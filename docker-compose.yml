@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    container_name: smarttaxi-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smarttaxi}
+      POSTGRES_USER: ${POSTGRES_USER:-smarttaxi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smarttaxi}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - smarttaxi_pg:/var/lib/postgresql/data
+      - ./apps/api/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smarttaxi} -d ${POSTGRES_DB:-smarttaxi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-bookworm
+    container_name: smarttaxi-redis
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: smarttaxi-api
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+    container_name: smarttaxi-web
+    restart: always
+    environment:
+      VITE_API_URL: ${API_ORIGIN:-http://localhost:4000}
+      VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4000}
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      - api
+
+volumes:
+  smarttaxi_pg:
