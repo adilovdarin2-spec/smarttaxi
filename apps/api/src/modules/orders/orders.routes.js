@@ -119,6 +119,14 @@ router.post("/", async (req, res, next) => {
 
     req.io?.to("dispatch").emit("order_created", order);
     req.io?.to("drivers").emit("order_created", order);
+    req.io?.emit("order_status_public", {
+      id: order.id,
+      short_id: order.short_id,
+      status: order.status,
+      price: order.price,
+      payment_method: order.payment_method,
+      tariff: order.tariff
+    });
     res.status(201).json({ order });
   } catch (e) { next(e); }
 });
@@ -177,6 +185,14 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
     });
     req.io?.to("dispatch").emit("order_updated", order);
     req.io?.to("drivers").emit("order_taken", { orderId: order.id });
+    req.io?.emit("order_status_public", {
+      id: order.id,
+      short_id: order.short_id,
+      status: order.status,
+      price: order.price,
+      payment_method: order.payment_method,
+      tariff: order.tariff
+    });
     res.json({ order });
   } catch (e) { next(e); }
 });
@@ -234,6 +250,14 @@ async function updateStatus(req, res, next, status) {
     });
     req.io?.to("dispatch").emit("order_updated", order);
     req.io?.to("drivers").emit("order_updated", order);
+    req.io?.emit("order_status_public", {
+      id: order.id,
+      short_id: order.short_id,
+      status: order.status,
+      price: order.price,
+      payment_method: order.payment_method,
+      tariff: order.tariff
+    });
     res.json({ order });
   } catch (e) { next(e); }
 }

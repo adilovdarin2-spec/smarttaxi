@@ -49,7 +49,13 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
   try {
     const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-    const stats = await query("SELECT COUNT(*)::int orders_total, COALESCE(SUM(price),0)::int revenue_total FROM orders WHERE driver_id=$1 AND created_at >= date_trunc('day', NOW())", [driver.id]);
+    const stats = await query(`
+      SELECT COUNT(*)::int orders_total,
+             COUNT(*) FILTER (WHERE status='COMPLETED')::int completed_orders,
+             COALESCE(SUM(price) FILTER (WHERE status='COMPLETED'),0)::int revenue_total
+      FROM orders
+      WHERE driver_id=$1 AND created_at >= date_trunc('day', NOW())
+    `, [driver.id]);
     res.json({ driver, today: stats.rows[0] });
   } catch (e) { next(e); }
 });

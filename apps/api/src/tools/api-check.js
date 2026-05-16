@@ -8,15 +8,27 @@ const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const orders = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
 const auth = readFileSync(join(root, "modules", "auth", "auth.routes.js"), "utf8");
 const finance = readFileSync(join(root, "modules", "finance", "finance.routes.js"), "utf8");
+const drivers = readFileSync(join(root, "modules", "drivers", "drivers.routes.js"), "utf8");
 
 const checks = [
   ["audit table", /CREATE TABLE IF NOT EXISTS audit_logs/i.test(schema)],
   ["audit indexes", /idx_audit_logs_created_at/i.test(schema)],
   ["order transition guard", /assertTransition/i.test(orders)],
+  ["completed requires in progress", /COMPLETED:\s*\["IN_PROGRESS"\]/.test(orders)],
+  ["double accept guard", /ORDER_ALREADY_ACCEPTED/.test(orders) && /FOR UPDATE/.test(orders)],
+  ["driver own order guard", /FORBIDDEN_ORDER/.test(orders)],
+  ["order status history", /order_status_history/.test(orders)],
+  ["driver busy on accept", /status='BUSY'/.test(orders)],
+  ["driver free on completion", /status='FREE'/.test(orders)],
+  ["cashback transaction on complete", /cashback_transactions/.test(orders) && /cashback_balance/.test(orders)],
+  ["driver debt on cash kaspi", /driver_debts/.test(orders) && /CASH/.test(orders) && /KASPI/.test(orders)],
+  ["driver card balance", /balance=balance\+\(\$1-\$2\)/.test(orders)],
   ["order audit logs", /order_created/.test(orders) && /order_completed/.test(orders)],
   ["auth rate limit", /auth-login/.test(auth)],
   ["auth audit logs", /login_success/.test(auth) && /login_failed/.test(auth)],
-  ["finance audit endpoint", /audit-logs/.test(finance)]
+  ["finance completed revenue", /SUM\(price\) FILTER \(WHERE status='COMPLETED'\)/.test(finance)],
+  ["finance audit endpoint", /audit-logs/.test(finance)],
+  ["driver stats completed orders", /completed_orders/.test(drivers) && /status='COMPLETED'/.test(drivers)]
 ];
 
 const failed = checks.filter(([, ok]) => !ok);

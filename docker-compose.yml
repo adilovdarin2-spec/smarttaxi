@@ -64,6 +64,9 @@ services:
   web:
     build:
       context: ./apps/web
+      args:
+        VITE_API_URL: ${API_ORIGIN:-http://localhost:4000}
+        VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4000}
     container_name: smarttaxi-web
     restart: always
     environment:

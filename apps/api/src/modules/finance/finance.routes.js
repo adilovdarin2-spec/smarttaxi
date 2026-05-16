@@ -34,9 +34,9 @@ router.get("/stats", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), a
     const where = dateWhere(range, params);
     const today = await query(`
       SELECT COUNT(*)::int orders_total,
-             COALESCE(SUM(price),0)::int revenue_total,
-             COALESCE(SUM(service_commission),0)::int commission_total,
-             COALESCE(SUM(cashback_earned),0)::int cashback_total,
+             COALESCE(SUM(price) FILTER (WHERE status='COMPLETED'),0)::int revenue_total,
+             COALESCE(SUM(service_commission) FILTER (WHERE status='COMPLETED'),0)::int commission_total,
+             COALESCE(SUM(cashback_earned) FILTER (WHERE status='COMPLETED'),0)::int cashback_total,
              COUNT(*) FILTER (WHERE status='NEW')::int new_orders,
              COUNT(*) FILTER (WHERE status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS'))::int active_orders,
              COUNT(*) FILTER (WHERE status='COMPLETED')::int completed_orders
