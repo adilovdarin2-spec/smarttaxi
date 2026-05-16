@@ -7,7 +7,9 @@ import jwt from "jsonwebtoken";
 import { env } from "./config/env.js";
 import { connectRedis } from "./db/redis.js";
 import { query, pool } from "./db/pool.js";
-import { errorHandler } from "./common/errors.js";
+import { runMigrations } from "./db/migrations.js";
+import { errorHandler, notFound } from "./common/errors.js";
+import { rateLimit } from "./common/rateLimit.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import ordersRoutes from "./modules/orders/orders.routes.js";
@@ -32,6 +34,7 @@ io.on("connection", socket => {
   socket.on("join_drivers", () => socket.join("drivers"));
 });
 
+app.set("trust proxy", 1);
 app.use(helmet());
 app.use(cors({
   origin(origin, cb) {
@@ -42,6 +45,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "1mb" }));
 app.use((req, _res, next) => { req.io = io; next(); });
+app.use("/api", rateLimit({ prefix: "api", windowMs: 60_000, max: 300 }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
@@ -51,12 +55,15 @@ app.use("/api/clients", clientsRoutes);
 app.use("/api/tariffs", tariffsRoutes);
 app.use("/api/finance", financeRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
+app.use(notFound);
 app.use(errorHandler);
 
 async function bootstrap() {
   await connectRedis();
+  await runMigrations();
   await query("SELECT 1");
   server.listen(env.API_PORT, () => console.log(`[API] SmartTaxi running on ${env.API_PORT}`));
 }
 process.on("SIGTERM", async () => { await pool.end(); process.exit(0); });
+process.on("SIGINT", async () => { await pool.end(); process.exit(0); });
 bootstrap().catch(e => { console.error(e); process.exit(1); });
