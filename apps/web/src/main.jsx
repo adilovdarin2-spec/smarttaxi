@@ -389,6 +389,17 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
         map,
         pickupMarker: new maps.Marker({ map, label: { text: "A", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
         dropoffMarker: new maps.Marker({ map, label: { text: "B", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
+        clientMarker: new maps.Marker({
+          map,
+          icon: {
+            path: maps.SymbolPath.CIRCLE,
+            fillColor: "#22C55E",
+            fillOpacity: 1,
+            strokeColor: "#F5F5F5",
+            strokeWeight: 2,
+            scale: 7
+          }
+        }),
         driverMarker: new maps.Marker({ map, label: { text: "🚕", fontWeight: "900" } }),
         polyline: new maps.Polyline({ map, strokeColor: GOLD_ROUTE, strokeOpacity: .95, strokeWeight: 5 }),
         directionsService: new maps.DirectionsService(),
@@ -404,9 +415,11 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
     const state = mapState.current;
     state.pickupMarker.setVisible(Boolean(pickup));
     state.dropoffMarker.setVisible(Boolean(dropoff));
+    state.clientMarker.setVisible(Boolean(locationOk && !order && pickup));
     state.driverMarker.setVisible(Boolean(driverPoint));
     if (pickup) state.pickupMarker.setPosition(pickup);
     if (dropoff) state.dropoffMarker.setPosition(dropoff);
+    if (pickup) state.clientMarker.setPosition(pickup);
     if (driverPoint) state.driverMarker.setPosition(driverPoint);
     state.directionsRenderer.setMap(null);
     state.directionsRenderer.setMap(state.map);
@@ -428,7 +441,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
       state.map.panTo(routeStart || routeTarget);
       state.map.setZoom(14);
     }
-  }, [mapsReady, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, driverPoint?.lat, driverPoint?.lng, order?.status]);
+  }, [mapsReady, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, driverPoint?.lat, driverPoint?.lng, order?.status, locationOk]);
 
   const hasRealMap = Boolean(hasGoogleMapsKey && mapsReady && !mapFailed);
   return (
@@ -437,6 +450,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
         {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
           <div className="fallback-map">
             <div className="route-line" />
+            {locationOk && !order && pickup && <div className="pin pin-client"><b>●</b><span>Вы здесь</span></div>}
             <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
             <div className="pin pin-b"><b>B</b><span>Куда</span></div>
             {driverPoint && <div className="pin pin-car"><b>🚕</b><span>Водитель</span></div>}
@@ -514,9 +528,11 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
           <span>{mode === "pickup" ? "A" : "B"}</span>
           <input ref={inputRef} value={value} onChange={event => setValue(event.target.value)} placeholder="Поиск адреса" autoComplete="off" autoFocus />
         </label>
-        <button className="address-action" type="button" onClick={onLocate} disabled={locating}>
-          {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
-        </button>
+        {mode === "pickup" && (
+          <button className="address-action" type="button" onClick={onLocate} disabled={locating}>
+            {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
+          </button>
+        )}
         <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
         <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
       </section>
@@ -571,8 +587,9 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
   );
 }
 
-function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCancel, cancelling, onMenu, menuOpen, setMenuOpen, aboutOpen, setAboutOpen, error }) {
+function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCancel, onNewOrder, cancelling, onMenu, menuOpen, setMenuOpen, aboutOpen, setAboutOpen, error }) {
   const canCancel = ["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order?.status);
+  const isFinished = FINISHED_STATUSES.includes(order?.status);
   return (
     <main className="mobile-app client-screen active-trip-screen">
       <ClientTopBar onMenu={onMenu} />
@@ -582,7 +599,7 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
       <MapExperience form={form} estimate={estimate} order={order} driverLocation={driverLocation} compact />
       <section className="active-trip-panel">
         <div className="card-head">
-          <div><small>Поездка</small><h2>#{order.short_id}</h2></div>
+          <div><small>{isFinished ? "Итог поездки" : "Поездка"}</small><h2>#{order.short_id}</h2></div>
           <StatusBadge status={order.status} />
         </div>
         <div className="trip-state">{mapCopy(order, driverLocation, estimate)}</div>
@@ -608,6 +625,7 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
           <button type="button">Поддержка</button>
         </div>
         {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
+        {isFinished && <button className="primary-cta" type="button" onClick={onNewOrder}>Новый заказ</button>}
       </section>
     </main>
   );
@@ -773,6 +791,7 @@ function Client() {
         setForm(next);
         setLocationOk(true);
         setLocating(false);
+        if (addressMode === "pickup") setAddressMode(null);
         estimateRoute(next).catch(() => {});
       },
       () => {
@@ -819,15 +838,16 @@ function Client() {
     }
   }
 
-  const activeOrder = order && !FINISHED_STATUSES.includes(order.status);
-  if (activeOrder) {
+  const visibleOrder = order;
+  if (visibleOrder) {
     return (
       <ClientActiveOrderScreen
-        order={order}
+        order={visibleOrder}
         form={form}
         estimate={estimate}
         driverLocation={driverLocation}
         onCancel={cancelOrder}
+        onNewOrder={() => { setOrder(null); setDriverLocation(null); setError(""); }}
         cancelling={loading}
         onMenu={() => setMenuOpen(true)}
         menuOpen={menuOpen}
