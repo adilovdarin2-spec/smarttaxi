@@ -1,0 +1,55 @@
+name: Apply client form cleanup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Remove noisy client fields
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/src/main.jsx')
+          s = p.read_text()
+          block = '''      <details className="ride-details">
+        <summary>Детали поездки</summary>
+        <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
+        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
+      </details>'''
+          s = s.replace(block, '')
+          s = s.replace('        <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />\n', '')
+          p.write_text(s)
+          css = Path('apps/web/src/styles.css')
+          c = css.read_text()
+          if 'SmartTaxi form cleanup' not in c:
+              c += '\n\n/* SmartTaxi form cleanup */\n.ride-details{display:none!important}\n.phone-row{margin-top:2px}\n'
+          css.write_text(c)
+          PY
+
+      - name: Verify form cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -n 'placeholder="Имя"' apps/web/src/main.jsx
+          grep -n 'SmartTaxi form cleanup' apps/web/src/styles.css
+
+      - name: Commit form cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/main.jsx apps/web/src/styles.css
+          git commit -m "Remove noisy client order fields" || true
+          git push origin dev
