@@ -40,6 +40,23 @@ const PAYMENT_OPTIONS = [
   ["CASHBACK", "Cashback", "Бонусы"]
 ];
 const GOOGLE_MAPS_BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
+const MAP_CENTER = { lat: 43.238949, lng: 76.889709 };
+const GOLD_ROUTE = "#F5C542";
+const DARK_MAP_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#0b0b0b" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8d8d8d" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#050505" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#262626" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#1b1b1b" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#101010" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#252015" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] }
+];
+
+let googleMapsPromise;
 
 function money(value) {
   return `${Number(value || 0).toLocaleString("ru-RU")} ₸`;
@@ -73,6 +90,61 @@ function fieldNumber(value) {
   if (value === "" || value === undefined || value === null) return undefined;
   const next = Number(value);
   return Number.isFinite(next) ? next : undefined;
+}
+
+function loadGoogleMaps() {
+  if (!GOOGLE_MAPS_BROWSER_KEY) return Promise.reject(new Error("GOOGLE_MAPS_BROWSER_KEY_MISSING"));
+  if (window.google?.maps) return Promise.resolve(window.google.maps);
+  if (!googleMapsPromise) {
+    googleMapsPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector("script[data-smarttaxi-google-maps]");
+      if (existing) {
+        existing.addEventListener("load", () => resolve(window.google.maps), { once: true });
+        existing.addEventListener("error", reject, { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_BROWSER_KEY)}&libraries=places&language=ru&region=KZ`;
+      script.async = true;
+      script.defer = true;
+      script.dataset.smarttaxiGoogleMaps = "true";
+      script.onload = () => resolve(window.google.maps);
+      script.onerror = () => reject(new Error("GOOGLE_MAPS_LOAD_FAILED"));
+      document.head.appendChild(script);
+    });
+  }
+  return googleMapsPromise;
+}
+
+function coordsFromForm(form, prefix) {
+  const lat = fieldNumber(form[`${prefix}Lat`]);
+  const lng = fieldNumber(form[`${prefix}Lng`]);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
+function markerIcon() {
+  const maps = window.google.maps;
+  return {
+    path: maps.SymbolPath.CIRCLE,
+    fillColor: GOLD_ROUTE,
+    fillOpacity: 1,
+    strokeColor: "#D4AF37",
+    strokeWeight: 2,
+    scale: 15,
+    labelOrigin: new maps.Point(0, 0)
+  };
+}
+
+async function reverseGeocode(lat, lng) {
+  if (!GOOGLE_MAPS_BROWSER_KEY) return "";
+  const maps = await loadGoogleMaps();
+  return new Promise(resolve => {
+    const geocoder = new maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results?.[0]?.formatted_address) resolve(results[0].formatted_address);
+      else resolve("");
+    });
+  });
 }
 
 function StatusBadge({ status }) {
@@ -155,6 +227,151 @@ function RoutePreview({ form, estimate, locating, onLocate, locationOk }) {
   );
 }
 
+function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk }) {
+  const mapNode = useRef(null);
+  const pickupInput = useRef(null);
+  const dropoffInput = useRef(null);
+  const mapState = useRef({});
+  const [mapsReady, setMapsReady] = useState(false);
+  const [mapFailed, setMapFailed] = useState(false);
+
+  useEffect(() => {
+    if (!GOOGLE_MAPS_BROWSER_KEY) return undefined;
+    let cancelled = false;
+    loadGoogleMaps()
+      .then(() => {
+        if (!cancelled) {
+          setMapsReady(true);
+          setMapFailed(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMapFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!mapsReady || !pickupInput.current || !dropoffInput.current) return undefined;
+    const maps = window.google.maps;
+    const attach = (input, prefix) => {
+      const autocomplete = new maps.places.Autocomplete(input, {
+        fields: ["formatted_address", "geometry", "name"],
+        componentRestrictions: { country: "kz" }
+      });
+      return autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        const location = place.geometry?.location;
+        const text = place.formatted_address || place.name || input.value;
+        setForm(current => ({
+          ...current,
+          [`${prefix}Text`]: text,
+          [`${prefix}Lat`]: location ? location.lat().toFixed(6) : current[`${prefix}Lat`],
+          [`${prefix}Lng`]: location ? location.lng().toFixed(6) : current[`${prefix}Lng`]
+        }));
+      });
+    };
+    const pickupListener = attach(pickupInput.current, "pickup");
+    const dropoffListener = attach(dropoffInput.current, "dropoff");
+    return () => {
+      pickupListener.remove();
+      dropoffListener.remove();
+    };
+  }, [mapsReady, setForm]);
+
+  useEffect(() => {
+    if (!mapsReady || !mapNode.current) return;
+    const maps = window.google.maps;
+    if (!mapState.current.map) {
+      const map = new maps.Map(mapNode.current, {
+        center: MAP_CENTER,
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: DARK_MAP_STYLE,
+        gestureHandling: "greedy"
+      });
+      mapState.current = {
+        map,
+        pickupMarker: new maps.Marker({ map, label: { text: "A", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
+        dropoffMarker: new maps.Marker({ map, label: { text: "B", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
+        polyline: new maps.Polyline({ map, strokeColor: GOLD_ROUTE, strokeOpacity: .95, strokeWeight: 5 }),
+        directionsService: new maps.DirectionsService(),
+        directionsRenderer: new maps.DirectionsRenderer({
+          map,
+          suppressMarkers: true,
+          preserveViewport: false,
+          polylineOptions: { strokeColor: GOLD_ROUTE, strokeOpacity: .96, strokeWeight: 5 }
+        })
+      };
+    }
+
+    const state = mapState.current;
+    const pickup = coordsFromForm(form, "pickup");
+    const dropoff = coordsFromForm(form, "dropoff");
+    state.pickupMarker.setVisible(Boolean(pickup));
+    state.dropoffMarker.setVisible(Boolean(dropoff));
+    if (pickup) state.pickupMarker.setPosition(pickup);
+    if (dropoff) state.dropoffMarker.setPosition(dropoff);
+    state.directionsRenderer.setMap(null);
+    state.directionsRenderer.setMap(state.map);
+    state.polyline.setPath([]);
+
+    if (pickup && dropoff) {
+      state.directionsService.route({ origin: pickup, destination: dropoff, travelMode: maps.TravelMode.DRIVING }, (result, status) => {
+        if (status === "OK" && result) {
+          state.directionsRenderer.setDirections(result);
+          return;
+        }
+        state.polyline.setPath([pickup, dropoff]);
+        const bounds = new maps.LatLngBounds();
+        bounds.extend(pickup);
+        bounds.extend(dropoff);
+        state.map.fitBounds(bounds, 60);
+      });
+    } else if (pickup || dropoff) {
+      state.map.panTo(pickup || dropoff);
+      state.map.setZoom(14);
+    }
+  }, [mapsReady, form.pickupLat, form.pickupLng, form.dropoffLat, form.dropoffLng]);
+
+  const hasRealMap = Boolean(GOOGLE_MAPS_BROWSER_KEY && mapsReady && !mapFailed);
+  return (
+    <section className="route-preview route-planner">
+      <div className="route-bg">
+        {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
+          <div className="fallback-map">
+            <div className="route-line" />
+            <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
+            <div className="pin pin-b"><b>B</b><span>Куда</span></div>
+            <div className="map-grid" />
+            <div className="fallback-label">Карта в fallback режиме</div>
+          </div>
+        )}
+      </div>
+      <div className="route-overlay">
+        <div>
+          <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : "Маршрут рассчитывается"}</strong>
+          <span>{hasRealMap ? "Google Maps · тёмная карта" : "Карта в fallback режиме"}</span>
+        </div>
+        <button className="ghost-btn" type="button" onClick={onLocate} disabled={locating}>
+          {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
+        </button>
+      </div>
+      <div className="route-card">
+        <label>
+          <span className="point point-a">A</span>
+          <input ref={pickupInput} value={form.pickupText} onChange={e => setForm({ ...form, pickupText: e.target.value })} placeholder="Откуда" autoComplete="off" />
+        </label>
+        <label>
+          <span className="point point-b">B</span>
+          <input ref={dropoffInput} value={form.dropoffText} onChange={e => setForm({ ...form, dropoffText: e.target.value })} placeholder="Куда" autoComplete="off" />
+        </label>
+      </div>
+    </section>
+  );
+}
+
 function ClientOrderCard({ order, onCancel, cancelling }) {
   const canCancel = ["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order?.status);
   return (
@@ -191,6 +408,29 @@ function ClientOrderCard({ order, onCancel, cancelling }) {
   );
 }
 
+function MiniRoutePreview({ order }) {
+  return (
+    <div className="mini-route-map">
+      <div className="map-grid" />
+      <div className="route-line mini" />
+      <div className="pin pin-a"><b>A</b></div>
+      <div className="pin pin-b"><b>B</b></div>
+      <span>{Number(order.distance_km || 0).toFixed(1)} км · {order.duration_min || 0} мин</span>
+    </div>
+  );
+}
+
+function BottomNav({ type }) {
+  const items = type === "owner"
+    ? [["⌂", "Главная"], ["▣", "Заказы"], ["●", "Водители"], ["₸", "Финансы"]]
+    : [["⌂", "Главная"], ["▣", "Заказы"], ["₸", "Статистика"], ["●", "Профиль"]];
+  return (
+    <nav className="bottom-nav">
+      {items.map(([icon, label], index) => <span className={index === 0 ? "active" : ""} key={label}><b>{icon}</b>{label}</span>)}
+    </nav>
+  );
+}
+
 function Client() {
   const [tariffs, setTariffs] = useState([]);
   const [form, setForm] = useState({
@@ -219,7 +459,9 @@ function Client() {
   }, [tariffs, form.tariff]);
   const disabled = !form.riderPhone.trim() || !form.pickupText.trim() || !form.dropoffText.trim() || loading;
   const approxPrice = estimate && selectedTariff?.base_price
-    ? Math.max(Number(selectedTariff.min_price || 0), Math.round((Number(selectedTariff.base_price || 0) + Number(selectedTariff.price_per_km || 0) * estimate.distanceKm + Number(selectedTariff.price_per_minute || 0) * estimate.durationMin) / 10) * 10)
+    ? estimate.tariff === form.tariff && estimate.price
+      ? estimate.price
+      : Math.max(Number(selectedTariff.min_price || 0), Math.round((Number(selectedTariff.base_price || 0) + Number(selectedTariff.price_per_km || 0) * estimate.distanceKm + Number(selectedTariff.price_per_minute || 0) * estimate.durationMin) / 10) * 10)
     : order?.price || 0;
 
   useEffect(() => {
@@ -230,7 +472,7 @@ function Client() {
     window.clearTimeout(estimateTimer.current);
     estimateTimer.current = window.setTimeout(() => estimateRoute(form).catch(() => {}), 450);
     return () => window.clearTimeout(estimateTimer.current);
-  }, [form.pickupText, form.dropoffText, form.pickupLat, form.pickupLng, form.dropoffLat, form.dropoffLng]);
+  }, [form.pickupText, form.dropoffText, form.pickupLat, form.pickupLng, form.dropoffLat, form.dropoffLng, form.tariff]);
 
   useEffect(() => {
     const socket = createSocket();
@@ -256,8 +498,9 @@ function Client() {
 
   async function estimateRoute(base = form) {
     const data = await api("/api/maps/estimate", { method: "POST", body: JSON.stringify(orderPayload(base)) });
-    setEstimate(data.estimate);
-    return data.estimate;
+    const next = data.estimate || data;
+    setEstimate(next);
+    return next;
   }
 
   async function locate() {
@@ -268,11 +511,15 @@ function Client() {
     }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      position => {
+      async position => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const address = await reverseGeocode(lat, lng).catch(() => "");
         const next = {
           ...form,
-          pickupLat: position.coords.latitude.toFixed(6),
-          pickupLng: position.coords.longitude.toFixed(6)
+          pickupText: address || "Моё местоположение",
+          pickupLat: lat.toFixed(6),
+          pickupLng: lng.toFixed(6)
         };
         setForm(next);
         setLocationOk(true);
@@ -328,10 +575,10 @@ function Client() {
       <AppHeader right={<div className="mini-balance"><b>0 ₸</b><span>cashback</span></div>} />
       <Alert message={error} />
       {order && !FINISHED_STATUSES.includes(order.status) ? <ClientOrderCard order={order} onCancel={cancelOrder} cancelling={loading} /> : null}
-      <RoutePreview form={form} estimate={estimate} locating={locating} onLocate={locate} locationOk={locationOk} />
+      <RoutePlanner form={form} setForm={setForm} estimate={estimate} locating={locating} onLocate={locate} locationOk={locationOk} />
 
       <form className="order-form" onSubmit={createOrder}>
-        <section className="address-card">
+        <section className="address-card legacy-address">
           <label><span className="point point-a">A</span><input value={form.pickupText} onChange={e => setForm({ ...form, pickupText: e.target.value })} placeholder="Откуда" /></label>
           <label><span className="point point-b">B</span><input value={form.dropoffText} onChange={e => setForm({ ...form, dropoffText: e.target.value })} placeholder="Куда" /></label>
         </section>
@@ -460,6 +707,7 @@ function DriverProfileCard({ driver, stats, activeOrder, onStatus, loading }) {
 function DriverOrderCard({ order, children }) {
   return (
     <article className="job-card">
+      <MiniRoutePreview order={order} />
       <div className="card-head"><strong>#{order.short_id}</strong><StatusBadge status={order.status} /></div>
       <div className="job-route"><p><b>A</b>{order.pickup_text}</p><p><b>B</b>{order.dropoff_text}</p></div>
       <div className="metric-row">
@@ -577,7 +825,33 @@ function Driver() {
           </DriverOrderCard>
         ))}
       </section>
+      <BottomNav type="driver" />
     </main>
+  );
+}
+
+function FinancePanel({ stats }) {
+  const revenue = Number(stats?.today?.revenue_total || 0);
+  const commission = Number(stats?.today?.commission_total || 0);
+  const cashback = Number(stats?.today?.cashback_total || 0);
+  const debts = Number(stats?.drivers?.driver_debts_total || 0);
+  const max = Math.max(revenue, commission, cashback, debts, 1);
+  const rows = [
+    ["Выручка", revenue],
+    ["Комиссия", commission],
+    ["Кэшбэк", cashback],
+    ["Долги", debts]
+  ];
+  return (
+    <section className="owner-panel finance-panel">
+      <div className="card-head"><h2>Финансы</h2><span>Сегодня</span></div>
+      {rows.map(([label, value]) => (
+        <div className="finance-line" key={label}>
+          <div><b>{label}</b><span>{money(value)}</span></div>
+          <i style={{ width: `${Math.max(8, Math.round(value / max * 100))}%` }} />
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -640,6 +914,8 @@ function Owner() {
         <div><b>{stats?.drivers?.free_drivers || 0}</b><span>Водители онлайн</span></div>
       </section>
 
+      <FinancePanel stats={stats} />
+
       <section className="owner-grid">
         <div className="owner-panel">
           <div className="card-head"><h2>Активные поездки</h2><span>{activeOrders.length}</span></div>
@@ -668,6 +944,7 @@ function Owner() {
           {orders.map(order => <OwnerOrder order={order} driver={driverById.get(order.driver_id)} key={order.id} compact />)}
         </div>
       </section>
+      <BottomNav type="owner" />
     </main>
   );
 }

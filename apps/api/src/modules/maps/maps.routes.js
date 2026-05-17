@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { env } from "../../config/env.js";
+import { query } from "../../db/pool.js";
 
 const router = Router();
 
@@ -10,7 +11,8 @@ const EstimateSchema = z.object({
   pickupLat: z.coerce.number().min(-90).max(90).optional(),
   pickupLng: z.coerce.number().min(-180).max(180).optional(),
   dropoffLat: z.coerce.number().min(-90).max(90).optional(),
-  dropoffLng: z.coerce.number().min(-180).max(180).optional()
+  dropoffLng: z.coerce.number().min(-180).max(180).optional(),
+  tariff: z.string().trim().min(2).max(40).optional().default("Economy")
 });
 
 function hasCoordinates(body) {
@@ -33,7 +35,18 @@ function textFallbackKm(body) {
   return 2.4 + (seed % 9) * 0.65;
 }
 
-export function estimateRoute(body) {
+function calcPrice(tariff, distanceKm, durationMin) {
+  const raw = Number(tariff.base_price) + Number(tariff.price_per_km) * distanceKm + Number(tariff.price_per_minute) * durationMin;
+  return Math.max(Number(tariff.min_price), Math.round(raw / 10) * 10);
+}
+
+async function getTariff(name) {
+  const result = await query("SELECT * FROM tariffs WHERE name=$1 AND is_active=true", [name]);
+  if (result.rows[0]) return result.rows[0];
+  return (await query("SELECT * FROM tariffs WHERE name='Economy' AND is_active=true LIMIT 1")).rows[0];
+}
+
+function fallbackEstimate(body) {
   const distanceKm = hasCoordinates(body)
     ? Math.max(0.5, Math.min(80, haversineKm(body) * 1.25))
     : textFallbackKm(body);
@@ -42,16 +55,62 @@ export function estimateRoute(body) {
   return {
     distanceKm: Math.round(distanceKm * 10) / 10,
     durationMin,
+    source: "fallback",
     provider: "fallback",
     googleReady: Boolean(env.GOOGLE_MAPS_SERVER_KEY),
     message: "Fallback estimate is used until Google Maps server billing is enabled."
   };
 }
 
+function googlePoint(lat, lng, text) {
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return `${lat},${lng}`;
+  return text || "";
+}
+
+async function googleEstimate(body) {
+  if (!env.GOOGLE_MAPS_SERVER_KEY) return null;
+  const origin = googlePoint(body.pickupLat, body.pickupLng, body.pickupText);
+  const destination = googlePoint(body.dropoffLat, body.dropoffLng, body.dropoffText);
+  if (!origin || !destination) return null;
+
+  const params = new URLSearchParams({
+    origin,
+    destination,
+    mode: "driving",
+    units: "metric",
+    key: env.GOOGLE_MAPS_SERVER_KEY
+  });
+  const response = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${params.toString()}`);
+  if (!response.ok) return null;
+  const data = await response.json();
+  const leg = data.routes?.[0]?.legs?.[0];
+  if (!leg?.distance?.value || !leg?.duration?.value) return null;
+  return {
+    distanceKm: Math.round((leg.distance.value / 1000) * 10) / 10,
+    durationMin: Math.max(1, Math.round(leg.duration.value / 60)),
+    source: "google",
+    provider: "google",
+    googleReady: true,
+    message: "Google Directions estimate."
+  };
+}
+
+export async function estimateRoute(body) {
+  const route = await googleEstimate(body).catch(() => null) || fallbackEstimate(body);
+  const tariff = await getTariff(body.tariff);
+  const price = tariff ? calcPrice(tariff, route.distanceKm, route.durationMin) : 0;
+  return {
+    ...route,
+    tariff: tariff?.name || body.tariff,
+    price
+  };
+}
+
 router.post("/estimate", async (req, res, next) => {
   try {
     const body = EstimateSchema.parse(req.body);
-    res.json({ estimate: estimateRoute(body) });
+    const estimate = await estimateRoute(body);
+    res.json({ ...estimate, estimate });
   } catch (error) {
     next(error);
   }
