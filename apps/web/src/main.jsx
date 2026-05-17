@@ -51,7 +51,10 @@ const LOCAL_PLACES = [
   { title: "Школа", subtitle: "Ближайшая школа", lat: 42.3212, lng: 69.6006 },
   { title: "Автостанция", subtitle: "Межгород", lat: 42.3198, lng: 69.6068 },
   { title: "Мечеть", subtitle: "Центральная мечеть", lat: 42.3129, lng: 69.5964 },
-  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 }
+  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 },
+  { title: "улица Шамо, 58", subtitle: "Атакент", lat: 42.3158, lng: 69.5948 },
+  { title: "улица Шамо, 58А", subtitle: "Атакент", lat: 42.3159, lng: 69.5952 },
+  { title: "улица Шамо, 56", subtitle: "Атакент", lat: 42.3155, lng: 69.5942 }
 ];
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0b0b0b" }] },
@@ -562,6 +565,11 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
   const inputRef = useRef(null);
   const [value, setValue] = useState(mode === "pickup" ? form.pickupText : form.dropoffText);
   const [mapsReady, setMapsReady] = useState(false);
+
+  useEffect(() => {
+    if (!mode) return;
+    setValue(mode === "pickup" ? form.pickupText : form.dropoffText);
+  }, [mode, form.pickupText, form.dropoffText]);
   const title = mode === "pickup" ? "Откуда поедем?" : "Куда едем?";
   const normalized = value.trim().toLowerCase();
   const filteredPlaces = LOCAL_PLACES.filter(place => !normalized || `${place.title} ${place.subtitle}`.toLowerCase().includes(normalized));
@@ -649,7 +657,7 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
             </button>
           )}
         </div>
-        <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
+        <div className="address-hint">SmartTaxi показывает популярные места Атакента. Если адреса нет — введите его вручную.</div>
         <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
       </section>
     </div>
@@ -668,6 +676,10 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
         <span>{selectedTariff?.name || form.tariff}</span>
         <span>{PAYMENT_OPTIONS.find(([key]) => key === form.paymentMethod)?.[1] || form.paymentMethod}</span>
       </div>
+      <label className="phone-row">
+        <span>Телефон для связи</span>
+        <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="+7 700 000 00 00" inputMode="tel" />
+      </label>
       <section>
         <h3>Тариф</h3>
         <div className="tariff-strip">
@@ -696,7 +708,6 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
       <details className="ride-details">
         <summary>Детали поездки</summary>
         <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
-        <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="Телефон" inputMode="tel" />
         <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
       </details>
       <button className="primary-cta sticky-order" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
@@ -856,6 +867,8 @@ function Client() {
   function orderPayload(base = form) {
     return {
       ...base,
+      riderName: normalizeText(base.riderName || "Клиент"),
+      riderPhone: String(base.riderPhone || "").trim(),
       pickupLat: fieldNumber(base.pickupLat),
       pickupLng: fieldNumber(base.pickupLng),
       dropoffLat: fieldNumber(base.dropoffLat),
