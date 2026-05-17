@@ -1,0 +1,43 @@
+name: Apply safe OSM patch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Patch current web map
+        run: |
+          set -e
+          perl -0pi -e 's/return window\.__SMARTTAXI_CONFIG__\?\.googleMapsBrowserKey \|\| import\.meta\.env\.VITE_GOOGLE_MAPS_BROWSER_KEY \|\| "";/return "";/g' apps/web/src/main.jsx
+          perl -0pi -e 's/Карта в fallback режиме/OpenStreetMap/g' apps/web/src/main.jsx
+          cat >> apps/web/src/styles.css <<'CSS'
+
+/* SmartTaxi OpenStreetMap safe patch */
+.fallback-map {
+  background-image:
+    linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)),
+    url("https://tile.openstreetmap.org/15/22718/12125.png");
+  background-size: cover;
+  background-position: center;
+}
+.fallback-label {
+  color: #F5C542;
+  border-color: rgba(245,197,66,.35);
+  background: rgba(5,5,5,.72);
+}
+CSS
+      - name: Commit patch to dev
+        run: |
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/main.jsx apps/web/src/styles.css
+          git commit -m "Disable Google map and show OpenStreetMap shell" || true
+          git push origin dev
