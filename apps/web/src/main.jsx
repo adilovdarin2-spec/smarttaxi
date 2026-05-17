@@ -413,7 +413,7 @@ function osmTileImage(center = MAP_CENTER) {
   const scale = 2 ** z;
   const x = Math.floor((lng + 180) / 360 * scale);
   const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale);
-  return ;
+  return "";
 }
 
 function MapExperience({ form, estimate, order, driverLocation, locating, locationOk, onLocate, compact = false }) {
