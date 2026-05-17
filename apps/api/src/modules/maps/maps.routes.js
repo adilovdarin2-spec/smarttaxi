@@ -106,14 +106,22 @@ export async function estimateRoute(body) {
   };
 }
 
-router.post("/estimate", async (req, res, next) => {
+async function handleEstimate(input, res, next) {
   try {
-    const body = EstimateSchema.parse(req.body);
+    const body = EstimateSchema.parse(input);
     const estimate = await estimateRoute(body);
     res.json({ ...estimate, estimate });
   } catch (error) {
     next(error);
   }
+}
+
+router.get("/estimate", async (req, res, next) => {
+  await handleEstimate(req.query, res, next);
+});
+
+router.post("/estimate", async (req, res, next) => {
+  await handleEstimate(req.body, res, next);
 });
 
 export default router;
