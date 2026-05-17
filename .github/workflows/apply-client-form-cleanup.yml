@@ -18,24 +18,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('apps/web/src/main.jsx')
-          s = p.read_text()
-          block = '''      <details className="ride-details">
-        <summary>Детали поездки</summary>
-        <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
-        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
-      </details>'''
-          s = s.replace(block, '')
-          s = s.replace('        <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />\n', '')
-          p.write_text(s)
-          css = Path('apps/web/src/styles.css')
-          c = css.read_text()
-          if 'SmartTaxi form cleanup' not in c:
-              c += '\n\n/* SmartTaxi form cleanup */\n.ride-details{display:none!important}\n.phone-row{margin-top:2px}\n'
-          css.write_text(c)
-          PY
+          perl -0pi -e 's/\n      <details className="ride-details">.*?<\/details>//s' apps/web/src/main.jsx
+          perl -0pi -e 's/\n        <input value=\{form\.riderName\}[^\n]*placeholder="Имя" \/>//g' apps/web/src/main.jsx
+          if ! grep -q "SmartTaxi form cleanup" apps/web/src/styles.css; then
+            echo "" >> apps/web/src/styles.css
+            echo "/* SmartTaxi form cleanup */" >> apps/web/src/styles.css
+            echo ".ride-details { display: none !important; }" >> apps/web/src/styles.css
+            echo ".phone-row { margin-top: 2px; }" >> apps/web/src/styles.css
+          fi
 
       - name: Verify form cleanup
         shell: bash
