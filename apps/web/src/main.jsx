@@ -406,6 +406,22 @@ function mapCopy(order, driverLocation, estimate) {
   return "Ищем водителя";
 }
 
+function osmEmbedUrl(center = MAP_CENTER) {
+  const lat = Number(center?.lat) || MAP_CENTER.lat;
+  const lng = Number(center?.lng) || MAP_CENTER.lng;
+  const d = 0.028;
+  const bbox = (lng - d) + "%2C" + (lat - d) + "%2C" + (lng + d) + "%2C" + (lat + d);
+  return "https://www.openstreetmap.org/export/embed.html?bbox=" + bbox + "&layer=mapnik&marker=" + lat + "%2C" + lng;
+}
+
+function manualPoint(text) {
+  const raw = String(text || "");
+  const seed = Array.from(raw).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return {
+    lat: (MAP_CENTER.lat + ((seed % 19) - 9) * 0.0012).toFixed(6),
+    lng: (MAP_CENTER.lng + ((seed % 23) - 11) * 0.0012).toFixed(6)
+  };
+}
 function osmTileImage(center = MAP_CENTER) {
   const lat = Number(center?.lat) || MAP_CENTER.lat;
   const lng = Number(center?.lng) || MAP_CENTER.lng;
@@ -544,7 +560,8 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
     <section className={`route-preview route-planner ${compact ? "compact-map" : ""}`}>
       <div className="route-bg">
         {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
-          <div className="fallback-map dynamic-osm-map" style={{ backgroundImage: osmTileImage(fallbackCenter) }}>
+          <div className="fallback-map dynamic-osm-map interactive-osm-map" style={{ backgroundImage: osmTileImage(fallbackCenter) }}>
+            <iframe className="osm-touch-frame" title="OpenStreetMap" src={osmEmbedUrl(fallbackCenter)} loading="lazy" />
             <div className="route-line" />
             {locationOk && !order && pickup && <div className="pin pin-client"><b>●</b><span>Вы здесь</span></div>}
             <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
@@ -562,7 +579,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
       <div className="route-overlay">
         <div>
           <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : mapStatus}</strong>
-          <span>{hasRealMap ? mapStatus : mapFailure ? "Карта работает в fallback режиме" : "OpenStreetMap"}</span>
+          <span>{hasRealMap ? mapStatus : "Карту можно двигать пальцем"}</span>
         </div>
         {onLocate && <button className="map-locate-btn" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
@@ -632,7 +649,14 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
     onClose();
   }
   function saveManual() {
-    setForm(current => ({ ...current, [`${mode}Text`]: value.trim() || current[`${mode}Text`] }));
+    const text = value.trim() || form[`${mode}Text`] || (mode === "pickup" ? "Моё местоположение" : "Точка назначения");
+    const point = manualPoint(text);
+    setForm(current => ({
+      ...current,
+      [`${mode}Text`]: text,
+      [`${mode}Lat`]: current[`${mode}Lat`] || point.lat,
+      [`${mode}Lng`]: current[`${mode}Lng`] || point.lng
+    }));
     onClose();
   }
   return (
@@ -764,7 +788,6 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
         <Timeline status={order.status} />
         <div className="trip-actions">
           <button type="button">SOS</button>
-          <button type="button">Поделиться поездкой</button>
           <button type="button">Поддержка</button>
         </div>
         {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
@@ -829,7 +852,8 @@ function Client() {
   const selectedTariff = useMemo(() => {
     return (tariffs.length ? tariffs : DEFAULT_TARIFFS).find(t => t.name === form.tariff) || DEFAULT_TARIFFS[0];
   }, [tariffs, form.tariff]);
-  const disabled = !form.riderPhone.trim() || !form.pickupText.trim() || !form.dropoffText.trim() || loading;
+  const phoneReady = String(form.riderPhone || "").replace(/\D/g, "").length >= 6;
+  const disabled = !phoneReady || !form.pickupText.trim() || !form.dropoffText.trim() || loading;
   const approxPrice = estimate && selectedTariff?.base_price
     ? estimate.tariff === form.tariff && estimate.price
       ? estimate.price
