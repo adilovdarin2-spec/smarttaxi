@@ -17,6 +17,7 @@ import driversRoutes from "./modules/drivers/drivers.routes.js";
 import clientsRoutes from "./modules/clients/clients.routes.js";
 import tariffsRoutes from "./modules/tariffs/tariffs.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
+import mapsRoutes from "./modules/maps/maps.routes.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -39,7 +40,7 @@ app.use(helmet());
 app.use(cors({
   origin(origin, cb) {
     if (!origin || env.CORS_ORIGINS.includes(origin)) return cb(null, true);
-    cb(new Error("CORS blocked"));
+    cb(new Error("CORS origin is not allowed"));
   },
   credentials: true
 }));
@@ -54,6 +55,7 @@ app.use("/api/drivers", driversRoutes);
 app.use("/api/clients", clientsRoutes);
 app.use("/api/tariffs", tariffsRoutes);
 app.use("/api/finance", financeRoutes);
+app.use("/api/maps", mapsRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);
