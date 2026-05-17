@@ -1328,3 +1328,7 @@ section h3 { margin-bottom: 10px; font-size: 18px; }
 /* SmartTaxi form cleanup */
 .ride-details { display: none !important; }
 .phone-row { margin-top: 2px; }
+
+/* SmartTaxi dynamic OSM center */
+.dynamic-osm-map { background-size: cover !important; background-position: center !important; }
+.dynamic-osm-map::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 42%, rgba(245,197,66,.12), transparent 30%); pointer-events: none; }

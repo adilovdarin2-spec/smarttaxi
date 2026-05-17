@@ -406,6 +406,16 @@ function mapCopy(order, driverLocation, estimate) {
   return "Ищем водителя";
 }
 
+function osmTileImage(center = MAP_CENTER) {
+  const lat = Number(center?.lat) || MAP_CENTER.lat;
+  const lng = Number(center?.lng) || MAP_CENTER.lng;
+  const z = 15;
+  const scale = 2 ** z;
+  const x = Math.floor((lng + 180) / 360 * scale);
+  const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale);
+  return ;
+}
+
 function MapExperience({ form, estimate, order, driverLocation, locating, locationOk, onLocate, compact = false }) {
   const mapNode = useRef(null);
   const mapState = useRef({});
@@ -419,6 +429,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
   const routeTarget = order?.status === "IN_PROGRESS" ? dropoff : order && driverPoint ? pickup : dropoff;
   const routeStart = order && driverPoint ? driverPoint : pickup;
   const mapStatus = mapCopy(order, driverLocation, estimate);
+  const fallbackCenter = driverPoint || pickup || dropoff || MAP_CENTER;
 
   useEffect(() => {
     if (!getGoogleMapsBrowserKey()) return undefined;
@@ -533,7 +544,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
     <section className={`route-preview route-planner ${compact ? "compact-map" : ""}`}>
       <div className="route-bg">
         {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
-          <div className="fallback-map">
+          <div className="fallback-map dynamic-osm-map" style={{ backgroundImage: osmTileImage(fallbackCenter) }}>
             <div className="route-line" />
             {locationOk && !order && pickup && <div className="pin pin-client"><b>●</b><span>Вы здесь</span></div>}
             <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
