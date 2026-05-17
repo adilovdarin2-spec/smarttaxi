@@ -23,6 +23,7 @@ const PAYMENTS = {
 
 const DRIVER_ACTIVE = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"];
 const DEFAULT_TARIFFS = [{ name: "Economy" }, { name: "Comfort" }, { name: "Business" }, { name: "Delivery" }];
+const GOOGLE_MAPS_BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
 
 function money(value) {
   return `${Number(value || 0).toLocaleString("ru-RU")} ₸`;
@@ -33,7 +34,7 @@ function humanError(error) {
   if (code === "ORDER_ALREADY_ACCEPTED") return "Заказ уже принял другой водитель.";
   if (code === "DRIVER_NOT_AVAILABLE") return "Сначала включите статус онлайн.";
   if (code === "DRIVER_HAS_ACTIVE_ORDER") return "У вас уже есть активная поездка.";
-  if (code === "INVALID_ORDER_TRANSITION") return "Этот шаг сейчас недоступен для текущего статуса заказа.";
+  if (code === "INVALID_STATUS_TRANSITION" || code === "INVALID_ORDER_TRANSITION") return "Этот шаг сейчас недоступен для текущего статуса заказа.";
   if (code === "FORBIDDEN_ORDER") return "Нельзя управлять чужим заказом.";
   if (error?.message === "Failed to fetch") return "API не отвечает. Проверьте backend или адрес VITE_API_URL.";
   return error?.message || "Что-то пошло не так.";
@@ -109,10 +110,16 @@ function Client() {
     riderPhone: "+77000000000",
     pickupText: "Atakent, центр",
     dropoffText: "Atakent, вокзал",
+    pickupLat: "",
+    pickupLng: "",
+    dropoffLat: "",
+    dropoffLng: "",
     tariff: "Economy",
     paymentMethod: "CASH",
     notes: ""
   });
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [estimate, setEstimate] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -140,12 +147,71 @@ function Client() {
     socket.on("order_status_public", update);
   });
 
+  function optionalNumber(value) {
+    if (value === "" || value === null || value === undefined) return undefined;
+    const next = Number(value);
+    return Number.isFinite(next) ? next : undefined;
+  }
+
+  function payloadWithCoordinates(base = form) {
+    return {
+      ...base,
+      pickupLat: optionalNumber(base.pickupLat),
+      pickupLng: optionalNumber(base.pickupLng),
+      dropoffLat: optionalNumber(base.dropoffLat),
+      dropoffLng: optionalNumber(base.dropoffLng)
+    };
+  }
+
+  async function estimateTrip(base = form) {
+    const data = await api("/api/maps/estimate", {
+      method: "POST",
+      body: JSON.stringify(payloadWithCoordinates(base))
+    });
+    setEstimate(data.estimate);
+    return data.estimate;
+  }
+
+  async function locateMe() {
+    setError("");
+    if (!("geolocation" in navigator)) {
+      setError("Геолокация недоступна в этом браузере. Заполните адрес вручную.");
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const next = {
+          ...form,
+          pickupLat: position.coords.latitude.toFixed(6),
+          pickupLng: position.coords.longitude.toFixed(6)
+        };
+        setForm(next);
+        estimateTrip(next).catch((err) => setError(humanError(err)));
+        setGeoLoading(false);
+      },
+      () => {
+        setError("Не удалось получить геолокацию. Разрешите доступ или оставьте ручной адрес.");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
   async function submit(event) {
     event.preventDefault();
     setError("");
     setCreating(true);
     try {
-      const data = await api("/api/orders", { method: "POST", body: JSON.stringify(form) });
+      const routeEstimate = await estimateTrip();
+      const data = await api("/api/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          ...payloadWithCoordinates(),
+          distanceKm: routeEstimate.distanceKm,
+          durationMin: routeEstimate.durationMin
+        })
+      });
       setOrder(data.order);
     } catch (err) {
       setError(humanError(err));
@@ -178,9 +244,26 @@ function Client() {
             <Field label="Откуда">
               <input value={form.pickupText} onChange={(e) => setForm({ ...form, pickupText: e.target.value })} />
             </Field>
+            <button type="button" className="btn btn-ghost" disabled={geoLoading} onClick={locateMe}>
+              {geoLoading ? "Определяем..." : "Определить моё местоположение"}
+            </button>
             <Field label="Куда">
               <input value={form.dropoffText} onChange={(e) => setForm({ ...form, dropoffText: e.target.value })} />
             </Field>
+            <div className="form-row coords-row">
+              <Field label="Pickup lat">
+                <input inputMode="decimal" value={form.pickupLat} onChange={(e) => setForm({ ...form, pickupLat: e.target.value })} placeholder="опционально" />
+              </Field>
+              <Field label="Pickup lng">
+                <input inputMode="decimal" value={form.pickupLng} onChange={(e) => setForm({ ...form, pickupLng: e.target.value })} placeholder="опционально" />
+              </Field>
+              <Field label="Dropoff lat">
+                <input inputMode="decimal" value={form.dropoffLat} onChange={(e) => setForm({ ...form, dropoffLat: e.target.value })} placeholder="опционально" />
+              </Field>
+              <Field label="Dropoff lng">
+                <input inputMode="decimal" value={form.dropoffLng} onChange={(e) => setForm({ ...form, dropoffLng: e.target.value })} placeholder="опционально" />
+              </Field>
+            </div>
             <div className="form-row">
               <Field label="Тариф">
                 <select value={form.tariff} onChange={(e) => setForm({ ...form, tariff: e.target.value })}>
@@ -198,6 +281,10 @@ function Client() {
             <Field label="Комментарий">
               <textarea rows="3" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </Field>
+            <div className="estimate-strip">
+              <span>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут будет рассчитан fallback-оценкой"}</span>
+              <small>{GOOGLE_MAPS_BROWSER_KEY ? "Google Maps key configured" : "Google Maps key отсутствует, fallback активен"}</small>
+            </div>
             <button className="btn btn-primary" disabled={creating}>{creating ? "Создаем заказ..." : "Заказать такси"}</button>
           </form>
         </section>

@@ -20,6 +20,10 @@ export function errorHandler(err, req, res, _next) {
     return res.status(400).json({ error: "INVALID_JSON", message: "Request body must be valid JSON" });
   }
 
+  if (err.message === "CORS origin is not allowed") {
+    return res.status(403).json({ error: "FORBIDDEN", message: "Origin is not allowed" });
+  }
+
   const status = err.status || 500;
   if (status >= 500) console.error("[ERROR]", err);
 

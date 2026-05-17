@@ -166,6 +166,29 @@ h2 {
   gap: 12px;
 }
 
+.coords-row {
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: rgba(7, 7, 7, .22);
+}
+
+.estimate-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #0b0a08;
+  color: var(--text);
+}
+
+.estimate-strip small {
+  color: var(--muted);
+  text-align: right;
+}
+
 .field {
   display: grid;
   gap: 7px;
@@ -453,6 +476,7 @@ td small {
   .page { padding: 28px 22px 56px; }
   .client-layout { grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); }
   .form-row { grid-template-columns: 1fr 1fr; }
+  .coords-row { grid-template-columns: repeat(4, 1fr); }
   .driver-toolbar { grid-template-columns: repeat(3, max-content); }
   .driver-toolbar .btn:last-child { grid-column: auto; }
   .stats-grid { grid-template-columns: repeat(4, 1fr); }

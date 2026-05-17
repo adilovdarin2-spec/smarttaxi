@@ -1,20 +1,64 @@
 import dotenv from "dotenv";
 dotenv.config({ path: process.env.ENV_FILE || "../../.env" });
 
-function required(name, fallback) {
-  const value = process.env[name] || fallback;
+function required(name) {
+  const value = process.env[name];
   if (!value) throw new Error(`Missing env ${name}`);
   return value;
+}
+
+function requiredUrl(name) {
+  const value = required(name);
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(`Invalid env ${name}: expected URL`);
+  }
+  return value;
+}
+
+function optionalUrl(name, fallback) {
+  const value = process.env[name] || fallback;
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(`Invalid env ${name}: expected URL`);
+  }
+  return value;
+}
+
+function jwtSecret() {
+  const value = required("JWT_SECRET");
+  if (value.length < 32) throw new Error("Invalid env JWT_SECRET: minimum 32 characters");
+  if ((process.env.NODE_ENV || "development") === "production" && /change_me|dev_secret/i.test(value)) {
+    throw new Error("Invalid env JWT_SECRET: production secret must be changed");
+  }
+  return value;
+}
+
+function corsOrigins() {
+  return (process.env.CORS_ORIGINS || "http://localhost:5173")
+    .split(",")
+    .map(origin => origin.trim())
+    .filter(Boolean)
+    .map(origin => {
+      try {
+        return new URL(origin).origin;
+      } catch {
+        throw new Error(`Invalid CORS origin: ${origin}`);
+      }
+    });
 }
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV || "development",
   API_PORT: Number(process.env.API_PORT || 4000),
-  DATABASE_URL: required("DATABASE_URL"),
-  REDIS_URL: process.env.REDIS_URL || "redis://redis:6379",
-  JWT_SECRET: required("JWT_SECRET", "dev_secret_change_me"),
+  DATABASE_URL: requiredUrl("DATABASE_URL"),
+  REDIS_URL: optionalUrl("REDIS_URL", "redis://redis:6379"),
+  JWT_SECRET: jwtSecret(),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
-  CORS_ORIGINS: (process.env.CORS_ORIGINS || "http://localhost:5173").split(",").map(s => s.trim()),
+  CORS_ORIGINS: corsOrigins(),
+  GOOGLE_MAPS_SERVER_KEY: process.env.GOOGLE_MAPS_SERVER_KEY || "",
   CITY: process.env.CITY || "Atakent",
   CURRENCY: process.env.CURRENCY || "KZT",
   CURRENCY_SYMBOL: process.env.CURRENCY_SYMBOL || "₸",

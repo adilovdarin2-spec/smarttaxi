@@ -4,6 +4,7 @@ import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { rateLimit } from "../../common/rateLimit.js";
 
 const router = Router();
 
@@ -42,6 +43,10 @@ const CreateOrder = z.object({
   riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone"),
   pickupText: z.string().trim().min(2).max(180).transform(normalizeText),
   dropoffText: z.string().trim().min(2).max(180).transform(normalizeText),
+  pickupLat: z.coerce.number().min(-90).max(90).optional(),
+  pickupLng: z.coerce.number().min(-180).max(180).optional(),
+  dropoffLat: z.coerce.number().min(-90).max(90).optional(),
+  dropoffLng: z.coerce.number().min(-180).max(180).optional(),
   tariff: z.string().trim().min(2).max(40).default("Economy"),
   paymentMethod: z.enum(["CASH", "KASPI", "CARD", "CASHBACK", "MIXED"]).default("CASH"),
   distanceKm: z.coerce.number().min(0).max(300).default(3.2),
@@ -53,8 +58,8 @@ async function insertOrderWithShortId(client, params) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const result = await client.query(`
-        INSERT INTO orders(short_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, tariff, payment_method, price, distance_km, duration_min, service_commission, notes)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        INSERT INTO orders(short_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, price, distance_km, duration_min, service_commission, notes)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
         RETURNING *
       `, [shortId(), ...params]);
       return result.rows[0];
@@ -68,7 +73,7 @@ async function insertOrderWithShortId(client, params) {
 function assertTransition(existing, nextStatus) {
   const allowed = TransitionRules[nextStatus] || [];
   if (!allowed.includes(existing.status)) {
-    throw new AppError("Invalid order status transition", 409, "INVALID_ORDER_TRANSITION", {
+    throw new AppError("Invalid order status transition", 409, "INVALID_STATUS_TRANSITION", {
       currentStatus: existing.status,
       nextStatus,
       allowedFrom: allowed
@@ -76,7 +81,7 @@ function assertTransition(existing, nextStatus) {
   }
 }
 
-router.post("/", async (req, res, next) => {
+router.post("/", rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
     const body = CreateOrder.parse(req.body);
     const order = await tx(async (client) => {
@@ -97,6 +102,10 @@ router.post("/", async (req, res, next) => {
         body.riderPhone,
         body.pickupText,
         body.dropoffText,
+        body.pickupLat || null,
+        body.pickupLng || null,
+        body.dropoffLat || null,
+        body.dropoffLng || null,
         body.tariff,
         body.paymentMethod,
         price,
