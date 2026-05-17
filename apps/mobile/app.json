@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "SmartTaxi",
+    "slug": "smarttaxi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "smarttaxi",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#070707"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "kz.smarttaxi.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "SmartTaxi uses your location to set pickup points for orders."
+      }
+    },
+    "android": {
+      "package": "kz.smarttaxi.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#070707"
+      }
+    },
+    "extra": {
+      "apiUrl": "${EXPO_PUBLIC_API_URL}",
+      "googleMapsKey": "${EXPO_PUBLIC_GOOGLE_MAPS_KEY}"
+    }
+  }
+}
