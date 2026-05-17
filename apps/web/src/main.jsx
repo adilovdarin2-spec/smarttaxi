@@ -705,11 +705,6 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
           {PAYMENT_OPTIONS.map(([key, title]) => <button type="button" className={form.paymentMethod === key ? "selected" : ""} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>{title}</button>)}
         </div>
       </section>
-      <details className="ride-details">
-        <summary>Детали поездки</summary>
-        <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
-        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
-      </details>
       <button className="primary-cta sticky-order" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
     </form>
   );
