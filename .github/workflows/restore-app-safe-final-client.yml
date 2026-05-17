@@ -14,45 +14,52 @@ jobs:
         with:
           ref: dev
           fetch-depth: 0
+
       - name: Restore main and switch client only
         shell: bash
         run: |
           set -euo pipefail
           git checkout 3e58540223aab766f0846c58c3e3ecee30f2170b -- apps/web/src/main.jsx
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('apps/web/src/main.jsx')
-          s = p.read_text()
-          if 'import FinalClient from "./FinalClient.jsx";' not in s:
-              s = s.replace('import { createSocket } from "./lib/socket";\n', 'import { createSocket } from "./lib/socket";\nimport FinalClient from "./FinalClient.jsx";\n')
-          old = '''function App() {
-  const path = window.location.pathname;
-  if (path.startsWith("/driver")) return <Driver />;
-  if (path.startsWith("/owner")) return <Owner />;
-  return <Client />;
-}'''
-          new = '''function App() {
-  const path = window.location.pathname;
-  if (path.startsWith("/driver")) return <Driver />;
-  if (path.startsWith("/owner")) return <Owner />;
-  return <FinalClient />;
-}'''
-          if old not in s:
-              raise SystemExit('App block not found')
-          p.write_text(s.replace(old, new))
-          PY
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'apps/web/src/main.jsx';
+          let s = fs.readFileSync(path, 'utf8');
+          if (!s.includes('import FinalClient from "./FinalClient.jsx";')) {
+            s = s.replace('import { createSocket } from "./lib/socket";\n', 'import { createSocket } from "./lib/socket";\nimport FinalClient from "./FinalClient.jsx";\n');
+          }
+          const oldBlock = [
+            'function App() {',
+            '  const path = window.location.pathname;',
+            '  if (path.startsWith("/driver")) return <Driver />;',
+            '  if (path.startsWith("/owner")) return <Owner />;',
+            '  return <Client />;',
+            '}'
+          ].join('\n');
+          const newBlock = [
+            'function App() {',
+            '  const path = window.location.pathname;',
+            '  if (path.startsWith("/driver")) return <Driver />;',
+            '  if (path.startsWith("/owner")) return <Owner />;',
+            '  return <FinalClient />;',
+            '}'
+          ].join('\n');
+          if (!s.includes(oldBlock)) throw new Error('App block not found');
+          fs.writeFileSync(path, s.replace(oldBlock, newBlock));
+          NODE
+
       - name: Clean old public polish include
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path('apps/web/index.html')
-          s = p.read_text()
-          s = s.replace('<link rel="stylesheet" href="/final-polish.css"/>', '')
-          s = s.replace('<script src="/final-polish.js" defer></script>', '')
-          p.write_text(s)
-          PY
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'apps/web/index.html';
+          let s = fs.readFileSync(path, 'utf8');
+          s = s.replace('<link rel="stylesheet" href="/final-polish.css"/>', '');
+          s = s.replace('<script src="/final-polish.js" defer></script>', '');
+          fs.writeFileSync(path, s);
+          NODE
+
       - name: Verify
         shell: bash
         run: |
@@ -64,6 +71,7 @@ jobs:
           test -s apps/web/src/FinalClient.jsx
           test -s apps/web/src/finalClient.css
           test -s apps/web/src/finalClientLayout.css
+
       - name: Commit
         shell: bash
         run: |
