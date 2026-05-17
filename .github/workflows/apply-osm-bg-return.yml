@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: dev
-      - name: Patch OSM background return
+      - name: Fix map helpers
         shell: bash
         run: |
           set -euo pipefail
@@ -21,16 +21,22 @@ jobs:
           from pathlib import Path
           p = Path('apps/web/src/main.jsx')
           s = p.read_text()
+          broken = '  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + ["https:", "", "tile.openstreetmap.org", z, x, y + ".png"].join("/") + ")";'
+          dynamic = '  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png)";'
+          s = s.replace(broken, '  return "";', 1)
+          target = 'function osmTileImage(center = MAP_CENTER) {'
+          start = s.index(target)
           old = '  return "";'
-          new = '  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + ["https:", "", "tile.openstreetmap.org", z, x, y + ".png"].join("/") + ")";'
-          if old not in s:
-              raise SystemExit('target not found')
-          p.write_text(s.replace(old, new, 1))
+          pos = s.index(old, start)
+          s = s[:pos] + dynamic + s[pos+len(old):]
+          p.write_text(s)
           PY
       - name: Verify
         shell: bash
         run: |
           set -euo pipefail
+          grep -n 'function getGoogleMapsBrowserKey' -A3 apps/web/src/main.jsx
+          grep -n 'function osmTileImage' -A10 apps/web/src/main.jsx
           grep -n 'tile.openstreetmap.org' apps/web/src/main.jsx
           if grep -n 'return ;' apps/web/src/main.jsx; then exit 1; fi
       - name: Commit
@@ -40,5 +46,5 @@ jobs:
           git config user.name smarttaxi-bot
           git config user.email smarttaxi-bot@users.noreply.github.com
           git add apps/web/src/main.jsx
-          git commit -m "Return dynamic OSM tile background" || true
+          git commit -m "Fix OSM helper returns" || true
           git push origin dev
