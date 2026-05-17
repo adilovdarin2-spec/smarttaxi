@@ -1,0 +1,74 @@
+name: Fix final client UX
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Patch FinalClient logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'apps/web/src/FinalClient.jsx';
+          let s = fs.readFileSync(file, 'utf8');
+          if (!s.includes('const PROFILE_PHONE')) {
+            s = s.replace('const GOLD = "#E5A93C";', 'const GOLD = "#E5A93C";\nconst PROFILE_PHONE = "+77000000000";');
+          }
+          if (!s.includes('function SplashScreen()')) {
+            s = s.replace('function CarShape({ small = false }) { return <div className={`fc-car ${small ? "small" : ""}`}><span className="fc-car-top" /><span className="fc-car-body" /><span className="fc-car-wheel left" /><span className="fc-car-wheel right" /></div>; }', 'function CarShape({ small = false }) { return <div className={`fc-car ${small ? "small" : ""}`}><span className="fc-car-top" /><span className="fc-car-body" /><span className="fc-car-wheel left" /><span className="fc-car-wheel right" /></div>; }\nfunction SplashScreen() { return <main className="fc-splash"><div className="fc-splash-card"><Logo /><h1>SmartTaxi</h1><p>Ваш комфорт. Ваш город.</p><div className="fc-loader"><i /><i /><i /></div></div></main>; }');
+          }
+          s = s.replace('{pickup && <div className="fc-pin pickup"><b /></div>}', '{phase !== "home" && phase !== "preview" && pickup && <div className="fc-pin pickup"><b /></div>}');
+          s = s.replace('function HomeScreen({ pickup, dropoff, phone, setPhone, estimate, tariff, setScreen, setAddressMode, setMapFull }) {', 'function HomeScreen({ pickup, dropoff, estimate, tariff, setTariff, setScreen, setAddressMode, setMapFull }) {');
+          s = s.replace('onClick={() => setScreen("tariff")}', 'onClick={() => setTariff(item)}');
+          s = s.replace('<label className="fc-phone"><span>Телефон для связи</span><input value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" placeholder="+7 700 000 00 00" /></label>', '');
+          s = s.replace('disabled={!dropoff || normalizePhone(phone).length < 6}', 'disabled={!dropoff}');
+          s = s.replace('const [phone, setPhone] = useState(() => localStorage.getItem("smarttaxi_phone") || "");', 'const [phone] = useState(() => localStorage.getItem("smarttaxi_phone") || PROFILE_PHONE); const [booting, setBooting] = useState(true);');
+          s = s.replace('useEffect(() => { localStorage.setItem("smarttaxi_phone", phone); }, [phone]);', 'useEffect(() => { localStorage.setItem("smarttaxi_phone", phone || PROFILE_PHONE); }, [phone]); useEffect(() => { const timer = setTimeout(() => setBooting(false), 950); return () => clearTimeout(timer); }, []);');
+          s = s.replace('if (mapFull) return <main className="fc-app">', 'if (booting) return <SplashScreen />; if (mapFull) return <main className="fc-app">');
+          s = s.replace('riderPhone:phone.trim()', 'riderPhone:(phone || PROFILE_PHONE).trim()');
+          s = s.replace('body:JSON.stringify({ riderPhone:phone })', 'body:JSON.stringify({ riderPhone: phone || PROFILE_PHONE })');
+          s = s.replace('<HomeScreen pickup={pickup} dropoff={dropoff} phone={phone} setPhone={setPhone} estimate={estimate} tariff={tariff} setScreen={setScreen} setAddressMode={setAddressMode} setMapFull={setMapFull} />', '<HomeScreen pickup={pickup} dropoff={dropoff} estimate={estimate} tariff={tariff} setTariff={setTariff} setScreen={setScreen} setAddressMode={setAddressMode} setMapFull={setMapFull} />');
+          fs.writeFileSync(file, s);
+          NODE
+
+      - name: Patch CSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >> apps/web/src/finalClientLayout.css <<'CSS'
+
+/* FinalClient UX bugfix */
+.fc-splash{width:min(100vw,430px);min-height:100svh;margin:0 auto;display:grid;place-items:center;padding:22px;color:#fff;background:radial-gradient(circle at 50% 24%,rgba(229,169,60,.22),transparent 210px),linear-gradient(180deg,#0B111E,#05070B);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}.fc-splash-card{display:grid;place-items:center;gap:12px;text-align:center;padding:28px;border-radius:30px;background:rgba(17,22,34,.72);border:1px solid rgba(229,169,60,.24);box-shadow:0 24px 90px rgba(0,0,0,.55)}.fc-splash h1{margin:0;font-size:32px}.fc-splash p{margin:0;color:#E5A93C;font-size:18px}.fc-loader{display:flex;gap:7px;margin-top:10px}.fc-loader i{width:8px;height:8px;border-radius:50%;background:#E5A93C;animation:fcLoad 1s infinite ease-in-out}.fc-loader i:nth-child(2){animation-delay:.15s}.fc-loader i:nth-child(3){animation-delay:.3s}@keyframes fcLoad{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-7px)}}.fc-phone{display:none!important}.fc-map iframe{filter:grayscale(1) invert(.9) contrast(1.2) brightness(.7) sepia(.12)!important}.fc-map-route{opacity:.8}.fc-pin.pickup{display:none!important}.fc-tariff-mini{touch-action:pan-x}.fc-tariff-mini:active{transform:scale(.97)}
+CSS
+
+      - name: Verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n 'function SplashScreen' apps/web/src/FinalClient.jsx
+          grep -n 'const PROFILE_PHONE' apps/web/src/FinalClient.jsx
+          grep -n 'setTariff(item)' apps/web/src/FinalClient.jsx
+          grep -n 'disabled={!dropoff}' apps/web/src/FinalClient.jsx
+          ! grep -n 'Телефон для связи' apps/web/src/FinalClient.jsx
+          grep -n 'fc-splash' apps/web/src/finalClientLayout.css
+
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/FinalClient.jsx apps/web/src/finalClientLayout.css
+          git commit -m "Fix final client UX bugs and simplify ordering" || true
+          git push origin dev
