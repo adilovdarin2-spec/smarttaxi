@@ -74,7 +74,7 @@ let googleMapsPromise;
 let googleMapsFailureReason = "";
 
 function getGoogleMapsBrowserKey() {
-  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + ["https:", "", "tile.openstreetmap.org", z, x, y + ".png"].join("/") + ")";
+  return "";
 }
 
 function setGoogleMapsFailure(reason) {
@@ -413,7 +413,7 @@ function osmTileImage(center = MAP_CENTER) {
   const scale = 2 ** z;
   const x = Math.floor((lng + 180) / 360 * scale);
   const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale);
-  return "";
+  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png)";
 }
 
 function MapExperience({ form, estimate, order, driverLocation, locating, locationOk, onLocate, compact = false }) {
