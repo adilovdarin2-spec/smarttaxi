@@ -18,6 +18,7 @@ const checks = [
   ["order transition guard", /assertTransition/i.test(orders)],
   ["completed requires in progress", /COMPLETED:\s*\["IN_PROGRESS"\]/.test(orders)],
   ["double accept guard", /ORDER_ALREADY_ACCEPTED/.test(orders) && /FOR UPDATE/.test(orders)],
+  ["driver availability codes", /DRIVER_OFFLINE/.test(orders) && /DRIVER_BUSY/.test(orders) && /DRIVER_BLOCKED/.test(orders)],
   ["driver own order guard", /FORBIDDEN_ORDER/.test(orders)],
   ["invalid transition code", /INVALID_STATUS_TRANSITION/.test(orders)],
   ["public order rate limit", /orders-create/.test(orders)],
@@ -33,6 +34,7 @@ const checks = [
   ["finance completed revenue", /SUM\(price\) FILTER \(WHERE status='COMPLETED'\)/.test(finance)],
   ["finance audit endpoint", /audit-logs/.test(finance)],
   ["driver stats completed orders", /completed_orders/.test(drivers) && /status='COMPLETED'/.test(drivers)],
+  ["driver active order endpoint", /\/me\/active-order/.test(drivers) && /activeOrder/.test(drivers)],
   ["maps fallback estimate", /estimateRoute/.test(maps) && /provider: "fallback"/.test(maps)],
   ["env validation", /requiredUrl\("DATABASE_URL"\)/.test(env) && /jwtSecret/.test(env) && /CORS_ORIGINS: corsOrigins/.test(env)]
 ];

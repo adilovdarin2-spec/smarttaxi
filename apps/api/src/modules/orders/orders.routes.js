@@ -7,6 +7,14 @@ import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
 
 const router = Router();
+const ORDER_SELECT = `
+  o.*,
+  d.name AS driver_name,
+  d.phone AS driver_phone,
+  d.car_model AS driver_car_model,
+  d.plate AS driver_plate,
+  d.rating AS driver_rating
+`;
 
 function shortId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
 
@@ -24,9 +32,27 @@ function calcPrice(tariff, distanceKm, durationMin) {
   return Math.max(Number(tariff.min_price), Math.round(raw / 10) * 10);
 }
 
+function publicOrderEvent(order) {
+  return {
+    id: order.id,
+    short_id: order.short_id,
+    status: order.status,
+    price: order.price,
+    payment_method: order.payment_method,
+    tariff: order.tariff,
+    driver_id: order.driver_id,
+    driver_name: order.driver_name,
+    driver_phone: order.driver_phone,
+    driver_car_model: order.driver_car_model,
+    driver_plate: order.driver_plate,
+    driver_rating: order.driver_rating
+  };
+}
+
 const OrderStatus = z.enum(["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]);
 const IdParam = z.object({ id: z.string().uuid() });
 const ActiveDriverStatuses = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"];
+const RecentDriverStatuses = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 const TransitionRules = {
   DRIVER_ARRIVED: ["DRIVER_ASSIGNED"],
   IN_PROGRESS: ["DRIVER_ARRIVED"],
@@ -36,6 +62,10 @@ const TransitionRules = {
 
 function normalizeText(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizePhone(value) {
+  return String(value || "").replace(/\D/g, "");
 }
 
 const CreateOrder = z.object({
@@ -128,15 +158,51 @@ router.post("/", rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 
 
     req.io?.to("dispatch").emit("order_created", order);
     req.io?.to("drivers").emit("order_created", order);
-    req.io?.emit("order_status_public", {
-      id: order.id,
-      short_id: order.short_id,
-      status: order.status,
-      price: order.price,
-      payment_method: order.payment_method,
-      tariff: order.tariff
-    });
+    req.io?.emit("order_status_public", publicOrderEvent(order));
     res.status(201).json({ order });
+  } catch (e) { next(e); }
+});
+
+router.post("/:id/cancel-public", async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = z.object({
+      riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone")
+    }).parse(req.body);
+    const order = await tx(async (client) => {
+      const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
+      if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      if (normalizePhone(existing.rider_phone) !== normalizePhone(body.riderPhone)) {
+        throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      }
+      if (!["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(existing.status)) {
+        throw new AppError("Invalid order status transition", 409, "INVALID_STATUS_TRANSITION", {
+          currentStatus: existing.status,
+          nextStatus: "CANCELLED"
+        });
+      }
+
+      await client.query("UPDATE orders SET status='CANCELLED', cancelled_at=NOW() WHERE id=$1", [existing.id]);
+      if (existing.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [existing.driver_id]);
+      await client.query("INSERT INTO order_status_history(order_id,status,message) VALUES($1,'CANCELLED','Cancelled by client')", [existing.id]);
+      await writeAudit(client, {
+        action: "order_status_changed",
+        entityType: "order",
+        entityId: existing.id,
+        metadata: { from: existing.status, to: "CANCELLED", source: "client" },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [existing.id])).rows[0];
+    });
+    req.io?.to("dispatch").emit("order_updated", order);
+    req.io?.to("drivers").emit("order_updated", order);
+    req.io?.emit("order_status_public", publicOrderEvent(order));
+    res.json({ order });
   } catch (e) { next(e); }
 });
 
@@ -150,13 +216,35 @@ router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE", "DRIVER
     if (req.user.role === "DRIVER") {
       const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
       if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-      result = params.status
-        ? await query("SELECT * FROM orders WHERE (status='NEW' OR driver_id=$1) AND status=$2 ORDER BY created_at DESC LIMIT $3", [driver.id, params.status, params.limit])
-        : await query("SELECT * FROM orders WHERE status='NEW' OR driver_id=$1 ORDER BY created_at DESC LIMIT $2", [driver.id, params.limit]);
+      if (driver.status === "BUSY") {
+        result = await query(`
+          SELECT ${ORDER_SELECT} FROM orders o
+          LEFT JOIN drivers d ON d.id=o.driver_id
+          WHERE o.driver_id=$1 AND o.status = ANY($2::text[])
+          ORDER BY o.created_at DESC
+          LIMIT $3
+        `, [driver.id, RecentDriverStatuses, params.limit]);
+      } else if (params.status) {
+        result = await query(`
+          SELECT ${ORDER_SELECT} FROM orders o
+          LEFT JOIN drivers d ON d.id=o.driver_id
+          WHERE (o.status='NEW' OR o.driver_id=$1) AND o.status=$2
+          ORDER BY o.created_at DESC
+          LIMIT $3
+        `, [driver.id, params.status, params.limit]);
+      } else {
+        result = await query(`
+          SELECT ${ORDER_SELECT} FROM orders o
+          LEFT JOIN drivers d ON d.id=o.driver_id
+          WHERE o.status='NEW' OR (o.driver_id=$1 AND o.status = ANY($2::text[]))
+          ORDER BY o.created_at DESC
+          LIMIT $3
+        `, [driver.id, RecentDriverStatuses, params.limit]);
+      }
     } else {
       result = params.status
-        ? await query("SELECT * FROM orders WHERE status=$1 ORDER BY created_at DESC LIMIT $2", [params.status, params.limit])
-        : await query("SELECT * FROM orders ORDER BY created_at DESC LIMIT $1", [params.limit]);
+        ? await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id WHERE o.status=$1 ORDER BY o.created_at DESC LIMIT $2`, [params.status, params.limit])
+        : await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id ORDER BY o.created_at DESC LIMIT $1`, [params.limit]);
     }
     res.json({ orders: result.rows });
   } catch (e) { next(e); }
@@ -166,13 +254,15 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
   try {
     const { id } = IdParam.parse(req.params);
     const order = await tx(async (client) => {
-      const d = await client.query("SELECT * FROM drivers WHERE user_id=$1 AND is_blocked=false FOR UPDATE", [req.user.id]);
+      const d = await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id]);
       const driver = d.rows[0];
       if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
-      if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_NOT_AVAILABLE");
+      if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
       if (Number(driver.debt) > 15000) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
       const active = await client.query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ActiveDriverStatuses]);
-      if (active.rows[0]) throw new AppError("Driver already has an active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
+      if (active.rows[0] || driver.status === "BUSY") throw new AppError("Driver already has an active order", 409, "DRIVER_BUSY");
+      if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
+      if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
 
       const o = await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id]);
       const existing = o.rows[0];
@@ -190,18 +280,16 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
         metadata: { driverId: driver.id },
         req
       });
-      return u.rows[0];
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [u.rows[0].id])).rows[0];
     });
     req.io?.to("dispatch").emit("order_updated", order);
     req.io?.to("drivers").emit("order_taken", { orderId: order.id });
-    req.io?.emit("order_status_public", {
-      id: order.id,
-      short_id: order.short_id,
-      status: order.status,
-      price: order.price,
-      payment_method: order.payment_method,
-      tariff: order.tariff
-    });
+    req.io?.emit("order_status_public", publicOrderEvent(order));
     res.json({ order });
   } catch (e) { next(e); }
 });
@@ -255,18 +343,16 @@ async function updateStatus(req, res, next, status) {
         metadata: { from: existing.status, to: status },
         req
       });
-      return (await client.query("SELECT * FROM orders WHERE id=$1", [existing.id])).rows[0];
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [existing.id])).rows[0];
     });
     req.io?.to("dispatch").emit("order_updated", order);
     req.io?.to("drivers").emit("order_updated", order);
-    req.io?.emit("order_status_public", {
-      id: order.id,
-      short_id: order.short_id,
-      status: order.status,
-      price: order.price,
-      payment_method: order.payment_method,
-      tariff: order.tariff
-    });
+    req.io?.emit("order_status_public", publicOrderEvent(order));
     res.json({ order });
   } catch (e) { next(e); }
 }

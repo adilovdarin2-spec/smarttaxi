@@ -21,11 +21,27 @@ router.get("/me", requireAuth, requireRole("DRIVER"), async (req, res, next) => 
   } catch (e) { next(e); }
 });
 
+router.get("/me/active-order", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    const activeOrder = (await query(`
+      SELECT o.*
+      FROM orders o
+      WHERE o.driver_id=$1 AND o.status = ANY($2::text[])
+      ORDER BY o.created_at DESC
+      LIMIT 1
+    `, [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0] || null;
+    res.json({ driver, activeOrder });
+  } catch (e) { next(e); }
+});
+
 router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const body = z.object({ status: z.enum(["FREE", "OFFLINE", "BREAK"]) }).parse(req.body);
-    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1 AND is_blocked=false", [req.user.id])).rows[0];
+    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
 
     if (["OFFLINE", "BREAK"].includes(body.status)) {
       const active = await query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]]);
@@ -56,7 +72,22 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
       FROM orders
       WHERE driver_id=$1 AND created_at >= date_trunc('day', NOW())
     `, [driver.id]);
-    res.json({ driver, today: stats.rows[0] });
+    const activeOrder = (await query(`
+      SELECT *
+      FROM orders
+      WHERE driver_id=$1 AND status = ANY($2::text[])
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0] || null;
+    res.json({
+      driver,
+      activeOrder,
+      today: {
+        ...stats.rows[0],
+        debt: driver.debt,
+        balance: driver.balance
+      }
+    });
   } catch (e) { next(e); }
 });
 

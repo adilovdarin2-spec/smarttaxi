@@ -1,110 +1,198 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, clearToken, login } from "./lib/api";
+import { api, clearToken, getToken, login } from "./lib/api";
 import { createSocket } from "./lib/socket";
 import "./styles.css";
 
 const STATUS = {
-  NEW: "Новый",
+  NEW: "Заказ создан",
   DRIVER_ASSIGNED: "Водитель назначен",
   DRIVER_ARRIVED: "Водитель приехал",
-  IN_PROGRESS: "В поездке",
-  COMPLETED: "Завершен",
-  CANCELLED: "Отменен"
+  IN_PROGRESS: "Поездка началась",
+  COMPLETED: "Завершено",
+  CANCELLED: "Отменено",
+  FREE: "На линии",
+  BUSY: "На заказе",
+  OFFLINE: "Не на линии",
+  BREAK: "Перерыв"
 };
 
-const PAYMENTS = {
-  CASH: "Наличные",
-  KASPI: "Kaspi",
-  CARD: "Карта",
-  CASHBACK: "Кэшбэк",
-  MIXED: "Смешанная"
-};
+const STATUS_STEPS = [
+  ["NEW", "Заказ создан"],
+  ["DRIVER_ASSIGNED", "Водитель назначен"],
+  ["DRIVER_ARRIVED", "Водитель приехал"],
+  ["IN_PROGRESS", "Поездка началась"],
+  ["COMPLETED", "Завершено"]
+];
 
-const DRIVER_ACTIVE = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"];
-const DEFAULT_TARIFFS = [{ name: "Economy" }, { name: "Comfort" }, { name: "Business" }, { name: "Delivery" }];
+const ACTIVE_STATUSES = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"];
+const FINISHED_STATUSES = ["COMPLETED", "CANCELLED"];
+const DEFAULT_TARIFFS = [
+  { name: "Economy", label: "Дешевле", note: "Быстрая городская поездка" },
+  { name: "Comfort", label: "Комфортнее", note: "Чище салон и выше класс" },
+  { name: "Business", label: "Премиум", note: "Для важных поездок" },
+  { name: "Delivery", label: "Доставка", note: "Посылки и документы" }
+];
+const PAYMENT_OPTIONS = [
+  ["CASH", "Наличные", "Водителю"],
+  ["KASPI", "Kaspi", "Перевод"],
+  ["CARD", "Карта", "Онлайн"],
+  ["CASHBACK", "Cashback", "Бонусы"]
+];
 const GOOGLE_MAPS_BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
 
 function money(value) {
   return `${Number(value || 0).toLocaleString("ru-RU")} ₸`;
 }
 
-function humanError(error) {
+function normalizeError(error) {
   const code = error?.code || "";
-  if (code === "ORDER_ALREADY_ACCEPTED") return "Заказ уже принял другой водитель.";
-  if (code === "DRIVER_NOT_AVAILABLE") return "Сначала включите статус онлайн.";
-  if (code === "DRIVER_HAS_ACTIVE_ORDER") return "У вас уже есть активная поездка.";
-  if (code === "INVALID_STATUS_TRANSITION" || code === "INVALID_ORDER_TRANSITION") return "Этот шаг сейчас недоступен для текущего статуса заказа.";
-  if (code === "FORBIDDEN_ORDER") return "Нельзя управлять чужим заказом.";
-  if (error?.message === "Failed to fetch") return "API не отвечает. Проверьте backend или адрес VITE_API_URL.";
-  return error?.message || "Что-то пошло не так.";
+  const message = error?.message || "";
+  const map = {
+    DRIVER_NOT_FOUND: "Профиль водителя не найден.",
+    DRIVER_OFFLINE: "Сначала выйдите на линию.",
+    DRIVER_BUSY: "У вас уже есть активная поездка.",
+    DRIVER_BLOCKED: "Аккаунт водителя заблокирован.",
+    DRIVER_DEBT_LIMIT: "Превышен лимит долга. Погасите долг.",
+    ORDER_ALREADY_ACCEPTED: "Заказ уже принял другой водитель.",
+    ORDER_NOT_FOUND: "Заказ не найден.",
+    FORBIDDEN_ORDER: "Это не ваш заказ.",
+    INVALID_STATUS_TRANSITION: "Нельзя выполнить это действие на текущем этапе.",
+    INVALID_CREDENTIALS: "Неверный логин или пароль.",
+    VALIDATION_ERROR: "Проверьте заполненные поля.",
+    UNAUTHORIZED: "Нужно войти в аккаунт.",
+    FORBIDDEN: "Недостаточно прав для этого действия."
+  };
+  if (map[code]) return map[code];
+  if (message === "Failed to fetch" || message.includes("NetworkError")) return "Сервер недоступен. Проверьте интернет или API.";
+  if (message === "Driver is not available") return "Сначала выйдите на линию.";
+  return message || "Что-то пошло не так.";
 }
 
-function Nav() {
-  return (
-    <header className="nav">
-      <a className="brand" href="/client" aria-label="SmartTaxi client">
-        <span className="brand-mark">ST</span>
-        <span>SmartTaxi</span>
-      </a>
-      <nav>
-        <a href="/client">Клиент</a>
-        <a href="/driver">Водитель</a>
-        <a href="/owner">Owner</a>
-      </nav>
-    </header>
-  );
-}
-
-function Shell({ children, wide = false }) {
-  return <main className={wide ? "page page-wide" : "page"}>{children}</main>;
-}
-
-function Alert({ message }) {
-  return message ? <div className="alert" role="alert">{message}</div> : null;
-}
-
-function Loading({ label = "Загрузка..." }) {
-  return <div className="state">{label}</div>;
-}
-
-function Empty({ title, text }) {
-  return <div className="state empty"><strong>{title}</strong><span>{text}</span></div>;
+function fieldNumber(value) {
+  if (value === "" || value === undefined || value === null) return undefined;
+  const next = Number(value);
+  return Number.isFinite(next) ? next : undefined;
 }
 
 function StatusBadge({ status }) {
-  return <span className={`badge status-${String(status || "").toLowerCase()}`}>{STATUS[status] || status || "Нет статуса"}</span>;
+  return <span className={`status-badge status-${String(status || "").toLowerCase()}`}>{STATUS[status] || status || "Статус"}</span>;
 }
 
-function Field({ label, children }) {
-  return <label className="field"><span>{label}</span>{children}</label>;
+function Alert({ message }) {
+  return message ? <div className="alert">{message}</div> : null;
 }
 
-function OrderRoute({ order }) {
+function EmptyState({ title, text, action }) {
   return (
-    <div className="route">
-      <span>{order.pickup_text}</span>
-      <i />
-      <span>{order.dropoff_text}</span>
+    <div className="empty-state">
+      <strong>{title}</strong>
+      <span>{text}</span>
+      {action}
     </div>
   );
 }
 
-function useSocket(enabled, setup) {
-  useEffect(() => {
-    if (!enabled) return undefined;
-    const socket = createSocket();
-    setup(socket);
-    return () => socket.disconnect();
-  }, [enabled]);
+function LoadingState({ label = "Загружаем данные..." }) {
+  return <div className="loading-state"><span className="spinner" />{label}</div>;
+}
+
+function AppHeader({ subtitle = "Быстрая поездка по городу", right }) {
+  return (
+    <header className="app-header">
+      <a className="brand" href="/client">
+        <span className="brand-mark">ST</span>
+        <span>
+          <b>SmartTaxi</b>
+          <small>Atakent</small>
+        </span>
+      </a>
+      <p>{subtitle}</p>
+      {right}
+    </header>
+  );
+}
+
+function Timeline({ status }) {
+  const currentIndex = STATUS_STEPS.findIndex(([key]) => key === status);
+  const safeIndex = status === "CANCELLED" ? 0 : Math.max(0, currentIndex);
+  return (
+    <div className="timeline">
+      {STATUS_STEPS.map(([key, label], index) => (
+        <div className={`timeline-step ${index <= safeIndex ? "done" : ""}`} key={key}>
+          <i />
+          <span>{label}</span>
+        </div>
+      ))}
+      {status === "CANCELLED" && <div className="timeline-step cancelled"><i /><span>Заказ отменён</span></div>}
+    </div>
+  );
+}
+
+function RoutePreview({ form, estimate, locating, onLocate, locationOk }) {
+  return (
+    <section className="route-preview">
+      <div className="route-bg">
+        <div className="route-line" />
+        <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
+        <div className="pin pin-b"><b>B</b><span>Куда</span></div>
+        <div className="map-grid" />
+      </div>
+      <div className="route-overlay">
+        <div>
+          <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут рассчитывается"}</strong>
+          <span>{GOOGLE_MAPS_BROWSER_KEY ? "Google Maps key подключен" : "Карта работает в fallback режиме"}</span>
+        </div>
+        <button className="ghost-btn" type="button" onClick={onLocate} disabled={locating}>
+          {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
+        </button>
+      </div>
+      <div className="route-summary">
+        <span><b>A</b>{form.pickupText || "Адрес подачи"}</span>
+        <span><b>B</b>{form.dropoffText || "Куда едем"}</span>
+      </div>
+    </section>
+  );
+}
+
+function ClientOrderCard({ order, onCancel, cancelling }) {
+  const canCancel = ["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order?.status);
+  return (
+    <section className="active-order-card">
+      <div className="card-head">
+        <div>
+          <small>Активный заказ</small>
+          <h2>#{order.short_id}</h2>
+        </div>
+        <StatusBadge status={order.status} />
+      </div>
+      <div className="order-route">
+        <p><b>A</b>{order.pickup_text}</p>
+        <p><b>B</b>{order.dropoff_text}</p>
+      </div>
+      <div className="metric-row">
+        <span><b>{money(order.price)}</b><small>Цена</small></span>
+        <span><b>{order.tariff}</b><small>Тариф</small></span>
+        <span><b>{order.payment_method}</b><small>Оплата</small></span>
+      </div>
+      {order.notes && <p className="driver-note">{order.notes}</p>}
+      {order.driver_name && (
+        <div className="driver-assigned">
+          <div>
+            <b>{order.driver_name}</b>
+            <span>{order.driver_car_model || "Авто"} · {order.driver_plate || "номер уточняется"}</span>
+          </div>
+          {order.driver_phone && <a className="call-btn" href={`tel:${order.driver_phone}`}>Позвонить</a>}
+        </div>
+      )}
+      <Timeline status={order.status} />
+      {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
+    </section>
+  );
 }
 
 function Client() {
   const [tariffs, setTariffs] = useState([]);
-  const [tariffsLoading, setTariffsLoading] = useState(true);
-  const [order, setOrder] = useState(null);
-  const [error, setError] = useState("");
-  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     riderName: "Дарын",
     riderPhone: "+77000000000",
@@ -118,204 +206,194 @@ function Client() {
     paymentMethod: "CASH",
     notes: ""
   });
-  const [geoLoading, setGeoLoading] = useState(false);
   const [estimate, setEstimate] = useState(null);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationOk, setLocationOk] = useState(false);
+  const [error, setError] = useState("");
+  const estimateTimer = useRef(null);
+
+  const selectedTariff = useMemo(() => {
+    return (tariffs.length ? tariffs : DEFAULT_TARIFFS).find(t => t.name === form.tariff) || DEFAULT_TARIFFS[0];
+  }, [tariffs, form.tariff]);
+  const disabled = !form.riderPhone.trim() || !form.pickupText.trim() || !form.dropoffText.trim() || loading;
+  const approxPrice = estimate && selectedTariff?.base_price
+    ? Math.max(Number(selectedTariff.min_price || 0), Math.round((Number(selectedTariff.base_price || 0) + Number(selectedTariff.price_per_km || 0) * estimate.distanceKm + Number(selectedTariff.price_per_minute || 0) * estimate.durationMin) / 10) * 10)
+    : order?.price || 0;
 
   useEffect(() => {
-    let alive = true;
-    setTariffsLoading(true);
-    api("/api/tariffs")
-      .then((data) => {
-        if (!alive) return;
-        const list = data.tariffs?.length ? data.tariffs : DEFAULT_TARIFFS;
-        setTariffs(list);
-        if (!list.some((item) => item.name === form.tariff)) {
-          setForm((current) => ({ ...current, tariff: list[0]?.name || "Economy" }));
-        }
-      })
-      .catch((err) => setError(humanError(err)))
-      .finally(() => alive && setTariffsLoading(false));
-    return () => { alive = false; };
+    api("/api/tariffs").then(data => setTariffs(data.tariffs || [])).catch(err => setError(normalizeError(err)));
   }, []);
 
-  useSocket(Boolean(order), (socket) => {
-    const update = (payload) => {
+  useEffect(() => {
+    window.clearTimeout(estimateTimer.current);
+    estimateTimer.current = window.setTimeout(() => estimateRoute(form).catch(() => {}), 450);
+    return () => window.clearTimeout(estimateTimer.current);
+  }, [form.pickupText, form.dropoffText, form.pickupLat, form.pickupLng, form.dropoffLat, form.dropoffLng]);
+
+  useEffect(() => {
+    const socket = createSocket();
+    socket.on("order_status_public", payload => {
+      setOrder(current => current && payload.id === current.id ? { ...current, ...payload } : current);
+    });
+    socket.on("order_updated", payload => {
       const next = payload.order || payload;
-      setOrder((current) => current && next?.id === current.id ? { ...current, ...next } : current);
-    };
-    socket.on("order_updated", update);
-    socket.on("order_status_public", update);
-  });
+      setOrder(current => current && next?.id === current.id ? { ...current, ...next } : current);
+    });
+    return () => socket.disconnect();
+  }, []);
 
-  function optionalNumber(value) {
-    if (value === "" || value === null || value === undefined) return undefined;
-    const next = Number(value);
-    return Number.isFinite(next) ? next : undefined;
-  }
-
-  function payloadWithCoordinates(base = form) {
+  function orderPayload(base = form) {
     return {
       ...base,
-      pickupLat: optionalNumber(base.pickupLat),
-      pickupLng: optionalNumber(base.pickupLng),
-      dropoffLat: optionalNumber(base.dropoffLat),
-      dropoffLng: optionalNumber(base.dropoffLng)
+      pickupLat: fieldNumber(base.pickupLat),
+      pickupLng: fieldNumber(base.pickupLng),
+      dropoffLat: fieldNumber(base.dropoffLat),
+      dropoffLng: fieldNumber(base.dropoffLng)
     };
   }
 
-  async function estimateTrip(base = form) {
-    const data = await api("/api/maps/estimate", {
-      method: "POST",
-      body: JSON.stringify(payloadWithCoordinates(base))
-    });
+  async function estimateRoute(base = form) {
+    const data = await api("/api/maps/estimate", { method: "POST", body: JSON.stringify(orderPayload(base)) });
     setEstimate(data.estimate);
     return data.estimate;
   }
 
-  async function locateMe() {
+  async function locate() {
     setError("");
-    if (!("geolocation" in navigator)) {
-      setError("Геолокация недоступна в этом браузере. Заполните адрес вручную.");
+    if (!navigator.geolocation) {
+      setError("Геолокация недоступна. Введите адрес вручную.");
       return;
     }
-    setGeoLoading(true);
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      position => {
         const next = {
           ...form,
           pickupLat: position.coords.latitude.toFixed(6),
           pickupLng: position.coords.longitude.toFixed(6)
         };
         setForm(next);
-        estimateTrip(next).catch((err) => setError(humanError(err)));
-        setGeoLoading(false);
+        setLocationOk(true);
+        setLocating(false);
+        estimateRoute(next).catch(() => {});
       },
       () => {
+        setLocating(false);
+        setLocationOk(false);
         setError("Не удалось получить геолокацию. Разрешите доступ или оставьте ручной адрес.");
-        setGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }
 
-  async function submit(event) {
+  async function createOrder(event) {
     event.preventDefault();
     setError("");
-    setCreating(true);
+    setLoading(true);
     try {
-      const routeEstimate = await estimateTrip();
+      const route = await estimateRoute();
       const data = await api("/api/orders", {
         method: "POST",
-        body: JSON.stringify({
-          ...payloadWithCoordinates(),
-          distanceKm: routeEstimate.distanceKm,
-          durationMin: routeEstimate.durationMin
-        })
+        body: JSON.stringify({ ...orderPayload(), distanceKm: route.distanceKm, durationMin: route.durationMin })
       });
       setOrder(data.order);
     } catch (err) {
-      setError(humanError(err));
+      setError(normalizeError(err));
     } finally {
-      setCreating(false);
+      setLoading(false);
+    }
+  }
+
+  async function cancelOrder() {
+    if (!order) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await api(`/api/orders/${order.id}/cancel-public`, {
+        method: "POST",
+        body: JSON.stringify({ riderPhone: order.rider_phone || form.riderPhone })
+      });
+      setOrder(data.order);
+    } catch (err) {
+      setError(normalizeError(err));
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <Shell>
-      <section className="hero">
-        <p className="eyebrow">Atakent taxi platform</p>
-        <h1>Заказ такси без звонков и ожидания диспетчера</h1>
-      </section>
+    <main className="mobile-app client-screen">
+      <AppHeader right={<div className="mini-balance"><b>0 ₸</b><span>cashback</span></div>} />
+      <Alert message={error} />
+      {order && !FINISHED_STATUSES.includes(order.status) ? <ClientOrderCard order={order} onCancel={cancelOrder} cancelling={loading} /> : null}
+      <RoutePreview form={form} estimate={estimate} locating={locating} onLocate={locate} locationOk={locationOk} />
 
-      <div className="client-layout">
-        <section className="panel">
-          <div className="panel-head">
-            <h2>Новый заказ</h2>
-            {tariffsLoading && <span className="mini">Тарифы загружаются</span>}
+      <form className="order-form" onSubmit={createOrder}>
+        <section className="address-card">
+          <label><span className="point point-a">A</span><input value={form.pickupText} onChange={e => setForm({ ...form, pickupText: e.target.value })} placeholder="Откуда" /></label>
+          <label><span className="point point-b">B</span><input value={form.dropoffText} onChange={e => setForm({ ...form, dropoffText: e.target.value })} placeholder="Куда" /></label>
+        </section>
+
+        <section className="compact-grid hidden-fields">
+          <input value={form.pickupLat} onChange={e => setForm({ ...form, pickupLat: e.target.value })} placeholder="pickupLat" />
+          <input value={form.pickupLng} onChange={e => setForm({ ...form, pickupLng: e.target.value })} placeholder="pickupLng" />
+          <input value={form.dropoffLat} onChange={e => setForm({ ...form, dropoffLat: e.target.value })} placeholder="dropoffLat" />
+          <input value={form.dropoffLng} onChange={e => setForm({ ...form, dropoffLng: e.target.value })} placeholder="dropoffLng" />
+        </section>
+
+        <section>
+          <h3>Тариф</h3>
+          <div className="tariff-grid">
+            {(tariffs.length ? tariffs : DEFAULT_TARIFFS).map(tariff => {
+              const meta = DEFAULT_TARIFFS.find(item => item.name === tariff.name) || tariff;
+              const active = form.tariff === tariff.name;
+              const price = estimate && tariff.base_price ? Math.max(Number(tariff.min_price || 0), Math.round((Number(tariff.base_price) + Number(tariff.price_per_km || 0) * estimate.distanceKm + Number(tariff.price_per_minute || 0) * estimate.durationMin) / 10) * 10) : tariff.min_price;
+              return (
+                <button type="button" className={`tariff-card ${active ? "selected" : ""}`} key={tariff.name} onClick={() => setForm({ ...form, tariff: tariff.name })}>
+                  <b>{tariff.name}</b>
+                  <span>{meta.label || "Тариф"}</span>
+                  <strong>{price ? money(price) : "по расчёту"}</strong>
+                  <small>{meta.note || `${tariff.base_price || 0} посадка · ${tariff.price_per_km || 0}/км`}</small>
+                </button>
+              );
+            })}
           </div>
-          <Alert message={error} />
-          <form className="form" onSubmit={submit}>
-            <Field label="Имя">
-              <input value={form.riderName} onChange={(e) => setForm({ ...form, riderName: e.target.value })} />
-            </Field>
-            <Field label="Телефон">
-              <input inputMode="tel" value={form.riderPhone} onChange={(e) => setForm({ ...form, riderPhone: e.target.value })} />
-            </Field>
-            <Field label="Откуда">
-              <input value={form.pickupText} onChange={(e) => setForm({ ...form, pickupText: e.target.value })} />
-            </Field>
-            <button type="button" className="btn btn-ghost" disabled={geoLoading} onClick={locateMe}>
-              {geoLoading ? "Определяем..." : "Определить моё местоположение"}
-            </button>
-            <Field label="Куда">
-              <input value={form.dropoffText} onChange={(e) => setForm({ ...form, dropoffText: e.target.value })} />
-            </Field>
-            <div className="form-row coords-row">
-              <Field label="Pickup lat">
-                <input inputMode="decimal" value={form.pickupLat} onChange={(e) => setForm({ ...form, pickupLat: e.target.value })} placeholder="опционально" />
-              </Field>
-              <Field label="Pickup lng">
-                <input inputMode="decimal" value={form.pickupLng} onChange={(e) => setForm({ ...form, pickupLng: e.target.value })} placeholder="опционально" />
-              </Field>
-              <Field label="Dropoff lat">
-                <input inputMode="decimal" value={form.dropoffLat} onChange={(e) => setForm({ ...form, dropoffLat: e.target.value })} placeholder="опционально" />
-              </Field>
-              <Field label="Dropoff lng">
-                <input inputMode="decimal" value={form.dropoffLng} onChange={(e) => setForm({ ...form, dropoffLng: e.target.value })} placeholder="опционально" />
-              </Field>
-            </div>
-            <div className="form-row">
-              <Field label="Тариф">
-                <select value={form.tariff} onChange={(e) => setForm({ ...form, tariff: e.target.value })}>
-                  {(tariffs.length ? tariffs : DEFAULT_TARIFFS).map((tariff) => <option key={tariff.name}>{tariff.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Оплата">
-                <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}>
-                  {Object.entries(PAYMENTS).filter(([key]) => ["CASH", "KASPI", "CARD"].includes(key)).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-            <Field label="Комментарий">
-              <textarea rows="3" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </Field>
-            <div className="estimate-strip">
-              <span>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут будет рассчитан fallback-оценкой"}</span>
-              <small>{GOOGLE_MAPS_BROWSER_KEY ? "Google Maps key configured" : "Google Maps key отсутствует, fallback активен"}</small>
-            </div>
-            <button className="btn btn-primary" disabled={creating}>{creating ? "Создаем заказ..." : "Заказать такси"}</button>
-          </form>
         </section>
 
-        <section className="panel order-panel">
-          <h2>Активный заказ</h2>
-          {!order ? (
-            <Empty title="Заказ еще не создан" text="После отправки формы здесь появятся номер, статус и цена." />
-          ) : (
-            <div className="active-order">
-              <div className="order-top">
-                <strong>#{order.short_id}</strong>
-                <StatusBadge status={order.status} />
-              </div>
-              <OrderRoute order={order} />
-              <div className="facts">
-                <span><b>{money(order.price)}</b><small>Цена</small></span>
-                <span><b>{PAYMENTS[order.payment_method] || order.payment_method}</b><small>Оплата</small></span>
-                <span><b>{order.tariff}</b><small>Тариф</small></span>
-              </div>
-            </div>
-          )}
+        <section>
+          <h3>Оплата</h3>
+          <div className="payment-grid">
+            {PAYMENT_OPTIONS.map(([key, title, note]) => (
+              <button type="button" className={`payment-card ${form.paymentMethod === key ? "selected" : ""}`} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>
+                <b>{title}</b><span>{note}</span>
+              </button>
+            ))}
+          </div>
         </section>
-      </div>
-    </Shell>
+
+        <section className="comment-card">
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
+        </section>
+
+        <section className="profile-line">
+          <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
+          <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="Телефон" inputMode="tel" />
+        </section>
+
+        <div className="bottom-action">
+          <button className="primary-cta" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
+        </div>
+      </form>
+    </main>
   );
 }
 
-function DriverLogin({ onLogin }) {
-  const [phone, setPhone] = useState("+77000000000");
-  const [password, setPassword] = useState("123456");
+function LoginCard({ type, onSuccess }) {
+  const isDriver = type === "driver";
+  const [identifier, setIdentifier] = useState(isDriver ? "+77000000000" : "admin@smarttaxi.local");
+  const [password, setPassword] = useState(isDriver ? "123456" : "ChangeMe_2026!");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -324,212 +402,187 @@ function DriverLogin({ onLogin }) {
     setError("");
     setLoading(true);
     try {
-      await login({ phone, password });
-      onLogin();
+      const data = await login(isDriver ? { phone: identifier, password } : { email: identifier, password });
+      onSuccess(data.user);
     } catch (err) {
-      setError(humanError(err));
+      setError(normalizeError(err));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Shell>
-      <section className="auth-card">
-        <p className="eyebrow">Driver app</p>
-        <h1>Вход водителя</h1>
+    <main className="mobile-app auth-screen">
+      <AppHeader subtitle={isDriver ? "Рабочее приложение водителя" : "Панель управления"} />
+      <form className="auth-card" onSubmit={submit}>
+        <small>{isDriver ? "Driver app" : "Owner/admin"}</small>
+        <h1>{isDriver ? "Вход водителя" : "Вход владельца"}</h1>
         <Alert message={error} />
-        <form className="form" onSubmit={submit}>
-          <Field label="Телефон"><input inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
-          <Field label="Пароль"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-          <button className="btn btn-primary" disabled={loading}>{loading ? "Проверяем..." : "Войти"}</button>
-        </form>
-      </section>
-    </Shell>
+        <label>{isDriver ? "Телефон" : "Email"}<input value={identifier} onChange={e => setIdentifier(e.target.value)} /></label>
+        <label>Пароль<input type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
+        <button className="primary-cta" disabled={loading}>{loading ? "Проверяем..." : "Войти"}</button>
+      </form>
+    </main>
+  );
+}
+
+function DriverProfileCard({ driver, stats, activeOrder, onStatus, loading }) {
+  const status = driver?.status || "OFFLINE";
+  const action = status === "OFFLINE" || status === "BREAK"
+    ? ["Выйти на линию", () => onStatus("FREE")]
+    : status === "FREE"
+      ? ["Уйти с линии", () => onStatus("OFFLINE")]
+      : ["Вы на заказе", () => {}];
+  return (
+    <section className="driver-profile-card">
+      <div className="driver-avatar">{driver?.name?.slice(0, 1) || "D"}</div>
+      <div className="driver-main">
+        <div className="card-head">
+          <div><h2>{driver?.name || "Водитель"}</h2><span>{driver?.car_model || "Авто"} · {driver?.plate || "номер"}</span></div>
+          <StatusBadge status={status} />
+        </div>
+        <div className="metric-row">
+          <span><b>{money(driver?.debt)}</b><small>Долг</small></span>
+          <span><b>{money(driver?.balance)}</b><small>Баланс</small></span>
+          <span><b>{driver?.rating || "5.00"}</b><small>Рейтинг</small></span>
+        </div>
+        <div className="metric-row">
+          <span><b>{stats?.orders_total || 0}</b><small>Заказы</small></span>
+          <span><b>{stats?.completed_orders || 0}</b><small>Завершено</small></span>
+          <span><b>{money(stats?.revenue_total)}</b><small>Выручка</small></span>
+        </div>
+        <button className={`line-action ${status === "BUSY" ? "disabled" : ""}`} onClick={action[1]} disabled={loading || status === "BUSY"}>{activeOrder ? "Вы на заказе" : action[0]}</button>
+      </div>
+    </section>
+  );
+}
+
+function DriverOrderCard({ order, children }) {
+  return (
+    <article className="job-card">
+      <div className="card-head"><strong>#{order.short_id}</strong><StatusBadge status={order.status} /></div>
+      <div className="job-route"><p><b>A</b>{order.pickup_text}</p><p><b>B</b>{order.dropoff_text}</p></div>
+      <div className="metric-row">
+        <span><b>{money(order.price)}</b><small>Цена</small></span>
+        <span><b>{order.tariff}</b><small>Тариф</small></span>
+        <span><b>{order.payment_method}</b><small>Оплата</small></span>
+      </div>
+      <div className="job-meta">
+        <span>{order.rider_phone}</span>
+        <span>{Number(order.distance_km || 0).toFixed(1)} км · {order.duration_min || 0} мин</span>
+      </div>
+      {order.notes && <p className="driver-note">{order.notes}</p>}
+      {children}
+    </article>
   );
 }
 
 function Driver() {
-  const [auth, setAuth] = useState(Boolean(localStorage.getItem("smarttaxi_token")));
+  const [auth, setAuth] = useState(Boolean(getToken()));
+  const [driver, setDriver] = useState(null);
+  const [activeOrder, setActiveOrder] = useState(null);
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState("");
   const [error, setError] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const [ordersData, statsData] = await Promise.all([
-        api("/api/orders?limit=100"),
-        api("/api/drivers/me/stats")
+      const [me, statsData, ordersData] = await Promise.all([
+        api("/api/drivers/me"),
+        api("/api/drivers/me/stats"),
+        api("/api/orders?limit=100")
       ]);
+      setDriver(me.driver);
+      setStats(statsData.today);
+      setActiveOrder(statsData.activeOrder || null);
       setOrders(ordersData.orders || []);
-      setStats(statsData);
     } catch (err) {
-      setError(humanError(err));
+      setError(normalizeError(err));
+      if (err?.code === "UNAUTHORIZED" || err?.code === "INVALID_TOKEN") setAuth(false);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => { if (auth) load(); }, [auth]);
-
-  useSocket(auth, (socket) => {
+  useEffect(() => {
+    if (!auth) return undefined;
+    const socket = createSocket();
     socket.emit("join_drivers");
     socket.on("order_created", load);
     socket.on("order_taken", load);
     socket.on("order_updated", load);
-  });
+    return () => socket.disconnect();
+  }, [auth]);
 
-  async function runAction(label, fn) {
-    setActionLoading(label);
+  async function run(fn) {
+    setLoading(true);
     setError("");
     try {
       await fn();
       await load();
     } catch (err) {
-      setError(humanError(err));
+      setError(normalizeError(err));
       await load().catch(() => {});
-    } finally {
-      setActionLoading("");
-    }
-  }
-
-  function logout() {
-    clearToken();
-    setAuth(false);
-    setOrders([]);
-    setStats(null);
-  }
-
-  if (!auth) return <DriverLogin onLogin={() => setAuth(true)} />;
-
-  const driverId = stats?.driver?.id;
-  const activeTrip = orders.find((order) => order.driver_id === driverId && DRIVER_ACTIVE.includes(order.status));
-  const newOrders = orders.filter((order) => order.status === "NEW");
-
-  return (
-    <Shell>
-      <div className="screen-head">
-        <div>
-          <p className="eyebrow">Driver workspace</p>
-          <h1>Рабочая смена</h1>
-        </div>
-        <button className="icon-btn" onClick={logout}>Выйти</button>
-      </div>
-      <Alert message={error} />
-
-      <section className="driver-toolbar">
-        <button className="btn btn-primary" disabled={Boolean(actionLoading)} onClick={() => runAction("online", () => api("/api/drivers/me/status", { method: "PATCH", body: JSON.stringify({ status: "FREE" }) }))}>Онлайн</button>
-        <button className="btn btn-ghost" disabled={Boolean(actionLoading)} onClick={() => runAction("offline", () => api("/api/drivers/me/status", { method: "PATCH", body: JSON.stringify({ status: "OFFLINE" }) }))}>Оффлайн</button>
-        <button className="btn btn-ghost" disabled={loading} onClick={load}>Обновить</button>
-      </section>
-
-      {loading && <Loading label="Обновляем заказы..." />}
-
-      <section className="stats-grid">
-        <div className="stat"><strong>{stats?.today?.orders_total || 0}</strong><span>Заказы сегодня</span></div>
-        <div className="stat"><strong>{money(stats?.today?.revenue_total)}</strong><span>Выручка</span></div>
-        <div className="stat"><strong>{money(stats?.driver?.debt)}</strong><span>Долг сервису</span></div>
-        <div className="stat"><strong>{money(stats?.driver?.balance)}</strong><span>Баланс</span></div>
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2>Активная поездка</h2>
-          {activeTrip && <StatusBadge status={activeTrip.status} />}
-        </div>
-        {!activeTrip ? (
-          <Empty title="Активной поездки нет" text="Новые заказы появятся ниже автоматически." />
-        ) : (
-          <OrderCard order={activeTrip}>
-            {activeTrip.status === "DRIVER_ASSIGNED" && <button className="btn btn-primary" disabled={Boolean(actionLoading)} onClick={() => runAction("arrived", () => api(`/api/orders/${activeTrip.id}/arrived`, { method: "POST" }))}>Я приехал</button>}
-            {activeTrip.status === "DRIVER_ARRIVED" && <button className="btn btn-primary" disabled={Boolean(actionLoading)} onClick={() => runAction("start", () => api(`/api/orders/${activeTrip.id}/start`, { method: "POST" }))}>Начать поездку</button>}
-            {activeTrip.status === "IN_PROGRESS" && <button className="btn btn-primary" disabled={Boolean(actionLoading)} onClick={() => runAction("complete", () => api(`/api/orders/${activeTrip.id}/complete`, { method: "POST" }))}>Завершить</button>}
-          </OrderCard>
-        )}
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2>Новые заказы</h2>
-          <span className="mini">{newOrders.length}</span>
-        </div>
-        {!newOrders.length ? (
-          <Empty title="Новых заказов нет" text="Когда клиент создаст заказ, он появится здесь без refresh." />
-        ) : (
-          <div className="cards-list">
-            {newOrders.map((order) => (
-              <OrderCard key={order.id} order={order}>
-                <button className="btn btn-primary" disabled={Boolean(actionLoading)} onClick={() => runAction(`accept-${order.id}`, () => api(`/api/orders/${order.id}/accept`, { method: "POST" }))}>Принять</button>
-              </OrderCard>
-            ))}
-          </div>
-        )}
-      </section>
-    </Shell>
-  );
-}
-
-function OrderCard({ order, children }) {
-  return (
-    <article className="order-card">
-      <div className="order-top">
-        <strong>#{order.short_id}</strong>
-        <StatusBadge status={order.status} />
-      </div>
-      <OrderRoute order={order} />
-      <div className="order-meta">
-        <span>{money(order.price)}</span>
-        <span>{order.tariff}</span>
-        <span>{PAYMENTS[order.payment_method] || order.payment_method}</span>
-      </div>
-      {order.notes && <p className="note">{order.notes}</p>}
-      {children && <div className="actions">{children}</div>}
-    </article>
-  );
-}
-
-function OwnerLogin({ onLogin }) {
-  const [email, setEmail] = useState("admin@smarttaxi.local");
-  const [password, setPassword] = useState("ChangeMe_2026!");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function submit(event) {
-    event.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await login({ email, password });
-      onLogin();
-    } catch (err) {
-      setError(humanError(err));
     } finally {
       setLoading(false);
     }
   }
 
+  async function updateStatus(status) {
+    await run(() => api("/api/drivers/me/status", { method: "PATCH", body: JSON.stringify({ status }) }));
+  }
+
+  async function logoutUser() {
+    clearToken();
+    setAuth(false);
+  }
+
+  if (!auth) return <LoginCard type="driver" onSuccess={() => setAuth(true)} />;
+
+  const isOffline = ["OFFLINE", "BREAK"].includes(driver?.status);
+  const isBusy = driver?.status === "BUSY" || Boolean(activeOrder);
+  const newOrders = isBusy ? [] : orders.filter(order => order.status === "NEW");
+
   return (
-    <Shell>
-      <section className="auth-card">
-        <p className="eyebrow">Owner dashboard</p>
-        <h1>Вход владельца</h1>
-        <Alert message={error} />
-        <form className="form" onSubmit={submit}>
-          <Field label="Email"><input value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-          <Field label="Пароль"><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-          <button className="btn btn-primary" disabled={loading}>{loading ? "Проверяем..." : "Войти"}</button>
-        </form>
+    <main className="mobile-app driver-screen">
+      <AppHeader subtitle="Рабочая смена" right={<button className="small-link" onClick={logoutUser}>Выйти</button>} />
+      <Alert message={error} />
+      {loading && <LoadingState label="Обновляем смену..." />}
+      <DriverProfileCard driver={driver} stats={stats} activeOrder={activeOrder} onStatus={updateStatus} loading={loading} />
+
+      {activeOrder && (
+        <section className="driver-section priority">
+          <h2>Активная поездка</h2>
+          <DriverOrderCard order={activeOrder}>
+            <Timeline status={activeOrder.status} />
+            {activeOrder.status === "DRIVER_ASSIGNED" && <button className="primary-cta" onClick={() => run(() => api(`/api/orders/${activeOrder.id}/arrived`, { method: "POST" }))}>Я приехал</button>}
+            {activeOrder.status === "DRIVER_ARRIVED" && <button className="primary-cta" onClick={() => run(() => api(`/api/orders/${activeOrder.id}/start`, { method: "POST" }))}>Начать поездку</button>}
+            {activeOrder.status === "IN_PROGRESS" && <button className="primary-cta" onClick={() => run(() => api(`/api/orders/${activeOrder.id}/complete`, { method: "POST" }))}>Завершить поездку</button>}
+          </DriverOrderCard>
+        </section>
+      )}
+
+      <section className="driver-section">
+        <div className="card-head"><h2>Новые заказы</h2><button className="ghost-btn" onClick={load}>Обновить</button></div>
+        {isOffline && <EmptyState title="Сначала выйдите на линию" text="Новые заказы можно принимать только в статусе На линии." />}
+        {isBusy && <EmptyState title="Вы на заказе" text="Пока поездка активна, новые заказы скрыты." />}
+        {!isOffline && !isBusy && !newOrders.length && <EmptyState title="Новых заказов нет" text="Заказы появятся здесь автоматически." />}
+        {!isOffline && !isBusy && newOrders.map(order => (
+          <DriverOrderCard order={order} key={order.id}>
+            <button className="primary-cta" onClick={() => run(() => api(`/api/orders/${order.id}/accept`, { method: "POST" }))}>Принять заказ</button>
+          </DriverOrderCard>
+        ))}
       </section>
-    </Shell>
+    </main>
   );
 }
 
 function Owner() {
-  const [auth, setAuth] = useState(Boolean(localStorage.getItem("smarttaxi_token")));
+  const [auth, setAuth] = useState(Boolean(getToken()));
   const [orders, setOrders] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [stats, setStats] = useState(null);
@@ -549,139 +602,97 @@ function Owner() {
       setDrivers(driversData.drivers || []);
       setStats(statsData);
     } catch (err) {
-      setError(humanError(err));
+      setError(normalizeError(err));
+      if (err?.code === "UNAUTHORIZED" || err?.code === "INVALID_TOKEN") setAuth(false);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => { if (auth) load(); }, [auth]);
-
-  useSocket(auth, (socket) => {
+  useEffect(() => {
+    if (!auth) return undefined;
+    const socket = createSocket();
     socket.emit("join_dispatch");
     socket.on("order_created", load);
     socket.on("order_updated", load);
-  });
+    return () => socket.disconnect();
+  }, [auth]);
 
-  function logout() {
-    clearToken();
-    setAuth(false);
-    setOrders([]);
-    setDrivers([]);
-    setStats(null);
-  }
+  if (!auth) return <LoginCard type="owner" onSuccess={() => setAuth(true)} />;
 
-  const driverById = useMemo(() => new Map(drivers.map((driver) => [driver.id, driver])), [drivers]);
-
-  if (!auth) return <OwnerLogin onLogin={() => setAuth(true)} />;
+  const driverById = new Map(drivers.map(driver => [driver.id, driver]));
+  const activeOrders = orders.filter(order => ACTIVE_STATUSES.includes(order.status));
 
   return (
-    <Shell wide>
-      <div className="screen-head">
-        <div>
-          <p className="eyebrow">Control room</p>
-          <h1>Owner dashboard</h1>
-        </div>
-        <div className="head-actions">
-          <button className="btn btn-ghost" disabled={loading} onClick={load}>{loading ? "Обновляем..." : "Refresh"}</button>
-          <button className="icon-btn" onClick={logout}>Выйти</button>
-        </div>
-      </div>
+    <main className="owner-app">
+      <AppHeader subtitle="Панель управления такси" right={<div className="owner-actions"><button className="ghost-btn" onClick={load}>{loading ? "Обновляем..." : "Обновить"}</button><button className="small-link" onClick={() => { clearToken(); setAuth(false); }}>Выйти</button></div>} />
       <Alert message={error} />
-
-      <section className="owner-stats">
-        <div className="stat"><strong>{stats?.today?.orders_total || 0}</strong><span>Заказы сегодня</span></div>
-        <div className="stat"><strong>{stats?.today?.active_orders || 0}</strong><span>Активные</span></div>
-        <div className="stat"><strong>{stats?.drivers?.free_drivers || 0}</strong><span>Водители онлайн</span></div>
-        <div className="stat"><strong>{money(stats?.today?.revenue_total)}</strong><span>Выручка</span></div>
-        <div className="stat"><strong>{money(stats?.today?.commission_total)}</strong><span>Комиссия</span></div>
-        <div className="stat"><strong>{money(stats?.drivers?.driver_debts_total)}</strong><span>Долги водителей</span></div>
-        <div className="stat"><strong>{money(stats?.today?.cashback_total)}</strong><span>Кэшбэк</span></div>
-        <div className="stat"><strong>{stats?.today?.new_orders || 0}</strong><span>Новые</span></div>
+      <section className="dashboard-stats">
+        <div><b>{stats?.today?.orders_total || 0}</b><span>Заказы сегодня</span></div>
+        <div><b>{stats?.today?.new_orders || 0}</b><span>Новые</span></div>
+        <div><b>{stats?.today?.active_orders || 0}</b><span>Активные поездки</span></div>
+        <div><b>{stats?.today?.completed_orders || 0}</b><span>Завершённые</span></div>
+        <div><b>{money(stats?.today?.revenue_total)}</b><span>Выручка</span></div>
+        <div><b>{money(stats?.today?.commission_total)}</b><span>Комиссия сервиса</span></div>
+        <div><b>{money(stats?.drivers?.driver_debts_total)}</b><span>Долги водителей</span></div>
+        <div><b>{money(stats?.today?.cashback_total)}</b><span>Кэшбэк</span></div>
+        <div><b>{stats?.drivers?.free_drivers || 0}</b><span>Водители онлайн</span></div>
       </section>
 
-      <section className="dashboard-grid">
-        <div className="panel">
-          <div className="panel-head">
-            <h2>Заказы</h2>
-            <span className="mini">{orders.length}</span>
-          </div>
-          {loading && !orders.length ? <Loading /> : !orders.length ? (
-            <Empty title="Заказов нет" text="Новые заказы клиентов появятся здесь." />
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Клиент</th>
-                    <th>Маршрут</th>
-                    <th>Статус</th>
-                    <th>Водитель</th>
-                    <th>Цена</th>
-                    <th>Оплата</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => {
-                    const driver = driverById.get(order.driver_id);
-                    return (
-                      <tr key={order.id}>
-                        <td>#{order.short_id}</td>
-                        <td><b>{order.rider_name}</b><small>{order.rider_phone}</small></td>
-                        <td><small>{order.pickup_text}</small><small>{order.dropoff_text}</small></td>
-                        <td><StatusBadge status={order.status} /></td>
-                        <td>{driver ? driver.name : "Не назначен"}</td>
-                        <td>{money(order.price)}</td>
-                        <td>{PAYMENTS[order.payment_method] || order.payment_method}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <section className="owner-grid">
+        <div className="owner-panel">
+          <div className="card-head"><h2>Активные поездки</h2><span>{activeOrders.length}</span></div>
+          {!activeOrders.length && <EmptyState title="Активных поездок нет" text="Когда водитель примет заказ, он появится здесь." />}
+          {activeOrders.map(order => <OwnerOrder order={order} driver={driverById.get(order.driver_id)} key={order.id} />)}
         </div>
-
-        <div className="panel">
-          <div className="panel-head">
-            <h2>Водители</h2>
-            <span className="mini">{drivers.length}</span>
+        <div className="owner-panel">
+          <div className="card-head"><h2>Водители</h2><span>{drivers.length}</span></div>
+          <div className="drivers-grid">
+            {drivers.map(driver => (
+              <article className="owner-driver-card" key={driver.id}>
+                <div className="card-head"><b>{driver.name}</b><StatusBadge status={driver.is_blocked ? "BLOCKED" : driver.status} /></div>
+                <span>{driver.phone}</span>
+                <p>{driver.car_model} · {driver.plate}</p>
+                <div className="metric-row"><span><b>{money(driver.debt)}</b><small>Долг</small></span><span><b>{money(driver.balance)}</b><small>Баланс</small></span><span><b>{driver.rating || "5.00"}</b><small>Рейтинг</small></span></div>
+                <small>Last seen: {driver.last_seen_at ? new Date(driver.last_seen_at).toLocaleString("ru-RU") : "нет данных"}</small>
+              </article>
+            ))}
           </div>
-          {!drivers.length ? (
-            <Empty title="Водителей нет" text="После seed здесь будет тестовый водитель." />
-          ) : (
-            <div className="cards-list compact">
-              {drivers.map((driver) => (
-                <article className="driver-card" key={driver.id}>
-                  <div>
-                    <strong>{driver.name}</strong>
-                    <span>{driver.phone}</span>
-                  </div>
-                  <StatusBadge status={driver.status} />
-                  <p>{driver.car_model} · {driver.plate}</p>
-                  <div className="driver-money">
-                    <span>Долг: {money(driver.debt)}</span>
-                    <span>Баланс: {money(driver.balance)}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
         </div>
       </section>
-    </Shell>
+
+      <section className="owner-panel">
+        <div className="card-head"><h2>Все заказы</h2><span>{orders.length}</span></div>
+        <div className="orders-table">
+          {orders.map(order => <OwnerOrder order={order} driver={driverById.get(order.driver_id)} key={order.id} compact />)}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function OwnerOrder({ order, driver, compact = false }) {
+  return (
+    <article className={`owner-order ${compact ? "compact" : ""}`}>
+      <div className="card-head"><strong>#{order.short_id}</strong><StatusBadge status={order.status} /></div>
+      <p><b>{order.rider_name}</b> · {order.rider_phone}</p>
+      <p>{order.pickup_text} → {order.dropoff_text}</p>
+      <div className="metric-row">
+        <span><b>{money(order.price)}</b><small>{order.tariff}</small></span>
+        <span><b>{order.payment_method}</b><small>Оплата</small></span>
+        <span><b>{driver?.name || order.driver_name || "Не назначен"}</b><small>Водитель</small></span>
+      </div>
+      <small>{order.created_at ? new Date(order.created_at).toLocaleString("ru-RU") : ""}</small>
+    </article>
   );
 }
 
 function App() {
   const path = window.location.pathname;
-  return (
-    <>
-      <Nav />
-      {path.startsWith("/driver") ? <Driver /> : path.startsWith("/owner") ? <Owner /> : <Client />}
-    </>
-  );
+  if (path.startsWith("/driver")) return <Driver />;
+  if (path.startsWith("/owner")) return <Owner />;
+  return <Client />;
 }
 
 createRoot(document.getElementById("root")).render(<App />);
