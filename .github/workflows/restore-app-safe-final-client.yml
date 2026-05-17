@@ -1,0 +1,75 @@
+name: Restore app safe final client
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+      - name: Restore main and switch client only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout 3e58540223aab766f0846c58c3e3ecee30f2170b -- apps/web/src/main.jsx
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/src/main.jsx')
+          s = p.read_text()
+          if 'import FinalClient from "./FinalClient.jsx";' not in s:
+              s = s.replace('import { createSocket } from "./lib/socket";\n', 'import { createSocket } from "./lib/socket";\nimport FinalClient from "./FinalClient.jsx";\n')
+          old = '''function App() {
+  const path = window.location.pathname;
+  if (path.startsWith("/driver")) return <Driver />;
+  if (path.startsWith("/owner")) return <Owner />;
+  return <Client />;
+}'''
+          new = '''function App() {
+  const path = window.location.pathname;
+  if (path.startsWith("/driver")) return <Driver />;
+  if (path.startsWith("/owner")) return <Owner />;
+  return <FinalClient />;
+}'''
+          if old not in s:
+              raise SystemExit('App block not found')
+          p.write_text(s.replace(old, new))
+          PY
+      - name: Clean old public polish include
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/index.html')
+          s = p.read_text()
+          s = s.replace('<link rel="stylesheet" href="/final-polish.css"/>', '')
+          s = s.replace('<script src="/final-polish.js" defer></script>', '')
+          p.write_text(s)
+          PY
+      - name: Verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n 'import FinalClient' apps/web/src/main.jsx
+          grep -n 'return <FinalClient' apps/web/src/main.jsx
+          grep -n 'function Driver' apps/web/src/main.jsx
+          grep -n 'function Owner' apps/web/src/main.jsx
+          test -s apps/web/src/FinalClient.jsx
+          test -s apps/web/src/finalClient.css
+          test -s apps/web/src/finalClientLayout.css
+      - name: Commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/main.jsx apps/web/index.html
+          git commit -m "Restore app and switch client to final interface" || true
+          git push origin dev
