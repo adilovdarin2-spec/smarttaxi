@@ -1,0 +1,38 @@
+name: Fix order create
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Patch order validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/api/src/modules/orders/orders.routes.js')
+          s = p.read_text()
+          s = s.replace('SELECT * FROM tariffs WHERE name=$1 AND is_active=true', 'SELECT * FROM tariffs WHERE lower(name)=lower($1) AND is_active=true')
+          s = s.replace('riderName: z.string().trim().min(2).max(80).transform(normalizeText),', 'riderName: z.string().trim().max(80).optional().default("Клиент").transform(value => normalizeText(value || "Клиент")),')
+          p.write_text(s)
+          PY
+      - name: Verify
+        run: |
+          grep -n 'lower(name)=lower' apps/api/src/modules/orders/orders.routes.js
+          grep -n 'default("Клиент")' apps/api/src/modules/orders/orders.routes.js
+      - name: Commit
+        run: |
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/api/src/modules/orders/orders.routes.js
+          git commit -m "Fix public order creation tolerance" || true
+          git push origin dev
