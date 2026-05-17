@@ -71,7 +71,7 @@ let googleMapsPromise;
 let googleMapsFailureReason = "";
 
 function getGoogleMapsBrowserKey() {
-  return window.__SMARTTAXI_CONFIG__?.googleMapsBrowserKey || import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
+  return "";
 }
 
 function setGoogleMapsFailure(reason) {
@@ -537,7 +537,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
             <div className="pin pin-b"><b>B</b><span>Куда</span></div>
             {driverPoint && <div className="pin pin-car"><b>🚕</b><span>Водитель</span></div>}
             <div className="map-grid" />
-            <div className="fallback-label">Карта в fallback режиме</div>
+            <div className="fallback-label">OpenStreetMap</div>
           </div>
         )}
         <div className="map-badges">
@@ -548,7 +548,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
       <div className="route-overlay">
         <div>
           <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : mapStatus}</strong>
-          <span>{hasRealMap ? mapStatus : mapFailure ? "Карта работает в fallback режиме" : "Карта в fallback режиме"}</span>
+          <span>{hasRealMap ? mapStatus : mapFailure ? "Карта работает в fallback режиме" : "OpenStreetMap"}</span>
         </div>
         {onLocate && <button className="map-locate-btn" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}

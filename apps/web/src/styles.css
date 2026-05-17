@@ -1303,3 +1303,15 @@ section h3 { margin-bottom: 10px; font-size: 18px; }
   .driver-profile-card { grid-template-columns: 1fr; }
   .profile-line { grid-template-columns: 1fr; }
 }
+
+/* SmartTaxi OpenStreetMap safe patch */
+.fallback-map {
+  background-image: linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url('https://tile.openstreetmap.org/15/22718/12125.png');
+  background-size: cover;
+  background-position: center;
+}
+.fallback-label {
+  color: #F5C542;
+  border-color: rgba(245,197,66,.35);
+  background: rgba(5,5,5,.72);
+}
