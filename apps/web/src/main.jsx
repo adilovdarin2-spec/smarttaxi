@@ -39,8 +39,20 @@ const PAYMENT_OPTIONS = [
   ["CARD", "Карта", "Онлайн"],
   ["CASHBACK", "Cashback", "Бонусы"]
 ];
-const MAP_CENTER = { lat: 43.238949, lng: 76.889709 };
+const MAP_CENTER = { lat: 42.3167, lng: 69.5958 };
 const GOLD_ROUTE = "#F5C542";
+const LOCAL_PLACES = [
+  { title: "Центр Атакента", subtitle: "Главная точка города", lat: 42.3167, lng: 69.5958 },
+  { title: "Вокзал", subtitle: "Ж/д и автостанция", lat: 42.3184, lng: 69.6041 },
+  { title: "Рынок", subtitle: "Центральный рынок", lat: 42.3139, lng: 69.5916 },
+  { title: "Больница", subtitle: "Городская больница", lat: 42.3206, lng: 69.5894 },
+  { title: "Акимат", subtitle: "Центр обслуживания", lat: 42.3161, lng: 69.5974 },
+  { title: "Kaspi", subtitle: "Банк и платежи", lat: 42.3154, lng: 69.599 },
+  { title: "Школа", subtitle: "Ближайшая школа", lat: 42.3212, lng: 69.6006 },
+  { title: "Автостанция", subtitle: "Межгород", lat: 42.3198, lng: 69.6068 },
+  { title: "Мечеть", subtitle: "Центральная мечеть", lat: 42.3129, lng: 69.5964 },
+  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 }
+];
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0b0b0b" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -56,9 +68,15 @@ const DARK_MAP_STYLE = [
 ];
 
 let googleMapsPromise;
+let googleMapsFailureReason = "";
 
 function getGoogleMapsBrowserKey() {
   return window.__SMARTTAXI_CONFIG__?.googleMapsBrowserKey || import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
+}
+
+function setGoogleMapsFailure(reason) {
+  googleMapsFailureReason = reason || "GOOGLE_MAPS_FAILED";
+  window.dispatchEvent(new CustomEvent("smarttaxi:google-maps-failed", { detail: { reason: googleMapsFailureReason } }));
 }
 
 function money(value) {
@@ -98,13 +116,26 @@ function fieldNumber(value) {
 function loadGoogleMaps() {
   const googleMapsBrowserKey = getGoogleMapsBrowserKey();
   if (!googleMapsBrowserKey) return Promise.reject(new Error("GOOGLE_MAPS_BROWSER_KEY_MISSING"));
+  if (googleMapsFailureReason) return Promise.reject(new Error(googleMapsFailureReason));
   if (window.google?.maps) return Promise.resolve(window.google.maps);
   if (!googleMapsPromise) {
     googleMapsPromise = new Promise((resolve, reject) => {
+      window.gm_authFailure = () => {
+        setGoogleMapsFailure("GOOGLE_MAPS_AUTH_FAILURE");
+        reject(new Error("GOOGLE_MAPS_AUTH_FAILURE"));
+      };
       const existing = document.querySelector("script[data-smarttaxi-google-maps]");
       if (existing) {
-        existing.addEventListener("load", () => resolve(window.google.maps), { once: true });
-        existing.addEventListener("error", reject, { once: true });
+        existing.addEventListener("load", () => {
+          window.setTimeout(() => {
+            if (googleMapsFailureReason || !window.google?.maps) reject(new Error(googleMapsFailureReason || "GOOGLE_MAPS_LOAD_FAILED"));
+            else resolve(window.google.maps);
+          }, 250);
+        }, { once: true });
+        existing.addEventListener("error", () => {
+          setGoogleMapsFailure("GOOGLE_MAPS_SCRIPT_ERROR");
+          reject(new Error("GOOGLE_MAPS_SCRIPT_ERROR"));
+        }, { once: true });
         return;
       }
       const script = document.createElement("script");
@@ -112,8 +143,16 @@ function loadGoogleMaps() {
       script.async = true;
       script.defer = true;
       script.dataset.smarttaxiGoogleMaps = "true";
-      script.onload = () => resolve(window.google.maps);
-      script.onerror = () => reject(new Error("GOOGLE_MAPS_LOAD_FAILED"));
+      script.onload = () => {
+        window.setTimeout(() => {
+          if (googleMapsFailureReason || !window.google?.maps) reject(new Error(googleMapsFailureReason || "GOOGLE_MAPS_LOAD_FAILED"));
+          else resolve(window.google.maps);
+        }, 250);
+      };
+      script.onerror = () => {
+        setGoogleMapsFailure("GOOGLE_MAPS_SCRIPT_ERROR");
+        reject(new Error("GOOGLE_MAPS_SCRIPT_ERROR"));
+      };
       document.head.appendChild(script);
     });
   }
@@ -245,6 +284,26 @@ function ClientTopBar({ onMenu }) {
   );
 }
 
+function VehicleIcon({ type = "car" }) {
+  const delivery = String(type).toLowerCase() === "delivery";
+  return (
+    <svg className={`vehicle-icon ${delivery ? "van" : "car"}`} viewBox="0 0 88 42" aria-hidden="true">
+      <defs>
+        <linearGradient id={`vehicleGold-${delivery ? "van" : "car"}`} x1="6" y1="10" x2="78" y2="38" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F5C542" />
+          <stop offset="1" stopColor="#D4AF37" />
+        </linearGradient>
+      </defs>
+      <path className="vehicle-body" d={delivery
+        ? "M10 24h9l7-12h32c5 0 9 4 9 9v3h8c3 0 5 2 5 5v5H8v-6c0-2 1-4 2-4Z"
+        : "M8 25h10l9-11h32l10 11h10c2 0 4 2 4 4v5H4v-5c0-2 2-4 4-4Z"} />
+      <path className="vehicle-window" d={delivery ? "M29 15h12v9H24l5-9Zm16 0h12c3 0 6 3 6 6v3H45v-9Z" : "M30 17h25l7 8H23l7-8Z"} />
+      <circle cx="24" cy="34" r="6" />
+      <circle cx="66" cy="34" r="6" />
+    </svg>
+  );
+}
+
 function AppMenu({ open, onClose, onAbout }) {
   if (!open) return null;
   const items = ["Главная", "Поездки", "Сообщения", "Профиль", "О нас", "Поддержка 24/7"];
@@ -349,6 +408,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
   const mapState = useRef({});
   const [mapsReady, setMapsReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
+  const [mapFailure, setMapFailure] = useState("");
   const hasGoogleMapsKey = Boolean(getGoogleMapsBrowserKey());
   const pickup = order ? getOrderCoords(order, "pickup") : coordsFromForm(form, "pickup");
   const dropoff = order ? getOrderCoords(order, "dropoff") : coordsFromForm(form, "dropoff");
@@ -360,86 +420,108 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
   useEffect(() => {
     if (!getGoogleMapsBrowserKey()) return undefined;
     let cancelled = false;
+    const fail = event => {
+      if (!cancelled) {
+        setMapFailure(event.detail?.reason || "GOOGLE_MAPS_FAILED");
+        setMapFailed(true);
+        setMapsReady(false);
+      }
+    };
+    window.addEventListener("smarttaxi:google-maps-failed", fail);
     loadGoogleMaps()
       .then(() => {
         if (!cancelled) {
           setMapsReady(true);
           setMapFailed(false);
+          setMapFailure("");
         }
       })
       .catch(() => {
-        if (!cancelled) setMapFailed(true);
+        if (!cancelled) {
+          setMapFailed(true);
+          setMapFailure(googleMapsFailureReason || "GOOGLE_MAPS_LOAD_FAILED");
+        }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      window.removeEventListener("smarttaxi:google-maps-failed", fail);
+    };
   }, []);
 
   useEffect(() => {
     if (!mapsReady || !mapNode.current) return;
-    const maps = window.google.maps;
-    if (!mapState.current.map) {
-      const map = new maps.Map(mapNode.current, {
-        center: MAP_CENTER,
-        zoom: 12,
-        disableDefaultUI: true,
-        zoomControl: true,
-        styles: DARK_MAP_STYLE,
-        gestureHandling: "greedy"
-      });
-      mapState.current = {
-        map,
-        pickupMarker: new maps.Marker({ map, label: { text: "A", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
-        dropoffMarker: new maps.Marker({ map, label: { text: "B", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
-        clientMarker: new maps.Marker({
+    try {
+      const maps = window.google.maps;
+      if (!mapState.current.map) {
+        const map = new maps.Map(mapNode.current, {
+          center: MAP_CENTER,
+          zoom: 12,
+          disableDefaultUI: true,
+          zoomControl: true,
+          styles: DARK_MAP_STYLE,
+          gestureHandling: "greedy"
+        });
+        mapState.current = {
           map,
-          icon: {
-            path: maps.SymbolPath.CIRCLE,
-            fillColor: "#22C55E",
-            fillOpacity: 1,
-            strokeColor: "#F5F5F5",
-            strokeWeight: 2,
-            scale: 7
+          pickupMarker: new maps.Marker({ map, label: { text: "A", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
+          dropoffMarker: new maps.Marker({ map, label: { text: "B", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
+          clientMarker: new maps.Marker({
+            map,
+            icon: {
+              path: maps.SymbolPath.CIRCLE,
+              fillColor: "#22C55E",
+              fillOpacity: 1,
+              strokeColor: "#F5F5F5",
+              strokeWeight: 2,
+              scale: 7
+            }
+          }),
+          driverMarker: new maps.Marker({ map, label: { text: "🚕", fontWeight: "900" } }),
+          polyline: new maps.Polyline({ map, strokeColor: GOLD_ROUTE, strokeOpacity: .95, strokeWeight: 5 }),
+          directionsService: new maps.DirectionsService(),
+          directionsRenderer: new maps.DirectionsRenderer({
+            map,
+            suppressMarkers: true,
+            preserveViewport: false,
+            polylineOptions: { strokeColor: GOLD_ROUTE, strokeOpacity: .96, strokeWeight: 5 }
+          })
+        };
+      }
+
+      const state = mapState.current;
+      state.pickupMarker.setVisible(Boolean(pickup));
+      state.dropoffMarker.setVisible(Boolean(dropoff));
+      state.clientMarker.setVisible(Boolean(locationOk && !order && pickup));
+      state.driverMarker.setVisible(Boolean(driverPoint));
+      if (pickup) state.pickupMarker.setPosition(pickup);
+      if (dropoff) state.dropoffMarker.setPosition(dropoff);
+      if (pickup) state.clientMarker.setPosition(pickup);
+      if (driverPoint) state.driverMarker.setPosition(driverPoint);
+      state.directionsRenderer.setMap(null);
+      state.directionsRenderer.setMap(state.map);
+      state.polyline.setPath([]);
+
+      if (routeStart && routeTarget) {
+        state.directionsService.route({ origin: routeStart, destination: routeTarget, travelMode: maps.TravelMode.DRIVING }, (result, status) => {
+          if (status === "OK" && result) {
+            state.directionsRenderer.setDirections(result);
+            return;
           }
-        }),
-        driverMarker: new maps.Marker({ map, label: { text: "🚕", fontWeight: "900" } }),
-        polyline: new maps.Polyline({ map, strokeColor: GOLD_ROUTE, strokeOpacity: .95, strokeWeight: 5 }),
-        directionsService: new maps.DirectionsService(),
-        directionsRenderer: new maps.DirectionsRenderer({
-          map,
-          suppressMarkers: true,
-          preserveViewport: false,
-          polylineOptions: { strokeColor: GOLD_ROUTE, strokeOpacity: .96, strokeWeight: 5 }
-        })
-      };
-    }
-
-    const state = mapState.current;
-    state.pickupMarker.setVisible(Boolean(pickup));
-    state.dropoffMarker.setVisible(Boolean(dropoff));
-    state.clientMarker.setVisible(Boolean(locationOk && !order && pickup));
-    state.driverMarker.setVisible(Boolean(driverPoint));
-    if (pickup) state.pickupMarker.setPosition(pickup);
-    if (dropoff) state.dropoffMarker.setPosition(dropoff);
-    if (pickup) state.clientMarker.setPosition(pickup);
-    if (driverPoint) state.driverMarker.setPosition(driverPoint);
-    state.directionsRenderer.setMap(null);
-    state.directionsRenderer.setMap(state.map);
-    state.polyline.setPath([]);
-
-    if (routeStart && routeTarget) {
-      state.directionsService.route({ origin: routeStart, destination: routeTarget, travelMode: maps.TravelMode.DRIVING }, (result, status) => {
-        if (status === "OK" && result) {
-          state.directionsRenderer.setDirections(result);
-          return;
-        }
-        state.polyline.setPath([routeStart, routeTarget]);
-        const bounds = new maps.LatLngBounds();
-        bounds.extend(routeStart);
-        bounds.extend(routeTarget);
-        state.map.fitBounds(bounds, 60);
-      });
-    } else if (routeStart || routeTarget) {
-      state.map.panTo(routeStart || routeTarget);
-      state.map.setZoom(14);
+          state.polyline.setPath([routeStart, routeTarget]);
+          const bounds = new maps.LatLngBounds();
+          bounds.extend(routeStart);
+          bounds.extend(routeTarget);
+          state.map.fitBounds(bounds, 60);
+        });
+      } else if (routeStart || routeTarget) {
+        state.map.panTo(routeStart || routeTarget);
+        state.map.setZoom(14);
+      }
+    } catch {
+      setGoogleMapsFailure("GOOGLE_MAPS_INIT_FAILED");
+      setMapFailure("GOOGLE_MAPS_INIT_FAILED");
+      setMapFailed(true);
+      setMapsReady(false);
     }
   }, [mapsReady, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, driverPoint?.lat, driverPoint?.lng, order?.status, locationOk]);
 
@@ -466,7 +548,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
       <div className="route-overlay">
         <div>
           <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : mapStatus}</strong>
-          <span>{hasRealMap ? mapStatus : "Карта в fallback режиме"}</span>
+          <span>{hasRealMap ? mapStatus : mapFailure ? "Карта работает в fallback режиме" : "Карта в fallback режиме"}</span>
         </div>
         {onLocate && <button className="map-locate-btn" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
@@ -481,6 +563,9 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
   const [value, setValue] = useState(mode === "pickup" ? form.pickupText : form.dropoffText);
   const [mapsReady, setMapsReady] = useState(false);
   const title = mode === "pickup" ? "Откуда поедем?" : "Куда едем?";
+  const normalized = value.trim().toLowerCase();
+  const filteredPlaces = LOCAL_PLACES.filter(place => !normalized || `${place.title} ${place.subtitle}`.toLowerCase().includes(normalized));
+  const suggestions = (filteredPlaces.length ? filteredPlaces : LOCAL_PLACES).slice(0, 7);
 
   useEffect(() => {
     if (!mode || !getGoogleMapsBrowserKey()) return undefined;
@@ -491,27 +576,42 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
 
   useEffect(() => {
     if (!mapsReady || !inputRef.current) return undefined;
-    const maps = window.google.maps;
-    const autocomplete = new maps.places.Autocomplete(inputRef.current, {
-      fields: ["formatted_address", "geometry", "name"],
-      componentRestrictions: { country: "kz" }
-    });
-    const listener = autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      const location = place.geometry?.location;
-      const text = place.formatted_address || place.name || inputRef.current.value;
-      setForm(current => ({
-        ...current,
-        [`${mode}Text`]: text,
-        [`${mode}Lat`]: location ? location.lat().toFixed(6) : current[`${mode}Lat`],
-        [`${mode}Lng`]: location ? location.lng().toFixed(6) : current[`${mode}Lng`]
-      }));
-      onClose();
-    });
-    return () => listener.remove();
+    try {
+      const maps = window.google.maps;
+      const autocomplete = new maps.places.Autocomplete(inputRef.current, {
+        fields: ["formatted_address", "geometry", "name"],
+        componentRestrictions: { country: "kz" }
+      });
+      const listener = autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        const location = place.geometry?.location;
+        const text = place.formatted_address || place.name || inputRef.current.value;
+        setForm(current => ({
+          ...current,
+          [`${mode}Text`]: text,
+          [`${mode}Lat`]: location ? location.lat().toFixed(6) : current[`${mode}Lat`],
+          [`${mode}Lng`]: location ? location.lng().toFixed(6) : current[`${mode}Lng`]
+        }));
+        onClose();
+      });
+      return () => listener.remove();
+    } catch {
+      setMapsReady(false);
+      return undefined;
+    }
   }, [mapsReady, mode, setForm, onClose]);
 
   if (!mode) return null;
+  function selectPlace(place) {
+    const text = place.title;
+    setForm(current => ({
+      ...current,
+      [`${mode}Text`]: text,
+      [`${mode}Lat`]: place.lat ? Number(place.lat).toFixed(6) : current[`${mode}Lat`],
+      [`${mode}Lng`]: place.lng ? Number(place.lng).toFixed(6) : current[`${mode}Lng`]
+    }));
+    onClose();
+  }
   function saveManual() {
     setForm(current => ({ ...current, [`${mode}Text`]: value.trim() || current[`${mode}Text`] }));
     onClose();
@@ -527,12 +627,28 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
         <label className="search-address">
           <span>{mode === "pickup" ? "A" : "B"}</span>
           <input ref={inputRef} value={value} onChange={event => setValue(event.target.value)} placeholder="Поиск адреса" autoComplete="off" autoFocus />
+          {value && <button className="clear-address" type="button" onClick={() => setValue("")} aria-label="Очистить">×</button>}
         </label>
         {mode === "pickup" && (
           <button className="address-action" type="button" onClick={onLocate} disabled={locating}>
             {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
           </button>
         )}
+        <div className="suggestion-list">
+          {mode === "pickup" && <button type="button" onClick={onLocate} disabled={locating}><b>●</b><span>Моё местоположение<small>Использовать текущую точку</small></span></button>}
+          {suggestions.map(place => (
+            <button type="button" key={place.title} onClick={() => selectPlace(place)}>
+              <b>⌖</b>
+              <span>{place.title}<small>{place.subtitle}</small></span>
+            </button>
+          ))}
+          {value.trim() && (
+            <button type="button" onClick={saveManual}>
+              <b>↵</b>
+              <span>Использовать введённый адрес<small>{value.trim()}</small></span>
+            </button>
+          )}
+        </div>
         <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
         <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
       </section>
@@ -561,8 +677,9 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
             const price = estimate && tariff.base_price ? calculateTariffPrice(tariff, estimate.distanceKm, estimate.durationMin) : tariff.min_price;
             return (
               <button type="button" className={`tariff-pill ${active ? "selected" : ""}`} key={tariff.name} onClick={() => setForm({ ...form, tariff: tariff.name })}>
-                <i>{tariff.name === "Delivery" ? "📦" : "🚕"}</i>
+                <i><VehicleIcon type={tariff.name} /></i>
                 <b>{tariff.name}</b>
+                <span>{estimate ? `${estimate.durationMin} мин` : "ETA"}</span>
                 <strong>{price ? money(price) : "по расчёту"}</strong>
                 <small>{meta.label || "Тариф"}</small>
               </button>
@@ -603,6 +720,15 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
           <StatusBadge status={order.status} />
         </div>
         <div className="trip-state">{mapCopy(order, driverLocation, estimate)}</div>
+        {order.status === "NEW" && (
+          <div className="searching-driver">
+            <i />
+            <div>
+              <b>Ищем водителя...</b>
+              <span>Обычно это занимает 1–2 минуты</span>
+            </div>
+          </div>
+        )}
         <div className="order-route">
           <p><b>A</b>{order.pickup_text}</p>
           <p><b>B</b>{order.dropoff_text}</p>
@@ -657,10 +783,10 @@ function BottomNav({ type }) {
 function Client() {
   const [tariffs, setTariffs] = useState([]);
   const [form, setForm] = useState({
-    riderName: "Дарын",
-    riderPhone: "+77000000000",
-    pickupText: "Atakent, центр",
-    dropoffText: "Atakent, вокзал",
+    riderName: "",
+    riderPhone: "",
+    pickupText: "",
+    dropoffText: "",
     pickupLat: "",
     pickupLng: "",
     dropoffLat: "",
