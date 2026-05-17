@@ -15,15 +15,15 @@ jobs:
           ref: dev
           fetch-depth: 0
 
-      - name: Restore main and switch client only
+      - name: Restore working main and switch client only
         shell: bash
         run: |
           set -euo pipefail
-          git checkout 3e58540223aab766f0846c58c3e3ecee30f2170b -- apps/web/src/main.jsx
+          git checkout bc17ae3c65f56a4e8e3ce5bc50942d1e049cb00d -- apps/web/src/main.jsx
           node <<'NODE'
           const fs = require('fs');
-          const path = 'apps/web/src/main.jsx';
-          let s = fs.readFileSync(path, 'utf8');
+          const file = 'apps/web/src/main.jsx';
+          let s = fs.readFileSync(file, 'utf8');
           if (!s.includes('import FinalClient from "./FinalClient.jsx";')) {
             s = s.replace('import { createSocket } from "./lib/socket";\n', 'import { createSocket } from "./lib/socket";\nimport FinalClient from "./FinalClient.jsx";\n');
           }
@@ -44,7 +44,7 @@ jobs:
             '}'
           ].join('\n');
           if (!s.includes(oldBlock)) throw new Error('App block not found');
-          fs.writeFileSync(path, s.replace(oldBlock, newBlock));
+          fs.writeFileSync(file, s.replace(oldBlock, newBlock));
           NODE
 
       - name: Clean old public polish include
@@ -53,11 +53,11 @@ jobs:
           set -euo pipefail
           node <<'NODE'
           const fs = require('fs');
-          const path = 'apps/web/index.html';
-          let s = fs.readFileSync(path, 'utf8');
+          const file = 'apps/web/index.html';
+          let s = fs.readFileSync(file, 'utf8');
           s = s.replace('<link rel="stylesheet" href="/final-polish.css"/>', '');
           s = s.replace('<script src="/final-polish.js" defer></script>', '');
-          fs.writeFileSync(path, s);
+          fs.writeFileSync(file, s);
           NODE
 
       - name: Verify
