@@ -19,7 +19,7 @@ const ORDER_SELECT = `
 function shortId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
 
 async function getTariff(name, executor = query) {
-  const sql = "SELECT * FROM tariffs WHERE name=$1 AND is_active=true";
+  const sql = "SELECT * FROM tariffs WHERE lower(name)=lower($1) AND is_active=true";
   const result = executor.query
     ? await executor.query(sql, [name])
     : await executor(sql, [name]);
@@ -69,7 +69,7 @@ function normalizePhone(value) {
 }
 
 const CreateOrder = z.object({
-  riderName: z.string().trim().min(2).max(80).transform(normalizeText),
+  riderName: z.string().trim().max(80).optional().default("Клиент").transform(value => normalizeText(value || "Клиент")),
   riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone"),
   pickupText: z.string().trim().min(2).max(180).transform(normalizeText),
   dropoffText: z.string().trim().min(2).max(180).transform(normalizeText),
