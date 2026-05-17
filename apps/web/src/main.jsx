@@ -39,7 +39,6 @@ const PAYMENT_OPTIONS = [
   ["CARD", "Карта", "Онлайн"],
   ["CASHBACK", "Cashback", "Бонусы"]
 ];
-const GOOGLE_MAPS_BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
 const MAP_CENTER = { lat: 43.238949, lng: 76.889709 };
 const GOLD_ROUTE = "#F5C542";
 const DARK_MAP_STYLE = [
@@ -57,6 +56,10 @@ const DARK_MAP_STYLE = [
 ];
 
 let googleMapsPromise;
+
+function getGoogleMapsBrowserKey() {
+  return window.__SMARTTAXI_CONFIG__?.googleMapsBrowserKey || import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
+}
 
 function money(value) {
   return `${Number(value || 0).toLocaleString("ru-RU")} ₸`;
@@ -93,7 +96,8 @@ function fieldNumber(value) {
 }
 
 function loadGoogleMaps() {
-  if (!GOOGLE_MAPS_BROWSER_KEY) return Promise.reject(new Error("GOOGLE_MAPS_BROWSER_KEY_MISSING"));
+  const googleMapsBrowserKey = getGoogleMapsBrowserKey();
+  if (!googleMapsBrowserKey) return Promise.reject(new Error("GOOGLE_MAPS_BROWSER_KEY_MISSING"));
   if (window.google?.maps) return Promise.resolve(window.google.maps);
   if (!googleMapsPromise) {
     googleMapsPromise = new Promise((resolve, reject) => {
@@ -104,7 +108,7 @@ function loadGoogleMaps() {
         return;
       }
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_BROWSER_KEY)}&libraries=places&language=ru&region=KZ`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsBrowserKey)}&libraries=places&language=ru&region=KZ`;
       script.async = true;
       script.defer = true;
       script.dataset.smarttaxiGoogleMaps = "true";
@@ -152,7 +156,7 @@ function markerIcon() {
 }
 
 async function reverseGeocode(lat, lng) {
-  if (!GOOGLE_MAPS_BROWSER_KEY) return "";
+  if (!getGoogleMapsBrowserKey()) return "";
   const maps = await loadGoogleMaps();
   return new Promise(resolve => {
     const geocoder = new maps.Geocoder();
@@ -185,19 +189,127 @@ function LoadingState({ label = "Загружаем данные..." }) {
   return <div className="loading-state"><span className="spinner" />{label}</div>;
 }
 
+function SmartTaxiLogo({ compact = false }) {
+  return (
+    <span className={`smart-logo ${compact ? "compact" : ""}`} aria-label="SmartTaxi">
+      <svg viewBox="0 0 64 64" role="img">
+        <defs>
+          <linearGradient id="smartTaxiGold" x1="14" y1="4" x2="52" y2="60" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#F5C542" />
+            <stop offset="1" stopColor="#D4AF37" />
+          </linearGradient>
+        </defs>
+        <path d="M32 4 52 12v16c0 15-8.5 25.2-20 31C20.5 53.2 12 43 12 28V12L32 4Z" fill="url(#smartTaxiGold)" />
+        <path d="M41.5 19.5c-4.6-3.7-13.8-3.5-15.4 1.7-2.2 7.1 16.8 6 14.1 14.1-1.9 5.8-12.1 6-17.7 1.4" fill="none" stroke="#070A0A" strokeWidth="6" strokeLinecap="round" />
+        <path d="M27 20.5c4.4 2.6 11.4 5.2 13.1 9.9" fill="none" stroke="#F8E08A" strokeWidth="2" strokeLinecap="round" opacity=".9" />
+        <circle cx="24" cy="38" r="3" fill="#070A0A" />
+      </svg>
+    </span>
+  );
+}
+
+function BrandBlock({ small = false }) {
+  return (
+    <span className={`brand-block ${small ? "small" : ""}`}>
+      <SmartTaxiLogo compact={small} />
+      <span>
+        <b>SmartTaxi</b>
+        <small>Ваш комфорт. Ваш город.</small>
+      </span>
+    </span>
+  );
+}
+
 function AppHeader({ subtitle = "Быстрая поездка по городу", right }) {
   return (
     <header className="app-header">
       <a className="brand" href="/client">
-        <span className="brand-mark">ST</span>
-        <span>
-          <b>SmartTaxi</b>
-          <small>Atakent</small>
-        </span>
+        <BrandBlock small />
       </a>
       <p>{subtitle}</p>
       {right ? <div className="header-right">{right}</div> : null}
     </header>
+  );
+}
+
+function ClientTopBar({ onMenu, onAbout }) {
+  return (
+    <header className="client-topbar">
+      <button className="icon-btn" type="button" onClick={onMenu} aria-label="Меню">☰</button>
+      <a href="/client" className="client-brand">
+        <BrandBlock small />
+        <em>Atakent</em>
+      </a>
+      <button className="icon-btn gift" type="button" onClick={onAbout} aria-label="О нас">🎁</button>
+    </header>
+  );
+}
+
+function AppMenu({ open, onClose, onAbout }) {
+  if (!open) return null;
+  const items = ["Главная", "Поездки", "Сообщения", "Профиль", "О нас", "Поддержка 24/7"];
+  return (
+    <div className="drawer-backdrop" role="presentation" onClick={onClose}>
+      <aside className="app-drawer" role="dialog" aria-label="Меню SmartTaxi" onClick={event => event.stopPropagation()}>
+        <div className="drawer-head">
+          <BrandBlock />
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть">×</button>
+        </div>
+        <div className="drawer-tagline">Городское такси для Атакента: быстро, безопасно, по понятной цене.</div>
+        <nav className="drawer-nav">
+          {items.map(item => (
+            <button key={item} type="button" onClick={() => item === "О нас" ? onAbout() : onClose()}>
+              <span>{item}</span>
+              <b>›</b>
+            </button>
+          ))}
+        </nav>
+      </aside>
+    </div>
+  );
+}
+
+function AboutPanel({ open, onClose }) {
+  if (!open) return null;
+  const reasons = [
+    "чтобы в городе было своё удобное такси",
+    "чтобы цена была понятной до заказа",
+    "чтобы водитель и клиент видели маршрут",
+    "чтобы сервис можно было развивать под нужды Атакента",
+    "чтобы поездки стали безопаснее и комфортнее"
+  ];
+  const principles = ["Безопасность", "Прозрачная цена", "Комфорт", "Поддержка 24/7", "Свой городской сервис"];
+  return (
+    <div className="drawer-backdrop about-backdrop" role="presentation" onClick={onClose}>
+      <section className="about-panel" role="dialog" aria-label="О нас" onClick={event => event.stopPropagation()}>
+        <div className="about-hero">
+          <SmartTaxiLogo />
+          <div>
+            <small>О нас</small>
+            <h2>SmartTaxi — такси для Атакента</h2>
+            <p>Ваш комфорт. Ваш город.</p>
+          </div>
+        </div>
+        <p className="about-lead">SmartTaxi создан, чтобы сделать поездки по Атакенту понятнее, безопаснее и удобнее. Мы хотим дать людям быстрый заказ машины, прозрачную цену, проверенных водителей и удобную оплату наличными или Kaspi.</p>
+        <div className="about-grid">
+          <article>
+            <h3>Зачем создали</h3>
+            {reasons.map(item => <span key={item}>✓ {item}</span>)}
+          </article>
+          <article>
+            <h3>Кто создал</h3>
+            <p><b>Дарын</b> — технический руководитель / CTO. Отвечает за приложение, backend, VPS, Docker, SSL, базу данных, тестирование и запуск.</p>
+            <p><b>Frontend-разработчик</b> — отвечает за сайт, визуальные страницы, интерфейс и адаптивную вёрстку.</p>
+            <p><b>Ереке</b> — отвечает за финансы, продвижение, переговоры, запуск и развитие сервиса.</p>
+          </article>
+        </div>
+        <div className="principles">
+          {principles.map(item => <span key={item}>{item}</span>)}
+        </div>
+        <div className="about-final">SmartTaxi работает в пределах города и развивается поэтапно. Сначала — стабильный запуск, потом — больше функций для клиентов и водителей.</div>
+        <button className="primary-cta" type="button" onClick={onClose}>Закрыть</button>
+      </section>
+    </div>
   );
 }
 
@@ -218,6 +330,7 @@ function Timeline({ status }) {
 }
 
 function RoutePreview({ form, estimate, locating, onLocate, locationOk }) {
+  const hasGoogleMapsKey = Boolean(getGoogleMapsBrowserKey());
   return (
     <section className="route-preview">
       <div className="route-bg">
@@ -229,7 +342,7 @@ function RoutePreview({ form, estimate, locating, onLocate, locationOk }) {
       <div className="route-overlay">
         <div>
           <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут рассчитывается"}</strong>
-          <span>{GOOGLE_MAPS_BROWSER_KEY ? "Google Maps key подключен" : "Карта работает в fallback режиме"}</span>
+          <span>{hasGoogleMapsKey ? "Google Maps key подключен" : "Карта работает в fallback режиме"}</span>
         </div>
         <button className="ghost-btn" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
@@ -250,9 +363,10 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
   const mapState = useRef({});
   const [mapsReady, setMapsReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
+  const hasGoogleMapsKey = Boolean(getGoogleMapsBrowserKey());
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_BROWSER_KEY) return undefined;
+    if (!getGoogleMapsBrowserKey()) return undefined;
     let cancelled = false;
     loadGoogleMaps()
       .then(() => {
@@ -351,7 +465,7 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
     }
   }, [mapsReady, form.pickupLat, form.pickupLng, form.dropoffLat, form.dropoffLng]);
 
-  const hasRealMap = Boolean(GOOGLE_MAPS_BROWSER_KEY && mapsReady && !mapFailed);
+  const hasRealMap = Boolean(hasGoogleMapsKey && mapsReady && !mapFailed);
   return (
     <section className="route-preview route-planner">
       <div className="route-bg">
@@ -364,6 +478,10 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
             <div className="fallback-label">Карта в fallback режиме</div>
           </div>
         )}
+        <div className="map-badges">
+          <span>Atakent</span>
+          <b>{estimate ? `${estimate.durationMin} мин` : "маршрут"}</b>
+        </div>
       </div>
       <div className="route-overlay">
         <div>
@@ -419,6 +537,11 @@ function ClientOrderCard({ order, onCancel, cancelling }) {
         </div>
       )}
       <Timeline status={order.status} />
+      <div className="trip-actions">
+        <button type="button">SOS</button>
+        <button type="button">Поделиться поездкой</button>
+        <button type="button">Доверенные контакты</button>
+      </div>
       {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
     </section>
   );
@@ -447,6 +570,27 @@ function BottomNav({ type }) {
   );
 }
 
+function QuickActions({ onSelect }) {
+  const actions = [
+    ["Дом", "🏠", { dropoffText: "Дом, Atakent" }],
+    ["Работа", "💼", { dropoffText: "Работа, Atakent" }],
+    ["Аэропорт", "✈", { dropoffText: "Аэропорт Алматы" }],
+    ["Доставка", "📦", { tariff: "Delivery" }],
+    ["По времени", "⏱", { notes: "Нужна поездка ко времени" }],
+    ["Ещё", "•••", {}]
+  ];
+  return (
+    <section className="quick-actions" aria-label="Быстрые действия">
+      {actions.map(([label, icon, patch]) => (
+        <button type="button" key={label} onClick={() => onSelect(patch)}>
+          <b>{icon}</b>
+          <span>{label}</span>
+        </button>
+      ))}
+    </section>
+  );
+}
+
 function Client() {
   const [tariffs, setTariffs] = useState([]);
   const [form, setForm] = useState({
@@ -468,6 +612,8 @@ function Client() {
   const [locating, setLocating] = useState(false);
   const [locationOk, setLocationOk] = useState(false);
   const [error, setError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const estimateTimer = useRef(null);
 
   const selectedTariff = useMemo(() => {
@@ -614,12 +760,15 @@ function Client() {
 
   return (
     <main className="mobile-app client-screen">
-      <AppHeader subtitle="Куда едем? · Premium" />
+      <ClientTopBar onMenu={() => setMenuOpen(true)} onAbout={() => setAboutOpen(true)} />
+      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} />
+      <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <Alert message={error} />
       {order && !FINISHED_STATUSES.includes(order.status) ? <ClientOrderCard order={order} onCancel={cancelOrder} cancelling={loading} /> : null}
       <RoutePlanner form={form} setForm={setForm} estimate={estimate} locating={locating} onLocate={locate} locationOk={locationOk} />
 
       <form className="order-form" onSubmit={createOrder}>
+        <QuickActions onSelect={patch => setForm(current => ({ ...current, ...patch }))} />
         <section className="address-card legacy-address">
           <label><span className="point point-a">A</span><input value={form.pickupText} onChange={e => setForm({ ...form, pickupText: e.target.value })} placeholder="Откуда" /></label>
           <label><span className="point point-b">B</span><input value={form.dropoffText} onChange={e => setForm({ ...form, dropoffText: e.target.value })} placeholder="Куда" /></label>
@@ -641,9 +790,11 @@ function Client() {
               const price = estimate && tariff.base_price ? Math.max(Number(tariff.min_price || 0), Math.round((Number(tariff.base_price) + Number(tariff.price_per_km || 0) * estimate.distanceKm + Number(tariff.price_per_minute || 0) * estimate.durationMin) / 10) * 10) : tariff.min_price;
               return (
                 <button type="button" className={`tariff-card ${active ? "selected" : ""}`} key={tariff.name} onClick={() => setForm({ ...form, tariff: tariff.name })}>
+                  <i className="tariff-icon">{tariff.name === "Delivery" ? "📦" : tariff.name === "Business" ? "◆" : "🚕"}</i>
                   <b>{tariff.name}</b>
                   <span>{meta.label || "Тариф"}</span>
                   <strong>{price ? money(price) : "по расчёту"}</strong>
+                  {active && <em>✓</em>}
                   <small>{meta.note || `${tariff.base_price || 0} посадка · ${tariff.price_per_km || 0}/км`}</small>
                 </button>
               );
