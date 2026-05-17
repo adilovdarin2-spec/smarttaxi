@@ -74,7 +74,7 @@ let googleMapsPromise;
 let googleMapsFailureReason = "";
 
 function getGoogleMapsBrowserKey() {
-  return "";
+  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + ["https:", "", "tile.openstreetmap.org", z, x, y + ".png"].join("/") + ")";
 }
 
 function setGoogleMapsFailure(reason) {
