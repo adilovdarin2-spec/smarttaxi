@@ -41,7 +41,7 @@ function calcPrice(tariff, distanceKm, durationMin) {
 }
 
 async function getTariff(name) {
-  const result = await query("SELECT * FROM tariffs WHERE name=$1 AND is_active=true", [name]);
+  const result = await query("SELECT * FROM tariffs WHERE LOWER(name)=LOWER($1) AND is_active=true", [name]);
   if (result.rows[0]) return result.rows[0];
   return (await query("SELECT * FROM tariffs WHERE name='Economy' AND is_active=true LIMIT 1")).rows[0];
 }

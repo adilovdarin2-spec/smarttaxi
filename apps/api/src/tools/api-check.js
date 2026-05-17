@@ -36,6 +36,7 @@ const checks = [
   ["driver stats completed orders", /completed_orders/.test(drivers) && /status='COMPLETED'/.test(drivers)],
   ["driver active order endpoint", /\/me\/active-order/.test(drivers) && /activeOrder/.test(drivers)],
   ["maps fallback estimate", /estimateRoute/.test(maps) && /provider: "fallback"/.test(maps)],
+  ["maps price source response", /LOWER\(name\)=LOWER\(\$1\)/.test(maps) && /source: "fallback"/.test(maps) && /price/.test(maps) && /\.\.\.estimate/.test(maps)],
   ["env validation", /requiredUrl\("DATABASE_URL"\)/.test(env) && /jwtSecret/.test(env) && /CORS_ORIGINS: corsOrigins/.test(env)]
 ];
 

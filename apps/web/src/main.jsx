@@ -28,10 +28,10 @@ const STATUS_STEPS = [
 const ACTIVE_STATUSES = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"];
 const FINISHED_STATUSES = ["COMPLETED", "CANCELLED"];
 const DEFAULT_TARIFFS = [
-  { name: "Economy", label: "Дешевле", note: "Быстрая городская поездка" },
-  { name: "Comfort", label: "Комфортнее", note: "Чище салон и выше класс" },
-  { name: "Business", label: "Премиум", note: "Для важных поездок" },
-  { name: "Delivery", label: "Доставка", note: "Посылки и документы" }
+  { name: "Economy", label: "Дешевле", note: "Быстрая городская поездка", base_price: 700, price_per_km: 120, price_per_minute: 25, min_price: 1200 },
+  { name: "Comfort", label: "Комфортнее", note: "Чище салон и выше класс", base_price: 900, price_per_km: 150, price_per_minute: 30, min_price: 1800 },
+  { name: "Business", label: "Премиум", note: "Для важных поездок", base_price: 1300, price_per_km: 220, price_per_minute: 45, min_price: 2500 },
+  { name: "Delivery", label: "Доставка", note: "Посылки и документы", base_price: 800, price_per_km: 130, price_per_minute: 25, min_price: 1500 }
 ];
 const PAYMENT_OPTIONS = [
   ["CASH", "Наличные", "Водителю"],
@@ -122,6 +122,22 @@ function coordsFromForm(form, prefix) {
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
 
+function haversineDistanceKm(a, b) {
+  const toRad = value => value * Math.PI / 180;
+  const earthKm = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return earthKm * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function calculateTariffPrice(tariff, distanceKm, durationMin) {
+  const raw = Number(tariff.base_price || 0) + Number(tariff.price_per_km || 0) * distanceKm + Number(tariff.price_per_minute || 0) * durationMin;
+  return Math.max(Number(tariff.min_price || 0), Math.round(raw / 10) * 10);
+}
+
 function markerIcon() {
   const maps = window.google.maps;
   return {
@@ -180,7 +196,7 @@ function AppHeader({ subtitle = "Быстрая поездка по городу
         </span>
       </a>
       <p>{subtitle}</p>
-      {right}
+      {right ? <div className="header-right">{right}</div> : null}
     </header>
   );
 }
@@ -496,9 +512,35 @@ function Client() {
     };
   }
 
+  function fallbackEstimate(base = form) {
+    const pickup = coordsFromForm(base, "pickup");
+    const dropoff = coordsFromForm(base, "dropoff");
+    const distanceKm = pickup && dropoff
+      ? Math.round(Math.max(0.5, Math.min(80, haversineDistanceKm(pickup, dropoff) * 1.25)) * 10) / 10
+      : Math.round((2.4 + ((base.pickupText || "").length + (base.dropoffText || "").length) % 7 * 0.7) * 10) / 10;
+    const durationMin = Math.max(5, Math.round(distanceKm / 0.42));
+    const tariff = (tariffs.length ? tariffs : DEFAULT_TARIFFS).find(item => item.name.toLowerCase() === String(base.tariff || "Economy").toLowerCase()) || DEFAULT_TARIFFS[0];
+    return {
+      distanceKm,
+      durationMin,
+      tariff: tariff.name,
+      price: calculateTariffPrice(tariff, distanceKm, durationMin),
+      source: "fallback"
+    };
+  }
+
   async function estimateRoute(base = form) {
-    const data = await api("/api/maps/estimate", { method: "POST", body: JSON.stringify(orderPayload(base)) });
-    const next = data.estimate || data;
+    let next;
+    try {
+      const data = await api("/api/maps/estimate", { method: "POST", body: JSON.stringify(orderPayload(base)) });
+      next = data.estimate || data;
+    } catch {
+      next = fallbackEstimate(base);
+    }
+    if (!next.price) {
+      const fallback = fallbackEstimate(base);
+      next = { ...fallback, ...next, price: fallback.price, tariff: next.tariff || fallback.tariff, source: next.source || next.provider || fallback.source };
+    }
     setEstimate(next);
     return next;
   }
@@ -572,7 +614,7 @@ function Client() {
 
   return (
     <main className="mobile-app client-screen">
-      <AppHeader right={<div className="mini-balance"><b>0 ₸</b><span>cashback</span></div>} />
+      <AppHeader subtitle="Куда едем? · Premium" />
       <Alert message={error} />
       {order && !FINISHED_STATUSES.includes(order.status) ? <ClientOrderCard order={order} onCancel={cancelOrder} cancelling={loading} /> : null}
       <RoutePlanner form={form} setForm={setForm} estimate={estimate} locating={locating} onLocate={locate} locationOk={locationOk} />
