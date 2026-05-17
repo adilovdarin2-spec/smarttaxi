@@ -13,29 +13,39 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: dev
-      - name: Patch current web map
-        run: |
-          set -e
-          perl -0pi -e 's/return window\.__SMARTTAXI_CONFIG__\?\.googleMapsBrowserKey \|\| import\.meta\.env\.VITE_GOOGLE_MAPS_BROWSER_KEY \|\| "";/return "";/g' apps/web/src/main.jsx
-          perl -0pi -e 's/Карта в fallback режиме/OpenStreetMap/g' apps/web/src/main.jsx
-          cat >> apps/web/src/styles.css <<'CSS'
 
-/* SmartTaxi OpenStreetMap safe patch */
-.fallback-map {
-  background-image:
-    linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)),
-    url("https://tile.openstreetmap.org/15/22718/12125.png");
-  background-size: cover;
-  background-position: center;
-}
-.fallback-label {
-  color: #F5C542;
-  border-color: rgba(245,197,66,.35);
-  background: rgba(5,5,5,.72);
-}
-CSS
-      - name: Commit patch to dev
+      - name: Patch current web map
+        shell: bash
         run: |
+          set -euo pipefail
+          python3 -c "from pathlib import Path; p=Path('apps/web/src/main.jsx'); s=p.read_text(); s=s.replace('return window.__SMARTTAXI_CONFIG__?.googleMapsBrowserKey || import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || \"\";', 'return \"\";'); s=s.replace('Карта в fallback режиме', 'OpenStreetMap'); p.write_text(s)"
+          if ! grep -q "SmartTaxi OpenStreetMap safe patch" apps/web/src/styles.css; then
+            echo "" >> apps/web/src/styles.css
+            echo "/* SmartTaxi OpenStreetMap safe patch */" >> apps/web/src/styles.css
+            echo ".fallback-map {" >> apps/web/src/styles.css
+            echo "  background-image: linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url('https://tile.openstreetmap.org/15/22718/12125.png');" >> apps/web/src/styles.css
+            echo "  background-size: cover;" >> apps/web/src/styles.css
+            echo "  background-position: center;" >> apps/web/src/styles.css
+            echo "}" >> apps/web/src/styles.css
+            echo ".fallback-label {" >> apps/web/src/styles.css
+            echo "  color: #F5C542;" >> apps/web/src/styles.css
+            echo "  border-color: rgba(245,197,66,.35);" >> apps/web/src/styles.css
+            echo "  background: rgba(5,5,5,.72);" >> apps/web/src/styles.css
+            echo "}" >> apps/web/src/styles.css
+          fi
+
+      - name: Verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n 'return "";' apps/web/src/main.jsx
+          grep -n 'OpenStreetMap' apps/web/src/main.jsx
+          grep -n 'SmartTaxi OpenStreetMap safe patch' apps/web/src/styles.css
+
+      - name: Commit patch to dev
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name smarttaxi-bot
           git config user.email smarttaxi-bot@users.noreply.github.com
           git add apps/web/src/main.jsx apps/web/src/styles.css
