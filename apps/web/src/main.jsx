@@ -232,7 +232,7 @@ function AppHeader({ subtitle = "Быстрая поездка по городу
   );
 }
 
-function ClientTopBar({ onMenu, onAbout }) {
+function ClientTopBar({ onMenu }) {
   return (
     <header className="client-topbar">
       <button className="icon-btn" type="button" onClick={onMenu} aria-label="Меню">☰</button>
@@ -240,7 +240,7 @@ function ClientTopBar({ onMenu, onAbout }) {
         <BrandBlock small />
         <em>Atakent</em>
       </a>
-      <button className="icon-btn gift" type="button" onClick={onAbout} aria-label="О нас">🎁</button>
+      <span className="status-dot" aria-label="SmartTaxi online" />
     </header>
   );
 }
@@ -271,14 +271,6 @@ function AppMenu({ open, onClose, onAbout }) {
 
 function AboutPanel({ open, onClose }) {
   if (!open) return null;
-  const reasons = [
-    "чтобы в городе было своё удобное такси",
-    "чтобы цена была понятной до заказа",
-    "чтобы водитель и клиент видели маршрут",
-    "чтобы сервис можно было развивать под нужды Атакента",
-    "чтобы поездки стали безопаснее и комфортнее"
-  ];
-  const principles = ["Безопасность", "Прозрачная цена", "Комфорт", "Поддержка 24/7", "Свой городской сервис"];
   return (
     <div className="drawer-backdrop about-backdrop" role="presentation" onClick={onClose}>
       <section className="about-panel" role="dialog" aria-label="О нас" onClick={event => event.stopPropagation()}>
@@ -290,23 +282,30 @@ function AboutPanel({ open, onClose }) {
             <p>Ваш комфорт. Ваш город.</p>
           </div>
         </div>
-        <p className="about-lead">SmartTaxi создан, чтобы сделать поездки по Атакенту понятнее, безопаснее и удобнее. Мы хотим дать людям быстрый заказ машины, прозрачную цену, проверенных водителей и удобную оплату наличными или Kaspi.</p>
+        <p className="about-lead">SmartTaxi создан, чтобы сделать поездки по Атакенту понятнее, безопаснее и удобнее. Сервис помогает быстро заказать машину, заранее увидеть примерную цену, выбрать подходящий тариф и оплатить поездку наличными или переводом Kaspi.</p>
         <div className="about-grid">
           <article>
-            <h3>Зачем создали</h3>
-            {reasons.map(item => <span key={item}>✓ {item}</span>)}
+            <h3>Зачем мы это создали</h3>
+            {[
+              "чтобы у жителей Атакента был свой удобный сервис такси",
+              "чтобы клиент видел цену и маршрут до заказа",
+              "чтобы водитель получал понятные заказы без лишней путаницы",
+              "чтобы поездки стали безопаснее, быстрее и прозрачнее",
+              "чтобы сервис развивался под реальные потребности города"
+            ].map(item => <span key={item}>✓ {item}</span>)}
           </article>
           <article>
-            <h3>Кто создал</h3>
+            <h3>Команда</h3>
             <p><b>Дарын</b> — технический руководитель / CTO. Отвечает за приложение, backend, VPS, Docker, SSL, базу данных, тестирование и запуск.</p>
-            <p><b>Frontend-разработчик</b> — отвечает за сайт, визуальные страницы, интерфейс и адаптивную вёрстку.</p>
+            <p><b>Frontend-разработчик</b> — отвечает за интерфейс, визуальные страницы, адаптивную вёрстку и удобство экранов.</p>
             <p><b>Ереке</b> — отвечает за финансы, продвижение, переговоры, запуск и развитие сервиса.</p>
           </article>
         </div>
+        <h3 className="about-subtitle">Принципы SmartTaxi</h3>
         <div className="principles">
-          {principles.map(item => <span key={item}>{item}</span>)}
+          {["Безопасность", "Понятная цена", "Комфортная поездка", "Честная работа с водителями", "Поддержка 24/7", "Развитие городского сервиса"].map(item => <span key={item}>{item}</span>)}
         </div>
-        <div className="about-final">SmartTaxi работает в пределах города и развивается поэтапно. Сначала — стабильный запуск, потом — больше функций для клиентов и водителей.</div>
+        <div className="about-final">SmartTaxi запускается поэтапно: сначала стабильные заказы и понятная цена, затем новые функции для клиентов, водителей и партнёров.</div>
         <button className="primary-cta" type="button" onClick={onClose}>Закрыть</button>
       </section>
     </div>
@@ -329,41 +328,34 @@ function Timeline({ status }) {
   );
 }
 
-function RoutePreview({ form, estimate, locating, onLocate, locationOk }) {
-  const hasGoogleMapsKey = Boolean(getGoogleMapsBrowserKey());
-  return (
-    <section className="route-preview">
-      <div className="route-bg">
-        <div className="route-line" />
-        <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
-        <div className="pin pin-b"><b>B</b><span>Куда</span></div>
-        <div className="map-grid" />
-      </div>
-      <div className="route-overlay">
-        <div>
-          <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут рассчитывается"}</strong>
-          <span>{hasGoogleMapsKey ? "Google Maps key подключен" : "Карта работает в fallback режиме"}</span>
-        </div>
-        <button className="ghost-btn" type="button" onClick={onLocate} disabled={locating}>
-          {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
-        </button>
-      </div>
-      <div className="route-summary">
-        <span><b>A</b>{form.pickupText || "Адрес подачи"}</span>
-        <span><b>B</b>{form.dropoffText || "Куда едем"}</span>
-      </div>
-    </section>
-  );
+function getOrderCoords(order, prefix) {
+  const lat = fieldNumber(order?.[`${prefix}_lat`]);
+  const lng = fieldNumber(order?.[`${prefix}_lng`]);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
 }
 
-function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk }) {
+function mapCopy(order, driverLocation, estimate) {
+  if (!order) return estimate ? "Выберите маршрут" : "Выберите маршрут";
+  if (order.status === "DRIVER_ASSIGNED") return driverLocation ? "Водитель едет к вам" : "Ожидаем координаты водителя";
+  if (order.status === "DRIVER_ARRIVED") return "Водитель приехал";
+  if (order.status === "IN_PROGRESS") return driverLocation ? "Поездка началась" : "Поездка началась";
+  if (order.status === "COMPLETED") return "Поездка завершена";
+  if (order.status === "CANCELLED") return "Заказ отменён";
+  return "Ищем водителя";
+}
+
+function MapExperience({ form, estimate, order, driverLocation, locating, locationOk, onLocate, compact = false }) {
   const mapNode = useRef(null);
-  const pickupInput = useRef(null);
-  const dropoffInput = useRef(null);
   const mapState = useRef({});
   const [mapsReady, setMapsReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
   const hasGoogleMapsKey = Boolean(getGoogleMapsBrowserKey());
+  const pickup = order ? getOrderCoords(order, "pickup") : coordsFromForm(form, "pickup");
+  const dropoff = order ? getOrderCoords(order, "dropoff") : coordsFromForm(form, "dropoff");
+  const driverPoint = driverLocation ? { lat: Number(driverLocation.lat), lng: Number(driverLocation.lng) } : null;
+  const routeTarget = order?.status === "IN_PROGRESS" ? dropoff : order && driverPoint ? pickup : dropoff;
+  const routeStart = order && driverPoint ? driverPoint : pickup;
+  const mapStatus = mapCopy(order, driverLocation, estimate);
 
   useEffect(() => {
     if (!getGoogleMapsBrowserKey()) return undefined;
@@ -382,34 +374,6 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
   }, []);
 
   useEffect(() => {
-    if (!mapsReady || !pickupInput.current || !dropoffInput.current) return undefined;
-    const maps = window.google.maps;
-    const attach = (input, prefix) => {
-      const autocomplete = new maps.places.Autocomplete(input, {
-        fields: ["formatted_address", "geometry", "name"],
-        componentRestrictions: { country: "kz" }
-      });
-      return autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        const location = place.geometry?.location;
-        const text = place.formatted_address || place.name || input.value;
-        setForm(current => ({
-          ...current,
-          [`${prefix}Text`]: text,
-          [`${prefix}Lat`]: location ? location.lat().toFixed(6) : current[`${prefix}Lat`],
-          [`${prefix}Lng`]: location ? location.lng().toFixed(6) : current[`${prefix}Lng`]
-        }));
-      });
-    };
-    const pickupListener = attach(pickupInput.current, "pickup");
-    const dropoffListener = attach(dropoffInput.current, "dropoff");
-    return () => {
-      pickupListener.remove();
-      dropoffListener.remove();
-    };
-  }, [mapsReady, setForm]);
-
-  useEffect(() => {
     if (!mapsReady || !mapNode.current) return;
     const maps = window.google.maps;
     if (!mapState.current.map) {
@@ -425,6 +389,7 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
         map,
         pickupMarker: new maps.Marker({ map, label: { text: "A", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
         dropoffMarker: new maps.Marker({ map, label: { text: "B", color: "#050505", fontWeight: "900" }, icon: markerIcon() }),
+        driverMarker: new maps.Marker({ map, label: { text: "🚕", fontWeight: "900" } }),
         polyline: new maps.Polyline({ map, strokeColor: GOLD_ROUTE, strokeOpacity: .95, strokeWeight: 5 }),
         directionsService: new maps.DirectionsService(),
         directionsRenderer: new maps.DirectionsRenderer({
@@ -437,43 +402,44 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
     }
 
     const state = mapState.current;
-    const pickup = coordsFromForm(form, "pickup");
-    const dropoff = coordsFromForm(form, "dropoff");
     state.pickupMarker.setVisible(Boolean(pickup));
     state.dropoffMarker.setVisible(Boolean(dropoff));
+    state.driverMarker.setVisible(Boolean(driverPoint));
     if (pickup) state.pickupMarker.setPosition(pickup);
     if (dropoff) state.dropoffMarker.setPosition(dropoff);
+    if (driverPoint) state.driverMarker.setPosition(driverPoint);
     state.directionsRenderer.setMap(null);
     state.directionsRenderer.setMap(state.map);
     state.polyline.setPath([]);
 
-    if (pickup && dropoff) {
-      state.directionsService.route({ origin: pickup, destination: dropoff, travelMode: maps.TravelMode.DRIVING }, (result, status) => {
+    if (routeStart && routeTarget) {
+      state.directionsService.route({ origin: routeStart, destination: routeTarget, travelMode: maps.TravelMode.DRIVING }, (result, status) => {
         if (status === "OK" && result) {
           state.directionsRenderer.setDirections(result);
           return;
         }
-        state.polyline.setPath([pickup, dropoff]);
+        state.polyline.setPath([routeStart, routeTarget]);
         const bounds = new maps.LatLngBounds();
-        bounds.extend(pickup);
-        bounds.extend(dropoff);
+        bounds.extend(routeStart);
+        bounds.extend(routeTarget);
         state.map.fitBounds(bounds, 60);
       });
-    } else if (pickup || dropoff) {
-      state.map.panTo(pickup || dropoff);
+    } else if (routeStart || routeTarget) {
+      state.map.panTo(routeStart || routeTarget);
       state.map.setZoom(14);
     }
-  }, [mapsReady, form.pickupLat, form.pickupLng, form.dropoffLat, form.dropoffLng]);
+  }, [mapsReady, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, driverPoint?.lat, driverPoint?.lng, order?.status]);
 
   const hasRealMap = Boolean(hasGoogleMapsKey && mapsReady && !mapFailed);
   return (
-    <section className="route-preview route-planner">
+    <section className={`route-preview route-planner ${compact ? "compact-map" : ""}`}>
       <div className="route-bg">
         {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
           <div className="fallback-map">
             <div className="route-line" />
             <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
             <div className="pin pin-b"><b>B</b><span>Куда</span></div>
+            {driverPoint && <div className="pin pin-car"><b>🚕</b><span>Водитель</span></div>}
             <div className="map-grid" />
             <div className="fallback-label">Карта в fallback режиме</div>
           </div>
@@ -485,65 +451,165 @@ function RoutePlanner({ form, setForm, estimate, locating, onLocate, locationOk 
       </div>
       <div className="route-overlay">
         <div>
-          <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : "Маршрут рассчитывается"}</strong>
-          <span>{hasRealMap ? "Google Maps · тёмная карта" : "Карта в fallback режиме"}</span>
+          <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : mapStatus}</strong>
+          <span>{hasRealMap ? mapStatus : "Карта в fallback режиме"}</span>
         </div>
-        <button className="ghost-btn" type="button" onClick={onLocate} disabled={locating}>
+        {onLocate && <button className="map-locate-btn" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
-        </button>
-      </div>
-      <div className="route-card">
-        <label>
-          <span className="point point-a">A</span>
-          <input ref={pickupInput} value={form.pickupText} onChange={e => setForm({ ...form, pickupText: e.target.value })} placeholder="Откуда" autoComplete="off" />
-        </label>
-        <label>
-          <span className="point point-b">B</span>
-          <input ref={dropoffInput} value={form.dropoffText} onChange={e => setForm({ ...form, dropoffText: e.target.value })} placeholder="Куда" autoComplete="off" />
-        </label>
+        </button>}
       </div>
     </section>
   );
 }
 
-function ClientOrderCard({ order, onCancel, cancelling }) {
+function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locationOk, error }) {
+  const inputRef = useRef(null);
+  const [value, setValue] = useState(mode === "pickup" ? form.pickupText : form.dropoffText);
+  const [mapsReady, setMapsReady] = useState(false);
+  const title = mode === "pickup" ? "Откуда поедем?" : "Куда едем?";
+
+  useEffect(() => {
+    if (!mode || !getGoogleMapsBrowserKey()) return undefined;
+    let cancelled = false;
+    loadGoogleMaps().then(() => { if (!cancelled) setMapsReady(true); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [mode]);
+
+  useEffect(() => {
+    if (!mapsReady || !inputRef.current) return undefined;
+    const maps = window.google.maps;
+    const autocomplete = new maps.places.Autocomplete(inputRef.current, {
+      fields: ["formatted_address", "geometry", "name"],
+      componentRestrictions: { country: "kz" }
+    });
+    const listener = autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      const location = place.geometry?.location;
+      const text = place.formatted_address || place.name || inputRef.current.value;
+      setForm(current => ({
+        ...current,
+        [`${mode}Text`]: text,
+        [`${mode}Lat`]: location ? location.lat().toFixed(6) : current[`${mode}Lat`],
+        [`${mode}Lng`]: location ? location.lng().toFixed(6) : current[`${mode}Lng`]
+      }));
+      onClose();
+    });
+    return () => listener.remove();
+  }, [mapsReady, mode, setForm, onClose]);
+
+  if (!mode) return null;
+  function saveManual() {
+    setForm(current => ({ ...current, [`${mode}Text`]: value.trim() || current[`${mode}Text`] }));
+    onClose();
+  }
+  return (
+    <div className="drawer-backdrop address-backdrop" role="presentation" onClick={onClose}>
+      <section className="address-modal" role="dialog" aria-label="Выберите адрес" onClick={event => event.stopPropagation()}>
+        <div className="modal-head">
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Назад">‹</button>
+          <div><small>Выберите адрес</small><h2>{title}</h2></div>
+        </div>
+        <Alert message={error} />
+        <label className="search-address">
+          <span>{mode === "pickup" ? "A" : "B"}</span>
+          <input ref={inputRef} value={value} onChange={event => setValue(event.target.value)} placeholder="Поиск адреса" autoComplete="off" autoFocus />
+        </label>
+        <button className="address-action" type="button" onClick={onLocate} disabled={locating}>
+          {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
+        </button>
+        <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
+        <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
+      </section>
+    </div>
+  );
+}
+
+function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, approxPrice, loading, disabled, openAddress, createOrder }) {
+  return (
+    <form className="ride-sheet" onSubmit={createOrder}>
+      <div className="route-picks">
+        <button type="button" onClick={() => openAddress("pickup")}><b>A</b><span>Откуда</span><strong>{form.pickupText || "Моё местоположение"}</strong></button>
+        <button type="button" onClick={() => openAddress("dropoff")}><b>B</b><span>Куда</span><strong>{form.dropoffText || "Куда едем?"}</strong></button>
+      </div>
+      <div className="sheet-summary">
+        <span>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут рассчитывается"}</span>
+        <span>{selectedTariff?.name || form.tariff}</span>
+        <span>{PAYMENT_OPTIONS.find(([key]) => key === form.paymentMethod)?.[1] || form.paymentMethod}</span>
+      </div>
+      <section>
+        <h3>Тариф</h3>
+        <div className="tariff-strip">
+          {(tariffs.length ? tariffs : DEFAULT_TARIFFS).map(tariff => {
+            const meta = DEFAULT_TARIFFS.find(item => item.name === tariff.name) || tariff;
+            const active = form.tariff === tariff.name;
+            const price = estimate && tariff.base_price ? calculateTariffPrice(tariff, estimate.distanceKm, estimate.durationMin) : tariff.min_price;
+            return (
+              <button type="button" className={`tariff-pill ${active ? "selected" : ""}`} key={tariff.name} onClick={() => setForm({ ...form, tariff: tariff.name })}>
+                <i>{tariff.name === "Delivery" ? "📦" : "🚕"}</i>
+                <b>{tariff.name}</b>
+                <strong>{price ? money(price) : "по расчёту"}</strong>
+                <small>{meta.label || "Тариф"}</small>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+      <section>
+        <h3>Оплата</h3>
+        <div className="payment-strip">
+          {PAYMENT_OPTIONS.map(([key, title]) => <button type="button" className={form.paymentMethod === key ? "selected" : ""} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>{title}</button>)}
+        </div>
+      </section>
+      <details className="ride-details">
+        <summary>Детали поездки</summary>
+        <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
+        <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="Телефон" inputMode="tel" />
+        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
+      </details>
+      <button className="primary-cta sticky-order" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
+    </form>
+  );
+}
+
+function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCancel, cancelling, onMenu, menuOpen, setMenuOpen, aboutOpen, setAboutOpen, error }) {
   const canCancel = ["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order?.status);
   return (
-    <section className="active-order-card">
-      <div className="card-head">
-        <div>
-          <small>Активный заказ</small>
-          <h2>#{order.short_id}</h2>
+    <main className="mobile-app client-screen active-trip-screen">
+      <ClientTopBar onMenu={onMenu} />
+      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} />
+      <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <Alert message={error} />
+      <MapExperience form={form} estimate={estimate} order={order} driverLocation={driverLocation} compact />
+      <section className="active-trip-panel">
+        <div className="card-head">
+          <div><small>Поездка</small><h2>#{order.short_id}</h2></div>
+          <StatusBadge status={order.status} />
         </div>
-        <StatusBadge status={order.status} />
-      </div>
-      <div className="order-route">
-        <p><b>A</b>{order.pickup_text}</p>
-        <p><b>B</b>{order.dropoff_text}</p>
-      </div>
-      <div className="metric-row">
-        <span><b>{money(order.price)}</b><small>Цена</small></span>
-        <span><b>{order.tariff}</b><small>Тариф</small></span>
-        <span><b>{order.payment_method}</b><small>Оплата</small></span>
-      </div>
-      {order.notes && <p className="driver-note">{order.notes}</p>}
-      {order.driver_name && (
-        <div className="driver-assigned">
-          <div>
-            <b>{order.driver_name}</b>
-            <span>{order.driver_car_model || "Авто"} · {order.driver_plate || "номер уточняется"}</span>
+        <div className="trip-state">{mapCopy(order, driverLocation, estimate)}</div>
+        <div className="order-route">
+          <p><b>A</b>{order.pickup_text}</p>
+          <p><b>B</b>{order.dropoff_text}</p>
+        </div>
+        {order.driver_name ? (
+          <div className="driver-assigned">
+            <div><b>{order.driver_name}</b><span>{order.driver_car_model || "Авто"} · {order.driver_plate || "номер уточняется"}</span></div>
+            {order.driver_phone && <a className="call-btn" href={`tel:${order.driver_phone}`}>Позвонить</a>}
           </div>
-          {order.driver_phone && <a className="call-btn" href={`tel:${order.driver_phone}`}>Позвонить</a>}
+        ) : <div className="driver-assigned muted-driver"><b>Ищем водителя</b><span>Когда водитель примет заказ, он появится здесь.</span></div>}
+        <div className="metric-row">
+          <span><b>{money(order.price)}</b><small>Цена</small></span>
+          <span><b>{order.tariff}</b><small>Тариф</small></span>
+          <span><b>{order.payment_method}</b><small>Оплата</small></span>
         </div>
-      )}
-      <Timeline status={order.status} />
-      <div className="trip-actions">
-        <button type="button">SOS</button>
-        <button type="button">Поделиться поездкой</button>
-        <button type="button">Доверенные контакты</button>
-      </div>
-      {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
-    </section>
+        <Timeline status={order.status} />
+        <div className="trip-actions">
+          <button type="button">SOS</button>
+          <button type="button">Поделиться поездкой</button>
+          <button type="button">Поддержка</button>
+        </div>
+        {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
+      </section>
+    </main>
   );
 }
 
@@ -570,27 +636,6 @@ function BottomNav({ type }) {
   );
 }
 
-function QuickActions({ onSelect }) {
-  const actions = [
-    ["Дом", "🏠", { dropoffText: "Дом, Atakent" }],
-    ["Работа", "💼", { dropoffText: "Работа, Atakent" }],
-    ["Аэропорт", "✈", { dropoffText: "Аэропорт Алматы" }],
-    ["Доставка", "📦", { tariff: "Delivery" }],
-    ["По времени", "⏱", { notes: "Нужна поездка ко времени" }],
-    ["Ещё", "•••", {}]
-  ];
-  return (
-    <section className="quick-actions" aria-label="Быстрые действия">
-      {actions.map(([label, icon, patch]) => (
-        <button type="button" key={label} onClick={() => onSelect(patch)}>
-          <b>{icon}</b>
-          <span>{label}</span>
-        </button>
-      ))}
-    </section>
-  );
-}
-
 function Client() {
   const [tariffs, setTariffs] = useState([]);
   const [form, setForm] = useState({
@@ -614,7 +659,11 @@ function Client() {
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [addressMode, setAddressMode] = useState(null);
+  const [driverLocation, setDriverLocation] = useState(null);
   const estimateTimer = useRef(null);
+  const socketRef = useRef(null);
+  const orderIdRef = useRef(null);
 
   const selectedTariff = useMemo(() => {
     return (tariffs.length ? tariffs : DEFAULT_TARIFFS).find(t => t.name === form.tariff) || DEFAULT_TARIFFS[0];
@@ -638,6 +687,7 @@ function Client() {
 
   useEffect(() => {
     const socket = createSocket();
+    socketRef.current = socket;
     socket.on("order_status_public", payload => {
       setOrder(current => current && payload.id === current.id ? { ...current, ...payload } : current);
     });
@@ -645,8 +695,19 @@ function Client() {
       const next = payload.order || payload;
       setOrder(current => current && next?.id === current.id ? { ...current, ...next } : current);
     });
-    return () => socket.disconnect();
+    socket.on("driver_location_updated", payload => {
+      setDriverLocation(current => orderIdRef.current && payload.orderId === orderIdRef.current ? payload : current);
+    });
+    return () => {
+      socketRef.current = null;
+      socket.disconnect();
+    };
   }, []);
+
+  useEffect(() => {
+    orderIdRef.current = order?.id || null;
+    if (order?.id) socketRef.current?.emit("join_order", order.id);
+  }, [order?.id]);
 
   function orderPayload(base = form) {
     return {
@@ -758,74 +819,46 @@ function Client() {
     }
   }
 
+  const activeOrder = order && !FINISHED_STATUSES.includes(order.status);
+  if (activeOrder) {
+    return (
+      <ClientActiveOrderScreen
+        order={order}
+        form={form}
+        estimate={estimate}
+        driverLocation={driverLocation}
+        onCancel={cancelOrder}
+        cancelling={loading}
+        onMenu={() => setMenuOpen(true)}
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        aboutOpen={aboutOpen}
+        setAboutOpen={setAboutOpen}
+        error={error}
+      />
+    );
+  }
+
   return (
     <main className="mobile-app client-screen">
-      <ClientTopBar onMenu={() => setMenuOpen(true)} onAbout={() => setAboutOpen(true)} />
+      <ClientTopBar onMenu={() => setMenuOpen(true)} />
       <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <AddressModal mode={addressMode} form={form} setForm={setForm} onClose={() => setAddressMode(null)} onLocate={locate} locating={locating} locationOk={locationOk} error={error} />
       <Alert message={error} />
-      {order && !FINISHED_STATUSES.includes(order.status) ? <ClientOrderCard order={order} onCancel={cancelOrder} cancelling={loading} /> : null}
-      <RoutePlanner form={form} setForm={setForm} estimate={estimate} locating={locating} onLocate={locate} locationOk={locationOk} />
-
-      <form className="order-form" onSubmit={createOrder}>
-        <QuickActions onSelect={patch => setForm(current => ({ ...current, ...patch }))} />
-        <section className="address-card legacy-address">
-          <label><span className="point point-a">A</span><input value={form.pickupText} onChange={e => setForm({ ...form, pickupText: e.target.value })} placeholder="Откуда" /></label>
-          <label><span className="point point-b">B</span><input value={form.dropoffText} onChange={e => setForm({ ...form, dropoffText: e.target.value })} placeholder="Куда" /></label>
-        </section>
-
-        <section className="compact-grid hidden-fields">
-          <input value={form.pickupLat} onChange={e => setForm({ ...form, pickupLat: e.target.value })} placeholder="pickupLat" />
-          <input value={form.pickupLng} onChange={e => setForm({ ...form, pickupLng: e.target.value })} placeholder="pickupLng" />
-          <input value={form.dropoffLat} onChange={e => setForm({ ...form, dropoffLat: e.target.value })} placeholder="dropoffLat" />
-          <input value={form.dropoffLng} onChange={e => setForm({ ...form, dropoffLng: e.target.value })} placeholder="dropoffLng" />
-        </section>
-
-        <section>
-          <h3>Тариф</h3>
-          <div className="tariff-grid">
-            {(tariffs.length ? tariffs : DEFAULT_TARIFFS).map(tariff => {
-              const meta = DEFAULT_TARIFFS.find(item => item.name === tariff.name) || tariff;
-              const active = form.tariff === tariff.name;
-              const price = estimate && tariff.base_price ? Math.max(Number(tariff.min_price || 0), Math.round((Number(tariff.base_price) + Number(tariff.price_per_km || 0) * estimate.distanceKm + Number(tariff.price_per_minute || 0) * estimate.durationMin) / 10) * 10) : tariff.min_price;
-              return (
-                <button type="button" className={`tariff-card ${active ? "selected" : ""}`} key={tariff.name} onClick={() => setForm({ ...form, tariff: tariff.name })}>
-                  <i className="tariff-icon">{tariff.name === "Delivery" ? "📦" : tariff.name === "Business" ? "◆" : "🚕"}</i>
-                  <b>{tariff.name}</b>
-                  <span>{meta.label || "Тариф"}</span>
-                  <strong>{price ? money(price) : "по расчёту"}</strong>
-                  {active && <em>✓</em>}
-                  <small>{meta.note || `${tariff.base_price || 0} посадка · ${tariff.price_per_km || 0}/км`}</small>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section>
-          <h3>Оплата</h3>
-          <div className="payment-grid">
-            {PAYMENT_OPTIONS.map(([key, title, note]) => (
-              <button type="button" className={`payment-card ${form.paymentMethod === key ? "selected" : ""}`} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>
-                <b>{title}</b><span>{note}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="comment-card">
-          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
-        </section>
-
-        <section className="profile-line">
-          <input value={form.riderName} onChange={e => setForm({ ...form, riderName: e.target.value })} placeholder="Имя" />
-          <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="Телефон" inputMode="tel" />
-        </section>
-
-        <div className="bottom-action">
-          <button className="primary-cta" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
-        </div>
-      </form>
+      <MapExperience form={form} estimate={estimate} locating={locating} locationOk={locationOk} onLocate={locate} />
+      <ClientRideSheet
+        form={form}
+        setForm={setForm}
+        tariffs={tariffs}
+        estimate={estimate}
+        selectedTariff={selectedTariff}
+        approxPrice={approxPrice}
+        loading={loading}
+        disabled={disabled}
+        openAddress={setAddressMode}
+        createOrder={createOrder}
+      />
     </main>
   );
 }
@@ -926,6 +959,8 @@ function Driver() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [driverLocation, setDriverLocation] = useState(null);
+  const driverSocketRef = useRef(null);
 
   async function load() {
     setLoading(true);
@@ -952,12 +987,47 @@ function Driver() {
   useEffect(() => {
     if (!auth) return undefined;
     const socket = createSocket();
+    driverSocketRef.current = socket;
     socket.emit("join_drivers");
     socket.on("order_created", load);
     socket.on("order_taken", load);
     socket.on("order_updated", load);
-    return () => socket.disconnect();
+    return () => {
+      driverSocketRef.current = null;
+      socket.disconnect();
+    };
   }, [auth]);
+
+  useEffect(() => {
+    if (!auth || !driver || ["OFFLINE", "BREAK"].includes(driver.status)) return undefined;
+    if (!navigator.geolocation) {
+      setError("Разрешите геолокацию, чтобы получать и выполнять заказы.");
+      return undefined;
+    }
+    let lastSent = 0;
+    const watchId = navigator.geolocation.watchPosition(
+      position => {
+        const nextLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          heading: position.coords.heading,
+          speed: position.coords.speed,
+          updatedAt: new Date().toISOString()
+        };
+        setDriverLocation(nextLocation);
+        const now = Date.now();
+        if (now - lastSent < 7000) return;
+        lastSent = now;
+        driverSocketRef.current?.emit("driver_location_update", {
+          orderId: activeOrder?.id,
+          ...nextLocation
+        });
+      },
+      () => setError("Разрешите геолокацию, чтобы получать и выполнять заказы."),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 12000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [auth, driver?.status, activeOrder?.id]);
 
   async function run(fn) {
     setLoading(true);
@@ -998,6 +1068,7 @@ function Driver() {
       {activeOrder && (
         <section className="driver-section priority">
           <h2>Активная поездка</h2>
+          <MapExperience form={{}} order={activeOrder} driverLocation={driverLocation} compact />
           <DriverOrderCard order={activeOrder}>
             <Timeline status={activeOrder.status} />
             {activeOrder.status === "DRIVER_ASSIGNED" && <button className="primary-cta" onClick={() => run(() => api(`/api/orders/${activeOrder.id}/arrived`, { method: "POST" }))}>Я приехал</button>}

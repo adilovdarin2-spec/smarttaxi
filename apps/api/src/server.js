@@ -22,6 +22,7 @@ import mapsRoutes from "./modules/maps/maps.routes.js";
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: env.CORS_ORIGINS, credentials: true } });
+const latestDriverLocations = new Map();
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -33,6 +34,38 @@ io.use((socket, next) => {
 io.on("connection", socket => {
   socket.on("join_dispatch", () => socket.join("dispatch"));
   socket.on("join_drivers", () => socket.join("drivers"));
+  socket.on("join_order", orderId => {
+    if (orderId) socket.join(`order:${orderId}`);
+  });
+  socket.on("driver_location_update", async payload => {
+    try {
+      if (socket.user?.role !== "DRIVER") return;
+      const lat = Number(payload?.lat);
+      const lng = Number(payload?.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const driver = (await query("SELECT id FROM drivers WHERE user_id=$1", [socket.user.id])).rows[0];
+      if (!driver) return;
+      let orderId = payload?.orderId;
+      if (!orderId) {
+        orderId = (await query(
+          "SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) ORDER BY created_at DESC LIMIT 1",
+          [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]]
+        )).rows[0]?.id;
+      }
+      const next = {
+        orderId,
+        driverId: driver.id,
+        lat,
+        lng,
+        heading: Number.isFinite(Number(payload?.heading)) ? Number(payload.heading) : null,
+        speed: Number.isFinite(Number(payload?.speed)) ? Number(payload.speed) : null,
+        updatedAt: new Date().toISOString()
+      };
+      latestDriverLocations.set(driver.id, next);
+      socket.to("dispatch").emit("driver_location_updated", next);
+      if (orderId) io.to(`order:${orderId}`).emit("driver_location_updated", next);
+    } catch {}
+  });
 });
 
 app.set("trust proxy", 1);

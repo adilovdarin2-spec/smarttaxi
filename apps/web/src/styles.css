@@ -38,7 +38,7 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
   width: min(100%, 560px);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 14px 14px 126px;
+  padding: 14px 14px 112px;
   overflow-x: hidden;
 }
 
@@ -120,7 +120,7 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
   overflow: hidden;
 }
 .client-topbar > .icon-btn:first-child { grid-column: 1; }
-.client-topbar > .icon-btn:last-child { grid-column: 3; }
+.client-topbar > .status-dot { grid-column: 3; justify-self: end; }
 .client-brand {
   grid-column: 2;
   display: grid;
@@ -156,6 +156,23 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
   font-weight: 1000;
 }
 .icon-btn.gift { color: #050505; background: linear-gradient(135deg, var(--gold-bright), var(--gold)); }
+.status-dot {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(212,175,55,.22);
+  border-radius: 16px;
+  background: rgba(16,20,20,.84);
+}
+.status-dot::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 7px rgba(34,197,94,.1), 0 0 20px rgba(34,197,94,.35);
+}
 
 .mini-balance {
   display: grid;
@@ -211,9 +228,10 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
 .route-preview {
   position: relative;
   overflow: hidden;
-  min-height: 330px;
-  margin-bottom: 16px;
+  min-height: min(64vh, 520px);
+  margin: 0 -14px 0;
   border-radius: 30px;
+  border-radius: 0 0 32px 32px;
 }
 
 .route-bg {
@@ -317,8 +335,78 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
   font-weight: 900;
 }
 .about-final { color: var(--text); border-color: rgba(212,175,55,.22); }
+.about-subtitle { color: var(--gold-bright); font-size: 17px; }
+.address-backdrop { align-items: end; }
+.address-modal {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(212,175,55,.24);
+  border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, rgba(22,27,27,.99), rgba(5,5,5,.99));
+  box-shadow: 0 -28px 80px rgba(0,0,0,.72);
+}
+.modal-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.modal-head small {
+  color: var(--gold-bright);
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.modal-head h2 { font-size: 25px; }
+.search-address {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(212,175,55,.16);
+  border-radius: 24px;
+  background: rgba(11,15,15,.96);
+}
+.search-address span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #050505;
+  background: var(--gold-bright);
+  font-weight: 1000;
+}
+.search-address input {
+  border: 0;
+  background: transparent;
+}
+.address-action {
+  min-height: 54px;
+  border: 1px solid rgba(212,175,55,.2);
+  border-radius: 20px;
+  color: var(--gold-bright);
+  background: rgba(212,175,55,.08);
+  font-weight: 1000;
+}
+.address-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
 
-.route-planner .route-bg { height: clamp(320px, 68vw, 390px); }
+.route-planner .route-bg { height: clamp(360px, 62vh, 540px); }
+.route-planner.compact-map {
+  min-height: 340px;
+  margin-bottom: 14px;
+  border-radius: 0 0 30px 30px;
+}
+.route-planner.compact-map .route-bg { height: 340px; }
 .google-map, .fallback-map {
   position: absolute;
   inset: 0;
@@ -425,13 +513,21 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
 .pin span { color: var(--muted); font-size: 12px; }
 .pin-a { left: 16%; top: 54%; }
 .pin-b { right: 16%; top: 22%; }
+.pin-car { left: 45%; top: 36%; }
+.pin-car b {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, #fef3c7, var(--gold-bright));
+  box-shadow: 0 0 0 12px rgba(245,197,66,.08), 0 18px 30px rgba(0,0,0,.4);
+}
 .point-b, .pin-b b { background: #fef3c7; }
 
 .route-overlay {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  margin: -56px 14px 0;
+  margin: -78px 16px 0;
   padding: 16px;
   position: relative;
   z-index: 5;
@@ -442,6 +538,21 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
 }
 .route-overlay strong { display: block; font-size: 22px; }
 .route-overlay span { color: var(--muted); font-size: 13px; }
+.client-screen:not(.active-trip-screen) > .route-planner > .route-overlay {
+  display: none;
+}
+.map-locate-btn {
+  flex: 0 0 auto;
+  min-height: 42px;
+  max-width: 148px;
+  border: 1px solid rgba(212,175,55,.22);
+  border-radius: 18px;
+  padding: 0 12px;
+  color: var(--gold-bright);
+  background: rgba(5,5,5,.76);
+  font-size: 12px;
+  font-weight: 1000;
+}
 
 .route-summary {
   display: grid;
@@ -489,35 +600,151 @@ h1, h2, h3, p { margin: 0; letter-spacing: 0; }
 }
 
 .order-form { display: grid; gap: 16px; }
-.quick-actions {
+.ride-sheet {
+  position: relative;
+  z-index: 8;
+  display: grid;
+  gap: 14px;
+  margin: -58px 0 0;
+  padding: 16px 14px 96px;
+  border: 1px solid rgba(212,175,55,.2);
+  border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, rgba(22,27,27,.98), rgba(5,5,5,.98));
+  box-shadow: 0 -26px 70px rgba(0,0,0,.58);
+}
+.route-picks {
+  display: grid;
+  gap: 8px;
+}
+.route-picks button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  align-items: center;
+  min-height: 62px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: rgba(11,15,15,.94);
+  text-align: left;
+}
+.route-picks b {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #050505;
+  background: var(--gold-bright);
+  font-weight: 1000;
+}
+.route-picks button:nth-child(2) b { background: #fef3c7; }
+.route-picks span { color: var(--muted); font-size: 12px; }
+.route-picks strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sheet-summary, .payment-strip {
   display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sheet-summary::-webkit-scrollbar, .payment-strip::-webkit-scrollbar, .tariff-strip::-webkit-scrollbar { display: none; }
+.sheet-summary span {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-radius: 999px;
+  color: var(--gold-bright);
+  background: rgba(212,175,55,.08);
+  border: 1px solid rgba(212,175,55,.16);
+  font-size: 12px;
+  font-weight: 900;
+}
+.tariff-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(132px, 1fr);
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: none;
 }
-.quick-actions::-webkit-scrollbar { display: none; }
-.quick-actions button {
-  flex: 0 0 140px;
+.tariff-pill {
+  position: relative;
   display: grid;
-  gap: 7px;
-  justify-items: center;
-  min-height: 82px;
-  border: 1px solid rgba(212,175,55,.16);
+  gap: 4px;
+  min-height: 118px;
+  border: 1px solid var(--border);
   border-radius: 22px;
+  padding: 12px;
   color: var(--text);
-  background: linear-gradient(180deg, rgba(22,27,27,.96), rgba(11,15,15,.96));
+  background: rgba(11,15,15,.96);
+  text-align: left;
 }
-.quick-actions b {
+.tariff-pill i {
   display: grid;
   place-items: center;
   width: 34px;
-  height: 34px;
+  height: 28px;
   border-radius: 14px;
-  color: #050505;
-  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: var(--gold-bright);
+  background: rgba(212,175,55,.1);
+  font-style: normal;
 }
-.quick-actions span { color: var(--muted); font-size: 12px; font-weight: 900; }
+.tariff-pill strong { color: var(--gold-bright); }
+.tariff-pill small { color: var(--muted); }
+.tariff-pill.selected::after {
+  content: "✓";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #050505;
+  background: var(--gold-bright);
+  font-weight: 1000;
+}
+.payment-strip button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 0 14px;
+  color: var(--text);
+  background: rgba(11,15,15,.96);
+  font-weight: 900;
+}
+.payment-strip .selected, .tariff-pill.selected {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(212,175,55,.2), rgba(16,20,20,.96));
+}
+.ride-details {
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  padding: 12px;
+  background: rgba(11,15,15,.9);
+}
+.ride-details summary {
+  color: var(--gold-bright);
+  font-weight: 1000;
+  cursor: pointer;
+}
+.ride-details input, .ride-details textarea { margin-top: 10px; }
+.sticky-order {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  z-index: 30;
+  width: min(calc(100% - 28px), 532px);
+  transform: translateX(-50%);
+}
 .address-card {
   display: grid;
   gap: 12px;
@@ -670,6 +897,33 @@ section h3 { margin-bottom: 10px; font-size: 18px; }
 }
 
 .active-order-card { display: grid; gap: 16px; margin-bottom: 16px; padding: 16px; }
+.active-trip-screen {
+  padding-bottom: 28px;
+}
+.active-trip-panel {
+  position: relative;
+  z-index: 8;
+  display: grid;
+  gap: 15px;
+  margin-top: -42px;
+  padding: 16px;
+  border: 1px solid rgba(212,175,55,.2);
+  border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, rgba(22,27,27,.98), rgba(5,5,5,.98));
+  box-shadow: 0 -26px 70px rgba(0,0,0,.58);
+}
+.trip-state {
+  padding: 12px 14px;
+  border: 1px solid rgba(212,175,55,.2);
+  border-radius: 20px;
+  color: var(--gold-bright);
+  background: rgba(212,175,55,.08);
+  font-weight: 1000;
+}
+.muted-driver {
+  background: rgba(212,175,55,.07);
+  border-color: rgba(212,175,55,.16);
+}
 .card-head {
   display: flex;
   align-items: center;
@@ -809,6 +1063,15 @@ section h3 { margin-bottom: 10px; font-size: 18px; }
   padding: 16px;
 }
 .driver-section.priority { border-color: rgba(245,197,66,.45); }
+.driver-section.priority .route-preview {
+  min-height: 260px;
+  margin: 0;
+  border-radius: 24px;
+}
+.driver-section.priority .route-bg { height: 260px; }
+.driver-section.priority .route-overlay {
+  margin: -62px 12px 0;
+}
 .job-card, .owner-order, .owner-driver-card {
   display: grid;
   gap: 12px;
