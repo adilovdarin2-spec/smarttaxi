@@ -1,0 +1,48 @@
+name: Fix OSM tile return
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Fix broken osmTileImage return
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+from pathlib import Path
+p = Path('apps/web/src/main.jsx')
+s = p.read_text()
+old = '  return ;'
+new = '  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png)";'
+if old not in s:
+    raise SystemExit('broken return not found')
+s = s.replace(old, new, 1)
+p.write_text(s)
+PY
+
+      - name: Verify fixed return
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n "tile.openstreetmap.org" apps/web/src/main.jsx
+          ! grep -n "return ;" apps/web/src/main.jsx
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/main.jsx
+          git commit -m "Fix OSM tile image return" || true
+          git push origin dev
