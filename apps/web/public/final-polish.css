@@ -1,0 +1,351 @@
+/* SmartTaxi final client polish layer */
+:root {
+  --st-radius-xl: 28px;
+  --st-radius-lg: 22px;
+  --st-bottom-space: max(14px, env(safe-area-inset-bottom));
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: clip !important;
+  overscroll-behavior-x: none;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+}
+
+.mobile-app.client-screen {
+  width: min(100vw, 430px) !important;
+  padding: 12px 12px 96px !important;
+  min-height: 100svh;
+}
+
+.client-topbar {
+  margin: -12px -12px 10px !important;
+  padding: 12px 12px 9px !important;
+  grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+}
+.client-topbar .icon-btn,
+.client-topbar .status-dot {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 16px !important;
+}
+.client-topbar .smart-logo.compact {
+  width: 38px !important;
+  height: 38px !important;
+}
+.client-topbar .brand-block b {
+  font-size: 17px !important;
+  max-width: 132px !important;
+}
+.client-brand em {
+  font-size: 10px !important;
+}
+
+.client-screen:not(.active-trip-screen) .route-planner {
+  min-height: 42svh !important;
+  height: 42svh !important;
+  max-height: 430px !important;
+  margin: 0 -12px !important;
+  border-radius: 0 0 28px 28px !important;
+}
+.client-screen:not(.active-trip-screen) .route-planner .route-bg {
+  height: 100% !important;
+}
+.active-trip-screen .route-planner {
+  min-height: 38svh !important;
+  margin: 0 -12px !important;
+}
+.active-trip-screen .route-planner .route-bg {
+  height: 38svh !important;
+}
+
+.fallback-map,
+.google-map,
+.dynamic-osm-map,
+.interactive-osm-map {
+  min-height: 100% !important;
+  touch-action: pan-x pan-y pinch-zoom !important;
+}
+.osm-touch-frame {
+  inset: -18% !important;
+  width: 136% !important;
+  height: 136% !important;
+  opacity: .86 !important;
+  filter: grayscale(1) invert(.92) contrast(1.16) brightness(.8) sepia(.1) !important;
+}
+.interactive-osm-map .route-line {
+  opacity: .72 !important;
+  height: 6px !important;
+  z-index: 3 !important;
+}
+.map-badges {
+  inset: 12px 12px auto !important;
+  z-index: 7 !important;
+}
+.map-badges span,
+.map-badges b,
+.fallback-label {
+  font-size: 11px !important;
+  border-color: rgba(245,197,66,.22) !important;
+  background: rgba(5,5,5,.66) !important;
+  backdrop-filter: blur(12px);
+}
+.fallback-label {
+  left: 12px !important;
+  bottom: 12px !important;
+  z-index: 7 !important;
+}
+.pin span { display: none !important; }
+.pin b {
+  width: 30px !important;
+  height: 30px !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,.42);
+}
+.pin-car b { width: 36px !important; height: 36px !important; }
+.pin-client b { width: 18px !important; height: 18px !important; }
+
+.ride-sheet {
+  width: calc(100% + 0px) !important;
+  max-width: 100% !important;
+  margin: -22px 0 0 !important;
+  padding: 13px 12px calc(14px + var(--st-bottom-space)) !important;
+  gap: 9px !important;
+  border-radius: 28px 28px 0 0 !important;
+  overflow: hidden !important;
+}
+.route-picks {
+  gap: 7px !important;
+}
+.route-picks button {
+  min-height: 56px !important;
+  padding: 9px 10px !important;
+  border-radius: 19px !important;
+}
+.route-picks b {
+  width: 29px !important;
+  height: 29px !important;
+}
+.route-picks span { font-size: 11px !important; }
+.route-picks strong { font-size: 14px !important; }
+.sheet-summary {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-snap-type: x proximity;
+  padding-bottom: 1px;
+}
+.sheet-summary span {
+  flex: 0 0 auto !important;
+  scroll-snap-align: start;
+  font-size: 11px !important;
+  padding: 7px 9px !important;
+}
+.phone-row {
+  min-width: 0 !important;
+  padding: 9px 11px !important;
+  border-radius: 18px !important;
+}
+.phone-row input {
+  min-height: 38px !important;
+  padding: 0 !important;
+  font-size: 16px !important;
+}
+
+.ride-sheet section {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+.ride-sheet section h3 {
+  margin-bottom: 7px !important;
+  font-size: 15px !important;
+}
+.tariff-strip {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0 3px 4px !important;
+  scroll-snap-type: x mandatory !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  touch-action: pan-x !important;
+}
+.tariff-strip::-webkit-scrollbar,
+.payment-strip::-webkit-scrollbar,
+.sheet-summary::-webkit-scrollbar {
+  display: none !important;
+}
+.tariff-pill {
+  flex: 0 0 112px !important;
+  width: 112px !important;
+  min-width: 112px !important;
+  min-height: 108px !important;
+  max-width: 112px !important;
+  padding: 9px !important;
+  gap: 2px !important;
+  border-radius: 18px !important;
+  scroll-snap-align: start !important;
+}
+.tariff-pill i {
+  width: 56px !important;
+  height: 25px !important;
+}
+.tariff-pill .vehicle-icon {
+  width: 55px !important;
+  height: 25px !important;
+}
+.tariff-pill b {
+  font-size: 13px !important;
+  line-height: 1.1;
+}
+.tariff-pill span,
+.tariff-pill small {
+  font-size: 10px !important;
+  line-height: 1.2;
+}
+.tariff-pill strong {
+  font-size: 12px !important;
+}
+.tariff-pill.selected::after {
+  width: 20px !important;
+  height: 20px !important;
+  top: 7px !important;
+  right: 7px !important;
+  font-size: 12px !important;
+}
+.payment-strip {
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 0 3px 4px !important;
+  scroll-snap-type: x mandatory !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+}
+.payment-strip button {
+  flex: 0 0 104px !important;
+  min-width: 104px !important;
+  min-height: 42px !important;
+  padding: 0 10px !important;
+  border-radius: 16px !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+}
+.sticky-order {
+  position: sticky !important;
+  bottom: var(--st-bottom-space) !important;
+  min-height: 54px !important;
+  border-radius: 19px !important;
+  margin-top: 3px !important;
+  font-size: 15px !important;
+}
+
+.address-modal {
+  max-height: calc(100svh - 10px) !important;
+  width: min(100%, 430px) !important;
+  padding: 14px !important;
+  gap: 10px !important;
+  border-radius: 26px 26px 0 0 !important;
+}
+.modal-head h2 { font-size: 21px !important; }
+.search-address {
+  padding: 8px !important;
+  border-radius: 20px !important;
+}
+.search-address input {
+  min-height: 40px !important;
+}
+.suggestion-list {
+  max-height: 46svh !important;
+  overflow-y: auto !important;
+  padding-right: 2px;
+}
+.suggestion-list button {
+  min-height: 52px !important;
+  border-radius: 17px !important;
+  padding: 8px 10px !important;
+}
+.address-action {
+  min-height: 48px !important;
+  border-radius: 17px !important;
+}
+.address-hint { display: none !important; }
+
+.active-trip-panel {
+  margin-top: -24px !important;
+  padding: 14px !important;
+  gap: 11px !important;
+  border-radius: 26px 26px 0 0 !important;
+}
+.trip-actions {
+  grid-template-columns: 1fr 1fr !important;
+}
+.trip-actions button:nth-child(2) { display: none !important; }
+
+.map-focus-btn,
+.map-focus-close {
+  position: fixed;
+  z-index: 160;
+  border: 1px solid rgba(245,197,66,.28);
+  border-radius: 999px;
+  color: #050505;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  box-shadow: 0 18px 48px rgba(0,0,0,.45);
+  font-weight: 1000;
+}
+.map-focus-btn {
+  right: 14px;
+  top: 74px;
+  min-height: 42px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+.map-focus-close {
+  display: none;
+  left: 14px;
+  top: 18px;
+  width: 46px;
+  height: 46px;
+  font-size: 22px;
+}
+body.smarttaxi-map-focus {
+  overflow: hidden !important;
+}
+body.smarttaxi-map-focus .client-screen .client-topbar,
+body.smarttaxi-map-focus .client-screen .ride-sheet,
+body.smarttaxi-map-focus .client-screen .active-trip-panel,
+body.smarttaxi-map-focus .client-screen .alert {
+  display: none !important;
+}
+body.smarttaxi-map-focus .client-screen .route-planner {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 150 !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+body.smarttaxi-map-focus .client-screen .route-planner .route-bg {
+  height: 100svh !important;
+}
+body.smarttaxi-map-focus .map-focus-btn { display: none !important; }
+body.smarttaxi-map-focus .map-focus-close { display: grid !important; place-items: center; }
+
+@media (max-width: 360px) {
+  .tariff-pill { flex-basis: 104px !important; width: 104px !important; min-width: 104px !important; }
+  .payment-strip button { flex-basis: 96px !important; min-width: 96px !important; }
+  .client-screen:not(.active-trip-screen) .route-planner { height: 39svh !important; min-height: 39svh !important; }
+}
