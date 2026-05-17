@@ -1,0 +1,79 @@
+name: Apply client UX fix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Patch client UX
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('apps/web/src/main.jsx')
+          s = p.read_text()
+
+          s = s.replace(
+          '  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 }\n];',
+          '  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 },\n  { title: "улица Шамо, 58", subtitle: "Атакент", lat: 42.3158, lng: 69.5948 },\n  { title: "улица Шамо, 58А", subtitle: "Атакент", lat: 42.3159, lng: 69.5952 },\n  { title: "улица Шамо, 56", subtitle: "Атакент", lat: 42.3155, lng: 69.5942 }\n];')
+
+          s = s.replace(
+          '  const [value, setValue] = useState(mode === "pickup" ? form.pickupText : form.dropoffText);\n  const [mapsReady, setMapsReady] = useState(false);',
+          '  const [value, setValue] = useState(mode === "pickup" ? form.pickupText : form.dropoffText);\n  const [mapsReady, setMapsReady] = useState(false);\n\n  useEffect(() => {\n    if (!mode) return;\n    setValue(mode === "pickup" ? form.pickupText : form.dropoffText);\n  }, [mode, form.pickupText, form.dropoffText]);')
+
+          s = s.replace(
+          '<div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>',
+          '<div className="address-hint">SmartTaxi показывает популярные места Атакента. Если адреса нет — введите его вручную.</div>')
+
+          s = s.replace(
+          '    return {\n      ...base,\n      pickupLat: fieldNumber(base.pickupLat),',
+          '    return {\n      ...base,\n      riderName: normalizeText(base.riderName || "Клиент"),\n      riderPhone: String(base.riderPhone || "").trim(),\n      pickupLat: fieldNumber(base.pickupLat),')
+
+          s = s.replace(
+          '      </div>\n      <section>\n        <h3>Тариф</h3>',
+          '      </div>\n      <label className="phone-row">\n        <span>Телефон для связи</span>\n        <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="+7 700 000 00 00" inputMode="tel" />\n      </label>\n      <section>\n        <h3>Тариф</h3>')
+
+          s = s.replace('        <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="Телефон" inputMode="tel" />\n', '')
+          p.write_text(s)
+          PY
+
+          if ! grep -q "SmartTaxi client UX fix" apps/web/src/styles.css; then
+            echo "" >> apps/web/src/styles.css
+            echo "/* SmartTaxi client UX fix */" >> apps/web/src/styles.css
+            echo ".phone-row { display: grid; gap: 8px; padding: 12px; border-radius: 20px; border: 1px solid rgba(245,197,66,.18); background: rgba(245,197,66,.07); }" >> apps/web/src/styles.css
+            echo ".phone-row span { color: var(--muted); font-size: 12px; font-weight: 900; }" >> apps/web/src/styles.css
+            echo ".phone-row input { width: 100%; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 17px; font-weight: 900; }" >> apps/web/src/styles.css
+            echo ".map-locate-btn { display: none !important; }" >> apps/web/src/styles.css
+            echo ".address-hint { color: var(--muted); }" >> apps/web/src/styles.css
+            echo ".route-overlay { pointer-events: none; }" >> apps/web/src/styles.css
+            echo ".ride-sheet section h3 { display: flex; align-items: center; justify-content: space-between; }" >> apps/web/src/styles.css
+          fi
+
+      - name: Verify client UX patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n "phone-row" apps/web/src/main.jsx
+          grep -n "SmartTaxi показывает популярные места" apps/web/src/main.jsx
+          grep -n "Клиент" apps/web/src/main.jsx
+          grep -n "SmartTaxi client UX fix" apps/web/src/styles.css
+
+      - name: Commit patch to dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/main.jsx apps/web/src/styles.css
+          git commit -m "Fix client order UX and address modal" || true
+          git push origin dev
