@@ -356,7 +356,14 @@ function VehicleIcon({ type = "car" }) {
 
 function AppMenu({ open, onClose, onAbout, onProfile }) {
   if (!open) return null;
-  const items = ["Главная", "Поездки", "Сообщения", "Профиль", "О нас", "Поддержка 24/7"];
+  const items = [
+    { label: "Главная", icon: "dashboard", action: onClose },
+    { label: "Поездки", icon: "route", disabled: true, reason: "История поездок появится после авторизации клиента" },
+    { label: "Сообщения", icon: "chat", disabled: true, reason: "Чат будет включён после запуска операторов" },
+    { label: "Профиль", icon: "user", action: onProfile },
+    { label: "О нас", icon: "shield", action: onAbout },
+    { label: "Поддержка 24/7", icon: "headset", disabled: true, reason: "Пока используйте телефон поддержки" }
+  ];
   return (
     <div className="drawer-backdrop" role="presentation" onClick={onClose}>
       <aside className="app-drawer" role="dialog" aria-label="Меню SmartTaxi" onClick={event => event.stopPropagation()}>
@@ -367,9 +374,9 @@ function AppMenu({ open, onClose, onAbout, onProfile }) {
         <div className="drawer-tagline">Городское такси для Атакента: быстро, безопасно, по понятной цене.</div>
         <nav className="drawer-nav">
           {items.map(item => (
-            <button key={item} type="button" onClick={() => item === "О нас" ? onAbout() : item === "Профиль" ? onProfile?.() : onClose()}>
-              <span><Icon name={item === "О нас" ? "shield" : item === "Поддержка 24/7" ? "headset" : item === "Профиль" ? "user" : item === "Сообщения" ? "chat" : "route"} size={18} />{item}</span>
-              <b>›</b>
+            <button key={item.label} type="button" disabled={item.disabled} title={item.reason || ""} onClick={() => item.action?.()}>
+              <span><Icon name={item.icon} size={18} />{item.label}{item.disabled && <small>Скоро</small>}</span>
+              <b>{item.disabled ? "•" : "›"}</b>
             </button>
           ))}
         </nav>
@@ -580,7 +587,11 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
       <div className="route-bg">
         {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
           <div className="fallback-map">
-            {routeStart && routeTarget && estimate?.source === "google" && <div className="route-line" />}
+            {routeStart && routeTarget && estimate && (
+              <div className={`route-line ${estimate?.source === "google" ? "" : "approx-route"}`}>
+                {estimate?.source !== "google" && <span>примерно</span>}
+              </div>
+            )}
             {locationOk && !order && pickup && <div className="pin pin-client"><b><Icon name="user" size={14} /></b><span>Вы здесь</span></div>}
             {(pickup || form?.pickupText || order?.pickup_text) && <div className="pin pin-a"><b>A</b><span>Откуда</span></div>}
             {(dropoff || form?.dropoffText || order?.dropoff_text) && <div className="pin pin-b"><b>B</b><span>Куда</span></div>}
@@ -812,6 +823,9 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
             </button>
           )}
         </div>
+        <div className="address-secondary-actions">
+          <button type="button" disabled title="Выбор точки на карте будет подключён после проверки карты на VPS">Выбрать на карте <small>Скоро</small></button>
+        </div>
         <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
         <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
       </section>
@@ -820,6 +834,14 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
 }
 
 function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, approxPrice, loading, disabled, openAddress, createOrder }) {
+  function clearRoute() {
+    setForm({
+      ...form,
+      dropoffText: "",
+      dropoffLat: "",
+      dropoffLng: ""
+    });
+  }
   return (
     <form className="ride-sheet" onSubmit={createOrder}>
       <div className="route-picks">
@@ -830,6 +852,7 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
         <span>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут рассчитывается"}</span>
         <span>{selectedTariff?.name || form.tariff}</span>
         <span>{PAYMENT_OPTIONS.find(([key]) => key === form.paymentMethod)?.[1] || form.paymentMethod}</span>
+        {form.dropoffText && <button className="summary-action" type="button" onClick={clearRoute}>Сбросить маршрут</button>}
       </div>
       <section>
         <h3>Тариф</h3>
@@ -853,7 +876,21 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
       <section>
         <h3>Оплата</h3>
         <div className="payment-strip">
-          {PAYMENT_OPTIONS.map(([key, title]) => <button type="button" className={form.paymentMethod === key ? "selected" : ""} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>{title}</button>)}
+          {PAYMENT_OPTIONS.map(([key, title]) => {
+            const disabledPayment = key === "CASHBACK";
+            return (
+              <button
+                type="button"
+                className={form.paymentMethod === key ? "selected" : ""}
+                key={key}
+                disabled={disabledPayment}
+                title={disabledPayment ? "Cashback оплату подключим после стабильного запуска бонусов" : ""}
+                onClick={() => !disabledPayment && setForm({ ...form, paymentMethod: key })}
+              >
+                {title}{disabledPayment && <small>Скоро</small>}
+              </button>
+            );
+          })}
         </div>
       </section>
       <details className="ride-details">
@@ -909,9 +946,9 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
         </div>
         <Timeline status={order.status} />
         <div className="trip-actions">
-          <button type="button">SOS</button>
-          <button type="button">Поделиться поездкой</button>
-          <button type="button">Поддержка</button>
+          <button type="button" disabled title="SOS будет подключён к контактам сервиса после VPS-настройки">SOS <small>Скоро</small></button>
+          <button type="button" disabled title="Шеринг поездки появится после профиля клиента">Поделиться <small>Скоро</small></button>
+          <button type="button" disabled title="Чат поддержки будет включён после запуска операторов">Поддержка <small>Скоро</small></button>
         </div>
         {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
         {isFinished && <button className="primary-cta" type="button" onClick={() => setReviewOpen(true)}>Оценить поездку</button>}
