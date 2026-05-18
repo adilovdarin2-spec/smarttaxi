@@ -294,6 +294,47 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
   } catch (e) { next(e); }
 });
 
+router.post("/:id/assign-driver", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = z.object({ driverId: z.string().uuid() }).parse(req.body);
+    const order = await tx(async (client) => {
+      const driver = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [body.driverId])).rows[0];
+      if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+      if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+      if (Number(driver.debt) > 15000) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
+      if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
+      if (driver.status !== "FREE") throw new AppError("Driver already has an active order", 409, "DRIVER_BUSY");
+
+      const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
+      if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      if (existing.status !== "NEW") throw new AppError("Order already accepted", 409, "ORDER_ALREADY_ACCEPTED");
+
+      await client.query("UPDATE orders SET status='DRIVER_ASSIGNED', driver_id=$1, accepted_at=NOW() WHERE id=$2", [driver.id, existing.id]);
+      await client.query("UPDATE drivers SET status='BUSY', last_seen_at=NOW() WHERE id=$1", [driver.id]);
+      await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'DRIVER_ASSIGNED','Driver assigned by operator',$2)", [existing.id, req.user.id]);
+      await writeAudit(client, {
+        action: "order_driver_assigned",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: existing.id,
+        metadata: { driverId: driver.id },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [existing.id])).rows[0];
+    });
+    req.io?.to("dispatch").emit("order_updated", order);
+    req.io?.to("drivers").emit("order_taken", { orderId: order.id });
+    req.io?.emit("order_status_public", publicOrderEvent(order));
+    res.json({ order });
+  } catch (e) { next(e); }
+});
+
 async function updateStatus(req, res, next, status) {
   try {
     IdParam.parse(req.params);

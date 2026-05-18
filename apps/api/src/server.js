@@ -18,6 +18,7 @@ import clientsRoutes from "./modules/clients/clients.routes.js";
 import tariffsRoutes from "./modules/tariffs/tariffs.routes.js";
 import financeRoutes from "./modules/finance/finance.routes.js";
 import mapsRoutes from "./modules/maps/maps.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +90,7 @@ app.use("/api/clients", clientsRoutes);
 app.use("/api/tariffs", tariffsRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/maps", mapsRoutes);
+app.use("/api/admin", adminRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);

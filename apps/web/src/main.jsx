@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, clearToken, getToken, login } from "./lib/api";
 import { createSocket } from "./lib/socket";
-import FinalClient from "./FinalClient.jsx";
 import "./styles.css";
 
 const STATUS = {
@@ -52,10 +51,7 @@ const LOCAL_PLACES = [
   { title: "Школа", subtitle: "Ближайшая школа", lat: 42.3212, lng: 69.6006 },
   { title: "Автостанция", subtitle: "Межгород", lat: 42.3198, lng: 69.6068 },
   { title: "Мечеть", subtitle: "Центральная мечеть", lat: 42.3129, lng: 69.5964 },
-  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 },
-  { title: "улица Шамо, 58", subtitle: "Атакент", lat: 42.3158, lng: 69.5948 },
-  { title: "улица Шамо, 58А", subtitle: "Атакент", lat: 42.3159, lng: 69.5952 },
-  { title: "улица Шамо, 56", subtitle: "Атакент", lat: 42.3155, lng: 69.5942 }
+  { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 }
 ];
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0b0b0b" }] },
@@ -75,7 +71,7 @@ let googleMapsPromise;
 let googleMapsFailureReason = "";
 
 function getGoogleMapsBrowserKey() {
-  return "";
+  return window.__SMARTTAXI_CONFIG__?.googleMapsBrowserKey || import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY || "";
 }
 
 function setGoogleMapsFailure(reason) {
@@ -198,6 +194,15 @@ function markerIcon() {
   };
 }
 
+function carMarkerIcon() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="54" height="34" viewBox="0 0 54 34"><path fill="#E5A93C" d="M8 20h5l7-9h17l6 9h4c3 0 5 2 5 5v4H3v-4c0-3 2-5 5-5Z"/><path fill="#0B111E" d="M22 14h12l4 6H17l5-6Z"/><circle cx="16" cy="29" r="4" fill="#0B111E" stroke="#E5A93C" stroke-width="2"/><circle cx="40" cy="29" r="4" fill="#0B111E" stroke="#E5A93C" stroke-width="2"/></svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new window.google.maps.Size(54, 34),
+    anchor: new window.google.maps.Point(27, 17)
+  };
+}
+
 async function reverseGeocode(lat, lng) {
   if (!getGoogleMapsBrowserKey()) return "";
   const maps = await loadGoogleMaps();
@@ -230,6 +235,36 @@ function EmptyState({ title, text, action }) {
 
 function LoadingState({ label = "Загружаем данные..." }) {
   return <div className="loading-state"><span className="spinner" />{label}</div>;
+}
+
+function Icon({ name, size = 22 }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true };
+  const paths = {
+    menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
+    close: <><path d="M6 6l12 12" /><path d="M18 6L6 18" /></>,
+    back: <path d="M15 18l-6-6 6-6" />,
+    pin: <><path d="M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></>,
+    route: <><circle cx="6" cy="18" r="2" /><circle cx="18" cy="6" r="2" /><path d="M8 18h4a4 4 0 0 0 0-8h0a4 4 0 0 1 0-8h4" /></>,
+    car: <><path d="M5 16l1.7-5.1A3 3 0 0 1 9.5 9h5a3 3 0 0 1 2.8 1.9L19 16" /><path d="M4 16h16v3H4z" /><path d="M7 19v2" /><path d="M17 19v2" /><circle cx="8" cy="16" r="1" /><circle cx="16" cy="16" r="1" /></>,
+    driver: <><circle cx="12" cy="7" r="3" /><path d="M5 21a7 7 0 0 1 14 0" /><path d="M8 14l4 3 4-3" /></>,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
+    wallet: <><path d="M4 7h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h13" /><path d="M16 13h5" /></>,
+    card: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M3 10h18" /></>,
+    cash: <><rect x="3" y="6" width="18" height="12" rx="2" /><circle cx="12" cy="12" r="3" /></>,
+    kaspi: <><circle cx="12" cy="12" r="8" /><path d="M8 12h8" /><path d="M12 8v8" /></>,
+    star: <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.1L12 17.1 6.4 20l1.1-6.1L3 9.6l6.2-.9L12 3Z" />,
+    shield: <path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" />,
+    headset: <><path d="M4 13a8 8 0 0 1 16 0" /><path d="M4 13v4a2 2 0 0 0 2 2h2v-6H6a2 2 0 0 0-2 2Z" /><path d="M20 13v4a2 2 0 0 1-2 2h-2v-6h2a2 2 0 0 1 2 2Z" /><path d="M14 21h-4" /></>,
+    phone: <path d="M6.5 4h3l1.5 4-2 1.2a12 12 0 0 0 5.8 5.8l1.2-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4Z" />,
+    chat: <><path d="M4 5h16v11H8l-4 4V5Z" /><path d="M8 9h8" /><path d="M8 13h5" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.3 3a7 7 0 0 0-1.7 1L5 6 3 9.5 5 11a7 7 0 0 0 0 2l-2 1.5L5 18l2.5-1a7 7 0 0 0 1.7 1l.3 3h5l.3-3a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2-1.5a7 7 0 0 0 .1-1Z" /></>,
+    dashboard: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></>,
+    lock: <><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>,
+    operator: <><path d="M4 18v-6a8 8 0 0 1 16 0v6" /><path d="M7 18h3v-6H7z" /><path d="M17 18h-3v-6h3z" /><path d="M14 21h-4" /></>,
+    admin: <><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4Z" /><path d="M9 12l2 2 4-5" /></>,
+    plus: <><path d="M12 5v14" /><path d="M5 12h14" /></>
+  };
+  return <svg {...common}>{paths[name] || paths.route}</svg>;
 }
 
 function SmartTaxiLogo({ compact = false }) {
@@ -278,13 +313,24 @@ function AppHeader({ subtitle = "Быстрая поездка по городу
 function ClientTopBar({ onMenu }) {
   return (
     <header className="client-topbar">
-      <button className="icon-btn" type="button" onClick={onMenu} aria-label="Меню">☰</button>
+      <button className="icon-btn" type="button" onClick={onMenu} aria-label="Меню"><Icon name="menu" /></button>
       <a href="/client" className="client-brand">
         <BrandBlock small />
         <em>Atakent</em>
       </a>
-      <span className="status-dot" aria-label="SmartTaxi online" />
+      <span className="status-dot" aria-label="SmartTaxi online"><Icon name="shield" size={18} /></span>
     </header>
+  );
+}
+
+function SplashScreen() {
+  return (
+    <main className="splash-screen">
+      <SmartTaxiLogo />
+      <h1>SmartTaxi</h1>
+      <p>Ваш комфорт. Ваш город.</p>
+      <span className="splash-loader" />
+    </main>
   );
 }
 
@@ -308,7 +354,7 @@ function VehicleIcon({ type = "car" }) {
   );
 }
 
-function AppMenu({ open, onClose, onAbout }) {
+function AppMenu({ open, onClose, onAbout, onProfile }) {
   if (!open) return null;
   const items = ["Главная", "Поездки", "Сообщения", "Профиль", "О нас", "Поддержка 24/7"];
   return (
@@ -316,13 +362,13 @@ function AppMenu({ open, onClose, onAbout }) {
       <aside className="app-drawer" role="dialog" aria-label="Меню SmartTaxi" onClick={event => event.stopPropagation()}>
         <div className="drawer-head">
           <BrandBlock />
-          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть">×</button>
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" /></button>
         </div>
         <div className="drawer-tagline">Городское такси для Атакента: быстро, безопасно, по понятной цене.</div>
         <nav className="drawer-nav">
           {items.map(item => (
-            <button key={item} type="button" onClick={() => item === "О нас" ? onAbout() : onClose()}>
-              <span>{item}</span>
+            <button key={item} type="button" onClick={() => item === "О нас" ? onAbout() : item === "Профиль" ? onProfile?.() : onClose()}>
+              <span><Icon name={item === "О нас" ? "shield" : item === "Поддержка 24/7" ? "headset" : item === "Профиль" ? "user" : item === "Сообщения" ? "chat" : "route"} size={18} />{item}</span>
               <b>›</b>
             </button>
           ))}
@@ -407,32 +453,6 @@ function mapCopy(order, driverLocation, estimate) {
   return "Ищем водителя";
 }
 
-function osmEmbedUrl(center = MAP_CENTER) {
-  const lat = Number(center?.lat) || MAP_CENTER.lat;
-  const lng = Number(center?.lng) || MAP_CENTER.lng;
-  const d = 0.028;
-  const bbox = (lng - d) + "%2C" + (lat - d) + "%2C" + (lng + d) + "%2C" + (lat + d);
-  return "https://www.openstreetmap.org/export/embed.html?bbox=" + bbox + "&layer=mapnik&marker=" + lat + "%2C" + lng;
-}
-
-function manualPoint(text) {
-  const raw = String(text || "");
-  const seed = Array.from(raw).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  return {
-    lat: (MAP_CENTER.lat + ((seed % 19) - 9) * 0.0012).toFixed(6),
-    lng: (MAP_CENTER.lng + ((seed % 23) - 11) * 0.0012).toFixed(6)
-  };
-}
-function osmTileImage(center = MAP_CENTER) {
-  const lat = Number(center?.lat) || MAP_CENTER.lat;
-  const lng = Number(center?.lng) || MAP_CENTER.lng;
-  const z = 15;
-  const scale = 2 ** z;
-  const x = Math.floor((lng + 180) / 360 * scale);
-  const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * scale);
-  return "linear-gradient(180deg, rgba(5,5,5,.08), rgba(5,5,5,.78)), url(" + "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png)";
-}
-
 function MapExperience({ form, estimate, order, driverLocation, locating, locationOk, onLocate, compact = false }) {
   const mapNode = useRef(null);
   const mapState = useRef({});
@@ -446,7 +466,6 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
   const routeTarget = order?.status === "IN_PROGRESS" ? dropoff : order && driverPoint ? pickup : dropoff;
   const routeStart = order && driverPoint ? driverPoint : pickup;
   const mapStatus = mapCopy(order, driverLocation, estimate);
-  const fallbackCenter = driverPoint || pickup || dropoff || MAP_CENTER;
 
   useEffect(() => {
     if (!getGoogleMapsBrowserKey()) return undefined;
@@ -507,7 +526,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
               scale: 7
             }
           }),
-          driverMarker: new maps.Marker({ map, label: { text: "🚕", fontWeight: "900" } }),
+          driverMarker: new maps.Marker({ map, icon: carMarkerIcon() }),
           polyline: new maps.Polyline({ map, strokeColor: GOLD_ROUTE, strokeOpacity: .95, strokeWeight: 5 }),
           directionsService: new maps.DirectionsService(),
           directionsRenderer: new maps.DirectionsRenderer({
@@ -538,7 +557,6 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
             state.directionsRenderer.setDirections(result);
             return;
           }
-          state.polyline.setPath([routeStart, routeTarget]);
           const bounds = new maps.LatLngBounds();
           bounds.extend(routeStart);
           bounds.extend(routeTarget);
@@ -561,15 +579,14 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
     <section className={`route-preview route-planner ${compact ? "compact-map" : ""}`}>
       <div className="route-bg">
         {hasRealMap ? <div ref={mapNode} className="google-map" /> : (
-          <div className="fallback-map dynamic-osm-map interactive-osm-map" style={{ backgroundImage: osmTileImage(fallbackCenter) }}>
-            <iframe className="osm-touch-frame" title="OpenStreetMap" src={osmEmbedUrl(fallbackCenter)} loading="lazy" />
-            <div className="route-line" />
-            {locationOk && !order && pickup && <div className="pin pin-client"><b>●</b><span>Вы здесь</span></div>}
-            <div className="pin pin-a"><b>A</b><span>Откуда</span></div>
-            <div className="pin pin-b"><b>B</b><span>Куда</span></div>
-            {driverPoint && <div className="pin pin-car"><b>🚕</b><span>Водитель</span></div>}
+          <div className="fallback-map">
+            {routeStart && routeTarget && estimate?.source === "google" && <div className="route-line" />}
+            {locationOk && !order && pickup && <div className="pin pin-client"><b><Icon name="user" size={14} /></b><span>Вы здесь</span></div>}
+            {(pickup || form?.pickupText || order?.pickup_text) && <div className="pin pin-a"><b>A</b><span>Откуда</span></div>}
+            {(dropoff || form?.dropoffText || order?.dropoff_text) && <div className="pin pin-b"><b>B</b><span>Куда</span></div>}
+            {driverPoint && <div className="pin pin-car"><b><Icon name="car" size={18} /></b><span>Водитель</span></div>}
             <div className="map-grid" />
-            <div className="fallback-label">OpenStreetMap</div>
+            <div className="fallback-label">Карта в fallback режиме</div>
           </div>
         )}
         <div className="map-badges">
@@ -580,7 +597,7 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
       <div className="route-overlay">
         <div>
           <strong>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин · ${money(estimate.price)}` : mapStatus}</strong>
-          <span>{hasRealMap ? mapStatus : "Карту можно двигать пальцем"}</span>
+          <span>{hasRealMap ? mapStatus : mapFailure ? "Карта работает в fallback режиме" : "Карта в fallback режиме"}</span>
         </div>
         {onLocate && <button className="map-locate-btn" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Определяем..." : locationOk ? "Местоположение определено" : "Определить моё местоположение"}
@@ -590,15 +607,124 @@ function MapExperience({ form, estimate, order, driverLocation, locating, locati
   );
 }
 
+function ProfilePanel({ open, profile, setProfile, onClose }) {
+  const [draft, setDraft] = useState(profile);
+  const [driverApplication, setDriverApplication] = useState({ fullName: "", phone: "", carModel: "", plateNumber: "", year: "" });
+  const [message, setMessage] = useState("");
+  useEffect(() => { setDraft(profile); }, [profile, open]);
+  if (!open) return null;
+  function saveProfile() {
+    setProfile(draft);
+    saveClientProfile(draft);
+    if (draft.phone) localStorage.setItem("smarttaxi_client_phone", draft.phone);
+    setMessage("Профиль сохранён.");
+  }
+  async function sendApplication() {
+    setMessage("");
+    try {
+      await api("/api/admin/driver-applications", {
+        method: "POST",
+        body: JSON.stringify({
+          fullName: driverApplication.fullName || draft.name || "Кандидат SmartTaxi",
+          phone: driverApplication.phone || draft.phone || "+77000000000",
+          carModel: driverApplication.carModel || "Toyota Camry",
+          plateNumber: driverApplication.plateNumber || "KZ 001",
+          year: driverApplication.year || undefined
+        })
+      });
+      setMessage("Заявка водителя отправлена.");
+    } catch (error) {
+      setMessage(normalizeError(error));
+    }
+  }
+  return (
+    <div className="drawer-backdrop profile-backdrop" role="presentation" onClick={onClose}>
+      <section className="profile-panel" role="dialog" aria-label="Профиль SmartTaxi" onClick={event => event.stopPropagation()}>
+        <div className="modal-head">
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть"><Icon name="back" /></button>
+          <div><small>SmartTaxi</small><h2>Профиль</h2></div>
+        </div>
+        <Alert message={message} />
+        <div className="profile-hero">
+          <span><Icon name="user" /></span>
+          <div><b>{draft.name || "Клиент SmartTaxi"}</b><small>{draft.phone || "Телефон не указан"}</small></div>
+          <strong>{money(draft.cashback || 850)}</strong>
+        </div>
+        <div className="profile-form">
+          <label>Имя<input value={draft.name || ""} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="Ваше имя" /></label>
+          <label>Телефон<input value={draft.phone || ""} onChange={event => setDraft({ ...draft, phone: event.target.value })} placeholder="+7..." inputMode="tel" /></label>
+          <button className="primary-cta" type="button" onClick={saveProfile}>Сохранить профиль</button>
+        </div>
+        <div className="profile-links">
+          {[
+            ["wallet", "Бонусы", money(draft.cashback || 850)],
+            ["card", "Способы оплаты", "Наличные / Kaspi / карта"],
+            ["route", "История поездок", "Последние заказы"],
+            ["shield", "Доверенные контакты", "Безопасность"],
+            ["headset", "Поддержка", "24/7"]
+          ].map(([icon, title, text]) => <div key={title}><Icon name={icon} /><span><b>{title}</b><small>{text}</small></span></div>)}
+        </div>
+        <section className="driver-apply-card">
+          <div><h3>Стать водителем</h3><p>Оставьте заявку, оператор проверит данные и свяжется с вами.</p></div>
+          <input value={driverApplication.fullName} onChange={e => setDriverApplication({ ...driverApplication, fullName: e.target.value })} placeholder="ФИО" />
+          <input value={driverApplication.phone} onChange={e => setDriverApplication({ ...driverApplication, phone: e.target.value })} placeholder="Телефон" />
+          <input value={driverApplication.carModel} onChange={e => setDriverApplication({ ...driverApplication, carModel: e.target.value })} placeholder="Марка авто" />
+          <input value={driverApplication.plateNumber} onChange={e => setDriverApplication({ ...driverApplication, plateNumber: e.target.value })} placeholder="Госномер" />
+          <button className="primary-cta" type="button" onClick={sendApplication}>Отправить заявку</button>
+        </section>
+      </section>
+    </div>
+  );
+}
+
+function RatingStars({ value, onChange }) {
+  return (
+    <div className="rating-stars">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button className={star <= value ? "selected" : ""} key={star} type="button" onClick={() => onChange?.(star)} aria-label={`${star} из 5`}>
+          <Icon name="star" size={26} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewSheet({ open, order, onClose }) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [message, setMessage] = useState("");
+  if (!open || !order) return null;
+  const tags = ["чистая машина", "вежливый водитель", "аккуратная езда", "быстро приехал", "проблема с оплатой", "грубое общение"];
+  async function submit() {
+    setMessage("");
+    try {
+      await api("/api/admin/driver-reviews", { method: "POST", body: JSON.stringify({ orderId: order.id, rating, tags: [], comment }) });
+      setMessage("Спасибо, отзыв сохранён.");
+    } catch (error) {
+      setMessage(normalizeError(error));
+    }
+  }
+  return (
+    <div className="drawer-backdrop" role="presentation" onClick={onClose}>
+      <section className="review-sheet" role="dialog" aria-label="Оценка поездки" onClick={event => event.stopPropagation()}>
+        <div className="modal-head">
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" /></button>
+          <div><small>Поездка завершена</small><h2>Как прошла поездка?</h2></div>
+        </div>
+        <Alert message={message} />
+        <RatingStars value={rating} onChange={setRating} />
+        <div className="review-tags">{tags.map(tag => <button type="button" key={tag}>{tag}</button>)}</div>
+        <textarea value={comment} onChange={event => setComment(event.target.value)} placeholder="Комментарий необязательно" />
+        <button className="primary-cta" type="button" onClick={submit}>Оставить отзыв</button>
+      </section>
+    </div>
+  );
+}
+
 function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locationOk, error }) {
   const inputRef = useRef(null);
   const [value, setValue] = useState(mode === "pickup" ? form.pickupText : form.dropoffText);
   const [mapsReady, setMapsReady] = useState(false);
-
-  useEffect(() => {
-    if (!mode) return;
-    setValue(mode === "pickup" ? form.pickupText : form.dropoffText);
-  }, [mode, form.pickupText, form.dropoffText]);
   const title = mode === "pickup" ? "Откуда поедем?" : "Куда едем?";
   const normalized = value.trim().toLowerCase();
   const filteredPlaces = LOCAL_PLACES.filter(place => !normalized || `${place.title} ${place.subtitle}`.toLowerCase().includes(normalized));
@@ -650,21 +776,14 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
     onClose();
   }
   function saveManual() {
-    const text = value.trim() || form[`${mode}Text`] || (mode === "pickup" ? "Моё местоположение" : "Точка назначения");
-    const point = manualPoint(text);
-    setForm(current => ({
-      ...current,
-      [`${mode}Text`]: text,
-      [`${mode}Lat`]: current[`${mode}Lat`] || point.lat,
-      [`${mode}Lng`]: current[`${mode}Lng`] || point.lng
-    }));
+    setForm(current => ({ ...current, [`${mode}Text`]: value.trim() || current[`${mode}Text`] }));
     onClose();
   }
   return (
     <div className="drawer-backdrop address-backdrop" role="presentation" onClick={onClose}>
       <section className="address-modal" role="dialog" aria-label="Выберите адрес" onClick={event => event.stopPropagation()}>
         <div className="modal-head">
-          <button className="icon-btn" type="button" onClick={onClose} aria-label="Назад">‹</button>
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Назад"><Icon name="back" /></button>
           <div><small>Выберите адрес</small><h2>{title}</h2></div>
         </div>
         <Alert message={error} />
@@ -679,21 +798,21 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
           </button>
         )}
         <div className="suggestion-list">
-          {mode === "pickup" && <button type="button" onClick={onLocate} disabled={locating}><b>●</b><span>Моё местоположение<small>Использовать текущую точку</small></span></button>}
+          {mode === "pickup" && <button type="button" onClick={onLocate} disabled={locating}><b><Icon name="user" size={16} /></b><span>Моё местоположение<small>Использовать текущую точку</small></span></button>}
           {suggestions.map(place => (
             <button type="button" key={place.title} onClick={() => selectPlace(place)}>
-              <b>⌖</b>
+              <b><Icon name="pin" size={16} /></b>
               <span>{place.title}<small>{place.subtitle}</small></span>
             </button>
           ))}
           {value.trim() && (
             <button type="button" onClick={saveManual}>
-              <b>↵</b>
+              <b><Icon name="plus" size={16} /></b>
               <span>Использовать введённый адрес<small>{value.trim()}</small></span>
             </button>
           )}
         </div>
-        <div className="address-hint">SmartTaxi показывает популярные места Атакента. Если адреса нет — введите его вручную.</div>
+        <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
         <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
       </section>
     </div>
@@ -712,10 +831,6 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
         <span>{selectedTariff?.name || form.tariff}</span>
         <span>{PAYMENT_OPTIONS.find(([key]) => key === form.paymentMethod)?.[1] || form.paymentMethod}</span>
       </div>
-      <label className="phone-row">
-        <span>Телефон для связи</span>
-        <input value={form.riderPhone} onChange={e => setForm({ ...form, riderPhone: e.target.value })} placeholder="+7 700 000 00 00" inputMode="tel" />
-      </label>
       <section>
         <h3>Тариф</h3>
         <div className="tariff-strip">
@@ -741,19 +856,25 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
           {PAYMENT_OPTIONS.map(([key, title]) => <button type="button" className={form.paymentMethod === key ? "selected" : ""} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>{title}</button>)}
         </div>
       </section>
+      <details className="ride-details">
+        <summary>Пожелания к поездке</summary>
+        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
+      </details>
       <button className="primary-cta sticky-order" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
     </form>
   );
 }
 
-function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCancel, onNewOrder, cancelling, onMenu, menuOpen, setMenuOpen, aboutOpen, setAboutOpen, error }) {
+function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCancel, onNewOrder, cancelling, onMenu, menuOpen, setMenuOpen, aboutOpen, setAboutOpen, profileOpen, setProfileOpen, profile, setProfile, reviewOpen, setReviewOpen, error }) {
   const canCancel = ["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order?.status);
   const isFinished = FINISHED_STATUSES.includes(order?.status);
   return (
     <main className="mobile-app client-screen active-trip-screen">
       <ClientTopBar onMenu={onMenu} />
-      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} />
+      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} onProfile={() => { setMenuOpen(false); setProfileOpen(true); }} />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <ProfilePanel open={profileOpen} profile={profile} setProfile={setProfile} onClose={() => setProfileOpen(false)} />
+      <ReviewSheet open={reviewOpen} order={order} onClose={() => setReviewOpen(false)} />
       <Alert message={error} />
       <MapExperience form={form} estimate={estimate} order={order} driverLocation={driverLocation} compact />
       <section className="active-trip-panel">
@@ -789,10 +910,12 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
         <Timeline status={order.status} />
         <div className="trip-actions">
           <button type="button">SOS</button>
+          <button type="button">Поделиться поездкой</button>
           <button type="button">Поддержка</button>
         </div>
         {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
-        {isFinished && <button className="primary-cta" type="button" onClick={onNewOrder}>Новый заказ</button>}
+        {isFinished && <button className="primary-cta" type="button" onClick={() => setReviewOpen(true)}>Оценить поездку</button>}
+        {isFinished && <button className="ghost-btn" type="button" onClick={onNewOrder}>Новый заказ</button>}
       </section>
     </main>
   );
@@ -802,7 +925,6 @@ function MiniRoutePreview({ order }) {
   return (
     <div className="mini-route-map">
       <div className="map-grid" />
-      <div className="route-line mini" />
       <div className="pin pin-a"><b>A</b></div>
       <div className="pin pin-b"><b>B</b></div>
       <span>{Number(order.distance_km || 0).toFixed(1)} км · {order.duration_min || 0} мин</span>
@@ -812,13 +934,25 @@ function MiniRoutePreview({ order }) {
 
 function BottomNav({ type }) {
   const items = type === "owner"
-    ? [["⌂", "Главная"], ["▣", "Заказы"], ["●", "Водители"], ["₸", "Финансы"]]
-    : [["⌂", "Главная"], ["▣", "Заказы"], ["₸", "Статистика"], ["●", "Профиль"]];
+    ? [["dashboard", "Главная"], ["route", "Заказы"], ["driver", "Водители"], ["wallet", "Финансы"]]
+    : [["dashboard", "Главная"], ["route", "Заказы"], ["wallet", "Статистика"], ["user", "Профиль"]];
   return (
     <nav className="bottom-nav">
-      {items.map(([icon, label], index) => <span className={index === 0 ? "active" : ""} key={label}><b>{icon}</b>{label}</span>)}
+      {items.map(([icon, label], index) => <span className={index === 0 ? "active" : ""} key={label}><b><Icon name={icon} size={18} /></b>{label}</span>)}
     </nav>
   );
+}
+
+function getClientProfile() {
+  try {
+    return JSON.parse(localStorage.getItem("smarttaxi_client_profile") || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveClientProfile(profile) {
+  localStorage.setItem("smarttaxi_client_profile", JSON.stringify(profile));
 }
 
 function Client() {
@@ -846,15 +980,24 @@ function Client() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [addressMode, setAddressMode] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
+  const [profile, setProfile] = useState(() => ({ name: "", phone: "", cashback: 850, ...getClientProfile() }));
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const estimateTimer = useRef(null);
   const socketRef = useRef(null);
   const orderIdRef = useRef(null);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSplash(false), 850);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const selectedTariff = useMemo(() => {
     return (tariffs.length ? tariffs : DEFAULT_TARIFFS).find(t => t.name === form.tariff) || DEFAULT_TARIFFS[0];
   }, [tariffs, form.tariff]);
-  const phoneReady = String(form.riderPhone || "").replace(/\D/g, "").length >= 6;
-  const disabled = !phoneReady || !form.pickupText.trim() || !form.dropoffText.trim() || loading;
+  const sameRoute = form.pickupText.trim() && form.dropoffText.trim() && form.pickupText.trim().toLowerCase() === form.dropoffText.trim().toLowerCase();
+  const disabled = !form.dropoffText.trim() || sameRoute || loading;
   const approxPrice = estimate && selectedTariff?.base_price
     ? estimate.tariff === form.tariff && estimate.price
       ? estimate.price
@@ -896,10 +1039,13 @@ function Client() {
   }, [order?.id]);
 
   function orderPayload(base = form) {
+    const fallbackPhone = profile.phone?.trim() || localStorage.getItem("smarttaxi_client_phone") || "+77000000000";
+    const fallbackName = profile.name?.trim() || "Клиент SmartTaxi";
     return {
       ...base,
-      riderName: normalizeText(base.riderName || "Клиент"),
-      riderPhone: String(base.riderPhone || "").trim(),
+      riderName: fallbackName,
+      riderPhone: fallbackPhone,
+      pickupText: base.pickupText?.trim() || "Моё местоположение",
       pickupLat: fieldNumber(base.pickupLat),
       pickupLng: fieldNumber(base.pickupLng),
       dropoffLat: fieldNumber(base.dropoffLat),
@@ -976,6 +1122,14 @@ function Client() {
   async function createOrder(event) {
     event.preventDefault();
     setError("");
+    if (!form.dropoffText.trim()) {
+      setError("Выберите, куда едем.");
+      return;
+    }
+    if (sameRoute) {
+      setError("Адрес отправления и назначения не должны совпадать.");
+      return;
+    }
     setLoading(true);
     try {
       const route = await estimateRoute();
@@ -1024,16 +1178,25 @@ function Client() {
         setMenuOpen={setMenuOpen}
         aboutOpen={aboutOpen}
         setAboutOpen={setAboutOpen}
+        profileOpen={profileOpen}
+        setProfileOpen={setProfileOpen}
+        profile={profile}
+        setProfile={setProfile}
+        reviewOpen={reviewOpen}
+        setReviewOpen={setReviewOpen}
         error={error}
       />
     );
   }
 
+  if (showSplash) return <SplashScreen />;
+
   return (
     <main className="mobile-app client-screen">
       <ClientTopBar onMenu={() => setMenuOpen(true)} />
-      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} />
+      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} onProfile={() => { setMenuOpen(false); setProfileOpen(true); }} />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <ProfilePanel open={profileOpen} profile={profile} setProfile={setProfile} onClose={() => setProfileOpen(false)} />
       <AddressModal mode={addressMode} form={form} setForm={setForm} onClose={() => setAddressMode(null)} onLocate={locate} locating={locating} locationOk={locationOk} error={error} />
       <Alert message={error} />
       <MapExperience form={form} estimate={estimate} locating={locating} locationOk={locationOk} onLocate={locate} />
@@ -1055,6 +1218,7 @@ function Client() {
 
 function LoginCard({ type, onSuccess }) {
   const isDriver = type === "driver";
+  const isOperator = type === "operator";
   const [identifier, setIdentifier] = useState(isDriver ? "+77000000000" : "admin@smarttaxi.local");
   const [password, setPassword] = useState(isDriver ? "123456" : "ChangeMe_2026!");
   const [loading, setLoading] = useState(false);
@@ -1076,10 +1240,10 @@ function LoginCard({ type, onSuccess }) {
 
   return (
     <main className="mobile-app auth-screen">
-      <AppHeader subtitle={isDriver ? "Рабочее приложение водителя" : "Панель управления"} />
+      <AppHeader subtitle={isDriver ? "Рабочее приложение водителя" : isOperator ? "Операторская панель" : "Панель управления"} />
       <form className="auth-card" onSubmit={submit}>
-        <small>{isDriver ? "Driver app" : "Owner/admin"}</small>
-        <h1>{isDriver ? "Вход водителя" : "Вход владельца"}</h1>
+        <small>{isDriver ? "Driver app" : isOperator ? "Dispatch" : "Owner/admin"}</small>
+        <h1>{isDriver ? "Вход водителя" : isOperator ? "Вход оператора" : "Вход владельца"}</h1>
         <Alert message={error} />
         <label>{isDriver ? "Телефон" : "Email"}<input value={identifier} onChange={e => setIdentifier(e.target.value)} /></label>
         <label>Пароль<input type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
@@ -1309,6 +1473,130 @@ function FinancePanel({ stats }) {
   );
 }
 
+function AdminControlCenter({ drivers, load, setError }) {
+  const [settings, setSettings] = useState(null);
+  const [applications, setApplications] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  async function loadAdmin() {
+    setLoading(true);
+    try {
+      const [settingsData, appsData, boardData, reviewsData] = await Promise.all([
+        api("/api/admin/settings"),
+        api("/api/admin/driver-applications"),
+        api("/api/admin/leaderboard"),
+        api("/api/admin/reviews")
+      ]);
+      setSettings(settingsData.settings);
+      setApplications(appsData.applications || []);
+      setLeaderboard(boardData.leaderboard || []);
+      setReviews(reviewsData.reviews || []);
+    } catch (error) {
+      setError?.(normalizeError(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadAdmin(); }, []);
+
+  async function toggleSetting(key) {
+    if (!settings) return;
+    try {
+      const data = await api("/api/admin/settings", { method: "PATCH", body: JSON.stringify({ [key]: !settings[key] }) });
+      setSettings(data.settings);
+    } catch (error) {
+      setError?.(normalizeError(error));
+    }
+  }
+
+  async function blockDriver(driver, isBlocked) {
+    try {
+      await api(`/api/drivers/${driver.id}/block`, { method: "PATCH", body: JSON.stringify({ isBlocked }) });
+      await load();
+    } catch (error) {
+      setError?.(normalizeError(error));
+    }
+  }
+
+  async function reviewApplication(application, status) {
+    try {
+      await api(`/api/admin/driver-applications/${application.id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+      await loadAdmin();
+    } catch (error) {
+      setError?.(normalizeError(error));
+    }
+  }
+
+  return (
+    <section className="admin-control-grid">
+      <div className="owner-panel settings-panel">
+        <div className="card-head"><h2>Настройки сервиса</h2><button className="ghost-btn" type="button" onClick={loadAdmin}>{loading ? "..." : "Обновить"}</button></div>
+        <div className="settings-list">
+          <div><span>Город</span><b>{settings?.city || "Atakent"}</b></div>
+          <div><span>Комиссия</span><b>{settings?.defaultCommissionPercent ?? 15}%</b></div>
+          <button type="button" onClick={() => toggleSetting("autoApproveDrivers")}><Icon name="driver" />Автопринятие заявок <b>{settings?.autoApproveDrivers ? "ON" : "OFF"}</b></button>
+          <button type="button" onClick={() => toggleSetting("autoAssignOrders")}><Icon name="operator" />Автоназначение заказов <b>{settings?.autoAssignOrders ? "ON" : "OFF"}</b></button>
+        </div>
+      </div>
+      <div className="owner-panel">
+        <div className="card-head"><h2>Заявки водителей</h2><span>{applications.length}</span></div>
+        <div className="application-list">
+          {!applications.length && <EmptyState title="Заявок нет" text="Новые заявки водителей появятся здесь." />}
+          {applications.slice(0, 6).map(app => (
+            <article key={app.id} className="application-card">
+              <div><b>{app.full_name}</b><StatusBadge status={app.status} /></div>
+              <p>{app.phone} · {app.car_model} · {app.plate_number}</p>
+              {app.status === "PENDING" && <div className="inline-actions"><button onClick={() => reviewApplication(app, "APPROVED")}>Принять</button><button onClick={() => reviewApplication(app, "REJECTED")}>Отклонить</button></div>}
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="owner-panel">
+        <div className="card-head"><h2>Рейтинг водителей</h2><span>Top</span></div>
+        <div className="leaderboard-list">
+          {(leaderboard.length ? leaderboard : drivers).slice(0, 8).map((driver, index) => (
+            <article key={driver.id} className="leader-row">
+              <b>{index + 1}</b>
+              <span>{driver.name}<small>{driver.car_model} · {driver.plate}</small></span>
+              <strong>{driver.rating || "5.00"}</strong>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="owner-panel">
+        <div className="card-head"><h2>Отзывы</h2><span>{reviews.length}</span></div>
+        <div className="review-list">
+          {!reviews.length && <EmptyState title="Отзывов пока нет" text="После завершённых поездок оценки появятся здесь." />}
+          {reviews.slice(0, 5).map(review => (
+            <article className="review-row" key={review.id}>
+              <RatingStars value={review.rating} />
+              <b>{review.driver_name || "Водитель"}</b>
+              <p>{review.comment || "Без комментария"}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className="owner-panel">
+        <div className="card-head"><h2>Управление водителями</h2><span>{drivers.length}</span></div>
+        <div className="application-list">
+          {drivers.slice(0, 6).map(driver => (
+            <article key={driver.id} className="application-card">
+              <div><b>{driver.name}</b><StatusBadge status={driver.is_blocked ? "BLOCKED" : driver.status} /></div>
+              <p>{driver.phone} · {driver.car_model} · {driver.plate}</p>
+              <div className="inline-actions">
+                <button type="button" onClick={() => blockDriver(driver, !driver.is_blocked)}>{driver.is_blocked ? "Разблокировать" : "Заблокировать"}</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Owner() {
   const [auth, setAuth] = useState(Boolean(getToken()));
   const [orders, setOrders] = useState([]);
@@ -1369,6 +1657,7 @@ function Owner() {
       </section>
 
       <FinancePanel stats={stats} />
+      <AdminControlCenter drivers={drivers} load={load} setError={setError} />
 
       <section className="owner-grid">
         <div className="owner-panel">
@@ -1419,11 +1708,126 @@ function OwnerOrder({ order, driver, compact = false }) {
   );
 }
 
+function Operator() {
+  const [auth, setAuth] = useState(Boolean(getToken()));
+  const [orders, setOrders] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [filter, setFilter] = useState("ALL");
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const [ordersData, driversData] = await Promise.all([
+        api("/api/orders?limit=200"),
+        api("/api/drivers")
+      ]);
+      setOrders(ordersData.orders || []);
+      setDrivers(driversData.drivers || []);
+      setSelected(current => current ? (ordersData.orders || []).find(order => order.id === current.id) || current : (ordersData.orders || [])[0] || null);
+    } catch (err) {
+      setError(normalizeError(err));
+      if (err?.code === "UNAUTHORIZED" || err?.code === "INVALID_TOKEN") setAuth(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { if (auth) load(); }, [auth]);
+  useEffect(() => {
+    if (!auth) return undefined;
+    const socket = createSocket();
+    socket.emit("join_dispatch");
+    socket.on("order_created", load);
+    socket.on("order_updated", load);
+    socket.on("driver_location_updated", () => {});
+    return () => socket.disconnect();
+  }, [auth]);
+
+  if (!auth) return <LoginCard type="operator" onSuccess={() => setAuth(true)} />;
+
+  const filtered = filter === "ALL" ? orders : orders.filter(order => order.status === filter);
+  const freeDrivers = drivers.filter(driver => driver.status === "FREE" && !driver.is_blocked);
+
+  async function assignDriver(driverId) {
+    if (!selected) return;
+    try {
+      await api(`/api/orders/${selected.id}/assign-driver`, { method: "POST", body: JSON.stringify({ driverId }) });
+      await load();
+    } catch (err) {
+      setError(normalizeError(err));
+    }
+  }
+
+  async function changeStatus(action) {
+    if (!selected) return;
+    try {
+      await api(`/api/orders/${selected.id}/${action}`, { method: "POST" });
+      await load();
+    } catch (err) {
+      setError(normalizeError(err));
+    }
+  }
+
+  return (
+    <main className="operator-app">
+      <AppHeader subtitle="Операторская панель" right={<div className="owner-actions"><button className="ghost-btn" onClick={load}>{loading ? "Обновляем..." : "Обновить"}</button><button className="small-link" onClick={() => { clearToken(); setAuth(false); }}>Выйти</button></div>} />
+      <Alert message={error} />
+      <section className="operator-board">
+        <div className="operator-list">
+          <div className="operator-filters">
+            {["ALL", "NEW", "DRIVER_ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map(item => <button className={filter === item ? "selected" : ""} key={item} onClick={() => setFilter(item)}>{item === "ALL" ? "Все" : STATUS[item]}</button>)}
+          </div>
+          {!filtered.length && <EmptyState title="Заказов нет" text="Новые заказы появятся здесь в realtime." />}
+          {filtered.map(order => (
+            <button className={`operator-order ${selected?.id === order.id ? "selected" : ""}`} key={order.id} onClick={() => setSelected(order)}>
+              <span><b>#{order.short_id}</b><StatusBadge status={order.status} /></span>
+              <strong>{order.pickup_text} → {order.dropoff_text}</strong>
+              <small>{money(order.price)} · {order.payment_method} · {order.tariff}</small>
+            </button>
+          ))}
+        </div>
+        <aside className="operator-detail">
+          {!selected ? <EmptyState title="Выберите заказ" text="Детали заказа откроются справа." /> : (
+            <>
+              <MapExperience form={{}} order={selected} compact />
+              <div className="card-head"><h2>#{selected.short_id}</h2><StatusBadge status={selected.status} /></div>
+              <div className="order-route"><p><b>A</b>{selected.pickup_text}</p><p><b>B</b>{selected.dropoff_text}</p></div>
+              <div className="metric-row">
+                <span><b>{money(selected.price)}</b><small>Цена</small></span>
+                <span><b>{selected.payment_method}</b><small>Оплата</small></span>
+                <span><b>{selected.driver_name || "Не назначен"}</b><small>Водитель</small></span>
+              </div>
+              {selected.status === "NEW" && (
+                <div className="assign-panel">
+                  <h3>Назначить водителя</h3>
+                  {!freeDrivers.length && <EmptyState title="Свободных водителей нет" text="Оператор может обновить список или оставить заказ в поиске." />}
+                  {freeDrivers.map(driver => <button key={driver.id} onClick={() => assignDriver(driver.id)}><Icon name="driver" />{driver.name}<span>{driver.car_model} · {driver.plate}</span></button>)}
+                </div>
+              )}
+              <div className="inline-actions">
+                {selected.status === "DRIVER_ASSIGNED" && <button onClick={() => changeStatus("arrived")}>Водитель приехал</button>}
+                {selected.status === "DRIVER_ARRIVED" && <button onClick={() => changeStatus("start")}>Начать поездку</button>}
+                {selected.status === "IN_PROGRESS" && <button onClick={() => changeStatus("complete")}>Завершить</button>}
+                {!FINISHED_STATUSES.includes(selected.status) && <button className="danger-inline" onClick={() => changeStatus("cancel")}>Отменить</button>}
+              </div>
+            </>
+          )}
+        </aside>
+      </section>
+    </main>
+  );
+}
+
 function App() {
   const path = window.location.pathname;
   if (path.startsWith("/driver")) return <Driver />;
-  if (path.startsWith("/owner")) return <Owner />;
-  return <FinalClient />;
+  if (path.startsWith("/operator")) return <Operator />;
+  if (path.startsWith("/owner") || path.startsWith("/admin")) return <Owner />;
+  return <Client />;
 }
 
 createRoot(document.getElementById("root")).render(<App />);

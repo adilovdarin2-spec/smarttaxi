@@ -112,6 +112,64 @@ CREATE TABLE IF NOT EXISTS driver_debts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS service_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  service_name TEXT NOT NULL DEFAULT 'SmartTaxi',
+  city TEXT NOT NULL DEFAULT 'Atakent',
+  currency TEXT NOT NULL DEFAULT 'KZT',
+  currency_symbol TEXT NOT NULL DEFAULT '₸',
+  default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
+  auto_approve_drivers BOOLEAN NOT NULL DEFAULT false,
+  auto_assign_orders BOOLEAN NOT NULL DEFAULT false,
+  support_phone TEXT NOT NULL DEFAULT '+77000000000',
+  sos_phone TEXT NOT NULL DEFAULT '+77000000000',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT service_settings_singleton CHECK (id = 1)
+);
+
+CREATE TABLE IF NOT EXISTS driver_applications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  full_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  car_model TEXT NOT NULL,
+  car_color TEXT,
+  plate_number TEXT NOT NULL,
+  year INTEGER,
+  status TEXT NOT NULL DEFAULT 'PENDING',
+  comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS driver_reviews (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+  driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  rating INTEGER NOT NULL,
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS client_reviews (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+  driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL,
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS commission_overrides (
+  driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
+  percent NUMERIC(5,2) NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   action TEXT NOT NULL,
@@ -129,8 +187,15 @@ CREATE INDEX IF NOT EXISTS idx_orders_driver_id ON orders(driver_id);
 CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
+CREATE INDEX IF NOT EXISTS idx_driver_applications_status ON driver_applications(status);
+CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id);
+CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+
+INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
+VALUES (1, 'SmartTaxi', 'Atakent', 'KZT', '₸')
+ON CONFLICT (id) DO NOTHING;
 
 DO $$
 BEGIN

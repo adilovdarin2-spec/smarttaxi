@@ -91,4 +91,31 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
   } catch (e) { next(e); }
 });
 
+router.patch("/:id/block", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      isBlocked: z.boolean(),
+      reason: z.string().trim().max(300).optional().default("")
+    }).parse(req.body);
+    const before = (await query("SELECT * FROM drivers WHERE id=$1", [params.id])).rows[0];
+    if (!before) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    const result = await query(`
+      UPDATE drivers
+      SET is_blocked=$1, status=CASE WHEN $1=true THEN 'OFFLINE' ELSE status END
+      WHERE id=$2
+      RETURNING *
+    `, [body.isBlocked, params.id]);
+    await writeAudit(query, {
+      action: body.isBlocked ? "driver_blocked" : "driver_unblocked",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: params.id,
+      metadata: { reason: body.reason },
+      req
+    });
+    res.json({ driver: result.rows[0] });
+  } catch (e) { next(e); }
+});
+
 export default router;
