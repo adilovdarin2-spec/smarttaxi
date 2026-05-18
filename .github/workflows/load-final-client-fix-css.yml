@@ -1,0 +1,43 @@
+name: Load final client fix css
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Add css import
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'apps/web/src/FinalClient.jsx';
+          let s = fs.readFileSync(file, 'utf8');
+          if (!s.includes('import "./finalClientFix.css";')) {
+            s = s.replace('import "./finalClientLayout.css";\n', 'import "./finalClientLayout.css";\nimport "./finalClientFix.css";\n');
+          }
+          fs.writeFileSync(file, s);
+          NODE
+      - name: Verify
+        shell: bash
+        run: |
+          grep -n 'finalClientFix.css' apps/web/src/FinalClient.jsx
+          grep -n 'fc-splash' apps/web/src/finalClientFix.css
+          grep -n 'PROFILE_PHONE' apps/web/src/FinalClient.jsx
+          if grep -n 'Телефон для связи' apps/web/src/FinalClient.jsx; then exit 1; fi
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name smarttaxi-bot
+          git config user.email smarttaxi-bot@users.noreply.github.com
+          git add apps/web/src/FinalClient.jsx
+          git commit -m "Load final client fix css" || true
+          git push origin dev
