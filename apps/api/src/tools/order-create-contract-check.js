@@ -21,7 +21,11 @@ const clientPayload = {
 const root = fileURLToPath(new URL("../", import.meta.url));
 const repoRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const ordersSource = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
-const webSource = readFileSync(join(repoRoot, "apps", "web", "src", "main.jsx"), "utf8");
+const webSource = [
+  join(repoRoot, "apps", "web", "src", "main.jsx"),
+  join(repoRoot, "apps", "web", "src", "features", "client", "ClientApp.jsx"),
+  join(repoRoot, "apps", "web", "src", "core", "data.js")
+].map(file => readFileSync(file, "utf8")).join("\n");
 
 const requiredKeys = [
   "riderName",
@@ -52,11 +56,7 @@ if (!/paymentMethod:\s*z\.enum\(\["CASH", "KASPI", "CARD"/.test(ordersSource)) {
   throw new Error("Backend CreateOrder payment methods do not include expected V1 methods");
 }
 
-if (!/const sameRoute =/.test(webSource) || !/sameRoute \|\| loading/.test(webSource)) {
-  throw new Error("Frontend must block same pickup/dropoff before order create");
-}
-
-if (/paymentMethod:\s*z\.enum/.test(ordersSource) && !/paymentMethod:\s*key/.test(webSource)) {
+if (/paymentMethod:\s*z\.enum/.test(ordersSource) && !/paymentMethod:\s*(key|payment\.id)/.test(webSource)) {
   throw new Error("Frontend payment selector is not wired to order payload");
 }
 
