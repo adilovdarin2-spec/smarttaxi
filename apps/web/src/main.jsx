@@ -40,7 +40,7 @@ const PAYMENT_OPTIONS = [
 ];
 const MAP_CENTER = { lat: 42.3167, lng: 69.5958 };
 const DEFAULT_PICKUP = { text: "Центр Атакента", lat: MAP_CENTER.lat, lng: MAP_CENTER.lng };
-const GOLD_ROUTE = "#F5C542";
+const GOLD_ROUTE = "#F6B800";
 const LOCAL_PLACES = [
   { title: "Центр Атакента", subtitle: "Главная точка города", lat: 42.3167, lng: 69.5958 },
   { title: "Вокзал", subtitle: "Ж/д и автостанция", lat: 42.3184, lng: 69.6041 },
@@ -60,17 +60,18 @@ const QUICK_DESTINATIONS = [
   { icon: "clock", label: "Недавние", title: "Рынок", subtitle: "Центральный рынок", lat: 42.3139, lng: 69.5916 }
 ];
 const DARK_MAP_STYLE = [
-  { elementType: "geometry", stylers: [{ color: "#0b0b0b" }] },
+  { elementType: "geometry", stylers: [{ color: "#f5f1e8" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#8d8d8d" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#050505" }] },
-  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#262626" }] },
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#1b1b1b" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#101010" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#252015" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#7c8794" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#fffaf0" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#e8e0cb" }] },
+  { featureType: "poi", stylers: [{ visibility: "simplified" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#e9f3e4" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e5dcc9" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#ffe3a3" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] }
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#cfe7f7" }] }
 ];
 
 let googleMapsPromise;
