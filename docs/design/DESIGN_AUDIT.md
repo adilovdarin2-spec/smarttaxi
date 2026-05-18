@@ -1,65 +1,73 @@
-# Smart Taxi Dark/Gold Pixel Design Audit
+# Smart Taxi UI Design Audit
 
 Date: 2026-05-18
 Branch: dev
-Stage: UI-only pixel rebuild
+Scope: UI/UX only. No backend, auth, API calls, WebSocket, real order creation, database or deploy changes.
 
-## Primary Reference
+## Reference Sources
 
-The current source of truth is:
+Primary visual source:
 
-- `docs/design/references/smarttaxi_dark_gold_reference_2026-05-17_23-46-19.png`
-- Original location found on this machine: `C:\Users\Adilove\Downloads\ChatGPT Image 17 мая 2026 г., 23_46_19.png`
-- Size: 1024 x 1536
+- `C:\Users\Adilove\Downloads\ChatGPT Image 17 мая 2026 г., 23_46_19.png`
+- Repo copy: `docs/design/references/smarttaxi_dark_gold_reference_2026-05-17_23-46-19.png`
 
-The image shows the complete dark/gold Smart Taxi mobile UI set. This overrides the previous white/gold handoff for this stage.
+Secondary handoff source:
 
-## Protected Files
+- `C:\Users\Adilove\Downloads\SmartTaxi_V2_UIUX_Handoff_Pack(2).zip`
+- Extracted to: `docs/design/smart-taxi-handoff-v2/smarttaxi_v2_handoff/`
 
-Do not delete or rewrite:
+Important conflict:
+
+- The handoff docs describe a white/gold design system.
+- The primary `23_46_19` reference image is dark/gold and shows all final screen visuals.
+- For this UI-only pass, the primary PNG is treated as the source of truth: dark graphite screens, gold CTA, dark cards, dark map.
+
+## Protected Files Not To Delete
+
+The following categories were identified and must be preserved:
 
 - `.env`, `.env.*`, `.env.example`
-- any keys, secrets, certificates, SSL, VPS or production access files
 - `docker-compose.yml`
 - `.github/workflows/*`
-- `infra/nginx/*`
-- `infra/scripts/*`
+- `infra/scripts/deploy.sh`
+- `infra/nginx/*` if present
 - `apps/api/Dockerfile`
 - `apps/web/Dockerfile`
 - `apps/web/nginx.conf`
-- root `package.json`, `package-lock.json`
-- workspace `package.json` files
-- backend source and database/deploy configuration
-- README or notes that may contain access/deploy context
+- `apps/api/src/config/env.js`
+- `apps/api/src/modules/maps/*`
+- Firebase, Google Maps, API key, SSL/cert/deploy/VPS config files
+- root and workspace `package.json` / lockfiles
+- backend source unless a later backend stage explicitly requires it
 
-Only frontend UI source, frontend components, frontend styles, old demo screens and mock UI may be replaced.
+No secrets or key values are printed in this document.
 
-## Theme Extracted From Reference
+## Visual System From Primary PNG
 
-- Main background: near black `#0D0F12`
-- Deeper background: `#080B0E`
-- Secondary panels: `#1B1F27`
-- Elevated cards: dark graphite `#20252D`
+- Background: near black `#0D0F12`
+- Deep background: `#080B0E`
+- Cards and panels: graphite `#1B1F27`, elevated `#20252D`
 - Primary gold: `#FFC000`
-- Gold gradient: `#FFD45C` to `#DFA21A`
-- Main text: `#F5F5F5`
-- Secondary text: `#8A8F99`
-- Muted border: `rgba(255,255,255,0.08)`
-- Gold border: `rgba(255,192,0,0.45)`
-- Danger: red/dark red for cancel/SOS/logout
-- Radius: mostly 12 to 18px, phone shells around 22 to 28px
-- Shadows: soft black shadows, subtle gold glows only on selected/CTA
+- Gold highlight: `#FFD45C`
+- Text: `#F5F5F5`
+- Muted text: `#8A8F99`
+- Borders: `rgba(255,255,255,.08)`
+- Active/selected borders: gold
+- Danger: red/dark red for cancel, SOS, logout
+- Radius: phone shells 24-28px, cards 14-18px, CTA 18px
+- Shadows: soft black shadows, subtle gold glow only on selected cards and CTA
+- Icons: thin SVG line icons only. No emoji.
+- Typography: compact mobile hierarchy, bold titles and prices, muted captions.
 
-## Screens In The Reference
+## Screens And Components In The Reference
 
-### 1. Welcome / Login
+### 1. Welcome / Intro
 
-- Dark premium background.
-- Large gold shield/S mark at top.
-- Wordmark `SmartTaxi`; Smart in white, Taxi in gold.
+- Large gold Smart Taxi S/shield mark at top.
+- `SmartTaxi` wordmark with white `Smart` and gold `Taxi`.
 - Slogan: `Ваш комфорт. Ваш город.`
-- City skyline and premium black car visual in the middle.
-- Benefit list with small gold circular icons:
+- City skyline and premium black car artwork.
+- Benefit list with gold circular SVG icons:
   - Быстрый заказ
   - Честные цены
   - Маленькая комиссия
@@ -67,71 +75,79 @@ Only frontend UI source, frontend components, frontend styles, old demo screens 
   - Поддержка 24/7
 - Bottom gold CTA: `Начать поездку`.
 
-### 2. Passenger Home
+### 2. Client Home
 
-- Full top dark map with thin street grid.
+- Dark map as top visual center.
 - Floating round menu button top-left.
-- Floating bonus pill top-right with `850 ₸`.
-- Yellow route line and circular ETA badge.
-- Bottom route card:
-  - pickup row: `Откуда`, `улица Шамо, 58`
-  - destination row: `Куда`, `Орталык базар`
-  - plus icons right.
-- Quick action row: Дом, Работа, Избранное, Недавние.
+- Bonus pill top-right with S mark and `850 ₸`.
+- Gold route line, pickup blue marker, destination gold marker, ETA badge.
+- Bottom sheet overlapping map.
+- Route card:
+  - `Откуда` / `улица Шамо, 58`
+  - `Куда` / `Орталык базар`
+  - blue pickup dot and gold destination dot
+  - plus icons on the right
+- Quick actions: Дом, Работа, Избранное, Недавние.
 - Tariff cards: Эконом, Комфорт, Бизнес, Доставка.
-- Selected tariff has gold border and check.
-- Large gold CTA: `Заказать такси`.
-- Bottom nav: Главная, История, center S logo, Сообщения/Поддержка, Профиль.
+- Selected tariff: gold border, gold glow/check.
+- Main gold CTA: `Заказать такси`.
+- Bottom navigation:
+  - Главная
+  - История
+  - centered S logo
+  - Сообщения
+  - Профиль
 
 ### 3. Address Search
 
-- Header back arrow + title `Куда едем?`.
-- Search input.
+- Header with back arrow and `Куда едем?`.
+- Dark search input.
+- Tabs: Все, Адреса, Организации.
 - Sections:
   - Избранные адреса
   - Популярные места
   - Недавние
-- Rows with small icons, address title, subtitle, chevron.
+- Rows use SVG icons, title, subtitle, chevron.
 
-### 4. Bonuses
+### 4. Bonuses / Invite
 
 - Header `Бонусы`.
-- Big card `Ваш баланс 850 ₸` with gold coin/S artwork.
+- Large dark/gold balance card: `Ваш баланс 850 ₸`.
 - Three action cards: История, Промокод, Пригласить.
-- Referral card with gift icon and three numbered steps.
-- Gold CTA `Пригласить друга`.
+- Referral card with gift visual and numbered steps.
+- Gold CTA: `Пригласить друга`.
 
 ### 5. Active Trip
 
-- Header `Поездка`, cancel/danger action.
+- Header `Поездка` with cancel action.
 - Driver card: avatar/photo, name, Toyota Camry, plate, rating.
-- Dark map with gold route and car marker.
-- ETA/vehicle/plate metric row.
-- Buttons: Поделиться, Поддержка.
-- SOS only in active ride context if shown.
+- Dark map with gold route and real-looking car marker.
+- ETA metrics and car details.
+- Actions: Поделиться, Поддержка.
+- SOS belongs only to active ride context.
 
 ### 6. Completed / Review
 
 - Header `Поездка завершена`.
-- Large gold amount `650 ₸`.
-- Route summary card with tariff, distance/time, pickup/dropoff and times.
-- Payment method row.
-- Rating stars in gold.
-- Buttons: `Чек`, `Повторить поездку`.
+- Large gold amount.
+- Route summary: tariff, distance, time, pickup/dropoff.
+- Payment row.
+- Gold star rating.
+- Buttons: Чек and Повторить поездку.
 
-### 7. Trip History
+### 7. History
 
 - Header `История поездок`.
-- Segmented tabs: Все / Завершённые / Отменённые.
-- Dense list rows with date, address, price and tariff/status.
+- Segmented tabs: Все, Завершённые, Отменённые.
+- Dense list rows with date, address, price, tariff/status.
 
-### 8. Profile
+### 8. Profile / Menu
 
 - Header `Профиль`.
-- Profile card with avatar, name, phone and edit link.
+- Profile card: avatar, name, phone, edit link.
 - Menu rows:
   - Способы оплаты
-  - Бонусы 850 ₸
+  - Бонусы
   - Промокоды
   - Пригласить друга
   - Избранные адреса
@@ -143,76 +159,78 @@ Only frontend UI source, frontend components, frontend styles, old demo screens 
 ### 9. Payment Methods
 
 - Header `Способы оплаты`.
-- Dark rows with line icons:
+- Dark rows:
   - Наличные
   - Kaspi QR
   - Kaspi Перевод
   - Банковская карта / Добавить карту
-- Selected method has gold check.
+- Selected method uses gold check.
 
 ### 10. Become Driver / Driver Application
 
-- Become driver screen:
-  - title `Стать водителем`
-  - car/driver visual
-  - benefit list with gold checks
-  - gold CTA `Оставить заявку`
-- Driver application screen:
-  - form rows: ФИО, phone, car model, plate, year
-  - ownership segmented control
+- `Стать водителем` screen with car/driver visual and gold benefits.
+- Gold CTA `Оставить заявку`.
+- `Заявка водителя` form:
+  - ФИО
+  - phone
+  - car model
+  - plate number
+  - year
+  - ownership selector
   - gold CTA `Отправить заявку`.
 
-### 11. Support Chat
+### 11. Support
 
 - Header `Поддержка`.
 - Dark chat screen.
-- User messages gold bubbles, operator messages dark bubbles.
+- User bubbles are gold.
+- Operator bubbles are dark graphite.
 - Bottom input with send button.
 
-### 12. Bottom Navigation
+### 12. Driver UI
 
-- Dark rounded floating bar.
-- Active item gold.
-- Center S logo is larger and elevated.
+- Driver login / registration.
+- Driver home:
+  - profile/status card
+  - balance/trips/rating stats
+  - online/offline CTA
+  - order cards with map preview
+- Active order:
+  - map
+  - current step
+  - status CTA.
 
-## Required Component Direction
+### 13. Operator UI
 
-- SVG icons only. No emoji.
-- Components:
-  - `AppHeader`
-  - `AppButton`
-  - `AppCard`
-  - `AppInput`
-  - `BottomNav`
-  - `RideMap`
-  - `TariffCard`
-  - `PaymentRow`
-  - `DriverCard`
-  - `MenuItem`
-  - `ChatBubble`
-- Role code split:
-  - `features/client`
-  - `features/driver`
-  - `features/operator`
-  - `features/admin`
-  - shared UI/core components.
+- Desktop-friendly dispatch panel.
+- Left navigation.
+- Ticket tabs.
+- Ticket list.
+- Details panel with map preview.
+- Manual driver assignment rows.
+- Gold/dark action buttons.
 
-## Implementation Scope For This Stage
+### 14. Admin UI
 
-UI only.
+- Left sidebar.
+- KPI cards.
+- Trip chart.
+- Recent orders.
+- Drivers/status cards.
+- Dark/gold dashboard theme matching the product style.
 
-- No backend implementation.
-- No WebSocket implementation.
-- No auth implementation.
-- Demo data is allowed.
-- Buttons must navigate to the correct UI state/screen.
-- No real orders should be created.
+## Implementation Rules
 
-## Current First Fixes Needed
+- UI data is hardcoded demo data only.
+- Buttons navigate to UI screens or local UI state only.
+- No real backend requests are made from the rebuilt UI.
+- No WebSocket or auth logic in this stage.
+- No emoji icons.
+- No visible disabled placeholder junk in the main flow.
+- Map is a premium SVG/CSS placeholder matching the reference, with gold route and markers.
 
-- Convert current white/gold UI to dark/gold reference.
-- Replace login/register-like first screen with the reference welcome screen.
-- Keep passenger home composition tight: map, route card, quick actions, tariffs, CTA, bottom nav.
-- Ensure all client reference screens are reachable.
-- Ensure driver/admin/operator have dark/gold UI shells, but logic remains UI-only.
-- Remove temporary screenshots and Chrome temp folders before commit.
+## Current Mismatches Being Tracked
+
+- Primary PNG is dark while secondary docs are white; primary PNG wins.
+- Real car/city photographic assets are approximated with local SVG/CSS visuals for now.
+- Backend integration is intentionally deferred to the next stage.
