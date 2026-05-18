@@ -53,6 +53,12 @@ const LOCAL_PLACES = [
   { title: "Мечеть", subtitle: "Центральная мечеть", lat: 42.3129, lng: 69.5964 },
   { title: "Парк", subtitle: "Городской парк", lat: 42.3147, lng: 69.6022 }
 ];
+const QUICK_DESTINATIONS = [
+  { icon: "home", label: "Дом", title: "Дом", subtitle: "улица Шамо, 58", lat: 42.3149, lng: 69.5932 },
+  { icon: "work", label: "Работа", title: "Работа", subtitle: "улица Бектаcова, 52", lat: 42.3187, lng: 69.6007 },
+  { icon: "star", label: "Избранное", title: "Больница", subtitle: "Городская больница", lat: 42.3206, lng: 69.5894 },
+  { icon: "clock", label: "Недавние", title: "Рынок", subtitle: "Центральный рынок", lat: 42.3139, lng: 69.5916 }
+];
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0b0b0b" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
@@ -243,6 +249,9 @@ function Icon({ name, size = 22 }) {
     menu: <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
     close: <><path d="M6 6l12 12" /><path d="M18 6L6 18" /></>,
     back: <path d="M15 18l-6-6 6-6" />,
+    home: <><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10.5V20h14v-9.5" /><path d="M9.5 20v-6h5v6" /></>,
+    work: <><rect x="4" y="8" width="16" height="11" rx="2" /><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M4 13h16" /></>,
+    clock: <><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></>,
     pin: <><path d="M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></>,
     route: <><circle cx="6" cy="18" r="2" /><circle cx="18" cy="6" r="2" /><path d="M8 18h4a4 4 0 0 0 0-8h0a4 4 0 0 1 0-8h4" /></>,
     car: <><path d="M5 16l1.7-5.1A3 3 0 0 1 9.5 9h5a3 3 0 0 1 2.8 1.9L19 16" /><path d="M4 16h16v3H4z" /><path d="M7 19v2" /><path d="M17 19v2" /><circle cx="8" cy="16" r="1" /><circle cx="16" cy="16" r="1" /></>,
@@ -258,6 +267,7 @@ function Icon({ name, size = 22 }) {
     phone: <path d="M6.5 4h3l1.5 4-2 1.2a12 12 0 0 0 5.8 5.8l1.2-2 4 1.5v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4Z" />,
     chat: <><path d="M4 5h16v11H8l-4 4V5Z" /><path d="M8 9h8" /><path d="M8 13h5" /></>,
     settings: <><circle cx="12" cy="12" r="3" /><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.3 3a7 7 0 0 0-1.7 1L5 6 3 9.5 5 11a7 7 0 0 0 0 2l-2 1.5L5 18l2.5-1a7 7 0 0 0 1.7 1l.3 3h5l.3-3a7 7 0 0 0 1.7-1l2.5 1 2-3.5-2-1.5a7 7 0 0 0 .1-1Z" /></>,
+    logout: <><path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4" /><path d="M15 8l4 4-4 4" /><path d="M19 12H9" /></>,
     dashboard: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></>,
     lock: <><rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>,
     operator: <><path d="M4 18v-6a8 8 0 0 1 16 0v6" /><path d="M7 18h3v-6H7z" /><path d="M17 18h-3v-6h3z" /><path d="M14 21h-4" /></>,
@@ -310,7 +320,7 @@ function AppHeader({ subtitle = "Быстрая поездка по городу
   );
 }
 
-function ClientTopBar({ onMenu }) {
+function ClientTopBar({ onMenu, profile, onProfile }) {
   return (
     <header className="client-topbar">
       <button className="icon-btn" type="button" onClick={onMenu} aria-label="Меню"><Icon name="menu" /></button>
@@ -318,7 +328,11 @@ function ClientTopBar({ onMenu }) {
         <BrandBlock small />
         <em>Atakent</em>
       </a>
-      <span className="status-dot" aria-label="SmartTaxi online"><Icon name="shield" size={18} /></span>
+      <button className="bonus-pill" type="button" onClick={onProfile} aria-label="Бонусы">
+        <span>S</span>
+        <small>Бонусы</small>
+        <b>{money(profile?.cashback || 850)}</b>
+      </button>
     </header>
   );
 }
@@ -688,22 +702,24 @@ function ProfilePanel({ open, profile, setProfile, onClose }) {
   );
 }
 
-function ClientUtilityPanel({ type, open, onClose, order }) {
+function ClientUtilityPanel({ type, open, onClose, order, profile }) {
   if (!open) return null;
-  const isTrips = type === "trips";
+  const isTrips = type === "trips" || type === "history";
+  const isBonus = type === "bonus";
   const isSupport = type === "support";
   return (
     <div className="drawer-backdrop utility-backdrop" role="presentation" onClick={onClose}>
-      <section className="utility-panel" role="dialog" aria-label={isTrips ? "Поездки" : "Поддержка"} onClick={event => event.stopPropagation()}>
+      <section className={`utility-panel ${isBonus ? "bonus-screen" : ""}`} role="dialog" aria-label={isTrips ? "Поездки" : isBonus ? "Бонусы" : "Поддержка"} onClick={event => event.stopPropagation()}>
         <div className="modal-head">
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" /></button>
           <div>
             <small>SmartTaxi</small>
-            <h2>{isTrips ? "Поездки" : "Поддержка 24/7"}</h2>
+            <h2>{isTrips ? "История поездок" : isBonus ? "Бонусы" : "Поддержка"}</h2>
           </div>
         </div>
         {isTrips ? (
           <div className="utility-list">
+            <div className="history-tabs"><span>Все</span><span className="active">Завершённые</span><span>Отменённые</span></div>
             {order ? (
               <div className="utility-row">
                 <Icon name="route" />
@@ -711,13 +727,43 @@ function ClientUtilityPanel({ type, open, onClose, order }) {
                 <strong>{money(order.price)}</strong>
               </div>
             ) : (
-              <div className="empty-state compact"><Icon name="route" /><b>История пока пустая</b><span>После первой поездки она появится здесь.</span></div>
+              <>
+                {[
+                  ["25 апреля, 19:57", "улица Жаштаева, 74", "300 ₸", "Эконом"],
+                  ["20 апреля, 19:10", "ТЦ Мырзакент", "300 ₸", "Эконом"],
+                  ["17 апреля, 22:58", "улица Бектаcова, 52", "300 ₸", "Комфорт"]
+                ].map(row => (
+                  <div className="history-row" key={row[0]}>
+                    <span><b>{row[0]}</b><small>{row[1]}</small></span>
+                    <strong>{row[2]}<small>{row[3]}</small></strong>
+                  </div>
+                ))}
+              </>
             )}
+          </div>
+        ) : isBonus ? (
+          <div className="bonus-content">
+            <div className="bonus-balance-card">
+              <span>Ваш баланс</span>
+              <strong>{money(profile?.cashback || 850)}</strong>
+              <SmartTaxiLogo compact />
+            </div>
+            <div className="bonus-mini-grid">
+              <button type="button"><Icon name="clock" />История</button>
+              <button type="button"><Icon name="card" />Промокод</button>
+              <button type="button"><Icon name="user" />Пригласить</button>
+            </div>
+            <div className="referral-card">
+              <h3>Пригласите друга и получите 500 ₸</h3>
+              {[["1", "Ваш друг регистрируется по ссылке"], ["2", "Он совершает первую поездку"], ["3", "Вы получаете бонусы"]].map(([n, text]) => <p key={n}><b>{n}</b>{text}</p>)}
+            </div>
+            <button className="primary-cta" type="button" onClick={() => navigator.clipboard?.writeText("SmartTaxi Atakent")}>Пригласить друга</button>
           </div>
         ) : (
           <div className="support-chat">
             <p className="support-bubble from-user">Здравствуйте, нужна помощь по поездке.</p>
             <p className="support-bubble">Оператор SmartTaxi на связи. Опишите проблему, мы поможем.</p>
+            <label className="support-input"><input placeholder="Напишите сообщение..." /><button type="button"><Icon name="chat" /></button></label>
             <a className="primary-cta support-call" href="tel:+77000000000">Позвонить в поддержку</a>
           </div>
         )}
@@ -920,11 +966,28 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
       dropoffLng: ""
     });
   }
+  function selectQuick(place) {
+    setForm({
+      ...form,
+      dropoffText: place.title,
+      dropoffLat: Number(place.lat).toFixed(6),
+      dropoffLng: Number(place.lng).toFixed(6)
+    });
+  }
   return (
     <form className="ride-sheet" onSubmit={createOrder}>
+      <span className="sheet-grip" aria-hidden="true" />
       <div className="route-picks">
         <button type="button" onClick={() => openAddress("pickup")}><b>A</b><span>Откуда</span><strong>{form.pickupText || "Моё местоположение"}</strong></button>
         <button type="button" onClick={() => openAddress("dropoff")}><b>B</b><span>Куда</span><strong>{form.dropoffText || "Куда едем?"}</strong></button>
+      </div>
+      <div className="quick-actions">
+        {QUICK_DESTINATIONS.map(place => (
+          <button type="button" key={place.label} onClick={() => selectQuick(place)}>
+            <Icon name={place.icon} size={18} />
+            <span>{place.label}</span>
+          </button>
+        ))}
       </div>
       <div className="sheet-summary">
         <span>{estimate ? `${estimate.distanceKm} км · ${estimate.durationMin} мин` : "Маршрут рассчитывается"}</span>
@@ -951,7 +1014,14 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
           })}
         </div>
       </section>
-      <section>
+      <button className="primary-cta sticky-order" disabled={disabled}>
+        {loading
+          ? "Создаём заказ..."
+          : !form.dropoffText.trim()
+            ? "Выберите куда едем"
+            : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}
+      </button>
+      <section className="payment-home-section">
         <h3>Оплата</h3>
         <div className="payment-strip">
           {PAYMENT_OPTIONS.map(([key, title]) => (
@@ -963,7 +1033,6 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
         <summary>Пожелания к поездке</summary>
         <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Подъезд, ориентир, комментарий водителю" />
       </details>
-      <button className="primary-cta sticky-order" disabled={disabled}>{loading ? "Создаём заказ..." : `Заказать за ${approxPrice ? `~${money(approxPrice)}` : "расчётную цену"}`}</button>
     </form>
   );
 }
@@ -975,7 +1044,7 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
   const [tripAction, setTripAction] = useState(null);
   return (
     <main className="mobile-app client-screen active-trip-screen">
-      <ClientTopBar onMenu={onMenu} />
+      <ClientTopBar onMenu={onMenu} profile={profile} onProfile={() => setProfileOpen(true)} />
       <AppMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -986,7 +1055,7 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
       />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <ProfilePanel open={profileOpen} profile={profile} setProfile={setProfile} onClose={() => setProfileOpen(false)} />
-      <ClientUtilityPanel type={utilityPanel} open={Boolean(utilityPanel)} order={order} onClose={() => setUtilityPanel(null)} />
+      <ClientUtilityPanel type={utilityPanel} open={Boolean(utilityPanel)} order={order} profile={profile} onClose={() => setUtilityPanel(null)} />
       <TripActionPanel type={tripAction} order={order} onClose={() => setTripAction(null)} />
       <ReviewSheet open={reviewOpen} order={order} onClose={() => setReviewOpen(false)} />
       <Alert message={error} />
@@ -1031,6 +1100,14 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
         {isFinished && <button className="primary-cta" type="button" onClick={() => setReviewOpen(true)}>Оценить поездку</button>}
         {isFinished && <button className="ghost-btn" type="button" onClick={onNewOrder}>Новый заказ</button>}
       </section>
+      <ClientBottomNav
+        active="home"
+        onHome={() => setUtilityPanel(null)}
+        onHistory={() => setUtilityPanel("history")}
+        onBonus={() => setUtilityPanel("bonus")}
+        onSupport={() => setUtilityPanel("support")}
+        onProfile={() => setProfileOpen(true)}
+      />
     </main>
   );
 }
@@ -1053,6 +1130,26 @@ function BottomNav({ type }) {
   return (
     <nav className="bottom-nav">
       {items.map(([icon, label], index) => <span className={index === 0 ? "active" : ""} key={label}><b><Icon name={icon} size={18} /></b>{label}</span>)}
+    </nav>
+  );
+}
+
+function ClientBottomNav({ active = "home", onHome, onHistory, onBonus, onSupport, onProfile }) {
+  const items = [
+    ["home", "Главная", onHome, "home"],
+    ["clock", "История", onHistory, "history"],
+    ["logo", "", onBonus, "bonus"],
+    ["chat", "Поддержка", onSupport, "support"],
+    ["user", "Профиль", onProfile, "profile"]
+  ];
+  return (
+    <nav className="client-bottom-nav" aria-label="Навигация клиента">
+      {items.map(([icon, label, action, key]) => (
+        <button className={`${active === key ? "active" : ""} ${icon === "logo" ? "center-logo" : ""}`} key={key} type="button" onClick={action}>
+          {icon === "logo" ? <SmartTaxiLogo compact /> : <Icon name={icon} size={19} />}
+          {label && <span>{label}</span>}
+        </button>
+      ))}
     </nav>
   );
 }
@@ -1120,7 +1217,7 @@ function Client() {
     : order?.price || 0;
 
   useEffect(() => {
-    api("/api/tariffs").then(data => setTariffs(data.tariffs || [])).catch(err => setError(normalizeError(err)));
+    api("/api/tariffs").then(data => setTariffs(data.tariffs || [])).catch(() => setTariffs(DEFAULT_TARIFFS));
   }, []);
 
   useEffect(() => {
@@ -1311,7 +1408,7 @@ function Client() {
 
   return (
     <main className="mobile-app client-screen">
-      <ClientTopBar onMenu={() => setMenuOpen(true)} />
+      <ClientTopBar onMenu={() => setMenuOpen(true)} profile={profile} onProfile={() => setUtilityPanel("bonus")} />
       <AppMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -1322,7 +1419,7 @@ function Client() {
       />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <ProfilePanel open={profileOpen} profile={profile} setProfile={setProfile} onClose={() => setProfileOpen(false)} />
-      <ClientUtilityPanel type={utilityPanel} open={Boolean(utilityPanel)} order={order} onClose={() => setUtilityPanel(null)} />
+      <ClientUtilityPanel type={utilityPanel} open={Boolean(utilityPanel)} order={order} profile={profile} onClose={() => setUtilityPanel(null)} />
       <AddressModal mode={addressMode} form={form} setForm={setForm} onClose={() => setAddressMode(null)} onLocate={locate} locating={locating} locationOk={locationOk} error={error} />
       <Alert message={error} />
       <MapExperience form={form} estimate={estimate} locating={locating} locationOk={locationOk} onLocate={locate} />
@@ -1337,6 +1434,14 @@ function Client() {
         disabled={disabled}
         openAddress={setAddressMode}
         createOrder={createOrder}
+      />
+      <ClientBottomNav
+        active="home"
+        onHome={() => setUtilityPanel(null)}
+        onHistory={() => setUtilityPanel("history")}
+        onBonus={() => setUtilityPanel("bonus")}
+        onSupport={() => setUtilityPanel("support")}
+        onProfile={() => setProfileOpen(true)}
       />
     </main>
   );
