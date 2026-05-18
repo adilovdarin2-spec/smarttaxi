@@ -27,7 +27,7 @@ async function getTariff(name, executor = query) {
   return result.rows[0];
 }
 
-function calcPrice(tariff, distanceKm, durationMin) {
+export function calcPrice(tariff, distanceKm, durationMin) {
   const raw = Number(tariff.base_price) + Number(tariff.price_per_km) * distanceKm + Number(tariff.price_per_minute) * durationMin;
   return Math.max(Number(tariff.min_price), Math.round(raw / 10) * 10);
 }
@@ -68,7 +68,7 @@ function normalizePhone(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
-const CreateOrder = z.object({
+export const CreateOrder = z.object({
   riderName: z.string().trim().max(80).optional().default("Клиент").transform(value => normalizeText(value || "Клиент")),
   riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone"),
   pickupText: z.string().trim().min(2).max(180).transform(normalizeText),

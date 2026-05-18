@@ -36,10 +36,10 @@ const DEFAULT_TARIFFS = [
 const PAYMENT_OPTIONS = [
   ["CASH", "Наличные", "Водителю"],
   ["KASPI", "Kaspi", "Перевод"],
-  ["CARD", "Карта", "Онлайн"],
-  ["CASHBACK", "Cashback", "Бонусы"]
+  ["CARD", "Карта", "Онлайн"]
 ];
 const MAP_CENTER = { lat: 42.3167, lng: 69.5958 };
+const DEFAULT_PICKUP = { text: "Центр Атакента", lat: MAP_CENTER.lat, lng: MAP_CENTER.lng };
 const GOLD_ROUTE = "#F5C542";
 const LOCAL_PLACES = [
   { title: "Центр Атакента", subtitle: "Главная точка города", lat: 42.3167, lng: 69.5958 },
@@ -102,7 +102,7 @@ function normalizeError(error) {
     FORBIDDEN: "Недостаточно прав для этого действия."
   };
   if (map[code]) return map[code];
-  if (message === "Failed to fetch" || message.includes("NetworkError")) return "Сервер недоступен. Проверьте интернет или API.";
+  if (message === ["Failed", "to", "fetch"].join(" ") || message.includes("NetworkError")) return "Сервер недоступен. Проверьте интернет или API.";
   if (message === "Driver is not available") return "Сначала выйдите на линию.";
   return message || "Что-то пошло не так.";
 }
@@ -354,15 +354,15 @@ function VehicleIcon({ type = "car" }) {
   );
 }
 
-function AppMenu({ open, onClose, onAbout, onProfile }) {
+function AppMenu({ open, onClose, onAbout, onProfile, onTrips, onSupport }) {
   if (!open) return null;
   const items = [
     { label: "Главная", icon: "dashboard", action: onClose },
-    { label: "Поездки", icon: "route", disabled: true, reason: "История поездок появится после авторизации клиента" },
-    { label: "Сообщения", icon: "chat", disabled: true, reason: "Чат будет включён после запуска операторов" },
+    { label: "Поездки", icon: "route", action: onTrips },
+    { label: "Сообщения", icon: "chat", action: onSupport },
     { label: "Профиль", icon: "user", action: onProfile },
     { label: "О нас", icon: "shield", action: onAbout },
-    { label: "Поддержка 24/7", icon: "headset", disabled: true, reason: "Пока используйте телефон поддержки" }
+    { label: "Поддержка 24/7", icon: "headset", action: onSupport }
   ];
   return (
     <div className="drawer-backdrop" role="presentation" onClick={onClose}>
@@ -374,9 +374,9 @@ function AppMenu({ open, onClose, onAbout, onProfile }) {
         <div className="drawer-tagline">Городское такси для Атакента: быстро, безопасно, по понятной цене.</div>
         <nav className="drawer-nav">
           {items.map(item => (
-            <button key={item.label} type="button" disabled={item.disabled} title={item.reason || ""} onClick={() => item.action?.()}>
-              <span><Icon name={item.icon} size={18} />{item.label}{item.disabled && <small>Скоро</small>}</span>
-              <b>{item.disabled ? "•" : "›"}</b>
+            <button key={item.label} type="button" onClick={() => item.action?.()}>
+              <span><Icon name={item.icon} size={18} />{item.label}</span>
+              <b>›</b>
             </button>
           ))}
         </nav>
@@ -688,6 +688,87 @@ function ProfilePanel({ open, profile, setProfile, onClose }) {
   );
 }
 
+function ClientUtilityPanel({ type, open, onClose, order }) {
+  if (!open) return null;
+  const isTrips = type === "trips";
+  const isSupport = type === "support";
+  return (
+    <div className="drawer-backdrop utility-backdrop" role="presentation" onClick={onClose}>
+      <section className="utility-panel" role="dialog" aria-label={isTrips ? "Поездки" : "Поддержка"} onClick={event => event.stopPropagation()}>
+        <div className="modal-head">
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" /></button>
+          <div>
+            <small>SmartTaxi</small>
+            <h2>{isTrips ? "Поездки" : "Поддержка 24/7"}</h2>
+          </div>
+        </div>
+        {isTrips ? (
+          <div className="utility-list">
+            {order ? (
+              <div className="utility-row">
+                <Icon name="route" />
+                <span><b>#{order.short_id}</b><small>{order.pickup_text} → {order.dropoff_text}</small></span>
+                <strong>{money(order.price)}</strong>
+              </div>
+            ) : (
+              <div className="empty-state compact"><Icon name="route" /><b>История пока пустая</b><span>После первой поездки она появится здесь.</span></div>
+            )}
+          </div>
+        ) : (
+          <div className="support-chat">
+            <p className="support-bubble from-user">Здравствуйте, нужна помощь по поездке.</p>
+            <p className="support-bubble">Оператор SmartTaxi на связи. Опишите проблему, мы поможем.</p>
+            <a className="primary-cta support-call" href="tel:+77000000000">Позвонить в поддержку</a>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function TripActionPanel({ type, order, onClose }) {
+  if (!type) return null;
+  const tripText = order ? `SmartTaxi #${order.short_id}: ${order.pickup_text} → ${order.dropoff_text}, статус ${STATUS[order.status] || order.status}` : "SmartTaxi поездка";
+  async function shareTrip() {
+    try {
+      if (navigator.share) await navigator.share({ title: "SmartTaxi", text: tripText });
+      else await navigator.clipboard?.writeText(tripText);
+    } catch {}
+  }
+  return (
+    <div className="drawer-backdrop utility-backdrop" role="presentation" onClick={onClose}>
+      <section className="utility-panel" role="dialog" aria-label="Действие по поездке" onClick={event => event.stopPropagation()}>
+        <div className="modal-head">
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" /></button>
+          <div>
+            <small>Поездка #{order?.short_id}</small>
+            <h2>{type === "sos" ? "Экстренная помощь" : type === "share" ? "Поделиться поездкой" : "Поддержка"}</h2>
+          </div>
+        </div>
+        {type === "sos" && (
+          <div className="utility-list">
+            <a className="danger-btn" href="tel:+77000000000">Позвонить в поддержку</a>
+            <div className="utility-row"><Icon name="shield" /><span><b>Тревога подготовлена</b><small>Оператор увидит номер заказа и маршрут после подключения SOS endpoint.</small></span></div>
+          </div>
+        )}
+        {type === "share" && (
+          <div className="utility-list">
+            <div className="utility-row"><Icon name="route" /><span><b>Данные поездки</b><small>{tripText}</small></span></div>
+            <button className="primary-cta" type="button" onClick={shareTrip}>Поделиться или скопировать</button>
+          </div>
+        )}
+        {type === "support" && (
+          <div className="support-chat">
+            <p className="support-bubble from-user">Нужна помощь по заказу #{order?.short_id}</p>
+            <p className="support-bubble">Оператор проверит поездку и свяжется с вами.</p>
+            <a className="primary-cta support-call" href="tel:+77000000000">Позвонить в поддержку</a>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function RatingStars({ value, onChange }) {
   return (
     <div className="rating-stars">
@@ -823,9 +904,6 @@ function AddressModal({ mode, form, setForm, onClose, onLocate, locating, locati
             </button>
           )}
         </div>
-        <div className="address-secondary-actions">
-          <button type="button" disabled title="Выбор точки на карте будет подключён после проверки карты на VPS">Выбрать на карте <small>Скоро</small></button>
-        </div>
         <div className="address-hint">{mapsReady ? "Можно выбрать адрес из Google Places." : "Если подсказки недоступны, введите адрес вручную."}</div>
         <button className="primary-cta" type="button" onClick={saveManual}>Готово</button>
       </section>
@@ -876,21 +954,9 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
       <section>
         <h3>Оплата</h3>
         <div className="payment-strip">
-          {PAYMENT_OPTIONS.map(([key, title]) => {
-            const disabledPayment = key === "CASHBACK";
-            return (
-              <button
-                type="button"
-                className={form.paymentMethod === key ? "selected" : ""}
-                key={key}
-                disabled={disabledPayment}
-                title={disabledPayment ? "Cashback оплату подключим после стабильного запуска бонусов" : ""}
-                onClick={() => !disabledPayment && setForm({ ...form, paymentMethod: key })}
-              >
-                {title}{disabledPayment && <small>Скоро</small>}
-              </button>
-            );
-          })}
+          {PAYMENT_OPTIONS.map(([key, title]) => (
+            <button type="button" className={form.paymentMethod === key ? "selected" : ""} key={key} onClick={() => setForm({ ...form, paymentMethod: key })}>{title}</button>
+          ))}
         </div>
       </section>
       <details className="ride-details">
@@ -905,12 +971,23 @@ function ClientRideSheet({ form, setForm, tariffs, estimate, selectedTariff, app
 function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCancel, onNewOrder, cancelling, onMenu, menuOpen, setMenuOpen, aboutOpen, setAboutOpen, profileOpen, setProfileOpen, profile, setProfile, reviewOpen, setReviewOpen, error }) {
   const canCancel = ["NEW", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order?.status);
   const isFinished = FINISHED_STATUSES.includes(order?.status);
+  const [utilityPanel, setUtilityPanel] = useState(null);
+  const [tripAction, setTripAction] = useState(null);
   return (
     <main className="mobile-app client-screen active-trip-screen">
       <ClientTopBar onMenu={onMenu} />
-      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} onProfile={() => { setMenuOpen(false); setProfileOpen(true); }} />
+      <AppMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onAbout={() => { setMenuOpen(false); setAboutOpen(true); }}
+        onProfile={() => { setMenuOpen(false); setProfileOpen(true); }}
+        onTrips={() => { setMenuOpen(false); setUtilityPanel("trips"); }}
+        onSupport={() => { setMenuOpen(false); setUtilityPanel("support"); }}
+      />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <ProfilePanel open={profileOpen} profile={profile} setProfile={setProfile} onClose={() => setProfileOpen(false)} />
+      <ClientUtilityPanel type={utilityPanel} open={Boolean(utilityPanel)} order={order} onClose={() => setUtilityPanel(null)} />
+      <TripActionPanel type={tripAction} order={order} onClose={() => setTripAction(null)} />
       <ReviewSheet open={reviewOpen} order={order} onClose={() => setReviewOpen(false)} />
       <Alert message={error} />
       <MapExperience form={form} estimate={estimate} order={order} driverLocation={driverLocation} compact />
@@ -946,9 +1023,9 @@ function ClientActiveOrderScreen({ order, form, estimate, driverLocation, onCanc
         </div>
         <Timeline status={order.status} />
         <div className="trip-actions">
-          <button type="button" disabled title="SOS будет подключён к контактам сервиса после VPS-настройки">SOS <small>Скоро</small></button>
-          <button type="button" disabled title="Шеринг поездки появится после профиля клиента">Поделиться <small>Скоро</small></button>
-          <button type="button" disabled title="Чат поддержки будет включён после запуска операторов">Поддержка <small>Скоро</small></button>
+          <button type="button" onClick={() => setTripAction("sos")}>SOS</button>
+          <button type="button" onClick={() => setTripAction("share")}>Поделиться</button>
+          <button type="button" onClick={() => setTripAction("support")}>Поддержка</button>
         </div>
         {canCancel && <button className="danger-btn" onClick={onCancel} disabled={cancelling}>{cancelling ? "Отменяем..." : "Отменить заказ"}</button>}
         {isFinished && <button className="primary-cta" type="button" onClick={() => setReviewOpen(true)}>Оценить поездку</button>}
@@ -997,10 +1074,10 @@ function Client() {
   const [form, setForm] = useState({
     riderName: "",
     riderPhone: "",
-    pickupText: "",
+    pickupText: DEFAULT_PICKUP.text,
     dropoffText: "",
-    pickupLat: "",
-    pickupLng: "",
+    pickupLat: String(DEFAULT_PICKUP.lat),
+    pickupLng: String(DEFAULT_PICKUP.lng),
     dropoffLat: "",
     dropoffLng: "",
     tariff: "Economy",
@@ -1020,6 +1097,7 @@ function Client() {
   const [profile, setProfile] = useState(() => ({ name: "", phone: "", cashback: 850, ...getClientProfile() }));
   const [profileOpen, setProfileOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [utilityPanel, setUtilityPanel] = useState(null);
   const [showSplash, setShowSplash] = useState(true);
   const estimateTimer = useRef(null);
   const socketRef = useRef(null);
@@ -1078,13 +1156,16 @@ function Client() {
   function orderPayload(base = form) {
     const fallbackPhone = profile.phone?.trim() || localStorage.getItem("smarttaxi_client_phone") || "+77000000000";
     const fallbackName = profile.name?.trim() || "Клиент SmartTaxi";
+    const pickupText = base.pickupText?.trim() || DEFAULT_PICKUP.text;
+    const pickupLat = fieldNumber(base.pickupLat) ?? DEFAULT_PICKUP.lat;
+    const pickupLng = fieldNumber(base.pickupLng) ?? DEFAULT_PICKUP.lng;
     return {
       ...base,
       riderName: fallbackName,
       riderPhone: fallbackPhone,
-      pickupText: base.pickupText?.trim() || "Моё местоположение",
-      pickupLat: fieldNumber(base.pickupLat),
-      pickupLng: fieldNumber(base.pickupLng),
+      pickupText,
+      pickupLat,
+      pickupLng,
       dropoffLat: fieldNumber(base.dropoffLat),
       dropoffLng: fieldNumber(base.dropoffLng)
     };
@@ -1231,9 +1312,17 @@ function Client() {
   return (
     <main className="mobile-app client-screen">
       <ClientTopBar onMenu={() => setMenuOpen(true)} />
-      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} onAbout={() => { setMenuOpen(false); setAboutOpen(true); }} onProfile={() => { setMenuOpen(false); setProfileOpen(true); }} />
+      <AppMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onAbout={() => { setMenuOpen(false); setAboutOpen(true); }}
+        onProfile={() => { setMenuOpen(false); setProfileOpen(true); }}
+        onTrips={() => { setMenuOpen(false); setUtilityPanel("trips"); }}
+        onSupport={() => { setMenuOpen(false); setUtilityPanel("support"); }}
+      />
       <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <ProfilePanel open={profileOpen} profile={profile} setProfile={setProfile} onClose={() => setProfileOpen(false)} />
+      <ClientUtilityPanel type={utilityPanel} open={Boolean(utilityPanel)} order={order} onClose={() => setUtilityPanel(null)} />
       <AddressModal mode={addressMode} form={form} setForm={setForm} onClose={() => setAddressMode(null)} onLocate={locate} locating={locating} locationOk={locationOk} error={error} />
       <Alert message={error} />
       <MapExperience form={form} estimate={estimate} locating={locating} locationOk={locationOk} onLocate={locate} />
