@@ -9,7 +9,7 @@
     "seed": "node src/seeds/seed.js",
     "syntax": "node src/tools/syntax-check.js",
     "check": "node src/tools/api-check.js",
-    "test": "node src/tools/regions-check.js && node src/tools/driver-approval-check.js"
+    "test": "node src/tools/regions-check.js && node src/tools/driver-approval-check.js && node src/tools/tariffs-orders-check.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
+import { calculateOrderPrice, prepareOrderPricing } from "./order-pricing.service.js";
 
 const router = Router();
 const ORDER_SELECT = `
@@ -18,18 +19,8 @@ const ORDER_SELECT = `
 
 function shortId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
 
-async function getTariff(name, executor = query) {
-  const sql = "SELECT * FROM tariffs WHERE lower(name)=lower($1) AND is_active=true";
-  const result = executor.query
-    ? await executor.query(sql, [name])
-    : await executor(sql, [name]);
-  if (!result.rows[0]) throw new AppError("Tariff not found", 404, "TARIFF_NOT_FOUND");
-  return result.rows[0];
-}
-
 export function calcPrice(tariff, distanceKm, durationMin) {
-  const raw = Number(tariff.base_price) + Number(tariff.price_per_km) * distanceKm + Number(tariff.price_per_minute) * durationMin;
-  return Math.max(Number(tariff.min_price), Math.round(raw / 10) * 10);
+  return calculateOrderPrice(tariff, distanceKm, durationMin);
 }
 
 function publicOrderEvent(order) {
@@ -73,23 +64,35 @@ export const CreateOrder = z.object({
   riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone"),
   pickupText: z.string().trim().min(2).max(180).transform(normalizeText),
   dropoffText: z.string().trim().min(2).max(180).transform(normalizeText),
-  pickupLat: z.coerce.number().min(-90).max(90).optional(),
-  pickupLng: z.coerce.number().min(-180).max(180).optional(),
-  dropoffLat: z.coerce.number().min(-90).max(90).optional(),
-  dropoffLng: z.coerce.number().min(-180).max(180).optional(),
+  pickupLat: z.coerce.number().min(-90).max(90),
+  pickupLng: z.coerce.number().min(-180).max(180),
+  dropoffLat: z.coerce.number().min(-90).max(90),
+  dropoffLng: z.coerce.number().min(-180).max(180),
+  tariffId: z.string().uuid().optional(),
   tariff: z.string().trim().min(2).max(40).default("Economy"),
   paymentMethod: z.enum(["CASH", "KASPI", "CARD", "CASHBACK", "MIXED"]).default("CASH"),
-  distanceKm: z.coerce.number().min(0).max(300).default(3.2),
-  durationMin: z.coerce.number().int().min(0).max(600).default(9),
+  distanceKm: z.coerce.number().gt(0).max(300),
+  durationMin: z.coerce.number().gt(0).max(600),
   notes: z.string().trim().max(500).optional().default("")
+});
+
+export const EstimateOrder = CreateOrder.pick({
+  pickupLat: true,
+  pickupLng: true,
+  dropoffLat: true,
+  dropoffLng: true,
+  tariffId: true,
+  tariff: true,
+  distanceKm: true,
+  durationMin: true
 });
 
 async function insertOrderWithShortId(client, params) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const result = await client.query(`
-        INSERT INTO orders(short_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, price, distance_km, duration_min, service_commission, notes)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        INSERT INTO orders(short_id, region_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, price, distance_km, duration_min, service_commission, pricing_snapshot, notes)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19)
         RETURNING *
       `, [shortId(), ...params]);
       return result.rows[0];
@@ -111,37 +114,45 @@ function assertTransition(existing, nextStatus) {
   }
 }
 
-router.post("/", rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 }), async (req, res, next) => {
+router.post("/estimate", rateLimit({ prefix: "orders-estimate", windowMs: 60_000, max: 60 }), async (req, res, next) => {
+  try {
+    const body = EstimateOrder.parse(req.body);
+    const pricing = await prepareOrderPricing(body, query);
+    res.json({ estimate: pricing.publicEstimate });
+  } catch (e) { next(e); }
+});
+
+router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
     const body = CreateOrder.parse(req.body);
     const order = await tx(async (client) => {
-      const tariff = await getTariff(body.tariff, client);
-      const price = calcPrice(tariff, body.distanceKm, body.durationMin);
-      const serviceCommission = Math.round(price * Number(tariff.service_commission_percent) / 100 / 10) * 10;
+      const pricing = await prepareOrderPricing(body, client);
 
       const rider = (await client.query(`
-        INSERT INTO clients(name, phone)
-        VALUES($1,$2)
-        ON CONFLICT (phone) DO UPDATE SET name=EXCLUDED.name
+        INSERT INTO clients(user_id, name, phone)
+        VALUES($1,$2,$3)
+        ON CONFLICT (phone) DO UPDATE SET name=EXCLUDED.name, user_id=COALESCE(clients.user_id, EXCLUDED.user_id)
         RETURNING *
-      `, [body.riderName, body.riderPhone])).rows[0];
+      `, [req.user.id, body.riderName, body.riderPhone])).rows[0];
 
       const created = await insertOrderWithShortId(client, [
+        pricing.regionId,
         rider.id,
         body.riderName,
         body.riderPhone,
         body.pickupText,
         body.dropoffText,
-        body.pickupLat || null,
-        body.pickupLng || null,
-        body.dropoffLat || null,
-        body.dropoffLng || null,
-        body.tariff,
+        body.pickupLat,
+        body.pickupLng,
+        body.dropoffLat,
+        body.dropoffLng,
+        pricing.tariff.name,
         body.paymentMethod,
-        price,
-        body.distanceKm,
-        body.durationMin,
-        serviceCommission,
+        pricing.estimatedPrice,
+        pricing.pricingSnapshot.distanceKm,
+        pricing.pricingSnapshot.durationMin,
+        pricing.serviceCommission,
+        JSON.stringify(pricing.pricingSnapshot),
         body.notes
       ]);
 
@@ -150,15 +161,12 @@ router.post("/", rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 
         action: "order_created",
         entityType: "order",
         entityId: created.id,
-        metadata: { shortId: created.short_id, tariff: created.tariff, paymentMethod: created.payment_method, price: created.price },
+        metadata: { shortId: created.short_id, regionId: created.region_id, tariff: created.tariff, paymentMethod: created.payment_method, price: created.price },
         req
       });
       return created;
     });
 
-    req.io?.to("dispatch").emit("order_created", order);
-    req.io?.to("drivers").emit("order_created", order);
-    req.io?.emit("order_status_public", publicOrderEvent(order));
     res.status(201).json({ order });
   } catch (e) { next(e); }
 });

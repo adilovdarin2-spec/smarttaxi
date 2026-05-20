@@ -47,6 +47,32 @@ const statements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(driver_id, region_id)
   )`,
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE CASCADE",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE RESTRICT",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb",
+  "UPDATE tariffs SET region_id=(SELECT id FROM regions WHERE code='ATAKENT') WHERE region_id IS NULL",
+  `INSERT INTO tariffs(region_id,name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,is_active)
+   SELECT r.id, seed.name, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, 1, true
+   FROM regions r
+   CROSS JOIN (
+     VALUES
+       ('Economy',400,110,20,700,15,2),
+       ('Comfort',600,150,25,1000,15,2),
+       ('Business',900,220,35,1500,18,2),
+       ('Delivery',500,130,20,800,15,1)
+   ) AS seed(name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent)
+   WHERE r.code='ATAKENT'
+   ON CONFLICT (name) DO UPDATE
+   SET region_id=EXCLUDED.region_id,
+       base_price=EXCLUDED.base_price,
+       price_per_km=EXCLUDED.price_per_km,
+       price_per_minute=EXCLUDED.price_per_minute,
+       min_price=EXCLUDED.min_price,
+       service_commission_percent=EXCLUDED.service_commission_percent,
+       cashback_percent=EXCLUDED.cashback_percent,
+       surge_multiplier=EXCLUDED.surge_multiplier,
+       is_active=EXCLUDED.is_active`,
   `CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     action TEXT NOT NULL,
@@ -115,7 +141,11 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)",
   "CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)",
   "CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id)",
+  "CREATE INDEX IF NOT EXISTS idx_orders_region_id ON orders(region_id)",
   "CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active)",
+  "CREATE INDEX IF NOT EXISTS idx_tariffs_region_id ON tariffs(region_id)",
+  "CREATE INDEX IF NOT EXISTS idx_tariffs_region_active ON tariffs(region_id, is_active)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_tariffs_region_name ON tariffs(region_id, name)",
   "CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_driver_id ON driver_region_approvals(driver_id)",
   "CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_region_id ON driver_region_approvals(region_id)",
   "CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_status ON driver_region_approvals(status)",
@@ -157,6 +187,11 @@ const statements = [
       AND service_commission_percent >= 0 AND service_commission_percent <= 100
       AND cashback_percent >= 0 AND cashback_percent <= 100
     );
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+  `DO $$
+  BEGIN
+    ALTER TABLE tariffs ADD CONSTRAINT tariffs_surge_multiplier_check CHECK (surge_multiplier > 0 AND surge_multiplier <= 10);
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`
 ];

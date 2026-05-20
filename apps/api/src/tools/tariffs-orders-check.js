@@ -1,0 +1,207 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  calculateOrderPrice,
+  prepareOrderPricing
+} from "../modules/orders/order-pricing.service.js";
+
+const root = fileURLToPath(new URL("../", import.meta.url));
+const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
+const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
+const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
+const tariffsRoutes = readFileSync(join(root, "modules", "tariffs", "tariffs.routes.js"), "utf8");
+
+assert.match(schema, /region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "tariffs must belong to regions");
+assert.match(schema, /is_active BOOLEAN NOT NULL DEFAULT true/i, "tariffs must keep active state");
+assert.match(schema, /surge_multiplier NUMERIC\(6,2\) NOT NULL DEFAULT 1/i, "tariffs must store surge multiplier");
+assert.match(schema, /UNIQUE\(region_id, name\)/i, "tariffs must be unique per region and name");
+assert.match(schema, /region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "orders must store immutable region id");
+assert.match(schema, /pricing_snapshot JSONB NOT NULL DEFAULT '\{\}'::jsonb/i, "orders must store pricing snapshot");
+assert.doesNotMatch(schema, /reject_reason/i, "Milestone 3 must not persist rejected order attempts");
+assert.match(schema, /idx_tariffs_region_id/i, "tariff region index must exist");
+assert.match(schema, /idx_tariffs_region_active/i, "tariff region active index must exist");
+assert.match(schema, /idx_orders_region_id/i, "order region index must exist");
+
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "migration must add tariff region id");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS surge_multiplier/i, "migration must add tariff surge multiplier");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "migration must add order region id");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB/i, "migration must add order pricing snapshot");
+assert.match(migrations, /UPDATE tariffs SET region_id=\(SELECT id FROM regions WHERE code='ATAKENT'\) WHERE region_id IS NULL/i, "migration must attach existing dev tariffs to Atakent");
+
+assert.match(ordersRoutes, /router\.post\("\/estimate"/, "estimate endpoint must exist");
+assert.match(ordersRoutes, /router\.post\("\/", requireAuth, requireRole\("CLIENT"\)/, "order creation endpoint must require client auth");
+assert.match(ordersRoutes, /prepareOrderPricing\(body, client\)/, "order creation must use backend pricing validation");
+assert.match(ordersRoutes, /INSERT INTO orders\(short_id, region_id,[\s\S]*pricing_snapshot/i, "order insert must store region id and pricing snapshot");
+const createRouteSource = ordersRoutes.slice(
+  ordersRoutes.indexOf('router.post("/",'),
+  ordersRoutes.indexOf('router.post("/:id/cancel-public"')
+);
+assert.doesNotMatch(createRouteSource, /\.emit\(/, "Milestone 3 order creation must not emit realtime matching events");
+assert.match(tariffsRoutes, /regionId/, "tariff listing must support region scoping");
+
+const formulaTariff = {
+  id: "tariff-formula",
+  region_id: "region-a",
+  name: "Formula",
+  base_price: 400,
+  price_per_km: 100,
+  price_per_minute: 20,
+  min_price: 700,
+  service_commission_percent: 15,
+  surge_multiplier: 1,
+  is_active: true
+};
+assert.equal(calculateOrderPrice(formulaTariff, 3, 10), 900, "price formula must apply distance and duration");
+assert.equal(calculateOrderPrice({ ...formulaTariff, min_price: 1000 }, 1, 1), 1000, "minimum price must apply");
+assert.equal(calculateOrderPrice({ ...formulaTariff, surge_multiplier: 1.5 }, 3, 10), 1350, "surge multiplier must apply");
+
+function createExecutor() {
+  const state = {
+    regions: [
+      {
+        id: "region-a",
+        code: "A",
+        name: "Region A",
+        is_active: true,
+        center_lat: 0.5,
+        center_lng: 0.5,
+        currency: "KZT",
+        boundary: [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]
+      },
+      {
+        id: "region-b",
+        code: "B",
+        name: "Region B",
+        is_active: true,
+        center_lat: 2.5,
+        center_lng: 2.5,
+        currency: "KZT",
+        boundary: [[2, 2], [3, 2], [3, 3], [2, 3], [2, 2]]
+      },
+      {
+        id: "region-inactive",
+        code: "OLD",
+        name: "Inactive Region",
+        is_active: false,
+        center_lat: 4.5,
+        center_lng: 4.5,
+        currency: "KZT",
+        boundary: [[4, 4], [5, 4], [5, 5], [4, 5], [4, 4]]
+      }
+    ],
+    tariffs: [
+      { ...formulaTariff, id: "tariff-a", name: "Economy" },
+      { ...formulaTariff, id: "tariff-a-inactive", name: "Inactive", is_active: false },
+      { ...formulaTariff, id: "tariff-b", region_id: "region-b", name: "Economy" }
+    ],
+    orders: []
+  };
+
+  return {
+    state,
+    async query(sql, params = []) {
+      if (/FROM regions\s+WHERE is_active=true/i.test(sql)) {
+        return { rows: state.regions.filter(region => region.is_active).sort((a, b) => a.name.localeCompare(b.name)) };
+      }
+      if (/SELECT \* FROM tariffs WHERE id=\$1/i.test(sql)) {
+        return { rows: state.tariffs.filter(tariff => tariff.id === params[0]) };
+      }
+      if (/FROM tariffs WHERE region_id=\$1 AND lower\(name\)=lower\(\$2\)/i.test(sql)) {
+        return { rows: state.tariffs.filter(tariff => tariff.region_id === params[0] && tariff.name.toLowerCase() === String(params[1]).toLowerCase()) };
+      }
+      if (/FROM tariffs WHERE lower\(name\)=lower\(\$1\) LIMIT 1/i.test(sql)) {
+        return { rows: state.tariffs.filter(tariff => tariff.name.toLowerCase() === String(params[0]).toLowerCase()).slice(0, 1) };
+      }
+      throw new Error(`Unexpected SQL in tariff/order check: ${sql}`);
+    }
+  };
+}
+
+const baseInput = {
+  pickupLat: 0.5,
+  pickupLng: 0.5,
+  dropoffLat: 0.8,
+  dropoffLng: 0.8,
+  tariffId: "tariff-a",
+  tariff: "Economy",
+  distanceKm: 3,
+  durationMin: 10,
+  price: 1,
+  serviceCommission: 1,
+  pricingSnapshot: { estimatedPrice: 1 }
+};
+
+const executor = createExecutor();
+const pricing = await prepareOrderPricing(baseInput, executor);
+assert.equal(pricing.regionId, "region-a", "order inside one active region succeeds");
+assert.equal(pricing.estimatedPrice, 900, "frontend-supplied price must be ignored");
+assert.equal(pricing.pricingSnapshot.serviceCommissionPercent, 15, "service commission percent must be included in pricing snapshot");
+assert.equal(pricing.pricingSnapshot.regionId, "region-a", "pricing snapshot must include region id");
+assert.equal(pricing.pricingSnapshot.tariffId, "tariff-a", "pricing snapshot must include tariff id");
+
+async function simulateOrderCreate(input, stateExecutor) {
+  const nextPricing = await prepareOrderPricing(input, stateExecutor);
+  const order = {
+    region_id: nextPricing.regionId,
+    price: nextPricing.estimatedPrice,
+    pricing_snapshot: nextPricing.pricingSnapshot
+  };
+  stateExecutor.state.orders.push(order);
+  return order;
+}
+
+const created = await simulateOrderCreate(baseInput, executor);
+assert.equal(created.region_id, "region-a", "created order stores region_id");
+assert.equal(created.pricing_snapshot.estimatedPrice, 900, "created order stores pricing_snapshot");
+
+await assert.rejects(
+  () => simulateOrderCreate({ ...baseInput, pickupLat: 9, pickupLng: 9 }, executor),
+  { code: "PICKUP_REGION_INACTIVE" },
+  "pickup outside active region rejects PICKUP_REGION_INACTIVE"
+);
+assert.equal(executor.state.orders.length, 1, "rejected pickup attempt must not insert order row");
+
+await assert.rejects(
+  () => prepareOrderPricing({ ...baseInput, dropoffLat: 9, dropoffLng: 9 }, executor),
+  { code: "DROPOFF_REGION_INACTIVE" },
+  "dropoff outside active region rejects DROPOFF_REGION_INACTIVE"
+);
+
+await assert.rejects(
+  () => prepareOrderPricing({ ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5 }, executor),
+  { code: "INTERCITY_NOT_SUPPORTED" },
+  "pickup/dropoff in different active regions rejects INTERCITY_NOT_SUPPORTED"
+);
+
+const ambiguousExecutor = createExecutor();
+ambiguousExecutor.state.regions.push({
+  id: "region-overlap",
+  code: "OVERLAP",
+  name: "Overlap",
+  is_active: true,
+  center_lat: 0.5,
+  center_lng: 0.5,
+  currency: "KZT",
+  boundary: [[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75], [0.25, 0.25]]
+});
+await assert.rejects(
+  () => prepareOrderPricing(baseInput, ambiguousExecutor),
+  { code: "REGION_AMBIGUOUS" },
+  "overlapping active regions reject REGION_AMBIGUOUS"
+);
+
+await assert.rejects(
+  () => prepareOrderPricing({ ...baseInput, tariffId: "tariff-a-inactive", tariff: "Inactive" }, executor),
+  { code: "TARIFF_INACTIVE" },
+  "inactive tariff rejects TARIFF_INACTIVE"
+);
+
+await assert.rejects(
+  () => prepareOrderPricing({ ...baseInput, tariffId: "tariff-b" }, executor),
+  { code: "TARIFF_REGION_MISMATCH" },
+  "tariff from another region rejects TARIFF_REGION_MISMATCH"
+);
+
+console.log("Tariffs and order creation checks ok");

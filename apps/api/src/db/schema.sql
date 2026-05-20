@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS driver_region_approvals (
 
 CREATE TABLE IF NOT EXISTS tariffs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
   name TEXT UNIQUE NOT NULL,
   base_price INTEGER NOT NULL,
   price_per_km INTEGER NOT NULL,
@@ -78,12 +79,15 @@ CREATE TABLE IF NOT EXISTS tariffs (
   min_price INTEGER NOT NULL,
   service_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
   cashback_percent NUMERIC(5,2) NOT NULL DEFAULT 2,
-  is_active BOOLEAN NOT NULL DEFAULT true
+  surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  UNIQUE(region_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   short_id TEXT UNIQUE NOT NULL,
+  region_id UUID REFERENCES regions(id) ON DELETE RESTRICT,
   client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
   driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
   rider_name TEXT NOT NULL,
@@ -104,6 +108,7 @@ CREATE TABLE IF NOT EXISTS orders (
   service_commission INTEGER NOT NULL DEFAULT 0,
   cashback_earned INTEGER NOT NULL DEFAULT 0,
   cashback_used INTEGER NOT NULL DEFAULT 0,
+  pricing_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
   notes TEXT,
   accepted_at TIMESTAMPTZ,
   arrived_at TIMESTAMPTZ,
@@ -215,8 +220,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_driver_id ON orders(driver_id);
 CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_region_id ON orders(region_id);
 CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
 CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active);
+CREATE INDEX IF NOT EXISTS idx_tariffs_region_id ON tariffs(region_id);
+CREATE INDEX IF NOT EXISTS idx_tariffs_region_active ON tariffs(region_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_driver_id ON driver_region_approvals(driver_id);
 CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_region_id ON driver_region_approvals(region_id);
 CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_status ON driver_region_approvals(status);
@@ -248,6 +256,28 @@ SET name=EXCLUDED.name,
 INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
 VALUES (1, 'SmartTaxi', 'Atakent', 'KZT', '₸')
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO tariffs(region_id,name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,is_active)
+SELECT r.id, seed.name, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, 1, true
+FROM regions r
+CROSS JOIN (
+  VALUES
+    ('Economy',400,110,20,700,15,2),
+    ('Comfort',600,150,25,1000,15,2),
+    ('Business',900,220,35,1500,18,2),
+    ('Delivery',500,130,20,800,15,1)
+) AS seed(name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent)
+WHERE r.code='ATAKENT'
+ON CONFLICT (name) DO UPDATE
+SET region_id=EXCLUDED.region_id,
+    base_price=EXCLUDED.base_price,
+    price_per_km=EXCLUDED.price_per_km,
+    price_per_minute=EXCLUDED.price_per_minute,
+    min_price=EXCLUDED.min_price,
+    service_commission_percent=EXCLUDED.service_commission_percent,
+    cashback_percent=EXCLUDED.cashback_percent,
+    surge_multiplier=EXCLUDED.surge_multiplier,
+    is_active=EXCLUDED.is_active;
 
 DO $$
 BEGIN
@@ -285,6 +315,7 @@ BEGIN
     base_price >= 0 AND price_per_km >= 0 AND price_per_minute >= 0 AND min_price >= 0
     AND service_commission_percent >= 0 AND service_commission_percent <= 100
     AND cashback_percent >= 0 AND cashback_percent <= 100
+    AND surge_multiplier > 0 AND surge_multiplier <= 10
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;

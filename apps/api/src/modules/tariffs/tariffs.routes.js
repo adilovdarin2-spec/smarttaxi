@@ -4,6 +4,7 @@ import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { publicTariff } from "./tariffs.service.js";
 const router = Router();
 
 const TariffName = z.string().trim().min(2).max(40);
@@ -14,6 +15,7 @@ const UpdateTariff = z.object({
   minPrice: z.coerce.number().int().min(0).max(500000).optional(),
   serviceCommissionPercent: z.coerce.number().min(0).max(100).optional(),
   cashbackPercent: z.coerce.number().min(0).max(100).optional(),
+  surgeMultiplier: z.coerce.number().gt(0).max(10).optional(),
   isActive: z.boolean().optional()
 }).refine((value) => Object.keys(value).length > 0, "at least one field is required");
 
@@ -24,13 +26,19 @@ const columns = {
   minPrice: "min_price",
   serviceCommissionPercent: "service_commission_percent",
   cashbackPercent: "cashback_percent",
+  surgeMultiplier: "surge_multiplier",
   isActive: "is_active"
 };
 
-router.get("/", async (_req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
-    const result = await query("SELECT * FROM tariffs WHERE is_active=true ORDER BY base_price ASC");
-    res.json({ tariffs: result.rows });
+    const params = z.object({
+      regionId: z.string().uuid().optional()
+    }).parse(req.query);
+    const result = params.regionId
+      ? await query("SELECT * FROM tariffs WHERE region_id=$1 AND is_active=true ORDER BY base_price ASC", [params.regionId])
+      : await query("SELECT * FROM tariffs WHERE is_active=true ORDER BY base_price ASC");
+    res.json({ tariffs: result.rows.map(publicTariff) });
   } catch (e) { next(e); }
 });
 
