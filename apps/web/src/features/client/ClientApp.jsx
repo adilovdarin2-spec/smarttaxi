@@ -1,12 +1,40 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Icon, SmartLogo, VehicleIcon } from "../../core/icons.jsx";
-import { AppHeader, BottomNav, Button, MenuRow, Money, PhoneFrame } from "../../core/ui.jsx";
-import { PAYMENTS, PLACES, TARIFFS, TRIPS } from "../../core/data.js";
+import { AppHeader, BottomNav, Button, Money, PhoneFrame } from "../../core/ui.jsx";
+import { PAYMENTS, PLACES } from "../../core/data.js";
+import {
+  cancelPublicOrder,
+  createOrder,
+  estimateOrder,
+  getActiveRegions,
+  getTariffs,
+  getToken,
+  loginUser
+} from "../../lib/mvpApi.js";
+import { createSocket } from "../../lib/socket.js";
 import MapView from "../map/MapView.jsx";
 
 const quick = [
-  ["home", "Дом"], ["work", "Работа"], ["star", "Избранное"], ["clock", "Недавние"]
+  ["home", "Дом"],
+  ["work", "Работа"],
+  ["star", "Избранное"],
+  ["clock", "Недавние"]
 ];
+const paymentOptions = PAYMENTS.filter(item => ["CASH", "KASPI", "CARD", "CASHBACK", "MIXED"].includes(item.id));
+const errorMessages = {
+  PICKUP_REGION_INACTIVE: "Точка посадки вне активного региона.",
+  DROPOFF_REGION_INACTIVE: "Точка назначения вне активного региона.",
+  INTERCITY_NOT_SUPPORTED: "Поездки между регионами в MVP не поддерживаются.",
+  TARIFF_INACTIVE: "Выбранный тариф сейчас недоступен.",
+  TARIFF_REGION_MISMATCH: "Тариф не относится к региону поездки.",
+  ORDER_ALREADY_ACCEPTED: "Заказ уже принят водителем.",
+  UNAUTHORIZED: "Войдите как пассажир, чтобы создать заказ.",
+  FORBIDDEN: "У аккаунта нет прав пассажира для создания заказа."
+};
+
+function formatError(error) {
+  return errorMessages[error?.code] || error?.message || "Не удалось выполнить запрос.";
+}
 
 function normalizeOrder(order) {
   if (!order) return null;
@@ -15,70 +43,213 @@ function normalizeOrder(order) {
     short_id: order.short_id || order.shortId || order.id,
     pickup_text: order.pickup_text || order.pickupText,
     dropoff_text: order.dropoff_text || order.dropoffText,
-    payment_method: order.payment_method || order.paymentMethod
+    payment_method: order.payment_method || order.paymentMethod,
+    public_status: order.public_status || order.publicStatus || order.status
   };
+}
+
+function tariffTitle(tariff) {
+  return tariff?.name || tariff?.title || "Tariff";
+}
+
+function tariffPrice(tariff, estimate) {
+  if (estimate?.pricing?.tariffId === tariff?.id) return estimate.estimatedPrice;
+  return tariff?.minimumPrice || tariff?.min_price || 0;
 }
 
 export default function ClientApp() {
   const [screen, setScreen] = useState("splash");
   const [sheet, setSheet] = useState("home");
-  const [pickup, setPickup] = useState({ ...PLACES[0], title: "улица Шамо, 58", subtitle: "Моё местоположение" });
+  const [pickup, setPickup] = useState({ ...PLACES[0], title: "ул. Шамо, 58", subtitle: "Моё местоположение" });
   const [destination, setDestination] = useState(PLACES[2]);
-  const [tariff, setTariff] = useState(TARIFFS[0]);
-  const [payment, setPayment] = useState(PAYMENTS[0]);
+  const [payment, setPayment] = useState(paymentOptions[0]);
+  const [regions, setRegions] = useState([]);
+  const [regionsLoading, setRegionsLoading] = useState(true);
+  const [regionsError, setRegionsError] = useState("");
+  const [tariffs, setTariffs] = useState([]);
+  const [tariffsLoading, setTariffsLoading] = useState(false);
+  const [tariffsError, setTariffsError] = useState("");
+  const [tariff, setTariff] = useState(null);
+  const [estimate, setEstimate] = useState(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [estimateError, setEstimateError] = useState("");
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [rating, setRating] = useState(5);
-  const price = useMemo(() => destination ? tariff.price + 150 : tariff.price, [destination, tariff]);
+  const [socketState, setSocketState] = useState("offline");
+  const [authOpen, setAuthOpen] = useState(!getToken());
+  const [auth, setAuth] = useState({ phone: "+77000000001", email: "", password: "123456" });
+  const [rider, setRider] = useState({ name: "SmartTaxi Passenger", phone: "+77000000001" });
+  const socketRef = useRef(null);
 
-  async function createOrder() {
-    if (!destination || loading) return;
+  const selectedRegionId = estimate?.regionId || regions[0]?.id || "";
+  const canRequest = Boolean(destination && pickup && tariff && estimate && !estimateError && getToken());
+  const price = estimate?.estimatedPrice || 0;
+
+  useEffect(() => {
+    let ignore = false;
+    setRegionsLoading(true);
+    getActiveRegions()
+      .then(data => {
+        if (ignore) return;
+        setRegions(data.regions || []);
+        setRegionsError("");
+      })
+      .catch(error => !ignore && setRegionsError(formatError(error)))
+      .finally(() => !ignore && setRegionsLoading(false));
+    return () => { ignore = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedRegionId) return;
+    let ignore = false;
+    setTariffsLoading(true);
+    getTariffs(selectedRegionId)
+      .then(data => {
+        if (ignore) return;
+        const nextTariffs = data.tariffs || [];
+        setTariffs(nextTariffs);
+        setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
+        setTariffsError("");
+      })
+      .catch(error => !ignore && setTariffsError(formatError(error)))
+      .finally(() => !ignore && setTariffsLoading(false));
+    return () => { ignore = true; };
+  }, [selectedRegionId]);
+
+  useEffect(() => {
+    if (!pickup || !destination || !tariff) {
+      setEstimate(null);
+      return;
+    }
+    let ignore = false;
+    setEstimateLoading(true);
+    setEstimateError("");
+    estimateOrder(buildRoutePayload({ pickup, destination, tariff }))
+      .then(data => {
+        if (ignore) return;
+        setEstimate(data.estimate || null);
+      })
+      .catch(error => {
+        if (ignore) return;
+        setEstimate(null);
+        setEstimateError(formatError(error));
+      })
+      .finally(() => !ignore && setEstimateLoading(false));
+    return () => { ignore = true; };
+  }, [pickup, destination, tariff]);
+
+  useEffect(() => {
+    if (!order?.id || !getToken()) return undefined;
+    const socket = createSocket();
+    socketRef.current = socket;
+    setSocketState("connecting");
+    socket.on("connect", () => {
+      setSocketState("connected");
+      socket.emit("join_order", order.id);
+    });
+    socket.on("disconnect", () => setSocketState("offline"));
+    const updateOrder = payload => {
+      if (payload?.id === order.id) setOrder(current => normalizeOrder({ ...current, ...payload }));
+    };
+    socket.on("order_status_public", updateOrder);
+    socket.on("order_updated", updateOrder);
+    socket.on("order_accepted", updateOrder);
+    return () => {
+      socket.off("order_status_public", updateOrder);
+      socket.off("order_updated", updateOrder);
+      socket.off("order_accepted", updateOrder);
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [order?.id]);
+
+  async function submitLogin(event) {
+    event.preventDefault();
     setLoading(true);
     setMessage("");
-    const payload = {
-      riderName: "Клиент Smart Taxi",
-      riderPhone: "+77000000000",
-      pickupText: pickup.title,
-      dropoffText: destination.title,
-      pickupLat: pickup.lat,
-      pickupLng: pickup.lng,
-      dropoffLat: destination.lat,
-      dropoffLng: destination.lng,
-      tariff: tariff.id,
-      paymentMethod: payment.id,
-      distanceKm: 6.2,
-      durationMin: 14,
-      notes: ""
-    };
-    window.setTimeout(() => {
-      setOrder(normalizeOrder({ id: "local-ui-order", shortId: "ST-1001", status: "searching", ...payload, price }));
-      setSheet("searching");
+    try {
+      await loginUser({
+        phone: auth.email ? undefined : auth.phone,
+        email: auth.email || undefined,
+        password: auth.password
+      });
+      setRider(current => ({ ...current, phone: auth.phone || current.phone }));
+      setAuthOpen(false);
+      setMessage("Вход выполнен. Теперь можно создать заказ.");
+    } catch (error) {
+      setMessage(formatError(error));
+    } finally {
       setLoading(false);
-    }, 450);
+    }
   }
 
-  if (screen === "splash") {
-    return <WelcomeScreen onStart={() => setScreen("home")} />;
+  async function submitOrder() {
+    if (!destination || !tariff || loading) return;
+    if (!getToken()) {
+      setAuthOpen(true);
+      setMessage(errorMessages.UNAUTHORIZED);
+      return;
+    }
+    setLoading(true);
+    setMessage("");
+    try {
+      const payload = {
+        ...buildRoutePayload({ pickup, destination, tariff }),
+        riderName: rider.name,
+        riderPhone: rider.phone,
+        pickupText: pickup.title,
+        dropoffText: destination.title,
+        paymentMethod: payment.id,
+        notes: ""
+      };
+      const data = await createOrder(payload);
+      setOrder(normalizeOrder(data.order));
+      setSheet("searching");
+    } catch (error) {
+      setMessage(formatError(error));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (screen === "register") {
-    return <RegisterScreen onBack={() => setScreen("splash")} onDone={() => setScreen("home")} />;
+  async function cancelOrder() {
+    if (!order?.id || loading) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      const data = await cancelPublicOrder(order.id, rider.phone);
+      setOrder(normalizeOrder(data.order));
+      setSheet("home");
+    } catch (error) {
+      setMessage(formatError(error));
+    } finally {
+      setLoading(false);
+    }
   }
+
+  if (screen === "splash") return <WelcomeScreen onStart={() => setScreen("home")} />;
 
   return (
     <PhoneFrame className="client-app">
       {sheet === "home" && (
         <>
-          <MapView pickup={pickup} destination={destination} status={destination ? "6 мин" : ""} />
-          <HomeHeader onMenu={() => setSheet("menu")} onBonus={() => setSheet("bonus")} />
+          <MapView pickup={pickup} destination={destination} status={estimateLoading ? "Расчёт..." : estimate ? `${estimate.pricing?.durationMin || 0} мин` : ""} />
+          <HomeHeader onMenu={() => setSheet("menu")} />
           <section className="ride-sheet">
             <div className="sheet-grip" />
             <RouteCard pickup={pickup} destination={destination} onPickup={() => setSheet("pickup")} onDestination={() => setSheet("destination")} />
             <div className="quick-grid">{quick.map(([icon, label]) => <button key={label} type="button" onClick={() => setSheet(label === "Недавние" ? "history" : "destination")}><Icon name={icon} /><span>{label}</span></button>)}</div>
-            <TariffCarousel tariff={tariff} setTariff={setTariff} price={price} />
-            {message && <p className="inline-error">{message}</p>}
-            <Button className="wide" disabled={!destination || loading} onClick={createOrder}>{loading ? "Ищем..." : destination ? "Заказать такси" : "Найти водителя"}</Button>
+            <RegionState loading={regionsLoading} error={regionsError} regions={regions} />
+            <TariffCarousel tariffs={tariffs} tariff={tariff} setTariff={setTariff} estimate={estimate} loading={tariffsLoading} error={tariffsError} />
+            <PaymentRow payment={payment} setPayment={setPayment} />
+            {authOpen && <PassengerLogin auth={auth} setAuth={setAuth} rider={rider} setRider={setRider} loading={loading} onSubmit={submitLogin} />}
+            {estimateLoading && <p className="inline-status">Считаем стоимость на backend...</p>}
+            {estimateError && <p className="inline-error">{estimateError}</p>}
+            {message && <p className={message.includes("Вход") ? "inline-status" : "inline-error"}>{message}</p>}
+            <Button className="wide" disabled={!destination || !tariff || loading || estimateLoading || !regions.length} onClick={submitOrder}>
+              {loading ? "Отправляем..." : canRequest ? <>Заказать за <Money value={price} /></> : "Войти и выбрать тариф"}
+            </Button>
           </section>
           <BottomNav active="home" onSelect={key => setSheet(key === "profile" ? "profile" : key)} />
         </>
@@ -86,44 +257,50 @@ export default function ClientApp() {
       {sheet === "pickup" && <AddressScreen mode="pickup" onBack={() => setSheet("home")} onSelect={place => { setPickup(place); setSheet("home"); }} />}
       {sheet === "destination" && <AddressScreen mode="destination" onBack={() => setSheet("home")} onSelect={place => { setDestination(place); setSheet("home"); }} />}
       {sheet === "payment" && <PaymentScreen payment={payment} setPayment={setPayment} onBack={() => setSheet("home")} />}
-      {sheet === "searching" && <SearchingScreen order={order} pickup={pickup} destination={destination} tariff={tariff} price={price} onCancel={() => setSheet("home")} onAssign={() => setSheet("assigned")} />}
-      {sheet === "assigned" && <AssignedScreen order={order} pickup={pickup} destination={destination} price={price} onStart={() => setSheet("ride")} />}
-      {sheet === "ride" && <RideScreen pickup={pickup} destination={destination} price={price} onComplete={() => setSheet("complete")} />}
-      {sheet === "complete" && <CompleteScreen pickup={pickup} destination={destination} price={price} rating={rating} setRating={setRating} onHome={() => { setDestination(null); setOrder(null); setSheet("home"); }} />}
-      {sheet === "history" && <HistoryScreen onBack={() => setSheet("home")} />}
-      {sheet === "bonus" && <BonusScreen onBack={() => setSheet("home")} onPromo={() => setSheet("promo")} onInvite={() => setSheet("invite")} />}
-      {sheet === "promo" && <PromoScreen onBack={() => setSheet("bonus")} />}
-      {sheet === "invite" && <InviteScreen onBack={() => setSheet("bonus")} />}
-      {sheet === "notifications" && <NotificationsScreen onBack={() => setSheet("profile")} />}
-      {sheet === "support" && <SupportScreen onBack={() => setSheet("home")} />}
-      {sheet === "profile" && <ProfileScreen onBack={() => setSheet("home")} setSheet={setSheet} />}
-      {sheet === "profileEdit" && <ProfileEditScreen onBack={() => setSheet("profile")} />}
-      {sheet === "settings" && <SettingsScreen onBack={() => setSheet("profile")} />}
+      {sheet === "searching" && <ActiveOrderScreen order={order} pickup={pickup} destination={destination} price={price} socketState={socketState} loading={loading} onCancel={cancelOrder} onHome={() => setSheet("home")} />}
+      {sheet === "history" && <HistoryScreen onBack={() => setSheet("home")} order={order} />}
+      {sheet === "profile" && <ProfileScreen onBack={() => setSheet("home")} setSheet={setSheet} rider={rider} />}
       {sheet === "menu" && <ClientMenu onBack={() => setSheet("home")} setSheet={setSheet} />}
-      {sheet === "driver" && <BecomeDriver onBack={() => setSheet("profile")} onApply={() => setSheet("driverApply")} />}
-      {sheet === "driverApply" && <DriverApplicationScreen onBack={() => setSheet("driver")} />}
     </PhoneFrame>
   );
 }
 
+function buildRoutePayload({ pickup, destination, tariff }) {
+  return {
+    pickupLat: pickup.lat,
+    pickupLng: pickup.lng,
+    dropoffLat: destination.lat,
+    dropoffLng: destination.lng,
+    tariffId: tariff?.id,
+    tariff: tariff?.name || tariff?.id || "Economy",
+    distanceKm: estimateDistanceKm(pickup, destination),
+    durationMin: estimateDurationMin(pickup, destination)
+  };
+}
+
+function estimateDistanceKm(a, b) {
+  const latKm = (Number(a.lat) - Number(b.lat)) * 111;
+  const lngKm = (Number(a.lng) - Number(b.lng)) * 82;
+  return Math.max(0.4, Math.round(Math.sqrt(latKm * latKm + lngKm * lngKm) * 10) / 10);
+}
+
+function estimateDurationMin(a, b) {
+  return Math.max(3, Math.round(estimateDistanceKm(a, b) * 3.4));
+}
+
 function WelcomeScreen({ onStart }) {
-  const benefits = [
-    ["route", "Быстрый заказ"],
-    ["cash", "Честные цены"],
-    ["cash", "Маленькая комиссия"],
-    ["shield", "Безопасные поездки"],
-    ["support", "Поддержка 24/7"]
-  ];
   return (
     <PhoneFrame className="welcome-screen">
       <div className="welcome-inner">
         <SmartLogo />
         <h1>Smart<span>Taxi</span></h1>
-        <p>Ваш комфорт. Ваш город.</p>
+        <p>Заказы только внутри активного региона.</p>
         <div className="splash-city" />
         <div className="splash-car"><VehicleIcon /></div>
         <ul>
-          {benefits.map(([icon, title]) => <li key={title}><Icon name={icon} />{title}</li>)}
+          <li><Icon name="route" />Backend проверяет регион поездки</li>
+          <li><Icon name="cash" />Цена считается на сервере</li>
+          <li><Icon name="shield" />Межгород заблокирован</li>
         </ul>
         <Button className="wide" onClick={onStart}>Начать поездку</Button>
       </div>
@@ -131,28 +308,11 @@ function WelcomeScreen({ onStart }) {
   );
 }
 
-function RegisterScreen({ onBack, onDone }) {
-  return (
-    <section className="panel-screen auth-panel">
-      <AppHeader title="Регистрация" subtitle="Создайте аккаунт клиента" onBack={onBack} />
-      <form className="form-stack" onSubmit={event => { event.preventDefault(); onDone(); }}>
-        <input placeholder="Имя" defaultValue="Дарын" />
-        <input placeholder="Номер телефона" defaultValue="+7 (778) 417-51-36" />
-        <input placeholder="Email" defaultValue="client@smarttaxi.kz" />
-        <input placeholder="Пароль" type="password" defaultValue="12345678" />
-        <label className="terms-row"><input type="checkbox" defaultChecked /> <span>Я согласен с условиями использования и политикой конфиденциальности</span></label>
-        <Button className="wide" onClick={onDone}>Зарегистрироваться</Button>
-      </form>
-      <button className="plain-link" type="button" onClick={onBack}>Уже есть аккаунт? Войти</button>
-    </section>
-  );
-}
-
-function HomeHeader({ onMenu, onBonus }) {
+function HomeHeader({ onMenu }) {
   return (
     <header className="floating-header">
       <button className="round-button" type="button" onClick={onMenu} aria-label="Меню"><Icon name="menu" /></button>
-      <button className="bonus-pill" type="button" onClick={onBonus}><SmartLogo compact /><span>Бонусы<br /><b>850 ₸</b></span></button>
+      <span className="bonus-pill"><SmartLogo compact /><span>Live API<br /><b>backend</b></span></span>
     </header>
   );
 }
@@ -166,19 +326,29 @@ function RouteCard({ pickup, destination, onPickup, onDestination }) {
   );
 }
 
-function TariffCarousel({ tariff, setTariff, price }) {
+function RegionState({ loading, error, regions }) {
+  if (loading) return <p className="inline-status">Загружаем активные регионы...</p>;
+  if (error) return <p className="inline-error">{error}</p>;
+  if (!regions.length) return <p className="inline-error">Нет активных регионов. Заказ недоступен.</p>;
+  return <p className="inline-status">Активный регион: {regions.map(region => region.name).join(", ")}</p>;
+}
+
+function TariffCarousel({ tariffs, tariff, setTariff, estimate, loading, error }) {
   return (
     <section>
       <h3 className="section-title">Тариф</h3>
+      {loading && <p className="inline-status">Загружаем тарифы...</p>}
+      {error && <p className="inline-error">{error}</p>}
+      {!loading && !error && !tariffs.length && <p className="inline-error">Нет активных тарифов для региона.</p>}
       <div className="tariff-carousel">
-        {TARIFFS.map(item => (
-          <button type="button" className={`tariff-card ${tariff.id === item.id ? "active" : ""}`} key={item.id} onClick={() => setTariff(item)}>
-            <VehicleIcon type={item.kind} />
-            {tariff.id === item.id && <span className="check"><Icon name="check" size={14} /></span>}
-            <strong>{item.title}</strong>
-            <small>{item.eta}</small>
-            <b><Money value={item.id === tariff.id ? price : item.price} /></b>
-            <em>{item.note}</em>
+        {tariffs.map(item => (
+          <button type="button" className={`tariff-card ${tariff?.id === item.id ? "active" : ""}`} key={item.id} onClick={() => setTariff(item)}>
+            <VehicleIcon type={item.name === "Business" ? "business" : item.name === "Comfort" ? "comfort" : "sedan"} />
+            {tariff?.id === item.id && <span className="check"><Icon name="check" size={14} /></span>}
+            <strong>{tariffTitle(item)}</strong>
+            <small>Мин. цена</small>
+            <b><Money value={tariffPrice(item, estimate)} /></b>
+            <em>{Number(item.surgeMultiplier || 1) > 1 ? `x${item.surgeMultiplier}` : "обычный спрос"}</em>
           </button>
         ))}
       </div>
@@ -186,27 +356,41 @@ function TariffCarousel({ tariff, setTariff, price }) {
   );
 }
 
+function PaymentRow({ payment, setPayment }) {
+  return (
+    <div className="tabs">
+      {paymentOptions.map(item => (
+        <button key={item.id} type="button" className={payment.id === item.id ? "active" : ""} onClick={() => setPayment(item)}>{item.title}</button>
+      ))}
+    </div>
+  );
+}
+
+function PassengerLogin({ auth, setAuth, rider, setRider, loading, onSubmit }) {
+  return (
+    <form className="auth-inline form-stack" onSubmit={onSubmit}>
+      <b>Вход пассажира</b>
+      <input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value, email: "" })} placeholder="Телефон аккаунта" />
+      <input value={auth.email} onChange={event => setAuth({ ...auth, email: event.target.value })} placeholder="или email" />
+      <input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="Пароль" type="password" />
+      <input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} placeholder="Имя пассажира" />
+      <input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} placeholder="Телефон для заказа" />
+      <Button className="wide" type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</Button>
+    </form>
+  );
+}
+
 function AddressScreen({ mode, onBack, onSelect }) {
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState("all");
-  const filtered = PLACES
-    .filter(p => tab === "all" || (tab === "addresses" ? p.group !== "popular" : p.group === "popular"))
-    .filter(p => `${p.title} ${p.subtitle}`.toLowerCase().includes(query.toLowerCase()));
-  const groups = [
-    ["Избранные адреса", filtered.filter(p => p.group === "favorite")],
-    ["Популярные места", filtered.filter(p => p.group === "popular")],
-    ["Недавние", filtered.filter(p => p.group === "recent")]
-  ];
+  const filtered = PLACES.filter(p => `${p.title} ${p.subtitle}`.toLowerCase().includes(query.toLowerCase()));
   return (
     <section className="panel-screen">
       <AppHeader title={mode === "pickup" ? "Откуда поедем?" : "Куда едем?"} onBack={onBack} />
-      <label className="search-field"><Icon name="search" /><input value={query} onChange={e => setQuery(e.target.value)} autoFocus placeholder="Куда?" /></label>
-      <div className="tabs">
-        <button type="button" className={tab === "all" ? "active" : ""} onClick={() => setTab("all")}>Все</button>
-        <button type="button" className={tab === "addresses" ? "active" : ""} onClick={() => setTab("addresses")}>Адреса</button>
-        <button type="button" className={tab === "orgs" ? "active" : ""} onClick={() => setTab("orgs")}>Организации</button>
-      </div>
-      {groups.map(([title, list]) => list.length ? <section className="address-group" key={title}><h3>{title}</h3>{list.map(place => <button key={place.title} type="button" onClick={() => onSelect(place)}><Icon name={place.group === "favorite" ? "home" : "pin"} /><span>{place.title}<small>{place.subtitle}</small></span><Icon name="back" /></button>)}</section> : null)}
+      <label className="search-field"><Icon name="search" /><input value={query} onChange={e => setQuery(e.target.value)} autoFocus placeholder="Адрес" /></label>
+      <section className="address-group">
+        <h3>Адреса</h3>
+        {filtered.map(place => <button key={`${place.title}-${place.subtitle}`} type="button" onClick={() => onSelect(place)}><Icon name="pin" /><span>{place.title}<small>{place.subtitle}</small></span><Icon name="back" /></button>)}
+      </section>
       {query && <Button variant="secondary" className="wide" onClick={() => onSelect({ title: query, subtitle: "Введённый адрес", lat: 42.316, lng: 69.596 })}>Использовать адрес: {query}</Button>}
     </section>
   );
@@ -215,134 +399,47 @@ function AddressScreen({ mode, onBack, onSelect }) {
 function PaymentScreen({ payment, setPayment, onBack }) {
   return (
     <section className="panel-screen">
-      <AppHeader title="Способы оплаты" onBack={onBack} />
-      <div className="list-card">{PAYMENTS.map(item => <button key={item.id} type="button" className={payment.id === item.id ? "selected" : ""} onClick={() => setPayment(item)}><Icon name={item.id === "CARD" ? "card" : item.id === "KASPI" ? "cash" : "cash"} /><span>{item.title}<small>{item.note}</small></span>{payment.id === item.id && <Icon name="check" />}</button>)}</div>
-      <p className="muted-note">Оплата списывается или передаётся после завершения поездки.</p>
+      <AppHeader title="Способ оплаты" onBack={onBack} />
+      <div className="list-card">{paymentOptions.map(item => <button key={item.id} type="button" className={payment.id === item.id ? "selected" : ""} onClick={() => setPayment(item)}><Icon name={item.id === "CARD" ? "card" : "cash"} /><span>{item.title}<small>{item.note}</small></span>{payment.id === item.id && <Icon name="check" />}</button>)}</div>
     </section>
   );
 }
 
-function SearchingScreen({ pickup, destination, tariff, price, onCancel, onAssign }) {
-  useEffect(() => {
-    const timer = window.setTimeout(onAssign, 1800);
-    return () => window.clearTimeout(timer);
-  }, [onAssign]);
+function ActiveOrderScreen({ order, pickup, destination, price, socketState, loading, onCancel, onHome }) {
+  const status = order?.public_status || order?.status || "SEARCHING";
+  const terminal = ["COMPLETED", "CANCELLED", "CANCELED"].includes(status);
   return (
     <section className="panel-screen ride-state">
-      <AppHeader title="Поиск водителя" onBack={onCancel} right={<button className="text-danger" onClick={onCancel}>Отмена</button>} />
-      <MapView pickup={pickup} destination={destination} status="Поиск ближайшего водителя" compact />
-      <div className="radar"><VehicleIcon /><span /><span /><span /></div>
-      <h2>Ищем водителя...</h2>
-      <p>Обычно это занимает 1–2 минуты</p>
-      <div className="summary-card"><b>{tariff.title}</b><span><Money value={price} /></span><small>{pickup.title} → {destination.title}</small></div>
-      <Button variant="secondary" className="wide" onClick={onCancel}>Отменить поиск</Button>
+      <AppHeader title="Активный заказ" onBack={onHome} right={!terminal ? <button className="text-danger" onClick={onCancel} disabled={loading}>Отмена</button> : null} />
+      <MapView pickup={pickup} destination={destination} status={status} compact />
+      <div className="summary-card">
+        <b>Заказ {order?.short_id || order?.id}</b>
+        <span>{status}</span>
+        <small>{pickup.title} {"->"} {destination.title}</small>
+        <strong><Money value={order?.price || price} /></strong>
+      </div>
+      <p className="inline-status">Realtime: {socketState}</p>
+      {!terminal && <Button variant="secondary" className="wide" onClick={onCancel} disabled={loading}>{loading ? "Отменяем..." : "Отменить заказ"}</Button>}
+      {terminal && <Button className="wide" onClick={onHome}>Новый заказ</Button>}
     </section>
   );
 }
 
-function AssignedScreen({ pickup, destination, price, onStart }) {
-  return (
-    <section className="panel-screen ride-state">
-      <AppHeader title="Поездка" onBack={onStart} />
-      <DriverFound />
-      <MapView pickup={pickup} destination={destination} driver status="Прибудет через 3 мин" compact />
-      <div className="trip-metrics"><span><b>3 мин</b><small>Приедет</small></span><span><b><Money value={price} /></b><small>Стоимость</small></span></div>
-      <Button className="wide" onClick={onStart}>Начать поездку</Button>
-    </section>
-  );
-}
-
-function RideScreen({ pickup, destination, price, onComplete }) {
-  const [notice, setNotice] = useState("");
-  function shareTrip() {
-    const text = `Smart Taxi: еду от ${pickup.title} до ${destination.title}.`;
-    if (navigator.share) {
-      navigator.share({ title: "Smart Taxi", text }).catch(() => setNotice("Ссылка на поездку подготовлена."));
-      return;
-    }
-    navigator.clipboard?.writeText(text).then(() => setNotice("Информация о поездке скопирована.")).catch(() => setNotice("Информация о поездке подготовлена."));
-  }
-  return (
-    <section className="panel-screen ride-state">
-      <AppHeader title="Поездка" onBack={onComplete} />
-      <DriverFound />
-      <MapView pickup={pickup} destination={destination} driver status="Едем к месту назначения" compact />
-      <div className="trip-actions"><Button variant="secondary" onClick={shareTrip}>Поделиться</Button><Button variant="secondary" onClick={() => setNotice("Оператор поддержки подключён к поездке.")}>Поддержка</Button><Button variant="danger" onClick={() => setNotice("SOS-сигнал показан оператору в UI-режиме.")}>SOS</Button></div>
-      {notice && <p className="inline-status">{notice}</p>}
-      <div className="summary-card"><b>Стоимость</b><span><Money value={price} /></span></div>
-      <Button className="wide" onClick={onComplete}>Завершить поездку</Button>
-    </section>
-  );
-}
-
-function DriverFound() {
-  return <article className="driver-found"><div className="avatar">И</div><span><b>Иван</b><small>Toyota Camry, белый<br />A123BC123</small></span><strong><Icon name="star" size={15} />4.9</strong></article>;
-}
-
-function CompleteScreen({ pickup, destination, price, rating, setRating, onHome }) {
-  const [saved, setSaved] = useState(false);
+function HistoryScreen({ onBack, order }) {
   return (
     <section className="panel-screen">
-      <AppHeader title="Поездка завершена" onBack={onHome} />
-      <div className="complete-card"><p>Спасибо за поездку!</p><h1><Money value={price} /></h1></div>
-      <div className="summary-card route-summary"><b>Эконом</b><span>12.4 км · 18 мин</span><small>{pickup.title} → {destination.title}</small></div>
-      <div className="rating-card"><p>Как прошла поездка?</p><div>{[1,2,3,4,5].map(v => <button type="button" key={v} className={v <= rating ? "active" : ""} onClick={() => setRating(v)}><Icon name="star" /></button>)}</div><Button variant="secondary" onClick={() => setSaved(true)}>{saved ? "Отзыв сохранён" : "Оставить отзыв"}</Button></div>
-      <div className="button-row"><Button variant="secondary" onClick={() => setSaved(true)}>Чек</Button><Button onClick={onHome}>Повторить поездку</Button></div>
+      <AppHeader title="История поездок" onBack={onBack} />
+      <div className="trip-list">
+        {order ? <article><span><b>{order.short_id || order.id}</b><small>{order.pickup_text} {"->"} {order.dropoff_text}</small></span><strong>{order.price ? <Money value={order.price} /> : order.status}</strong><small>{order.status}</small></article> : <p className="muted-note">История появится после реальных заказов.</p>}
+      </div>
     </section>
   );
 }
 
-function HistoryScreen({ onBack }) {
-  const [tab, setTab] = useState("done");
-  const trips = TRIPS.filter(t => tab === "all" || (tab === "cancelled" ? t.status === "Отменено" : t.status !== "Отменено"));
-  return <section className="panel-screen"><AppHeader title="История поездок" onBack={onBack} /><div className="tabs"><button type="button" className={tab === "all" ? "active" : ""} onClick={() => setTab("all")}>Все</button><button type="button" className={tab === "done" ? "active" : ""} onClick={() => setTab("done")}>Завершённые</button><button type="button" className={tab === "cancelled" ? "active" : ""} onClick={() => setTab("cancelled")}>Отменённые</button></div><div className="trip-list">{trips.map(t => <article key={t.date}><span><b>{t.date}</b><small>{t.address}</small></span><strong>{t.price ? <Money value={t.price} /> : t.status}</strong><small>{t.tariff}</small></article>)}</div></section>;
-}
-
-function BonusScreen({ onBack, onPromo, onInvite }) {
-  return <section className="panel-screen"><AppHeader title="Бонусы" onBack={onBack} right={<Icon name="support" />} /><div className="bonus-card"><span>Ваш баланс</span><h1>850 ₸</h1><SmartLogo /></div><div className="bonus-actions"><button type="button" onClick={onBack}><Icon name="clock" />История</button><button type="button" onClick={onPromo}><Icon name="gift" />Промокод</button><button type="button" onClick={onInvite}><Icon name="user" />Пригласить</button></div><div className="referral-card"><h3>Пригласите друга и получите 500 ₸</h3><p><b>1</b>Ваш друг регистрируется по ссылке</p><p><b>2</b>Он совершает первую поездку</p><p><b>3</b>Вы получаете 500 ₸ на счёт</p></div><Button className="wide" onClick={onInvite}>Пригласить друга</Button></section>;
-}
-
-function PromoScreen({ onBack }) {
-  const [value, setValue] = useState("");
-  const [status, setStatus] = useState("");
-  return <section className="panel-screen"><AppHeader title="Промокоды" onBack={onBack} /><div className="summary-card"><b>Введите промокод</b><label className="search-field"><Icon name="gift" /><input value={value} onChange={e => setValue(e.target.value)} placeholder="SMART500" /></label><Button className="wide" onClick={() => setStatus(value.trim() ? "Промокод сохранён в UI." : "Введите промокод.")}>Применить</Button>{status && <p className="inline-status">{status}</p>}</div></section>;
-}
-
-function InviteScreen({ onBack }) {
-  const [copied, setCopied] = useState(false);
-  return <section className="panel-screen"><AppHeader title="Пригласить друга" onBack={onBack} /><div className="referral-card"><h3>Ваш код: SMART-850</h3><p><b>1</b>Отправьте приглашение другу</p><p><b>2</b>Друг совершает первую поездку</p><p><b>3</b>На ваш баланс начисляется 500 ₸</p></div><Button className="wide" onClick={() => { navigator.clipboard?.writeText("SMART-850"); setCopied(true); }}>{copied ? "Код скопирован" : "Скопировать приглашение"}</Button></section>;
-}
-
-function NotificationsScreen({ onBack }) {
-  return <section className="panel-screen"><AppHeader title="Уведомления" onBack={onBack} /><div className="list-card"><MenuRow icon="gift" title="Бонусы начислены" value="+500 ₸" onClick={onBack} /><MenuRow icon="route" title="Поездка завершена" value="650 ₸" onClick={onBack} /><MenuRow icon="support" title="Поддержка ответила" onClick={onBack} /></div></section>;
-}
-
-function SupportScreen({ onBack }) {
-  const [messages, setMessages] = useState(["Здравствуйте, нужна помощь по поездке.", "Оператор Smart Taxi на связи. Опишите проблему, мы поможем."]);
-  const [draft, setDraft] = useState("");
-  return <section className="panel-screen support-screen"><AppHeader title="Поддержка" onBack={onBack} /><div className="chat-box">{messages.map((m, i) => <p key={`${m}-${i}`} className={i % 2 ? "" : "from-user"}>{m}<small>10:{24 + i}</small></p>)}</div><form className="chat-input" onSubmit={e => { e.preventDefault(); if (draft.trim()) { setMessages([...messages, draft.trim()]); setDraft(""); } }}><input value={draft} onChange={e => setDraft(e.target.value)} placeholder="Напишите сообщение..." /><button><Icon name="route" /></button></form></section>;
-}
-
-function ProfileScreen({ onBack, setSheet }) {
-  return <section className="panel-screen"><AppHeader title="Профиль" onBack={onBack} /><div className="profile-card"><div className="avatar">Д</div><span><b>Дарын</b><small>+7 (778) 417-51-36</small><button type="button" onClick={() => setSheet("profileEdit")}>Изменить данные</button></span></div><div className="list-card"><MenuRow icon="card" title="Способы оплаты" onClick={() => setSheet("payment")} /><MenuRow icon="gift" title="Бонусы" value="850 ₸" onClick={() => setSheet("bonus")} /><MenuRow icon="star" title="Промокоды" onClick={() => setSheet("promo")} /><MenuRow icon="user" title="Пригласить друга" onClick={() => setSheet("invite")} /><MenuRow icon="pin" title="Избранные адреса" onClick={() => setSheet("destination")} /><MenuRow icon="clock" title="История поездок" onClick={() => setSheet("history")} /><MenuRow icon="chat" title="Уведомления" onClick={() => setSheet("notifications")} /><MenuRow icon="support" title="Поддержка" onClick={() => setSheet("support")} /><MenuRow icon="work" title="Стать водителем" onClick={() => setSheet("driver")} /><MenuRow icon="settings" title="Настройки" onClick={() => setSheet("settings")} /><MenuRow icon="logout" title="Выйти" danger onClick={onBack} /></div></section>;
+function ProfileScreen({ onBack, setSheet, rider }) {
+  return <section className="panel-screen"><AppHeader title="Профиль" onBack={onBack} /><div className="profile-card"><div className="avatar">{rider.name.slice(0, 1)}</div><span><b>{rider.name}</b><small>{rider.phone}</small></span></div><div className="list-card"><button type="button" onClick={() => setSheet("payment")}><Icon name="card" /><span>Способ оплаты</span><Icon name="back" /></button><button type="button" onClick={() => setSheet("history")}><Icon name="clock" /><span>История поездок</span><Icon name="back" /></button></div></section>;
 }
 
 function ClientMenu({ onBack, setSheet }) {
-  return <section className="panel-screen"><AppHeader title="Меню клиента" onBack={onBack} /><div className="list-card"><MenuRow icon="user" title="Профиль" onClick={() => setSheet("profile")} /><MenuRow icon="clock" title="История поездок" onClick={() => setSheet("history")} /><MenuRow icon="card" title="Способы оплаты" onClick={() => setSheet("payment")} /><MenuRow icon="pin" title="Избранные адреса" onClick={() => setSheet("destination")} /><MenuRow icon="gift" title="Бонусы" onClick={() => setSheet("bonus")} /><MenuRow icon="star" title="Промокоды" onClick={() => setSheet("promo")} /><MenuRow icon="user" title="Пригласить друга" onClick={() => setSheet("invite")} /><MenuRow icon="support" title="Поддержка" onClick={() => setSheet("support")} /><MenuRow icon="settings" title="Настройки" onClick={() => setSheet("settings")} /><MenuRow icon="logout" title="Выйти" danger onClick={onBack} /></div></section>;
-}
-
-function BecomeDriver({ onBack, onApply }) {
-  return <section className="panel-screen"><AppHeader title="Стать водителем" onBack={onBack} /><div className="driver-hero"><VehicleIcon /><h2>Свободный график и быстрые выплаты</h2><p><Icon name="check" /> Маленькая комиссия</p><p><Icon name="check" /> Много заказов</p><p><Icon name="check" /> Поддержка 24/7</p></div><Button className="wide" onClick={onApply}>Оставить заявку</Button></section>;
-}
-
-function ProfileEditScreen({ onBack }) {
-  return <section className="panel-screen"><AppHeader title="Изменить данные" onBack={onBack} /><form className="form-stack"><input placeholder="Имя" defaultValue="Дарын" /><input placeholder="Телефон" defaultValue="+7 (778) 417-51-36" /><Button className="wide" onClick={onBack}>Сохранить</Button></form></section>;
-}
-
-function SettingsScreen({ onBack }) {
-  return <section className="panel-screen"><AppHeader title="Настройки" onBack={onBack} /><div className="list-card"><MenuRow icon="support" title="Язык: русский" onClick={onBack} /><MenuRow icon="shield" title="Безопасность" onClick={onBack} /><MenuRow icon="settings" title="Уведомления включены" onClick={onBack} /></div></section>;
-}
-
-function DriverApplicationScreen({ onBack }) {
-  return <section className="panel-screen"><AppHeader title="Заявка водителя" onBack={onBack} /><form className="form-stack"><input placeholder="ФИО" defaultValue="Дарын Адинов" /><input placeholder="Номер телефона" defaultValue="+7 (778) 417-51-36" /><input placeholder="Марка авто" defaultValue="Toyota Camry" /><input placeholder="Госномер" defaultValue="123ABM02" /><input placeholder="Год выпуска" defaultValue="2020" /><div className="tabs"><button type="button" className="active">Личный</button><button type="button">В аренде</button></div><Button className="wide" onClick={onBack}>Отправить заявку</Button></form></section>;
+  return <section className="panel-screen"><AppHeader title="Меню пассажира" onBack={onBack} /><div className="list-card"><button type="button" onClick={() => setSheet("profile")}><Icon name="user" /><span>Профиль</span><Icon name="back" /></button><button type="button" onClick={() => setSheet("history")}><Icon name="clock" /><span>История</span><Icon name="back" /></button><button type="button" onClick={() => setSheet("payment")}><Icon name="card" /><span>Оплата</span><Icon name="back" /></button></div></section>;
 }

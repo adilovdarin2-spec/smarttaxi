@@ -600,6 +600,36 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .inline-error { margin: 8px 0; color: var(--danger); font-weight: 800; }
 .inline-status { margin: 10px 0; color: var(--gold-light); font-size: 13px; font-weight: 800; }
 .muted-note { color: var(--muted); font-size: 13px; }
+.auth-inline,
+.region-selector {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .04);
+}
+.auth-inline b,
+.region-selector span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--gold-light);
+}
+.region-selector {
+  margin-inline: 18px;
+}
+.region-selector select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--surface);
+}
+.driver-message {
+  margin-inline: 18px;
+}
 
 .ride-state h2 { margin: 12px 0 4px; text-align: center; }
 .ride-state > p { color: var(--muted); text-align: center; }
