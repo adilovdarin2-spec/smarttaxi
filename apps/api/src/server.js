@@ -20,6 +20,13 @@ import financeRoutes from "./modules/finance/finance.routes.js";
 import mapsRoutes from "./modules/maps/maps.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import regionsRoutes from "./modules/regions/regions.routes.js";
+import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
+import {
+  ACTIVE_ORDER_STATUSES,
+  dispatchRegionRoom,
+  driverRegionRoom,
+  orderRoom
+} from "./modules/orders/order-dispatch.service.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -34,10 +41,27 @@ io.use((socket, next) => {
   next();
 });
 io.on("connection", socket => {
-  socket.on("join_dispatch", () => socket.join("dispatch"));
-  socket.on("join_drivers", () => socket.join("drivers"));
+  socket.on("join_dispatch", async payload => {
+    try {
+      if (!["OWNER", "OPERATOR", "FINANCE"].includes(socket.user?.role)) return;
+      const regionId = payload?.regionId;
+      if (!regionId) return;
+      const region = (await query("SELECT id, is_active FROM regions WHERE id=$1", [regionId])).rows[0];
+      if (!region?.is_active) return;
+      socket.join(dispatchRegionRoom(region.id));
+    } catch {}
+  });
+  socket.on("join_drivers", async () => {
+    try {
+      if (socket.user?.role !== "DRIVER") return;
+      const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [socket.user.id])).rows[0];
+      if (!driver) return;
+      await assertDriverDispatchReady(driver, query);
+      socket.join(driverRegionRoom(driver.current_region_id));
+    } catch {}
+  });
   socket.on("join_order", orderId => {
-    if (orderId) socket.join(`order:${orderId}`);
+    if (orderId) socket.join(orderRoom(orderId));
   });
   socket.on("driver_location_update", async payload => {
     try {
@@ -45,15 +69,20 @@ io.on("connection", socket => {
       const lat = Number(payload?.lat);
       const lng = Number(payload?.lng);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      const driver = (await query("SELECT id FROM drivers WHERE user_id=$1", [socket.user.id])).rows[0];
+      const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [socket.user.id])).rows[0];
       if (!driver) return;
+      await assertDriverDispatchReady(driver, query);
       let orderId = payload?.orderId;
-      if (!orderId) {
-        orderId = (await query(
+      const order = orderId
+        ? (await query(
+          "SELECT id FROM orders WHERE id=$1 AND driver_id=$2 AND status = ANY($3::text[]) LIMIT 1",
+          [orderId, driver.id, ACTIVE_ORDER_STATUSES]
+        )).rows[0]
+        : (await query(
           "SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) ORDER BY created_at DESC LIMIT 1",
-          [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]]
-        )).rows[0]?.id;
-      }
+          [driver.id, ACTIVE_ORDER_STATUSES]
+        )).rows[0];
+      orderId = order?.id || null;
       const next = {
         orderId,
         driverId: driver.id,
@@ -64,8 +93,8 @@ io.on("connection", socket => {
         updatedAt: new Date().toISOString()
       };
       latestDriverLocations.set(driver.id, next);
-      socket.to("dispatch").emit("driver_location_updated", next);
-      if (orderId) io.to(`order:${orderId}`).emit("driver_location_updated", next);
+      socket.to(dispatchRegionRoom(driver.current_region_id)).emit("driver_location_updated", next);
+      if (orderId) io.to(orderRoom(orderId)).emit("driver_location_updated", next);
     } catch {}
   });
 });

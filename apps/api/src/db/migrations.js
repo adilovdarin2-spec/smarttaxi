@@ -142,6 +142,26 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)",
   "CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id)",
   "CREATE INDEX IF NOT EXISTS idx_orders_region_id ON orders(region_id)",
+  "CREATE INDEX IF NOT EXISTS idx_orders_region_status_created_at ON orders(region_id, status, created_at DESC)",
+  `DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM (
+        SELECT driver_id
+        FROM orders
+        WHERE driver_id IS NOT NULL
+          AND status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS')
+        GROUP BY driver_id
+        HAVING COUNT(*) > 1
+      ) duplicate_active_driver_orders
+    ) THEN
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_one_active_per_driver ON orders(driver_id)
+        WHERE driver_id IS NOT NULL AND status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS');
+    ELSE
+      RAISE NOTICE 'Skipping idx_orders_one_active_per_driver because duplicate active driver orders exist';
+    END IF;
+  END $$`,
   "CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active)",
   "CREATE INDEX IF NOT EXISTS idx_tariffs_region_id ON tariffs(region_id)",
   "CREATE INDEX IF NOT EXISTS idx_tariffs_region_active ON tariffs(region_id, is_active)",

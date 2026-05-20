@@ -97,6 +97,23 @@ export async function assertDriverCanGoOnline(driver, executor = defaultQuery) {
   return assertDriverRegionApproved(driver, driver?.current_region_id, executor);
 }
 
+export async function assertDriverDispatchReady(driver, executor = defaultQuery) {
+  if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+  if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+  if (!driver.current_region_id) throw new AppError("Driver region is not selected", 400, "DRIVER_REGION_NOT_SELECTED");
+
+  const region = await getRegion(driver.current_region_id, executor);
+  if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+  if (!region.is_active) throw new AppError("Selected driver region is inactive", 403, "DRIVER_REGION_INACTIVE");
+
+  const approval = await getDriverRegionApproval(driver.id, region.id, executor);
+  if (!approval) throw new AppError("Driver is not approved for this region", 403, "DRIVER_REGION_NOT_APPROVED");
+  if (approval.status === "BLOCKED") throw new AppError("Driver is blocked for this region", 403, "DRIVER_REGION_BLOCKED");
+  if (approval.status !== "APPROVED") throw new AppError("Driver is not approved for this region", 403, "DRIVER_REGION_NOT_APPROVED");
+
+  return { region, approval };
+}
+
 export async function setDriverRegionApproval({ driverId, regionId, status, adminUserId, reason = "" }, executor = defaultQuery) {
   if (!["APPROVED", "BLOCKED"].includes(status)) {
     throw new AppError("Invalid driver region approval status", 400, "INVALID_DRIVER_REGION_STATUS");
