@@ -45,12 +45,28 @@ CREATE TABLE IF NOT EXISTS drivers (
   status TEXT NOT NULL DEFAULT 'OFFLINE',
   lat NUMERIC(10,6),
   lng NUMERIC(10,6),
+  current_region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
   rating NUMERIC(3,2) NOT NULL DEFAULT 5.00,
   balance INTEGER NOT NULL DEFAULT 0,
   debt INTEGER NOT NULL DEFAULT 0,
   is_blocked BOOLEAN NOT NULL DEFAULT false,
   last_seen_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS driver_region_approvals (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('APPROVED','BLOCKED')),
+  approved_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  blocked_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  block_reason TEXT,
+  approved_at TIMESTAMPTZ,
+  blocked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(driver_id, region_id)
 );
 
 CREATE TABLE IF NOT EXISTS tariffs (
@@ -201,6 +217,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
 CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active);
+CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_driver_id ON driver_region_approvals(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_region_id ON driver_region_approvals(region_id);
+CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_status ON driver_region_approvals(status);
 CREATE INDEX IF NOT EXISTS idx_driver_applications_status ON driver_applications(status);
 CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id);
 CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id);

@@ -5,6 +5,11 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { createRegion, listRegions, publicRegion, setRegionActive, updateRegion } from "../regions/regions.service.js";
+import {
+  listDriverRegionApprovals,
+  publicDriverRegionApproval,
+  setDriverRegionApproval
+} from "../driver-region-approvals/driver-region-approvals.service.js";
 
 const router = Router();
 
@@ -53,6 +58,12 @@ const RegionCreate = z.object({
 });
 
 const RegionUpdate = RegionCreate.partial().refine(value => Object.keys(value).length > 0, "at least one field is required");
+
+const DriverRegionApprovalUpdate = z.object({
+  regionId: z.string().uuid(),
+  status: z.enum(["APPROVED", "BLOCKED"]),
+  reason: z.string().trim().max(300).optional().default("")
+});
 
 function mapSettings(row) {
   return {
@@ -131,6 +142,45 @@ router.delete("/regions/:id", requireAuth, requireRole("OWNER"), async (req, res
       return updated;
     });
     res.json({ region: publicRegion(result.region) });
+  } catch (error) { next(error); }
+});
+
+router.get("/drivers/:id/regions", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const driver = (await query("SELECT * FROM drivers WHERE id=$1", [params.id])).rows[0];
+    if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    const regions = await listDriverRegionApprovals(params.id, query);
+    res.json({ driver, regions: regions.map(publicDriverRegionApproval) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/drivers/:id/regions", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = DriverRegionApprovalUpdate.parse(req.body);
+    const result = await tx(async client => {
+      const updated = await setDriverRegionApproval({
+        driverId: params.id,
+        regionId: body.regionId,
+        status: body.status,
+        adminUserId: req.user.id,
+        reason: body.reason
+      }, client);
+      await writeAudit(client, {
+        action: body.status === "APPROVED" ? "driver_region_approved" : "driver_region_blocked",
+        actorUserId: req.user.id,
+        entityType: "driver_region_approval",
+        entityId: updated.approval.id,
+        metadata: { driverId: params.id, regionId: body.regionId, status: body.status, reason: body.reason },
+        req
+      });
+      return updated;
+    });
+    res.json({
+      approval: publicDriverRegionApproval(result.approval),
+      driver: result.driver
+    });
   } catch (error) { next(error); }
 });
 

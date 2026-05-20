@@ -4,6 +4,12 @@ import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import {
+  assertDriverCanGoOnline,
+  listDriverRegionApprovals,
+  publicDriverRegionApproval,
+  selectDriverRegion
+} from "../driver-region-approvals/driver-region-approvals.service.js";
 const router = Router();
 
 router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
@@ -18,6 +24,37 @@ router.get("/me", requireAuth, requireRole("DRIVER"), async (req, res, next) => 
     const result = await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id]);
     if (!result.rows[0]) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
     res.json({ driver: result.rows[0] });
+  } catch (e) { next(e); }
+});
+
+router.get("/me/regions", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    const regions = await listDriverRegionApprovals(driver.id, query);
+    res.json({
+      driver,
+      regions: regions
+        .filter(region => region.region_is_active && region.approval_status === "APPROVED")
+        .map(publicDriverRegionApproval)
+    });
+  } catch (e) { next(e); }
+});
+
+router.patch("/me/region", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const body = z.object({ regionId: z.string().uuid() }).parse(req.body);
+    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    const selected = await selectDriverRegion(driver, body.regionId, query);
+    await writeAudit(query, {
+      action: "driver_region_selected",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: selected.driver.id,
+      metadata: { regionId: body.regionId },
+      req
+    });
+    res.json({ driver: selected.driver, region: selected.region });
   } catch (e) { next(e); }
 });
 
@@ -42,6 +79,10 @@ router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, 
     const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
     if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+
+    if (body.status === "FREE") {
+      await assertDriverCanGoOnline(driver, query);
+    }
 
     if (["OFFLINE", "BREAK"].includes(body.status)) {
       const active = await query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]]);
