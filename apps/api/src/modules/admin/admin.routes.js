@@ -4,6 +4,7 @@ import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { createRegion, listRegions, publicRegion, setRegionActive, updateRegion } from "../regions/regions.service.js";
 
 const router = Router();
 
@@ -36,6 +37,23 @@ const Review = z.object({
   comment: z.string().trim().max(500).optional().default("")
 });
 
+const BoundaryPoint = z.tuple([
+  z.coerce.number().min(-180).max(180),
+  z.coerce.number().min(-90).max(90)
+]);
+
+const RegionCreate = z.object({
+  code: z.string().trim().toUpperCase().min(2).max(32),
+  name: z.string().trim().min(2).max(120),
+  boundary: z.array(BoundaryPoint).min(4),
+  centerLat: z.coerce.number().min(-90).max(90),
+  centerLng: z.coerce.number().min(-180).max(180),
+  currency: z.string().trim().min(2).max(8).default("KZT"),
+  isActive: z.boolean().default(true)
+});
+
+const RegionUpdate = RegionCreate.partial().refine(value => Object.keys(value).length > 0, "at least one field is required");
+
 function mapSettings(row) {
   return {
     serviceName: row.service_name,
@@ -50,6 +68,71 @@ function mapSettings(row) {
     updatedAt: row.updated_at
   };
 }
+
+router.get("/regions", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+  try {
+    const regions = await listRegions(query);
+    res.json({ regions: regions.map(publicRegion) });
+  } catch (error) { next(error); }
+});
+
+router.post("/regions", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const body = RegionCreate.parse(req.body);
+    const region = await tx(async client => {
+      const created = await createRegion(body, client);
+      await writeAudit(client, {
+        action: "region_created",
+        actorUserId: req.user.id,
+        entityType: "region",
+        entityId: created.id,
+        metadata: { code: created.code, isActive: created.is_active },
+        req
+      });
+      return created;
+    });
+    res.status(201).json({ region: publicRegion(region) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/regions/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = RegionUpdate.parse(req.body);
+    const result = await tx(async client => {
+      const updated = await updateRegion(params.id, body, client);
+      await writeAudit(client, {
+        action: "region_updated",
+        actorUserId: req.user.id,
+        entityType: "region",
+        entityId: params.id,
+        metadata: { before: updated.before, after: updated.region },
+        req
+      });
+      return updated;
+    });
+    res.json({ region: publicRegion(result.region) });
+  } catch (error) { next(error); }
+});
+
+router.delete("/regions/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const result = await tx(async client => {
+      const updated = await setRegionActive(params.id, false, client);
+      await writeAudit(client, {
+        action: "region_deactivated",
+        actorUserId: req.user.id,
+        entityType: "region",
+        entityId: params.id,
+        metadata: { before: updated.before, after: updated.region },
+        req
+      });
+      return updated;
+    });
+    res.json({ region: publicRegion(result.region) });
+  } catch (error) { next(error); }
+});
 
 router.get("/settings", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
   try {

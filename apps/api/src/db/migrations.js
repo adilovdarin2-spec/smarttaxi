@@ -1,6 +1,37 @@
 import { query } from "./pool.js";
 
 const statements = [
+  `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
+  `CREATE TABLE IF NOT EXISTS regions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    boundary JSONB NOT NULL,
+    center_lat NUMERIC(10,6) NOT NULL,
+    center_lng NUMERIC(10,6) NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'KZT',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
+   VALUES (
+     'ATAKENT',
+     'Atakent',
+     '[[69.4500,42.2000],[69.7600,42.2000],[69.7600,42.4300],[69.4500,42.4300],[69.4500,42.2000]]'::jsonb,
+     42.316700,
+     69.595800,
+     'KZT',
+     true
+   )
+   ON CONFLICT (code) DO UPDATE
+   SET name=EXCLUDED.name,
+       boundary=EXCLUDED.boundary,
+       center_lat=EXCLUDED.center_lat,
+       center_lng=EXCLUDED.center_lng,
+       currency=EXCLUDED.currency,
+       is_active=EXCLUDED.is_active,
+       updated_at=NOW()`,
   `CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     action TEXT NOT NULL,
@@ -69,6 +100,7 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)",
   "CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)",
   "CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id)",
+  "CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active)",
   "CREATE INDEX IF NOT EXISTS idx_driver_applications_status ON driver_applications(status)",
   "CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id)",
   "CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id)",

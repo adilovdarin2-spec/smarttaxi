@@ -10,6 +10,7 @@
   "scripts": {
     "syntax": "npm --prefix apps/api run syntax",
     "check": "npm --prefix apps/api run check",
+    "test": "npm --prefix apps/api run test",
     "syntax:web": "npm --prefix apps/web run syntax",
     "check:web": "npm --prefix apps/web run check",
     "build": "npm --prefix apps/web run build"

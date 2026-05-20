@@ -13,6 +13,27 @@ async function upsertUser({ name, email, phone, password, role }) {
 
 async function seed() {
   await query(`
+    INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
+    VALUES (
+      'ATAKENT',
+      'Atakent',
+      '[[69.4500,42.2000],[69.7600,42.2000],[69.7600,42.4300],[69.4500,42.4300],[69.4500,42.2000]]'::jsonb,
+      42.316700,
+      69.595800,
+      'KZT',
+      true
+    )
+    ON CONFLICT (code) DO UPDATE
+    SET name=EXCLUDED.name,
+        boundary=EXCLUDED.boundary,
+        center_lat=EXCLUDED.center_lat,
+        center_lng=EXCLUDED.center_lng,
+        currency=EXCLUDED.currency,
+        is_active=EXCLUDED.is_active,
+        updated_at=NOW()
+  `);
+
+  await query(`
     INSERT INTO tariffs(name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent)
     VALUES
       ('Economy',400,110,20,700,15,2),

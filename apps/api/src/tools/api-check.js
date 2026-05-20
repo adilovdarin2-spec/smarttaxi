@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import "./syntax-check.js";
 import "./order-create-contract-check.js";
+import "./regions-check.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
