@@ -112,12 +112,66 @@ export function getAdminRegions() {
   return api("/api/admin/regions");
 }
 
+export function createAdminRegion(payload) {
+  return api("/api/admin/regions", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminRegion(regionId, payload) {
+  return api(`/api/admin/regions/${regionId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function toggleAdminRegion(regionId, isActive) {
+  return updateAdminRegion(regionId, { isActive });
+}
+
 export function getAdminDrivers() {
   return api("/api/admin/drivers");
 }
 
+export function getAdminDriverDetail(driverId) {
+  return api(`/api/admin/drivers/${driverId}`);
+}
+
+export function blockAdminDriver(driverId, reason = "") {
+  return api(`/api/admin/drivers/${driverId}/block`, {
+    method: "PATCH",
+    body: JSON.stringify({ isBlocked: true, reason })
+  });
+}
+
+export function unblockAdminDriver(driverId) {
+  return api(`/api/admin/drivers/${driverId}/block`, {
+    method: "PATCH",
+    body: JSON.stringify({ isBlocked: false })
+  });
+}
+
+export function getAdminDriverRegions(driverId) {
+  return api(`/api/admin/drivers/${driverId}/regions`);
+}
+
+export function updateAdminDriverRegion(driverId, payload) {
+  return api(`/api/admin/drivers/${driverId}/regions`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getAdminDriverApplications() {
   return api("/api/admin/driver-applications");
+}
+
+export function updateAdminDriverApplication(applicationId, payload) {
+  return api(`/api/admin/driver-applications/${applicationId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
 }
 
 export function getAdminOrders() {

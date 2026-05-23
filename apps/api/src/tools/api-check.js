@@ -34,8 +34,17 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
 [
   "getAdminDashboard",
   "getAdminRegions",
+  "createAdminRegion",
+  "updateAdminRegion",
+  "toggleAdminRegion",
   "getAdminDrivers",
+  "getAdminDriverDetail",
+  "blockAdminDriver",
+  "unblockAdminDriver",
+  "getAdminDriverRegions",
+  "updateAdminDriverRegion",
   "getAdminDriverApplications",
+  "updateAdminDriverApplication",
   "getAdminOrders",
   "getAdminAudit",
   "getAdminSettings"
@@ -57,4 +66,27 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
   "Нет доступа к панели управления"
 ].forEach(copy => assert(adminApp.includes(copy), `Admin shell missing honest state copy: ${copy}`));
 
-console.log("Milestone 1, 2, 3, 4, auth/seed, routing/location and admin shell checks ok");
+[
+  "Добавить регион",
+  "Boundary JSON",
+  "Редактировать",
+  "Активировать",
+  "Отключить",
+  "Карточка водителя",
+  "Региональный доступ",
+  "Причина блокировки",
+  "Доступ к региону одобрен",
+  "Заявка водителя",
+  "Отклонить"
+].forEach(copy => assert(adminApp.includes(copy), `Admin operations UI missing ${copy}`));
+
+const adminRoutes = read("../modules/admin/admin.routes.js");
+[
+  'router.get("/drivers/:id"',
+  'router.patch("/drivers/:id/block"',
+  'router.get("/drivers/:id/regions"',
+  'router.patch("/drivers/:id/regions"',
+  'router.patch("/driver-applications/:id"'
+].forEach(route => assert(adminRoutes.includes(route), `Admin route missing ${route}`));
+
+console.log("Milestone 1, 2, 3, 4, auth/seed, routing/location and admin control checks ok");

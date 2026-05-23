@@ -170,6 +170,76 @@ router.get("/drivers", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"),
   } catch (error) { next(error); }
 });
 
+router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const driver = (await query(`
+      SELECT d.*, r.name region_name, r.code region_code,
+             active.id active_order_id,
+             active.short_id active_order_short_id,
+             active.status active_order_status,
+             active.pickup_text active_order_pickup,
+             active.dropoff_text active_order_dropoff
+      FROM drivers d
+      LEFT JOIN regions r ON r.id=d.current_region_id
+      LEFT JOIN LATERAL (
+        SELECT id, short_id, status, pickup_text, dropoff_text
+        FROM orders
+        WHERE driver_id=d.id AND status=ANY($2::text[])
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) active ON true
+      WHERE d.id=$1
+    `, [params.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0];
+    if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    const approvals = await listDriverRegionApprovals(params.id, query);
+    res.json({
+      driver,
+      activeOrder: driver.active_order_id ? {
+        id: driver.active_order_id,
+        shortId: driver.active_order_short_id,
+        status: driver.active_order_status,
+        pickupText: driver.active_order_pickup,
+        dropoffText: driver.active_order_dropoff
+      } : null,
+      regions: approvals.map(publicDriverRegionApproval)
+    });
+  } catch (error) { next(error); }
+});
+
+router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      isBlocked: z.boolean(),
+      reason: z.string().trim().max(300).optional().default("")
+    }).parse(req.body);
+    const driver = await tx(async client => {
+      const before = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
+      if (!before) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+      const updated = (await client.query(`
+        UPDATE drivers
+        SET is_blocked=$1,
+            status=CASE WHEN $1=true THEN 'OFFLINE' ELSE status END,
+            current_region_id=CASE WHEN $1=true THEN NULL ELSE current_region_id END,
+            last_seen_at=NOW()
+        WHERE id=$2
+        RETURNING *
+      `, [body.isBlocked, params.id])).rows[0];
+      await writeAudit(client, {
+        action: body.isBlocked ? "driver_blocked" : "driver_unblocked",
+        actorUserId: req.user.id,
+        entityType: "driver",
+        entityId: params.id,
+        metadata: { before: { isBlocked: before.is_blocked, status: before.status, regionId: before.current_region_id }, reason: body.reason },
+        req
+      });
+      return updated;
+    });
+    res.json({ driver });
+  } catch (error) { next(error); }
+});
+
 router.get("/audit-logs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({
