@@ -14,6 +14,7 @@ import {
   adminTariff,
   createAdminTariff,
   getAdminTariff,
+  listAdminTariffAnalytics,
   listAdminTariffs,
   setAdminTariffStatus,
   updateAdminTariff
@@ -102,6 +103,12 @@ const TariffStatusUpdate = z.object({
   isActive: z.boolean()
 });
 
+const TariffAnalyticsQuery = z.object({
+  regionId: z.string().uuid().optional(),
+  dateFrom: z.string().trim().optional(),
+  dateTo: z.string().trim().optional()
+});
+
 const TariffPreviewDraft = z.object({
   basePrice: z.coerce.number().int().min(0).max(1000000),
   pricePerKm: z.coerce.number().int().min(0).max(1000000),
@@ -161,6 +168,64 @@ function draftToTariffRow(draft) {
     cancellation_fee: draft.cancellationFee ?? draft.cancellation_fee ?? 0,
     sort_order: draft.sortOrder ?? draft.sort_order ?? 0,
     is_active: true
+  };
+}
+
+function dateOnly(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function parseDateOnly(value, field) {
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new AppError(`${field} must use YYYY-MM-DD`, 400, "VALIDATION_ERROR");
+  }
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || dateOnly(parsed) !== value) {
+    throw new AppError(`${field} must be a valid date`, 400, "VALIDATION_ERROR");
+  }
+  return value;
+}
+
+function resolveTariffAnalyticsDateRange(params) {
+  const today = new Date();
+  const defaultFrom = new Date(today);
+  defaultFrom.setUTCDate(today.getUTCDate() - 29);
+
+  const dateFrom = parseDateOnly(params.dateFrom, "dateFrom") || dateOnly(defaultFrom);
+  const dateTo = parseDateOnly(params.dateTo, "dateTo") || dateOnly(today);
+  if (dateFrom > dateTo) {
+    throw new AppError("dateFrom must be before dateTo", 400, "VALIDATION_ERROR");
+  }
+
+  return {
+    dateFrom,
+    dateTo,
+    preset: params.dateFrom || params.dateTo ? "CUSTOM" : "LAST_30_DAYS"
+  };
+}
+
+function summarizeTariffAnalytics(analytics) {
+  const totals = analytics.reduce((acc, item) => ({
+    orderCount: acc.orderCount + item.orderCount,
+    completedOrderCount: acc.completedOrderCount + item.completedOrderCount,
+    cancelledOrderCount: acc.cancelledOrderCount + item.cancelledOrderCount,
+    grossTotal: acc.grossTotal + item.grossTotal,
+    serviceCommissionTotal: acc.serviceCommissionTotal + item.serviceCommissionTotal,
+    driverEarningTotal: acc.driverEarningTotal + item.driverEarningTotal
+  }), {
+    orderCount: 0,
+    completedOrderCount: 0,
+    cancelledOrderCount: 0,
+    grossTotal: 0,
+    serviceCommissionTotal: 0,
+    driverEarningTotal: 0
+  });
+
+  return {
+    ...totals,
+    averageFinalPrice: totals.completedOrderCount ? Math.round(totals.grossTotal / totals.completedOrderCount) : null,
+    completedSharePercent: totals.orderCount ? Math.round((totals.completedOrderCount / totals.orderCount) * 1000) / 10 : null
   };
 }
 
@@ -410,6 +475,41 @@ router.get("/tariffs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"),
     }).parse(req.query);
     const tariffs = await listAdminTariffs(params, query);
     res.json({ tariffs: tariffs.map(adminTariff) });
+  } catch (error) { next(error); }
+});
+
+router.get("/tariffs/analytics", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = TariffAnalyticsQuery.parse(req.query);
+    const dateRange = resolveTariffAnalyticsDateRange(params);
+    const analytics = await listAdminTariffAnalytics({
+      regionId: params.regionId,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo
+    }, query);
+    res.json({
+      dateRange,
+      analytics,
+      totals: summarizeTariffAnalytics(analytics)
+    });
+  } catch (error) { next(error); }
+});
+
+router.get("/tariffs/:id/analytics", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const queryParams = TariffAnalyticsQuery.omit({ regionId: true }).parse(req.query);
+    const dateRange = resolveTariffAnalyticsDateRange(queryParams);
+    const analytics = await listAdminTariffAnalytics({
+      tariffId: params.id,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo
+    }, query);
+    res.json({
+      dateRange,
+      analytics: analytics[0] || null,
+      totals: summarizeTariffAnalytics(analytics)
+    });
   } catch (error) { next(error); }
 });
 

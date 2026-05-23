@@ -13,6 +13,7 @@ import {
   getAdminOrders,
   getAdminRegions,
   getAdminSettings,
+  getAdminTariffAnalytics,
   getAdminTariffs,
   previewAdminTariffPrice,
   setAdminTariffStatus,
@@ -61,6 +62,16 @@ function formatDate(value) {
 
 function formatMoney(value) {
   return `${Number(value || 0).toLocaleString("ru-RU")} ₸`;
+}
+
+function formatOptionalMoney(value) {
+  if (value === null || value === undefined) return "—";
+  return formatMoney(value);
+}
+
+function formatMetric(value, suffix) {
+  if (value === null || value === undefined) return "—";
+  return `${Number(value).toLocaleString("ru-RU")} ${suffix}`;
 }
 
 function formatPercent(value) {
@@ -124,6 +135,31 @@ function isTariffActive(tariff) {
   return Boolean(tariff?.isActive ?? tariff?.is_active);
 }
 
+function dateInputValue(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function tariffDateParams(preset, customFrom, customTo) {
+  const today = new Date();
+  const from = new Date(today);
+  if (preset === "today") {
+    return { dateFrom: dateInputValue(today), dateTo: dateInputValue(today) };
+  }
+  if (preset === "7d") {
+    from.setDate(today.getDate() - 6);
+    return { dateFrom: dateInputValue(from), dateTo: dateInputValue(today) };
+  }
+  if (preset === "custom") {
+    return { dateFrom: customFrom || undefined, dateTo: customTo || undefined };
+  }
+  from.setDate(today.getDate() - 29);
+  return { dateFrom: dateInputValue(from), dateTo: dateInputValue(today) };
+}
+
+function tariffAnalyticsKey(tariff) {
+  return tariff?.tariffId || tariff?.id;
+}
+
 function normalizeTariffForm(tariff, defaultRegionId = "") {
   return {
     regionId: tariff?.regionId || tariff?.region_id || defaultRegionId,
@@ -160,6 +196,9 @@ export default function AdminApp() {
   const [applicationStatus, setApplicationStatus] = useState("PENDING");
   const [tariffStatus, setTariffStatus] = useState("all");
   const [tariffRegion, setTariffRegion] = useState("all");
+  const [tariffDatePreset, setTariffDatePreset] = useState("30d");
+  const [tariffDateFrom, setTariffDateFrom] = useState("");
+  const [tariffDateTo, setTariffDateTo] = useState("");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
 
   const canAccess = user && adminRoles.has(user.role);
@@ -197,8 +236,23 @@ export default function AdminApp() {
       applications: getAdminDriverApplications,
       orders: getAdminOrders,
       tariffs: async () => {
-        const [tariffs, regions] = await Promise.all([getAdminTariffs(), getAdminRegions()]);
-        return { tariffs: tariffs.tariffs || [], regions: regions.regions || [] };
+        const selectedRegionId = tariffRegion !== "all" ? tariffRegion : undefined;
+        const dateParams = tariffDateParams(tariffDatePreset, tariffDateFrom, tariffDateTo);
+        const [tariffs, regions, analytics] = await Promise.allSettled([
+          getAdminTariffs(),
+          getAdminRegions(),
+          getAdminTariffAnalytics({ regionId: selectedRegionId, ...dateParams })
+        ]);
+        if (tariffs.status === "rejected") throw tariffs.reason;
+        if (regions.status === "rejected") throw regions.reason;
+        return {
+          tariffs: tariffs.value.tariffs || [],
+          regions: regions.value.regions || [],
+          analytics: analytics.status === "fulfilled" ? analytics.value.analytics || [] : [],
+          analyticsTotals: analytics.status === "fulfilled" ? analytics.value.totals || null : null,
+          analyticsDateRange: analytics.status === "fulfilled" ? analytics.value.dateRange || dateParams : dateParams,
+          analyticsError: analytics.status === "rejected" ? "Не удалось загрузить аналитику тарифов" : ""
+        };
       },
       audit: getAdminAudit,
       settings: getAdminSettings
@@ -217,7 +271,7 @@ export default function AdminApp() {
     } catch (error) {
       setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, []);
+  }, [tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
@@ -503,6 +557,12 @@ export default function AdminApp() {
             setTariffStatus={setTariffStatus}
             tariffRegion={tariffRegion}
             setTariffRegion={setTariffRegion}
+            tariffDatePreset={tariffDatePreset}
+            setTariffDatePreset={setTariffDatePreset}
+            tariffDateFrom={tariffDateFrom}
+            setTariffDateFrom={setTariffDateFrom}
+            tariffDateTo={tariffDateTo}
+            setTariffDateTo={setTariffDateTo}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
             onToggleRegion={switchRegion}
@@ -814,21 +874,62 @@ function ApplicationsPage({ applications, applicationStatus, setApplicationStatu
 function TariffsPage({
   tariffs,
   regions,
+  payload,
   tariffStatus,
   setTariffStatus,
   tariffRegion,
   setTariffRegion,
+  tariffDatePreset,
+  setTariffDatePreset,
+  tariffDateFrom,
+  setTariffDateFrom,
+  tariffDateTo,
+  setTariffDateTo,
   onAddTariff,
   onEditTariff,
   onToggleTariff,
   onPreviewTariff
 }) {
+  const analytics = asArray(payload, "analytics");
+  const analyticsByTariff = useMemo(() => new Map(analytics.map(item => [tariffAnalyticsKey(item), item])), [analytics]);
+  const totals = payload?.analyticsTotals || analytics.reduce((acc, item) => ({
+    orderCount: acc.orderCount + Number(item.orderCount || 0),
+    completedOrderCount: acc.completedOrderCount + Number(item.completedOrderCount || 0),
+    cancelledOrderCount: acc.cancelledOrderCount + Number(item.cancelledOrderCount || 0),
+    grossTotal: acc.grossTotal + Number(item.grossTotal || 0),
+    serviceCommissionTotal: acc.serviceCommissionTotal + Number(item.serviceCommissionTotal || 0),
+    driverEarningTotal: acc.driverEarningTotal + Number(item.driverEarningTotal || 0)
+  }), {
+    orderCount: 0,
+    completedOrderCount: 0,
+    cancelledOrderCount: 0,
+    grossTotal: 0,
+    serviceCommissionTotal: 0,
+    driverEarningTotal: 0,
+    averageFinalPrice: null
+  });
+  const dateRange = payload?.analyticsDateRange;
   const visible = tariffs.filter(tariff => {
     if (tariffStatus === "active" && !isTariffActive(tariff)) return false;
     if (tariffStatus === "inactive" && isTariffActive(tariff)) return false;
     if (tariffRegion !== "all" && tariff.regionId !== tariffRegion) return false;
     return true;
   });
+  const analyticsRows = visible.map(tariff => analyticsByTariff.get(tariff.id) || {
+    tariffId: tariff.id,
+    tariffName: tariff.name,
+    displayName: tariff.displayName || tariff.name,
+    regionName: tariff.regionName,
+    orderCount: 0,
+    completedOrderCount: 0,
+    cancelledOrderCount: 0,
+    averageFinalPrice: null,
+    averageDistanceKm: null,
+    averageDurationMin: null,
+    serviceCommissionTotal: 0,
+    driverEarningTotal: 0
+  });
+  const hasAnalyticsOrders = analyticsRows.some(item => item.orderCount > 0);
 
   return (
     <div className="admin-page-stack">
@@ -851,6 +952,71 @@ function TariffsPage({
         <button type="button" className="admin-primary-button" onClick={onAddTariff}>Добавить тариф</button>
       </PageHeader>
 
+      <DataCard title="Аналитика тарифов" text="Расчёт по реальным заказам и сохранённой цене поездки.">
+        <div className="admin-date-filter-row">
+          <SegmentedFilter
+            value={tariffDatePreset}
+            onChange={setTariffDatePreset}
+            items={[
+              ["today", "Сегодня"],
+              ["7d", "7 дней"],
+              ["30d", "30 дней"],
+              ["custom", "Период"]
+            ]}
+          />
+          {tariffDatePreset === "custom" && (
+            <div className="admin-date-inputs">
+              <input type="date" value={tariffDateFrom} onChange={event => setTariffDateFrom(event.target.value)} aria-label="Дата начала" />
+              <input type="date" value={tariffDateTo} onChange={event => setTariffDateTo(event.target.value)} aria-label="Дата окончания" />
+            </div>
+          )}
+          {dateRange && <small>Период: {dateRange.dateFrom} — {dateRange.dateTo}</small>}
+        </div>
+        {payload?.analyticsError && <InlineMessage danger text={payload.analyticsError} />}
+        <section className="admin-analytics-grid">
+          <article className="admin-analytics-card">
+            <span>Заказы</span>
+            <strong>{totals.orderCount}</strong>
+            <small>Все статусы за период</small>
+          </article>
+          <article className="admin-analytics-card">
+            <span>Завершено</span>
+            <strong>{totals.completedOrderCount}</strong>
+            <small>{totals.cancelledOrderCount} отменено</small>
+          </article>
+          <article className="admin-analytics-card">
+            <span>Средняя цена</span>
+            <strong>{formatOptionalMoney(totals.averageFinalPrice)}</strong>
+            <small>Только завершённые поездки</small>
+          </article>
+          <article className="admin-analytics-card">
+            <span>Комиссия сервиса</span>
+            <strong>{formatMoney(totals.serviceCommissionTotal)}</strong>
+            <small>Доход водителей: {formatMoney(totals.driverEarningTotal)}</small>
+          </article>
+        </section>
+        {!hasAnalyticsOrders ? (
+          <div className="admin-empty-note">
+            <strong>По этому тарифу пока нет завершённых заказов</strong>
+            <span>Аналитика появится после первых поездок.</span>
+          </div>
+        ) : (
+          <div className="admin-table premium tariff-analytics">
+            {analyticsRows.map(item => (
+              <div className="admin-table-row tariff-analytics" key={item.tariffId}>
+                <strong>{item.displayName || item.tariffName}</strong>
+                <span>{item.regionName || "Регион не выбран"}</span>
+                <span>{item.completedOrderCount} завершено · {item.cancelledOrderCount} отменено</span>
+                <span>{formatOptionalMoney(item.averageFinalPrice)}</span>
+                <span>{formatMetric(item.averageDistanceKm, "км")} · {formatMetric(item.averageDurationMin, "мин")}</span>
+                <span>{formatMoney(item.serviceCommissionTotal)} комиссия</span>
+                <span>{formatMoney(item.driverEarningTotal)} водителю</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </DataCard>
+
       {!regions.length ? (
         <StatePanel title="Сначала настройте регионы" text="Тарифы привязываются к активным рабочим регионам SmartTaxi." />
       ) : !visible.length ? (
@@ -862,7 +1028,9 @@ function TariffsPage({
         />
       ) : (
         <section className="admin-card-grid tariffs">
-          {visible.map(tariff => (
+          {visible.map(tariff => {
+            const metric = analyticsByTariff.get(tariff.id) || {};
+            return (
             <article className="admin-tariff-card" key={tariff.id}>
               <header>
                 <div>
@@ -883,17 +1051,21 @@ function TariffsPage({
                 <InfoLine label="Спрос" value={formatMultiplier(tariff.surgeMultiplier)} />
                 <InfoLine label="Ожидание" value={`${tariff.freeWaitingMinutes || 0} мин бесплатно · ${formatMoney(tariff.waitingPricePerMinute)}/мин`} />
                 <InfoLine label="Сортировка" value={tariff.sortOrder || 0} />
+                <InfoLine label="Заказы" value={metric.orderCount ?? 0} />
+                <InfoLine label="Средняя цена" value={formatOptionalMoney(metric.averageFinalPrice)} />
+                <InfoLine label="Комиссия" value={formatMoney(metric.serviceCommissionTotal || 0)} />
+                <InfoLine label="Доход водителя" value={formatMoney(metric.driverEarningTotal || 0)} />
               </div>
-              <small className="admin-honest-note">Аналитика по средним ценам будет подключена на следующем этапе.</small>
+              {!metric.completedOrderCount && <small className="admin-honest-note">По этому тарифу пока нет завершённых заказов. Аналитика появится после первых поездок.</small>}
               <footer>
-                <button type="button" className="admin-secondary-button compact" onClick={() => onPreviewTariff(tariff)}>Предпросмотр</button>
+                <button type="button" className="admin-secondary-button compact" onClick={() => onPreviewTariff({ ...tariff, analytics: metric })}>Предпросмотр</button>
                 <button type="button" className="admin-secondary-button compact" onClick={() => onEditTariff(tariff)}>Редактировать</button>
                 <button type="button" className={isTariffActive(tariff) ? "admin-danger-button compact" : "admin-secondary-button compact"} onClick={() => onToggleTariff(tariff)}>
                   {isTariffActive(tariff) ? "Отключить" : "Активировать"}
                 </button>
               </footer>
             </article>
-          ))}
+          );})}
         </section>
       )}
     </div>
@@ -1061,6 +1233,7 @@ function TariffPreviewPanel({ tariff, onClose, onPreview }) {
   }
 
   const preview = state.result;
+  const analytics = tariff.analytics || {};
   return (
     <ModalFrame title="Предпросмотр цены" onClose={onClose}>
       <form className="admin-form-grid" onSubmit={calculate}>
@@ -1071,6 +1244,18 @@ function TariffPreviewPanel({ tariff, onClose, onPreview }) {
           </div>
           <Badge tone={isTariffActive(tariff) ? "success" : "muted"}>{isTariffActive(tariff) ? "Активен" : "Отключён"}</Badge>
         </div>
+        <div className="admin-preview-grid compact">
+          <InfoLine label="Завершённых заказов" value={analytics.completedOrderCount ?? 0} />
+          <InfoLine label="Средняя цена" value={formatOptionalMoney(analytics.averageFinalPrice)} />
+          <InfoLine label="Средний маршрут" value={`${formatMetric(analytics.averageDistanceKm, "км")} · ${formatMetric(analytics.averageDurationMin, "мин")}`} />
+          <InfoLine label="Комиссия за период" value={formatMoney(analytics.serviceCommissionTotal || 0)} />
+        </div>
+        {!analytics.completedOrderCount && (
+          <div className="admin-empty-note">
+            <strong>По этому тарифу пока нет завершённых заказов</strong>
+            <span>Предпросмотр цены работает отдельно от аналитики и использует текущие правила тарифа.</span>
+          </div>
+        )}
         <div className="admin-form-row">
           <Field label="Расстояние, км" type="number" value={form.distanceKm} onChange={value => setForm(current => ({ ...current, distanceKm: value }))} />
           <Field label="Время, мин" type="number" value={form.durationMin} onChange={value => setForm(current => ({ ...current, durationMin: value }))} />

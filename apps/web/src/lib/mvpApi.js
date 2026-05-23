@@ -179,6 +179,15 @@ export function getAdminTariffs(regionId) {
   return api(`/api/admin/tariffs${query}`);
 }
 
+export function getAdminTariffAnalytics({ regionId, dateFrom, dateTo } = {}) {
+  const params = new URLSearchParams();
+  if (regionId) params.set("regionId", regionId);
+  if (dateFrom) params.set("dateFrom", dateFrom);
+  if (dateTo) params.set("dateTo", dateTo);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return api(`/api/admin/tariffs/analytics${query}`);
+}
+
 export function createAdminTariff(payload) {
   return api("/api/admin/tariffs", {
     method: "POST",

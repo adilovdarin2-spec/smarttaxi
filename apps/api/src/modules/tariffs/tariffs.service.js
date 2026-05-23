@@ -95,6 +95,146 @@ export async function listAdminTariffs({ regionId } = {}, executor = defaultQuer
   return result.rows;
 }
 
+function nullableNumber(value) {
+  if (value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function roundMoney(value) {
+  const parsed = nullableNumber(value);
+  return parsed === null ? null : Math.round(parsed);
+}
+
+function roundMetric(value) {
+  const parsed = nullableNumber(value);
+  return parsed === null ? null : Math.round(parsed * 10) / 10;
+}
+
+export async function listAdminTariffAnalytics({
+  regionId,
+  tariffId,
+  dateFrom,
+  dateTo
+} = {}, executor = defaultQuery) {
+  const params = [dateFrom, dateTo];
+  const where = [];
+
+  if (regionId) {
+    params.push(regionId);
+    where.push(`t.region_id=$${params.length}`);
+  }
+
+  if (tariffId) {
+    params.push(tariffId);
+    where.push(`t.id=$${params.length}`);
+  }
+
+  const result = await run(executor, `
+    SELECT
+      t.id tariff_id,
+      t.name tariff_name,
+      t.display_name,
+      t.region_id,
+      r.name region_name,
+      r.currency,
+      COALESCE(a.order_count, 0)::int order_count,
+      COALESCE(a.completed_order_count, 0)::int completed_order_count,
+      COALESCE(a.cancelled_order_count, 0)::int cancelled_order_count,
+      a.average_final_price,
+      a.average_distance_km,
+      a.average_duration_min,
+      COALESCE(a.gross_total, 0) gross_total,
+      COALESCE(a.service_commission_total, 0) service_commission_total,
+      COALESCE(a.driver_earning_total, 0) driver_earning_total
+    FROM tariffs t
+    LEFT JOIN regions r ON r.id=t.region_id
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(o.id)::int order_count,
+        COUNT(o.id) FILTER (WHERE o.status='COMPLETED')::int completed_order_count,
+        COUNT(o.id) FILTER (WHERE o.status='CANCELLED')::int cancelled_order_count,
+        AVG(base.final_price) FILTER (WHERE o.status='COMPLETED' AND base.final_price IS NOT NULL) average_final_price,
+        AVG(base.distance_km) FILTER (WHERE o.status='COMPLETED' AND base.distance_km IS NOT NULL) average_distance_km,
+        AVG(base.duration_min) FILTER (WHERE o.status='COMPLETED' AND base.duration_min IS NOT NULL) average_duration_min,
+        COALESCE(SUM(base.final_price) FILTER (WHERE o.status='COMPLETED'), 0) gross_total,
+        COALESCE(SUM(commission.service_commission) FILTER (WHERE o.status='COMPLETED'), 0) service_commission_total,
+        COALESCE(SUM(earning.driver_earning) FILTER (WHERE o.status='COMPLETED'), 0) driver_earning_total
+      FROM orders o
+      CROSS JOIN LATERAL (
+        SELECT
+          COALESCE(
+            NULLIF(o.pricing_snapshot->>'finalPrice', '')::numeric,
+            NULLIF(o.pricing_snapshot->>'estimatedPrice', '')::numeric,
+            o.price::numeric
+          ) final_price,
+          COALESCE(
+            NULLIF(o.pricing_snapshot->>'distanceKm', '')::numeric,
+            o.distance_km::numeric
+          ) distance_km,
+          COALESCE(
+            NULLIF(o.pricing_snapshot->>'durationMin', '')::numeric,
+            o.duration_min::numeric
+          ) duration_min
+      ) base
+      CROSS JOIN LATERAL (
+        SELECT COALESCE(
+          NULLIF(o.pricing_snapshot->>'serviceCommission', '')::numeric,
+          NULLIF(o.service_commission, 0)::numeric,
+          base.final_price * COALESCE(
+            NULLIF(o.pricing_snapshot->>'serviceCommissionPercent', '')::numeric,
+            t.service_commission_percent,
+            0
+          ) / 100,
+          0
+        ) service_commission
+      ) commission
+      CROSS JOIN LATERAL (
+        SELECT COALESCE(
+          NULLIF(o.pricing_snapshot->>'driverEarning', '')::numeric,
+          base.final_price - commission.service_commission,
+          0
+        ) driver_earning
+      ) earning
+      WHERE o.region_id=t.region_id
+        AND (
+          NULLIF(o.pricing_snapshot->>'tariffId', '') = t.id::text
+          OR (
+            NULLIF(o.pricing_snapshot->>'tariffId', '') IS NULL
+            AND lower(o.tariff)=lower(t.name)
+          )
+        )
+        AND o.created_at >= $1::date
+        AND o.created_at < ($2::date + INTERVAL '1 day')
+    ) a ON true
+    ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+    ORDER BY r.name ASC NULLS LAST, t.sort_order ASC, t.name ASC
+  `, params);
+
+  return result.rows.map(row => {
+    const orderCount = Number(row.order_count || 0);
+    const completedOrderCount = Number(row.completed_order_count || 0);
+    return {
+      tariffId: row.tariff_id,
+      tariffName: row.tariff_name,
+      displayName: row.display_name || row.tariff_name,
+      regionId: row.region_id,
+      regionName: row.region_name,
+      orderCount,
+      completedOrderCount,
+      cancelledOrderCount: Number(row.cancelled_order_count || 0),
+      averageFinalPrice: roundMoney(row.average_final_price),
+      averageDistanceKm: roundMetric(row.average_distance_km),
+      averageDurationMin: roundMetric(row.average_duration_min),
+      grossTotal: roundMoney(row.gross_total) || 0,
+      serviceCommissionTotal: roundMoney(row.service_commission_total) || 0,
+      driverEarningTotal: roundMoney(row.driver_earning_total) || 0,
+      completedSharePercent: orderCount ? Math.round((completedOrderCount / orderCount) * 1000) / 10 : null,
+      currency: row.currency || "KZT"
+    };
+  });
+}
+
 export async function getAdminTariff(id, executor = defaultQuery) {
   const tariff = (await run(executor, `
     SELECT t.*, r.name region_name, r.code region_code, r.currency

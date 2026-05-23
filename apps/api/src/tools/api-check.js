@@ -50,6 +50,7 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
   "createAdminTariff",
   "updateAdminTariff",
   "setAdminTariffStatus",
+  "getAdminTariffAnalytics",
   "previewAdminTariffPrice",
   "getAdminOrders",
   "getAdminAudit",

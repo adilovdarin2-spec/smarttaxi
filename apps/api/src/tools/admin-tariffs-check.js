@@ -7,6 +7,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const adminRoutes = readFileSync(join(root, "modules", "admin", "admin.routes.js"), "utf8");
+const tariffsService = readFileSync(join(root, "modules", "tariffs", "tariffs.service.js"), "utf8");
 const pricingService = readFileSync(join(root, "modules", "orders", "order-pricing.service.js"), "utf8");
 const adminApp = readFileSync(join(root, "..", "..", "web", "src", "features", "admin", "AdminApp.jsx"), "utf8");
 const adminApi = readFileSync(join(root, "..", "..", "web", "src", "lib", "mvpApi.js"), "utf8");
@@ -27,11 +28,28 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
 
 [
   'router.get("/tariffs"',
+  'router.get("/tariffs/analytics"',
+  'router.get("/tariffs/:id/analytics"',
   'router.post("/tariffs/preview-price"',
   'router.post("/tariffs"',
   'router.patch("/tariffs/:id"',
   'router.patch("/tariffs/:id/status"'
 ].forEach(route => assert.match(adminRoutes, new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `admin tariff route missing ${route}`));
+
+[
+  "listAdminTariffAnalytics",
+  "pricing_snapshot",
+  "status='COMPLETED'",
+  "status='CANCELLED'",
+  "average_final_price",
+  "service_commission_total",
+  "driver_earning_total",
+  "dateFrom",
+  "dateTo"
+].forEach(token => assert(
+  adminRoutes.includes(token) || tariffsService.includes(token),
+  `tariff analytics implementation missing ${token}`
+));
 
 [
   "raw = basePrice + distanceKm * pricePerKm + durationMin * pricePerMinute",
@@ -47,11 +65,20 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
   "createAdminTariff",
   "updateAdminTariff",
   "setAdminTariffStatus",
+  "getAdminTariffAnalytics",
   "previewAdminTariffPrice"
 ].forEach(fn => assert(adminApi.includes(`function ${fn}`), `Admin tariff API wrapper missing ${fn}`));
 
 [
   "Добавить тариф",
+  "Аналитика тарифов",
+  "Сегодня",
+  "7 дней",
+  "30 дней",
+  "Средняя цена",
+  "Комиссия сервиса",
+  "По этому тарифу пока нет завершённых заказов",
+  "Не удалось загрузить аналитику тарифов",
   "Предпросмотр цены",
   "Итоговая стоимость",
   "Комиссия сервиса",
