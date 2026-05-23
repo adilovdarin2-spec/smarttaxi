@@ -20,9 +20,10 @@ import financeRoutes from "./modules/finance/finance.routes.js";
 import mapsRoutes from "./modules/maps/maps.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import regionsRoutes from "./modules/regions/regions.routes.js";
+import routingRoutes from "./modules/routing/routing.routes.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
+import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
 import {
-  ACTIVE_ORDER_STATUSES,
   dispatchRegionRoom,
   driverRegionRoom,
   orderRoom
@@ -31,7 +32,6 @@ import {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: env.CORS_ORIGINS, credentials: true } });
-const latestDriverLocations = new Map();
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -60,41 +60,19 @@ io.on("connection", socket => {
       socket.join(driverRegionRoom(driver.current_region_id));
     } catch {}
   });
-  socket.on("join_order", orderId => {
-    if (orderId) socket.join(orderRoom(orderId));
+  socket.on("join_order", async orderId => {
+    try {
+      if (!socket.user || !orderId) return;
+      const order = (await query("SELECT * FROM orders WHERE id=$1", [orderId])).rows[0];
+      if (!order) return;
+      await assertCanAccessOrderLocation({ user: socket.user, order, executor: query });
+      socket.join(orderRoom(orderId));
+    } catch {}
   });
   socket.on("driver_location_update", async payload => {
     try {
       if (socket.user?.role !== "DRIVER") return;
-      const lat = Number(payload?.lat);
-      const lng = Number(payload?.lng);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [socket.user.id])).rows[0];
-      if (!driver) return;
-      await assertDriverDispatchReady(driver, query);
-      let orderId = payload?.orderId;
-      const order = orderId
-        ? (await query(
-          "SELECT id FROM orders WHERE id=$1 AND driver_id=$2 AND status = ANY($3::text[]) LIMIT 1",
-          [orderId, driver.id, ACTIVE_ORDER_STATUSES]
-        )).rows[0]
-        : (await query(
-          "SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) ORDER BY created_at DESC LIMIT 1",
-          [driver.id, ACTIVE_ORDER_STATUSES]
-        )).rows[0];
-      orderId = order?.id || null;
-      const next = {
-        orderId,
-        driverId: driver.id,
-        lat,
-        lng,
-        heading: Number.isFinite(Number(payload?.heading)) ? Number(payload.heading) : null,
-        speed: Number.isFinite(Number(payload?.speed)) ? Number(payload.speed) : null,
-        updatedAt: new Date().toISOString()
-      };
-      latestDriverLocations.set(driver.id, next);
-      socket.to(dispatchRegionRoom(driver.current_region_id)).emit("driver_location_updated", next);
-      if (orderId) io.to(orderRoom(orderId)).emit("driver_location_updated", next);
+      await updateDriverLocation({ userId: socket.user.id, location: payload || {}, io, executor: query });
     } catch {}
   });
 });
@@ -120,6 +98,7 @@ app.use("/api/clients", clientsRoutes);
 app.use("/api/tariffs", tariffsRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/maps", mapsRoutes);
+app.use("/api/routes", routingRoutes);
 app.use("/api/regions", regionsRoutes);
 app.use("/api/admin", adminRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));

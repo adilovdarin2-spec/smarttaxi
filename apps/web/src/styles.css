@@ -1128,3 +1128,704 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* SmartTaxi final mobile shell: white/gold, scoped away from admin/operator UI. */
+.smarttaxi-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  flex-shrink: 0;
+}
+
+.smarttaxi-logo--large {
+  width: 88px;
+  height: 88px;
+}
+
+.phone-frame.taxi-pwa {
+  --taxi-bg: #ffffff;
+  --taxi-app: #fffcf6;
+  --taxi-card: #ffffff;
+  --taxi-card-warm: #fff9ea;
+  --taxi-gold: #c99a2e;
+  --taxi-gold-deep: #a97814;
+  --taxi-gold-soft: #f7e8be;
+  --taxi-text: #141414;
+  --taxi-secondary: #666666;
+  --taxi-muted: #9a9a9a;
+  --taxi-border: #efe2c4;
+  --taxi-border-strong: #ddc88b;
+  --taxi-success: #16a34a;
+  --taxi-danger: #dc2626;
+  --taxi-warning: #b7791f;
+  width: min(100%, 430px);
+  min-height: 100vh;
+  margin: 0 auto;
+  color: var(--taxi-text);
+  background: var(--taxi-bg);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+.taxi-pwa .taxi-app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 0 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--taxi-border);
+}
+
+.taxi-pwa .taxi-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+
+.taxi-pwa .taxi-brand > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.taxi-pwa .taxi-brand span {
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 850;
+  letter-spacing: 0;
+  color: var(--taxi-text);
+}
+
+.taxi-pwa .taxi-brand small {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  color: var(--taxi-secondary);
+}
+
+.taxi-pwa .app-content {
+  min-height: calc(100vh - 136px);
+  padding: 16px 16px 92px;
+  background: var(--taxi-app);
+}
+
+.taxi-pwa .screen-grid,
+.taxi-pwa .screen-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.taxi-pwa .desktop-only {
+  display: none;
+}
+
+.taxi-pwa .screen-intro {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.taxi-pwa .screen-intro h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 850;
+  color: var(--taxi-text);
+}
+
+.taxi-pwa .screen-intro p,
+.taxi-pwa .helper-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--taxi-secondary);
+}
+
+.taxi-pwa .helper-text.center {
+  text-align: center;
+}
+
+.taxi-pwa .app-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  background: var(--taxi-card);
+  border: 1px solid var(--taxi-border);
+  border-radius: 24px;
+  box-shadow: 0 18px 45px rgba(120, 90, 20, 0.08);
+}
+
+.taxi-pwa .card-head-clean {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.taxi-pwa .card-head-clean h2,
+.taxi-pwa .app-card h2 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 26px;
+  font-weight: 800;
+  color: var(--taxi-text);
+}
+
+.taxi-pwa .app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 850;
+  letter-spacing: 0;
+  border: 1px solid #c99424;
+  color: var(--taxi-text);
+  background: var(--taxi-gold);
+  box-shadow: 0 12px 24px rgba(217, 164, 65, 0.22);
+}
+
+.taxi-pwa .app-button:hover:not(:disabled) {
+  background: #c99424;
+}
+
+.taxi-pwa .app-button.secondary {
+  min-height: 48px;
+  border-color: var(--taxi-border);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.taxi-pwa .app-button.danger-soft,
+.taxi-pwa .danger-soft {
+  color: var(--taxi-danger);
+  border-color: #fecaca;
+  background: #fff1f1;
+}
+
+.taxi-pwa .app-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.taxi-pwa .full-width {
+  width: 100%;
+}
+
+.taxi-pwa input,
+.taxi-pwa select,
+.taxi-pwa .route-input,
+.taxi-pwa .single-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 14px;
+  color: var(--taxi-text);
+  background: #ffffff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+  outline: none;
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 600;
+}
+
+.taxi-pwa input:focus,
+.taxi-pwa select:focus,
+.taxi-pwa .route-input:focus,
+.taxi-pwa .single-input:focus {
+  border-color: var(--taxi-gold);
+  box-shadow: 0 0 0 4px rgba(217, 164, 65, 0.18);
+}
+
+.taxi-pwa label span,
+.taxi-pwa .route-inputs label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+  color: var(--taxi-text);
+}
+
+.taxi-pwa .form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.taxi-pwa .route-input-card {
+  gap: 18px;
+}
+
+.taxi-pwa .route-input-grid {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.taxi-pwa .route-connector {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding: 22px 0;
+}
+
+.taxi-pwa .route-connector .route-line {
+  position: absolute;
+  top: 32px;
+  bottom: 32px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--taxi-border);
+}
+
+.taxi-pwa .route-dot {
+  position: relative;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.taxi-pwa .route-dot.pickup {
+  background: var(--taxi-text);
+}
+
+.taxi-pwa .route-dot.dropoff {
+  align-self: end;
+  background: var(--taxi-gold);
+}
+
+.taxi-pwa .route-inputs {
+  display: grid;
+  gap: 12px;
+}
+
+.taxi-pwa .address-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.taxi-pwa .address-list-clean {
+  display: grid;
+  gap: 8px;
+}
+
+.taxi-pwa .address-list-clean button {
+  min-height: 44px;
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--taxi-text);
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+  border-radius: 14px;
+}
+
+.taxi-pwa .tariff-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(144px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scroll-snap-type: x proximity;
+}
+
+.taxi-pwa .tariff-card-clean {
+  min-height: 108px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 14px;
+  text-align: left;
+  color: var(--taxi-text);
+  background: #ffffff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+  scroll-snap-align: start;
+}
+
+.taxi-pwa .tariff-card-clean.active {
+  background: var(--taxi-card-warm);
+  border: 2px solid var(--taxi-gold);
+  padding: 13px;
+}
+
+.taxi-pwa .tariff-card-clean strong,
+.taxi-pwa .order-card-clean strong,
+.taxi-pwa .compact-route-clean strong {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 850;
+  color: var(--taxi-text);
+}
+
+.taxi-pwa .tariff-card-clean span,
+.taxi-pwa .compact-route-clean span {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--taxi-secondary);
+}
+
+.taxi-pwa .price-card-clean .price-value,
+.taxi-pwa .price-value {
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 900;
+  color: var(--taxi-text);
+}
+
+.taxi-pwa .payment-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.taxi-pwa .payment-strip button {
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid var(--taxi-border);
+  background: #ffffff;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.taxi-pwa .payment-strip button.active {
+  color: var(--taxi-text);
+  background: var(--taxi-gold-soft);
+  border-color: var(--taxi-border-strong);
+}
+
+.taxi-pwa .status-badge-clean,
+.taxi-pwa .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 850;
+  border: 1px solid var(--taxi-border);
+  color: var(--taxi-secondary);
+  background: #ffffff;
+}
+
+.taxi-pwa .status-badge-clean.success,
+.taxi-pwa .status-pill.success {
+  color: var(--taxi-success);
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.taxi-pwa .status-badge-clean.warning,
+.taxi-pwa .status-pill.warning {
+  color: var(--taxi-warning);
+  background: var(--taxi-gold-soft);
+  border-color: var(--taxi-border-strong);
+}
+
+.taxi-pwa .status-badge-clean.danger,
+.taxi-pwa .status-pill.danger {
+  color: var(--taxi-danger);
+  background: #fff1f1;
+  border-color: #fecaca;
+}
+
+.taxi-pwa .status-line,
+.taxi-pwa .order-meta-clean,
+.taxi-pwa .price-row,
+.taxi-pwa .region-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.taxi-pwa .status-line strong,
+.taxi-pwa .price-row strong,
+.taxi-pwa .region-summary strong {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 850;
+}
+
+.taxi-pwa .status-stepper-clean {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.taxi-pwa .driver-pwa .status-stepper-clean {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.taxi-pwa .status-stepper-clean span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 850;
+  color: var(--taxi-muted);
+  background: #ffffff;
+  border: 1px solid var(--taxi-border);
+}
+
+.taxi-pwa .status-stepper-clean span.done {
+  color: var(--taxi-text);
+  background: var(--taxi-gold-soft);
+  border-color: var(--taxi-border-strong);
+}
+
+.taxi-pwa .compact-route-clean {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.taxi-pwa .compact-route-clean > div:last-child {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.taxi-pwa .route-connector.mini {
+  min-height: 58px;
+  padding: 5px 0;
+}
+
+.taxi-pwa .route-connector.mini .route-line {
+  top: 13px;
+  bottom: 13px;
+}
+
+.taxi-pwa .empty-state-clean {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.taxi-pwa .empty-mark {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+}
+
+.taxi-pwa .empty-mark span {
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
+  border: 2px solid var(--taxi-gold);
+  background: #ffffff;
+}
+
+.taxi-pwa .empty-state-clean strong {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 850;
+}
+
+.taxi-pwa .empty-state-clean p {
+  max-width: 280px;
+  margin: 0;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.taxi-pwa .message {
+  padding: 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.taxi-pwa .message.error {
+  color: var(--taxi-danger);
+  background: #fff1f1;
+  border: 1px solid #fecaca;
+}
+
+.taxi-pwa .message.warning {
+  color: var(--taxi-warning);
+  background: var(--taxi-gold-soft);
+  border: 1px solid var(--taxi-border-strong);
+}
+
+.taxi-pwa .text-action {
+  padding: 0;
+  border: 0;
+  color: var(--taxi-gold-deep);
+  background: transparent;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 850;
+}
+
+.taxi-pwa .driver-login-clean {
+  justify-items: stretch;
+  text-align: center;
+}
+
+.taxi-pwa .driver-login-clean .smarttaxi-logo {
+  margin: 0 auto 2px;
+}
+
+.taxi-pwa .driver-login-clean p {
+  margin: 0;
+  color: var(--taxi-secondary);
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.taxi-pwa .order-list-clean,
+.taxi-pwa .active-trip-clean {
+  display: grid;
+  gap: 12px;
+}
+
+.taxi-pwa .order-card-clean {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--taxi-border);
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.taxi-pwa .skeleton-block,
+.taxi-pwa .skeleton-list span {
+  display: block;
+  height: 52px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #fff9ea, #f7e8be, #fff9ea);
+  background-size: 220% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.taxi-pwa .skeleton-list {
+  display: grid;
+  gap: 10px;
+}
+
+.taxi-pwa .mobile-bottom-tabs {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  min-height: 72px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border-top: 1px solid var(--taxi-border);
+}
+
+.taxi-pwa .mobile-bottom-tabs button {
+  min-height: 48px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 850;
+}
+
+.taxi-pwa .mobile-bottom-tabs button.active {
+  color: var(--taxi-text);
+  background: var(--taxi-gold-soft);
+  border-color: var(--taxi-border-strong);
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (min-width: 768px) {
+  .phone-frame.taxi-pwa {
+    width: min(100%, 1120px);
+  }
+
+  .taxi-pwa .taxi-app-header {
+    padding: 0 24px;
+  }
+
+  .taxi-pwa .app-content {
+    padding: 32px 32px 40px;
+  }
+
+  .taxi-pwa .screen-grid {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 24px;
+  }
+
+  .taxi-pwa.driver-pwa .screen-grid {
+    grid-template-columns: 360px minmax(0, 1fr);
+  }
+
+  .taxi-pwa .desktop-only {
+    display: grid;
+  }
+
+  .taxi-pwa .mobile-bottom-tabs {
+    max-width: 520px;
+    margin: 0 auto;
+    border: 1px solid var(--taxi-border);
+    border-radius: 24px 24px 0 0;
+  }
+
+  .taxi-pwa .app-card {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 390px) {
+  .taxi-pwa .taxi-brand span {
+    font-size: 17px;
+  }
+
+  .taxi-pwa .app-content {
+    padding-inline: 12px;
+  }
+
+  .taxi-pwa .status-stepper-clean {
+    gap: 4px;
+  }
+
+  .taxi-pwa .status-stepper-clean span {
+    font-size: 10px;
+    padding-inline: 4px;
+  }
+}

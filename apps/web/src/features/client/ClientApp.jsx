@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Icon, SmartLogo, VehicleIcon } from "../../core/icons.jsx";
-import { AppHeader, BottomNav, Button, Money, PhoneFrame } from "../../core/ui.jsx";
+import { Icon } from "../../core/icons.jsx";
+import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import { PAYMENTS, PLACES } from "../../core/data.js";
+import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import {
   cancelPublicOrder,
   createOrder,
@@ -12,28 +13,32 @@ import {
   loginUser
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
-import MapView from "../map/MapView.jsx";
 
-const quick = [
-  ["home", "Дом"],
-  ["work", "Работа"],
-  ["star", "Избранное"],
-  ["clock", "Недавние"]
-];
-const paymentOptions = PAYMENTS.filter(item => ["CASH", "KASPI", "CARD", "CASHBACK", "MIXED"].includes(item.id));
+const paymentOptions = PAYMENTS.filter(item => ["CASH", "KASPI", "CARD"].includes(item.id));
 const errorMessages = {
-  PICKUP_REGION_INACTIVE: "Точка посадки вне активного региона.",
-  DROPOFF_REGION_INACTIVE: "Точка назначения вне активного региона.",
-  INTERCITY_NOT_SUPPORTED: "Поездки между регионами в MVP не поддерживаются.",
-  TARIFF_INACTIVE: "Выбранный тариф сейчас недоступен.",
-  TARIFF_REGION_MISMATCH: "Тариф не относится к региону поездки.",
-  ORDER_ALREADY_ACCEPTED: "Заказ уже принят водителем.",
-  UNAUTHORIZED: "Войдите как пассажир, чтобы создать заказ.",
-  FORBIDDEN: "У аккаунта нет прав пассажира для создания заказа."
+  PICKUP_REGION_INACTIVE: "В этом месте сервис пока недоступен",
+  DROPOFF_REGION_INACTIVE: "Точка назначения вне активного региона",
+  INTERCITY_NOT_SUPPORTED: "Межгород пока не поддерживается",
+  TARIFF_INACTIVE: "Этот тариф временно недоступен",
+  TARIFF_REGION_MISMATCH: "Тариф недоступен для выбранного региона",
+  ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
+  UNAUTHORIZED: "Войдите, чтобы заказать поездку",
+  FORBIDDEN: "У аккаунта нет прав пассажира"
 };
+const orderSteps = [["SEARCHING", "Поиск"], ["ACCEPTED", "Принят"], ["DRIVER_ARRIVED", "Прибыл"], ["IN_PROGRESS", "В пути"], ["COMPLETED", "Завершено"]];
 
 function formatError(error) {
-  return errorMessages[error?.code] || error?.message || "Не удалось выполнить запрос.";
+  return errorMessages[error?.code] || error?.message || "Не удалось выполнить запрос";
+}
+
+function publicStatus(status) {
+  const map = { NEW: "SEARCHING", DRIVER_ASSIGNED: "ACCEPTED", DRIVER_ARRIVED: "DRIVER_ARRIVED", IN_PROGRESS: "IN_PROGRESS", COMPLETED: "COMPLETED", CANCELLED: "CANCELED", CANCELED: "CANCELED" };
+  return map[status] || status || "SEARCHING";
+}
+
+function statusLabel(status) {
+  const map = { NEW: "Поиск", SEARCHING: "Поиск", ACCEPTED: "Принят", DRIVER_ASSIGNED: "Принят", DRIVER_ARRIVED: "Прибыл", IN_PROGRESS: "В пути", COMPLETED: "Завершено", CANCELLED: "Отменён", CANCELED: "Отменён" };
+  return map[status] || status || "Статус";
 }
 
 function normalizeOrder(order) {
@@ -41,26 +46,44 @@ function normalizeOrder(order) {
   return {
     ...order,
     short_id: order.short_id || order.shortId || order.id,
-    pickup_text: order.pickup_text || order.pickupText,
-    dropoff_text: order.dropoff_text || order.dropoffText,
+    pickup_text: order.pickup_text || order.pickupText || order.pickup || "Откуда",
+    dropoff_text: order.dropoff_text || order.dropoffText || order.dropoff || "Куда",
     payment_method: order.payment_method || order.paymentMethod,
-    public_status: order.public_status || order.publicStatus || order.status
+    public_status: order.public_status || order.publicStatus || publicStatus(order.status)
   };
 }
 
 function tariffTitle(tariff) {
-  return tariff?.name || tariff?.title || "Tariff";
+  return tariff?.name || tariff?.title || "Тариф";
 }
 
-function tariffPrice(tariff, estimate) {
-  if (estimate?.pricing?.tariffId === tariff?.id) return estimate.estimatedPrice;
-  return tariff?.minimumPrice || tariff?.min_price || 0;
+function estimateDistanceKm(a, b) {
+  const latKm = (Number(a.lat) - Number(b.lat)) * 111;
+  const lngKm = (Number(a.lng) - Number(b.lng)) * 82;
+  return Math.max(0.4, Math.round(Math.sqrt(latKm * latKm + lngKm * lngKm) * 10) / 10);
+}
+
+function estimateDurationMin(a, b) {
+  return Math.max(3, Math.round(estimateDistanceKm(a, b) * 3.4));
+}
+
+function buildRoutePayload({ pickup, destination, tariff }) {
+  return {
+    pickupLat: pickup.lat,
+    pickupLng: pickup.lng,
+    dropoffLat: destination.lat,
+    dropoffLng: destination.lng,
+    tariffId: tariff?.id,
+    tariff: tariff?.name || tariff?.id || "Economy",
+    distanceKm: estimateDistanceKm(pickup, destination),
+    durationMin: estimateDurationMin(pickup, destination)
+  };
 }
 
 export default function ClientApp() {
-  const [screen, setScreen] = useState("splash");
-  const [sheet, setSheet] = useState("home");
-  const [pickup, setPickup] = useState({ ...PLACES[0], title: "ул. Шамо, 58", subtitle: "Моё местоположение" });
+  const [tab, setTab] = useState("order");
+  const [addressMode, setAddressMode] = useState("");
+  const [pickup, setPickup] = useState({ ...PLACES[0], title: "ул. Шамо, 58", subtitle: "Точка посадки" });
   const [destination, setDestination] = useState(PLACES[2]);
   const [payment, setPayment] = useState(paymentOptions[0]);
   const [regions, setRegions] = useState([]);
@@ -76,15 +99,14 @@ export default function ClientApp() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [socketState, setSocketState] = useState("offline");
-  const [authOpen, setAuthOpen] = useState(!getToken());
   const [auth, setAuth] = useState({ phone: "+77000000001", email: "", password: "123456" });
-  const [rider, setRider] = useState({ name: "SmartTaxi Passenger", phone: "+77000000001" });
+  const [rider, setRider] = useState({ name: "Пассажир", phone: "+77000000001" });
+  const [authenticated, setAuthenticated] = useState(Boolean(getToken()));
   const socketRef = useRef(null);
 
   const selectedRegionId = estimate?.regionId || regions[0]?.id || "";
-  const canRequest = Boolean(destination && pickup && tariff && estimate && !estimateError && getToken());
-  const price = estimate?.estimatedPrice || 0;
+  const selectedRegionName = estimate?.regionName || regions.find(region => region.id === selectedRegionId)?.name || "";
+  const canCreate = Boolean(authenticated && pickup && destination && tariff && estimate && !estimateError);
 
   useEffect(() => {
     let ignore = false;
@@ -101,7 +123,7 @@ export default function ClientApp() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRegionId) return;
+    if (!selectedRegionId) return undefined;
     let ignore = false;
     setTariffsLoading(true);
     getTariffs(selectedRegionId)
@@ -120,7 +142,7 @@ export default function ClientApp() {
   useEffect(() => {
     if (!pickup || !destination || !tariff) {
       setEstimate(null);
-      return;
+      return undefined;
     }
     let ignore = false;
     setEstimateLoading(true);
@@ -143,12 +165,7 @@ export default function ClientApp() {
     if (!order?.id || !getToken()) return undefined;
     const socket = createSocket();
     socketRef.current = socket;
-    setSocketState("connecting");
-    socket.on("connect", () => {
-      setSocketState("connected");
-      socket.emit("join_order", order.id);
-    });
-    socket.on("disconnect", () => setSocketState("offline"));
+    socket.on("connect", () => socket.emit("join_order", order.id));
     const updateOrder = payload => {
       if (payload?.id === order.id) setOrder(current => normalizeOrder({ ...current, ...payload }));
     };
@@ -169,14 +186,10 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
-      await loginUser({
-        phone: auth.email ? undefined : auth.phone,
-        email: auth.email || undefined,
-        password: auth.password
-      });
+      await loginUser({ phone: auth.email ? undefined : auth.phone, email: auth.email || undefined, password: auth.password });
+      setAuthenticated(true);
       setRider(current => ({ ...current, phone: auth.phone || current.phone }));
-      setAuthOpen(false);
-      setMessage("Вход выполнен. Теперь можно создать заказ.");
+      setMessage("Вы вошли в аккаунт");
     } catch (error) {
       setMessage(formatError(error));
     } finally {
@@ -185,16 +198,17 @@ export default function ClientApp() {
   }
 
   async function submitOrder() {
-    if (!destination || !tariff || loading) return;
-    if (!getToken()) {
-      setAuthOpen(true);
+    if (loading) return;
+    if (!authenticated || !getToken()) {
+      setTab("profile");
       setMessage(errorMessages.UNAUTHORIZED);
       return;
     }
+    if (!pickup || !destination || !tariff || !estimate) return;
     setLoading(true);
     setMessage("");
     try {
-      const payload = {
+      const data = await createOrder({
         ...buildRoutePayload({ pickup, destination, tariff }),
         riderName: rider.name,
         riderPhone: rider.phone,
@@ -202,10 +216,9 @@ export default function ClientApp() {
         dropoffText: destination.title,
         paymentMethod: payment.id,
         notes: ""
-      };
-      const data = await createOrder(payload);
+      });
       setOrder(normalizeOrder(data.order));
-      setSheet("searching");
+      setTab("trip");
     } catch (error) {
       setMessage(formatError(error));
     } finally {
@@ -220,7 +233,6 @@ export default function ClientApp() {
     try {
       const data = await cancelPublicOrder(order.id, rider.phone);
       setOrder(normalizeOrder(data.order));
-      setSheet("home");
     } catch (error) {
       setMessage(formatError(error));
     } finally {
@@ -228,218 +240,168 @@ export default function ClientApp() {
     }
   }
 
-  if (screen === "splash") return <WelcomeScreen onStart={() => setScreen("home")} />;
+  function chooseAddress(place) {
+    if (addressMode === "pickup") setPickup(place);
+    if (addressMode === "destination") setDestination(place);
+    setAddressMode("");
+  }
+
+  const ctaText = !authenticated ? "Войдите, чтобы заказать" : estimate ? "Заказать" : "Рассчитать стоимость";
 
   return (
-    <PhoneFrame className="client-app">
-      {sheet === "home" && (
-        <>
-          <MapView pickup={pickup} destination={destination} status={estimateLoading ? "Расчёт..." : estimate ? `${estimate.pricing?.durationMin || 0} мин` : ""} />
-          <HomeHeader onMenu={() => setSheet("menu")} />
-          <section className="ride-sheet">
-            <div className="sheet-grip" />
-            <RouteCard pickup={pickup} destination={destination} onPickup={() => setSheet("pickup")} onDestination={() => setSheet("destination")} />
-            <div className="quick-grid">{quick.map(([icon, label]) => <button key={label} type="button" onClick={() => setSheet(label === "Недавние" ? "history" : "destination")}><Icon name={icon} /><span>{label}</span></button>)}</div>
-            <RegionState loading={regionsLoading} error={regionsError} regions={regions} />
-            <TariffCarousel tariffs={tariffs} tariff={tariff} setTariff={setTariff} estimate={estimate} loading={tariffsLoading} error={tariffsError} />
-            <PaymentRow payment={payment} setPayment={setPayment} />
-            {authOpen && <PassengerLogin auth={auth} setAuth={setAuth} rider={rider} setRider={setRider} loading={loading} onSubmit={submitLogin} />}
-            {estimateLoading && <p className="inline-status">Считаем стоимость на backend...</p>}
-            {estimateError && <p className="inline-error">{estimateError}</p>}
-            {message && <p className={message.includes("Вход") ? "inline-status" : "inline-error"}>{message}</p>}
-            <Button className="wide" disabled={!destination || !tariff || loading || estimateLoading || !regions.length} onClick={submitOrder}>
-              {loading ? "Отправляем..." : canRequest ? <>Заказать за <Money value={price} /></> : "Войти и выбрать тариф"}
-            </Button>
-          </section>
-          <BottomNav active="home" onSelect={key => setSheet(key === "profile" ? "profile" : key)} />
-        </>
+    <PhoneFrame className="taxi-pwa passenger-pwa">
+      <AppHeader regionName={selectedRegionName} />
+      {addressMode ? (
+        <AddressPicker mode={addressMode} onBack={() => setAddressMode("")} onSelect={chooseAddress} />
+      ) : (
+        <main className="app-content passenger-content">
+          {tab === "order" && <OrderTab pickup={pickup} destination={destination} onPickup={() => setAddressMode("pickup")} onDestination={() => setAddressMode("destination")} tariffs={tariffs} tariff={tariff} setTariff={setTariff} tariffsLoading={tariffsLoading} tariffError={tariffsError} regionsLoading={regionsLoading} regionsError={regionsError} regions={regions} estimate={estimate} estimateLoading={estimateLoading} estimateError={estimateError} payment={payment} setPayment={setPayment} ctaText={ctaText} loading={loading} canCreate={canCreate} onSubmit={submitOrder} />}
+          {tab === "trip" && <TripTab order={order} pickup={pickup} destination={destination} estimate={estimate} loading={loading} onCancel={cancelOrder} />}
+          {tab === "profile" && <ProfileTab authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} message={message} loading={loading} onSubmit={submitLogin} />}
+        </main>
       )}
-      {sheet === "pickup" && <AddressScreen mode="pickup" onBack={() => setSheet("home")} onSelect={place => { setPickup(place); setSheet("home"); }} />}
-      {sheet === "destination" && <AddressScreen mode="destination" onBack={() => setSheet("home")} onSelect={place => { setDestination(place); setSheet("home"); }} />}
-      {sheet === "payment" && <PaymentScreen payment={payment} setPayment={setPayment} onBack={() => setSheet("home")} />}
-      {sheet === "searching" && <ActiveOrderScreen order={order} pickup={pickup} destination={destination} price={price} socketState={socketState} loading={loading} onCancel={cancelOrder} onHome={() => setSheet("home")} />}
-      {sheet === "history" && <HistoryScreen onBack={() => setSheet("home")} order={order} />}
-      {sheet === "profile" && <ProfileScreen onBack={() => setSheet("home")} setSheet={setSheet} rider={rider} />}
-      {sheet === "menu" && <ClientMenu onBack={() => setSheet("home")} setSheet={setSheet} />}
+      {!addressMode && <BottomTabs active={tab} onSelect={setTab} items={[["order", "Заказ"], ["trip", "Поездка"], ["profile", "Профиль"]]} />}
     </PhoneFrame>
   );
 }
 
-function buildRoutePayload({ pickup, destination, tariff }) {
-  return {
-    pickupLat: pickup.lat,
-    pickupLng: pickup.lng,
-    dropoffLat: destination.lat,
-    dropoffLng: destination.lng,
-    tariffId: tariff?.id,
-    tariff: tariff?.name || tariff?.id || "Economy",
-    distanceKm: estimateDistanceKm(pickup, destination),
-    durationMin: estimateDurationMin(pickup, destination)
-  };
+function AppHeader({ regionName }) {
+  return <header className="taxi-app-header"><SmartTaxiLogo /><span className="header-region">{regionName || "Регион не выбран"}</span></header>;
 }
 
-function estimateDistanceKm(a, b) {
-  const latKm = (Number(a.lat) - Number(b.lat)) * 111;
-  const lngKm = (Number(a.lng) - Number(b.lng)) * 82;
-  return Math.max(0.4, Math.round(Math.sqrt(latKm * latKm + lngKm * lngKm) * 10) / 10);
-}
-
-function estimateDurationMin(a, b) {
-  return Math.max(3, Math.round(estimateDistanceKm(a, b) * 3.4));
-}
-
-function WelcomeScreen({ onStart }) {
+function OrderTab({ pickup, destination, onPickup, onDestination, tariffs, tariff, setTariff, tariffsLoading, tariffError, regionsLoading, regionsError, regions, estimate, estimateLoading, estimateError, payment, setPayment, ctaText, loading, canCreate, onSubmit }) {
   return (
-    <PhoneFrame className="welcome-screen">
-      <div className="welcome-inner">
-        <SmartLogo />
-        <h1>Smart<span>Taxi</span></h1>
-        <p>Заказы только внутри активного региона.</p>
-        <div className="splash-city" />
-        <div className="splash-car"><VehicleIcon /></div>
-        <ul>
-          <li><Icon name="route" />Backend проверяет регион поездки</li>
-          <li><Icon name="cash" />Цена считается на сервере</li>
-          <li><Icon name="shield" />Межгород заблокирован</li>
-        </ul>
-        <Button className="wide" onClick={onStart}>Начать поездку</Button>
-      </div>
-    </PhoneFrame>
-  );
-}
-
-function HomeHeader({ onMenu }) {
-  return (
-    <header className="floating-header">
-      <button className="round-button" type="button" onClick={onMenu} aria-label="Меню"><Icon name="menu" /></button>
-      <span className="bonus-pill"><SmartLogo compact /><span>Live API<br /><b>backend</b></span></span>
-    </header>
+    <div className="screen-grid order-screen">
+      <section className="screen-intro"><h1>Закажите поездку</h1><p>Поездки только внутри активного региона</p></section>
+      <RouteCard pickup={pickup} destination={destination} onPickup={onPickup} onDestination={onDestination} />
+      <TariffCard tariffs={tariffs} tariff={tariff} setTariff={setTariff} loading={tariffsLoading} error={tariffError} />
+      <PriceCard estimate={estimate} loading={estimateLoading} error={estimateError || regionsError} regionsLoading={regionsLoading} hasRegions={Boolean(regions.length)} />
+      <PaymentSelector payment={payment} setPayment={setPayment} />
+      <section className="action-card"><Button className="wide primary-gold" disabled={loading || estimateLoading || !tariff || !regions.length} onClick={onSubmit}>{loading ? "Отправляем заказ" : ctaText}{canCreate && estimate?.estimatedPrice ? <> · <Money value={estimate.estimatedPrice} /></> : null}</Button></section>
+    </div>
   );
 }
 
 function RouteCard({ pickup, destination, onPickup, onDestination }) {
   return (
-    <div className="route-card">
-      <button type="button" onClick={onPickup}><b className="dot blue" /> <span><small>Откуда</small>{pickup?.title || "Моё местоположение"}</span><Icon name="plus" /></button>
-      <button type="button" onClick={onDestination}><b className="dot gold" /> <span><small>Куда</small>{destination?.title || "Куда едем?"}</span><Icon name="plus" /></button>
-    </div>
-  );
-}
-
-function RegionState({ loading, error, regions }) {
-  if (loading) return <p className="inline-status">Загружаем активные регионы...</p>;
-  if (error) return <p className="inline-error">{error}</p>;
-  if (!regions.length) return <p className="inline-error">Нет активных регионов. Заказ недоступен.</p>;
-  return <p className="inline-status">Активный регион: {regions.map(region => region.name).join(", ")}</p>;
-}
-
-function TariffCarousel({ tariffs, tariff, setTariff, estimate, loading, error }) {
-  return (
-    <section>
-      <h3 className="section-title">Тариф</h3>
-      {loading && <p className="inline-status">Загружаем тарифы...</p>}
-      {error && <p className="inline-error">{error}</p>}
-      {!loading && !error && !tariffs.length && <p className="inline-error">Нет активных тарифов для региона.</p>}
-      <div className="tariff-carousel">
-        {tariffs.map(item => (
-          <button type="button" className={`tariff-card ${tariff?.id === item.id ? "active" : ""}`} key={item.id} onClick={() => setTariff(item)}>
-            <VehicleIcon type={item.name === "Business" ? "business" : item.name === "Comfort" ? "comfort" : "sedan"} />
-            {tariff?.id === item.id && <span className="check"><Icon name="check" size={14} /></span>}
-            <strong>{tariffTitle(item)}</strong>
-            <small>Мин. цена</small>
-            <b><Money value={tariffPrice(item, estimate)} /></b>
-            <em>{Number(item.surgeMultiplier || 1) > 1 ? `x${item.surgeMultiplier}` : "обычный спрос"}</em>
-          </button>
-        ))}
+    <section className="app-card route-input-card">
+      <h2>Куда едем?</h2>
+      <div className="route-input-grid">
+        <div className="route-connector" aria-hidden="true"><span className="route-dot pickup" /><span className="route-line" /><span className="route-dot dropoff" /></div>
+        <div className="route-inputs">
+          <button className="route-input" type="button" onClick={onPickup}><span>Откуда</span><b>{pickup?.title || "Укажите точку посадки"}</b>{pickup?.subtitle && <small>{pickup.subtitle}</small>}</button>
+          <button className="route-input" type="button" onClick={onDestination}><span>Куда</span><b>{destination?.title || "Укажите точку назначения"}</b>{destination?.subtitle && <small>{destination.subtitle}</small>}</button>
+        </div>
       </div>
     </section>
   );
 }
 
-function PaymentRow({ payment, setPayment }) {
+function TariffCard({ tariffs, tariff, setTariff, loading, error }) {
   return (
-    <div className="tabs">
-      {paymentOptions.map(item => (
-        <button key={item.id} type="button" className={payment.id === item.id ? "active" : ""} onClick={() => setPayment(item)}>{item.title}</button>
-      ))}
-    </div>
-  );
-}
-
-function PassengerLogin({ auth, setAuth, rider, setRider, loading, onSubmit }) {
-  return (
-    <form className="auth-inline form-stack" onSubmit={onSubmit}>
-      <b>Вход пассажира</b>
-      <input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value, email: "" })} placeholder="Телефон аккаунта" />
-      <input value={auth.email} onChange={event => setAuth({ ...auth, email: event.target.value })} placeholder="или email" />
-      <input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="Пароль" type="password" />
-      <input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} placeholder="Имя пассажира" />
-      <input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} placeholder="Телефон для заказа" />
-      <Button className="wide" type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</Button>
-    </form>
-  );
-}
-
-function AddressScreen({ mode, onBack, onSelect }) {
-  const [query, setQuery] = useState("");
-  const filtered = PLACES.filter(p => `${p.title} ${p.subtitle}`.toLowerCase().includes(query.toLowerCase()));
-  return (
-    <section className="panel-screen">
-      <AppHeader title={mode === "pickup" ? "Откуда поедем?" : "Куда едем?"} onBack={onBack} />
-      <label className="search-field"><Icon name="search" /><input value={query} onChange={e => setQuery(e.target.value)} autoFocus placeholder="Адрес" /></label>
-      <section className="address-group">
-        <h3>Адреса</h3>
-        {filtered.map(place => <button key={`${place.title}-${place.subtitle}`} type="button" onClick={() => onSelect(place)}><Icon name="pin" /><span>{place.title}<small>{place.subtitle}</small></span><Icon name="back" /></button>)}
-      </section>
-      {query && <Button variant="secondary" className="wide" onClick={() => onSelect({ title: query, subtitle: "Введённый адрес", lat: 42.316, lng: 69.596 })}>Использовать адрес: {query}</Button>}
+    <section className="app-card tariff-card-clean">
+      <h2>Выберите тариф</h2>
+      {loading && <p className="state-note">Загружаем тарифы</p>}
+      {error && <p className="state-note danger">{error}</p>}
+      {!loading && !error && !tariffs.length && <p className="state-note">Нет доступных тарифов</p>}
+      <div className="tariff-scroll">{tariffs.map(item => <button type="button" key={item.id} className={tariff?.id === item.id ? "selected" : ""} onClick={() => setTariff(item)}><strong>{tariffTitle(item)}</strong><span>{item.description || "Поездка по активному региону"}</span><small>Минимум <Money value={item.minimumPrice || item.minimum_price || item.min_price || 0} /></small></button>)}</div>
     </section>
   );
 }
 
-function PaymentScreen({ payment, setPayment, onBack }) {
+function PriceCard({ estimate, loading, error, regionsLoading, hasRegions }) {
   return (
-    <section className="panel-screen">
-      <AppHeader title="Способ оплаты" onBack={onBack} />
-      <div className="list-card">{paymentOptions.map(item => <button key={item.id} type="button" className={payment.id === item.id ? "selected" : ""} onClick={() => setPayment(item)}><Icon name={item.id === "CARD" ? "card" : "cash"} /><span>{item.title}<small>{item.note}</small></span>{payment.id === item.id && <Icon name="check" />}</button>)}</div>
+    <section className="app-card price-card-clean">
+      <h2>Стоимость</h2>
+      {regionsLoading && <p className="state-note">Проверяем активные регионы</p>}
+      {!regionsLoading && !hasRegions && <p className="state-note danger">Нет активных регионов</p>}
+      {error && <p className="state-note danger">{error}</p>}
+      {loading ? <div className="price-skeleton" /> : estimate ? <div className="price-value"><strong><Money value={estimate.estimatedPrice} /></strong><span>Рассчитано сервером</span><RouteEstimate estimate={estimate} /></div> : <p className="state-note">Укажите маршрут, чтобы рассчитать стоимость</p>}
     </section>
   );
 }
 
-function ActiveOrderScreen({ order, pickup, destination, price, socketState, loading, onCancel, onHome }) {
-  const status = order?.public_status || order?.status || "SEARCHING";
+function PaymentSelector({ payment, setPayment }) {
+  return <section className="payment-strip">{paymentOptions.map(item => <button type="button" key={item.id} className={payment?.id === item.id ? "selected" : ""} onClick={() => setPayment(item)}>{item.title}</button>)}</section>;
+}
+
+function RouteEstimate({ estimate }) {
+  const distance = estimate?.pricing?.distanceKm || estimate?.distanceKm;
+  const duration = estimate?.pricing?.durationMin || estimate?.durationMin;
+  if (!distance && !duration) return null;
+  return <em>Маршрут: {distance ? `${distance} км` : ""}{distance && duration ? " · " : ""}{duration ? `${duration} мин` : ""}</em>;
+}
+
+function TripTab({ order, pickup, destination, estimate, loading, onCancel }) {
+  if (!order) return <section className="screen-grid"><section className="screen-intro"><h1>Текущая поездка</h1><p>Создайте заказ, и его статус появится здесь.</p></section><EmptyState title="Активной поездки нет" text="Создайте заказ, и его статус появится здесь." /></section>;
+  const status = publicStatus(order.public_status || order.status);
   const terminal = ["COMPLETED", "CANCELLED", "CANCELED"].includes(status);
   return (
-    <section className="panel-screen ride-state">
-      <AppHeader title="Активный заказ" onBack={onHome} right={!terminal ? <button className="text-danger" onClick={onCancel} disabled={loading}>Отмена</button> : null} />
-      <MapView pickup={pickup} destination={destination} status={status} compact />
-      <div className="summary-card">
-        <b>Заказ {order?.short_id || order?.id}</b>
-        <span>{status}</span>
-        <small>{pickup.title} {"->"} {destination.title}</small>
-        <strong><Money value={order?.price || price} /></strong>
-      </div>
-      <p className="inline-status">Realtime: {socketState}</p>
-      {!terminal && <Button variant="secondary" className="wide" onClick={onCancel} disabled={loading}>{loading ? "Отменяем..." : "Отменить заказ"}</Button>}
-      {terminal && <Button className="wide" onClick={onHome}>Новый заказ</Button>}
+    <section className="screen-grid">
+      <section className="screen-intro"><h1>Текущая поездка</h1><p>{statusLabel(status)}</p></section>
+      <section className="app-card active-order-clean">
+        <div className="card-topline"><h2>Заказ {order.short_id || order.id}</h2><StatusBadge label={statusLabel(status)} tone={terminal ? "muted" : "gold"} /></div>
+        <StatusStepper status={status} />
+        <CompactRoute pickup={order.pickup_text || pickup.title} dropoff={order.dropoff_text || destination.title} />
+        <div className="price-value compact"><strong><Money value={order.price || estimate?.estimatedPrice} /></strong><span>Стоимость поездки</span></div>
+        {!["ACCEPTED", "DRIVER_ARRIVED", "IN_PROGRESS", "COMPLETED"].includes(status) && <p className="state-note">Данные водителя появятся после принятия заказа</p>}
+        {!terminal && <Button variant="danger" className="wide" onClick={onCancel} disabled={loading}>{loading ? "Отменяем" : "Отменить заказ"}</Button>}
+      </section>
     </section>
   );
 }
 
-function HistoryScreen({ onBack, order }) {
+function ProfileTab({ authenticated, rider, setRider, auth, setAuth, message, loading, onSubmit }) {
   return (
-    <section className="panel-screen">
-      <AppHeader title="История поездок" onBack={onBack} />
-      <div className="trip-list">
-        {order ? <article><span><b>{order.short_id || order.id}</b><small>{order.pickup_text} {"->"} {order.dropoff_text}</small></span><strong>{order.price ? <Money value={order.price} /> : order.status}</strong><small>{order.status}</small></article> : <p className="muted-note">История появится после реальных заказов.</p>}
-      </div>
+    <section className="screen-grid profile-screen">
+      <section className="screen-intro"><h1>Профиль</h1><p>{authenticated ? "Аккаунт подключён" : "Войдите, чтобы заказать поездку"}</p></section>
+      <section className="app-card account-card">
+        <div className="card-topline"><h2>Аккаунт пассажира</h2><StatusBadge label={authenticated ? "Вход выполнен" : "Нужен вход"} tone={authenticated ? "success" : "muted"} /></div>
+        <form className="form-grid" onSubmit={onSubmit}>
+          <label>Телефон<input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value, email: "" })} placeholder="Телефон" /></label>
+          <label>Email<input value={auth.email} onChange={event => setAuth({ ...auth, email: event.target.value })} placeholder="Если вход по email" /></label>
+          <label>Пароль<input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="Пароль" type="password" /></label>
+          <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} placeholder="Имя пассажира" /></label>
+          <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} placeholder="Телефон" /></label>
+          {message && <p className={message.includes("вошли") ? "state-note success" : "state-note danger"}>{message}</p>}
+          <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Входим" : authenticated ? "Обновить данные" : "Войти"}</Button>
+        </form>
+      </section>
+      <section className="app-card support-card"><h2>Поддержка</h2><p>Все проверки региона, тарифа и стоимости выполняет backend.</p></section>
     </section>
   );
 }
 
-function ProfileScreen({ onBack, setSheet, rider }) {
-  return <section className="panel-screen"><AppHeader title="Профиль" onBack={onBack} /><div className="profile-card"><div className="avatar">{rider.name.slice(0, 1)}</div><span><b>{rider.name}</b><small>{rider.phone}</small></span></div><div className="list-card"><button type="button" onClick={() => setSheet("payment")}><Icon name="card" /><span>Способ оплаты</span><Icon name="back" /></button><button type="button" onClick={() => setSheet("history")}><Icon name="clock" /><span>История поездок</span><Icon name="back" /></button></div></section>;
+function AddressPicker({ mode, onBack, onSelect }) {
+  const [query, setQuery] = useState("");
+  const filtered = PLACES.filter(place => `${place.title} ${place.subtitle}`.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <main className="app-content address-screen">
+      <div className="screen-intro with-back"><button type="button" onClick={onBack} aria-label="Назад"><Icon name="back" /></button><div><h1>{mode === "pickup" ? "Откуда" : "Куда"}</h1><p>Выберите адрес из подсказок</p></div></div>
+      <label className="single-input">Адрес<input value={query} onChange={event => setQuery(event.target.value)} autoFocus placeholder="Введите адрес" /></label>
+      <section className="address-list-clean">{filtered.map(place => <button type="button" key={`${place.title}-${place.subtitle}`} onClick={() => onSelect(place)}><span><b>{place.title}</b><small>{place.subtitle}</small></span></button>)}</section>
+      {query && <Button variant="secondary" className="wide" onClick={() => onSelect({ title: query, subtitle: "Введённый адрес", lat: 42.316, lng: 69.596 })}>Использовать адрес</Button>}
+    </main>
+  );
 }
 
-function ClientMenu({ onBack, setSheet }) {
-  return <section className="panel-screen"><AppHeader title="Меню пассажира" onBack={onBack} /><div className="list-card"><button type="button" onClick={() => setSheet("profile")}><Icon name="user" /><span>Профиль</span><Icon name="back" /></button><button type="button" onClick={() => setSheet("history")}><Icon name="clock" /><span>История</span><Icon name="back" /></button><button type="button" onClick={() => setSheet("payment")}><Icon name="card" /><span>Оплата</span><Icon name="back" /></button></div></section>;
+function StatusStepper({ status }) {
+  const currentIndex = Math.max(0, orderSteps.findIndex(([key]) => key === status));
+  return <ol className="status-stepper-clean">{orderSteps.map(([key, label], index) => <li key={key} className={index <= currentIndex ? "done" : ""}><span /><b>{label}</b></li>)}</ol>;
+}
+
+function CompactRoute({ pickup, dropoff }) {
+  return <div className="compact-route-clean"><b>{pickup}</b><span>{dropoff}</span></div>;
+}
+
+function StatusBadge({ label, tone = "gold" }) {
+  return <span className={`status-badge-clean ${tone}`}>{label}</span>;
+}
+
+function EmptyState({ title, text }) {
+  return <section className="app-card empty-state-clean"><b>{title}</b><p>{text}</p></section>;
+}
+
+function BottomTabs({ active, onSelect, items }) {
+  return <nav className="mobile-bottom-tabs">{items.map(([key, label]) => <button type="button" key={key} className={active === key ? "active" : ""} onClick={() => onSelect(key)}>{label}</button>)}</nav>;
 }

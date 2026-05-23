@@ -3,5 +3,6 @@ import "./regions-check.js";
 import "./driver-approval-check.js";
 import "./tariffs-orders-check.js";
 import "./dispatch-realtime-check.js";
+import "./routing-location-check.js";
 
-console.log("Milestone 1, 2, 3 and 4 backend checks ok");
+console.log("Milestone 1, 2, 3, 4 and routing/location backend checks ok");

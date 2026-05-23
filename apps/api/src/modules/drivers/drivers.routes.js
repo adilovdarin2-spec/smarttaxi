@@ -10,6 +10,7 @@ import {
   publicDriverRegionApproval,
   selectDriverRegion
 } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { updateDriverLocation } from "../routing/routing.service.js";
 const router = Router();
 
 router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
@@ -99,6 +100,34 @@ router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, 
       req
     });
     res.json({ driver: result.rows[0] });
+  } catch (e) { next(e); }
+});
+
+router.patch("/me/location", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const body = z.object({
+      lat: z.coerce.number().min(-90).max(90),
+      lng: z.coerce.number().min(-180).max(180),
+      heading: z.coerce.number().min(0).max(360).optional(),
+      speed: z.coerce.number().min(0).max(120).optional(),
+      accuracy: z.coerce.number().min(0).max(5000).optional(),
+      source: z.string().trim().max(40).optional().default("mobile")
+    }).parse(req.body);
+    const result = await updateDriverLocation({
+      userId: req.user.id,
+      location: body,
+      io: req.io,
+      executor: query
+    });
+    await writeAudit(query, {
+      action: "driver_location_updated",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: result.driver.id,
+      metadata: { regionId: result.location.regionId },
+      req
+    });
+    res.json({ location: result.location });
   } catch (e) { next(e); }
 });
 

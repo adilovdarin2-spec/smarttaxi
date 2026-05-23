@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Icon, SmartLogo } from "../../core/icons.jsx";
-import { AppHeader, BottomNav, Button, Money, PhoneFrame } from "../../core/ui.jsx";
+import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
+import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import {
   acceptOrder,
   cancelDriverOrder,
@@ -16,41 +16,88 @@ import {
   startTrip
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
-import MapView from "../map/MapView.jsx";
 
 const activeStatuses = ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"];
 const errorMessages = {
-  DRIVER_REGION_NOT_SELECTED: "Выберите утверждённый регион.",
-  DRIVER_REGION_REQUIRED: "Выберите утверждённый регион.",
-  DRIVER_REGION_INACTIVE: "Выбранный регион неактивен.",
-  REGION_INACTIVE: "Выбранный регион неактивен.",
-  DRIVER_REGION_NOT_APPROVED: "Водитель не утверждён в этом регионе.",
-  DRIVER_REGION_BLOCKED: "Водитель заблокирован в этом регионе.",
-  DRIVER_BLOCKED: "Водитель заблокирован.",
-  DRIVER_HAS_ACTIVE_ORDER: "У водителя уже есть активный заказ.",
-  ORDER_REGION_MISMATCH: "Заказ относится к другому региону.",
-  ORDER_ALREADY_ACCEPTED: "Заказ уже принят.",
-  FORBIDDEN: "Недостаточно прав для действия.",
-  UNAUTHORIZED: "Войдите как водитель."
+  DRIVER_REGION_NOT_SELECTED: "Выберите рабочий регион",
+  DRIVER_REGION_REQUIRED: "Выберите рабочий регион",
+  DRIVER_REGION_INACTIVE: "Регион временно отключён",
+  REGION_INACTIVE: "Регион временно отключён",
+  DRIVER_REGION_NOT_APPROVED: "Вы не одобрены для этого региона",
+  DRIVER_REGION_BLOCKED: "Работа в этом регионе заблокирована",
+  DRIVER_BLOCKED: "Водитель заблокирован",
+  DRIVER_HAS_ACTIVE_ORDER: "У вас уже есть активный заказ",
+  ORDER_REGION_MISMATCH: "Заказ относится к другому региону",
+  ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
+  FORBIDDEN: "Недостаточно прав для действия",
+  UNAUTHORIZED: "Войдите как водитель"
 };
 
+const tabs = [
+  ["line", "Линия"],
+  ["orders", "Заказы"],
+  ["trip", "Поездка"]
+];
+
+const orderSteps = [
+  ["DRIVER_ASSIGNED", "Принят"],
+  ["DRIVER_ARRIVED", "Прибыл"],
+  ["IN_PROGRESS", "В пути"],
+  ["COMPLETED", "Завершено"]
+];
+
 function formatError(error) {
-  return errorMessages[error?.code] || error?.message || "Запрос не выполнен.";
+  return errorMessages[error?.code] || error?.message || "Запрос не выполнен";
 }
 
 function normalizeOrder(order) {
   if (!order) return null;
+  const snapshot = order.pricing_snapshot || order.pricingSnapshot || {};
   return {
     ...order,
-    pickup: order.pickup_text || order.pickupText || order.pickup || "Точка посадки",
-    dropoff: order.dropoff_text || order.dropoffText || order.dropoff || "Точка назначения",
-    public_status: order.public_status || order.publicStatus || order.status
+    pickup: order.pickup_text || order.pickupText || order.pickup || order.pickup_address || "Точка посадки",
+    dropoff: order.dropoff_text || order.dropoffText || order.dropoff || order.dropoff_address || "Точка назначения",
+    public_status: order.public_status || order.publicStatus || order.status,
+    estimated_price: order.estimated_price || order.estimatedPrice || order.price || snapshot.estimatedPrice,
+    routeDistanceKm: snapshot.distanceKm || order.distance_km || order.distanceKm,
+    routeDurationMin: snapshot.durationMin || order.duration_min || order.durationMin
   };
+}
+
+function statusLabel(status) {
+  const map = {
+    OFFLINE: "Не на линии",
+    FREE: "На линии",
+    BUSY: "Занят",
+    NEW: "Поиск",
+    DRIVER_ASSIGNED: "Принят",
+    DRIVER_ARRIVED: "Прибыл",
+    IN_PROGRESS: "В пути",
+    COMPLETED: "Завершено",
+    CANCELLED: "Отменён",
+    CANCELED: "Отменён"
+  };
+  return map[status] || status || "Не на линии";
+}
+
+function nextTripAction(order) {
+  const status = order?.status || order?.public_status;
+  if (status === "DRIVER_ASSIGNED") return { label: "Прибыл", action: markDriverArrived };
+  if (status === "DRIVER_ARRIVED") return { label: "Начать поездку", action: startTrip };
+  if (status === "IN_PROGRESS") return { label: "Завершить поездку", action: completeTrip };
+  return null;
+}
+
+function mergeOrder(list, nextOrder) {
+  const normalized = normalizeOrder(nextOrder);
+  if (!normalized?.id) return list;
+  const exists = list.some(order => order.id === normalized.id);
+  return exists ? list.map(order => (order.id === normalized.id ? { ...order, ...normalized } : order)) : [normalized, ...list];
 }
 
 export default function DriverApp() {
   const [logged, setLogged] = useState(Boolean(getToken()));
-  const [auth, setAuth] = useState({ phone: "+77000000000", email: "", password: "123456" });
+  const [auth, setAuth] = useState({ phone: "", email: "", password: "" });
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [driver, setDriver] = useState(null);
@@ -59,108 +106,113 @@ export default function DriverApp() {
   const [regionsLoading, setRegionsLoading] = useState(false);
   const [regionError, setRegionError] = useState("");
   const [onlineLoading, setOnlineLoading] = useState(false);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState("");
   const [orders, setOrders] = useState([]);
-  const [active, setActive] = useState(null);
-  const [tab, setTab] = useState("home");
-  const [message, setMessage] = useState("");
-  const [socketState, setSocketState] = useState("offline");
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState("");
+  const [actionLoading, setActionLoading] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [tab, setTab] = useState("line");
   const socketRef = useRef(null);
 
-  const online = driver?.status === "FREE" || driver?.status === "BUSY";
-  const disabledReason = useMemo(() => {
-    if (regionsLoading) return "Загружаем регионы";
-    if (!regions.length) return "Нет утверждённых активных регионов";
-    if (!selectedRegionId) return "Выберите регион";
-    if (driver?.is_blocked) return errorMessages.DRIVER_BLOCKED;
-    return "";
-  }, [driver?.is_blocked, regions, regionsLoading, selectedRegionId]);
+  const activeOrder = useMemo(
+    () => orders.map(normalizeOrder).find(order => activeStatuses.includes(order.status)) || null,
+    [orders]
+  );
+  const availableOrders = useMemo(
+    () => orders.map(normalizeOrder).filter(order => order.status === "NEW" && !order.driver_id && !order.driverId),
+    [orders]
+  );
+  const selectedRegion = regions.find(region => region.id === selectedRegionId || region.regionId === selectedRegionId);
+  const driverStatus = driver?.status || (activeOrder ? "BUSY" : "OFFLINE");
+  const isOnline = driverStatus === "FREE" || driverStatus === "BUSY";
+  const canGoOnline = Boolean(logged && selectedRegionId && selectedRegion?.status !== "BLOCKED" && selectedRegion?.is_active !== false && selectedRegion?.isActive !== false);
+  const disabledReason = !logged
+    ? "Войдите как водитель"
+    : !selectedRegionId
+      ? "Выберите рабочий регион"
+      : selectedRegion?.status === "BLOCKED"
+        ? "Работа в этом регионе заблокирована"
+        : selectedRegion?.is_active === false || selectedRegion?.isActive === false
+          ? "Регион временно отключён"
+          : "";
 
   useEffect(() => {
-    if (logged) loadDriverState();
+    if (!logged) return;
+    loadRegions();
+    loadOrders();
+    connectSocket();
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
   }, [logged]);
 
   useEffect(() => {
-    if (!logged || !getToken()) return undefined;
-    const socket = createSocket();
-    socketRef.current = socket;
-    setSocketState("connecting");
-    socket.on("connect", () => {
-      setSocketState("connected");
-      socket.emit("join_drivers");
-      if (active?.id) socket.emit("join_order", active.id);
-    });
-    socket.on("disconnect", () => setSocketState("offline"));
-    const updateOrder = payload => {
-      const next = normalizeOrder(payload);
-      if (!next?.id) return;
-      setOrders(current => mergeOrder(current, next));
-      setActive(current => current?.id === next.id ? normalizeOrder({ ...current, ...next }) : current);
-    };
-    socket.on("order_created", updateOrder);
-    socket.on("order_updated", updateOrder);
-    socket.on("order_accepted", updateOrder);
-    socket.on("order_assigned", updateOrder);
-    socket.on("order_status_public", updateOrder);
-    return () => {
-      socket.off("order_created", updateOrder);
-      socket.off("order_updated", updateOrder);
-      socket.off("order_accepted", updateOrder);
-      socket.off("order_assigned", updateOrder);
-      socket.off("order_status_public", updateOrder);
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, [logged, active?.id]);
+    if (!logged || !isOnline) return;
+    loadOrders();
+  }, [logged, isOnline, selectedRegionId]);
 
-  async function loadDriverState() {
+  useEffect(() => {
+    if (activeOrder?.id && socketRef.current) {
+      socketRef.current.emit("join_order", activeOrder.id);
+    }
+  }, [activeOrder?.id]);
+
+  async function loadRegions() {
     setRegionsLoading(true);
     setRegionError("");
     try {
-      const data = await getDriverRegions();
-      setDriver(data.driver);
-      setRegions(data.regions || []);
-      setSelectedRegionId(data.driver?.current_region_id || "");
-      await refreshOrders();
+      const payload = await getDriverRegions();
+      const list = payload.regions || payload.items || payload || [];
+      setRegions(list);
+      const current = payload.driver?.current_region_id || payload.driver?.currentRegionId || list.find(item => item.selected)?.id || list[0]?.id || "";
+      setSelectedRegionId(current);
+      setDriver(payload.driver || null);
     } catch (error) {
       setRegionError(formatError(error));
-      if (error.code === "UNAUTHORIZED" || error.code === "FORBIDDEN") setLogged(false);
     } finally {
       setRegionsLoading(false);
     }
   }
 
-  async function refreshOrders() {
+  async function loadOrders() {
+    if (!logged) return;
     setOrdersLoading(true);
+    setOrdersError("");
     try {
-      const data = await getDriverOrders();
-      const nextOrders = (data.orders || []).map(normalizeOrder);
-      const activeFromOrders = nextOrders.find(order => activeStatuses.includes(order.status));
-      setOrders(nextOrders);
-      setActive(current => activeFromOrders || (current && activeStatuses.includes(current.status) ? current : null));
+      const payload = await getDriverOrders();
+      const list = (payload.orders || payload.items || payload || []).map(normalizeOrder);
+      setOrders(list);
     } catch (error) {
-      setMessage(formatError(error));
+      setOrdersError(formatError(error));
     } finally {
       setOrdersLoading(false);
     }
   }
 
-  async function submitLogin(event) {
+  function connectSocket() {
+    socketRef.current?.disconnect();
+    const socket = createSocket();
+    socketRef.current = socket;
+    socket.on("connect", () => {
+      socket.emit("join_drivers");
+      if (activeOrder?.id) socket.emit("join_order", activeOrder.id);
+    });
+    socket.on("order_created", order => setOrders(current => mergeOrder(current, order)));
+    socket.on("order_update", order => setOrders(current => mergeOrder(current, order)));
+    socket.on("order_status", order => setOrders(current => mergeOrder(current, order)));
+    socket.on("dispatch_error", error => setOrdersError(formatError(error)));
+  }
+
+  async function handleLogin(event) {
     event.preventDefault();
     setLoginLoading(true);
     setLoginError("");
     try {
-      const data = await loginUser({
-        phone: auth.email ? undefined : auth.phone,
-        email: auth.email || undefined,
-        password: auth.password
-      });
-      if (data.user?.role !== "DRIVER") {
-        clearToken();
-        throw Object.assign(new Error("Войдите аккаунтом водителя."), { code: "FORBIDDEN" });
-      }
+      const payload = await loginUser(auth);
+      setDriver(payload.user || payload.driver || null);
       setLogged(true);
+      setTab("line");
     } catch (error) {
       setLoginError(formatError(error));
     } finally {
@@ -168,225 +220,490 @@ export default function DriverApp() {
     }
   }
 
-  async function changeRegion(regionId) {
-    setSelectedRegionId(regionId);
+  async function handleLogout() {
+    socketRef.current?.disconnect();
+    socketRef.current = null;
+    clearToken();
+    setLogged(false);
+    setDriver(null);
+    setOrders([]);
+    setRegions([]);
+    setSelectedRegionId("");
+    setTab("line");
+  }
+
+  async function handleRegionChange(regionId) {
     setRegionError("");
+    setSelectedRegionId(regionId);
     try {
-      const data = await selectDriverRegion(regionId);
-      setDriver(data.driver);
-      setMessage(`Регион выбран: ${data.region?.name || regionId}`);
-      socketRef.current?.emit("join_drivers");
-      await refreshOrders();
+      const payload = await selectDriverRegion(regionId);
+      setDriver(payload.driver || driver);
+      await loadOrders();
     } catch (error) {
-      setSelectedRegionId(driver?.current_region_id || "");
       setRegionError(formatError(error));
     }
   }
 
-  async function toggleOnline() {
-    if (disabledReason || onlineLoading) return;
+  async function handleStatusChange(nextStatus) {
     setOnlineLoading(true);
-    setMessage("");
+    setActionError("");
     try {
-      const data = await setDriverStatus(online ? "OFFLINE" : "FREE");
-      setDriver(data.driver);
-      setMessage(online ? "Вы ушли с линии." : "Вы на линии. Заказы приходят из выбранного региона.");
-      socketRef.current?.emit("join_drivers");
-      await refreshOrders();
+      const payload = await setDriverStatus(nextStatus);
+      setDriver(payload.driver || { ...driver, status: nextStatus });
+      if (nextStatus === "FREE") {
+        socketRef.current?.emit("join_drivers");
+        await loadOrders();
+      }
     } catch (error) {
-      setMessage(formatError(error));
+      setActionError(formatError(error));
     } finally {
       setOnlineLoading(false);
     }
   }
 
-  async function takeOrder(order) {
-    setActionLoading(order.id);
-    setMessage("");
+  async function handleAccept(orderId) {
+    setActionLoading(orderId);
+    setActionError("");
     try {
-      const data = await acceptOrder(order.id);
-      setActive(normalizeOrder(data.order));
-      setDriver(current => current ? { ...current, status: "BUSY" } : current);
-      setOrders(current => current.filter(item => item.id !== order.id));
-      socketRef.current?.emit("join_order", order.id);
+      const payload = await acceptOrder(orderId);
+      const order = normalizeOrder(payload.order || payload);
+      setOrders(current => mergeOrder(current, order));
+      setDriver(current => ({ ...(current || driver), status: "BUSY" }));
+      setTab("trip");
+      if (order?.id) socketRef.current?.emit("join_order", order.id);
     } catch (error) {
-      setMessage(formatError(error));
+      setActionError(formatError(error));
     } finally {
       setActionLoading("");
     }
   }
 
-  async function updateTrip(action) {
-    if (!active?.id || actionLoading) return;
-    setActionLoading(action);
-    setMessage("");
+  async function handleTripAction(orderId, action) {
+    setActionLoading(orderId);
+    setActionError("");
     try {
-      const calls = {
-        arrived: markDriverArrived,
-        start: startTrip,
-        complete: completeTrip,
-        cancel: cancelDriverOrder
-      };
-      const data = await calls[action](active.id);
-      const next = normalizeOrder(data.order);
-      setActive(next && activeStatuses.includes(next.status) ? next : null);
-      await refreshOrders();
+      const payload = await action(orderId);
+      const order = normalizeOrder(payload.order || payload);
+      setOrders(current => mergeOrder(current, order));
+      if (order?.status === "COMPLETED" || order?.status === "CANCELLED") {
+        setDriver(current => ({ ...(current || driver), status: "FREE" }));
+      }
     } catch (error) {
-      setMessage(formatError(error));
+      setActionError(formatError(error));
     } finally {
       setActionLoading("");
     }
   }
 
-  function logout() {
-    clearToken();
-    socketRef.current?.disconnect();
-    setLogged(false);
-    setDriver(null);
-    setOrders([]);
-    setActive(null);
+  async function handleCancel(orderId) {
+    await handleTripAction(orderId, cancelDriverOrder);
   }
 
-  if (!logged) {
-    return <DriverLogin auth={auth} setAuth={setAuth} loading={loginLoading} error={loginError} onSubmit={submitLogin} />;
-  }
-
-  if (tab === "history") {
-    return (
-      <PhoneFrame className="driver-app">
-        <AppHeader title="Заказы" subtitle="Реальные данные backend" right={<SmartLogo compact />} />
-        <section className="orders-list">
-          {ordersLoading && <p className="inline-status">Загружаем заказы...</p>}
-          {!ordersLoading && !orders.length && <p className="muted-note">В выбранном регионе заказов нет.</p>}
-          {orders.map(order => <OrderCard key={order.id} order={order} onAccept={takeOrder} loading={actionLoading === order.id} />)}
-        </section>
-        <BottomNav active="history" onSelect={setTab} />
-      </PhoneFrame>
-    );
-  }
-
-  if (tab === "support") {
-    return (
-      <PhoneFrame className="driver-app">
-        <AppHeader title="Статус связи" subtitle={`Socket: ${socketState}`} right={<SmartLogo compact />} />
-        <section className="orders-list"><article className="driver-order"><b>Backend realtime</b><p>Водитель подключается к серверной комнате региона через join_drivers без передачи regionId с клиента.</p></article></section>
-        <BottomNav active="support" onSelect={setTab} />
-      </PhoneFrame>
-    );
-  }
-
-  if (tab === "profile") {
-    return (
-      <PhoneFrame className="driver-app">
-        <AppHeader title="Профиль водителя" subtitle={driver?.phone || ""} right={<SmartLogo compact />} />
-        <section className="orders-list">
-          <div className="list-card">
-            <button type="button"><Icon name="route" /><span>Регион<small>{regions.find(r => r.regionId === selectedRegionId)?.regionName || "Не выбран"}</small></span><Icon name="back" /></button>
-            <button type="button"><Icon name="star" /><span>Рейтинг<small>{driver?.rating || "5.00"}</small></span><Icon name="back" /></button>
-            <button type="button" onClick={logout}><Icon name="logout" /><span>Выйти</span><Icon name="back" /></button>
+  return (
+    <PhoneFrame className="taxi-pwa driver-pwa">
+      <header className="taxi-app-header">
+        <div className="taxi-brand">
+          <SmartTaxiLogo />
+          <div>
+            <span>SmartTaxi</span>
+            <small>Водитель</small>
           </div>
-        </section>
-        <BottomNav active="profile" onSelect={setTab} />
-      </PhoneFrame>
-    );
-  }
+        </div>
+        {logged ? (
+          <button className="text-action" type="button" onClick={handleLogout}>Выйти</button>
+        ) : (
+          <span className="status-pill muted">Вход</span>
+        )}
+      </header>
 
-  return (
-    <PhoneFrame className="driver-app">
-      <AppHeader title="Водитель" subtitle={online ? "На линии" : "Не на линии"} right={<SmartLogo compact />} />
-      <section className="driver-status-card">
-        <div className="avatar">{driver?.name?.slice(0, 1) || "D"}</div>
-        <span><b>{driver?.name || "Driver"}</b><small>{driver?.car_model || "Авто"} · {driver?.plate || "номер"}</small></span>
-        <strong>{driver?.rating || "5.00"}</strong>
+      <section className="app-content">
+        <div className="screen-grid driver-grid">
+          <div className="screen-column primary">
+            {tab === "line" && (
+              <LineTab
+                logged={logged}
+                auth={auth}
+                setAuth={setAuth}
+                onLogin={handleLogin}
+                loginLoading={loginLoading}
+                loginError={loginError}
+                driverStatus={driverStatus}
+                regions={regions}
+                selectedRegionId={selectedRegionId}
+                selectedRegion={selectedRegion}
+                regionsLoading={regionsLoading}
+                regionError={regionError}
+                onRegionChange={handleRegionChange}
+                isOnline={isOnline}
+                canGoOnline={canGoOnline}
+                disabledReason={disabledReason}
+                onlineLoading={onlineLoading}
+                actionError={actionError}
+                onStatusChange={handleStatusChange}
+              />
+            )}
+            {tab === "orders" && (
+              <OrdersTab
+                isOnline={isOnline}
+                orders={availableOrders}
+                loading={ordersLoading}
+                error={ordersError || actionError}
+                actionLoading={actionLoading}
+                onRefresh={loadOrders}
+                onAccept={handleAccept}
+              />
+            )}
+            {tab === "trip" && (
+              <TripTab
+                order={activeOrder}
+                error={actionError}
+                actionLoading={actionLoading}
+                onTripAction={handleTripAction}
+                onCancel={handleCancel}
+              />
+            )}
+          </div>
+
+          <aside className="screen-column secondary desktop-only">
+            {logged ? (
+              <>
+                <DriverStateCard status={driverStatus} />
+                <RegionSummary region={selectedRegion} />
+                <TripPreview order={activeOrder} />
+              </>
+            ) : (
+              <AppCard title="Работайте в своём регионе">
+                <p className="helper-text">Водитель выходит на линию только после одобрения администратором.</p>
+              </AppCard>
+            )}
+          </aside>
+        </div>
       </section>
-      <RegionSelector regions={regions} value={selectedRegionId} loading={regionsLoading} error={regionError} onChange={changeRegion} />
-      <Button className="wide" variant={online ? "secondary" : "primary"} disabled={Boolean(disabledReason) || onlineLoading} onClick={toggleOnline}>
-        {onlineLoading ? "Обновляем..." : online ? "Уйти с линии" : "Выйти на линию"}
-      </Button>
-      {disabledReason && <p className="inline-error driver-message">{disabledReason}</p>}
-      {message && <p className={message.includes("линии") || message.includes("Регион") ? "inline-status driver-message" : "inline-error driver-message"}>{message}</p>}
-      {active ? (
-        <ActiveTrip order={active} loading={actionLoading} onAction={updateTrip} />
+
+      <BottomTabs active={tab} onSelect={setTab} />
+    </PhoneFrame>
+  );
+}
+
+function LineTab(props) {
+  const {
+    logged,
+    auth,
+    setAuth,
+    onLogin,
+    loginLoading,
+    loginError,
+    driverStatus,
+    regions,
+    selectedRegionId,
+    selectedRegion,
+    regionsLoading,
+    regionError,
+    onRegionChange,
+    isOnline,
+    canGoOnline,
+    disabledReason,
+    onlineLoading,
+    actionError,
+    onStatusChange
+  } = props;
+
+  return (
+    <>
+      <ScreenIntro title="Рабочая смена" helper="Выходите на линию только в одобренном регионе" />
+      {!logged ? (
+        <DriverLogin auth={auth} setAuth={setAuth} onLogin={onLogin} loading={loginLoading} error={loginError} />
       ) : (
-        <section className="orders-list">
-          <h2>{online ? "Новые заказы региона" : "Вы не на линии"}</h2>
-          {!online && <p className="muted-note">Выберите утверждённый регион и выйдите на линию, чтобы получать заказы.</p>}
-          {online && ordersLoading && <p className="inline-status">Загружаем заказы...</p>}
-          {online && !ordersLoading && !orders.length && <p className="muted-note">В выбранном регионе пока нет заказов.</p>}
-          {online && orders.filter(order => order.status === "NEW").map(order => <OrderCard key={order.id} order={order} onAccept={takeOrder} loading={actionLoading === order.id} />)}
-        </section>
+        <>
+          <DriverStateCard status={driverStatus} />
+          <RegionCard
+            regions={regions}
+            selectedRegionId={selectedRegionId}
+            selectedRegion={selectedRegion}
+            loading={regionsLoading}
+            error={regionError}
+            onChange={onRegionChange}
+          />
+          <OnlineCard
+            isOnline={isOnline}
+            canGoOnline={canGoOnline}
+            disabledReason={disabledReason}
+            loading={onlineLoading}
+            error={actionError}
+            onStatusChange={onStatusChange}
+          />
+        </>
       )}
-      <BottomNav active="home" onSelect={setTab} />
-    </PhoneFrame>
+    </>
   );
 }
 
-function DriverLogin({ auth, setAuth, loading, error, onSubmit }) {
+function DriverLogin({ auth, setAuth, onLogin, loading, error }) {
   return (
-    <PhoneFrame className="driver-app auth-screen">
-      <SmartLogo />
-      <h1>Вход водителя</h1>
-      <p>Только реальный backend login.</p>
-      <form className="form-stack" onSubmit={onSubmit}>
-        <input placeholder="Телефон" value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value, email: "" })} />
-        <input placeholder="или email" value={auth.email} onChange={event => setAuth({ ...auth, email: event.target.value })} />
-        <input placeholder="Пароль" type="password" value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} />
-        {error && <p className="inline-error">{error}</p>}
-        <Button className="wide" type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</Button>
-      </form>
-    </PhoneFrame>
+    <form className="app-card driver-login-clean" onSubmit={onLogin}>
+      <SmartTaxiLogo large />
+      <h2>Вход для водителя</h2>
+      <p>Работайте только в одобренном регионе</p>
+      <div className="form-grid">
+        <label>
+          <span>Телефон</span>
+          <input value={auth.phone} onChange={event => setAuth(current => ({ ...current, phone: event.target.value }))} placeholder="+7" autoComplete="tel" />
+        </label>
+        <label>
+          <span>Email</span>
+          <input value={auth.email} onChange={event => setAuth(current => ({ ...current, email: event.target.value }))} placeholder="Если вход по email" autoComplete="email" />
+        </label>
+        <label>
+          <span>Пароль</span>
+          <input value={auth.password} onChange={event => setAuth(current => ({ ...current, password: event.target.value }))} type="password" placeholder="Пароль" autoComplete="current-password" />
+        </label>
+      </div>
+      {error && <div className="message error">{error}</div>}
+      <Button className="full-width" disabled={loading} type="submit">{loading ? "Вход..." : "Войти"}</Button>
+    </form>
   );
 }
 
-function RegionSelector({ regions, value, loading, error, onChange }) {
+function DriverStateCard({ status }) {
   return (
-    <section className="region-selector">
-      <label>
-        <span>Утверждённый регион</span>
-        <select value={value} disabled={loading || !regions.length} onChange={event => onChange(event.target.value)}>
-          <option value="">{loading ? "Загрузка..." : "Выберите регион"}</option>
-          {regions.map(region => <option value={region.regionId} key={region.regionId}>{region.regionName}</option>)}
-        </select>
-      </label>
-      {error && <p className="inline-error">{error}</p>}
-      {!loading && !regions.length && <p className="inline-error">Нет активных утверждённых регионов.</p>}
-    </section>
+    <AppCard title="Статус">
+      <div className="status-line">
+        <StatusBadge status={status} />
+        <strong>{statusLabel(status)}</strong>
+      </div>
+    </AppCard>
   );
 }
 
-function OrderCard({ order, onAccept, loading }) {
+function RegionCard({ regions, selectedRegionId, selectedRegion, loading, error, onChange }) {
   return (
-    <article className="driver-order">
-      <MapView pickup={{ lat: order.pickup_lat, lng: order.pickup_lng }} destination={{ lat: order.dropoff_lat, lng: order.dropoff_lng }} status={order.public_status || order.status} compact />
-      <b>{order.pickup} {"->"} {order.dropoff}</b>
-      <p>{order.tariff} · {order.payment_method}</p>
-      <strong><Money value={order.price} /></strong>
-      {order.status === "NEW" && <div className="button-row"><Button onClick={() => onAccept(order)} disabled={loading}>{loading ? "Принимаем..." : "Принять заказ"}</Button></div>}
+    <AppCard title="Рабочий регион">
+      {loading ? (
+        <div className="skeleton-block" />
+      ) : regions.length ? (
+        <>
+          <select className="select-control" value={selectedRegionId} onChange={event => onChange(event.target.value)}>
+            {regions.map(region => (
+              <option key={region.id || region.regionId} value={region.id || region.regionId}>
+                {region.name || region.regionName}
+              </option>
+            ))}
+          </select>
+          {selectedRegion?.status === "BLOCKED" && <div className="message warning">Работа в этом регионе заблокирована</div>}
+          {(selectedRegion?.is_active === false || selectedRegion?.isActive === false) && <div className="message warning">Регион временно отключён</div>}
+        </>
+      ) : (
+        <EmptyState title="Нет одобренных регионов" text="Администратор должен одобрить вас для работы в регионе." />
+      )}
+      {error && <div className="message error">{error}</div>}
+    </AppCard>
+  );
+}
+
+function OnlineCard({ isOnline, canGoOnline, disabledReason, loading, error, onStatusChange }) {
+  const disabled = loading || (!isOnline && !canGoOnline);
+  return (
+    <AppCard title="Линия">
+      <Button className="full-width" disabled={disabled} onClick={() => onStatusChange(isOnline ? "OFFLINE" : "FREE")}>
+        {loading ? "Обновляем..." : isOnline ? "Уйти с линии" : "Выйти на линию"}
+      </Button>
+      {!isOnline && disabledReason && <p className="helper-text center">{disabledReason}</p>}
+      {error && <div className="message error">{error}</div>}
+    </AppCard>
+  );
+}
+
+function OrdersTab({ isOnline, orders, loading, error, actionLoading, onRefresh, onAccept }) {
+  return (
+    <>
+      <ScreenIntro title="Заказы в регионе" helper="Показываются только заказы выбранного одобренного региона" />
+      <AppCard title="Доступные заказы" action={<button type="button" className="text-action" onClick={onRefresh}>Обновить</button>}>
+        {loading ? (
+          <div className="skeleton-list"><span /><span /><span /></div>
+        ) : !isOnline ? (
+          <EmptyState title="Выйдите на линию, чтобы получать заказы" text="После выхода на линию здесь появятся региональные заказы." />
+        ) : orders.length ? (
+          <div className="order-list-clean">
+            {orders.map(order => (
+              <OrderCard key={order.id} order={order} loading={actionLoading === order.id} onAccept={() => onAccept(order.id)} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Заказов в вашем регионе пока нет" text="Новые заказы появятся здесь после backend-dispatch." />
+        )}
+        {error && <div className="message error">{error}</div>}
+      </AppCard>
+    </>
+  );
+}
+
+function OrderCard({ order, loading, onAccept }) {
+  return (
+    <article className="order-card-clean">
+      <CompactRoute pickup={order.pickup} dropoff={order.dropoff} />
+      <div className="order-meta-clean">
+        <StatusBadge status={order.status} />
+        {order.estimated_price && <strong><Money value={order.estimated_price} /></strong>}
+      </div>
+      <RouteMeta order={order} />
+      <Button className="full-width" disabled={loading} onClick={onAccept}>{loading ? "Принимаем..." : "Принять"}</Button>
     </article>
   );
 }
 
-function ActiveTrip({ order, loading, onAction }) {
+function TripTab({ order, error, actionLoading, onTripAction, onCancel }) {
+  const action = nextTripAction(order);
   return (
-    <section className="order-panel">
-      <MapView pickup={{ lat: order.pickup_lat, lng: order.pickup_lng }} destination={{ lat: order.dropoff_lat, lng: order.dropoff_lng }} driver status={order.public_status || order.status} compact />
-      <h2>Активный заказ</h2>
-      <p>{order.pickup} {"->"} {order.dropoff}</p>
-      <div className="summary-card"><b>{order.short_id || order.id}</b><span><Money value={order.price} /></span><small>{order.status}</small></div>
-      <div className="button-row">
-        {order.status === "DRIVER_ASSIGNED" && <Button onClick={() => onAction("arrived")} disabled={loading === "arrived"}>{loading === "arrived" ? "..." : "Я приехал"}</Button>}
-        {order.status === "DRIVER_ARRIVED" && <Button onClick={() => onAction("start")} disabled={loading === "start"}>{loading === "start" ? "..." : "Начать поездку"}</Button>}
-        {order.status === "IN_PROGRESS" && <Button onClick={() => onAction("complete")} disabled={loading === "complete"}>{loading === "complete" ? "..." : "Завершить"}</Button>}
-        {["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"].includes(order.status) && <Button variant="secondary" onClick={() => onAction("cancel")} disabled={loading === "cancel"}>Отменить</Button>}
+    <>
+      <ScreenIntro title="Активная поездка" helper="Следующий шаг доступен только по текущему статусу заказа" />
+      <AppCard title="Поездка">
+        {order ? (
+          <div className="active-trip-clean">
+            <StatusBadge status={order.status} />
+            <TripStepper status={order.status} />
+            <CompactRoute pickup={order.pickup} dropoff={order.dropoff} />
+            <RouteMeta order={order} />
+            {order.estimated_price && <div className="price-row"><span>Стоимость</span><strong><Money value={order.estimated_price} /></strong></div>}
+            {action && (
+              <Button className="full-width" disabled={actionLoading === order.id} onClick={() => onTripAction(order.id, action.action)}>
+                {actionLoading === order.id ? "Обновляем..." : action.label}
+              </Button>
+            )}
+            {["DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(order.status) && (
+              <Button variant="secondary" className="full-width danger-soft" disabled={actionLoading === order.id} onClick={() => onCancel(order.id)}>
+                Отменить поездку
+              </Button>
+            )}
+          </div>
+        ) : (
+          <EmptyState title="Активной поездки нет" text="Примите заказ, и маршрут появится здесь." />
+        )}
+        {error && <div className="message error">{error}</div>}
+      </AppCard>
+    </>
+  );
+}
+
+function TripPreview({ order }) {
+  return (
+    <AppCard title="Активная поездка">
+      {order ? (
+        <>
+          <StatusBadge status={order.status} />
+          <CompactRoute pickup={order.pickup} dropoff={order.dropoff} />
+        </>
+      ) : (
+        <EmptyState title="Поездки нет" text="Активный заказ появится после принятия." />
+      )}
+    </AppCard>
+  );
+}
+
+function RegionSummary({ region }) {
+  return (
+    <AppCard title="Регион">
+      {region ? (
+        <div className="region-summary">
+          <strong>{region.name || region.regionName}</strong>
+          <span>{region.status === "BLOCKED" ? "Заблокирован" : "Одобрен"}</span>
+        </div>
+      ) : (
+        <p className="helper-text">Регион не выбран</p>
+      )}
+    </AppCard>
+  );
+}
+
+function ScreenIntro({ title, helper }) {
+  return (
+    <div className="screen-intro">
+      <h1>{title}</h1>
+      <p>{helper}</p>
+    </div>
+  );
+}
+
+function AppCard({ title, action, children }) {
+  return (
+    <section className="app-card">
+      <div className="card-head-clean">
+        <h2>{title}</h2>
+        {action}
       </div>
+      {children}
     </section>
   );
 }
 
-function mergeOrder(list, order) {
-  if (activeStatuses.includes(order.status)) return list.filter(item => item.id !== order.id);
-  if (order.status !== "NEW") return list.filter(item => item.id !== order.id);
-  const index = list.findIndex(item => item.id === order.id);
-  if (index === -1) return [order, ...list];
-  return list.map(item => item.id === order.id ? { ...item, ...order } : item);
+function CompactRoute({ pickup, dropoff }) {
+  return (
+    <div className="compact-route-clean">
+      <div className="route-connector mini">
+        <span className="route-dot pickup" />
+        <span className="route-line" />
+        <span className="route-dot dropoff" />
+      </div>
+      <div>
+        <strong>{pickup}</strong>
+        <span>{dropoff}</span>
+      </div>
+    </div>
+  );
+}
+
+function RouteMeta({ order }) {
+  if (!order?.routeDistanceKm && !order?.routeDurationMin) return null;
+  const parts = [];
+  if (order.routeDistanceKm) parts.push(`${Number(order.routeDistanceKm).toFixed(1)} км`);
+  if (order.routeDurationMin) parts.push(`${Math.round(Number(order.routeDurationMin))} мин`);
+  return <p className="helper-text">Маршрут: {parts.join(" · ")}</p>;
+}
+
+function TripStepper({ status }) {
+  const currentIndex = Math.max(0, orderSteps.findIndex(([key]) => key === status));
+  return (
+    <div className="status-stepper-clean">
+      {orderSteps.map(([key, label], index) => (
+        <span key={key} className={index <= currentIndex ? "done" : ""}>{label}</span>
+      ))}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const normalized = status || "OFFLINE";
+  const tone = normalized === "FREE"
+    ? "success"
+    : normalized === "BUSY" || activeStatuses.includes(normalized)
+      ? "warning"
+      : normalized === "COMPLETED"
+        ? "success"
+        : normalized === "CANCELLED" || normalized === "CANCELED"
+          ? "danger"
+          : "muted";
+  return <span className={`status-badge-clean ${tone}`}>{statusLabel(normalized)}</span>;
+}
+
+function EmptyState({ title, text }) {
+  return (
+    <div className="empty-state-clean">
+      <div className="empty-mark" aria-hidden="true">
+        <span />
+      </div>
+      <strong>{title}</strong>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+function BottomTabs({ active, onSelect }) {
+  return (
+    <nav className="mobile-bottom-tabs" aria-label="Навигация водителя">
+      {tabs.map(([key, label]) => (
+        <button key={key} type="button" className={active === key ? "active" : ""} onClick={() => onSelect(key)}>
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
 }

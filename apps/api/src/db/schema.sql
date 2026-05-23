@@ -69,6 +69,21 @@ CREATE TABLE IF NOT EXISTS driver_region_approvals (
   UNIQUE(driver_id, region_id)
 );
 
+CREATE TABLE IF NOT EXISTS driver_locations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  lat NUMERIC(10,6) NOT NULL,
+  lng NUMERIC(10,6) NOT NULL,
+  heading NUMERIC(6,2),
+  speed NUMERIC(8,2),
+  accuracy NUMERIC(8,2),
+  source TEXT NOT NULL DEFAULT 'mobile',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(driver_id)
+);
+
 CREATE TABLE IF NOT EXISTS tariffs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
@@ -231,6 +246,9 @@ CREATE INDEX IF NOT EXISTS idx_tariffs_region_active ON tariffs(region_id, is_ac
 CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_driver_id ON driver_region_approvals(driver_id);
 CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_region_id ON driver_region_approvals(region_id);
 CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_status ON driver_region_approvals(status);
+CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_locations_region_id ON driver_locations(region_id);
+CREATE INDEX IF NOT EXISTS idx_driver_locations_updated_at ON driver_locations(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_driver_applications_status ON driver_applications(status);
 CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id);
 CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id);
