@@ -80,6 +80,114 @@ function mapSettings(row) {
   };
 }
 
+function numberValue(row, key) {
+  return Number(row?.[key] || 0);
+}
+
+router.get("/dashboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const [
+      regions,
+      drivers,
+      orders,
+      applications,
+      settings
+    ] = await Promise.all([
+      query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE is_active)::int active FROM regions"),
+      query(`
+        SELECT COUNT(*)::int total,
+               COUNT(*) FILTER (WHERE status='FREE')::int online,
+               COUNT(*) FILTER (WHERE status='BUSY')::int busy,
+               COUNT(*) FILTER (WHERE is_blocked)::int blocked
+        FROM drivers
+      `),
+      query(`
+        SELECT COUNT(*)::int total,
+               COUNT(*) FILTER (WHERE status='NEW')::int searching,
+               COUNT(*) FILTER (WHERE status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS'))::int active,
+               COUNT(*) FILTER (WHERE status='COMPLETED')::int completed
+        FROM orders
+      `),
+      query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='PENDING')::int pending FROM driver_applications"),
+      query("SELECT * FROM service_settings WHERE id=1")
+    ]);
+
+    res.json({
+      user: req.user,
+      settings: settings.rows[0] ? mapSettings(settings.rows[0]) : null,
+      cards: [
+        {
+          key: "regions",
+          label: "Активные регионы",
+          value: numberValue(regions.rows[0], "active"),
+          hint: `Всего регионов: ${numberValue(regions.rows[0], "total")}`
+        },
+        {
+          key: "drivers",
+          label: "Водители на линии",
+          value: numberValue(drivers.rows[0], "online"),
+          hint: `Заняты: ${numberValue(drivers.rows[0], "busy")}`
+        },
+        {
+          key: "orders",
+          label: "Активные заказы",
+          value: numberValue(orders.rows[0], "active"),
+          hint: `В поиске: ${numberValue(orders.rows[0], "searching")}`
+        },
+        {
+          key: "applications",
+          label: "Заявки водителей",
+          value: numberValue(applications.rows[0], "pending"),
+          hint: `Всего заявок: ${numberValue(applications.rows[0], "total")}`
+        }
+      ],
+      summary: {
+        regions: regions.rows[0],
+        drivers: drivers.rows[0],
+        orders: orders.rows[0],
+        applications: applications.rows[0]
+      }
+    });
+  } catch (error) { next(error); }
+});
+
+router.get("/drivers", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+  try {
+    const result = await query(`
+      SELECT d.id, d.name, d.phone, d.car_model, d.car_color, d.plate, d.status,
+             d.rating, d.balance, d.debt, d.is_blocked, d.last_seen_at, d.created_at,
+             r.name region_name,
+             COUNT(o.id)::int total_orders,
+             COUNT(o.id) FILTER (WHERE o.status='COMPLETED')::int completed_orders
+      FROM drivers d
+      LEFT JOIN regions r ON r.id=d.current_region_id
+      LEFT JOIN orders o ON o.driver_id=d.id
+      GROUP BY d.id, r.name
+      ORDER BY d.created_at DESC
+      LIMIT 100
+    `);
+    res.json({ drivers: result.rows });
+  } catch (error) { next(error); }
+});
+
+router.get("/audit-logs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      limit: z.coerce.number().int().min(1).max(200).default(100)
+    }).parse(req.query);
+    const result = await query(`
+      SELECT a.id, a.action, a.actor_user_id, a.entity_type, a.entity_id,
+             a.metadata, a.ip, a.user_agent, a.created_at,
+             u.name actor_name, u.role actor_role
+      FROM audit_logs a
+      LEFT JOIN users u ON u.id=a.actor_user_id
+      ORDER BY a.created_at DESC
+      LIMIT $1
+    `, [params.limit]);
+    res.json({ logs: result.rows });
+  } catch (error) { next(error); }
+});
+
 router.get("/regions", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
   try {
     const regions = await listRegions(query);

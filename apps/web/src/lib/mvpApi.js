@@ -6,6 +6,10 @@ export async function loginUser(payload) {
   return apiLogin(payload);
 }
 
+export function getCurrentUser() {
+  return api("/api/auth/me");
+}
+
 export function getActiveRegions() {
   return api("/api/regions/active");
 }
@@ -76,4 +80,54 @@ export function completeTrip(orderId) {
 
 export function cancelDriverOrder(orderId) {
   return api(`/api/orders/${orderId}/cancel`, { method: "POST" });
+}
+
+export async function getAdminDashboard() {
+  const [me, health, dashboard] = await Promise.allSettled([
+    getCurrentUser(),
+    api("/api/health/ready"),
+    api("/api/admin/dashboard")
+  ]);
+
+  if (dashboard.status === "fulfilled") {
+    return {
+      ...dashboard.value,
+      user: me.status === "fulfilled" ? me.value.user : null,
+      health: health.status === "fulfilled" ? health.value : null
+    };
+  }
+
+  return {
+    user: me.status === "fulfilled" ? me.value.user : null,
+    health: health.status === "fulfilled" ? health.value : null,
+    cards: [],
+    setup: {
+      title: "Панель подключается",
+      text: "Сводка пока недоступна. Разделы ниже используют доступные серверные данные."
+    }
+  };
+}
+
+export function getAdminRegions() {
+  return api("/api/admin/regions");
+}
+
+export function getAdminDrivers() {
+  return api("/api/admin/drivers");
+}
+
+export function getAdminDriverApplications() {
+  return api("/api/admin/driver-applications");
+}
+
+export function getAdminOrders() {
+  return api("/api/orders?limit=100");
+}
+
+export function getAdminAudit() {
+  return api("/api/admin/audit-logs");
+}
+
+export function getAdminSettings() {
+  return api("/api/admin/settings");
 }
