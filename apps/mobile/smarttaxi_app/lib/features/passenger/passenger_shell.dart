@@ -489,7 +489,11 @@ class _PassengerShellState extends State<PassengerShell> {
   }
 
   Widget _homeScreen() {
-    final mapHeight = MediaQuery.sizeOf(context).height * 0.43;
+    final screen = MediaQuery.sizeOf(context);
+    final compact = screen.height < 720 || screen.width < 390;
+    final mapHeight = (screen.height * (compact ? 0.40 : 0.43))
+        .clamp(compact ? 284.0 : 305.0, compact ? 356.0 : 410.0)
+        .toDouble();
     final geolocationNotice = _geolocationNotice;
     final mapRoute = _order?.driverId != null
         ? (_driverPickupRoute?.geometry ?? const <LatLng>[])
@@ -520,9 +524,10 @@ class _PassengerShellState extends State<PassengerShell> {
           ),
         ),
         Transform.translate(
-          offset: const Offset(0, -30),
+          offset: Offset(0, compact ? -24 : -30),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: EdgeInsets.fromLTRB(
+                compact ? 14 : 16, 0, compact ? 14 : 16, compact ? 8 : 12),
             child: _OrderSheet(
               pickupLabel: _pickupLabel,
               dropoffLabel: _dropoffLabel,
@@ -862,9 +867,7 @@ class _PassengerShellState extends State<PassengerShell> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _PremiumCard(
-          child: EmptyState(title: title, text: text),
-        ),
+        EmptyState(title: title, text: text),
       ],
     );
   }
@@ -1244,7 +1247,14 @@ class _MapInstructionCard extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(onPressed: onHelp, child: const Text('Как выбрать')),
+          TextButton(
+            onPressed: onHelp,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            child: const Text('Как выбрать'),
+          ),
         ],
       ),
     );
@@ -2512,7 +2522,7 @@ class _ButtonSpinner extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text(text),
+        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
       ],
     );
   }
@@ -2657,6 +2667,7 @@ class _ProfileRow extends StatelessWidget {
           label,
           style: const TextStyle(color: SmartTaxiColors.textSecondary),
         ),
+        const SizedBox(width: 12),
         Flexible(
           child: Text(
             value,
@@ -2772,9 +2783,14 @@ class _StatusStepper extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              labels[stepIndex],
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                labels[stepIndex],
+                maxLines: 1,
+                style:
+                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+              ),
             ),
           ),
         );

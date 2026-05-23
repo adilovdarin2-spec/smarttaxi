@@ -48,6 +48,34 @@ ThemeData buildSmartTaxiTheme() {
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
     ),
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: SmartTaxiColors.goldDeep,
+      selectionColor: SmartTaxiColors.gold.withValues(alpha: 0.22),
+      selectionHandleColor: SmartTaxiColors.goldDeep,
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: SmartTaxiColors.background,
+      surfaceTintColor: Colors.transparent,
+      modalBackgroundColor: SmartTaxiColors.background,
+      modalBarrierColor: Color(0x52000000),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      clipBehavior: Clip.antiAlias,
+    ),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: SmartTaxiColors.background,
+      surfaceTintColor: Colors.transparent,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: SmartTaxiColors.text,
+      contentTextStyle: const TextStyle(
+        color: SmartTaxiColors.background,
+        fontWeight: FontWeight.w700,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: SmartTaxiColors.background,

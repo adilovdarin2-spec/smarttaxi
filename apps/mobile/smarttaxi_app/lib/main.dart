@@ -242,7 +242,7 @@ class _ButtonLoader extends StatelessWidget {
               strokeWidth: 2.2, color: SmartTaxiColors.text),
         ),
         const SizedBox(width: 10),
-        Text(text),
+        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
       ],
     );
   }
@@ -397,6 +397,8 @@ class _AuthScreenState extends State<_AuthScreen> {
     final subtitle = _registerMode
         ? 'Создайте аккаунт для заказа поездок'
         : 'Введите номер телефона, чтобы продолжить';
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.height < 720;
     return Scaffold(
       backgroundColor: SmartTaxiColors.appBackground,
       body: Stack(
@@ -405,7 +407,12 @@ class _AuthScreenState extends State<_AuthScreen> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 28, 22, 22),
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 18 : 22,
+                  compact ? 18 : 28,
+                  compact ? 18 : 22,
+                  compact ? 18 : 22,
+                ),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 child: ConstrainedBox(
@@ -413,9 +420,10 @@ class _AuthScreenState extends State<_AuthScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const _AuthBrandHeader(),
-                      const SizedBox(height: 24),
+                      _AuthBrandHeader(compact: compact),
+                      SizedBox(height: compact ? 16 : 24),
                       _PremiumCard(
+                        padding: compact ? 18 : 22,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -440,87 +448,123 @@ class _AuthScreenState extends State<_AuthScreen> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 220),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              child: _registerMode
-                                  ? Column(
-                                      key: const ValueKey('register'),
-                                      children: [
-                                        TextField(
-                                          controller: _nameController,
-                                          decoration: const InputDecoration(
-                                              labelText: 'Имя'),
-                                          textInputAction: TextInputAction.next,
-                                        ),
-                                        const SizedBox(height: 12),
-                                        TextField(
-                                          controller: _phoneController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Номер телефона',
-                                            hintText: '+7 ___ ___ __ __',
+                            SizedBox(height: compact ? 18 : 24),
+                            AutofillGroup(
+                              child: Column(
+                                children: [
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 220),
+                                    switchInCurve: Curves.easeOutCubic,
+                                    switchOutCurve: Curves.easeInCubic,
+                                    child: _registerMode
+                                        ? Column(
+                                            key: const ValueKey('register'),
+                                            children: [
+                                              TextField(
+                                                controller: _nameController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                        labelText: 'Имя'),
+                                                autofillHints: const [
+                                                  AutofillHints.name
+                                                ],
+                                                keyboardType:
+                                                    TextInputType.name,
+                                                textCapitalization:
+                                                    TextCapitalization.words,
+                                                textInputAction:
+                                                    TextInputAction.next,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextField(
+                                                controller: _phoneController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                  labelText: 'Номер телефона',
+                                                  hintText: '+7 ___ ___ __ __',
+                                                ),
+                                                autofillHints: const [
+                                                  AutofillHints.telephoneNumber
+                                                ],
+                                                keyboardType:
+                                                    TextInputType.phone,
+                                                textInputAction:
+                                                    TextInputAction.next,
+                                              ),
+                                            ],
+                                          )
+                                        : TextField(
+                                            key: const ValueKey('login'),
+                                            controller: _phoneController,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Номер телефона',
+                                              hintText: '+7 ___ ___ __ __',
+                                            ),
+                                            autofillHints: const [
+                                              AutofillHints.telephoneNumber
+                                            ],
+                                            keyboardType: TextInputType.phone,
+                                            textInputAction:
+                                                TextInputAction.next,
                                           ),
-                                          keyboardType: TextInputType.phone,
-                                          textInputAction: TextInputAction.next,
-                                        ),
-                                      ],
-                                    )
-                                  : TextField(
-                                      key: const ValueKey('login'),
-                                      controller: _phoneController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Номер телефона',
-                                        hintText: '+7 ___ ___ __ __',
-                                      ),
-                                      keyboardType: TextInputType.phone,
-                                      textInputAction: TextInputAction.next,
-                                    ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _passwordController,
-                              decoration: InputDecoration(
-                                labelText: 'Пароль',
-                                suffixIcon: IconButton(
-                                  tooltip: _showPassword
-                                      ? 'Скрыть пароль'
-                                      : 'Показать пароль',
-                                  icon: Icon(_showPassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined),
-                                  onPressed: () => setState(
-                                      () => _showPassword = !_showPassword),
-                                ),
-                              ),
-                              obscureText: !_showPassword,
-                              textInputAction: _registerMode
-                                  ? TextInputAction.next
-                                  : TextInputAction.done,
-                            ),
-                            if (_registerMode) ...[
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _passwordRepeatController,
-                                decoration: InputDecoration(
-                                  labelText: 'Повторите пароль',
-                                  suffixIcon: IconButton(
-                                    tooltip: _showPasswordRepeat
-                                        ? 'Скрыть пароль'
-                                        : 'Показать пароль',
-                                    icon: Icon(_showPasswordRepeat
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined),
-                                    onPressed: () => setState(() =>
-                                        _showPasswordRepeat =
-                                            !_showPasswordRepeat),
                                   ),
-                                ),
-                                obscureText: !_showPasswordRepeat,
-                                textInputAction: TextInputAction.done,
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    controller: _passwordController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Пароль',
+                                      suffixIcon: IconButton(
+                                        tooltip: _showPassword
+                                            ? 'Скрыть пароль'
+                                            : 'Показать пароль',
+                                        icon: Icon(_showPassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined),
+                                        onPressed: () => setState(() =>
+                                            _showPassword = !_showPassword),
+                                      ),
+                                    ),
+                                    autofillHints: _registerMode
+                                        ? const [AutofillHints.newPassword]
+                                        : const [AutofillHints.password],
+                                    obscureText: !_showPassword,
+                                    textInputAction: _registerMode
+                                        ? TextInputAction.next
+                                        : TextInputAction.done,
+                                    onSubmitted: _registerMode || _loading
+                                        ? null
+                                        : (_) => _submit(),
+                                  ),
+                                  if (_registerMode) ...[
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _passwordRepeatController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Повторите пароль',
+                                        suffixIcon: IconButton(
+                                          tooltip: _showPasswordRepeat
+                                              ? 'Скрыть пароль'
+                                              : 'Показать пароль',
+                                          icon: Icon(_showPasswordRepeat
+                                              ? Icons.visibility_off_outlined
+                                              : Icons.visibility_outlined),
+                                          onPressed: () => setState(() =>
+                                              _showPasswordRepeat =
+                                                  !_showPasswordRepeat),
+                                        ),
+                                      ),
+                                      autofillHints: const [
+                                        AutofillHints.newPassword
+                                      ],
+                                      obscureText: !_showPasswordRepeat,
+                                      textInputAction: TextInputAction.done,
+                                      onSubmitted:
+                                          _loading ? null : (_) => _submit(),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
+                            ),
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 180),
                               child: _error == null
@@ -569,21 +613,23 @@ class _AuthScreenState extends State<_AuthScreen> {
 }
 
 class _AuthBrandHeader extends StatelessWidget {
-  const _AuthBrandHeader();
+  const _AuthBrandHeader({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
         BrandLogo(large: true),
-        SizedBox(height: 18),
-        Text(
+        SizedBox(height: compact ? 12 : 18),
+        const Text(
           'SmartTaxi',
           style: TextStyle(
               fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
         ),
-        SizedBox(height: 8),
-        Text(
+        SizedBox(height: compact ? 5 : 8),
+        const Text(
           'Региональное такси рядом с вами',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -606,21 +652,21 @@ class _AuthSwitchLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = registerMode ? 'Уже есть аккаунт?' : 'Ещё нет аккаунта?';
     final action = registerMode ? 'Войти' : 'Зарегистрируйтесь';
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      runSpacing: 0,
       children: [
-        Flexible(
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: SmartTaxiColors.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(width: 6),
         InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onSwitch,
@@ -642,14 +688,15 @@ class _AuthSwitchLink extends StatelessWidget {
 }
 
 class _PremiumCard extends StatelessWidget {
-  const _PremiumCard({required this.child});
+  const _PremiumCard({required this.child, this.padding = 20});
 
   final Widget child;
+  final double padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: SmartTaxiColors.border),

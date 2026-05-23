@@ -330,6 +330,34 @@ void main() {
     expect(driver, contains('_tripActionLabel'));
   });
 
+  test('stage 4.5 final visual QA guards compact premium mobile polish', () {
+    final main = _read('lib/main.dart');
+    final theme = _read('lib/core/theme/app_theme.dart');
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final driver = _read('lib/features/driver/driver_shell.dart');
+    final emptyState = _read('lib/core/widgets/empty_state.dart');
+    final statusPill = _read('lib/core/widgets/status_pill.dart');
+
+    expect(main, contains('final compact = size.height < 720'));
+    expect(main, contains('AutofillGroup'));
+    expect(main, contains('AutofillHints.telephoneNumber'));
+    expect(main, contains('TextCapitalization.words'));
+    expect(main, contains('WrapAlignment.center'));
+    expect(theme, contains('textSelectionTheme'));
+    expect(theme, contains('bottomSheetTheme'));
+    expect(theme, contains('snackBarTheme'));
+    expect(passenger, contains('final compact = screen.height < 720'));
+    expect(passenger, contains('BoxFit.scaleDown'));
+    expect(passenger, contains('TextButton.styleFrom'));
+    expect(emptyState, contains('BoxConstraints(maxWidth: 430)'));
+    expect(emptyState, contains('fontWeight: FontWeight.w900'));
+    expect(statusPill, contains('BoxConstraints(maxWidth: 164)'));
+    expect(statusPill, contains('TextOverflow.ellipsis'));
+    expect(driver, contains('_driverPagePadding'));
+    expect(driver, contains('width < 390 ? 16 : 20'));
+    expect(driver, contains('BoxFit.scaleDown'));
+  });
+
   test('driver socket and order model keep live updates region scoped', () {
     final socket = _read('lib/core/sockets/socket_service.dart');
     final models = _read('lib/features/shared/models.dart');

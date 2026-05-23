@@ -414,7 +414,7 @@ class _DriverShellState extends State<DriverShell> {
     final disabledReason = _disabledReason();
     final busy = _activeOrder?.isActive == true;
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: _driverPagePadding(context),
       children: [
         const _TitleBlock(
             title: 'Рабочая смена',
@@ -499,7 +499,7 @@ class _DriverShellState extends State<DriverShell> {
     return RefreshIndicator(
       onRefresh: _loadOrders,
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: _driverPagePadding(context),
         children: [
           const _TitleBlock(
               title: 'Заказы в регионе',
@@ -535,7 +535,7 @@ class _DriverShellState extends State<DriverShell> {
   Widget _tripTab() {
     final action = _nextAction();
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: _driverPagePadding(context),
       children: [
         const _TitleBlock(
             title: 'Активная поездка', text: 'Следующий шаг по поездке'),
@@ -678,6 +678,11 @@ class _FloatingNav extends StatelessWidget {
   }
 }
 
+EdgeInsets _driverPagePadding(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return EdgeInsets.all(width < 390 ? 16 : 20);
+}
+
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.title, required this.text});
 
@@ -776,11 +781,15 @@ class _RegionSummary extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(region.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       fontSize: 15, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
               const Text(
                 'Заказы будут показаны только из этого региона',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: SmartTaxiColors.textSecondary,
                     fontWeight: FontWeight.w700),
@@ -919,10 +928,12 @@ class _LoadingStrip extends StatelessWidget {
                 strokeWidth: 2.2, color: SmartTaxiColors.goldDeep),
           ),
           const SizedBox(width: 12),
-          Text(text,
-              style: const TextStyle(
-                  color: SmartTaxiColors.textSecondary,
-                  fontWeight: FontWeight.w700)),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );
@@ -947,7 +958,7 @@ class _ButtonSpinner extends StatelessWidget {
               strokeWidth: 2.2, color: SmartTaxiColors.text),
         ),
         const SizedBox(width: 10),
-        Text(text),
+        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
       ],
     );
   }
@@ -986,9 +997,13 @@ class _DriverStatusStepper extends StatelessWidget {
                       : SmartTaxiColors.border),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(labels[stepIndex],
-                style:
-                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(labels[stepIndex],
+                  maxLines: 1,
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w900)),
+            ),
           ),
         );
       }),

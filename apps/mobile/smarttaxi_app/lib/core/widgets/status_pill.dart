@@ -34,25 +34,33 @@ class StatusPill extends StatelessWidget {
         ),
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.$2,
-        border: Border.all(color: colors.$3),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: colors.$1.withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          )
-        ],
-      ),
-      child: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 180),
-        style: TextStyle(
-            color: colors.$1, fontSize: 12, fontWeight: FontWeight.w900),
-        child: Text(label),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 164),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+        decoration: BoxDecoration(
+          color: colors.$2,
+          border: Border.all(color: colors.$3),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: colors.$1.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 180),
+          style: TextStyle(
+              color: colors.$1, fontSize: 12, fontWeight: FontWeight.w900),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }
