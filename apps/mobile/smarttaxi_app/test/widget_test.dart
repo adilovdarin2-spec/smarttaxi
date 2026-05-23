@@ -50,14 +50,11 @@ void main() {
 
   test('auth screen is production-only and starts before main app', () {
     final main = _read('lib/main.dart');
-    final testAccountsLabel =
-        'Тестовые '
+    final testAccountsLabel = 'Тестовые '
         'аккаунты';
-    final clientSeedPassword =
-        '123'
+    final clientSeedPassword = '123'
         '456';
-    final ownerSeedPassword =
-        'ChangeMe_'
+    final ownerSeedPassword = 'ChangeMe_'
         '2026';
 
     expect(main, contains('AppSession.splash'));
@@ -66,8 +63,8 @@ void main() {
     expect(main, contains('Номер телефона'));
     expect(main, contains('Создать аккаунт'));
     expect(main, contains('Продолжая, вы соглашаетесь с правилами сервиса'));
-    expect(main, isNot(contains('Телефон или Email')));
-    expect(main, isNot(contains('Email, если вход по email')));
+    expect(main, isNot(contains('Телефон или ' 'Email')));
+    expect(main, isNot(contains('Email, если вход по ' 'email')));
     expect(main, isNot(contains(testAccountsLabel)));
     expect(main, isNot(contains(clientSeedPassword)));
     expect(main, isNot(contains(ownerSeedPassword)));
@@ -89,8 +86,8 @@ void main() {
     expect(main, contains('Войти'));
     expect(main, contains('Создать аккаунт'));
     expect(main, isNot(contains('TextInputType.emailAddress')));
-    expect(main, isNot(contains('Телефон или Email')));
-    expect(main, isNot(contains('Email, если вход по email')));
+    expect(main, isNot(contains('Телефон или ' 'Email')));
+    expect(main, isNot(contains('Email, если вход по ' 'email')));
   });
 
   test(
@@ -104,6 +101,7 @@ void main() {
       expect(passenger, contains('_MapRoundButton'));
       expect(passenger, contains('_MapInstructionCard'));
       expect(passenger, contains('_MapPermissionCard'));
+      expect(passenger, contains('_MapRouteState'));
       expect(passenger, contains('Выбрать точку на карте'));
       expect(
         passenger,
@@ -111,15 +109,19 @@ void main() {
       );
       expect(passenger, contains('Куда едем?'));
       expect(passenger, contains('Выберите точку посадки'));
+      expect(passenger, contains('Выберите точку посадки на карте'));
+      expect(passenger, contains('Выберите точку назначения на карте'));
       expect(passenger, contains('Введите точку назначения'));
       expect(passenger, contains('Адрес или ориентир'));
       expect(passenger, contains('Можно проще'));
+      expect(passenger, contains('Координаты выбраны'));
       expect(passenger, contains('Тариф'));
       expect(passenger, contains('_TariffSection'));
       expect(passenger, contains('Тарифы пока не настроены'));
       expect(passenger, contains('_PriceSection'));
       expect(passenger, contains('Стоимость'));
       expect(passenger, contains('Маршрут временно недоступен.'));
+      expect(passenger, contains('Считаем маршрут...'));
       expect(passenger, contains('Цена рассчитана сервером'));
       expect(passenger, contains('Заказать'));
     },
@@ -145,6 +147,38 @@ void main() {
     expect(passenger, contains('_StatusStepper'));
   });
 
+  test('stage 3 route preview stays server-driven with honest map states', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final api = _read('lib/core/api/api_client.dart');
+    final models = _read('lib/features/shared/models.dart');
+
+    expect(api, contains("'/api/routes/preview'"));
+    expect(api, contains("'/api/routes/driver-to-pickup'"));
+    expect(passenger, contains('PointSource.gps'));
+    expect(passenger, contains('PointSource.map'));
+    expect(passenger, contains('PointSource.manual'));
+    expect(passenger, contains('PointSource.none'));
+    expect(passenger, contains('Точка на карте'));
+    expect(passenger, contains('Получаем геолокацию...'));
+    expect(passenger, contains('initialCameraFit'));
+    expect(passenger, contains('CameraFit.coordinates'));
+    expect(passenger, contains('if (route.isNotEmpty)'));
+    expect(passenger, contains('PolylineLayer'));
+    expect(passenger, contains('_driverPickupRoute'));
+    expect(passenger, contains('_driverRouteError'));
+    expect(passenger, contains('Маршрут водителя временно недоступен.'));
+    expect(
+      passenger,
+      contains('До точки посадки: \$distance км · \$minutes мин'),
+    );
+    expect(
+      passenger,
+      contains('_order?.driverId == null ? null : _driverLocation'),
+    );
+    expect(models, contains('_routeDistanceMeters'));
+    expect(models, contains('_routeDurationSeconds'));
+  });
+
   test('passenger order API sends required rider phone contract', () {
     final api = _read('lib/core/api/api_client.dart');
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
@@ -159,11 +193,9 @@ void main() {
   test('driver entry is not a public top role switch', () {
     final main = _read('lib/main.dart');
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
-    final publicSwitchA =
-        'Пассажир / '
+    final publicSwitchA = 'Пассажир / '
         'Водитель';
-    final publicSwitchB =
-        'Passenger / '
+    final publicSwitchB = 'Passenger / '
         'Driver';
 
     expect(
@@ -245,6 +277,10 @@ void main() {
     expect(driver, contains('_LineGlyph'));
     expect(driver, contains('Выйдите на линию, чтобы получать заказы'));
     expect(driver, contains('Заказов в вашем регионе пока нет'));
+    expect(driver, contains('_TripMap'));
+    expect(driver, contains('CameraFit.coordinates'));
+    expect(driver, contains('Маршрут до точки посадки'));
+    expect(driver, contains('Маршрут временно недоступен'));
   });
 
   test(
@@ -303,20 +339,15 @@ void main() {
     final liveSource = _dartFiles(
       'lib',
     ).map((file) => _read(file.path)).join('\n');
-    final driverOrders =
-        'DRIVER_'
+    final driverOrders = 'DRIVER_'
         'ORDERS';
-    final statsPath =
-        'drivers/me/'
+    final statsPath = 'drivers/me/'
         'stats';
-    final testAccountsLabel =
-        'Тестовые '
+    final testAccountsLabel = 'Тестовые '
         'аккаунты';
-    final clientSeedPassword =
-        '123'
+    final clientSeedPassword = '123'
         '456';
-    final ownerSeedPassword =
-        'ChangeMe_'
+    final ownerSeedPassword = 'ChangeMe_'
         '2026';
 
     expect(liveSource, isNot(contains(driverOrders)));

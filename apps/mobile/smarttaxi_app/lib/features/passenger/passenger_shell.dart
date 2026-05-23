@@ -44,6 +44,7 @@ class _PassengerShellState extends State<PassengerShell> {
   PointTarget _target = PointTarget.pickup;
   bool _loading = false;
   bool _previewLoading = false;
+  bool _locationLoading = false;
   String? _error;
   List<TariffOption> _tariffs = const [];
   String? _tariffId;
@@ -51,7 +52,11 @@ class _PassengerShellState extends State<PassengerShell> {
   Coordinate? _dropoff;
   String _pickupLabel = 'Выберите точку посадки';
   String _dropoffLabel = 'Введите точку назначения';
+  PointSource _pickupSource = PointSource.none;
+  PointSource _dropoffSource = PointSource.none;
   RoutePreview? _preview;
+  RoutePreview? _driverPickupRoute;
+  String? _driverRouteError;
   OrderSummary? _order;
   DriverLocation? _driverLocation;
   LatLng? _mapCenter;
@@ -103,22 +108,39 @@ class _PassengerShellState extends State<PassengerShell> {
       Map<String, dynamic>.from(data['order'] ?? data),
     );
     if (_order?.id != order.id) return;
-    setState(() => _order = order);
-    if (order.driverId != null) _loadDriverRoute(order.id);
+    setState(() {
+      _order = order;
+      if (order.driverId == null) {
+        _driverLocation = null;
+        _driverPickupRoute = null;
+        _driverRouteError = null;
+      }
+    });
+    if (order.driverId != null && _driverLocation != null) {
+      _loadDriverRoute(order.id);
+    }
   }
 
   void _handleDriverLocation(dynamic data) {
     if (_order?.driverId == null || data is! Map) return;
+    final payload = Map<String, dynamic>.from(data);
+    final orderId = payload['orderId']?.toString();
+    if (orderId != null && orderId.isNotEmpty && orderId != _order!.id) {
+      return;
+    }
     setState(
       () => _driverLocation = DriverLocation.fromJson(
-        Map<String, dynamic>.from(data),
+        payload,
       ),
     );
     _loadDriverRoute(_order!.id);
   }
 
   Future<void> _usePhoneLocation() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _locationLoading = true;
+    });
     try {
       final permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied ||
@@ -134,12 +156,15 @@ class _PassengerShellState extends State<PassengerShell> {
       setState(() {
         _pickup = point;
         _pickupLabel = 'Текущее местоположение';
+        _pickupSource = PointSource.gps;
         _target = PointTarget.dropoff;
         _mapCenter = point.toLatLng();
       });
       await _refreshPreview();
     } catch (_) {
       setState(() => _error = 'Не удалось получить геолокацию');
+    } finally {
+      if (mounted) setState(() => _locationLoading = false);
     }
   }
 
@@ -157,18 +182,22 @@ class _PassengerShellState extends State<PassengerShell> {
       ),
     );
     if (selected == null) return;
-    await _applyPoint(target, selected.coordinate, selected.label);
+    await _applyPoint(
+      target,
+      selected.coordinate,
+      selected.label,
+      PointSource.manual,
+    );
   }
 
   Future<void> _applyMapTap(LatLng point) async {
     final target = _target;
-    final label = target == PointTarget.pickup
-        ? 'Точка посадки на карте'
-        : 'Точка назначения на карте';
+    const label = 'Точка на карте';
     await _applyPoint(
       target,
       Coordinate(lat: point.latitude, lng: point.longitude),
       label,
+      PointSource.map,
     );
     if (target == PointTarget.pickup) {
       setState(() => _target = PointTarget.dropoff);
@@ -179,17 +208,22 @@ class _PassengerShellState extends State<PassengerShell> {
     PointTarget target,
     Coordinate coordinate,
     String label,
+    PointSource source,
   ) async {
     setState(() {
       if (target == PointTarget.pickup) {
         _pickup = coordinate;
         _pickupLabel = label;
+        _pickupSource = source;
       } else {
         _dropoff = coordinate;
         _dropoffLabel = label;
+        _dropoffSource = source;
       }
       _mapCenter = coordinate.toLatLng();
       _preview = null;
+      _driverPickupRoute = null;
+      _driverRouteError = null;
     });
     await _refreshPreview();
   }
@@ -199,6 +233,7 @@ class _PassengerShellState extends State<PassengerShell> {
     setState(() {
       _previewLoading = true;
       _error = null;
+      _preview = null;
     });
     try {
       var preview = await widget.api.previewRoute(
@@ -283,7 +318,12 @@ class _PassengerShellState extends State<PassengerShell> {
         _order!.id,
         riderPhone: widget.accountPhone,
       );
-      setState(() => _order = null);
+      setState(() {
+        _order = null;
+        _driverLocation = null;
+        _driverPickupRoute = null;
+        _driverRouteError = null;
+      });
     } catch (error) {
       setState(() => _error = _readableError(error));
     } finally {
@@ -292,11 +332,27 @@ class _PassengerShellState extends State<PassengerShell> {
   }
 
   Future<void> _loadDriverRoute(String orderId) async {
+    if (_driverLocation == null) {
+      setState(() {
+        _driverPickupRoute = null;
+        _driverRouteError = null;
+      });
+      return;
+    }
     try {
       final route = await widget.api.driverToPickupRoute(orderId);
-      if (mounted) setState(() => _preview = route);
-    } catch (_) {
-      if (mounted && _driverLocation == null) setState(() {});
+      if (mounted) {
+        setState(() {
+          _driverPickupRoute = route;
+          _driverRouteError = null;
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _driverPickupRoute = null;
+        _driverRouteError = _readableDriverRouteError(error);
+      });
     }
   }
 
@@ -435,6 +491,12 @@ class _PassengerShellState extends State<PassengerShell> {
   Widget _homeScreen() {
     final mapHeight = MediaQuery.sizeOf(context).height * 0.43;
     final geolocationNotice = _geolocationNotice;
+    final mapRoute = _order?.driverId != null
+        ? (_driverPickupRoute?.geometry ?? const <LatLng>[])
+        : (_preview?.geometry ?? const <LatLng>[]);
+    final mapRouteError = _order?.driverId != null
+        ? _driverRouteError
+        : (_routePreviewError ? _error : null);
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -445,9 +507,11 @@ class _PassengerShellState extends State<PassengerShell> {
             pickup: _pickup,
             dropoff: _dropoff,
             driver: _order?.driverId == null ? null : _driverLocation,
-            route: _preview?.geometry ?? const [],
+            route: mapRoute,
             target: _target,
             permissionNotice: geolocationNotice,
+            routeLoading: _previewLoading,
+            routeError: mapRouteError,
             onTap: _applyMapTap,
             onUseLocation: _usePhoneLocation,
             onReset: _resetRoute,
@@ -464,9 +528,12 @@ class _PassengerShellState extends State<PassengerShell> {
               dropoffLabel: _dropoffLabel,
               pickupActive: _target == PointTarget.pickup,
               dropoffActive: _target == PointTarget.dropoff,
+              pickupSource: _pickupSource,
+              dropoffSource: _dropoffSource,
               onPickupTap: () => _selectPoint(target: PointTarget.pickup),
               onDropoffTap: () => _selectPoint(target: PointTarget.dropoff),
               onUseLocation: _usePhoneLocation,
+              locationLoading: _locationLoading,
               tariffs: _tariffs,
               selectedTariffId: _tariffId,
               preview: _preview,
@@ -494,13 +561,26 @@ class _PassengerShellState extends State<PassengerShell> {
     return 'Разрешите геолокацию или выберите точку посадки вручную.';
   }
 
+  bool get _routePreviewError {
+    final error = _error;
+    if (error == null) return false;
+    return error.toLowerCase().contains('маршрут') ||
+        error.contains('В этом месте сервис пока недоступен') ||
+        error.contains('Точка назначения вне активного региона') ||
+        error.contains('Межгород пока не поддерживается');
+  }
+
   void _resetRoute() {
     setState(() {
       _pickup = null;
       _dropoff = null;
       _pickupLabel = 'Выберите точку посадки';
       _dropoffLabel = 'Введите точку назначения';
+      _pickupSource = PointSource.none;
+      _dropoffSource = PointSource.none;
       _preview = null;
+      _driverPickupRoute = null;
+      _driverRouteError = null;
       _tariffId = null;
       _target = PointTarget.pickup;
       _error = null;
@@ -533,6 +613,9 @@ class _PassengerShellState extends State<PassengerShell> {
         : _driverLocation == null
             ? 'Ожидаем геолокацию водителя'
             : 'Водитель на связи';
+    final driverRouteText = _driverPickupRoute == null
+        ? null
+        : _driverPickupMeta(_driverPickupRoute!);
     final orderShortId =
         _order!.id.length > 8 ? _order!.id.substring(0, 8) : _order!.id;
     return ListView(
@@ -584,7 +667,9 @@ class _PassengerShellState extends State<PassengerShell> {
                     ? 'Данные водителя появятся после принятия заказа.'
                     : _driverLocation == null
                         ? 'Покажем местоположение, когда водитель передаст геолокацию.'
-                        : 'Местоположение получено из реального обновления водителя.',
+                        : driverRouteText ??
+                            _driverRouteError ??
+                            'Местоположение получено из реального обновления водителя.',
               ),
               if (_order!.price != null) ...[
                 const SizedBox(height: 14),
@@ -794,6 +879,8 @@ class _MapCanvas extends StatelessWidget {
     required this.route,
     required this.target,
     required this.permissionNotice,
+    required this.routeLoading,
+    required this.routeError,
     required this.onTap,
     required this.onUseLocation,
     required this.onReset,
@@ -808,6 +895,8 @@ class _MapCanvas extends StatelessWidget {
   final List<LatLng> route;
   final PointTarget target;
   final String? permissionNotice;
+  final bool routeLoading;
+  final String? routeError;
   final ValueChanged<LatLng> onTap;
   final VoidCallback onUseLocation;
   final VoidCallback onReset;
@@ -817,20 +906,31 @@ class _MapCanvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final instruction = pickup == null
-        ? 'Выберите точку посадки'
+        ? 'Выберите точку посадки на карте'
         : dropoff == null
-            ? 'Теперь выберите точку назначения'
+            ? 'Выберите точку назначения на карте'
             : route.isNotEmpty
                 ? 'Маршрут построен по данным сервиса'
                 : 'Маршрут выбран';
+    final cameraPoints = _cameraPoints();
+    final initialFit = cameraPoints.length > 1
+        ? CameraFit.coordinates(
+            coordinates: cameraPoints,
+            padding: const EdgeInsets.fromLTRB(54, 120, 54, 92),
+            maxZoom: 15.5,
+          )
+        : null;
+    final mapKey = ValueKey(cameraPoints.map(_pointKey).join('|'));
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       child: Stack(
         children: [
           FlutterMap(
+            key: mapKey,
             options: MapOptions(
               initialCenter: center,
               initialZoom: pickup == null && dropoff == null ? 12 : 14,
+              initialCameraFit: initialFit,
               onTap: (_, point) => onTap(point),
             ),
             children: [
@@ -956,6 +1056,16 @@ class _MapCanvas extends StatelessWidget {
             ),
           ),
           Positioned(
+            left: 14,
+            right: 80,
+            bottom: 72,
+            child: _MapRouteState(
+              loading: routeLoading,
+              routeReady: route.isNotEmpty,
+              error: routeError,
+            ),
+          ),
+          Positioned(
             left: 12,
             bottom: 36,
             child: DecoratedBox(
@@ -1019,7 +1129,26 @@ class _MapCanvas extends StatelessWidget {
       ),
     );
   }
+
+  List<LatLng> _cameraPoints() {
+    if (route.isNotEmpty) {
+      return [
+        ...route,
+        if (pickup != null) pickup!.toLatLng(),
+        if (dropoff != null) dropoff!.toLatLng(),
+        if (driver != null) driver!.toLatLng(),
+      ];
+    }
+    return [
+      if (pickup != null) pickup!.toLatLng(),
+      if (dropoff != null) dropoff!.toLatLng(),
+      if (driver != null) driver!.toLatLng(),
+    ];
+  }
 }
+
+String _pointKey(LatLng point) =>
+    '${point.latitude.toStringAsFixed(5)},${point.longitude.toStringAsFixed(5)}';
 
 class _MapRoundButton extends StatelessWidget {
   const _MapRoundButton({
@@ -1186,15 +1315,101 @@ class _MapPermissionCard extends StatelessWidget {
   }
 }
 
+class _MapRouteState extends StatelessWidget {
+  const _MapRouteState({
+    required this.loading,
+    required this.routeReady,
+    required this.error,
+  });
+
+  final bool loading;
+  final bool routeReady;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!loading && !routeReady && error == null) {
+      return const SizedBox.shrink();
+    }
+    final text = loading ? 'Считаем маршрут...' : error ?? 'Маршрут готов';
+    final icon = loading
+        ? null
+        : error == null
+            ? Icons.route_rounded
+            : Icons.error_outline_rounded;
+    final danger = error != null;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      child: Container(
+        key: ValueKey(text),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: danger
+              ? const Color(0xfffff1f1).withValues(alpha: 0.96)
+              : Colors.white.withValues(alpha: 0.94),
+          border: Border.all(
+            color: danger ? const Color(0xfffecaca) : SmartTaxiColors.border,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14785a14),
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (loading)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: SmartTaxiColors.goldDeep,
+                ),
+              )
+            else
+              Icon(
+                icon,
+                size: 17,
+                color:
+                    danger ? SmartTaxiColors.danger : SmartTaxiColors.goldDeep,
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: danger ? SmartTaxiColors.danger : SmartTaxiColors.text,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _OrderSheet extends StatelessWidget {
   const _OrderSheet({
     required this.pickupLabel,
     required this.dropoffLabel,
     required this.pickupActive,
     required this.dropoffActive,
+    required this.pickupSource,
+    required this.dropoffSource,
     required this.onPickupTap,
     required this.onDropoffTap,
     required this.onUseLocation,
+    required this.locationLoading,
     required this.tariffs,
     required this.selectedTariffId,
     required this.preview,
@@ -1210,9 +1425,12 @@ class _OrderSheet extends StatelessWidget {
   final String dropoffLabel;
   final bool pickupActive;
   final bool dropoffActive;
+  final PointSource pickupSource;
+  final PointSource dropoffSource;
   final VoidCallback onPickupTap;
   final VoidCallback onDropoffTap;
   final VoidCallback onUseLocation;
+  final bool locationLoading;
   final List<TariffOption> tariffs;
   final String? selectedTariffId;
   final RoutePreview? preview;
@@ -1286,11 +1504,28 @@ class _OrderSheet extends StatelessWidget {
                 onPickupTap: onPickupTap,
                 onDropoffTap: onDropoffTap,
               ),
+              const SizedBox(height: 10),
+              _RouteSourceSummary(
+                pickupSource: pickupSource,
+                dropoffSource: dropoffSource,
+                pickupActive: pickupActive,
+                dropoffActive: dropoffActive,
+              ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: onUseLocation,
-                icon: const Icon(Icons.my_location_rounded, size: 19),
-                label: const Text('Разрешить геолокацию'),
+                onPressed: locationLoading ? null : onUseLocation,
+                icon: locationLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_rounded, size: 19),
+                label: Text(
+                  locationLoading
+                      ? 'Получаем геолокацию...'
+                      : 'Разрешить геолокацию',
+                ),
               ),
               const SizedBox(height: 18),
               _TariffSection(
@@ -1359,7 +1594,7 @@ class _CoordinateSheetState extends State<_CoordinateSheet> {
       context,
       _PointResult(
         Coordinate(lat: lat, lng: lng),
-        _label.text.trim().isEmpty ? 'Выбранная точка' : _label.text.trim(),
+        _label.text.trim().isEmpty ? 'Координаты выбраны' : _label.text.trim(),
       ),
     );
   }
@@ -1457,6 +1692,74 @@ class _CoordinateSheetState extends State<_CoordinateSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RouteSourceSummary extends StatelessWidget {
+  const _RouteSourceSummary({
+    required this.pickupSource,
+    required this.dropoffSource,
+    required this.pickupActive,
+    required this.dropoffActive,
+  });
+
+  final PointSource pickupSource;
+  final PointSource dropoffSource;
+  final bool pickupActive;
+  final bool dropoffActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _PointSourceChip(
+          label: 'Откуда',
+          source: pickupSource,
+          active: pickupActive,
+        ),
+        _PointSourceChip(
+          label: 'Куда',
+          source: dropoffSource,
+          active: dropoffActive,
+        ),
+      ],
+    );
+  }
+}
+
+class _PointSourceChip extends StatelessWidget {
+  const _PointSourceChip({
+    required this.label,
+    required this.source,
+    required this.active,
+  });
+
+  final String label;
+  final PointSource source;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = source == PointSource.none
+        ? (active ? 'выбирается' : 'не выбрано')
+        : _pointSourceLabel(source);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: active ? SmartTaxiColors.goldPale : Colors.white,
+        border: Border.all(
+          color: active ? SmartTaxiColors.gold : SmartTaxiColors.border,
+        ),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label: $text',
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -2484,6 +2787,23 @@ enum PassengerTab { home, trips, profile, driverApplication, support }
 
 enum PointTarget { pickup, dropoff }
 
+enum PointSource { none, gps, map, manual }
+
+String _pointSourceLabel(PointSource source) {
+  return switch (source) {
+    PointSource.gps => 'GPS',
+    PointSource.map => 'карта',
+    PointSource.manual => 'вручную',
+    PointSource.none => 'не выбрано',
+  };
+}
+
+String _driverPickupMeta(RoutePreview route) {
+  final distance = (route.distanceMeters / 1000).toStringAsFixed(1);
+  final minutes = (route.durationSeconds / 60).round();
+  return 'До точки посадки: $distance км · $minutes мин';
+}
+
 String _statusLabel(String status) {
   return const {
         'NEW': 'Ищем водителя',
@@ -2505,6 +2825,17 @@ StatusTone _statusTone(String status) {
     return StatusTone.warning;
   }
   return StatusTone.neutral;
+}
+
+String _readableDriverRouteError(Object error) {
+  final message = error.toString();
+  if (message.contains('DRIVER_LOCATION_UNAVAILABLE')) {
+    return 'Ожидаем геолокацию водителя.';
+  }
+  if (message.contains('ROUTE_UNAVAILABLE')) {
+    return 'Маршрут водителя временно недоступен.';
+  }
+  return 'Маршрут водителя временно недоступен.';
 }
 
 String _readableError(Object error) {

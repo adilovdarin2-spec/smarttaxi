@@ -249,9 +249,19 @@ class _DriverShellState extends State<DriverShell> {
   Future<void> _loadDriverRoute(String orderId) async {
     try {
       final route = await widget.api.driverToPickupRoute(orderId);
-      if (mounted) setState(() => _driverRoute = route);
-    } catch (_) {
-      if (mounted) setState(() => _driverRoute = null);
+      if (mounted) {
+        setState(() {
+          _driverRoute = route;
+          _error = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _driverRoute = null;
+          _error = _readableError(error);
+        });
+      }
     }
   }
 
@@ -740,6 +750,18 @@ class _TripMap extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final center = pickup ?? dropoff ?? route.first;
+    final points = [
+      if (route.isNotEmpty) ...route,
+      if (pickup != null) pickup,
+      if (dropoff != null) dropoff,
+    ];
+    final cameraFit = points.length > 1
+        ? CameraFit.coordinates(
+            coordinates: points,
+            padding: const EdgeInsets.fromLTRB(36, 54, 36, 62),
+            maxZoom: 15.5,
+          )
+        : null;
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: SizedBox(
@@ -747,7 +769,12 @@ class _TripMap extends StatelessWidget {
         child: Stack(
           children: [
             FlutterMap(
-              options: MapOptions(initialCenter: center, initialZoom: 14),
+              key: ValueKey(points.map(_driverMapPointKey).join('|')),
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 14,
+                initialCameraFit: cameraFit,
+              ),
               children: [
                 TileLayer(
                     urlTemplate: AppConfig.osmTileUrl,
@@ -801,6 +828,15 @@ class _TripMap extends StatelessWidget {
                 ),
               ),
             ),
+            Positioned(
+              left: 12,
+              top: 12,
+              child: _DriverMapBadge(
+                text: route.isEmpty
+                    ? 'Маршрут появится после расчёта'
+                    : 'Маршрут до точки посадки',
+              ),
+            ),
           ],
         ),
       ),
@@ -823,6 +859,40 @@ class _TripMap extends StatelessWidget {
             ]),
         child: Text(label,
             style: TextStyle(color: foreground, fontWeight: FontWeight.w900)),
+      ),
+    );
+  }
+}
+
+String _driverMapPointKey(LatLng point) =>
+    '${point.latitude.toStringAsFixed(5)},${point.longitude.toStringAsFixed(5)}';
+
+class _DriverMapBadge extends StatelessWidget {
+  const _DriverMapBadge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14785a14),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          )
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
@@ -1133,7 +1203,8 @@ String _readableError(Object error) {
     'ORDER_ALREADY_ACCEPTED': 'Заказ уже принят другим водителем',
     'DRIVER_OFFLINE': 'Выйдите на линию',
     'DRIVER_LOCATION_OUTSIDE_REGION': 'Геолокация вне рабочего региона',
-    'ROUTE_UNAVAILABLE': 'Маршрут сейчас недоступен',
+    'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен',
+    'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
   };
   for (final entry in map.entries) {
     if (message.contains(entry.key)) return entry.value;
