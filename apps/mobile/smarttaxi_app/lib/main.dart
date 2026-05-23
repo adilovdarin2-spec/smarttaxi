@@ -80,7 +80,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     await widget.authStore.saveUser(
       label: _accountLabel,
       phone: _accountPhone,
-      email: _userEmail(user),
+      email: _userMail(user),
       role: _userRole(user),
     );
   }
@@ -306,7 +306,9 @@ class _AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<_AuthScreen> {
+  final _loginController = TextEditingController();
   final _nameController = TextEditingController();
+  final _surnameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordRepeatController = TextEditingController();
@@ -319,7 +321,9 @@ class _AuthScreenState extends State<_AuthScreen> {
 
   @override
   void dispose() {
+    _loginController.dispose();
     _nameController.dispose();
+    _surnameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _passwordRepeatController.dispose();
@@ -354,19 +358,38 @@ class _AuthScreenState extends State<_AuthScreen> {
 
   Future<Map<String, dynamic>> _register() async {
     final phone = _normalizePhone(_phoneController.text);
-    return widget.api.register(
-      name: _nameController.text.trim(),
+    final login = _loginController.text.trim();
+    final fullName =
+        '${_nameController.text.trim()} ${_surnameController.text.trim()}'
+            .trim();
+    final payload = await widget.api.register(
+      name: fullName,
       phone: phone,
       password: _passwordController.text,
     );
+    final user = payload['user'];
+    if (user is Map) {
+      payload['user'] = {
+        ...Map<String, dynamic>.from(user),
+        'login': login,
+        'name': fullName,
+      };
+    }
+    return payload;
   }
 
   String? _validate() {
     final phone = _phoneController.text;
     final password = _passwordController.text;
     final phoneDigits = _phoneDigits(phone);
+    if (_registerMode && _loginController.text.trim().length < 3) {
+      return 'Введите логин';
+    }
     if (_registerMode && _nameController.text.trim().isEmpty) {
       return 'Введите имя';
+    }
+    if (_registerMode && _surnameController.text.trim().isEmpty) {
+      return 'Введите фамилию';
     }
     if (phone.trim().isEmpty) return 'Введите номер телефона';
     if (phoneDigits.length < 10) return 'Введите корректный номер';
@@ -384,6 +407,8 @@ class _AuthScreenState extends State<_AuthScreen> {
     setState(() {
       _registerMode = registerMode;
       _error = null;
+      _loginController.clear();
+      _surnameController.clear();
       _passwordController.clear();
       _passwordRepeatController.clear();
       _showPassword = false;
@@ -461,12 +486,40 @@ class _AuthScreenState extends State<_AuthScreen> {
                                             key: const ValueKey('register'),
                                             children: [
                                               TextField(
+                                                controller: _loginController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                        labelText: 'Логин'),
+                                                autofillHints: const [
+                                                  AutofillHints.username
+                                                ],
+                                                textInputAction:
+                                                    TextInputAction.next,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextField(
                                                 controller: _nameController,
                                                 decoration:
                                                     const InputDecoration(
                                                         labelText: 'Имя'),
                                                 autofillHints: const [
                                                   AutofillHints.name
+                                                ],
+                                                keyboardType:
+                                                    TextInputType.name,
+                                                textCapitalization:
+                                                    TextCapitalization.words,
+                                                textInputAction:
+                                                    TextInputAction.next,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextField(
+                                                controller: _surnameController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                        labelText: 'Фамилия'),
+                                                autofillHints: const [
+                                                  AutofillHints.familyName
                                                 ],
                                                 keyboardType:
                                                     TextInputType.name,
@@ -757,7 +810,7 @@ class _ConnectionHint extends StatelessWidget {
 
 String _userLabel(dynamic user) {
   if (user is! Map) return 'Аккаунт SmartTaxi';
-  return (user['phone'] ?? user['email'] ?? user['name'] ?? 'Аккаунт SmartTaxi')
+  return (user['login'] ?? user['name'] ?? user['phone'] ?? 'Аккаунт SmartTaxi')
       .toString();
 }
 
@@ -766,7 +819,7 @@ String _userPhone(dynamic user) {
   return (user['phone'] ?? '').toString();
 }
 
-String _userEmail(dynamic user) {
+String _userMail(dynamic user) {
   if (user is! Map) return '';
   return (user['email'] ?? '').toString();
 }

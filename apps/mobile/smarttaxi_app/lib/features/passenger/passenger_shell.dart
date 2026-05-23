@@ -40,6 +40,7 @@ class PassengerShell extends StatefulWidget {
 
 class _PassengerShellState extends State<PassengerShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _supportController = TextEditingController();
   PassengerTab _tab = PassengerTab.home;
   PointTarget _target = PointTarget.pickup;
   bool _loading = false;
@@ -68,6 +69,8 @@ class _PassengerShellState extends State<PassengerShell> {
   String _driverYear = '';
   String _driverComment = '';
   String? _driverApplicationMessage;
+  String _supportTopic = 'Проблема с поездкой';
+  String? _supportMessage;
 
   @override
   void initState() {
@@ -77,6 +80,7 @@ class _PassengerShellState extends State<PassengerShell> {
 
   @override
   void dispose() {
+    _supportController.dispose();
     widget.sockets.clearListeners();
     super.dispose();
   }
@@ -451,34 +455,10 @@ class _PassengerShellState extends State<PassengerShell> {
                   _tripsScreen(),
                   _profileScreen(),
                   _driverApplicationScreen(),
-                  _simpleInfoScreen(
-                    'Поддержка',
-                    'Напишите в поддержку SmartTaxi, если нужна помощь с поездкой.',
-                  ),
-                ],
-              ),
-            ),
-            _FloatingNav(
-              child: NavigationBar(
-                selectedIndex: _tab.index > 2 ? 2 : _tab.index,
-                onDestinationSelected: (index) =>
-                    setState(() => _tab = PassengerTab.values[index]),
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Icons.map_outlined),
-                    selectedIcon: Icon(Icons.map),
-                    label: 'Главная',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.receipt_long_outlined),
-                    selectedIcon: Icon(Icons.receipt_long),
-                    label: 'Поездки',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.person_outline),
-                    selectedIcon: Icon(Icons.person),
-                    label: 'Профиль',
-                  ),
+                  _supportScreen(),
+                  _faqScreen(),
+                  _aboutScreen(),
+                  _settingsScreen(),
                 ],
               ),
             ),
@@ -505,7 +485,7 @@ class _PassengerShellState extends State<PassengerShell> {
       padding: EdgeInsets.zero,
       children: [
         SizedBox(
-          height: mapHeight.clamp(305.0, 410.0).toDouble(),
+          height: mapHeight,
           child: _MapCanvas(
             center: _mapCenter ?? const LatLng(42.316, 69.596),
             pickup: _pickup,
@@ -713,35 +693,50 @@ class _PassengerShellState extends State<PassengerShell> {
   }
 
   Widget _profileScreen() {
+    final label =
+        widget.accountLabel.isEmpty ? 'Пользователь' : widget.accountLabel;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        const _TitleBlock(
+          title: 'Профиль',
+          text: 'Аккаунт, поездки и настройки SmartTaxi',
+        ),
+        const SizedBox(height: 16),
         _PremiumCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const BrandLogo(),
+                  Container(
+                    width: 58,
+                    height: 58,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: SmartTaxiColors.goldSurface,
+                      border: Border.all(color: SmartTaxiColors.borderStrong),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const BrandLogo(),
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'SmartTaxi',
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        Text(
-                          widget.accountLabel.isEmpty
-                              ? 'Ваш аккаунт'
-                              : widget.accountLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                        const Text(
+                          'Клиент SmartTaxi',
+                          style: TextStyle(
                             color: SmartTaxiColors.textSecondary,
                             fontWeight: FontWeight.w700,
                           ),
@@ -752,26 +747,11 @@ class _PassengerShellState extends State<PassengerShell> {
                 ],
               ),
               const SizedBox(height: 16),
-              _ProfileRow(
-                label: 'Аккаунт',
-                value: widget.accountLabel.isEmpty
-                    ? 'Пользователь'
-                    : widget.accountLabel,
-              ),
+              _ProfileRow(label: 'Логин', value: label),
               if (widget.accountPhone.trim().isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _ProfileRow(label: 'Телефон', value: widget.accountPhone),
               ],
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: _openDriverEntry,
-                child: const Text('Стать водителем'),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton(
-                onPressed: widget.onLogout,
-                child: const Text('Выйти'),
-              ),
             ],
           ),
         ),
@@ -780,15 +760,40 @@ class _PassengerShellState extends State<PassengerShell> {
           child: Column(
             children: [
               _MenuLine(
-                title: 'Поддержка',
-                onTap: () => setState(() => _tab = PassengerTab.support),
-              ),
+                  title: 'Мои поездки',
+                  onTap: () => setState(() => _tab = PassengerTab.trips)),
+              _MenuLine(title: 'Стать водителем', onTap: _openDriverEntry),
               _MenuLine(
-                title: 'Настройки',
-                onTap: () => setState(() => _tab = PassengerTab.support),
-              ),
+                  title: 'Поддержка',
+                  onTap: () => setState(() => _tab = PassengerTab.support)),
             ],
           ),
+        ),
+        const SizedBox(height: 14),
+        _PremiumCard(
+          child: Column(
+            children: [
+              _MenuLine(
+                  title: 'Настройки',
+                  onTap: () => setState(() => _tab = PassengerTab.settings)),
+              _MenuLine(
+                  title: 'FAQ',
+                  onTap: () => setState(() => _tab = PassengerTab.faq)),
+              _MenuLine(
+                  title: 'О нас',
+                  onTap: () => setState(() => _tab = PassengerTab.about)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        OutlinedButton(
+          onPressed: widget.onLogout,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: SmartTaxiColors.danger,
+            side: const BorderSide(color: Color(0xfffecaca)),
+            backgroundColor: const Color(0xfffff1f1),
+          ),
+          child: const Text('Выйти'),
         ),
       ],
     );
@@ -863,11 +868,267 @@ class _PassengerShellState extends State<PassengerShell> {
     );
   }
 
-  Widget _simpleInfoScreen(String title, String text) {
+  Widget _supportScreen() {
+    const topics = [
+      'Проблема с поездкой',
+      'Водитель не приехал',
+      'Забыл вещь',
+      'Оплата',
+      'Другое',
+    ];
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        EmptyState(title: title, text: text),
+        const _TitleBlock(
+          title: 'Поддержка',
+          text: 'Опишите проблему, мы поможем',
+        ),
+        const SizedBox(height: 16),
+        _PremiumCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionLabel(
+                title: 'Тема обращения',
+                text: 'Выберите, с чем нужна помощь',
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: topics
+                    .map(
+                      (topic) => ChoiceChip(
+                        label: Text(topic),
+                        selected: _supportTopic == topic,
+                        onSelected: (_) =>
+                            setState(() => _supportTopic = topic),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _supportController,
+                minLines: 5,
+                maxLines: 7,
+                decoration: const InputDecoration(
+                  labelText: 'Сообщение',
+                  hintText: 'Напишите сообщение…',
+                  alignLabelWithHint: true,
+                ),
+              ),
+              if (_supportMessage != null) ...[
+                const SizedBox(height: 12),
+                _InlineMessage(text: _supportMessage!),
+              ],
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(
+                    () => _supportMessage =
+                        'Сообщение подготовлено. Отправка будет подключена позже.',
+                  );
+                },
+                child: const Text('Отправить'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _settingsScreen() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const _TitleBlock(
+          title: 'Настройки',
+          text: 'Аккаунт, поездки и информация о приложении',
+        ),
+        const SizedBox(height: 16),
+        _SettingsGroup(
+          title: 'Аккаунт',
+          children: [
+            _SettingsRow(
+              title: 'Номер телефона',
+              text: widget.accountPhone.isEmpty
+                  ? 'Не указан'
+                  : widget.accountPhone,
+            ),
+            _SettingsRow(
+              title: 'Выход из аккаунта',
+              text: 'Завершить текущую сессию',
+              danger: true,
+              onTap: widget.onLogout,
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        const _SettingsGroup(
+          title: 'Интерфейс',
+          children: [
+            _SettingsRow(title: 'Тема', text: 'Светлая', badge: 'Скоро'),
+            _SettingsRow(title: 'Язык', text: 'Русский', badge: 'Скоро'),
+          ],
+        ),
+        const SizedBox(height: 14),
+        const _SettingsGroup(
+          title: 'Поездки',
+          children: [
+            _SettingsRow(
+              title: 'Уведомления о статусе',
+              text: 'Появятся после подключения push',
+              badge: 'Скоро',
+            ),
+            _SettingsRow(
+              title: 'Геолокация',
+              text: 'Разрешение управляется в настройках телефона',
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        const _SettingsGroup(
+          title: 'Безопасность аккаунта',
+          children: [
+            _SettingsRow(
+              title: 'Изменить пароль',
+              text: 'Раздел будет доступен позже',
+              badge: 'Скоро',
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        const _SettingsGroup(
+          title: 'О приложении',
+          children: [
+            _SettingsRow(title: 'Версия', text: 'SmartTaxi mobile'),
+            _SettingsRow(
+              title: 'Условия сервиса',
+              text: 'Документы будут добавлены перед запуском',
+              badge: 'Скоро',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _faqScreen() {
+    final items = const [
+      (
+        'Как заказать поездку?',
+        'Выберите точки A и B на карте, выберите тариф, дождитесь расчёта и нажмите «Заказать».'
+      ),
+      (
+        'Почему сервис работает только в выбранном регионе?',
+        'SmartTaxi запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.'
+      ),
+      (
+        'Как считается цена?',
+        'Цена рассчитывается сервером по маршруту, тарифу, расстоянию и времени поездки.'
+      ),
+      (
+        'Как стать водителем?',
+        'Откройте раздел «Стать водителем», заполните данные автомобиля и дождитесь проверки администратора.'
+      ),
+      (
+        'Что делать, если водитель не приехал?',
+        'Откройте поддержку и выберите тему «Водитель не приехал».'
+      ),
+      (
+        'Как отменить заказ?',
+        'Откройте «Мои поездки» и нажмите «Отменить поездку», если заказ ещё можно отменить.'
+      ),
+      (
+        'Почему нужна геолокация?',
+        'Геолокация помогает выбрать точку посадки и строить честный маршрут.'
+      ),
+      (
+        'Как связаться с поддержкой?',
+        'Откройте раздел «Поддержка» в меню и напишите сообщение.'
+      ),
+    ];
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const _TitleBlock(
+          title: 'FAQ',
+          text: 'Ответы на частые вопросы',
+        ),
+        const SizedBox(height: 16),
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _PremiumCard(
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(top: 4),
+                title: Text(
+                  item.$1,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      item.$2,
+                      style: const TextStyle(
+                        color: SmartTaxiColors.textSecondary,
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _aboutScreen() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _PremiumCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(child: BrandLogo(large: true)),
+              const SizedBox(height: 18),
+              const Text(
+                'SmartTaxi',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.',
+                style: TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const _CompactNotice(
+                icon: Icons.map_outlined,
+                title: 'Региональная модель',
+                text:
+                    'Поездки доступны только внутри регионов, включённых администратором. Межгород на текущем этапе не поддерживается.',
+              ),
+              const SizedBox(height: 12),
+              _CompactNotice(
+                icon: Icons.support_agent_rounded,
+                title: 'Связь',
+                text: 'Если нужна помощь, откройте поддержку в левом меню.',
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -2172,6 +2433,11 @@ class _SmartDrawer extends StatelessWidget {
               onTap: () => onSelect(PassengerTab.trips),
             ),
             _DrawerItem(
+              label: 'Профиль',
+              active: active == PassengerTab.profile,
+              onTap: () => onSelect(PassengerTab.profile),
+            ),
+            _DrawerItem(
               label: driverLabel,
               active: active == PassengerTab.driverApplication,
               onTap: onDriver,
@@ -2182,9 +2448,19 @@ class _SmartDrawer extends StatelessWidget {
               onTap: () => onSelect(PassengerTab.support),
             ),
             _DrawerItem(
+              label: 'FAQ',
+              active: active == PassengerTab.faq,
+              onTap: () => onSelect(PassengerTab.faq),
+            ),
+            _DrawerItem(
+              label: 'О нас',
+              active: active == PassengerTab.about,
+              onTap: () => onSelect(PassengerTab.about),
+            ),
+            _DrawerItem(
               label: 'Настройки',
-              active: false,
-              onTap: () => onSelect(PassengerTab.support),
+              active: active == PassengerTab.settings,
+              onTap: () => onSelect(PassengerTab.settings),
             ),
             const Spacer(),
             _DrawerItem(
@@ -2398,38 +2674,6 @@ class _PremiumCard extends StatelessWidget {
         ],
       ),
       child: child,
-    );
-  }
-}
-
-class _FloatingNav extends StatelessWidget {
-  const _FloatingNav({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottom = MediaQuery.paddingOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(14, 6, 14, 10 + bottom * 0.35),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
-            border: Border.all(color: SmartTaxiColors.border),
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x16785a14),
-                blurRadius: 28,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
     );
   }
 }
@@ -2681,6 +2925,102 @@ class _ProfileRow extends StatelessWidget {
   }
 }
 
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PremiumCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.title,
+    required this.text,
+    this.badge,
+    this.danger = false,
+    this.onTap,
+  });
+
+  final String title;
+  final String text;
+  final String? badge;
+  final bool danger;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = danger ? SmartTaxiColors.danger : SmartTaxiColors.text;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: titleColor,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    text,
+                    style: const TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (badge != null) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: SmartTaxiColors.goldPale,
+                  border: Border.all(color: SmartTaxiColors.borderStrong),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badge!,
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MenuLine extends StatelessWidget {
   const _MenuLine({required this.title, required this.onTap});
 
@@ -2799,7 +3139,16 @@ class _StatusStepper extends StatelessWidget {
   }
 }
 
-enum PassengerTab { home, trips, profile, driverApplication, support }
+enum PassengerTab {
+  home,
+  trips,
+  profile,
+  driverApplication,
+  support,
+  faq,
+  about,
+  settings
+}
 
 enum PointTarget { pickup, dropoff }
 

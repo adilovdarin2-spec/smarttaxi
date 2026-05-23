@@ -1,13 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512" role="img" aria-label="SmartTaxi icon">
   <defs>
-    <linearGradient id="smarttaxiGold" x1="82" y1="60" x2="430" y2="452" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFB64A"/>
-      <stop offset="0.55" stop-color="#F2A31F"/>
-      <stop offset="1" stop-color="#D98B13"/>
+    <linearGradient id="gold" x1="100" y1="74" x2="412" y2="438" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4D27A"/>
+      <stop offset="0.48" stop-color="#C99A2E"/>
+      <stop offset="1" stop-color="#A97814"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="132" y1="118" x2="380" y2="402" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#24211A"/>
+      <stop offset="1" stop-color="#111111"/>
     </linearGradient>
   </defs>
-  <path d="M256 54 L424 151 L424 354 L256 451 L88 354 L88 151 Z" fill="none" stroke="url(#smarttaxiGold)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M336 218 L256 172 L172 221 L172 283 L258 333 L258 388 L181 433" fill="none" stroke="url(#smarttaxiGold)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M256 172 L379 243" fill="none" stroke="url(#smarttaxiGold)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M326 232 L326 359 L395 399" fill="none" stroke="url(#smarttaxiGold)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="210" fill="url(#gold)"/>
+  <circle cx="256" cy="256" r="165" fill="#FFFCF6"/>
+  <path d="M145 291C183 258 211 236 247 214C292 186 340 173 382 176" fill="none" stroke="url(#ink)" stroke-width="29" stroke-linecap="round"/>
+  <path d="M128 348C181 304 224 277 276 254C315 237 351 229 386 230" fill="none" stroke="url(#gold)" stroke-width="29" stroke-linecap="round"/>
+  <path d="M260 94C198 94 148 144 148 205C148 285 245 380 255 390C258 393 263 393 266 390C276 380 373 285 373 205C373 144 322 94 260 94Z" fill="url(#ink)"/>
+  <circle cx="260" cy="203" r="43" fill="#FFFCF6"/>
+  <circle cx="260" cy="203" r="18" fill="url(#gold)"/>
+  <circle cx="126" cy="352" r="24" fill="url(#ink)"/>
+  <circle cx="386" cy="230" r="24" fill="url(#ink)"/>
+  <path d="M170 407C222 433 291 437 344 408" fill="none" stroke="#FFFCF6" stroke-width="18" stroke-linecap="round"/>
 </svg>

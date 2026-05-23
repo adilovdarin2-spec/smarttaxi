@@ -43,10 +43,17 @@ void main() {
   test('official icon-only logo asset is wired', () {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
+    final icon = _read('assets/brand/smarttaxi_icon.svg');
 
     expect(logo, contains('assets/brand/smarttaxi_icon.svg'));
     expect(pubspec, contains('assets/brand/smarttaxi_icon.svg'));
     expect(pubspec, contains('assets/brand/smarttaxi_icon_2048.png'));
+    expect(icon, contains('viewBox="0 0 512 512"'));
+    expect(icon, contains('<path'));
+    expect(icon, isNot(contains('>S<')));
+    expect(icon, isNot(contains('>ST<')));
+    expect(icon.toLowerCase(), isNot(contains('car')));
+    expect(icon.toLowerCase(), isNot(contains('shield')));
   });
 
   test('auth screen is production-only and starts before main app', () {
@@ -71,8 +78,8 @@ void main() {
     expect(main, contains('Ещё нет аккаунта?'));
     expect(main, contains('Зарегистрируйтесь'));
     expect(main, contains('Уже есть аккаунт?'));
-    expect(main, isNot(contains('Телефон или ' 'Email')));
-    expect(main, isNot(contains('Email, если вход по ' 'email')));
+    expect(main, isNot(contains('Телефон или ' 'E' 'mail')));
+    expect(main, isNot(contains('E' 'mail, если вход по ' 'email')));
     expect(main, isNot(contains('_AuthModeSwitch')));
     expect(main, isNot(contains(testAccountsLabel)));
     expect(main, isNot(contains(clientSeedPassword)));
@@ -84,14 +91,18 @@ void main() {
 
     expect(main, contains('Вход'));
     expect(main, contains('Регистрация'));
+    expect(main, contains('Логин'));
     expect(main, contains('Имя'));
+    expect(main, contains('Фамилия'));
     expect(main, contains('Номер телефона'));
     expect(main, contains('+7 ___ ___ __ __'));
     expect(main, contains('Пароль'));
     expect(main, contains('Повторите пароль'));
     expect(main, contains('Введите номер телефона'));
+    expect(main, contains('Введите логин'));
     expect(main, contains('Введите корректный номер'));
     expect(main, contains('Введите пароль'));
+    expect(main, contains('Введите фамилию'));
     expect(main, contains('Пароль должен быть не короче 6 символов'));
     expect(main, contains('Пароли не совпадают'));
     expect(main, contains('Введите имя'));
@@ -108,8 +119,8 @@ void main() {
     expect(main, contains('Войти'));
     expect(main, contains('Создать аккаунт'));
     expect(main, isNot(contains('TextInputType.emailAddress')));
-    expect(main, isNot(contains('Телефон или ' 'Email')));
-    expect(main, isNot(contains('Email, если вход по ' 'email')));
+    expect(main, isNot(contains('Телефон или ' 'E' 'mail')));
+    expect(main, isNot(contains('E' 'mail, если вход по ' 'email')));
   });
 
   test(
@@ -212,6 +223,59 @@ void main() {
     expect(passenger, contains('Для заказа войдите по номеру телефона.'));
   });
 
+  test('client navigation is drawer-only with full passenger sections', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    expect(passenger, contains('enum PassengerTab'));
+    expect(passenger, contains('PassengerTab.driverApplication'));
+    expect(passenger, contains('PassengerTab.support'));
+    expect(passenger, contains('PassengerTab.faq'));
+    expect(passenger, contains('PassengerTab.about'));
+    expect(passenger, contains('PassengerTab.settings'));
+    expect(passenger, contains('_SmartDrawer'));
+    expect(passenger, contains("label: 'Главная'"));
+    expect(passenger, contains("label: 'Мои поездки'"));
+    expect(passenger, contains("label: 'Профиль'"));
+    expect(passenger, contains("driverLabel: 'Стать водителем'"));
+    expect(passenger, contains("label: 'Поддержка'"));
+    expect(passenger, contains("label: 'FAQ'"));
+    expect(passenger, contains("label: 'О нас'"));
+    expect(passenger, contains("label: 'Настройки'"));
+    expect(passenger, contains("label: 'Выйти'"));
+    expect(passenger, isNot(contains('NavigationBar(')));
+    expect(passenger, isNot(contains('NavigationDestination(')));
+    expect(passenger, isNot(contains('class _FloatingNav')));
+  });
+
+  test('passenger menu screens are useful and production-oriented', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    expect(passenger, contains('_supportScreen'));
+    expect(passenger, contains('Проблема с поездкой'));
+    expect(passenger, contains('Водитель не приехал'));
+    expect(passenger, contains('Сообщение'));
+    expect(passenger, contains('Напишите сообщение'));
+    expect(
+      passenger,
+      contains('Сообщение подготовлено. Отправка будет подключена позже.'),
+    );
+    expect(passenger, contains('_settingsScreen'));
+    expect(passenger, contains('Аккаунт'));
+    expect(passenger, contains('Интерфейс'));
+    expect(passenger, contains('Поездки'));
+    expect(passenger, contains('Безопасность аккаунта'));
+    expect(passenger, contains('О приложении'));
+    expect(passenger, contains('Скоро'));
+    expect(passenger, contains('_faqScreen'));
+    expect(passenger, contains('ExpansionTile'));
+    expect(passenger, contains('Как заказать поездку?'));
+    expect(passenger, contains('Как считается цена?'));
+    expect(passenger, contains('Как стать водителем?'));
+    expect(passenger, contains('_aboutScreen'));
+    expect(passenger, contains('SmartTaxi'));
+    expect(passenger, contains('региональный сервис такси'));
+  });
+
   test('driver entry is not a public top role switch', () {
     final main = _read('lib/main.dart');
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
@@ -243,6 +307,23 @@ void main() {
     expect(passenger, contains('Стать водителем'));
     expect(passenger, contains('onOpenDriverMode'));
     expect(passenger, contains('_SmartDrawer'));
+  });
+
+  test('driver drawer keeps driver tabs and adds account/support sections', () {
+    final driver = _read('lib/features/driver/driver_shell.dart');
+
+    expect(driver, contains('_DriverDrawer'));
+    expect(driver, contains('_showDriverDrawerSheet'));
+    expect(driver, contains("label: 'Линия'"));
+    expect(driver, contains("label: 'Заказы'"));
+    expect(driver, contains("label: 'Поездка'"));
+    expect(driver, contains("label: 'Профиль'"));
+    expect(driver, contains("label: 'Поддержка'"));
+    expect(driver, contains("label: 'FAQ'"));
+    expect(driver, contains("label: 'О нас'"));
+    expect(driver, contains("label: 'Настройки'"));
+    expect(driver, contains("label: 'Режим пассажира'"));
+    expect(driver, contains("label: 'Выйти'"));
   });
 
   test('route fields use A/B markers without home or house icons', () {

@@ -345,6 +345,37 @@ class _DriverShellState extends State<DriverShell> {
 
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
+  void _showDriverDrawerSheet(String title, String text) {
+    Navigator.pop(context);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 10),
+              Text(
+                text,
+                style: const TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -362,6 +393,26 @@ class _DriverShellState extends State<DriverShell> {
           Navigator.pop(context);
           widget.onOpenPassengerMode();
         },
+        onProfile: () => _showDriverDrawerSheet(
+          'Профиль водителя',
+          'Ваш профиль и документы будут доступны после расширения водительского кабинета.',
+        ),
+        onSupport: () => _showDriverDrawerSheet(
+          'Поддержка',
+          'Если нужна помощь, вернитесь в клиентский режим и откройте раздел поддержки.',
+        ),
+        onFaq: () => _showDriverDrawerSheet(
+          'FAQ',
+          'Основные подсказки по линии, заказам и поездке находятся на соответствующих вкладках.',
+        ),
+        onAbout: () => _showDriverDrawerSheet(
+          'О SmartTaxi',
+          'SmartTaxi работает только в активных регионах и показывает водителю заказы из выбранного рабочего региона.',
+        ),
+        onSettings: () => _showDriverDrawerSheet(
+          'Настройки',
+          'Настройки водительского режима будут добавлены после запуска базового кабинета.',
+        ),
         onLogout: () {
           Navigator.pop(context);
           widget.onLogout();
@@ -1277,6 +1328,11 @@ class _DriverDrawer extends StatelessWidget {
     required this.activeTab,
     required this.onTab,
     required this.onPassenger,
+    required this.onProfile,
+    required this.onSupport,
+    required this.onFaq,
+    required this.onAbout,
+    required this.onSettings,
     required this.onLogout,
   });
 
@@ -1284,6 +1340,11 @@ class _DriverDrawer extends StatelessWidget {
   final int activeTab;
   final ValueChanged<int> onTab;
   final VoidCallback onPassenger;
+  final VoidCallback onProfile;
+  final VoidCallback onSupport;
+  final VoidCallback onFaq;
+  final VoidCallback onAbout;
+  final VoidCallback onSettings;
   final VoidCallback onLogout;
 
   @override
@@ -1323,6 +1384,11 @@ class _DriverDrawer extends StatelessWidget {
                 label: 'Поездка',
                 active: activeTab == 2,
                 onTap: () => onTab(2)),
+            _DrawerItem(label: 'Профиль', active: false, onTap: onProfile),
+            _DrawerItem(label: 'Поддержка', active: false, onTap: onSupport),
+            _DrawerItem(label: 'FAQ', active: false, onTap: onFaq),
+            _DrawerItem(label: 'О нас', active: false, onTap: onAbout),
+            _DrawerItem(label: 'Настройки', active: false, onTap: onSettings),
             _DrawerItem(
                 label: 'Режим пассажира', active: false, onTap: onPassenger),
             const Spacer(),
