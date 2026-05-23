@@ -2062,6 +2062,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: 0 0 0 4px rgba(201, 154, 46, .16);
 }
 
+.admin-finance-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+}
+
 .admin-page-toolbar input:focus {
   border-color: var(--admin-gold);
   box-shadow: 0 0 0 4px rgba(201, 154, 46, .16);
@@ -2326,6 +2332,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   grid-template-columns: minmax(150px, 1.1fr) minmax(120px, .8fr) minmax(130px, .9fr) minmax(110px, .8fr) minmax(130px, .9fr) minmax(130px, .9fr) minmax(130px, .9fr);
 }
 
+.admin-table-row.finance-report {
+  grid-template-columns: minmax(150px, 1.1fr) minmax(110px, .75fr) minmax(130px, .9fr) minmax(130px, .9fr) minmax(120px, .8fr) minmax(160px, 1fr) minmax(110px, .75fr);
+}
+
+.admin-table-row.finance-report.total {
+  background: #fff;
+  border-color: var(--admin-gold-soft);
+  box-shadow: 0 12px 30px rgba(120, 90, 20, .07);
+}
+
 .admin-analytics-grid.finance {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
@@ -2335,11 +2351,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-table-row.finance-debt {
-  grid-template-columns: minmax(150px, 1.1fr) minmax(120px, .8fr) minmax(140px, 1fr) minmax(90px, .6fr) minmax(120px, .8fr) minmax(130px, .8fr);
+  grid-template-columns: minmax(150px, 1.1fr) minmax(120px, .8fr) minmax(140px, 1fr) minmax(90px, .6fr) minmax(120px, .8fr) minmax(130px, .8fr) minmax(160px, .9fr);
 }
 
 .admin-table-row.finance-transaction {
-  grid-template-columns: minmax(150px, 1.1fr) minmax(110px, .7fr) minmax(140px, 1fr) minmax(110px, .7fr) minmax(130px, .8fr) minmax(130px, .8fr) minmax(110px, .7fr) auto minmax(130px, .8fr);
+  grid-template-columns: minmax(145px, 1fr) minmax(90px, .6fr) minmax(130px, .9fr) minmax(105px, .7fr) minmax(110px, .7fr) repeat(4, minmax(100px, .7fr)) auto auto minmax(110px, .7fr) minmax(130px, .8fr);
 }
 
 .admin-table-row strong {
@@ -2940,6 +2956,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .admin-card-grid.tariffs,
   .admin-card-facts,
   .admin-card-facts.tariff,
+  .admin-finance-filter-grid,
   .admin-form-row,
   .admin-approval-list,
   .admin-preview-grid {
@@ -2952,6 +2969,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .admin-table-row.orders,
   .admin-table-row.audit,
   .admin-table-row.tariff-analytics,
+  .admin-table-row.finance-report,
   .admin-table-row.finance-debt,
   .admin-table-row.finance-transaction {
     grid-template-columns: 1fr;

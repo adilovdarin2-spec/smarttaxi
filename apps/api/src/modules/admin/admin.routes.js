@@ -20,7 +20,14 @@ import {
   updateAdminTariff
 } from "../tariffs/tariffs.service.js";
 import { calculatePricingComponents } from "../orders/order-pricing.service.js";
-import { getDriverDebts, getFinanceSummary, getTransactions } from "../finance/finance.service.js";
+import {
+  adjustDriverDebt,
+  exportFinanceTransactionsCsv,
+  getDriverDebts,
+  getFinanceReports,
+  getFinanceSummary,
+  getTransactions
+} from "../finance/finance.service.js";
 
 const router = Router();
 
@@ -113,10 +120,25 @@ const TariffAnalyticsQuery = z.object({
 const FinanceQuery = z.object({
   regionId: z.string().uuid().optional(),
   driverId: z.string().uuid().optional(),
+  tariffId: z.string().uuid().optional(),
   dateFrom: z.string().trim().optional(),
   dateTo: z.string().trim().optional(),
   type: z.enum(["ORDER_COMPLETED", "ORDER_CANCELLED", "DRIVER_DEBT_CREATED", "DRIVER_DEBT_ADJUSTED", "MANUAL_ADJUSTMENT"]).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(100)
+  paymentMethod: z.enum(["CASH", "KASPI_TRANSFER", "UNKNOWN"]).optional(),
+  status: z.enum(["POSTED", "VOIDED"]).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+  offset: z.coerce.number().int().min(0).default(0)
+});
+
+const FinanceReportQuery = FinanceQuery.extend({
+  groupBy: z.enum(["day", "region", "driver", "tariff", "paymentMethod"]).default("day")
+});
+
+const FinanceDebtAdjustment = z.object({
+  amount: z.coerce.number().finite().refine(value => value !== 0, "amount must not be zero"),
+  reason: z.string().trim().min(3).max(500),
+  regionId: z.string().uuid().optional(),
+  metadata: z.record(z.any()).optional().default({})
 });
 
 const TariffPreviewDraft = z.object({
@@ -632,7 +654,7 @@ router.patch("/tariffs/:id/status", requireAuth, requireRole("OWNER", "FINANCE")
 
 router.get("/finance/summary", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
   try {
-    const params = FinanceQuery.omit({ driverId: true, type: true, limit: true }).parse(req.query);
+    const params = FinanceQuery.omit({ driverId: true, tariffId: true, type: true, paymentMethod: true, status: true, limit: true, offset: true }).parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
     const summary = await getFinanceSummary({
       regionId: params.regionId,
@@ -645,14 +667,87 @@ router.get("/finance/summary", requireAuth, requireRole("OWNER", "OPERATOR", "FI
 
 router.get("/finance/driver-debts", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
   try {
-    const params = FinanceQuery.omit({ driverId: true, type: true, limit: true }).parse(req.query);
+    const params = FinanceQuery.omit({ tariffId: true, type: true, paymentMethod: true, status: true, limit: true, offset: true }).parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
     const driverDebts = await getDriverDebts({
       regionId: params.regionId,
+      driverId: params.driverId,
       dateFrom: dateRange.dateFrom,
       dateTo: dateRange.dateTo
     }, query);
     res.json({ dateRange, driverDebts });
+  } catch (error) { next(error); }
+});
+
+router.post("/finance/driver-debts/:driverId/adjust", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ driverId: z.string().uuid() }).parse(req.params);
+    const body = FinanceDebtAdjustment.parse(req.body);
+    const transaction = await tx(async client => {
+      if (body.regionId) {
+        const region = (await client.query("SELECT id FROM regions WHERE id=$1", [body.regionId])).rows[0];
+        if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+      }
+      const created = await adjustDriverDebt({
+        driverId: params.driverId,
+        amount: body.amount,
+        reason: body.reason,
+        regionId: body.regionId,
+        metadata: body.metadata,
+        actorUserId: req.user.id
+      }, client);
+      await writeAudit(client, {
+        action: "driver_debt_adjusted",
+        actorUserId: req.user.id,
+        entityType: "driver",
+        entityId: params.driverId,
+        metadata: { amount: body.amount, reason: body.reason, transactionId: created.id },
+        req
+      });
+      return created;
+    });
+    res.status(201).json({ transaction });
+  } catch (error) { next(error); }
+});
+
+router.get("/finance/reports", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = FinanceReportQuery.parse(req.query);
+    const dateRange = resolveFinanceDateRange(params);
+    const report = await getFinanceReports({
+      regionId: params.regionId,
+      driverId: params.driverId,
+      tariffId: params.tariffId,
+      type: params.type,
+      paymentMethod: params.paymentMethod,
+      status: params.status,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo,
+      groupBy: params.groupBy
+    }, query);
+    res.json({ dateRange, groupBy: params.groupBy, rows: report.rows, totals: report.totals });
+  } catch (error) { next(error); }
+});
+
+router.get("/finance/transactions.csv", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = FinanceQuery.parse(req.query);
+    const dateRange = resolveFinanceDateRange(params);
+    const csv = await exportFinanceTransactionsCsv({
+      regionId: params.regionId,
+      driverId: params.driverId,
+      tariffId: params.tariffId,
+      type: params.type,
+      paymentMethod: params.paymentMethod,
+      status: params.status,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo,
+      limit: params.limit,
+      offset: params.offset
+    }, query);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=\"smarttaxi-finance-transactions.csv\"");
+    res.send(csv);
   } catch (error) { next(error); }
 });
 
@@ -663,12 +758,16 @@ router.get("/finance/transactions", requireAuth, requireRole("OWNER", "OPERATOR"
     const transactions = await getTransactions({
       regionId: params.regionId,
       driverId: params.driverId,
+      tariffId: params.tariffId,
       type: params.type,
+      paymentMethod: params.paymentMethod,
+      status: params.status,
       dateFrom: dateRange.dateFrom,
       dateTo: dateRange.dateTo,
-      limit: params.limit
+      limit: params.limit,
+      offset: params.offset
     }, query);
-    res.json({ dateRange, transactions });
+    res.json({ dateRange, items: transactions.items, transactions: transactions.items, total: transactions.total, limit: transactions.limit, offset: transactions.offset });
   } catch (error) { next(error); }
 });
 

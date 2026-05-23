@@ -1,4 +1,4 @@
-import { api, clearToken, getToken, login as apiLogin } from "./api.js";
+import { API_URL, api, clearToken, getToken, login as apiLogin } from "./api.js";
 
 export { clearToken, getToken };
 
@@ -234,6 +234,29 @@ export function getAdminFinanceDriverDebts(params = {}) {
 
 export function getAdminFinanceTransactions(params = {}) {
   return api(`/api/admin/finance/transactions${queryString(params)}`);
+}
+
+export function getAdminFinanceReports(params = {}) {
+  return api(`/api/admin/finance/reports${queryString(params)}`);
+}
+
+export function adjustAdminDriverDebt(driverId, payload) {
+  return api(`/api/admin/finance/driver-debts/${driverId}/adjust`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function exportAdminFinanceTransactionsCsv(params = {}) {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/api/admin/finance/transactions.csv${queryString(params)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(message || "CSV export failed");
+  }
+  return response.text();
 }
 
 export function getAdminOrders() {

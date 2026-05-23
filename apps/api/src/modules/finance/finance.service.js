@@ -40,6 +40,13 @@ function normalizePaymentMethod(value) {
   return "UNKNOWN";
 }
 
+export function validateFinanceDateRange({ dateFrom, dateTo } = {}) {
+  if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+    throw new Error("dateFrom must be before dateTo");
+  }
+  return { dateFrom, dateTo };
+}
+
 function orderAmounts(order) {
   const data = snapshot(order);
   const finalPrice = roundMoney(snapshotNumber(data, "finalPrice", snapshotNumber(data, "estimatedPrice", order.price)));
@@ -180,9 +187,24 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
   return transactionRow(result.rows[0]);
 }
 
-function financeFilters({ regionId, driverId, dateFrom, dateTo, type } = {}) {
+function financeFilters({
+  regionId,
+  driverId,
+  tariffId,
+  dateFrom,
+  dateTo,
+  type,
+  paymentMethod,
+  status
+} = {}, { defaultPosted = true } = {}) {
   const params = [];
-  const where = ["ft.status='POSTED'"];
+  const where = [];
+  if (status) {
+    params.push(status);
+    where.push(`ft.status=$${params.length}`);
+  } else if (defaultPosted) {
+    where.push("ft.status='POSTED'");
+  }
   if (regionId) {
     params.push(regionId);
     where.push(`ft.region_id=$${params.length}`);
@@ -191,9 +213,17 @@ function financeFilters({ regionId, driverId, dateFrom, dateTo, type } = {}) {
     params.push(driverId);
     where.push(`ft.driver_id=$${params.length}`);
   }
+  if (tariffId) {
+    params.push(tariffId);
+    where.push(`ft.tariff_id=$${params.length}`);
+  }
   if (type) {
     params.push(type);
     where.push(`ft.type=$${params.length}`);
+  }
+  if (paymentMethod) {
+    params.push(paymentMethod);
+    where.push(`ft.payment_method=$${params.length}`);
   }
   if (dateFrom) {
     params.push(dateFrom);
@@ -203,7 +233,7 @@ function financeFilters({ regionId, driverId, dateFrom, dateTo, type } = {}) {
     params.push(dateTo);
     where.push(`ft.created_at < ($${params.length}::date + INTERVAL '1 day')`);
   }
-  return { params, where: where.join(" AND ") };
+  return { params, where: where.length ? where.join(" AND ") : "true" };
 }
 
 export async function getFinanceSummary(filters = {}, executor = defaultQuery) {
@@ -236,8 +266,9 @@ export async function getFinanceSummary(filters = {}, executor = defaultQuery) {
 
 export async function getDriverDebts(filters = {}, executor = defaultQuery) {
   const scoped = { ...filters };
-  delete scoped.driverId;
   delete scoped.type;
+  delete scoped.paymentMethod;
+  delete scoped.status;
   const { params, where } = financeFilters(scoped);
   const result = await run(executor, `
     SELECT
@@ -272,8 +303,14 @@ export async function getDriverDebts(filters = {}, executor = defaultQuery) {
 
 export async function getTransactions(filters = {}, executor = defaultQuery) {
   const limit = Math.min(Math.max(Number(filters.limit || 100), 1), 200);
+  const offset = Math.max(Number(filters.offset || 0), 0);
   const { params, where } = financeFilters(filters);
-  params.push(limit);
+  const total = await run(executor, `
+    SELECT COUNT(*)::int total
+    FROM financial_transactions ft
+    WHERE ${where}
+  `, params);
+  params.push(limit, offset);
   const result = await run(executor, `
     SELECT ft.*, o.short_id order_short_id, d.name driver_name, d.phone driver_phone,
            d.car_model, d.car_color, d.plate, r.name region_name, t.name tariff_name
@@ -284,7 +321,182 @@ export async function getTransactions(filters = {}, executor = defaultQuery) {
     LEFT JOIN tariffs t ON t.id=ft.tariff_id
     WHERE ${where}
     ORDER BY ft.created_at DESC
-    LIMIT $${params.length}
+    LIMIT $${params.length - 1}
+    OFFSET $${params.length}
   `, params);
-  return result.rows.map(transactionRow);
+  return {
+    items: result.rows.map(transactionRow),
+    total: Number(total.rows[0]?.total || 0),
+    limit,
+    offset
+  };
+}
+
+export async function adjustDriverDebt({
+  driverId,
+  amount,
+  reason,
+  regionId = null,
+  metadata = {},
+  actorUserId = null
+}, executor = defaultQuery) {
+  const numericAmount = roundMoney(amount);
+  const cleanReason = String(reason || "").trim();
+  const driver = (await run(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [driverId])).rows[0];
+  if (!driver) throw new Error("DRIVER_NOT_FOUND");
+
+  const result = await run(executor, `
+    INSERT INTO financial_transactions(
+      driver_id, region_id, type, payment_method, gross_amount, service_commission,
+      driver_earning, driver_debt_delta, currency, status, metadata, created_by_user_id
+    )
+    VALUES($1,$2,'DRIVER_DEBT_ADJUSTED','UNKNOWN',0,0,0,$3,'KZT','POSTED',$4::jsonb,$5)
+    RETURNING *
+  `, [
+    driverId,
+    regionId || driver.current_region_id || null,
+    numericAmount,
+    JSON.stringify({
+      ...metadata,
+      reason: cleanReason,
+      source: "ADMIN_MANUAL_ADJUSTMENT"
+    }),
+    actorUserId
+  ]);
+
+  await run(executor, "UPDATE drivers SET debt=GREATEST(0, debt+$1) WHERE id=$2", [numericAmount, driverId]);
+  return transactionRow(result.rows[0]);
+}
+
+function reportGroupExpression(groupBy) {
+  return {
+    day: {
+      key: "to_char(date_trunc('day', ft.created_at), 'YYYY-MM-DD')",
+      label: "to_char(date_trunc('day', ft.created_at), 'YYYY-MM-DD')",
+      order: "key ASC"
+    },
+    region: {
+      key: "COALESCE(ft.region_id::text, 'none')",
+      label: "COALESCE(r.name, 'Регион не указан')",
+      order: "label ASC"
+    },
+    driver: {
+      key: "COALESCE(ft.driver_id::text, 'none')",
+      label: "COALESCE(d.name, 'Водитель не указан')",
+      order: "label ASC"
+    },
+    tariff: {
+      key: "COALESCE(ft.tariff_id::text, 'none')",
+      label: "COALESCE(t.display_name, t.name, ft.metadata->>'tariffName', 'Тариф не указан')",
+      order: "label ASC"
+    },
+    paymentMethod: {
+      key: "ft.payment_method",
+      label: "ft.payment_method",
+      order: "key ASC"
+    }
+  }[groupBy];
+}
+
+function reportRow(row) {
+  return {
+    key: row.key,
+    label: row.label,
+    grossTotal: roundMoney(row.gross_total),
+    serviceCommissionTotal: roundMoney(row.service_commission_total),
+    driverEarningTotal: roundMoney(row.driver_earning_total),
+    driverDebtDeltaTotal: roundMoney(row.driver_debt_delta_total),
+    completedOrderCount: Number(row.completed_order_count || 0),
+    cancelledOrderCount: Number(row.cancelled_order_count || 0),
+    transactionCount: Number(row.transaction_count || 0),
+    currency: row.currency || "KZT"
+  };
+}
+
+export async function getFinanceReports(filters = {}, executor = defaultQuery) {
+  const groupBy = filters.groupBy || "day";
+  const group = reportGroupExpression(groupBy);
+  if (!group) throw new Error("INVALID_GROUP_BY");
+  const { params, where } = financeFilters(filters);
+  const result = await run(executor, `
+    SELECT
+      ${group.key} key,
+      ${group.label} label,
+      COALESCE(SUM(ft.gross_amount) FILTER (WHERE ft.type='ORDER_COMPLETED'), 0) gross_total,
+      COALESCE(SUM(ft.service_commission) FILTER (WHERE ft.type='ORDER_COMPLETED'), 0) service_commission_total,
+      COALESCE(SUM(ft.driver_earning) FILTER (WHERE ft.type='ORDER_COMPLETED'), 0) driver_earning_total,
+      COALESCE(SUM(ft.driver_debt_delta), 0) driver_debt_delta_total,
+      COUNT(*) FILTER (WHERE ft.type='ORDER_COMPLETED')::int completed_order_count,
+      COUNT(*) FILTER (WHERE ft.type='ORDER_CANCELLED')::int cancelled_order_count,
+      COUNT(*)::int transaction_count,
+      COALESCE(MAX(ft.currency), 'KZT') currency
+    FROM financial_transactions ft
+    LEFT JOIN drivers d ON d.id=ft.driver_id
+    LEFT JOIN regions r ON r.id=ft.region_id
+    LEFT JOIN tariffs t ON t.id=ft.tariff_id
+    WHERE ${where}
+    GROUP BY ${group.key}, ${group.label}
+    ORDER BY ${group.order}
+  `, params);
+  const rows = result.rows.map(reportRow);
+  const totals = rows.reduce((acc, row) => ({
+    grossTotal: acc.grossTotal + row.grossTotal,
+    serviceCommissionTotal: acc.serviceCommissionTotal + row.serviceCommissionTotal,
+    driverEarningTotal: acc.driverEarningTotal + row.driverEarningTotal,
+    driverDebtDeltaTotal: acc.driverDebtDeltaTotal + row.driverDebtDeltaTotal,
+    completedOrderCount: acc.completedOrderCount + row.completedOrderCount,
+    cancelledOrderCount: acc.cancelledOrderCount + row.cancelledOrderCount,
+    transactionCount: acc.transactionCount + row.transactionCount,
+    currency: row.currency || acc.currency
+  }), {
+    grossTotal: 0,
+    serviceCommissionTotal: 0,
+    driverEarningTotal: 0,
+    driverDebtDeltaTotal: 0,
+    completedOrderCount: 0,
+    cancelledOrderCount: 0,
+    transactionCount: 0,
+    currency: "KZT"
+  });
+  return { rows, totals };
+}
+
+function csvCell(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+export async function exportFinanceTransactionsCsv(filters = {}, executor = defaultQuery) {
+  const result = await getTransactions({ ...filters, limit: filters.limit || 200, offset: filters.offset || 0 }, executor);
+  const header = [
+    "date",
+    "type",
+    "order",
+    "driver",
+    "region",
+    "tariff",
+    "payment_method",
+    "gross_amount",
+    "service_commission",
+    "driver_earning",
+    "driver_debt_delta",
+    "status",
+    "reason"
+  ];
+  const rows = result.items.map(item => [
+    item.createdAt,
+    item.type,
+    item.orderShortId,
+    item.driverName,
+    item.regionName,
+    item.tariffName,
+    item.paymentMethod,
+    item.grossAmount,
+    item.serviceCommission,
+    item.driverEarning,
+    item.driverDebtDelta,
+    item.status,
+    item.metadata?.reason || ""
+  ]);
+  return [header, ...rows].map(row => row.map(csvCell).join(",")).join("\n");
 }

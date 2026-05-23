@@ -55,7 +55,10 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
   "previewAdminTariffPrice",
   "getAdminFinanceSummary",
   "getAdminFinanceDriverDebts",
+  "getAdminFinanceReports",
   "getAdminFinanceTransactions",
+  "adjustAdminDriverDebt",
+  "exportAdminFinanceTransactionsCsv",
   "getAdminOrders",
   "getAdminAudit",
   "getAdminSettings"

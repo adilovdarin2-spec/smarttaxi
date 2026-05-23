@@ -52,10 +52,17 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
   "getFinanceSummary",
   "getDriverDebts",
   "getTransactions",
+  "adjustDriverDebt",
+  "getFinanceReports",
+  "exportFinanceTransactionsCsv",
+  "validateFinanceDateRange",
   "pricing_snapshot",
   "driver_debt_delta",
   "paymentNeedsReview",
-  "ON CONFLICT DO NOTHING"
+  "ON CONFLICT DO NOTHING",
+  "ADMIN_MANUAL_ADJUSTMENT",
+  "ORDER_COMPLETED",
+  "ORDER_CANCELLED"
 ].forEach(token => assert(financeService.includes(token), `Finance service missing ${token}`));
 
 [
@@ -67,29 +74,47 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
 [
   'router.get("/finance/summary"',
   'router.get("/finance/driver-debts"',
+  'router.post("/finance/driver-debts/:driverId/adjust"',
+  'router.get("/finance/reports"',
+  'router.get("/finance/transactions.csv"',
   'router.get("/finance/transactions"',
+  'requireRole("OWNER", "FINANCE")',
+  'groupBy: z.enum(["day", "region", "driver", "tariff", "paymentMethod"])',
+  "FinanceDebtAdjustment",
+  "reason: z.string().trim().min(3)",
+  "driver_debt_adjusted",
   "getFinanceSummary",
   "getDriverDebts",
+  "adjustDriverDebt",
+  "getFinanceReports",
+  "exportFinanceTransactionsCsv",
   "getTransactions"
 ].forEach(token => assert(adminRoutes.includes(token), `Admin finance endpoint missing ${token}`));
 
 [
   "getAdminFinanceSummary",
   "getAdminFinanceDriverDebts",
-  "getAdminFinanceTransactions"
+  "getAdminFinanceTransactions",
+  "getAdminFinanceReports",
+  "adjustAdminDriverDebt",
+  "exportAdminFinanceTransactionsCsv"
 ].forEach(fn => assert(adminApi.includes(`function ${fn}`), `Admin finance API wrapper missing ${fn}`));
 
 [
-  "Финансы",
-  "Выручка, комиссия сервиса и задолженность водителей",
-  "Общая выручка",
-  "Комиссия сервиса",
-  "Доход водителей",
-  "Долг водителей",
-  "Финансовых операций пока нет",
-  "Данные появятся после завершённых поездок",
+  "financeSection",
+  "overview",
+  "reports",
+  "debts",
+  "transactions",
+  "finance-report",
   "finance-debt",
-  "finance-transaction"
-].forEach(copy => assert(adminApp.includes(copy), `Admin finance UI missing ${copy}`));
+  "finance-transaction",
+  "DebtAdjustmentPanel",
+  "Корректировка долга",
+  "Экспорт CSV",
+  "groupBy",
+  "paymentMethod",
+  "driverDebtDelta"
+].forEach(token => assert(adminApp.includes(token), `Admin finance UI missing ${token}`));
 
 console.log("Finance ledger checks ok");

@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import {
+  adjustAdminDriverDebt,
   blockAdminDriver,
   clearToken,
   createAdminRegion,
   createAdminTariff,
+  exportAdminFinanceTransactionsCsv,
   getAdminAudit,
   getAdminDashboard,
   getAdminDriverApplications,
   getAdminDriverDetail,
   getAdminDrivers,
   getAdminFinanceDriverDebts,
+  getAdminFinanceReports,
   getAdminFinanceSummary,
   getAdminFinanceTransactions,
   getAdminOrders,
@@ -181,6 +184,16 @@ function paymentMethodLabel(method) {
   }[method] || method || "—";
 }
 
+function financeGroupLabel(groupBy) {
+  return {
+    day: "День",
+    region: "Регион",
+    driver: "Водитель",
+    tariff: "Тариф",
+    paymentMethod: "Способ оплаты"
+  }[groupBy] || groupBy || "—";
+}
+
 function tariffAnalyticsKey(tariff) {
   return tariff?.tariffId || tariff?.id;
 }
@@ -225,6 +238,10 @@ export default function AdminApp() {
   const [tariffDateFrom, setTariffDateFrom] = useState("");
   const [tariffDateTo, setTariffDateTo] = useState("");
   const [financeRegion, setFinanceRegion] = useState("all");
+  const [financeDriver, setFinanceDriver] = useState("all");
+  const [financeTariff, setFinanceTariff] = useState("all");
+  const [financeGroupBy, setFinanceGroupBy] = useState("day");
+  const [financeSection, setFinanceSection] = useState("overview");
   const [financeDatePreset, setFinanceDatePreset] = useState("30d");
   const [financeDateFrom, setFinanceDateFrom] = useState("");
   const [financeDateTo, setFinanceDateTo] = useState("");
@@ -285,18 +302,37 @@ export default function AdminApp() {
       },
       finance: async () => {
         const selectedRegionId = financeRegion !== "all" ? financeRegion : undefined;
+        const selectedDriverId = financeDriver !== "all" ? financeDriver : undefined;
+        const selectedTariffId = financeTariff !== "all" ? financeTariff : undefined;
         const dateParams = dateRangeParams(financeDatePreset, financeDateFrom, financeDateTo);
-        const [regions, summary, driverDebts, transactions] = await Promise.all([
+        const commonFilters = {
+          regionId: selectedRegionId,
+          driverId: selectedDriverId,
+          tariffId: selectedTariffId,
+          ...dateParams
+        };
+        const [regions, drivers, tariffs, summary, driverDebts, reports, transactions] = await Promise.all([
           getAdminRegions(),
+          getAdminDrivers(),
+          getAdminTariffs(),
           getAdminFinanceSummary({ regionId: selectedRegionId, ...dateParams }),
-          getAdminFinanceDriverDebts({ regionId: selectedRegionId, ...dateParams }),
-          getAdminFinanceTransactions({ regionId: selectedRegionId, ...dateParams, limit: 100 })
+          getAdminFinanceDriverDebts({ regionId: selectedRegionId, driverId: selectedDriverId, ...dateParams }),
+          getAdminFinanceReports({ ...commonFilters, groupBy: financeGroupBy }),
+          getAdminFinanceTransactions({ ...commonFilters, limit: 100 })
         ]);
         return {
           regions: regions.regions || [],
+          drivers: drivers.drivers || [],
+          tariffs: tariffs.tariffs || [],
           summary: summary.summary || null,
           driverDebts: driverDebts.driverDebts || [],
-          transactions: transactions.transactions || [],
+          reports: reports.rows || [],
+          reportTotals: reports.totals || null,
+          reportGroupBy: reports.groupBy || financeGroupBy,
+          transactions: transactions.items || transactions.transactions || [],
+          transactionTotal: transactions.total || 0,
+          transactionLimit: transactions.limit || 100,
+          transactionOffset: transactions.offset || 0,
           dateRange: summary.dateRange || dateParams
         };
       },
@@ -317,7 +353,7 @@ export default function AdminApp() {
     } catch (error) {
       setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [financeDateFrom, financeDatePreset, financeDateTo, financeRegion, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
@@ -492,6 +528,45 @@ export default function AdminApp() {
     });
   }
 
+  async function saveDebtAdjustment(driver, form) {
+    await runAction(async () => {
+      await adjustAdminDriverDebt(driver.driverId || driver.id, {
+        amount: Number(form.amount),
+        reason: form.reason.trim(),
+        regionId: form.regionId || undefined,
+        metadata: { sourceView: "admin_finance" }
+      });
+      setModal(null);
+      await loadPage("finance");
+      await loadDashboard();
+    }, "Корректировка долга сохранена");
+  }
+
+  async function exportFinanceCsv() {
+    await runAction(async () => {
+      const selectedRegionId = financeRegion !== "all" ? financeRegion : undefined;
+      const selectedDriverId = financeDriver !== "all" ? financeDriver : undefined;
+      const selectedTariffId = financeTariff !== "all" ? financeTariff : undefined;
+      const dateParams = dateRangeParams(financeDatePreset, financeDateFrom, financeDateTo);
+      const csv = await exportAdminFinanceTransactionsCsv({
+        regionId: selectedRegionId,
+        driverId: selectedDriverId,
+        tariffId: selectedTariffId,
+        ...dateParams,
+        limit: 200
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "smarttaxi-finance-transactions.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }, "CSV экспорт подготовлен");
+  }
+
   if (bootLoading) {
     return (
       <main className="admin-control-shell">
@@ -619,6 +694,14 @@ export default function AdminApp() {
             setTariffDateTo={setTariffDateTo}
             financeRegion={financeRegion}
             setFinanceRegion={setFinanceRegion}
+            financeDriver={financeDriver}
+            setFinanceDriver={setFinanceDriver}
+            financeTariff={financeTariff}
+            setFinanceTariff={setFinanceTariff}
+            financeGroupBy={financeGroupBy}
+            setFinanceGroupBy={setFinanceGroupBy}
+            financeSection={financeSection}
+            setFinanceSection={setFinanceSection}
             financeDatePreset={financeDatePreset}
             setFinanceDatePreset={setFinanceDatePreset}
             financeDateFrom={financeDateFrom}
@@ -635,6 +718,9 @@ export default function AdminApp() {
             onEditTariff={tariff => setModal({ type: "tariff", tariff })}
             onToggleTariff={switchTariff}
             onPreviewTariff={tariff => setModal({ type: "tariffPreview", tariff })}
+            canAdjustFinance={user?.role === "OWNER" || user?.role === "FINANCE"}
+            onAdjustDebt={driver => setModal({ type: "debtAdjustment", driver })}
+            onExportFinanceCsv={exportFinanceCsv}
           />
         )}
       </section>
@@ -681,6 +767,15 @@ export default function AdminApp() {
           tariff={modal.tariff}
           onClose={() => setModal(null)}
           onPreview={runTariffPreview}
+        />
+      )}
+      {modal?.type === "debtAdjustment" && (
+        <DebtAdjustmentPanel
+          driver={modal.driver}
+          regions={asArray(pageState.payload, "regions")}
+          onClose={() => setModal(null)}
+          onSave={saveDebtAdjustment}
+          busy={actionState.loading}
         />
       )}
     </main>
@@ -1132,16 +1227,31 @@ function FinancePage({
   regions,
   financeRegion,
   setFinanceRegion,
+  financeDriver,
+  setFinanceDriver,
+  financeTariff,
+  setFinanceTariff,
+  financeGroupBy,
+  setFinanceGroupBy,
+  financeSection,
+  setFinanceSection,
   financeDatePreset,
   setFinanceDatePreset,
   financeDateFrom,
   setFinanceDateFrom,
   financeDateTo,
-  setFinanceDateTo
+  setFinanceDateTo,
+  canAdjustFinance,
+  onAdjustDebt,
+  onExportFinanceCsv
 }) {
   const summary = payload?.summary || {};
   const driverDebts = asArray(payload, "driverDebts");
   const transactions = asArray(payload, "transactions");
+  const reports = asArray(payload, "reports");
+  const drivers = asArray(payload, "drivers");
+  const tariffs = asArray(payload, "tariffs");
+  const totals = payload?.reportTotals || {};
   const dateRange = payload?.dateRange;
   const cards = [
     ["Общая выручка", formatMoney(summary.grossTotal), `${summary.completedOrderCount || 0} завершённых заказов`],
@@ -1155,15 +1265,56 @@ function FinancePage({
   return (
     <div className="admin-page-stack">
       <PageHeader title="Финансы" subtitle="Выручка, комиссия сервиса и задолженность водителей">
-        <select className="admin-control-select" value={financeRegion} onChange={event => setFinanceRegion(event.target.value)}>
-          <option value="all">Все регионы</option>
-          {regions.map(region => (
-            <option value={region.id} key={region.id}>{region.name}</option>
-          ))}
-        </select>
+        <SegmentedFilter
+          value={financeSection}
+          onChange={setFinanceSection}
+          items={[
+            ["overview", "Обзор"],
+            ["reports", "Отчёты"],
+            ["debts", "Долги"],
+            ["transactions", "Операции"]
+          ]}
+        />
       </PageHeader>
 
-      <DataCard title="Финансовый период" text="Показатели строятся только по реальным операциям финансового журнала.">
+      <DataCard title="Фильтры" text="Финансовые данные строятся только из реального журнала операций.">
+        <div className="admin-finance-filter-grid">
+          <label className="admin-field compact">
+            <span>Регион</span>
+            <select className="admin-control-select" value={financeRegion} onChange={event => setFinanceRegion(event.target.value)}>
+              <option value="all">Все регионы</option>
+              {regions.map(region => (
+                <option value={region.id} key={region.id}>{region.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field compact">
+            <span>Водитель</span>
+            <select className="admin-control-select" value={financeDriver} onChange={event => setFinanceDriver(event.target.value)}>
+              <option value="all">Все водители</option>
+              {drivers.map(driver => (
+                <option value={driver.id} key={driver.id}>{driver.name} · {driver.phone}</option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field compact">
+            <span>Тариф</span>
+            <select className="admin-control-select" value={financeTariff} onChange={event => setFinanceTariff(event.target.value)}>
+              <option value="all">Все тарифы</option>
+              {tariffs.map(tariff => (
+                <option value={tariff.id} key={tariff.id}>{tariff.displayName || tariff.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field compact">
+            <span>Группировка отчёта</span>
+            <select className="admin-control-select" value={financeGroupBy} onChange={event => setFinanceGroupBy(event.target.value)}>
+              {["day", "region", "driver", "tariff", "paymentMethod"].map(group => (
+                <option value={group} key={group}>{financeGroupLabel(group)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="admin-date-filter-row">
           <SegmentedFilter
             value={financeDatePreset}
@@ -1183,64 +1334,123 @@ function FinancePage({
           )}
           {dateRange && <small>Период: {dateRange.dateFrom} — {dateRange.dateTo}</small>}
         </div>
-
-        <section className="admin-analytics-grid finance">
-          {cards.map(card => (
-            <article className="admin-analytics-card finance" key={card[0]}>
-              <span>{card[0]}</span>
-              <strong>{card[1]}</strong>
-              <small>{card[2]}</small>
-            </article>
-          ))}
-        </section>
       </DataCard>
 
-      <DataCard title="Долг водителей" text="Долг появляется, когда поездка оплачена наличными или Kaspi переводом, а комиссия сервиса остаётся у водителя.">
-        {!driverDebts.length ? (
-          <div className="admin-empty-note">
-            <strong>Долгов водителей пока нет</strong>
-            <span>Данные появятся после завершённых поездок с оплатой наличными или Kaspi переводом.</span>
-          </div>
-        ) : (
-          <div className="admin-table premium">
-            {driverDebts.map(driver => (
-              <div className="admin-table-row finance-debt" key={driver.driverId}>
-                <strong>{driver.driverName || "Водитель"}</strong>
-                <span>{driver.phone || "Телефон не указан"}</span>
-                <span>{driver.car || "Авто не указано"}</span>
-                <span>{driver.completedOrders || 0} поездок</span>
-                <strong>{formatMoney(driver.debtTotal)}</strong>
-                <span>{formatDate(driver.lastTransactionAt)}</span>
-              </div>
+      {financeSection === "overview" && (
+        <DataCard title="Обзор" text="Ключевые показатели за выбранный период.">
+          <section className="admin-analytics-grid finance">
+            {cards.map(card => (
+              <article className="admin-analytics-card finance" key={card[0]}>
+                <span>{card[0]}</span>
+                <strong>{card[1]}</strong>
+                <small>{card[2]}</small>
+              </article>
             ))}
-          </div>
-        )}
-      </DataCard>
+          </section>
+        </DataCard>
+      )}
 
-      <DataCard title="Финансовые операции" text="Аудируемый журнал завершённых и отменённых поездок.">
-        {!transactions.length ? (
-          <div className="admin-empty-note">
-            <strong>Финансовых операций пока нет</strong>
-            <span>Данные появятся после завершённых поездок.</span>
-          </div>
-        ) : (
-          <div className="admin-table premium">
-            {transactions.map(transaction => (
-              <div className="admin-table-row finance-transaction" key={transaction.id}>
-                <strong>{financeTypeLabel(transaction.type)}</strong>
-                <span>{transaction.orderShortId || "Заказ не указан"}</span>
-                <span>{transaction.driverName || "Водитель не назначен"}</span>
-                <span>{formatMoney(transaction.grossAmount)}</span>
-                <span>{formatMoney(transaction.serviceCommission)} комиссия</span>
-                <span>{formatMoney(transaction.driverEarning)} водителю</span>
-                <span>{formatMoney(transaction.driverDebtDelta)} долг</span>
-                <Badge tone={transaction.paymentMethod === "UNKNOWN" ? "warning" : "success"}>{paymentMethodLabel(transaction.paymentMethod)}</Badge>
-                <span>{formatDate(transaction.createdAt)}</span>
+      {financeSection === "reports" && (
+        <DataCard title="Финансовый отчёт" text={`Группировка: ${financeGroupLabel(payload?.reportGroupBy || financeGroupBy)}.`}>
+          {!reports.length ? (
+            <div className="admin-empty-note">
+              <strong>За выбранный период финансовых данных нет</strong>
+              <span>Отчёт появится после первых операций в финансовом журнале.</span>
+            </div>
+          ) : (
+            <div className="admin-table premium">
+              {reports.map(row => (
+                <div className="admin-table-row finance-report" key={row.key}>
+                  <strong>{row.label}</strong>
+                  <span>{formatMoney(row.grossTotal)}</span>
+                  <span>{formatMoney(row.serviceCommissionTotal)} комиссия</span>
+                  <span>{formatMoney(row.driverEarningTotal)} водителям</span>
+                  <span>{formatMoney(row.driverDebtDeltaTotal)} долг</span>
+                  <span>{row.completedOrderCount} завершено · {row.cancelledOrderCount} отменено</span>
+                  <span>{row.transactionCount} операций</span>
+                </div>
+              ))}
+              <div className="admin-table-row finance-report total">
+                <strong>Итого</strong>
+                <span>{formatMoney(totals.grossTotal)}</span>
+                <span>{formatMoney(totals.serviceCommissionTotal)} комиссия</span>
+                <span>{formatMoney(totals.driverEarningTotal)} водителям</span>
+                <span>{formatMoney(totals.driverDebtDeltaTotal)} долг</span>
+                <span>{totals.completedOrderCount || 0} завершено · {totals.cancelledOrderCount || 0} отменено</span>
+                <span>{totals.transactionCount || 0} операций</span>
               </div>
-            ))}
-          </div>
-        )}
-      </DataCard>
+            </div>
+          )}
+        </DataCard>
+      )}
+
+      {financeSection === "debts" && (
+        <DataCard title="Долги водителей" text="Корректировки сохраняются отдельными строками финансового журнала.">
+          {!canAdjustFinance && <InlineMessage text="Недостаточно прав для корректировки" />}
+          {!driverDebts.length ? (
+            <div className="admin-empty-note">
+              <strong>Долгов водителей пока нет</strong>
+              <span>Данные появятся после завершённых поездок с оплатой наличными или Kaspi переводом.</span>
+            </div>
+          ) : (
+            <div className="admin-table premium">
+              {driverDebts.map(driver => (
+                <div className="admin-table-row finance-debt" key={driver.driverId}>
+                  <strong>{driver.driverName || "Водитель"}</strong>
+                  <span>{driver.phone || "Телефон не указан"}</span>
+                  <span>{driver.car || "Авто не указано"}</span>
+                  <span>{driver.completedOrders || 0} поездок</span>
+                  <strong>{formatMoney(driver.debtTotal)}</strong>
+                  <span>{formatDate(driver.lastTransactionAt)}</span>
+                  <button
+                    type="button"
+                    className="admin-secondary-button compact"
+                    disabled={!canAdjustFinance}
+                    onClick={() => onAdjustDebt(driver)}
+                  >
+                    Корректировать долг
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DataCard>
+      )}
+
+      {financeSection === "transactions" && (
+        <DataCard
+          title="История операций"
+          text={`${payload?.transactionTotal || 0} операций по текущим фильтрам.`}
+          action={<button type="button" className="admin-secondary-button compact" onClick={onExportFinanceCsv}>Экспорт CSV</button>}
+        >
+          {!transactions.length ? (
+            <div className="admin-empty-note">
+              <strong>Нет финансовых операций</strong>
+              <span>Данные появятся после завершённых поездок или ручных корректировок.</span>
+            </div>
+          ) : (
+            <div className="admin-table premium">
+              {transactions.map(transaction => (
+                <div className="admin-table-row finance-transaction" key={transaction.id}>
+                  <strong>{financeTypeLabel(transaction.type)}</strong>
+                  <span>{transaction.orderShortId || "Заказ не указан"}</span>
+                  <span>{transaction.driverName || "Водитель не назначен"}</span>
+                  <span>{transaction.regionName || "Регион не указан"}</span>
+                  <span>{transaction.tariffName || "Тариф не указан"}</span>
+                  <span>{formatMoney(transaction.grossAmount)}</span>
+                  <span>{formatMoney(transaction.serviceCommission)} комиссия</span>
+                  <span>{formatMoney(transaction.driverEarning)} водителю</span>
+                  <span>{formatMoney(transaction.driverDebtDelta)} долг</span>
+                  <Badge tone={transaction.paymentMethod === "UNKNOWN" ? "warning" : "success"}>{paymentMethodLabel(transaction.paymentMethod)}</Badge>
+                  <Badge tone={transaction.status === "POSTED" ? "success" : "muted"}>{transaction.status}</Badge>
+                  <span>{transaction.metadata?.reason || "—"}</span>
+                  <span>{formatDate(transaction.createdAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DataCard>
+      )}
     </div>
   );
 }
@@ -1622,6 +1832,80 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview }) {
   );
 }
 
+function DebtAdjustmentPanel({ driver, regions, onClose, onSave, busy }) {
+  const [form, setForm] = useState({ amount: "", reason: "", regionId: "" });
+  const [error, setError] = useState("");
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    const amount = Number(form.amount);
+    if (!Number.isFinite(amount) || amount === 0) {
+      setError("Введите сумму корректировки");
+      return;
+    }
+    if (form.reason.trim().length < 3) {
+      setError("Укажите причину корректировки");
+      return;
+    }
+    await onSave(driver, form);
+  }
+
+  return (
+    <ModalFrame title="Корректировка долга" onClose={onClose}>
+      <form className="admin-form-grid" onSubmit={submit}>
+        <section className="admin-detail-hero">
+          <div>
+            <h2>{driver.driverName || driver.name || "Водитель"}</h2>
+            <p>{[driver.phone, driver.car].filter(Boolean).join(" · ") || "Данные водителя"}</p>
+          </div>
+          <Badge tone={Number(driver.debtTotal || 0) > 0 ? "warning" : "success"}>
+            {formatMoney(driver.debtTotal)}
+          </Badge>
+        </section>
+        <InlineMessage text="Положительная сумма увеличивает долг, отрицательная уменьшает." />
+        <div className="admin-form-row">
+          <Field
+            label="Сумма корректировки"
+            type="number"
+            value={form.amount}
+            onChange={value => setForm(current => ({ ...current, amount: value }))}
+          />
+          <label className="admin-field">
+            <span>Регион</span>
+            <select
+              className="admin-control-select"
+              value={form.regionId}
+              onChange={event => setForm(current => ({ ...current, regionId: event.target.value }))}
+            >
+              <option value="">Без привязки к региону</option>
+              {regions.map(region => (
+                <option value={region.id} key={region.id}>{region.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label className="admin-textarea-field">
+          <span>Причина корректировки</span>
+          <textarea
+            value={form.reason}
+            onChange={event => setForm(current => ({ ...current, reason: event.target.value }))}
+            rows={4}
+            placeholder="Например: сверка наличных за смену"
+          />
+        </label>
+        {error && <InlineMessage danger text={error} />}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="submit" className="admin-primary-button" disabled={busy}>
+            {busy ? "Сохраняем..." : "Сохранить корректировку"}
+          </button>
+        </div>
+      </form>
+    </ModalFrame>
+  );
+}
+
 function ModalFrame({ title, onClose, children, wide = false }) {
   return (
     <div className="admin-modal-backdrop" role="presentation">
@@ -1657,7 +1941,7 @@ function Field({ label, value, onChange, type = "text" }) {
   );
 }
 
-function DataCard({ title, text, children }) {
+function DataCard({ title, text, action, children }) {
   return (
     <section className="admin-data-card">
       <header>
@@ -1665,6 +1949,7 @@ function DataCard({ title, text, children }) {
           <h2>{title}</h2>
           <p>{text}</p>
         </div>
+        {action}
       </header>
       {children}
     </section>
