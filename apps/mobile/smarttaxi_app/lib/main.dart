@@ -306,26 +306,33 @@ class _AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<_AuthScreen> {
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _passwordRepeatController = TextEditingController();
+
   bool _registerMode = false;
   bool _loading = false;
   bool _showPassword = false;
   bool _showPasswordRepeat = false;
-  String _name = '';
-  String _phone = '';
-  String _password = '';
-  String _passwordRepeat = '';
   String? _error;
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _passwordRepeatController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
-    final phone = _normalizePhone(_phone);
-    if (_phoneDigits(phone).length < 10) {
-      setState(() => _error = 'Введите корректный номер телефона');
+    final validationError = _validate();
+    if (validationError != null) {
+      setState(() => _error = validationError);
       return;
     }
-    if (_password.length < 6) {
-      setState(() => _error = 'Пароль должен быть не короче 6 символов');
-      return;
-    }
+    final phone = _normalizePhone(_phoneController.text);
     setState(() {
       _loading = true;
       _error = null;
@@ -333,7 +340,10 @@ class _AuthScreenState extends State<_AuthScreen> {
     try {
       final payload = _registerMode
           ? await _register()
-          : await widget.api.login(phone: phone, password: _password);
+          : await widget.api.login(
+              phone: phone,
+              password: _passwordController.text,
+            );
       await widget.onLoggedIn(payload);
     } catch (error) {
       setState(() => _error = _authError(error));
@@ -343,24 +353,50 @@ class _AuthScreenState extends State<_AuthScreen> {
   }
 
   Future<Map<String, dynamic>> _register() async {
-    if (_name.trim().length < 2) throw const FormatException('NAME_REQUIRED');
-    final phone = _normalizePhone(_phone);
-    if (_phoneDigits(phone).length < 10) {
-      throw const FormatException('PHONE_REQUIRED');
-    }
-    if (_password.length < 6) throw const FormatException('PASSWORD_TOO_SHORT');
-    if (_password != _passwordRepeat) {
-      throw const FormatException('PASSWORD_MISMATCH');
-    }
+    final phone = _normalizePhone(_phoneController.text);
     return widget.api.register(
-      name: _name.trim(),
+      name: _nameController.text.trim(),
       phone: phone,
-      password: _password,
+      password: _passwordController.text,
     );
+  }
+
+  String? _validate() {
+    final phone = _phoneController.text;
+    final password = _passwordController.text;
+    final phoneDigits = _phoneDigits(phone);
+    if (_registerMode && _nameController.text.trim().isEmpty) {
+      return 'Введите имя';
+    }
+    if (phone.trim().isEmpty) return 'Введите номер телефона';
+    if (phoneDigits.length < 10) return 'Введите корректный номер';
+    if (password.isEmpty) return 'Введите пароль';
+    if (password.length < 6) {
+      return 'Пароль должен быть не короче 6 символов';
+    }
+    if (_registerMode && password != _passwordRepeatController.text) {
+      return 'Пароли не совпадают';
+    }
+    return null;
+  }
+
+  void _switchMode(bool registerMode) {
+    setState(() {
+      _registerMode = registerMode;
+      _error = null;
+      _passwordController.clear();
+      _passwordRepeatController.clear();
+      _showPassword = false;
+      _showPasswordRepeat = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final title = _registerMode ? 'Регистрация' : 'Вход';
+    final subtitle = _registerMode
+        ? 'Создайте аккаунт для заказа поездок'
+        : 'Введите номер телефона, чтобы продолжить';
     return Scaffold(
       backgroundColor: SmartTaxiColors.appBackground,
       body: Stack(
@@ -377,32 +413,34 @@ class _AuthScreenState extends State<_AuthScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const BrandLogo(large: true),
-                      const SizedBox(height: 20),
-                      const Text('SmartTaxi',
-                          style: TextStyle(
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5)),
-                      const SizedBox(height: 8),
-                      const Text('Региональное такси рядом с вами',
-                          style: TextStyle(
-                              color: SmartTaxiColors.textSecondary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700)),
+                      const _AuthBrandHeader(),
                       const SizedBox(height: 24),
                       _PremiumCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _AuthModeSwitch(
-                              registerMode: _registerMode,
-                              onChanged: (value) => setState(() {
-                                _registerMode = value;
-                                _error = null;
-                              }),
+                            Text(
+                              title,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 30,
+                                height: 1.08,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
                             ),
-                            const SizedBox(height: 18),
+                            const SizedBox(height: 8),
+                            Text(
+                              subtitle,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: SmartTaxiColors.textSecondary,
+                                fontSize: 15,
+                                height: 1.35,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 220),
                               switchInCurve: Curves.easeOutCubic,
@@ -412,37 +450,37 @@ class _AuthScreenState extends State<_AuthScreen> {
                                       key: const ValueKey('register'),
                                       children: [
                                         TextField(
+                                          controller: _nameController,
                                           decoration: const InputDecoration(
                                               labelText: 'Имя'),
                                           textInputAction: TextInputAction.next,
-                                          onChanged: (value) =>
-                                              _name = value.trim(),
                                         ),
                                         const SizedBox(height: 12),
                                         TextField(
+                                          controller: _phoneController,
                                           decoration: const InputDecoration(
                                             labelText: 'Номер телефона',
                                             hintText: '+7 ___ ___ __ __',
                                           ),
                                           keyboardType: TextInputType.phone,
                                           textInputAction: TextInputAction.next,
-                                          onChanged: (value) => _phone = value,
                                         ),
                                       ],
                                     )
                                   : TextField(
                                       key: const ValueKey('login'),
+                                      controller: _phoneController,
                                       decoration: const InputDecoration(
                                         labelText: 'Номер телефона',
                                         hintText: '+7 ___ ___ __ __',
                                       ),
                                       keyboardType: TextInputType.phone,
                                       textInputAction: TextInputAction.next,
-                                      onChanged: (value) => _phone = value,
                                     ),
                             ),
                             const SizedBox(height: 12),
                             TextField(
+                              controller: _passwordController,
                               decoration: InputDecoration(
                                 labelText: 'Пароль',
                                 suffixIcon: IconButton(
@@ -460,11 +498,11 @@ class _AuthScreenState extends State<_AuthScreen> {
                               textInputAction: _registerMode
                                   ? TextInputAction.next
                                   : TextInputAction.done,
-                              onChanged: (value) => _password = value,
                             ),
                             if (_registerMode) ...[
                               const SizedBox(height: 12),
                               TextField(
+                                controller: _passwordRepeatController,
                                 decoration: InputDecoration(
                                   labelText: 'Повторите пароль',
                                   suffixIcon: IconButton(
@@ -481,7 +519,6 @@ class _AuthScreenState extends State<_AuthScreen> {
                                 ),
                                 obscureText: !_showPasswordRepeat,
                                 textInputAction: TextInputAction.done,
-                                onChanged: (value) => _passwordRepeat = value,
                               ),
                             ],
                             AnimatedSwitcher(
@@ -490,8 +527,16 @@ class _AuthScreenState extends State<_AuthScreen> {
                                   ? const SizedBox(height: 12)
                                   : Padding(
                                       padding: const EdgeInsets.only(top: 12),
-                                      child: _InlineMessage(
-                                          text: _error!, danger: true),
+                                      child: Column(
+                                        children: [
+                                          _InlineMessage(
+                                              text: _error!, danger: true),
+                                          if (_isConnectionError(_error!)) ...[
+                                            const SizedBox(height: 8),
+                                            const _ConnectionHint(),
+                                          ],
+                                        ],
+                                      ),
                                     ),
                             ),
                             const SizedBox(height: 6),
@@ -503,23 +548,10 @@ class _AuthScreenState extends State<_AuthScreen> {
                                       ? 'Создать аккаунт'
                                       : 'Войти'),
                             ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Продолжая, вы соглашаетесь с правилами сервиса',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: SmartTaxiColors.textSecondary,
-                                  fontSize: 13,
-                                  height: 1.35),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Водителем можно стать после регистрации в профиле',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: SmartTaxiColors.textSecondary,
-                                  fontSize: 13,
-                                  height: 1.35),
+                            const SizedBox(height: 18),
+                            _AuthSwitchLink(
+                              registerMode: _registerMode,
+                              onSwitch: () => _switchMode(!_registerMode),
                             ),
                           ],
                         ),
@@ -536,69 +568,75 @@ class _AuthScreenState extends State<_AuthScreen> {
   }
 }
 
-class _AuthModeSwitch extends StatelessWidget {
-  const _AuthModeSwitch({required this.registerMode, required this.onChanged});
-
-  final bool registerMode;
-  final ValueChanged<bool> onChanged;
+class _AuthBrandHeader extends StatelessWidget {
+  const _AuthBrandHeader();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-          color: SmartTaxiColors.goldSurface,
-          borderRadius: BorderRadius.circular(18)),
-      child: Row(
-        children: [
-          Expanded(
-              child: _ModeButton(
-                  label: 'Вход',
-                  active: !registerMode,
-                  onTap: () => onChanged(false))),
-          Expanded(
-              child: _ModeButton(
-                  label: 'Регистрация',
-                  active: registerMode,
-                  onTap: () => onChanged(true))),
-        ],
-      ),
+    return const Column(
+      children: [
+        BrandLogo(large: true),
+        SizedBox(height: 18),
+        Text(
+          'SmartTaxi',
+          style: TextStyle(
+              fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Региональное такси рядом с вами',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: SmartTaxiColors.textSecondary,
+              fontSize: 15,
+              fontWeight: FontWeight.w700),
+        ),
+      ],
     );
   }
 }
 
-class _ModeButton extends StatelessWidget {
-  const _ModeButton(
-      {required this.label, required this.active, required this.onTap});
+class _AuthSwitchLink extends StatelessWidget {
+  const _AuthSwitchLink({required this.registerMode, required this.onSwitch});
 
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
+  final bool registerMode;
+  final VoidCallback onSwitch;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: active
-              ? const [
-                  BoxShadow(
-                      color: Color(0x16785a14),
-                      blurRadius: 16,
-                      offset: Offset(0, 8))
-                ]
-              : null,
+    final text = registerMode ? 'Уже есть аккаунт?' : 'Ещё нет аккаунта?';
+    final action = registerMode ? 'Войти' : 'Зарегистрируйтесь';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: SmartTaxiColors.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
-        child: Text(label,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-      ),
+        const SizedBox(width: 6),
+        InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onSwitch,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            child: Text(
+              action,
+              style: const TextStyle(
+                color: SmartTaxiColors.goldDeep,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -652,6 +690,24 @@ class _InlineMessage extends StatelessWidget {
   }
 }
 
+class _ConnectionHint extends StatelessWidget {
+  const _ConnectionHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      'Проверьте адрес сервера в настройках запуска приложения.',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: SmartTaxiColors.textSecondary,
+        fontSize: 12,
+        height: 1.35,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
 String _userLabel(dynamic user) {
   if (user is! Map) return 'Аккаунт SmartTaxi';
   return (user['phone'] ?? user['email'] ?? user['name'] ?? 'Аккаунт SmartTaxi')
@@ -690,14 +746,10 @@ String _normalizePhone(String value) {
 
 String _authError(Object error) {
   final message = error.toString();
-  if (message.contains('SocketException') ||
-      message.contains('Connection') ||
-      message.contains('connection') ||
-      message.contains('timed out')) {
-    return 'Сервер недоступен. Проверьте подключение';
-  }
-  if (message.contains('INVALID_CREDENTIALS')) {
-    return 'Неверный телефон или пароль';
+  if (message.contains('INVALID_CREDENTIALS') ||
+      message.contains('401') ||
+      message.contains('403')) {
+    return 'Неверный номер или пароль';
   }
   if (message.contains('PHONE_EXISTS')) return 'Этот номер уже зарегистрирован';
   if (message.contains('USER_ALREADY_EXISTS')) {
@@ -707,10 +759,26 @@ String _authError(Object error) {
     return 'Аккаунт водителя заблокирован';
   }
   if (message.contains('NAME_REQUIRED')) return 'Введите имя';
-  if (message.contains('PHONE_REQUIRED')) return 'Введите телефон';
+  if (message.contains('PHONE_REQUIRED')) return 'Введите номер телефона';
   if (message.contains('PASSWORD_TOO_SHORT')) {
     return 'Пароль должен быть не короче 6 символов';
   }
   if (message.contains('PASSWORD_MISMATCH')) return 'Пароли не совпадают';
+  if (message.contains('SocketException') ||
+      message.contains('DioException') ||
+      message.contains('DioError') ||
+      message.contains('connection error') ||
+      message.contains('Connection error') ||
+      message.contains('Connection') ||
+      message.contains('connection') ||
+      message.contains('Failed host lookup') ||
+      message.contains('Connection refused') ||
+      message.contains('timed out') ||
+      message.contains('Network is unreachable')) {
+    return 'Сервер недоступен. Проверьте подключение.';
+  }
   return 'Проверьте заполненные данные';
 }
+
+bool _isConnectionError(String error) =>
+    error == 'Сервер недоступен. Проверьте подключение.';

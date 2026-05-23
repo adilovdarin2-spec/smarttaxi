@@ -33,6 +33,7 @@ String _visibleSource(String source) {
 
 void main() {
   test('map configuration is explicit and attributed', () {
+    expect(AppConfig.apiBaseUrl, 'http://10.0.2.2:4000');
     expect(AppConfig.osmTileUrl, contains('{z}'));
     expect(AppConfig.osmTileUrl, contains('{x}'));
     expect(AppConfig.osmTileUrl, contains('{y}'));
@@ -60,11 +61,19 @@ void main() {
     expect(main, contains('AppSession.splash'));
     expect(main, contains('AppSession.auth'));
     expect(main, contains('Региональное такси рядом с вами'));
+    expect(
+        main, contains("final title = _registerMode ? 'Регистрация' : 'Вход'"));
+    expect(main, contains('Введите номер телефона, чтобы продолжить'));
+    expect(main, contains('Создайте аккаунт для заказа поездок'));
     expect(main, contains('Номер телефона'));
     expect(main, contains('Создать аккаунт'));
-    expect(main, contains('Продолжая, вы соглашаетесь с правилами сервиса'));
+    expect(main, contains('_AuthSwitchLink'));
+    expect(main, contains('Ещё нет аккаунта?'));
+    expect(main, contains('Зарегистрируйтесь'));
+    expect(main, contains('Уже есть аккаунт?'));
     expect(main, isNot(contains('Телефон или ' 'Email')));
     expect(main, isNot(contains('Email, если вход по ' 'email')));
+    expect(main, isNot(contains('_AuthModeSwitch')));
     expect(main, isNot(contains(testAccountsLabel)));
     expect(main, isNot(contains(clientSeedPassword)));
     expect(main, isNot(contains(ownerSeedPassword)));
@@ -80,8 +89,21 @@ void main() {
     expect(main, contains('+7 ___ ___ __ __'));
     expect(main, contains('Пароль'));
     expect(main, contains('Повторите пароль'));
+    expect(main, contains('Введите номер телефона'));
+    expect(main, contains('Введите корректный номер'));
+    expect(main, contains('Введите пароль'));
+    expect(main, contains('Пароль должен быть не короче 6 символов'));
+    expect(main, contains('Пароли не совпадают'));
+    expect(main, contains('Введите имя'));
+    expect(main, contains('Неверный номер или пароль'));
+    expect(main, contains('Сервер недоступен. Проверьте подключение.'));
+    expect(
+      main,
+      contains('Проверьте адрес сервера в настройках запуска приложения.'),
+    );
     expect(main, contains('_normalizePhone'));
     expect(main, contains('_phoneDigits'));
+    expect(main, contains('TextEditingController'));
     expect(main, contains('Показать пароль'));
     expect(main, contains('Войти'));
     expect(main, contains('Создать аккаунт'));
