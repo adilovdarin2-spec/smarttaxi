@@ -15,16 +15,18 @@ Iterable<File> _dartFiles(String root) {
 String _visibleSource(String source) {
   return source
       .split('\n')
-      .where((line) =>
-          line.contains('Text(') ||
-          line.contains('InputDecoration') ||
-          line.contains('SnackBar') ||
-          line.contains('_InlineMessage') ||
-          line.contains('title:') ||
-          line.contains('subtitle:') ||
-          line.contains('labelText') ||
-          line.contains('child: Text') ||
-          line.contains('tooltip:'))
+      .where(
+        (line) =>
+            line.contains('Text(') ||
+            line.contains('InputDecoration') ||
+            line.contains('SnackBar') ||
+            line.contains('_InlineMessage') ||
+            line.contains('title:') ||
+            line.contains('subtitle:') ||
+            line.contains('labelText') ||
+            line.contains('child: Text') ||
+            line.contains('tooltip:'),
+      )
       .join('\n')
       .toLowerCase();
 }
@@ -48,9 +50,15 @@ void main() {
 
   test('auth screen is production-only and starts before main app', () {
     final main = _read('lib/main.dart');
-    final testAccountsLabel = 'Тестовые ' 'аккаунты';
-    final clientSeedPassword = '123' '456';
-    final ownerSeedPassword = 'ChangeMe_' '2026';
+    final testAccountsLabel =
+        'Тестовые '
+        'аккаунты';
+    final clientSeedPassword =
+        '123'
+        '456';
+    final ownerSeedPassword =
+        'ChangeMe_'
+        '2026';
 
     expect(main, contains('AppSession.splash'));
     expect(main, contains('AppSession.auth'));
@@ -85,25 +93,56 @@ void main() {
     expect(main, isNot(contains('Email, если вход по email')));
   });
 
-  test('passenger home has map, order sheet, route, tariff, price, and action',
-      () {
+  test(
+    'passenger home has map, order sheet, route, tariff, price, and action',
+    () {
+      final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+      expect(passenger, contains('FlutterMap'));
+      expect(passenger, contains('_OrderSheet'));
+      expect(passenger, contains('_MapOverlayHeader'));
+      expect(passenger, contains('_MapRoundButton'));
+      expect(passenger, contains('_MapInstructionCard'));
+      expect(passenger, contains('_MapPermissionCard'));
+      expect(passenger, contains('Выбрать точку на карте'));
+      expect(
+        passenger,
+        contains('Разрешите геолокацию или выберите точку посадки вручную.'),
+      );
+      expect(passenger, contains('Куда едем?'));
+      expect(passenger, contains('Выберите точку посадки'));
+      expect(passenger, contains('Введите точку назначения'));
+      expect(passenger, contains('Адрес или ориентир'));
+      expect(passenger, contains('Можно проще'));
+      expect(passenger, contains('Тариф'));
+      expect(passenger, contains('_TariffSection'));
+      expect(passenger, contains('Тарифы пока не настроены'));
+      expect(passenger, contains('_PriceSection'));
+      expect(passenger, contains('Стоимость'));
+      expect(passenger, contains('Маршрут временно недоступен.'));
+      expect(passenger, contains('Цена рассчитана сервером'));
+      expect(passenger, contains('Заказать'));
+    },
+  );
+
+  test('passenger stage 2 polish keeps one clear CTA and animated states', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
-    expect(passenger, contains('FlutterMap'));
-    expect(passenger, contains('_OrderSheet'));
-    expect(passenger, contains('_MapOverlayHeader'));
-    expect(passenger, contains('_MapRoundButton'));
-    expect(passenger, contains('Выбрать точку на карте'));
-    expect(passenger,
-        contains('Разрешите геолокацию или выберите точку посадки вручную'));
-    expect(passenger, contains('Куда едем?'));
-    expect(passenger, contains('Выберите точку посадки'));
-    expect(passenger, contains('Введите точку назначения'));
-    expect(passenger, contains('Тариф'));
-    expect(passenger, contains('_TariffSection'));
-    expect(passenger, contains('_PriceSection'));
-    expect(passenger, contains('Стоимость'));
-    expect(passenger, contains('Заказать'));
+    expect(passenger, contains("cta == 'Рассчитать' || cta == 'Заказать'"));
+    expect(passenger, contains('AnimatedSwitcher'));
+    expect(passenger, contains('AnimatedSize'));
+    expect(passenger, contains('AnimatedScale'));
+    expect(passenger, contains('AnimatedContainer'));
+    expect(passenger, contains('_CompactNotice'));
+    expect(
+      passenger,
+      contains('Данные водителя появятся после принятия заказа.'),
+    );
+    expect(
+      passenger,
+      contains('Местоположение получено из реального обновления водителя.'),
+    );
+    expect(passenger, contains('_StatusStepper'));
   });
 
   test('passenger order API sends required rider phone contract', () {
@@ -120,11 +159,31 @@ void main() {
   test('driver entry is not a public top role switch', () {
     final main = _read('lib/main.dart');
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
-    final publicSwitchA = 'Пассажир / ' 'Водитель';
-    final publicSwitchB = 'Passenger / ' 'Driver';
+    final publicSwitchA =
+        'Пассажир / '
+        'Водитель';
+    final publicSwitchB =
+        'Passenger / '
+        'Driver';
 
-    expect(main, isNot(contains('Segmented' 'Button')));
-    expect(main, isNot(contains('Button' 'Segment')));
+    expect(
+      main,
+      isNot(
+        contains(
+          'Segmented'
+          'Button',
+        ),
+      ),
+    );
+    expect(
+      main,
+      isNot(
+        contains(
+          'Button'
+          'Segment',
+        ),
+      ),
+    );
     expect(main, isNot(contains(publicSwitchA)));
     expect(main, isNot(contains(publicSwitchB)));
     expect(passenger, contains('Стать водителем'));
@@ -138,10 +197,42 @@ void main() {
 
     expect(routeFields, contains("label: 'A'"));
     expect(routeFields, contains("label: 'B'"));
-    expect(routeFields, isNot(contains('Icons.' 'home')));
-    expect(routeFields, isNot(contains('Icons.' 'house')));
-    expect(passenger, isNot(contains('Icons.' 'home')));
-    expect(passenger, isNot(contains('Icons.' 'house')));
+    expect(
+      routeFields,
+      isNot(
+        contains(
+          'Icons.'
+          'home',
+        ),
+      ),
+    );
+    expect(
+      routeFields,
+      isNot(
+        contains(
+          'Icons.'
+          'house',
+        ),
+      ),
+    );
+    expect(
+      passenger,
+      isNot(
+        contains(
+          'Icons.'
+          'home',
+        ),
+      ),
+    );
+    expect(
+      passenger,
+      isNot(
+        contains(
+          'Icons.'
+          'house',
+        ),
+      ),
+    );
   });
 
   test('driver tabs and premium driver states exist', () {
@@ -157,26 +248,36 @@ void main() {
   });
 
   test(
-      'become driver flow submits a real application or shows production state',
-      () {
-    final api = _read('lib/core/api/api_client.dart');
-    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    'become driver flow submits a real application or shows production state',
+    () {
+      final api = _read('lib/core/api/api_client.dart');
+      final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
-    expect(api, contains("'/api/admin/driver-applications'"));
-    expect(passenger, contains('Отправить заявку'));
-    expect(passenger,
-        contains('Заявка отправлена. Администратор проверит данные.'));
-  });
+      expect(api, contains("'/api/admin/driver-applications'"));
+      expect(passenger, contains('Отправить заявку'));
+      expect(
+        passenger,
+        contains('Заявка отправлена. Администратор проверит данные.'),
+      );
+    },
+  );
 
   test('live Flutter UI has no placeholder or technical visible copy', () {
     final blocked = [
-      'fa' 'ke',
-      'mo' 'ck',
-      'de' 'mo',
-      'de' 'bug',
-      'de' 'v',
-      'back' 'end',
-      'end' 'point',
+      'fa'
+          'ke',
+      'mo'
+          'ck',
+      'de'
+          'mo',
+      'de'
+          'bug',
+      'de'
+          'v',
+      'back'
+          'end',
+      'end'
+          'point',
     ];
     final mojibake = [
       String.fromCharCode(0x2568),
@@ -199,13 +300,24 @@ void main() {
   });
 
   test('removed unsupported live shortcuts and seed credential display', () {
-    final liveSource =
-        _dartFiles('lib').map((file) => _read(file.path)).join('\n');
-    final driverOrders = 'DRIVER_' 'ORDERS';
-    final statsPath = 'drivers/me/' 'stats';
-    final testAccountsLabel = 'Тестовые ' 'аккаунты';
-    final clientSeedPassword = '123' '456';
-    final ownerSeedPassword = 'ChangeMe_' '2026';
+    final liveSource = _dartFiles(
+      'lib',
+    ).map((file) => _read(file.path)).join('\n');
+    final driverOrders =
+        'DRIVER_'
+        'ORDERS';
+    final statsPath =
+        'drivers/me/'
+        'stats';
+    final testAccountsLabel =
+        'Тестовые '
+        'аккаунты';
+    final clientSeedPassword =
+        '123'
+        '456';
+    final ownerSeedPassword =
+        'ChangeMe_'
+        '2026';
 
     expect(liveSource, isNot(contains(driverOrders)));
     expect(liveSource, isNot(contains(statsPath)));

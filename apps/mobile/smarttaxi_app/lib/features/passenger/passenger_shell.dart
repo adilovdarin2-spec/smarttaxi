@@ -99,8 +99,9 @@ class _PassengerShellState extends State<PassengerShell> {
 
   void _handleOrderUpdate(dynamic data) {
     if (data is! Map) return;
-    final order =
-        OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
+    final order = OrderSummary.fromJson(
+      Map<String, dynamic>.from(data['order'] ?? data),
+    );
     if (_order?.id != order.id) return;
     setState(() => _order = order);
     if (order.driverId != null) _loadDriverRoute(order.id);
@@ -108,8 +109,11 @@ class _PassengerShellState extends State<PassengerShell> {
 
   void _handleDriverLocation(dynamic data) {
     if (_order?.driverId == null || data is! Map) return;
-    setState(() => _driverLocation =
-        DriverLocation.fromJson(Map<String, dynamic>.from(data)));
+    setState(
+      () => _driverLocation = DriverLocation.fromJson(
+        Map<String, dynamic>.from(data),
+      ),
+    );
     _loadDriverRoute(_order!.id);
   }
 
@@ -119,8 +123,10 @@ class _PassengerShellState extends State<PassengerShell> {
       final permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        setState(() =>
-            _error = 'Разрешите геолокацию или выберите точку посадки вручную');
+        setState(
+          () => _error =
+              'Разрешите геолокацию или выберите точку посадки вручную.',
+        );
         return;
       }
       final position = await Geolocator.getCurrentPosition();
@@ -144,9 +150,11 @@ class _PassengerShellState extends State<PassengerShell> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) => _CoordinateSheet(
-          title: target == PointTarget.pickup ? 'Откуда' : 'Куда'),
+        title: target == PointTarget.pickup ? 'Откуда' : 'Куда',
+      ),
     );
     if (selected == null) return;
     await _applyPoint(target, selected.coordinate, selected.label);
@@ -158,14 +166,20 @@ class _PassengerShellState extends State<PassengerShell> {
         ? 'Точка посадки на карте'
         : 'Точка назначения на карте';
     await _applyPoint(
-        target, Coordinate(lat: point.latitude, lng: point.longitude), label);
+      target,
+      Coordinate(lat: point.latitude, lng: point.longitude),
+      label,
+    );
     if (target == PointTarget.pickup) {
       setState(() => _target = PointTarget.dropoff);
     }
   }
 
   Future<void> _applyPoint(
-      PointTarget target, Coordinate coordinate, String label) async {
+    PointTarget target,
+    Coordinate coordinate,
+    String label,
+  ) async {
     setState(() {
       if (target == PointTarget.pickup) {
         _pickup = coordinate;
@@ -188,7 +202,10 @@ class _PassengerShellState extends State<PassengerShell> {
     });
     try {
       var preview = await widget.api.previewRoute(
-          pickup: _pickup!, dropoff: _dropoff!, tariffId: _tariffId);
+        pickup: _pickup!,
+        dropoff: _dropoff!,
+        tariffId: _tariffId,
+      );
       var tariffs = _tariffs;
       if (tariffs.isEmpty || preview.regionId != _preview?.regionId) {
         tariffs = await widget.api.getTariffs(preview.regionId);
@@ -197,7 +214,10 @@ class _PassengerShellState extends State<PassengerShell> {
       if (selectedTariffId == null && tariffs.isNotEmpty) {
         selectedTariffId = tariffs.first.id;
         preview = await widget.api.previewRoute(
-            pickup: _pickup!, dropoff: _dropoff!, tariffId: selectedTariffId);
+          pickup: _pickup!,
+          dropoff: _dropoff!,
+          tariffId: selectedTariffId,
+        );
       }
       setState(() {
         _preview = preview;
@@ -259,8 +279,10 @@ class _PassengerShellState extends State<PassengerShell> {
     if (_order == null) return;
     setState(() => _loading = true);
     try {
-      await widget.api
-          .cancelPublicOrder(_order!.id, riderPhone: widget.accountPhone);
+      await widget.api.cancelPublicOrder(
+        _order!.id,
+        riderPhone: widget.accountPhone,
+      );
       setState(() => _order = null);
     } catch (error) {
       setState(() => _error = _readableError(error));
@@ -318,8 +340,10 @@ class _PassengerShellState extends State<PassengerShell> {
         year: int.tryParse(_driverYear.trim()),
         comment: _driverComment.trim(),
       );
-      setState(() => _driverApplicationMessage =
-          'Заявка отправлена. Администратор проверит данные.');
+      setState(
+        () => _driverApplicationMessage =
+            'Заявка отправлена. Администратор проверит данные.',
+      );
     } catch (error) {
       setState(() => _error = _readableError(error));
     } finally {
@@ -337,6 +361,7 @@ class _PassengerShellState extends State<PassengerShell> {
       drawerScrimColor: Colors.black.withValues(alpha: 0.26),
       drawer: _SmartDrawer(
         accountLabel: widget.accountLabel,
+        accountPhone: widget.accountPhone,
         active: _tab,
         driverLabel: 'Стать водителем',
         onSelect: (tab) {
@@ -357,10 +382,11 @@ class _PassengerShellState extends State<PassengerShell> {
           children: [
             if (_tab != PassengerTab.home)
               _AppHeader(
-                  onMenu: _openDrawer,
-                  trailing: _HeaderProfileButton(
-                      onTap: () =>
-                          setState(() => _tab = PassengerTab.profile))),
+                onMenu: _openDrawer,
+                trailing: _HeaderProfileButton(
+                  onTap: () => setState(() => _tab = PassengerTab.profile),
+                ),
+              ),
             Expanded(
               child: IndexedStack(
                 index: _tab.index,
@@ -369,8 +395,10 @@ class _PassengerShellState extends State<PassengerShell> {
                   _tripsScreen(),
                   _profileScreen(),
                   _driverApplicationScreen(),
-                  _simpleInfoScreen('Поддержка',
-                      'Напишите в поддержку SmartTaxi, если нужна помощь с поездкой.'),
+                  _simpleInfoScreen(
+                    'Поддержка',
+                    'Напишите в поддержку SmartTaxi, если нужна помощь с поездкой.',
+                  ),
                 ],
               ),
             ),
@@ -381,17 +409,20 @@ class _PassengerShellState extends State<PassengerShell> {
                     setState(() => _tab = PassengerTab.values[index]),
                 destinations: const [
                   NavigationDestination(
-                      icon: Icon(Icons.map_outlined),
-                      selectedIcon: Icon(Icons.map),
-                      label: 'Главная'),
+                    icon: Icon(Icons.map_outlined),
+                    selectedIcon: Icon(Icons.map),
+                    label: 'Главная',
+                  ),
                   NavigationDestination(
-                      icon: Icon(Icons.receipt_long_outlined),
-                      selectedIcon: Icon(Icons.receipt_long),
-                      label: 'Поездки'),
+                    icon: Icon(Icons.receipt_long_outlined),
+                    selectedIcon: Icon(Icons.receipt_long),
+                    label: 'Поездки',
+                  ),
                   NavigationDestination(
-                      icon: Icon(Icons.person_outline),
-                      selectedIcon: Icon(Icons.person),
-                      label: 'Профиль'),
+                    icon: Icon(Icons.person_outline),
+                    selectedIcon: Icon(Icons.person),
+                    label: 'Профиль',
+                  ),
                 ],
               ),
             ),
@@ -402,18 +433,21 @@ class _PassengerShellState extends State<PassengerShell> {
   }
 
   Widget _homeScreen() {
-    final mapHeight = MediaQuery.sizeOf(context).height * 0.41;
+    final mapHeight = MediaQuery.sizeOf(context).height * 0.43;
+    final geolocationNotice = _geolocationNotice;
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         SizedBox(
-          height: mapHeight.clamp(285.0, 380.0).toDouble(),
+          height: mapHeight.clamp(305.0, 410.0).toDouble(),
           child: _MapCanvas(
             center: _mapCenter ?? const LatLng(42.316, 69.596),
             pickup: _pickup,
             dropoff: _dropoff,
             driver: _order?.driverId == null ? null : _driverLocation,
             route: _preview?.geometry ?? const [],
+            target: _target,
+            permissionNotice: geolocationNotice,
             onTap: _applyMapTap,
             onUseLocation: _usePhoneLocation,
             onReset: _resetRoute,
@@ -422,9 +456,9 @@ class _PassengerShellState extends State<PassengerShell> {
           ),
         ),
         Transform.translate(
-          offset: const Offset(0, -24),
+          offset: const Offset(0, -30),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: _OrderSheet(
               pickupLabel: _pickupLabel,
               dropoffLabel: _dropoffLabel,
@@ -448,8 +482,16 @@ class _PassengerShellState extends State<PassengerShell> {
             ),
           ),
         ),
+        const SizedBox(height: 2),
       ],
     );
+  }
+
+  String? get _geolocationNotice {
+    final error = _error;
+    if (error == null) return null;
+    if (!error.toLowerCase().contains('геолокац')) return null;
+    return 'Разрешите геолокацию или выберите точку посадки вручную.';
   }
 
   void _resetRoute() {
@@ -480,8 +522,10 @@ class _PassengerShellState extends State<PassengerShell> {
       return const Padding(
         padding: EdgeInsets.all(20),
         child: EmptyState(
-            title: 'Активной поездки нет',
-            text: 'Создайте заказ, и его статус появится здесь.'),
+          icon: Icons.route_rounded,
+          title: 'Активной поездки нет',
+          text: 'Создайте заказ, и его статус появится здесь.',
+        ),
       );
     }
     final driverText = _order!.driverId == null
@@ -489,42 +533,88 @@ class _PassengerShellState extends State<PassengerShell> {
         : _driverLocation == null
             ? 'Ожидаем геолокацию водителя'
             : 'Водитель на связи';
+    final orderShortId =
+        _order!.id.length > 8 ? _order!.id.substring(0, 8) : _order!.id;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         const _TitleBlock(
-            title: 'Текущая поездка', text: 'Статус обновляется автоматически'),
+          title: 'Текущая поездка',
+          text: 'Статус обновляется автоматически',
+        ),
         const SizedBox(height: 16),
         _PremiumCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StatusPill(
-                  label: _statusLabel(_order!.status),
-                  tone: _statusTone(_order!.status)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Поездка $orderShortId',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  StatusPill(
+                    label: _statusLabel(_order!.status),
+                    tone: _statusTone(_order!.status),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               _StatusStepper(status: _order!.status),
               const SizedBox(height: 18),
               RouteFields(
-                  pickupLabel: _order!.pickup,
-                  dropoffLabel: _order!.dropoff,
-                  onPickupTap: () {},
-                  onDropoffTap: () {}),
+                pickupLabel: _order!.pickup,
+                dropoffLabel: _order!.dropoff,
+                onPickupTap: () {},
+                onDropoffTap: () {},
+              ),
               const SizedBox(height: 14),
-              Text(driverText,
-                  style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
-                      fontWeight: FontWeight.w700)),
+              _CompactNotice(
+                icon: _order!.driverId == null
+                    ? Icons.person_search_rounded
+                    : Icons.verified_user_outlined,
+                title: driverText,
+                text: _order!.driverId == null
+                    ? 'Данные водителя появятся после принятия заказа.'
+                    : _driverLocation == null
+                        ? 'Покажем местоположение, когда водитель передаст геолокацию.'
+                        : 'Местоположение получено из реального обновления водителя.',
+              ),
               if (_order!.price != null) ...[
                 const SizedBox(height: 14),
-                Text('${_order!.price!.round()} ₸',
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: SmartTaxiColors.goldSurface,
+                    border: Border.all(color: SmartTaxiColors.border),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_order!.price!.round()} ₸',
                     style: const TextStyle(
-                        fontSize: 30, fontWeight: FontWeight.w900)),
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
               ],
               const SizedBox(height: 16),
               OutlinedButton(
-                  onPressed: _loading ? null : _cancelOrder,
-                  child: const Text('Отменить поездку')),
+                onPressed: _loading ? null : _cancelOrder,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: SmartTaxiColors.danger,
+                  side: const BorderSide(color: Color(0xfffecaca)),
+                  backgroundColor: const Color(0xfffff1f1),
+                ),
+                child: const Text('Отменить поездку'),
+              ),
             ],
           ),
         ),
@@ -540,21 +630,58 @@ class _PassengerShellState extends State<PassengerShell> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _TitleBlock(
-                  title: 'Профиль', text: 'Ваш аккаунт SmartTaxi'),
+              Row(
+                children: [
+                  const BrandLogo(),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'SmartTaxi',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          widget.accountLabel.isEmpty
+                              ? 'Ваш аккаунт'
+                              : widget.accountLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               _ProfileRow(
-                  label: 'Аккаунт',
-                  value: widget.accountLabel.isEmpty
-                      ? 'Пользователь'
-                      : widget.accountLabel),
+                label: 'Аккаунт',
+                value: widget.accountLabel.isEmpty
+                    ? 'Пользователь'
+                    : widget.accountLabel,
+              ),
+              if (widget.accountPhone.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _ProfileRow(label: 'Телефон', value: widget.accountPhone),
+              ],
               const SizedBox(height: 12),
               ElevatedButton(
-                  onPressed: _openDriverEntry,
-                  child: const Text('Стать водителем')),
+                onPressed: _openDriverEntry,
+                child: const Text('Стать водителем'),
+              ),
               const SizedBox(height: 10),
               OutlinedButton(
-                  onPressed: widget.onLogout, child: const Text('Выйти')),
+                onPressed: widget.onLogout,
+                child: const Text('Выйти'),
+              ),
             ],
           ),
         ),
@@ -563,11 +690,13 @@ class _PassengerShellState extends State<PassengerShell> {
           child: Column(
             children: [
               _MenuLine(
-                  title: 'Поддержка',
-                  onTap: () => setState(() => _tab = PassengerTab.support)),
+                title: 'Поддержка',
+                onTap: () => setState(() => _tab = PassengerTab.support),
+              ),
               _MenuLine(
-                  title: 'Настройки',
-                  onTap: () => setState(() => _tab = PassengerTab.support)),
+                title: 'Настройки',
+                onTap: () => setState(() => _tab = PassengerTab.support),
+              ),
             ],
           ),
         ),
@@ -580,43 +709,50 @@ class _PassengerShellState extends State<PassengerShell> {
       padding: const EdgeInsets.all(20),
       children: [
         const _TitleBlock(
-            title: 'Стать водителем',
-            text:
-                'После заявки администратор одобрит вас для работы в регионе.'),
+          title: 'Стать водителем',
+          text: 'После заявки администратор одобрит вас для работы в регионе.',
+        ),
         const SizedBox(height: 16),
         _PremiumCard(
           child: Column(
             children: [
               _ApplicationField(
-                  label: 'Имя и фамилия',
-                  onChanged: (value) => _driverFullName = value),
+                label: 'Имя и фамилия',
+                onChanged: (value) => _driverFullName = value,
+              ),
               const SizedBox(height: 12),
               _ApplicationField(
-                  label: 'Телефон',
-                  initialValue:
-                      _driverPhone.isEmpty ? widget.accountPhone : _driverPhone,
-                  onChanged: (value) => _driverPhone = value),
+                label: 'Телефон',
+                initialValue:
+                    _driverPhone.isEmpty ? widget.accountPhone : _driverPhone,
+                onChanged: (value) => _driverPhone = value,
+              ),
               const SizedBox(height: 12),
               _ApplicationField(
-                  label: 'Марка и модель авто',
-                  onChanged: (value) => _driverCarModel = value),
+                label: 'Марка и модель авто',
+                onChanged: (value) => _driverCarModel = value,
+              ),
               const SizedBox(height: 12),
               _ApplicationField(
-                  label: 'Цвет авто',
-                  onChanged: (value) => _driverCarColor = value),
+                label: 'Цвет авто',
+                onChanged: (value) => _driverCarColor = value,
+              ),
               const SizedBox(height: 12),
               _ApplicationField(
-                  label: 'Госномер',
-                  onChanged: (value) => _driverPlate = value),
+                label: 'Госномер',
+                onChanged: (value) => _driverPlate = value,
+              ),
               const SizedBox(height: 12),
               _ApplicationField(
-                  label: 'Год выпуска',
-                  keyboardType: TextInputType.number,
-                  onChanged: (value) => _driverYear = value),
+                label: 'Год выпуска',
+                keyboardType: TextInputType.number,
+                onChanged: (value) => _driverYear = value,
+              ),
               const SizedBox(height: 12),
               _ApplicationField(
-                  label: 'Комментарий',
-                  onChanged: (value) => _driverComment = value),
+                label: 'Комментарий',
+                onChanged: (value) => _driverComment = value,
+              ),
               if (_driverApplicationMessage != null) ...[
                 const SizedBox(height: 14),
                 _InlineMessage(text: _driverApplicationMessage!),
@@ -641,7 +777,9 @@ class _PassengerShellState extends State<PassengerShell> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _PremiumCard(child: EmptyState(title: title, text: text)),
+        _PremiumCard(
+          child: EmptyState(title: title, text: text),
+        ),
       ],
     );
   }
@@ -654,6 +792,8 @@ class _MapCanvas extends StatelessWidget {
     required this.dropoff,
     required this.driver,
     required this.route,
+    required this.target,
+    required this.permissionNotice,
     required this.onTap,
     required this.onUseLocation,
     required this.onReset,
@@ -666,6 +806,8 @@ class _MapCanvas extends StatelessWidget {
   final Coordinate? dropoff;
   final DriverLocation? driver;
   final List<LatLng> route;
+  final PointTarget target;
+  final String? permissionNotice;
   final ValueChanged<LatLng> onTap;
   final VoidCallback onUseLocation;
   final VoidCallback onReset;
@@ -674,6 +816,13 @@ class _MapCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final instruction = pickup == null
+        ? 'Выберите точку посадки'
+        : dropoff == null
+            ? 'Теперь выберите точку назначения'
+            : route.isNotEmpty
+                ? 'Маршрут построен по данным сервиса'
+                : 'Маршрут выбран';
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       child: Stack(
@@ -686,26 +835,44 @@ class _MapCanvas extends StatelessWidget {
             ),
             children: [
               TileLayer(
-                  urlTemplate: AppConfig.osmTileUrl,
-                  userAgentPackageName: 'com.smarttaxi.app'),
+                urlTemplate: AppConfig.osmTileUrl,
+                userAgentPackageName: 'com.smarttaxi.app',
+              ),
               if (route.isNotEmpty)
-                PolylineLayer(polylines: [
-                  Polyline(
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
                       points: route,
                       color: SmartTaxiColors.goldDeep,
-                      strokeWidth: 5)
-                ]),
-              MarkerLayer(markers: [
-                if (pickup != null)
-                  _marker(pickup!.toLatLng(), 'A', SmartTaxiColors.text,
-                      Colors.white),
-                if (dropoff != null)
-                  _marker(dropoff!.toLatLng(), 'B', SmartTaxiColors.gold,
-                      SmartTaxiColors.text),
-                if (driver != null)
-                  _marker(driver!.toLatLng(), 'D', SmartTaxiColors.success,
-                      Colors.white),
-              ]),
+                      strokeWidth: 5,
+                    ),
+                  ],
+                ),
+              MarkerLayer(
+                markers: [
+                  if (pickup != null)
+                    _marker(
+                      pickup!.toLatLng(),
+                      'A',
+                      SmartTaxiColors.text,
+                      Colors.white,
+                    ),
+                  if (dropoff != null)
+                    _marker(
+                      dropoff!.toLatLng(),
+                      'B',
+                      SmartTaxiColors.gold,
+                      SmartTaxiColors.text,
+                    ),
+                  if (driver != null)
+                    _marker(
+                      driver!.toLatLng(),
+                      'D',
+                      SmartTaxiColors.success,
+                      Colors.white,
+                    ),
+                ],
+              ),
             ],
           ),
           const Positioned.fill(
@@ -735,11 +902,29 @@ class _MapCanvas extends StatelessWidget {
             left: 14,
             top: 84,
             right: 80,
-            child: _MapHint(
-                onLocation: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            'Выберите точку на карте или через поля маршрута')))),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: permissionNotice == null
+                  ? _MapInstructionCard(
+                      key: ValueKey(instruction),
+                      title: instruction,
+                      text: target == PointTarget.pickup
+                          ? 'Нажмите на карту или заполните поле «Откуда».'
+                          : 'Нажмите на карту или заполните поле «Куда».',
+                      onHelp: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Карта ставит только выбранную точку A или B.',
+                          ),
+                        ),
+                      ),
+                    )
+                  : _MapPermissionCard(
+                      key: const ValueKey('permission-notice'),
+                      text: permissionNotice!,
+                      onUseLocation: onUseLocation,
+                    ),
+            ),
           ),
           Positioned(
             right: 14,
@@ -747,22 +932,26 @@ class _MapCanvas extends StatelessWidget {
             child: Column(
               children: [
                 _MapRoundButton(
-                    icon: Icons.my_location_rounded,
-                    label: 'Разрешить геолокацию',
-                    onTap: onUseLocation),
+                  icon: Icons.my_location_rounded,
+                  label: 'Разрешить геолокацию',
+                  onTap: onUseLocation,
+                ),
                 const SizedBox(height: 10),
                 _MapRoundButton(
-                    icon: Icons.add_location_alt_outlined,
-                    label: 'Выбрать точку на карте',
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Нажмите на карту, чтобы поставить точку')))),
+                  icon: Icons.add_location_alt_outlined,
+                  label: 'Выбрать точку на карте',
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Нажмите на карту, чтобы поставить точку'),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 _MapRoundButton(
-                    icon: Icons.refresh_rounded,
-                    label: 'Сбросить маршрут',
-                    onTap: onReset),
+                  icon: Icons.refresh_rounded,
+                  label: 'Сбросить маршрут',
+                  onTap: onReset,
+                ),
               ],
             ),
           ),
@@ -771,20 +960,26 @@ class _MapCanvas extends StatelessWidget {
             bottom: 36,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.94),
-                  border: Border.all(color: SmartTaxiColors.border),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                        color: Color(0x12785a14),
-                        blurRadius: 16,
-                        offset: Offset(0, 8))
-                  ]),
+                color: Colors.white.withValues(alpha: 0.94),
+                border: Border.all(color: SmartTaxiColors.border),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x12785a14),
+                    blurRadius: 16,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                child: Text(AppConfig.mapAttribution,
-                    style: TextStyle(
-                        fontSize: 11, color: SmartTaxiColors.textSecondary)),
+                child: Text(
+                  AppConfig.mapAttribution,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: SmartTaxiColors.textSecondary,
+                  ),
+                ),
               ),
             ),
           ),
@@ -794,7 +989,11 @@ class _MapCanvas extends StatelessWidget {
   }
 
   Marker _marker(
-      LatLng point, String label, Color background, Color foreground) {
+    LatLng point,
+    String label,
+    Color background,
+    Color foreground,
+  ) {
     return Marker(
       point: point,
       width: 46,
@@ -802,25 +1001,32 @@ class _MapCanvas extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-            color: background,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                  color: background.withValues(alpha: 0.32),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10))
-            ]),
-        child: Text(label,
-            style: TextStyle(color: foreground, fontWeight: FontWeight.w900)),
+          color: background,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: background.withValues(alpha: 0.32),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(color: foreground, fontWeight: FontWeight.w900),
+        ),
       ),
     );
   }
 }
 
 class _MapRoundButton extends StatelessWidget {
-  const _MapRoundButton(
-      {required this.icon, required this.label, required this.onTap});
+  const _MapRoundButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -846,9 +1052,10 @@ class _MapRoundButton extends StatelessWidget {
               border: Border.all(color: SmartTaxiColors.border),
               boxShadow: const [
                 BoxShadow(
-                    color: Color(0x12785a14),
-                    blurRadius: 18,
-                    offset: Offset(0, 8))
+                  color: Color(0x12785a14),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
               ],
             ),
             child: Icon(icon, color: SmartTaxiColors.text, size: 21),
@@ -859,28 +1066,120 @@ class _MapRoundButton extends StatelessWidget {
   }
 }
 
-class _MapHint extends StatelessWidget {
-  const _MapHint({required this.onLocation});
+class _MapInstructionCard extends StatelessWidget {
+  const _MapInstructionCard({
+    super.key,
+    required this.title,
+    required this.text,
+    required this.onHelp,
+  });
 
-  final VoidCallback onLocation;
+  final String title;
+  final String text;
+  final VoidCallback onHelp;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.94),
-          border: Border.all(color: SmartTaxiColors.border),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(color: Color(0x16785a14), blurRadius: 22)
-          ]),
+        color: Colors.white.withValues(alpha: 0.94),
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [BoxShadow(color: Color(0x16785a14), blurRadius: 22)],
+      ),
       child: Row(
         children: [
-          const Expanded(
-              child: Text('Нажмите на карту, чтобы выбрать точку',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
-          TextButton(onPressed: onLocation, child: const Text('Как выбрать')),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(onPressed: onHelp, child: const Text('Как выбрать')),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapPermissionCard extends StatelessWidget {
+  const _MapPermissionCard({
+    super.key,
+    required this.text,
+    required this.onUseLocation,
+  });
+
+  final String text;
+  final VoidCallback onUseLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xfffff8e6).withValues(alpha: 0.96),
+        border: Border.all(color: SmartTaxiColors.borderStrong),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x18785a14),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: SmartTaxiColors.goldPale,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.near_me_disabled_outlined,
+              size: 18,
+              color: SmartTaxiColors.goldDeep,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12.5,
+                height: 1.25,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onUseLocation,
+            tooltip: 'Разрешить геолокацию',
+            icon: const Icon(Icons.my_location_rounded),
+          ),
         ],
       ),
     );
@@ -926,6 +1225,11 @@ class _OrderSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final routeError =
+        error != null && error!.toLowerCase().contains('маршрут');
+    final canSubmit = !loading &&
+        !previewLoading &&
+        (cta == 'Рассчитать' || cta == 'Заказать');
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.96, end: 1),
       duration: const Duration(milliseconds: 260),
@@ -949,20 +1253,27 @@ class _OrderSheet extends StatelessWidget {
                 children: [
                   const Expanded(
                     child: _TitleBlock(
-                        title: 'Куда едем?',
-                        text: 'Поездки только внутри активного региона'),
+                      title: 'Куда едем?',
+                      text: 'Поездки только внутри активного региона',
+                    ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: SmartTaxiColors.goldPale,
                       border: Border.all(color: SmartTaxiColors.borderStrong),
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: const Text('A/B',
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w900)),
+                    child: const Text(
+                      'A/B',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -977,25 +1288,31 @@ class _OrderSheet extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                  onPressed: onUseLocation,
-                  icon: const Icon(Icons.my_location_rounded, size: 19),
-                  label: const Text('Разрешить геолокацию')),
+                onPressed: onUseLocation,
+                icon: const Icon(Icons.my_location_rounded, size: 19),
+                label: const Text('Разрешить геолокацию'),
+              ),
               const SizedBox(height: 18),
               _TariffSection(
-                  tariffs: tariffs,
-                  selectedId: selectedTariffId,
-                  estimate: preview,
-                  loading: previewLoading,
-                  onSelect: onTariff),
+                tariffs: tariffs,
+                selectedId: selectedTariffId,
+                estimate: preview,
+                loading: previewLoading,
+                onSelect: onTariff,
+              ),
               const SizedBox(height: 16),
-              _PriceSection(preview: preview, loading: previewLoading),
-              if (error != null) ...[
+              _PriceSection(
+                preview: preview,
+                loading: previewLoading,
+                routeError: routeError ? error : null,
+              ),
+              if (error != null && !routeError) ...[
                 const SizedBox(height: 12),
                 _InlineMessage(text: error!, danger: true),
               ],
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: loading || previewLoading ? null : onCreate,
+                onPressed: canSubmit ? onCreate : null,
                 child: loading
                     ? const _ButtonSpinner(text: 'Создаём заказ...')
                     : Text(cta),
@@ -1039,69 +1356,120 @@ class _CoordinateSheetState extends State<_CoordinateSheet> {
       return;
     }
     Navigator.pop(
-        context,
-        _PointResult(
-            Coordinate(lat: lat, lng: lng),
-            _label.text.trim().isEmpty
-                ? 'Выбранная точка'
-                : _label.text.trim()));
+      context,
+      _PointResult(
+        Coordinate(lat: lat, lng: lng),
+        _label.text.trim().isEmpty ? 'Выбранная точка' : _label.text.trim(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          20, 20, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.title,
-              style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 8),
-          const Text('Выберите точку на карте или введите адрес.',
-              style: TextStyle(color: SmartTaxiColors.textSecondary)),
-          const SizedBox(height: 16),
-          TextField(
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.title,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Выберите точку на карте или укажите адрес с координатами.',
+              style: TextStyle(color: SmartTaxiColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            TextField(
               controller: _label,
-              decoration: const InputDecoration(labelText: 'Название точки')),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                  child: TextField(
-                      controller: _lat,
-                      decoration: const InputDecoration(labelText: 'Широта'),
-                      keyboardType: TextInputType.number)),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: TextField(
-                      controller: _lng,
-                      decoration: const InputDecoration(labelText: 'Долгота'),
-                      keyboardType: TextInputType.number)),
-            ],
-          ),
-          if (_error != null) ...[
+              decoration: const InputDecoration(
+                labelText: 'Адрес или ориентир',
+              ),
+            ),
             const SizedBox(height: 12),
-            _InlineMessage(text: _error!, danger: true),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _lat,
+                    decoration: const InputDecoration(
+                      labelText: 'Широта',
+                      hintText: '42.3167',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: true,
+                      decimal: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _lng,
+                    decoration: const InputDecoration(
+                      labelText: 'Долгота',
+                      hintText: '69.5958',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: true,
+                      decimal: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const _CompactNotice(
+              icon: Icons.touch_app_outlined,
+              title: 'Можно проще',
+              text: 'Закройте окно и нажмите на карту, чтобы поставить точку.',
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              _InlineMessage(text: _error!, danger: true),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Выбрать на карте'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _submit,
+                    child: const Text('Готово'),
+                  ),
+                ),
+              ],
+            ),
           ],
-          const SizedBox(height: 16),
-          ElevatedButton(
-              onPressed: _submit, child: const Text('Выбрать точку')),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _TariffSection extends StatelessWidget {
-  const _TariffSection(
-      {required this.tariffs,
-      required this.selectedId,
-      required this.estimate,
-      required this.loading,
-      required this.onSelect});
+  const _TariffSection({
+    required this.tariffs,
+    required this.selectedId,
+    required this.estimate,
+    required this.loading,
+    required this.onSelect,
+  });
 
   final List<TariffOption> tariffs;
   final String? selectedId;
@@ -1118,9 +1486,11 @@ class _TariffSection extends StatelessWidget {
         const _SectionLabel(title: 'Тариф', text: 'Выберите класс поездки'),
         const SizedBox(height: 10),
         if (tariffs.isEmpty)
-          const _InlineMessage(
-              text:
-                  'Тарифы пока не настроены\nАдминистратор должен добавить тариф для активного региона.')
+          const _CompactNotice(
+            icon: Icons.local_taxi_outlined,
+            title: 'Тарифы пока не настроены',
+            text: 'Администратор должен добавить тариф для активного региона.',
+          )
         else
           SizedBox(
             height: 112,
@@ -1146,62 +1516,78 @@ class _TariffSection extends StatelessWidget {
                         color:
                             selected ? SmartTaxiColors.cardWarm : Colors.white,
                         border: Border.all(
-                            color: selected
-                                ? SmartTaxiColors.gold
-                                : SmartTaxiColors.border,
-                            width: selected ? 2 : 1),
+                          color: selected
+                              ? SmartTaxiColors.gold
+                              : SmartTaxiColors.border,
+                          width: selected ? 2 : 1,
+                        ),
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: selected
                             ? const [
                                 BoxShadow(
-                                    color: Color(0x16785a14),
-                                    blurRadius: 22,
-                                    offset: Offset(0, 10))
+                                  color: Color(0x16785a14),
+                                  blurRadius: 22,
+                                  offset: Offset(0, 10),
+                                ),
                               ]
                             : null,
                       ),
                       child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: selected
-                                        ? SmartTaxiColors.gold
-                                        : SmartTaxiColors.goldPale,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.local_taxi_rounded,
-                                      size: 16, color: SmartTaxiColors.text),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 28,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? SmartTaxiColors.gold
+                                      : SmartTaxiColors.goldPale,
+                                  shape: BoxShape.circle,
                                 ),
-                                const Spacer(),
-                                if (selected)
-                                  const Icon(Icons.check_circle_rounded,
-                                      size: 18, color: SmartTaxiColors.goldDeep)
-                              ],
+                                child: const Icon(
+                                  Icons.local_taxi_rounded,
+                                  size: 16,
+                                  color: SmartTaxiColors.text,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (selected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 18,
+                                  color: SmartTaxiColors.goldDeep,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            tariff.name,
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                          if (tariff.description != null)
+                            Text(
+                              tariff.description!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: SmartTaxiColors.textSecondary,
+                                fontSize: 12,
+                              ),
                             ),
-                            const SizedBox(height: 10),
-                            Text(tariff.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w900)),
-                            if (tariff.description != null)
-                              Text(tariff.description!,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: SmartTaxiColors.textSecondary,
-                                      fontSize: 12)),
-                            const Spacer(),
-                            if (selected && estimate?.estimatedPrice != null)
-                              Text('${estimate!.estimatedPrice!.round()} ₸',
-                                  style: const TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w900)),
-                          ]),
+                          const Spacer(),
+                          if (selected && estimate?.estimatedPrice != null)
+                            Text(
+                              '${estimate!.estimatedPrice!.round()} ₸',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -1232,8 +1618,9 @@ class _TariffSkeleton extends StatelessWidget {
                 margin: EdgeInsets.only(right: index < 2 ? 10 : 0),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldSurface,
-                    borderRadius: BorderRadius.circular(22)),
+                  color: SmartTaxiColors.goldSurface,
+                  borderRadius: BorderRadius.circular(22),
+                ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1254,10 +1641,15 @@ class _TariffSkeleton extends StatelessWidget {
 }
 
 class _PriceSection extends StatelessWidget {
-  const _PriceSection({required this.preview, required this.loading});
+  const _PriceSection({
+    required this.preview,
+    required this.loading,
+    required this.routeError,
+  });
 
   final RoutePreview? preview;
   final bool loading;
+  final String? routeError;
 
   @override
   Widget build(BuildContext context) {
@@ -1271,45 +1663,76 @@ class _PriceSection extends StatelessWidget {
       ),
       child: loading
           ? const _PriceSkeleton()
-          : preview?.estimatedPrice == null
-              ? const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SectionLabel(title: 'Стоимость', text: 'Расчёт поездки'),
-                    SizedBox(height: 10),
-                    Text('Укажите маршрут, чтобы рассчитать стоимость',
-                        style: TextStyle(
-                            color: SmartTaxiColors.textSecondary,
-                            fontWeight: FontWeight.w700)),
-                  ],
-                )
-              : Column(
+          : routeError != null
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _SectionLabel(
-                        title: 'Стоимость', text: 'Цена рассчитана сервером'),
+                      title: 'Стоимость',
+                      text: 'Маршрут не рассчитан',
+                    ),
                     const SizedBox(height: 10),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    Text(
+                      routeError!,
+                      style: const TextStyle(
+                        color: SmartTaxiColors.danger,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                )
+              : preview?.estimatedPrice == null
+                  ? const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${preview!.estimatedPrice!.round()}',
-                            style: const TextStyle(
-                                fontSize: 36,
-                                height: 0.95,
-                                fontWeight: FontWeight.w900)),
-                        const SizedBox(width: 6),
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 2),
-                          child: Text('₸',
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w900)),
+                        _SectionLabel(
+                            title: 'Стоимость', text: 'Расчёт поездки'),
+                        SizedBox(height: 10),
+                        Text(
+                          'Укажите маршрут, чтобы рассчитать стоимость.',
+                          style: TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionLabel(
+                          title: 'Стоимость',
+                          text: 'Цена рассчитана сервером',
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${preview!.estimatedPrice!.round()}',
+                              style: const TextStyle(
+                                fontSize: 36,
+                                height: 0.95,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                '₸',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _RouteEstimateMeta(preview: preview!),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    _RouteEstimateMeta(preview: preview!),
-                  ],
-                ),
     );
   }
 }
@@ -1341,15 +1764,20 @@ class _RouteEstimateMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     final distance = (preview.distanceMeters / 1000).toStringAsFixed(1);
     final minutes = (preview.durationSeconds / 60).round();
-    return Text('Маршрут: $distance км · $minutes мин',
-        style: const TextStyle(
-            color: SmartTaxiColors.textSecondary, fontWeight: FontWeight.w700));
+    return Text(
+      'Маршрут: $distance км · $minutes мин',
+      style: const TextStyle(
+        color: SmartTaxiColors.textSecondary,
+        fontWeight: FontWeight.w700,
+      ),
+    );
   }
 }
 
 class _SmartDrawer extends StatelessWidget {
   const _SmartDrawer({
     required this.accountLabel,
+    required this.accountPhone,
     required this.active,
     required this.driverLabel,
     required this.onSelect,
@@ -1358,6 +1786,7 @@ class _SmartDrawer extends StatelessWidget {
   });
 
   final String accountLabel;
+  final String accountPhone;
   final PassengerTab active;
   final String driverLabel;
   final ValueChanged<PassengerTab> onSelect;
@@ -1369,7 +1798,8 @@ class _SmartDrawer extends StatelessWidget {
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.84,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.horizontal(right: Radius.circular(28))),
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+      ),
       child: SafeArea(
         child: Column(
           children: [
@@ -1383,45 +1813,73 @@ class _SmartDrawer extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('SmartTaxi',
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.w900)),
-                          Text(accountLabel.isEmpty ? 'Аккаунт' : accountLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: SmartTaxiColors.textSecondary)),
-                        ]),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'SmartTaxi',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          accountLabel.isEmpty ? 'Аккаунт' : accountLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                          ),
+                        ),
+                        if (accountPhone.trim().isNotEmpty)
+                          Text(
+                            accountPhone,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: SmartTaxiColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 10),
             _DrawerItem(
-                label: 'Главная',
-                active: active == PassengerTab.home,
-                onTap: () => onSelect(PassengerTab.home)),
+              label: 'Главная',
+              active: active == PassengerTab.home,
+              onTap: () => onSelect(PassengerTab.home),
+            ),
             _DrawerItem(
-                label: 'Мои поездки',
-                active: active == PassengerTab.trips,
-                onTap: () => onSelect(PassengerTab.trips)),
+              label: 'Мои поездки',
+              active: active == PassengerTab.trips,
+              onTap: () => onSelect(PassengerTab.trips),
+            ),
             _DrawerItem(
-                label: driverLabel,
-                active: active == PassengerTab.driverApplication,
-                onTap: onDriver),
+              label: driverLabel,
+              active: active == PassengerTab.driverApplication,
+              onTap: onDriver,
+            ),
             _DrawerItem(
-                label: 'Поддержка',
-                active: active == PassengerTab.support,
-                onTap: () => onSelect(PassengerTab.support)),
+              label: 'Поддержка',
+              active: active == PassengerTab.support,
+              onTap: () => onSelect(PassengerTab.support),
+            ),
             _DrawerItem(
-                label: 'Настройки',
-                active: false,
-                onTap: () => onSelect(PassengerTab.support)),
+              label: 'Настройки',
+              active: false,
+              onTap: () => onSelect(PassengerTab.support),
+            ),
             const Spacer(),
             _DrawerItem(
-                label: 'Выйти', active: false, danger: true, onTap: onLogout),
+              label: 'Выйти',
+              active: false,
+              danger: true,
+              onTap: onLogout,
+            ),
             const SizedBox(height: 12),
           ],
         ),
@@ -1431,11 +1889,12 @@ class _SmartDrawer extends StatelessWidget {
 }
 
 class _DrawerItem extends StatelessWidget {
-  const _DrawerItem(
-      {required this.label,
-      required this.active,
-      required this.onTap,
-      this.danger = false});
+  const _DrawerItem({
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.danger = false,
+  });
 
   final String label;
   final bool active;
@@ -1477,15 +1936,19 @@ class _AppHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x10785a14), blurRadius: 22, offset: Offset(0, 10))
+            color: Color(0x10785a14),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
         ],
       ),
       child: Row(
         children: [
           IconButton(
-              onPressed: onMenu,
-              icon: const Icon(Icons.menu_rounded),
-              tooltip: 'Меню'),
+            onPressed: onMenu,
+            icon: const Icon(Icons.menu_rounded),
+            tooltip: 'Меню',
+          ),
           const SizedBox(width: 4),
           const BrandLogo(),
           const Spacer(),
@@ -1522,9 +1985,10 @@ class _MapOverlayHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x16785a14),
-                  blurRadius: 24,
-                  offset: Offset(0, 10))
+                color: Color(0x16785a14),
+                blurRadius: 24,
+                offset: Offset(0, 10),
+              ),
             ],
           ),
           child: const BrandLogo(),
@@ -1570,9 +2034,10 @@ class _MapChromeButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: const [
                 BoxShadow(
-                    color: Color(0x14785a14),
-                    blurRadius: 22,
-                    offset: Offset(0, 10))
+                  color: Color(0x14785a14),
+                  blurRadius: 22,
+                  offset: Offset(0, 10),
+                ),
               ],
             ),
             child: Icon(icon, color: SmartTaxiColors.text),
@@ -1591,9 +2056,10 @@ class _HeaderProfileButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-        onPressed: onTap,
-        icon: const Icon(Icons.person_outline_rounded),
-        tooltip: 'Профиль');
+      onPressed: onTap,
+      icon: const Icon(Icons.person_outline_rounded),
+      tooltip: 'Профиль',
+    );
   }
 }
 
@@ -1612,7 +2078,10 @@ class _PremiumCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x18785a14), blurRadius: 42, offset: Offset(0, 18))
+            color: Color(0x18785a14),
+            blurRadius: 42,
+            offset: Offset(0, 18),
+          ),
         ],
       ),
       child: child,
@@ -1639,9 +2108,10 @@ class _FloatingNav extends StatelessWidget {
             borderRadius: BorderRadius.circular(26),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x16785a14),
-                  blurRadius: 28,
-                  offset: Offset(0, 12))
+                color: Color(0x16785a14),
+                blurRadius: 28,
+                offset: Offset(0, 12),
+              ),
             ],
           ),
           child: child,
@@ -1665,15 +2135,22 @@ class _SectionLabel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w900)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 3),
-              Text(text,
-                  style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                text,
+                style: const TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         ),
@@ -1683,8 +2160,11 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _SkeletonLine extends StatelessWidget {
-  const _SkeletonLine(
-      {required this.width, required this.height, this.radius = 8});
+  const _SkeletonLine({
+    required this.width,
+    required this.height,
+    this.radius = 8,
+  });
 
   final double width;
   final double height;
@@ -1724,7 +2204,9 @@ class _ButtonSpinner extends StatelessWidget {
           width: 18,
           height: 18,
           child: CircularProgressIndicator(
-              strokeWidth: 2.2, color: SmartTaxiColors.text),
+            strokeWidth: 2.2,
+            color: SmartTaxiColors.text,
+          ),
         ),
         const SizedBox(width: 10),
         Text(text),
@@ -1741,17 +2223,89 @@ class _TitleBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
           style: const TextStyle(
-              fontSize: 27, height: 1.12, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 6),
-      Text(text,
+            fontSize: 27,
+            height: 1.12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          text,
           style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
-              fontSize: 14,
-              height: 1.35)),
-    ]);
+            color: SmartTaxiColors.textSecondary,
+            fontSize: 14,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CompactNotice extends StatelessWidget {
+  const _CompactNotice({
+    required this.icon,
+    required this.title,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.72),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: SmartTaxiColors.goldDeep, size: 19),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  text,
+                  style: const TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1769,15 +2323,18 @@ class _InlineMessage extends StatelessWidget {
       decoration: BoxDecoration(
         color: danger ? const Color(0xfffff1f1) : SmartTaxiColors.goldSurface,
         border: Border.all(
-            color: danger ? const Color(0xfffecaca) : SmartTaxiColors.border),
+          color: danger ? const Color(0xfffecaca) : SmartTaxiColors.border,
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Text(text,
-          style: TextStyle(
-              color: danger
-                  ? SmartTaxiColors.danger
-                  : SmartTaxiColors.textSecondary,
-              fontWeight: FontWeight.w700)),
+      child: Text(
+        text,
+        style: TextStyle(
+          color:
+              danger ? SmartTaxiColors.danger : SmartTaxiColors.textSecondary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
@@ -1790,14 +2347,23 @@ class _ProfileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(label, style: const TextStyle(color: SmartTaxiColors.textSecondary)),
-      Flexible(
-          child: Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w800))),
-    ]);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: SmartTaxiColors.textSecondary),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1810,10 +2376,11 @@ class _MenuLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap);
+      contentPadding: EdgeInsets.zero,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: onTap,
+    );
   }
 }
 
@@ -1853,12 +2420,14 @@ class _SheetHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-          width: 44,
-          height: 5,
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-              color: SmartTaxiColors.borderStrong,
-              borderRadius: BorderRadius.circular(999))),
+        width: 44,
+        height: 5,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: SmartTaxiColors.borderStrong,
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
     );
   }
 }
@@ -1875,7 +2444,7 @@ class _StatusStepper extends StatelessWidget {
       'DRIVER_ASSIGNED',
       'DRIVER_ARRIVED',
       'IN_PROGRESS',
-      'COMPLETED'
+      'COMPLETED',
     ];
     const labels = ['Поиск', 'Принят', 'Прибыл', 'В пути', 'Завершено'];
     final index = steps.indexOf(status).clamp(0, steps.length - 1);
@@ -1883,22 +2452,27 @@ class _StatusStepper extends StatelessWidget {
       children: List.generate(steps.length, (stepIndex) {
         final done = stepIndex <= index;
         return Expanded(
-          child: Container(
-            margin:
-                EdgeInsets.only(right: stepIndex == steps.length - 1 ? 0 : 5),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            margin: EdgeInsets.only(
+              right: stepIndex == steps.length - 1 ? 0 : 5,
+            ),
             padding: const EdgeInsets.symmetric(vertical: 9),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: done ? SmartTaxiColors.goldSoft : Colors.white,
               border: Border.all(
-                  color: done
-                      ? SmartTaxiColors.borderStrong
-                      : SmartTaxiColors.border),
+                color: done
+                    ? SmartTaxiColors.borderStrong
+                    : SmartTaxiColors.border,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(labels[stepIndex],
-                style:
-                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+            child: Text(
+              labels[stepIndex],
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+            ),
           ),
         );
       }),
@@ -1953,7 +2527,7 @@ String _readableError(Object error) {
     'INTERCITY_NOT_SUPPORTED': 'Межгород пока не поддерживается',
     'TARIFF_INACTIVE': 'Этот тариф временно недоступен',
     'TARIFF_REGION_MISMATCH': 'Тариф недоступен для выбранного региона',
-    'ROUTE_UNAVAILABLE': 'Маршрут сейчас недоступен',
+    'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен.',
     'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
   };
   for (final entry in map.entries) {
