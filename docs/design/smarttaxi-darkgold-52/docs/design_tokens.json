@@ -1,0 +1,27 @@
+{
+  "brand": "SmartTaxi",
+  "logo": "gold S inside shield/hexagon",
+  "theme": "dark luxury black/gold",
+  "colors": {
+    "background": [
+      "#050607",
+      "#090B0F",
+      "#0E1116"
+    ],
+    "card": "rgba(20,22,26,.88)",
+    "border": "rgba(255,255,255,.10)",
+    "gold": "#FFC21A",
+    "goldGradient": "linear-gradient(180deg, #FFD966 0%, #F2B400 100%)",
+    "textPrimary": "#FFFFFF",
+    "textSecondary": "#A7A7A7",
+    "success": "#4CD964",
+    "danger": "#FF453A"
+  },
+  "rules": [
+    "No emoji",
+    "No random brand names",
+    "No white/gold old UI",
+    "Map APIs deferred",
+    "UI-only stage"
+  ]
+}
