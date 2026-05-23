@@ -111,6 +111,7 @@ class OrderSummary {
     this.price,
     this.distanceKm,
     this.durationMin,
+    this.tariff,
     this.driverId,
     this.pickupCoordinate,
     this.dropoffCoordinate,
@@ -123,6 +124,7 @@ class OrderSummary {
   final double? price;
   final double? distanceKm;
   final double? durationMin;
+  final String? tariff;
   final String? driverId;
   final Coordinate? pickupCoordinate;
   final Coordinate? dropoffCoordinate;
@@ -155,6 +157,7 @@ class OrderSummary {
       durationMin: _nullableDouble(json['duration_min'] ??
           json['durationMin'] ??
           snapshot['durationMin']),
+      tariff: (json['tariff'] ?? snapshot['tariffName'])?.toString(),
       driverId: json['driver_id']?.toString() ?? json['driverId']?.toString(),
       pickupCoordinate: _coordinateFromJson(json, 'pickup'),
       dropoffCoordinate: _coordinateFromJson(json, 'dropoff'),

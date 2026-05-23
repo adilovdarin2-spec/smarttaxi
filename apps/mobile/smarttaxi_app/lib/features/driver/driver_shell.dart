@@ -42,8 +42,14 @@ class _DriverShellState extends State<DriverShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _tab = 0;
   bool _loading = false;
+  bool _regionsLoading = false;
+  bool _ordersLoading = false;
+  bool _locationLoading = false;
   bool _online = false;
   String? _error;
+  String? _locationMessage;
+  String? _acceptingOrderId;
+  String? _tripActionLabel;
   List<DriverRegion> _regions = const [];
   String? _regionId;
   List<OrderSummary> _orders = const [];
@@ -81,16 +87,31 @@ class _DriverShellState extends State<DriverShell> {
 
   void _handleOrderUpdate(dynamic data) {
     if (data is! Map) return;
-    final order =
-        OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
+    final payload = Map<String, dynamic>.from(data['order'] ?? data);
+    final order = OrderSummary.fromJson(payload);
+    final hasRouteDetails = payload.containsKey('pickup_text') ||
+        payload.containsKey('pickupText') ||
+        payload.containsKey('pickup') ||
+        payload.containsKey('dropoff_text') ||
+        payload.containsKey('dropoffText') ||
+        payload.containsKey('dropoff');
     setState(() {
       _orders = _mergeOrder(_orders, order);
-      if (order.isActive) _activeOrder = order;
+      if (_activeOrder?.id == order.id || order.isActive) {
+        _activeOrder = order;
+      }
+      if (order.status == 'COMPLETED' || order.status == 'CANCELLED') {
+        _driverRoute = null;
+      }
     });
+    if (!hasRouteDetails) unawaited(_loadOrders());
   }
 
   Future<void> _loadRegions() async {
-    setState(() => _error = null);
+    setState(() {
+      _regionsLoading = true;
+      _error = null;
+    });
     try {
       final regions = await widget.api.getDriverRegions();
       setState(() {
@@ -99,6 +120,8 @@ class _DriverShellState extends State<DriverShell> {
       });
     } catch (error) {
       setState(() => _error = _readableError(error));
+    } finally {
+      if (mounted) setState(() => _regionsLoading = false);
     }
   }
 
@@ -123,6 +146,10 @@ class _DriverShellState extends State<DriverShell> {
     setState(() {
       _loading = true;
       _error = null;
+      if (nextOnline) {
+        _locationLoading = true;
+        _locationMessage = 'Проверяем геолокацию...';
+      }
     });
     try {
       await widget.api.setDriverStatus(nextOnline ? 'FREE' : 'OFFLINE');
@@ -130,7 +157,10 @@ class _DriverShellState extends State<DriverShell> {
         final locationStarted = await _startLocationFlow();
         if (!locationStarted) {
           await widget.api.setDriverStatus('OFFLINE');
-          setState(() => _online = false);
+          setState(() {
+            _online = false;
+            _locationMessage = null;
+          });
           return;
         }
         widget.sockets.joinDrivers();
@@ -138,12 +168,21 @@ class _DriverShellState extends State<DriverShell> {
       } else {
         await _positionSub?.cancel();
         _positionSub = null;
+        _locationMessage = null;
       }
       setState(() => _online = nextOnline);
     } catch (error) {
-      setState(() => _error = _readableError(error));
+      setState(() {
+        _error = _readableError(error);
+        if (nextOnline) _locationMessage = null;
+      });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _locationLoading = false;
+        });
+      }
     }
   }
 
@@ -166,44 +205,81 @@ class _DriverShellState extends State<DriverShell> {
     _positionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high, distanceFilter: 20),
-    ).listen((position) {
-      widget.api.updateDriverLocation(
-        location: Coordinate(lat: position.latitude, lng: position.longitude),
-        heading: position.heading.isFinite ? position.heading : null,
-        speed: position.speed.isFinite ? position.speed : null,
-        accuracy: position.accuracy.isFinite ? position.accuracy : null,
-      );
+    ).listen((position) async {
+      try {
+        await widget.api.updateDriverLocation(
+          location: Coordinate(lat: position.latitude, lng: position.longitude),
+          heading: position.heading.isFinite ? position.heading : null,
+          speed: position.speed.isFinite ? position.speed : null,
+          accuracy: position.accuracy.isFinite ? position.accuracy : null,
+        );
+      } catch (_) {
+        if (mounted) {
+          setState(() => _locationMessage =
+              'Не удалось отправить геолокацию. Попробуйте снова.');
+        }
+      }
+    }, onError: (_) {
+      if (mounted) {
+        setState(() => _locationMessage =
+            'Не удалось получить геолокацию. Попробуйте снова.');
+      }
     });
-    final current = await Geolocator.getCurrentPosition();
-    await widget.api.updateDriverLocation(
-      location: Coordinate(lat: current.latitude, lng: current.longitude),
-      heading: current.heading.isFinite ? current.heading : null,
-      speed: current.speed.isFinite ? current.speed : null,
-      accuracy: current.accuracy.isFinite ? current.accuracy : null,
-    );
+    try {
+      final current = await Geolocator.getCurrentPosition();
+      await widget.api.updateDriverLocation(
+        location: Coordinate(lat: current.latitude, lng: current.longitude),
+        heading: current.heading.isFinite ? current.heading : null,
+        speed: current.speed.isFinite ? current.speed : null,
+        accuracy: current.accuracy.isFinite ? current.accuracy : null,
+      );
+      if (mounted) {
+        setState(() => _locationMessage = 'Геолокация активна');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() =>
+            _error = 'Не удалось отправить геолокацию. Попробуйте снова.');
+      }
+      return false;
+    }
     return true;
   }
 
   Future<void> _loadOrders() async {
-    setState(() => _loading = true);
+    setState(() => _ordersLoading = true);
     try {
       final orders = await widget.api.getOrders();
       final active =
           orders.where((order) => order.isActive).toList(growable: false);
+      final current = _activeOrder;
+      OrderSummary? retainedTerminal;
+      if (current != null && !current.isActive) {
+        for (final order in orders) {
+          if (order.id == current.id) {
+            retainedTerminal = order;
+            break;
+          }
+        }
+      }
       setState(() {
         _orders = orders;
-        _activeOrder = active.isEmpty ? null : active.first;
+        _activeOrder = active.isEmpty ? retainedTerminal : active.first;
       });
     } catch (error) {
       setState(() => _error = _readableError(error));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _ordersLoading = false);
     }
   }
 
   Future<void> _accept(OrderSummary order) async {
+    if (!_online) {
+      setState(() => _error = 'Выйдите на линию, чтобы принимать заказы.');
+      return;
+    }
     setState(() {
-      _loading = true;
+      _acceptingOrderId = order.id;
       _error = null;
     });
     try {
@@ -219,21 +295,23 @@ class _DriverShellState extends State<DriverShell> {
     } catch (error) {
       setState(() => _error = _readableError(error));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _acceptingOrderId = null);
     }
   }
 
   Future<void> _tripAction(
-      Future<OrderSummary> Function(String id) action) async {
+    String label,
+    Future<OrderSummary> Function(String id) action,
+  ) async {
     if (_activeOrder == null) return;
     setState(() {
-      _loading = true;
+      _tripActionLabel = label;
       _error = null;
     });
     try {
       final order = await action(_activeOrder!.id);
       setState(() {
-        _activeOrder = order.isActive ? order : null;
+        _activeOrder = order;
         _orders = _mergeOrder(_orders, order);
         if (order.status == 'COMPLETED' || order.status == 'CANCELLED') {
           _driverRoute = null;
@@ -242,7 +320,7 @@ class _DriverShellState extends State<DriverShell> {
     } catch (error) {
       setState(() => _error = _readableError(error));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _tripActionLabel = null);
     }
   }
 
@@ -334,6 +412,7 @@ class _DriverShellState extends State<DriverShell> {
 
   Widget _lineTab() {
     final disabledReason = _disabledReason();
+    final busy = _activeOrder?.isActive == true;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -341,35 +420,22 @@ class _DriverShellState extends State<DriverShell> {
             title: 'Рабочая смена',
             text: 'Выходите на линию только в одобренном регионе'),
         const SizedBox(height: 16),
+        _DriverStatusPanel(
+          status: _driverStatusLabel(),
+          tone: _driverStatusTone(),
+          online: _online,
+          busy: busy,
+          regionName: _selectedRegion?.name,
+        ),
+        const SizedBox(height: 14),
         _PremiumCard(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Статус водителя',
-                          style: TextStyle(
-                              color: SmartTaxiColors.textSecondary,
-                              fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 6),
-                      StatusPill(
-                          label: _driverStatusLabel(),
-                          tone: _driverStatusTone()),
-                    ],
-                  ),
-                ),
-                _LineGlyph(online: _online, busy: _activeOrder != null),
-              ],
-            ),
-            const SizedBox(height: 20),
             const _SectionLabel(
                 title: 'Рабочий регион',
                 text: 'Заказы поступают только из выбранного региона'),
             const SizedBox(height: 12),
-            if (_loading && _regions.isEmpty)
+            if (_regionsLoading && _regions.isEmpty)
               const _LoadingStrip(text: 'Загружаем регионы...')
             else if (_regions.isEmpty)
               const EmptyState(
@@ -385,6 +451,25 @@ class _DriverShellState extends State<DriverShell> {
                     .toList(),
                 onChanged: _online ? null : _selectRegion,
               ),
+            if (_selectedRegion != null) ...[
+              const SizedBox(height: 12),
+              _RegionSummary(region: _selectedRegion!),
+            ],
+          ]),
+        ),
+        const SizedBox(height: 14),
+        _PremiumCard(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const _SectionLabel(
+                title: 'Линия',
+                text: 'Система проверяет регион, статус и одобрение водителя'),
+            const SizedBox(height: 14),
+            _LocationNotice(
+              online: _online,
+              loading: _locationLoading,
+              message: _locationMessage,
+            ),
             if (disabledReason != null) ...[
               const SizedBox(height: 12),
               _InlineMessage(text: disabledReason),
@@ -420,7 +505,9 @@ class _DriverShellState extends State<DriverShell> {
               title: 'Заказы в регионе',
               text: 'Показываем заказы только в вашем рабочем регионе.'),
           const SizedBox(height: 16),
-          if (!_online)
+          if (_ordersLoading && _online)
+            const _LoadingStrip(text: 'Обновляем заказы...')
+          else if (!_online)
             const EmptyState(
                 title: 'Выйдите на линию, чтобы получать заказы',
                 text: 'После выхода на линию заказы появятся здесь.',
@@ -436,7 +523,7 @@ class _DriverShellState extends State<DriverShell> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _OrderCard(
                       order: order,
-                      loading: _loading,
+                      loading: _acceptingOrderId == order.id,
                       onAccept: () => _accept(order)),
                 )),
           if (_error != null) _InlineMessage(text: _error!, danger: true),
@@ -482,6 +569,13 @@ class _DriverShellState extends State<DriverShell> {
                     style: const TextStyle(
                         fontSize: 26, fontWeight: FontWeight.w900)),
               ],
+              if (_activeOrder!.tariff != null &&
+                  _activeOrder!.tariff!.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text('Тариф: ${_activeOrder!.tariff}',
+                    style:
+                        const TextStyle(color: SmartTaxiColors.textSecondary)),
+              ],
               if (_routeMeta(_activeOrder!) != null) ...[
                 const SizedBox(height: 8),
                 Text(_routeMeta(_activeOrder!)!,
@@ -491,17 +585,20 @@ class _DriverShellState extends State<DriverShell> {
               const SizedBox(height: 16),
               if (action != null)
                 ElevatedButton(
-                    onPressed: _loading ? null : () => _tripAction(action.$2),
-                    child: _loading
+                    onPressed: _tripActionLabel != null
+                        ? null
+                        : () => _tripAction(action.$1, action.$2),
+                    child: _tripActionLabel == action.$1
                         ? const _ButtonSpinner(text: 'Сохраняем...')
                         : Text(action.$1)),
               if (_activeOrder!.status == 'DRIVER_ASSIGNED' ||
                   _activeOrder!.status == 'DRIVER_ARRIVED') ...[
                 const SizedBox(height: 10),
                 OutlinedButton(
-                    onPressed: _loading
+                    onPressed: _tripActionLabel != null
                         ? null
-                        : () => _tripAction(widget.api.cancelDriverOrder),
+                        : () => _tripAction(
+                            'Отменить', widget.api.cancelDriverOrder),
                     child: const Text('Отменить')),
               ],
             ]),
@@ -540,12 +637,12 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   String _driverStatusLabel() {
-    if (_activeOrder != null) return 'Занят';
+    if (_activeOrder?.isActive == true) return 'Занят';
     return _online ? 'На линии' : 'Не на линии';
   }
 
   StatusTone _driverStatusTone() {
-    if (_activeOrder != null) return StatusTone.warning;
+    if (_activeOrder?.isActive == true) return StatusTone.warning;
     return _online ? StatusTone.success : StatusTone.neutral;
   }
 }
@@ -599,6 +696,169 @@ class _SectionLabel extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.w700)),
     ]);
+  }
+}
+
+class _DriverStatusPanel extends StatelessWidget {
+  const _DriverStatusPanel({
+    required this.status,
+    required this.tone,
+    required this.online,
+    required this.busy,
+    required this.regionName,
+  });
+
+  final String status;
+  final StatusTone tone;
+  final bool online;
+  final bool busy;
+  final String? regionName;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PremiumCard(
+      child: Row(
+        children: [
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Статус водителя',
+                  style: TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              StatusPill(label: status, tone: tone),
+              const SizedBox(height: 12),
+              Text(
+                regionName == null
+                    ? 'Рабочий регион не выбран'
+                    : 'Регион: $regionName',
+                style: const TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ]),
+          ),
+          _LineGlyph(online: online, busy: busy),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegionSummary extends StatelessWidget {
+  const _RegionSummary({required this.region});
+
+  final DriverRegion region;
+
+  @override
+  Widget build(BuildContext context) {
+    final blocked = region.status == 'BLOCKED';
+    final inactive = !region.isActive;
+    final label = blocked
+        ? 'Заблокирован'
+        : inactive
+            ? 'Отключён'
+            : 'Одобрен';
+    final tone = blocked || inactive ? StatusTone.danger : StatusTone.success;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(region.name,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 4),
+              const Text(
+                'Заказы будут показаны только из этого региона',
+                style: TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontWeight: FontWeight.w700),
+              ),
+            ]),
+          ),
+          StatusPill(label: label, tone: tone),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationNotice extends StatelessWidget {
+  const _LocationNotice({
+    required this.online,
+    required this.loading,
+    required this.message,
+  });
+
+  final bool online;
+  final bool loading;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = message ??
+        (online
+            ? 'Геолокация отправляется только во время работы на линии.'
+            : 'Для работы на линии нужна геолокация.');
+    final icon = loading
+        ? Icons.my_location_rounded
+        : online
+            ? Icons.location_on_outlined
+            : Icons.location_searching_rounded;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.82),
+              shape: BoxShape.circle,
+            ),
+            child: loading
+                ? const SizedBox(
+                    width: 17,
+                    height: 17,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: SmartTaxiColors.goldDeep,
+                    ),
+                  )
+                : Icon(icon, size: 20, color: SmartTaxiColors.goldDeep),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -918,9 +1178,12 @@ class _OrderCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                   child: _SectionLabel(
-                      title: 'Новый заказ', text: 'В вашем рабочем регионе')),
+                      title: 'Новый заказ',
+                      text: order.tariff == null || order.tariff!.isEmpty
+                          ? 'В вашем рабочем регионе'
+                          : 'Тариф: ${order.tariff}')),
               StatusPill(
                   label: _statusLabel(order.status), tone: StatusTone.neutral),
             ],
@@ -1163,11 +1426,28 @@ List<OrderSummary> _mergeOrder(List<OrderSummary> orders, OrderSummary next) {
   final updated = [...orders];
   final index = updated.indexWhere((order) => order.id == next.id);
   if (index >= 0) {
-    updated[index] = next;
+    updated[index] = _mergeOrderDetails(updated[index], next);
   } else {
     updated.insert(0, next);
   }
   return updated;
+}
+
+OrderSummary _mergeOrderDetails(OrderSummary previous, OrderSummary next) {
+  return OrderSummary(
+    id: next.id,
+    status: next.status,
+    pickup: next.pickup == 'Точка посадки' ? previous.pickup : next.pickup,
+    dropoff:
+        next.dropoff == 'Точка назначения' ? previous.dropoff : next.dropoff,
+    price: next.price ?? previous.price,
+    distanceKm: next.distanceKm ?? previous.distanceKm,
+    durationMin: next.durationMin ?? previous.durationMin,
+    tariff: next.tariff ?? previous.tariff,
+    driverId: next.driverId ?? previous.driverId,
+    pickupCoordinate: next.pickupCoordinate ?? previous.pickupCoordinate,
+    dropoffCoordinate: next.dropoffCoordinate ?? previous.dropoffCoordinate,
+  );
 }
 
 String? _routeMeta(OrderSummary order) {
@@ -1193,6 +1473,12 @@ String _statusLabel(String status) {
 
 String _readableError(Object error) {
   final message = error.toString();
+  if (message.contains('SocketException') ||
+      message.contains('Connection') ||
+      message.contains('connection') ||
+      message.contains('timed out')) {
+    return 'Сервер недоступен. Проверьте подключение.';
+  }
   const map = {
     'DRIVER_REGION_NOT_SELECTED': 'Выберите рабочий регион',
     'DRIVER_REGION_INACTIVE': 'Регион временно отключён',
@@ -1201,7 +1487,7 @@ String _readableError(Object error) {
     'DRIVER_BLOCKED': 'Водитель заблокирован',
     'DRIVER_HAS_ACTIVE_ORDER': 'У вас уже есть активный заказ',
     'ORDER_ALREADY_ACCEPTED': 'Заказ уже принят другим водителем',
-    'DRIVER_OFFLINE': 'Выйдите на линию',
+    'DRIVER_OFFLINE': 'Выйдите на линию, чтобы принимать заказы.',
     'DRIVER_LOCATION_OUTSIDE_REGION': 'Геолокация вне рабочего региона',
     'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен',
     'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',

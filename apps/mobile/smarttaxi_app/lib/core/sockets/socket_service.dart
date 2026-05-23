@@ -34,8 +34,12 @@ class SocketService {
 
   void onOrderUpdate(void Function(dynamic data) handler) {
     _socket?.on('order_update', handler);
+    _socket?.on('order_updated', handler);
     _socket?.on('order_status', handler);
+    _socket?.on('order_status_public', handler);
     _socket?.on('order_created', handler);
+    _socket?.on('order_accepted', handler);
+    _socket?.on('order_assigned', handler);
   }
 
   void onDriverLocation(void Function(dynamic data) handler) {
@@ -45,8 +49,12 @@ class SocketService {
 
   void clearListeners() {
     _socket?.off('order_update');
+    _socket?.off('order_updated');
     _socket?.off('order_status');
+    _socket?.off('order_status_public');
     _socket?.off('order_created');
+    _socket?.off('order_accepted');
+    _socket?.off('order_assigned');
     _socket?.off('driver_location_updated');
     _socket?.off('driver_location_update');
   }

@@ -273,14 +273,55 @@ void main() {
     expect(driver, contains("label: 'Линия'"));
     expect(driver, contains("label: 'Заказы'"));
     expect(driver, contains("label: 'Поездка'"));
+    expect(driver, contains('_DriverStatusPanel'));
+    expect(driver, contains('_RegionSummary'));
+    expect(driver, contains('_LocationNotice'));
     expect(driver, contains('_DriverStatusStepper'));
     expect(driver, contains('_LineGlyph'));
+    expect(driver, contains('Рабочий регион'));
+    expect(driver, contains('Выйти на линию'));
+    expect(driver, contains('Уйти с линии'));
+    expect(driver, contains('Для работы на линии нужна геолокация'));
+    expect(driver, contains('Проверяем геолокацию...'));
+    expect(driver, contains('Геолокация активна'));
+    expect(
+        driver, contains('Не удалось отправить геолокацию. Попробуйте снова.'));
+    expect(driver, contains('Нет одобренных регионов'));
+    expect(
+      driver,
+      contains('Администратор должен одобрить вас для работы.'),
+    );
     expect(driver, contains('Выйдите на линию, чтобы получать заказы'));
     expect(driver, contains('Заказов в вашем регионе пока нет'));
+    expect(driver, contains('_acceptingOrderId'));
+    expect(driver, contains('Принимаем...'));
+    expect(driver, contains('Выйдите на линию, чтобы принимать заказы.'));
+    expect(driver, contains('Заказ уже принят другим водителем'));
+    expect(driver, contains('У вас уже есть активный заказ'));
     expect(driver, contains('_TripMap'));
     expect(driver, contains('CameraFit.coordinates'));
     expect(driver, contains('Маршрут до точки посадки'));
     expect(driver, contains('Маршрут временно недоступен'));
+    expect(driver, contains("if (status == 'DRIVER_ASSIGNED')"));
+    expect(driver, contains("if (status == 'DRIVER_ARRIVED')"));
+    expect(driver, contains("if (status == 'IN_PROGRESS')"));
+    expect(driver, contains('_tripActionLabel'));
+  });
+
+  test('driver socket and order model keep live updates region scoped', () {
+    final socket = _read('lib/core/sockets/socket_service.dart');
+    final models = _read('lib/features/shared/models.dart');
+    final driver = _read('lib/features/driver/driver_shell.dart');
+
+    expect(socket, contains("emit('join_drivers')"));
+    expect(socket, contains("'order_updated'"));
+    expect(socket, contains("'order_accepted'"));
+    expect(socket, contains("'order_status_public'"));
+    expect(socket, isNot(contains('regionId')));
+    expect(models, contains('final String? tariff;'));
+    expect(models, contains("snapshot['tariffName']"));
+    expect(driver, contains('_mergeOrderDetails'));
+    expect(driver, contains('unawaited(_loadOrders())'));
   });
 
   test(
