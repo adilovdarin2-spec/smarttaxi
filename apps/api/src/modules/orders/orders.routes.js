@@ -15,6 +15,7 @@ import {
   listOrdersForDriver
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { createOrderCancelledTransaction, createOrderCompletedTransaction } from "../finance/finance.service.js";
 
 const router = Router();
 const ORDER_SELECT = `
@@ -168,13 +169,14 @@ router.post("/:id/cancel-public", async (req, res, next) => {
         });
       }
 
-      await client.query("UPDATE orders SET status='CANCELLED', cancelled_at=NOW() WHERE id=$1", [existing.id]);
-      if (existing.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [existing.driver_id]);
-      await client.query("INSERT INTO order_status_history(order_id,status,message) VALUES($1,'CANCELLED','Cancelled by client')", [existing.id]);
+      const updated = (await client.query("UPDATE orders SET status='CANCELLED', cancelled_at=NOW() WHERE id=$1 RETURNING *", [existing.id])).rows[0];
+      if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
+      await createOrderCancelledTransaction(updated, null, client);
+      await client.query("INSERT INTO order_status_history(order_id,status,message) VALUES($1,'CANCELLED','Cancelled by client')", [updated.id]);
       await writeAudit(client, {
         action: "order_status_changed",
         entityType: "order",
-        entityId: existing.id,
+        entityId: updated.id,
         metadata: { from: existing.status, to: "CANCELLED", source: "client" },
         req
       });
@@ -183,7 +185,7 @@ router.post("/:id/cancel-public", async (req, res, next) => {
         FROM orders o
         LEFT JOIN drivers d ON d.id=o.driver_id
         WHERE o.id=$1
-      `, [existing.id])).rows[0];
+      `, [updated.id])).rows[0];
     });
     emitOrderUpdated(req.io, order);
     res.json({ order });
@@ -306,7 +308,7 @@ async function updateStatus(req, res, next, status) {
       let updated = u.rows[0];
 
       if (status === "COMPLETED") {
-        const tariff = (await client.query("SELECT * FROM tariffs WHERE name=$1", [updated.tariff])).rows[0];
+        const tariff = (await client.query("SELECT * FROM tariffs WHERE region_id=$1 AND name=$2", [updated.region_id, updated.tariff])).rows[0];
         if (!tariff) throw new AppError("Tariff not found", 404, "TARIFF_NOT_FOUND");
         const cashback = Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
@@ -322,8 +324,12 @@ async function updateStatus(req, res, next, status) {
             await client.query("UPDATE drivers SET balance=balance+($1-$2),status='FREE' WHERE id=$3", [updated.price, updated.service_commission, updated.driver_id]);
           }
         }
+        await createOrderCompletedTransaction(updated, req.user.id, client);
       }
-      if (status === "CANCELLED" && updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
+      if (status === "CANCELLED") {
+        if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
+        await createOrderCancelledTransaction(updated, req.user.id, client);
+      }
       await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,$2,$3,$4)", [existing.id, status, `Status changed to ${status}`, req.user.id]);
       await writeAudit(client, {
         action: status === "COMPLETED" ? "order_completed" : "order_status_changed",

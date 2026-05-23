@@ -170,6 +170,27 @@ CREATE TABLE IF NOT EXISTS driver_debts (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS financial_transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+  driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  client_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
+  tariff_id UUID REFERENCES tariffs(id) ON DELETE SET NULL,
+  type TEXT NOT NULL CHECK (type IN ('ORDER_COMPLETED','ORDER_CANCELLED','DRIVER_DEBT_CREATED','DRIVER_DEBT_ADJUSTED','MANUAL_ADJUSTMENT')),
+  payment_method TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (payment_method IN ('CASH','KASPI_TRANSFER','UNKNOWN')),
+  gross_amount NUMERIC NOT NULL DEFAULT 0,
+  service_commission NUMERIC NOT NULL DEFAULT 0,
+  driver_earning NUMERIC NOT NULL DEFAULT 0,
+  driver_debt_delta NUMERIC NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'KZT',
+  status TEXT NOT NULL DEFAULT 'POSTED' CHECK (status IN ('POSTED','VOIDED')),
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS service_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
   service_name TEXT NOT NULL DEFAULT 'SmartTaxi',
@@ -248,6 +269,15 @@ CREATE INDEX IF NOT EXISTS idx_orders_region_id ON orders(region_id);
 CREATE INDEX IF NOT EXISTS idx_orders_region_status_created_at ON orders(region_id, status, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_one_active_per_driver ON orders(driver_id)
   WHERE driver_id IS NOT NULL AND status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS');
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_order_id ON financial_transactions(order_id);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_driver_id ON financial_transactions(driver_id);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_region_id ON financial_transactions(region_id);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_tariff_id ON financial_transactions(tariff_id);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_type ON financial_transactions(type);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_created_at ON financial_transactions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_status ON financial_transactions(status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_financial_transactions_order_completed_once ON financial_transactions(order_id, type)
+  WHERE type = 'ORDER_COMPLETED' AND status = 'POSTED';
 CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
 CREATE INDEX IF NOT EXISTS idx_regions_active ON regions(is_active);
 CREATE INDEX IF NOT EXISTS idx_tariffs_region_id ON tariffs(region_id);

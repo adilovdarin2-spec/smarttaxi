@@ -2326,6 +2326,22 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   grid-template-columns: minmax(150px, 1.1fr) minmax(120px, .8fr) minmax(130px, .9fr) minmax(110px, .8fr) minmax(130px, .9fr) minmax(130px, .9fr) minmax(130px, .9fr);
 }
 
+.admin-analytics-grid.finance {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.admin-analytics-card.finance {
+  min-height: 146px;
+}
+
+.admin-table-row.finance-debt {
+  grid-template-columns: minmax(150px, 1.1fr) minmax(120px, .8fr) minmax(140px, 1fr) minmax(90px, .6fr) minmax(120px, .8fr) minmax(130px, .8fr);
+}
+
+.admin-table-row.finance-transaction {
+  grid-template-columns: minmax(150px, 1.1fr) minmax(110px, .7fr) minmax(140px, 1fr) minmax(110px, .7fr) minmax(130px, .8fr) minmax(130px, .8fr) minmax(110px, .7fr) auto minmax(130px, .8fr);
+}
+
 .admin-table-row strong {
   min-width: 0;
   overflow: hidden;
@@ -2833,6 +2849,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 @media (max-width: 1180px) {
   .admin-metric-grid,
   .admin-analytics-grid,
+  .admin-analytics-grid.finance,
   .admin-settings-grid,
   .admin-card-grid,
   .admin-card-grid.applications,
@@ -2916,6 +2933,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
   .admin-metric-grid,
   .admin-analytics-grid,
+  .admin-analytics-grid.finance,
   .admin-settings-grid,
   .admin-card-grid,
   .admin-card-grid.applications,
@@ -2933,7 +2951,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .admin-table-row.applications,
   .admin-table-row.orders,
   .admin-table-row.audit,
-  .admin-table-row.tariff-analytics {
+  .admin-table-row.tariff-analytics,
+  .admin-table-row.finance-debt,
+  .admin-table-row.finance-transaction {
     grid-template-columns: 1fr;
     align-items: start;
   }

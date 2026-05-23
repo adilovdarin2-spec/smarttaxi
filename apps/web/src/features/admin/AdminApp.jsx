@@ -10,6 +10,9 @@ import {
   getAdminDriverApplications,
   getAdminDriverDetail,
   getAdminDrivers,
+  getAdminFinanceDriverDebts,
+  getAdminFinanceSummary,
+  getAdminFinanceTransactions,
   getAdminOrders,
   getAdminRegions,
   getAdminSettings,
@@ -139,7 +142,7 @@ function dateInputValue(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function tariffDateParams(preset, customFrom, customTo) {
+function dateRangeParams(preset, customFrom, customTo) {
   const today = new Date();
   const from = new Date(today);
   if (preset === "today") {
@@ -154,6 +157,28 @@ function tariffDateParams(preset, customFrom, customTo) {
   }
   from.setDate(today.getDate() - 29);
   return { dateFrom: dateInputValue(from), dateTo: dateInputValue(today) };
+}
+
+function tariffDateParams(preset, customFrom, customTo) {
+  return dateRangeParams(preset, customFrom, customTo);
+}
+
+function financeTypeLabel(type) {
+  return {
+    ORDER_COMPLETED: "Поездка завершена",
+    ORDER_CANCELLED: "Поездка отменена",
+    DRIVER_DEBT_CREATED: "Долг водителя",
+    DRIVER_DEBT_ADJUSTED: "Корректировка долга",
+    MANUAL_ADJUSTMENT: "Ручная корректировка"
+  }[type] || type || "—";
+}
+
+function paymentMethodLabel(method) {
+  return {
+    CASH: "Наличные",
+    KASPI_TRANSFER: "Kaspi перевод",
+    UNKNOWN: "Требует проверки"
+  }[method] || method || "—";
 }
 
 function tariffAnalyticsKey(tariff) {
@@ -199,6 +224,10 @@ export default function AdminApp() {
   const [tariffDatePreset, setTariffDatePreset] = useState("30d");
   const [tariffDateFrom, setTariffDateFrom] = useState("");
   const [tariffDateTo, setTariffDateTo] = useState("");
+  const [financeRegion, setFinanceRegion] = useState("all");
+  const [financeDatePreset, setFinanceDatePreset] = useState("30d");
+  const [financeDateFrom, setFinanceDateFrom] = useState("");
+  const [financeDateTo, setFinanceDateTo] = useState("");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
 
   const canAccess = user && adminRoles.has(user.role);
@@ -225,7 +254,7 @@ export default function AdminApp() {
   }, []);
 
   const loadPage = useCallback(async (page) => {
-    if (["dashboard", "finance", "support"].includes(page)) {
+    if (["dashboard", "support"].includes(page)) {
       setPageState({ loading: false, error: "", payload: null });
       return;
     }
@@ -254,6 +283,23 @@ export default function AdminApp() {
           analyticsError: analytics.status === "rejected" ? "Не удалось загрузить аналитику тарифов" : ""
         };
       },
+      finance: async () => {
+        const selectedRegionId = financeRegion !== "all" ? financeRegion : undefined;
+        const dateParams = dateRangeParams(financeDatePreset, financeDateFrom, financeDateTo);
+        const [regions, summary, driverDebts, transactions] = await Promise.all([
+          getAdminRegions(),
+          getAdminFinanceSummary({ regionId: selectedRegionId, ...dateParams }),
+          getAdminFinanceDriverDebts({ regionId: selectedRegionId, ...dateParams }),
+          getAdminFinanceTransactions({ regionId: selectedRegionId, ...dateParams, limit: 100 })
+        ]);
+        return {
+          regions: regions.regions || [],
+          summary: summary.summary || null,
+          driverDebts: driverDebts.driverDebts || [],
+          transactions: transactions.transactions || [],
+          dateRange: summary.dateRange || dateParams
+        };
+      },
       audit: getAdminAudit,
       settings: getAdminSettings
     };
@@ -271,7 +317,7 @@ export default function AdminApp() {
     } catch (error) {
       setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [financeDateFrom, financeDatePreset, financeDateTo, financeRegion, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
@@ -306,6 +352,14 @@ export default function AdminApp() {
     if (payload.applications) return { ...payload, applications: filter(payload.applications) };
     if (payload.orders) return { ...payload, orders: filter(payload.orders) };
     if (payload.tariffs) return { ...payload, tariffs: filter(payload.tariffs), regions: payload.regions || [] };
+    if (payload.transactions || payload.driverDebts) {
+      return {
+        ...payload,
+        transactions: filter(payload.transactions || []),
+        driverDebts: filter(payload.driverDebts || []),
+        regions: payload.regions || []
+      };
+    }
     if (payload.logs) return { ...payload, logs: filter(payload.logs) };
     return payload;
   }, [pageState.payload, query]);
@@ -563,6 +617,14 @@ export default function AdminApp() {
             setTariffDateFrom={setTariffDateFrom}
             tariffDateTo={tariffDateTo}
             setTariffDateTo={setTariffDateTo}
+            financeRegion={financeRegion}
+            setFinanceRegion={setFinanceRegion}
+            financeDatePreset={financeDatePreset}
+            setFinanceDatePreset={setFinanceDatePreset}
+            financeDateFrom={financeDateFrom}
+            setFinanceDateFrom={setFinanceDateFrom}
+            financeDateTo={financeDateTo}
+            setFinanceDateTo={setFinanceDateTo}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
             onToggleRegion={switchRegion}
@@ -665,16 +727,9 @@ function AdminPage(props) {
   if (active === "applications") return <ApplicationsPage applications={asArray(payload, "applications")} {...props} />;
   if (active === "orders") return <OrdersPage orders={asArray(payload, "orders")} />;
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
+  if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
   if (active === "audit") return <AuditPage logs={asArray(payload, "logs")} />;
   if (active === "settings") return <SettingsPage settings={payload?.settings} />;
-  if (active === "finance") {
-    return (
-      <StatePanel
-        title="Финансовые отчёты будут доработаны на отдельном этапе"
-        text="Раздел будет показывать выручку, комиссию сервиса, долг водителя и отчёты по регионам после отдельной реализации."
-      />
-    );
-  }
   if (active === "support") {
     return (
       <StatePanel
@@ -1068,6 +1123,124 @@ function TariffsPage({
           );})}
         </section>
       )}
+    </div>
+  );
+}
+
+function FinancePage({
+  payload,
+  regions,
+  financeRegion,
+  setFinanceRegion,
+  financeDatePreset,
+  setFinanceDatePreset,
+  financeDateFrom,
+  setFinanceDateFrom,
+  financeDateTo,
+  setFinanceDateTo
+}) {
+  const summary = payload?.summary || {};
+  const driverDebts = asArray(payload, "driverDebts");
+  const transactions = asArray(payload, "transactions");
+  const dateRange = payload?.dateRange;
+  const cards = [
+    ["Общая выручка", formatMoney(summary.grossTotal), `${summary.completedOrderCount || 0} завершённых заказов`],
+    ["Комиссия сервиса", formatMoney(summary.serviceCommissionTotal), "Сумма по завершённым поездкам"],
+    ["Доход водителей", formatMoney(summary.driverEarningTotal), "После комиссии сервиса"],
+    ["Долг водителей", formatMoney(summary.driverDebtTotal), "Наличные и Kaspi переводы"],
+    ["Завершённые заказы", summary.completedOrderCount || 0, "Финансовые операции поездок"],
+    ["Отменённые заказы", summary.cancelledOrderCount || 0, "Без дохода, если нет штрафа"]
+  ];
+
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Финансы" subtitle="Выручка, комиссия сервиса и задолженность водителей">
+        <select className="admin-control-select" value={financeRegion} onChange={event => setFinanceRegion(event.target.value)}>
+          <option value="all">Все регионы</option>
+          {regions.map(region => (
+            <option value={region.id} key={region.id}>{region.name}</option>
+          ))}
+        </select>
+      </PageHeader>
+
+      <DataCard title="Финансовый период" text="Показатели строятся только по реальным операциям финансового журнала.">
+        <div className="admin-date-filter-row">
+          <SegmentedFilter
+            value={financeDatePreset}
+            onChange={setFinanceDatePreset}
+            items={[
+              ["today", "Сегодня"],
+              ["7d", "7 дней"],
+              ["30d", "30 дней"],
+              ["custom", "Период"]
+            ]}
+          />
+          {financeDatePreset === "custom" && (
+            <div className="admin-date-inputs">
+              <input type="date" value={financeDateFrom} onChange={event => setFinanceDateFrom(event.target.value)} aria-label="Дата начала" />
+              <input type="date" value={financeDateTo} onChange={event => setFinanceDateTo(event.target.value)} aria-label="Дата окончания" />
+            </div>
+          )}
+          {dateRange && <small>Период: {dateRange.dateFrom} — {dateRange.dateTo}</small>}
+        </div>
+
+        <section className="admin-analytics-grid finance">
+          {cards.map(card => (
+            <article className="admin-analytics-card finance" key={card[0]}>
+              <span>{card[0]}</span>
+              <strong>{card[1]}</strong>
+              <small>{card[2]}</small>
+            </article>
+          ))}
+        </section>
+      </DataCard>
+
+      <DataCard title="Долг водителей" text="Долг появляется, когда поездка оплачена наличными или Kaspi переводом, а комиссия сервиса остаётся у водителя.">
+        {!driverDebts.length ? (
+          <div className="admin-empty-note">
+            <strong>Долгов водителей пока нет</strong>
+            <span>Данные появятся после завершённых поездок с оплатой наличными или Kaspi переводом.</span>
+          </div>
+        ) : (
+          <div className="admin-table premium">
+            {driverDebts.map(driver => (
+              <div className="admin-table-row finance-debt" key={driver.driverId}>
+                <strong>{driver.driverName || "Водитель"}</strong>
+                <span>{driver.phone || "Телефон не указан"}</span>
+                <span>{driver.car || "Авто не указано"}</span>
+                <span>{driver.completedOrders || 0} поездок</span>
+                <strong>{formatMoney(driver.debtTotal)}</strong>
+                <span>{formatDate(driver.lastTransactionAt)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </DataCard>
+
+      <DataCard title="Финансовые операции" text="Аудируемый журнал завершённых и отменённых поездок.">
+        {!transactions.length ? (
+          <div className="admin-empty-note">
+            <strong>Финансовых операций пока нет</strong>
+            <span>Данные появятся после завершённых поездок.</span>
+          </div>
+        ) : (
+          <div className="admin-table premium">
+            {transactions.map(transaction => (
+              <div className="admin-table-row finance-transaction" key={transaction.id}>
+                <strong>{financeTypeLabel(transaction.type)}</strong>
+                <span>{transaction.orderShortId || "Заказ не указан"}</span>
+                <span>{transaction.driverName || "Водитель не назначен"}</span>
+                <span>{formatMoney(transaction.grossAmount)}</span>
+                <span>{formatMoney(transaction.serviceCommission)} комиссия</span>
+                <span>{formatMoney(transaction.driverEarning)} водителю</span>
+                <span>{formatMoney(transaction.driverDebtDelta)} долг</span>
+                <Badge tone={transaction.paymentMethod === "UNKNOWN" ? "warning" : "success"}>{paymentMethodLabel(transaction.paymentMethod)}</Badge>
+                <span>{formatDate(transaction.createdAt)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </DataCard>
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
   updateAdminTariff
 } from "../tariffs/tariffs.service.js";
 import { calculatePricingComponents } from "../orders/order-pricing.service.js";
+import { getDriverDebts, getFinanceSummary, getTransactions } from "../finance/finance.service.js";
 
 const router = Router();
 
@@ -107,6 +108,15 @@ const TariffAnalyticsQuery = z.object({
   regionId: z.string().uuid().optional(),
   dateFrom: z.string().trim().optional(),
   dateTo: z.string().trim().optional()
+});
+
+const FinanceQuery = z.object({
+  regionId: z.string().uuid().optional(),
+  driverId: z.string().uuid().optional(),
+  dateFrom: z.string().trim().optional(),
+  dateTo: z.string().trim().optional(),
+  type: z.enum(["ORDER_COMPLETED", "ORDER_CANCELLED", "DRIVER_DEBT_CREATED", "DRIVER_DEBT_ADJUSTED", "MANUAL_ADJUSTMENT"]).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100)
 });
 
 const TariffPreviewDraft = z.object({
@@ -203,6 +213,10 @@ function resolveTariffAnalyticsDateRange(params) {
     dateTo,
     preset: params.dateFrom || params.dateTo ? "CUSTOM" : "LAST_30_DAYS"
   };
+}
+
+function resolveFinanceDateRange(params) {
+  return resolveTariffAnalyticsDateRange(params);
 }
 
 function summarizeTariffAnalytics(analytics) {
@@ -613,6 +627,48 @@ router.patch("/tariffs/:id/status", requireAuth, requireRole("OWNER", "FINANCE")
       return updated.tariff;
     });
     res.json({ tariff: adminTariff(await getAdminTariff(result.id, query)) });
+  } catch (error) { next(error); }
+});
+
+router.get("/finance/summary", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = FinanceQuery.omit({ driverId: true, type: true, limit: true }).parse(req.query);
+    const dateRange = resolveFinanceDateRange(params);
+    const summary = await getFinanceSummary({
+      regionId: params.regionId,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo
+    }, query);
+    res.json({ dateRange, summary });
+  } catch (error) { next(error); }
+});
+
+router.get("/finance/driver-debts", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = FinanceQuery.omit({ driverId: true, type: true, limit: true }).parse(req.query);
+    const dateRange = resolveFinanceDateRange(params);
+    const driverDebts = await getDriverDebts({
+      regionId: params.regionId,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo
+    }, query);
+    res.json({ dateRange, driverDebts });
+  } catch (error) { next(error); }
+});
+
+router.get("/finance/transactions", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = FinanceQuery.parse(req.query);
+    const dateRange = resolveFinanceDateRange(params);
+    const transactions = await getTransactions({
+      regionId: params.regionId,
+      driverId: params.driverId,
+      type: params.type,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo,
+      limit: params.limit
+    }, query);
+    res.json({ dateRange, transactions });
   } catch (error) { next(error); }
 });
 

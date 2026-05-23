@@ -188,6 +188,14 @@ export function getAdminTariffAnalytics({ regionId, dateFrom, dateTo } = {}) {
   return api(`/api/admin/tariffs/analytics${query}`);
 }
 
+function queryString(params) {
+  const search = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") search.set(key, value);
+  });
+  return search.toString() ? `?${search.toString()}` : "";
+}
+
 export function createAdminTariff(payload) {
   return api("/api/admin/tariffs", {
     method: "POST",
@@ -214,6 +222,18 @@ export function previewAdminTariffPrice(payload) {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export function getAdminFinanceSummary(params = {}) {
+  return api(`/api/admin/finance/summary${queryString(params)}`);
+}
+
+export function getAdminFinanceDriverDebts(params = {}) {
+  return api(`/api/admin/finance/driver-debts${queryString(params)}`);
+}
+
+export function getAdminFinanceTransactions(params = {}) {
+  return api(`/api/admin/finance/transactions${queryString(params)}`);
 }
 
 export function getAdminOrders() {
