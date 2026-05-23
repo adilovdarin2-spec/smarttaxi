@@ -33,6 +33,7 @@ const statements = [
        is_active=EXCLUDED.is_active,
        updated_at=NOW()`,
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
+  "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS car_color TEXT",
   `CREATE TABLE IF NOT EXISTS driver_region_approvals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,

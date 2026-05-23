@@ -15,15 +15,17 @@ class Coordinate {
 }
 
 class RegionOption {
-  const RegionOption({required this.id, required this.name});
+  const RegionOption({required this.id, required this.name, this.center});
 
   final String id;
   final String name;
+  final Coordinate? center;
 
   factory RegionOption.fromJson(Map<String, dynamic> json) {
     return RegionOption(
       id: '${json['id'] ?? json['regionId']}',
       name: '${json['name'] ?? json['regionName'] ?? 'Регион'}',
+      center: _coordinateFromFields(json, ['center_lat', 'centerLat', 'lat'], ['center_lng', 'centerLng', 'lng']),
     );
   }
 }
@@ -177,6 +179,19 @@ double? _nullableDouble(dynamic value) {
 Coordinate? _coordinateFromJson(Map<String, dynamic> json, String prefix) {
   final lat = _nullableDouble(json['${prefix}_lat'] ?? json['${prefix}Lat']);
   final lng = _nullableDouble(json['${prefix}_lng'] ?? json['${prefix}Lng']);
+  if (lat == null || lng == null) return null;
+  return Coordinate(lat: lat, lng: lng);
+}
+
+Coordinate? _coordinateFromFields(Map<String, dynamic> json, List<String> latKeys, List<String> lngKeys) {
+  double? lat;
+  double? lng;
+  for (final key in latKeys) {
+    lat ??= _nullableDouble(json[key]);
+  }
+  for (final key in lngKeys) {
+    lng ??= _nullableDouble(json[key]);
+  }
   if (lat == null || lng == null) return null;
   return Coordinate(lat: lat, lng: lng);
 }

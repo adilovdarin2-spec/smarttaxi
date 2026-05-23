@@ -1,6 +1,11 @@
 node_modules
 dist
 build
+.dart_tool
+.idea
+.flutter-plugins
+.flutter-plugins-dependencies
+*.apk
 .next
 .expo
 .env

@@ -17,25 +17,33 @@ import '../../core/widgets/status_pill.dart';
 import '../shared/models.dart';
 
 class DriverShell extends StatefulWidget {
-  const DriverShell({super.key, required this.api, required this.authStore, required this.sockets});
+  const DriverShell({
+    super.key,
+    required this.api,
+    required this.authStore,
+    required this.sockets,
+    required this.accountLabel,
+    required this.onLogout,
+    required this.onOpenPassengerMode,
+  });
 
   final ApiClient api;
   final AuthStore authStore;
   final SocketService sockets;
+  final String accountLabel;
+  final Future<void> Function() onLogout;
+  final Future<void> Function() onOpenPassengerMode;
 
   @override
   State<DriverShell> createState() => _DriverShellState();
 }
 
 class _DriverShellState extends State<DriverShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _tab = 0;
-  bool _logged = false;
   bool _loading = false;
   bool _online = false;
   String? _error;
-  String _phone = '';
-  String _email = '';
-  String _password = '';
   List<DriverRegion> _regions = const [];
   String? _regionId;
   List<OrderSummary> _orders = const [];
@@ -59,19 +67,11 @@ class _DriverShellState extends State<DriverShell> {
   @override
   void dispose() {
     _positionSub?.cancel();
-    widget.sockets.dispose();
+    widget.sockets.clearListeners();
     super.dispose();
   }
 
   Future<void> _bootstrap() async {
-    _logged = (await widget.authStore.readToken()) != null;
-    if (_logged) {
-      await _afterLogin();
-    }
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _afterLogin() async {
     await widget.sockets.connect();
     widget.sockets.joinDrivers();
     widget.sockets.onOrderUpdate(_handleOrderUpdate);
@@ -81,27 +81,12 @@ class _DriverShellState extends State<DriverShell> {
 
   void _handleOrderUpdate(dynamic data) {
     if (data is! Map) return;
-    final order = OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
+    final order =
+        OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
     setState(() {
       _orders = _mergeOrder(_orders, order);
       if (order.isActive) _activeOrder = order;
     });
-  }
-
-  Future<void> _login() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      await widget.api.login(phone: _phone, email: _email, password: _password);
-      _logged = true;
-      await _afterLogin();
-    } catch (error) {
-      setState(() => _error = _readableError(error));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
   }
 
   Future<void> _loadRegions() async {
@@ -165,20 +150,22 @@ class _DriverShellState extends State<DriverShell> {
   Future<bool> _startLocationFlow() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
-      setState(() => _error = 'Включите геолокацию, чтобы выйти на линию');
+      setState(() => _error = 'Для работы на линии нужна геолокация');
       return false;
     }
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      setState(() => _error = 'Разрешите геолокацию, чтобы выйти на линию');
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      setState(() => _error = 'Для работы на линии нужна геолокация');
       return false;
     }
     await _positionSub?.cancel();
     _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 20),
+      locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high, distanceFilter: 20),
     ).listen((position) {
       widget.api.updateDriverLocation(
         location: Coordinate(lat: position.latitude, lng: position.longitude),
@@ -198,11 +185,11 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   Future<void> _loadOrders() async {
-    if (!_logged) return;
     setState(() => _loading = true);
     try {
       final orders = await widget.api.getOrders();
-      final active = orders.where((order) => order.isActive).toList(growable: false);
+      final active =
+          orders.where((order) => order.isActive).toList(growable: false);
       setState(() {
         _orders = orders;
         _activeOrder = active.isEmpty ? null : active.first;
@@ -226,6 +213,7 @@ class _DriverShellState extends State<DriverShell> {
         _activeOrder = accepted;
         _orders = _mergeOrder(_orders, accepted);
         _tab = 2;
+        _online = true;
       });
       await _loadDriverRoute(accepted.id);
     } catch (error) {
@@ -235,7 +223,8 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
-  Future<void> _tripAction(Future<OrderSummary> Function(String id) action) async {
+  Future<void> _tripAction(
+      Future<OrderSummary> Function(String id) action) async {
     if (_activeOrder == null) return;
     setState(() {
       _loading = true;
@@ -246,7 +235,9 @@ class _DriverShellState extends State<DriverShell> {
       setState(() {
         _activeOrder = order.isActive ? order : null;
         _orders = _mergeOrder(_orders, order);
-        if (order.status == 'COMPLETED' || order.status == 'CANCELLED') _driverRoute = null;
+        if (order.status == 'COMPLETED' || order.status == 'CANCELLED') {
+          _driverRoute = null;
+        }
       });
     } catch (error) {
       setState(() => _error = _readableError(error));
@@ -264,92 +255,142 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: IndexedStack(
-            index: _tab,
-            children: [
-              _lineTab(),
-              _ordersTab(),
-              _tripTab(),
-            ],
-          ),
-        ),
-        NavigationBar(
-          selectedIndex: _tab,
-          onDestinationSelected: (index) => setState(() => _tab = index),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.power_settings_new), label: 'Линия'),
-            NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Заказы'),
-            NavigationDestination(icon: Icon(Icons.route_outlined), label: 'Поездка'),
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: SmartTaxiColors.appBackground,
+      drawerScrimColor: Colors.black.withValues(alpha: 0.26),
+      drawer: _DriverDrawer(
+        accountLabel: widget.accountLabel,
+        activeTab: _tab,
+        onTab: (index) {
+          Navigator.pop(context);
+          setState(() => _tab = index);
+        },
+        onPassenger: () {
+          Navigator.pop(context);
+          widget.onOpenPassengerMode();
+        },
+        onLogout: () {
+          Navigator.pop(context);
+          widget.onLogout();
+        },
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _DriverHeader(
+                onMenu: _openDrawer,
+                status: _driverStatusLabel(),
+                tone: _driverStatusTone()),
+            Expanded(
+              child: IndexedStack(
+                index: _tab,
+                children: [
+                  _lineTab(),
+                  _ordersTab(),
+                  _tripTab(),
+                ],
+              ),
+            ),
+            _FloatingNav(
+              child: NavigationBar(
+                selectedIndex: _tab,
+                onDestinationSelected: (index) => setState(() => _tab = index),
+                destinations: const [
+                  NavigationDestination(
+                      icon: Icon(Icons.power_settings_new),
+                      selectedIcon: Icon(Icons.power_settings_new_rounded),
+                      label: 'Линия'),
+                  NavigationDestination(
+                      icon: Icon(Icons.receipt_long_outlined),
+                      selectedIcon: Icon(Icons.receipt_long),
+                      label: 'Заказы'),
+                  NavigationDestination(
+                      icon: Icon(Icons.route_outlined),
+                      selectedIcon: Icon(Icons.route),
+                      label: 'Поездка'),
+                ],
+              ),
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _lineTab() {
-    if (!_logged) {
-      return ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Center(child: BrandLogo(large: true)),
-          const SizedBox(height: 20),
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _TitleBlock(title: 'Вход для водителя', text: 'Работайте только в одобренном регионе'),
-                const SizedBox(height: 16),
-                TextField(decoration: const InputDecoration(labelText: 'Телефон'), keyboardType: TextInputType.phone, onChanged: (value) => _phone = value),
-                const SizedBox(height: 12),
-                TextField(decoration: const InputDecoration(labelText: 'Email'), keyboardType: TextInputType.emailAddress, onChanged: (value) => _email = value),
-                const SizedBox(height: 12),
-                TextField(decoration: const InputDecoration(labelText: 'Пароль'), obscureText: true, onChanged: (value) => _password = value),
-                if (_error != null) ...[const SizedBox(height: 12), _ErrorText(_error!)],
-                const SizedBox(height: 16),
-                ElevatedButton(onPressed: _loading ? null : _login, child: const Text('Войти')),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
     final disabledReason = _disabledReason();
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(title: 'Рабочая смена', text: 'Выходите на линию только в одобренном регионе'),
+        const _TitleBlock(
+            title: 'Рабочая смена',
+            text: 'Выходите на линию только в одобренном регионе'),
         const SizedBox(height: 16),
-        _Card(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            StatusPill(label: _online ? 'На линии' : 'Не на линии', tone: _online ? StatusTone.success : StatusTone.neutral),
-            const SizedBox(height: 16),
-            const Text('Рабочий регион', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 10),
-            if (_regions.isEmpty)
-              const EmptyState(title: 'Нет одобренных регионов', text: 'Администратор должен одобрить вас для работы в регионе.')
+        _PremiumCard(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Статус водителя',
+                          style: TextStyle(
+                              color: SmartTaxiColors.textSecondary,
+                              fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 6),
+                      StatusPill(
+                          label: _driverStatusLabel(),
+                          tone: _driverStatusTone()),
+                    ],
+                  ),
+                ),
+                _LineGlyph(online: _online, busy: _activeOrder != null),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const _SectionLabel(
+                title: 'Рабочий регион',
+                text: 'Заказы поступают только из выбранного региона'),
+            const SizedBox(height: 12),
+            if (_loading && _regions.isEmpty)
+              const _LoadingStrip(text: 'Загружаем регионы...')
+            else if (_regions.isEmpty)
+              const EmptyState(
+                  title: 'Нет одобренных регионов',
+                  text: 'Администратор должен одобрить вас для работы.',
+                  icon: Icons.verified_user_outlined)
             else
               DropdownButtonFormField<String>(
                 initialValue: _regionId,
-                items: _regions.map((region) => DropdownMenuItem(value: region.id, child: Text(region.name))).toList(),
+                items: _regions
+                    .map((region) => DropdownMenuItem(
+                        value: region.id, child: Text(region.name)))
+                    .toList(),
                 onChanged: _online ? null : _selectRegion,
               ),
             if (disabledReason != null) ...[
               const SizedBox(height: 12),
-              _WarningText(disabledReason),
+              _InlineMessage(text: disabledReason),
             ],
             if (_error != null) ...[
               const SizedBox(height: 12),
-              _ErrorText(_error!),
+              _InlineMessage(text: _error!, danger: true),
             ],
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _loading || (!_online && disabledReason != null) ? null : () => _setOnline(!_online),
-              child: Text(_online ? 'Уйти с линии' : 'Выйти на линию'),
+              onPressed: _loading || (!_online && disabledReason != null)
+                  ? null
+                  : () => _setOnline(!_online),
+              child: _loading
+                  ? const _ButtonSpinner(text: 'Обновляем статус...')
+                  : Text(_online ? 'Уйти с линии' : 'Выйти на линию'),
             ),
           ]),
         ),
@@ -358,24 +399,37 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   Widget _ordersTab() {
-    final openOrders = _orders.where((order) => order.isOpen).toList(growable: false);
+    final openOrders =
+        _orders.where((order) => order.isOpen).toList(growable: false);
     return RefreshIndicator(
       onRefresh: _loadOrders,
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const _TitleBlock(title: 'Заказы в регионе', text: 'Только backend-выдача выбранного одобренного региона'),
+          const _TitleBlock(
+              title: 'Заказы в регионе',
+              text: 'Показываем заказы только в вашем рабочем регионе.'),
           const SizedBox(height: 16),
           if (!_online)
-            const EmptyState(title: 'Выйдите на линию, чтобы получать заказы', text: 'Заказы появятся после backend-проверки региона и статуса.')
+            const EmptyState(
+                title: 'Выйдите на линию, чтобы получать заказы',
+                text: 'После выхода на линию заказы появятся здесь.',
+                icon: Icons.power_settings_new_rounded)
           else if (openOrders.isEmpty)
-            const EmptyState(title: 'Заказов в вашем регионе пока нет', text: 'Новые заказы появятся здесь без выдуманных данных.')
+            const EmptyState(
+                title: 'Заказов в вашем регионе пока нет',
+                text:
+                    'Новые заказы появятся здесь, когда пассажиры создадут поездку.',
+                icon: Icons.receipt_long_outlined)
           else
             ...openOrders.map((order) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _OrderCard(order: order, loading: _loading, onAccept: () => _accept(order)),
+                  child: _OrderCard(
+                      order: order,
+                      loading: _loading,
+                      onAccept: () => _accept(order)),
                 )),
-          if (_error != null) _ErrorText(_error!),
+          if (_error != null) _InlineMessage(text: _error!, danger: true),
         ],
       ),
     );
@@ -386,41 +440,67 @@ class _DriverShellState extends State<DriverShell> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(title: 'Активная поездка', text: 'Один следующий шаг по статусу заказа'),
+        const _TitleBlock(
+            title: 'Активная поездка', text: 'Следующий шаг по поездке'),
         const SizedBox(height: 16),
         if (_activeOrder == null)
-          const EmptyState(title: 'Активной поездки нет', text: 'Примите заказ, и поездка появится здесь.')
+          const EmptyState(
+              title: 'Активной поездки нет',
+              text: 'Примите заказ, и поездка появится здесь.',
+              icon: Icons.route_outlined)
         else ...[
-          _TripMap(order: _activeOrder!, route: _driverRoute?.geometry ?? const []),
+          _TripMap(
+              order: _activeOrder!, route: _driverRoute?.geometry ?? const []),
           const SizedBox(height: 12),
-          _Card(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              StatusPill(label: _statusLabel(_activeOrder!.status), tone: StatusTone.warning),
+          _PremiumCard(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              StatusPill(
+                  label: _statusLabel(_activeOrder!.status),
+                  tone: StatusTone.warning),
+              const SizedBox(height: 16),
+              _DriverStatusStepper(status: _activeOrder!.status),
               const SizedBox(height: 16),
               RouteFields(
-                pickupLabel: _activeOrder!.pickup,
-                dropoffLabel: _activeOrder!.dropoff,
-                onPickupTap: () {},
-                onDropoffTap: () {},
-              ),
+                  pickupLabel: _activeOrder!.pickup,
+                  dropoffLabel: _activeOrder!.dropoff,
+                  onPickupTap: () {},
+                  onDropoffTap: () {}),
               if (_activeOrder!.price != null) ...[
                 const SizedBox(height: 14),
-                Text('${_activeOrder!.price!.round()} ₸', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+                Text('${_activeOrder!.price!.round()} ₸',
+                    style: const TextStyle(
+                        fontSize: 26, fontWeight: FontWeight.w900)),
               ],
               if (_routeMeta(_activeOrder!) != null) ...[
                 const SizedBox(height: 8),
-                Text(_routeMeta(_activeOrder!)!, style: const TextStyle(color: SmartTaxiColors.textSecondary)),
+                Text(_routeMeta(_activeOrder!)!,
+                    style:
+                        const TextStyle(color: SmartTaxiColors.textSecondary)),
               ],
               const SizedBox(height: 16),
-              if (action != null) ElevatedButton(onPressed: _loading ? null : () => _tripAction(action.$2), child: Text(action.$1)),
-              if (_activeOrder!.status == 'DRIVER_ASSIGNED' || _activeOrder!.status == 'DRIVER_ARRIVED') ...[
+              if (action != null)
+                ElevatedButton(
+                    onPressed: _loading ? null : () => _tripAction(action.$2),
+                    child: _loading
+                        ? const _ButtonSpinner(text: 'Сохраняем...')
+                        : Text(action.$1)),
+              if (_activeOrder!.status == 'DRIVER_ASSIGNED' ||
+                  _activeOrder!.status == 'DRIVER_ARRIVED') ...[
                 const SizedBox(height: 10),
-                OutlinedButton(onPressed: _loading ? null : () => _tripAction(widget.api.cancelDriverOrder), child: const Text('Отменить')),
+                OutlinedButton(
+                    onPressed: _loading
+                        ? null
+                        : () => _tripAction(widget.api.cancelDriverOrder),
+                    child: const Text('Отменить')),
               ],
             ]),
           ),
         ],
-        if (_error != null) ...[const SizedBox(height: 12), _ErrorText(_error!)],
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          _InlineMessage(text: _error!, danger: true)
+        ],
       ],
     );
   }
@@ -430,7 +510,9 @@ class _DriverShellState extends State<DriverShell> {
     if (_regions.isEmpty) return 'Нет одобренных регионов';
     if (_regionId == null) return 'Выберите рабочий регион';
     if (region?.isActive == false) return 'Регион временно отключён';
-    if (region?.status == 'BLOCKED') return 'Работа в этом регионе заблокирована';
+    if (region?.status == 'BLOCKED') {
+      return 'Работа в этом регионе заблокирована';
+    }
     if (region?.status != 'APPROVED') return 'Вы не одобрены для этого региона';
     return null;
   }
@@ -438,9 +520,209 @@ class _DriverShellState extends State<DriverShell> {
   (String, Future<OrderSummary> Function(String id))? _nextAction() {
     final status = _activeOrder?.status;
     if (status == 'DRIVER_ASSIGNED') return ('Прибыл', widget.api.arrived);
-    if (status == 'DRIVER_ARRIVED') return ('Начать поездку', widget.api.startTrip);
-    if (status == 'IN_PROGRESS') return ('Завершить поездку', widget.api.completeTrip);
+    if (status == 'DRIVER_ARRIVED') {
+      return ('Начать поездку', widget.api.startTrip);
+    }
+    if (status == 'IN_PROGRESS') {
+      return ('Завершить поездку', widget.api.completeTrip);
+    }
     return null;
+  }
+
+  String _driverStatusLabel() {
+    if (_activeOrder != null) return 'Занят';
+    return _online ? 'На линии' : 'Не на линии';
+  }
+
+  StatusTone _driverStatusTone() {
+    if (_activeOrder != null) return StatusTone.warning;
+    return _online ? StatusTone.success : StatusTone.neutral;
+  }
+}
+
+class _FloatingNav extends StatelessWidget {
+  const _FloatingNav({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 6, 14, 10 + bottom * 0.35),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            border: Border.all(color: SmartTaxiColors.border),
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color(0x16785a14),
+                  blurRadius: 28,
+                  offset: Offset(0, 12))
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.title, required this.text});
+
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 3),
+      Text(text,
+          style: const TextStyle(
+              color: SmartTaxiColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700)),
+    ]);
+  }
+}
+
+class _LineGlyph extends StatelessWidget {
+  const _LineGlyph({required this.online, required this.busy});
+
+  final bool online;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = busy
+        ? SmartTaxiColors.warning
+        : online
+            ? SmartTaxiColors.success
+            : SmartTaxiColors.textMuted;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Icon(
+          busy
+              ? Icons.local_taxi_rounded
+              : online
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.power_settings_new_rounded,
+          color: color),
+    );
+  }
+}
+
+class _LoadingStrip extends StatelessWidget {
+  const _LoadingStrip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+                strokeWidth: 2.2, color: SmartTaxiColors.goldDeep),
+          ),
+          const SizedBox(width: 12),
+          Text(text,
+              style: const TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ButtonSpinner extends StatelessWidget {
+  const _ButtonSpinner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+              strokeWidth: 2.2, color: SmartTaxiColors.text),
+        ),
+        const SizedBox(width: 10),
+        Text(text),
+      ],
+    );
+  }
+}
+
+class _DriverStatusStepper extends StatelessWidget {
+  const _DriverStatusStepper({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = [
+      'DRIVER_ASSIGNED',
+      'DRIVER_ARRIVED',
+      'IN_PROGRESS',
+      'COMPLETED'
+    ];
+    const labels = ['Принят', 'Прибыл', 'В пути', 'Завершён'];
+    final index = steps.indexOf(status).clamp(0, steps.length - 1);
+    return Row(
+      children: List.generate(steps.length, (stepIndex) {
+        final done = stepIndex <= index;
+        return Expanded(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            margin:
+                EdgeInsets.only(right: stepIndex == steps.length - 1 ? 0 : 6),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: done ? SmartTaxiColors.goldPale : Colors.white,
+              border: Border.all(
+                  color: done
+                      ? SmartTaxiColors.borderStrong
+                      : SmartTaxiColors.border),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(labels[stepIndex],
+                style:
+                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+          ),
+        );
+      }),
+    );
   }
 }
 
@@ -459,30 +741,63 @@ class _TripMap extends StatelessWidget {
     }
     final center = pickup ?? dropoff ?? route.first;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(28),
       child: SizedBox(
-        height: 260,
+        height: 246,
         child: Stack(
           children: [
             FlutterMap(
               options: MapOptions(initialCenter: center, initialZoom: 14),
               children: [
-                TileLayer(urlTemplate: AppConfig.osmTileUrl, userAgentPackageName: 'com.smarttaxi.app'),
-                if (route.isNotEmpty) PolylineLayer(polylines: [Polyline(points: route, color: SmartTaxiColors.goldDeep, strokeWidth: 5)]),
+                TileLayer(
+                    urlTemplate: AppConfig.osmTileUrl,
+                    userAgentPackageName: 'com.smarttaxi.app'),
+                if (route.isNotEmpty)
+                  PolylineLayer(polylines: [
+                    Polyline(
+                        points: route,
+                        color: SmartTaxiColors.goldDeep,
+                        strokeWidth: 5)
+                  ]),
                 MarkerLayer(markers: [
-                  if (pickup != null) Marker(point: pickup, width: 42, height: 42, child: const Icon(Icons.trip_origin, color: SmartTaxiColors.text)),
-                  if (dropoff != null) Marker(point: dropoff, width: 42, height: 42, child: const Icon(Icons.location_on, color: SmartTaxiColors.goldDeep)),
+                  if (pickup != null)
+                    _letterMarker(
+                        pickup, 'A', SmartTaxiColors.text, Colors.white),
+                  if (dropoff != null)
+                    _letterMarker(dropoff, 'B', SmartTaxiColors.gold,
+                        SmartTaxiColors.text),
                 ]),
               ],
+            ),
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x00fffcf6),
+                        Color(0x1afff8e6),
+                        Color(0xcafffcf6),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
             const Positioned(
               left: 12,
               bottom: 12,
               child: DecoratedBox(
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(10))),
+                decoration: BoxDecoration(
+                    color: Color(0xebffffff),
+                    borderRadius: BorderRadius.all(Radius.circular(12))),
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  child: Text(AppConfig.mapAttribution, style: TextStyle(fontSize: 11, color: SmartTaxiColors.textSecondary)),
+                  child: Text(AppConfig.mapAttribution,
+                      style: TextStyle(
+                          fontSize: 11, color: SmartTaxiColors.textSecondary)),
                 ),
               ),
             ),
@@ -491,10 +806,31 @@ class _TripMap extends StatelessWidget {
       ),
     );
   }
+
+  Marker _letterMarker(
+      LatLng point, String label, Color background, Color foreground) {
+    return Marker(
+      point: point,
+      width: 42,
+      height: 42,
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+            color: background,
+            shape: BoxShape.circle,
+            boxShadow: const [
+              BoxShadow(color: Color(0x24000000), blurRadius: 14)
+            ]),
+        child: Text(label,
+            style: TextStyle(color: foreground, fontWeight: FontWeight.w900)),
+      ),
+    );
+  }
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.loading, required this.onAccept});
+  const _OrderCard(
+      {required this.order, required this.loading, required this.onAccept});
 
   final OrderSummary order;
   final bool loading;
@@ -502,26 +838,187 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Card(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        RouteFields(pickupLabel: order.pickup, dropoffLabel: order.dropoff, onPickupTap: () {}, onDropoffTap: () {}),
-        if (order.price != null) ...[
-          const SizedBox(height: 10),
-          Text('${order.price!.round()} ₸', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-        ],
-        if (_routeMeta(order) != null) ...[
-          const SizedBox(height: 8),
-          Text(_routeMeta(order)!, style: const TextStyle(color: SmartTaxiColors.textSecondary)),
-        ],
-        const SizedBox(height: 14),
-        ElevatedButton(onPressed: loading ? null : onAccept, child: const Text('Принять')),
-      ]),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.98, end: 1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) =>
+          Transform.scale(scale: value, child: child),
+      child: _PremiumCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
+            children: [
+              const Expanded(
+                  child: _SectionLabel(
+                      title: 'Новый заказ', text: 'В вашем рабочем регионе')),
+              StatusPill(
+                  label: _statusLabel(order.status), tone: StatusTone.neutral),
+            ],
+          ),
+          const SizedBox(height: 14),
+          RouteFields(
+              pickupLabel: order.pickup,
+              dropoffLabel: order.dropoff,
+              onPickupTap: () {},
+              onDropoffTap: () {}),
+          if (order.price != null) ...[
+            const SizedBox(height: 14),
+            Text('${order.price!.round()} ₸',
+                style:
+                    const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+          ],
+          if (_routeMeta(order) != null) ...[
+            const SizedBox(height: 8),
+            Text(_routeMeta(order)!,
+                style: const TextStyle(color: SmartTaxiColors.textSecondary)),
+          ],
+          const SizedBox(height: 14),
+          ElevatedButton(
+              onPressed: loading ? null : onAccept,
+              child: loading
+                  ? const _ButtonSpinner(text: 'Принимаем...')
+                  : const Text('Принять')),
+        ]),
+      ),
     );
   }
 }
 
-class _Card extends StatelessWidget {
-  const _Card({required this.child});
+class _DriverHeader extends StatelessWidget {
+  const _DriverHeader(
+      {required this.onMenu, required this.status, required this.tone});
+
+  final VoidCallback onMenu;
+  final String status;
+  final StatusTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 62,
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x10785a14), blurRadius: 22, offset: Offset(0, 10))
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+              onPressed: onMenu,
+              icon: const Icon(Icons.menu_rounded),
+              tooltip: 'Меню'),
+          const SizedBox(width: 4),
+          const BrandLogo(),
+          const Spacer(),
+          StatusPill(label: status, tone: tone),
+        ],
+      ),
+    );
+  }
+}
+
+class _DriverDrawer extends StatelessWidget {
+  const _DriverDrawer({
+    required this.accountLabel,
+    required this.activeTab,
+    required this.onTab,
+    required this.onPassenger,
+    required this.onLogout,
+  });
+
+  final String accountLabel;
+  final int activeTab;
+  final ValueChanged<int> onTab;
+  final VoidCallback onPassenger;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      width: MediaQuery.sizeOf(context).width * 0.84,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(right: Radius.circular(28))),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              color: SmartTaxiColors.goldSurface,
+              child: Row(
+                children: [
+                  const BrandLogo(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Text(
+                          accountLabel.isEmpty
+                              ? 'Водитель SmartTaxi'
+                              : accountLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w900))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            _DrawerItem(
+                label: 'Линия', active: activeTab == 0, onTap: () => onTab(0)),
+            _DrawerItem(
+                label: 'Заказы', active: activeTab == 1, onTap: () => onTab(1)),
+            _DrawerItem(
+                label: 'Поездка',
+                active: activeTab == 2,
+                onTap: () => onTab(2)),
+            _DrawerItem(
+                label: 'Режим пассажира', active: false, onTap: onPassenger),
+            const Spacer(),
+            _DrawerItem(
+                label: 'Выйти', active: false, danger: true, onTap: onLogout),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  const _DrawerItem(
+      {required this.label,
+      required this.active,
+      required this.onTap,
+      this.danger = false});
+
+  final String label;
+  final bool active;
+  final bool danger;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: ListTile(
+        minTileHeight: 52,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        selected: active,
+        selectedTileColor: SmartTaxiColors.goldSurface,
+        textColor: danger ? SmartTaxiColors.danger : SmartTaxiColors.text,
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _PremiumCard extends StatelessWidget {
+  const _PremiumCard({required this.child});
 
   final Widget child;
 
@@ -532,8 +1029,11 @@ class _Card extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: SmartTaxiColors.border),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: const [BoxShadow(color: Color(0x14785a14), blurRadius: 35, offset: Offset(0, 16))],
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x18785a14), blurRadius: 42, offset: Offset(0, 18))
+        ],
       ),
       child: child,
     );
@@ -549,41 +1049,42 @@ class _TitleBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: const TextStyle(fontSize: 28, height: 1.12, fontWeight: FontWeight.w900)),
+      Text(title,
+          style: const TextStyle(
+              fontSize: 27, height: 1.12, fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
-      Text(text, style: const TextStyle(color: SmartTaxiColors.textSecondary, fontSize: 14)),
+      Text(text,
+          style: const TextStyle(
+              color: SmartTaxiColors.textSecondary,
+              fontSize: 14,
+              height: 1.35)),
     ]);
   }
 }
 
-class _ErrorText extends StatelessWidget {
-  const _ErrorText(this.text);
+class _InlineMessage extends StatelessWidget {
+  const _InlineMessage({required this.text, this.danger = false});
 
   final String text;
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: const Color(0xfffff1f1), border: Border.all(color: const Color(0xfffecaca)), borderRadius: BorderRadius.circular(16)),
-      child: Text(text, style: const TextStyle(color: SmartTaxiColors.danger, fontWeight: FontWeight.w700)),
-    );
-  }
-}
-
-class _WarningText extends StatelessWidget {
-  const _WarningText(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: SmartTaxiColors.goldSoft, border: Border.all(color: SmartTaxiColors.borderStrong), borderRadius: BorderRadius.circular(16)),
-      child: Text(text, style: const TextStyle(color: SmartTaxiColors.warning, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(
+        color: danger ? const Color(0xfffff1f1) : SmartTaxiColors.goldSurface,
+        border: Border.all(
+            color: danger ? const Color(0xfffecaca) : SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              color: danger
+                  ? SmartTaxiColors.danger
+                  : SmartTaxiColors.textSecondary,
+              fontWeight: FontWeight.w700)),
     );
   }
 }
@@ -601,7 +1102,9 @@ List<OrderSummary> _mergeOrder(List<OrderSummary> orders, OrderSummary next) {
 
 String? _routeMeta(OrderSummary order) {
   final parts = <String>[];
-  if (order.distanceKm != null) parts.add('${order.distanceKm!.toStringAsFixed(1)} км');
+  if (order.distanceKm != null) {
+    parts.add('${order.distanceKm!.toStringAsFixed(1)} км');
+  }
   if (order.durationMin != null) parts.add('${order.durationMin!.round()} мин');
   if (parts.isEmpty) return null;
   return 'Маршрут: ${parts.join(' · ')}';
@@ -625,6 +1128,7 @@ String _readableError(Object error) {
     'DRIVER_REGION_INACTIVE': 'Регион временно отключён',
     'DRIVER_REGION_NOT_APPROVED': 'Вы не одобрены для этого региона',
     'DRIVER_REGION_BLOCKED': 'Работа в этом регионе заблокирована',
+    'DRIVER_BLOCKED': 'Водитель заблокирован',
     'DRIVER_HAS_ACTIVE_ORDER': 'У вас уже есть активный заказ',
     'ORDER_ALREADY_ACCEPTED': 'Заказ уже принят другим водителем',
     'DRIVER_OFFLINE': 'Выйдите на линию',

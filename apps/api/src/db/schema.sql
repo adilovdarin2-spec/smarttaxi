@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS drivers (
   name TEXT NOT NULL,
   phone TEXT NOT NULL,
   car_model TEXT NOT NULL,
+  car_color TEXT,
   plate TEXT NOT NULL,
   tariff TEXT NOT NULL DEFAULT 'Economy',
   status TEXT NOT NULL DEFAULT 'OFFLINE',

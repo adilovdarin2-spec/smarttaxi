@@ -37,6 +37,30 @@ class ApiClient {
     return data;
   }
 
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String phone,
+    String? email,
+    required String password,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>('/api/auth/register', data: {
+      'name': name,
+      'phone': phone,
+      if (email != null && email.isNotEmpty) 'email': email,
+      'password': password,
+    });
+    final data = response.data ?? {};
+    final token = data['token']?.toString() ?? data['accessToken']?.toString();
+    if (token != null && token.isNotEmpty) await _authStore.saveToken(token);
+    return data;
+  }
+
+  Future<Map<String, dynamic>> me() async {
+    await _attachToken();
+    final response = await _dio.get<Map<String, dynamic>>('/api/auth/me');
+    return response.data ?? {};
+  }
+
   Future<List<RegionOption>> getActiveRegions() async {
     final response = await _dio.get<dynamic>('/api/regions/active');
     final items = _extractList(response.data, 'regions');
@@ -69,6 +93,9 @@ class ApiClient {
   Future<OrderSummary> createOrder({
     required Coordinate pickup,
     required Coordinate dropoff,
+    required String pickupText,
+    required String dropoffText,
+    required String riderPhone,
     required String tariffId,
     required double distanceKm,
     required double durationMin,
@@ -80,8 +107,9 @@ class ApiClient {
       'pickupLng': pickup.lng,
       'dropoffLat': dropoff.lat,
       'dropoffLng': dropoff.lng,
-      'pickupText': 'Выбранная точка посадки',
-      'dropoffText': 'Выбранная точка назначения',
+      'pickupText': pickupText,
+      'dropoffText': dropoffText,
+      'riderPhone': riderPhone,
       'tariffId': tariffId,
       'distanceKm': distanceKm,
       'durationMin': durationMin,
@@ -91,9 +119,9 @@ class ApiClient {
     return OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
   }
 
-  Future<void> cancelPublicOrder(String orderId) async {
+  Future<void> cancelPublicOrder(String orderId, {required String riderPhone}) async {
     await _attachToken();
-    await _dio.post('/api/orders/$orderId/cancel-public');
+    await _dio.post('/api/orders/$orderId/cancel-public', data: {'riderPhone': riderPhone});
   }
 
   Future<List<DriverRegion>> getDriverRegions() async {
@@ -148,6 +176,26 @@ class ApiClient {
     final response = await _dio.post<Map<String, dynamic>>('/api/routes/driver-to-pickup', data: {'orderId': orderId});
     final data = response.data ?? {};
     return RoutePreview.fromJson(Map<String, dynamic>.from(data['route'] ?? data));
+  }
+
+  Future<void> submitDriverApplication({
+    required String fullName,
+    required String phone,
+    required String carModel,
+    required String carColor,
+    required String plateNumber,
+    int? year,
+    String comment = '',
+  }) async {
+    await _dio.post('/api/admin/driver-applications', data: {
+      'fullName': fullName,
+      'phone': phone,
+      'carModel': carModel,
+      'carColor': carColor,
+      'plateNumber': plateNumber,
+      if (year != null) 'year': year,
+      if (comment.isNotEmpty) 'comment': comment,
+    });
   }
 
   Future<OrderSummary> _postOrderAction(String path) async {
