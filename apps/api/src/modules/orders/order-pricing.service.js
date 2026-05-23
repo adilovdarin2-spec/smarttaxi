@@ -18,31 +18,87 @@ function positiveFinite(value, name, max) {
   return parsed;
 }
 
-export function calculateOrderPrice(tariff, distanceKm, durationMin) {
+function nonNegativeFinite(value, name, max) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > max) {
+    throw new AppError(`${name} is outside allowed bounds`, 400, "INVALID_ROUTE_METRICS");
+  }
+  return parsed;
+}
+
+function roundCurrency(value) {
+  return Math.round(Number(value || 0));
+}
+
+export function calculatePricingComponents(tariff, { distanceKm, durationMin, waitingMinutes = 0, includeCancellationFee = false }) {
   const basePrice = Number(tariff.base_price);
   const pricePerKm = Number(tariff.price_per_km);
   const pricePerMinute = Number(tariff.price_per_minute);
   const minimumPrice = Number(tariff.min_price);
   const surgeMultiplier = Number(tariff.surge_multiplier ?? 1);
+  const freeWaitingMinutes = Number(tariff.free_waiting_minutes ?? 0);
+  const waitingPricePerMinute = Number(tariff.waiting_price_per_minute ?? 0);
+  const cancellationFee = includeCancellationFee ? Number(tariff.cancellation_fee ?? 0) : 0;
+  const serviceCommissionPercent = Number(tariff.service_commission_percent ?? 0);
   const raw = basePrice + distanceKm * pricePerKm + durationMin * pricePerMinute;
   const surged = raw * surgeMultiplier;
-  return Math.round(Math.max(minimumPrice, surged));
+  const withMinimum = Math.max(minimumPrice, surged);
+  const billableWaitingMinutes = Math.max(0, waitingMinutes - freeWaitingMinutes);
+  const waitingPrice = billableWaitingMinutes * waitingPricePerMinute;
+  const finalPrice = roundCurrency(withMinimum + waitingPrice + cancellationFee);
+  const serviceCommission = roundCurrency(finalPrice * serviceCommissionPercent / 100);
+
+  return {
+    rawPrice: roundCurrency(raw),
+    surgePrice: roundCurrency(surged),
+    withMinimumPrice: roundCurrency(withMinimum),
+    waitingPrice: roundCurrency(waitingPrice),
+    finalPrice,
+    serviceCommission,
+    driverEarning: roundCurrency(finalPrice - serviceCommission),
+    formulaParts: {
+      basePrice,
+      pricePerKm,
+      pricePerMinute,
+      minimumPrice,
+      surgeMultiplier,
+      distanceKm,
+      durationMin,
+      freeWaitingMinutes,
+      waitingMinutes,
+      billableWaitingMinutes,
+      waitingPricePerMinute,
+      cancellationFee,
+      serviceCommissionPercent
+    }
+  };
 }
 
-export function buildPricingSnapshot({ region, tariff, distanceKm, durationMin, estimatedPrice }) {
+export function calculateOrderPrice(tariff, distanceKm, durationMin) {
+  return calculatePricingComponents(tariff, { distanceKm, durationMin }).finalPrice;
+}
+
+export function buildPricingSnapshot({ region, tariff, distanceKm, durationMin, waitingMinutes = 0, components }) {
   return {
     regionId: region.id,
     tariffId: tariff.id,
     tariffName: tariff.name,
+    tariffDisplayName: tariff.display_name || tariff.name,
     basePrice: Number(tariff.base_price),
     pricePerKm: Number(tariff.price_per_km),
     pricePerMinute: Number(tariff.price_per_minute),
     minimumPrice: Number(tariff.min_price),
     surgeMultiplier: Number(tariff.surge_multiplier ?? 1),
+    freeWaitingMinutes: Number(tariff.free_waiting_minutes ?? 0),
+    waitingPricePerMinute: Number(tariff.waiting_price_per_minute ?? 0),
     distanceKm,
     durationMin,
+    waitingMinutes,
     serviceCommissionPercent: Number(tariff.service_commission_percent),
-    estimatedPrice
+    estimatedPrice: components.finalPrice,
+    finalPrice: components.finalPrice,
+    serviceCommission: components.serviceCommission,
+    driverEarning: components.driverEarning
   };
 }
 
@@ -63,33 +119,37 @@ export async function prepareOrderPricing(input, executor) {
 
   const distanceKm = positiveFinite(input.distanceKm, "distance_km", 300);
   const durationMin = positiveFinite(input.durationMin, "duration_min", 600);
+  const waitingMinutes = nonNegativeFinite(input.waitingMinutes, "waiting_minutes", 1440);
   const tariff = await getTariffForRegion({
     regionId: pickupRegion.id,
     tariffId: input.tariffId,
     tariffName: input.tariff || input.tariffName
   }, executor);
-  const estimatedPrice = calculateOrderPrice(tariff, distanceKm, durationMin);
+  const components = calculatePricingComponents(tariff, { distanceKm, durationMin, waitingMinutes });
+  const estimatedPrice = components.finalPrice;
   const pricingSnapshot = buildPricingSnapshot({
     region: pickupRegion,
     tariff,
     distanceKm,
     durationMin,
-    estimatedPrice
+    waitingMinutes,
+    components
   });
-  const serviceCommission = Math.round(estimatedPrice * Number(tariff.service_commission_percent) / 100);
 
   return {
     region: pickupRegion,
     regionId: pickupRegion.id,
     tariff,
     estimatedPrice,
-    serviceCommission,
+    serviceCommission: components.serviceCommission,
+    driverEarning: components.driverEarning,
     pricingSnapshot,
     publicEstimate: {
       regionId: pickupRegion.id,
       region: publicRegion(pickupRegion),
       tariff: publicTariff(tariff),
       estimatedPrice,
+      finalPrice: estimatedPrice,
       pricing: pricingSnapshot
     }
   };

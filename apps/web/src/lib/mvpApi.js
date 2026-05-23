@@ -174,6 +174,39 @@ export function updateAdminDriverApplication(applicationId, payload) {
   });
 }
 
+export function getAdminTariffs(regionId) {
+  const query = regionId ? `?regionId=${encodeURIComponent(regionId)}` : "";
+  return api(`/api/admin/tariffs${query}`);
+}
+
+export function createAdminTariff(payload) {
+  return api("/api/admin/tariffs", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminTariff(tariffId, payload) {
+  return api(`/api/admin/tariffs/${tariffId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function setAdminTariffStatus(tariffId, isActive) {
+  return api(`/api/admin/tariffs/${tariffId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive })
+  });
+}
+
+export function previewAdminTariffPrice(payload) {
+  return api("/api/admin/tariffs/preview-price", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getAdminOrders() {
   return api("/api/orders?limit=100");
 }

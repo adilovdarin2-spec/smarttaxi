@@ -10,6 +10,15 @@ import {
   publicDriverRegionApproval,
   setDriverRegionApproval
 } from "../driver-region-approvals/driver-region-approvals.service.js";
+import {
+  adminTariff,
+  createAdminTariff,
+  getAdminTariff,
+  listAdminTariffs,
+  setAdminTariffStatus,
+  updateAdminTariff
+} from "../tariffs/tariffs.service.js";
+import { calculatePricingComponents } from "../orders/order-pricing.service.js";
 
 const router = Router();
 
@@ -65,6 +74,56 @@ const DriverRegionApprovalUpdate = z.object({
   reason: z.string().trim().max(300).optional().default("")
 });
 
+const TariffBase = {
+  regionId: z.string().uuid(),
+  name: z.string().trim().min(2).max(80),
+  displayName: z.string().trim().max(120).optional().default(""),
+  description: z.string().trim().max(500).optional().default(""),
+  basePrice: z.coerce.number().int().min(0).max(1000000),
+  pricePerKm: z.coerce.number().int().min(0).max(1000000),
+  pricePerMinute: z.coerce.number().int().min(0).max(1000000),
+  minimumPrice: z.coerce.number().int().min(0).max(1000000),
+  serviceCommissionPercent: z.coerce.number().min(0).max(100),
+  cashbackPercent: z.coerce.number().min(0).max(100).optional().default(0),
+  surgeMultiplier: z.coerce.number().min(1).max(10),
+  freeWaitingMinutes: z.coerce.number().int().min(0).max(300).default(0),
+  waitingPricePerMinute: z.coerce.number().int().min(0).max(1000000).default(0),
+  cancellationFee: z.coerce.number().int().min(0).max(1000000).default(0),
+  sortOrder: z.coerce.number().int().min(0).max(100000).default(0),
+  isActive: z.boolean().default(true)
+};
+
+const TariffCreate = z.object(TariffBase);
+const TariffUpdate = z.object(Object.fromEntries(
+  Object.entries(TariffBase).map(([key, schema]) => [key, schema.optional()])
+)).refine(value => Object.keys(value).length > 0, "at least one field is required");
+
+const TariffStatusUpdate = z.object({
+  isActive: z.boolean()
+});
+
+const TariffPreviewDraft = z.object({
+  basePrice: z.coerce.number().int().min(0).max(1000000),
+  pricePerKm: z.coerce.number().int().min(0).max(1000000),
+  pricePerMinute: z.coerce.number().int().min(0).max(1000000),
+  minimumPrice: z.coerce.number().int().min(0).max(1000000),
+  serviceCommissionPercent: z.coerce.number().min(0).max(100),
+  surgeMultiplier: z.coerce.number().min(1).max(10),
+  freeWaitingMinutes: z.coerce.number().int().min(0).max(300).default(0),
+  waitingPricePerMinute: z.coerce.number().int().min(0).max(1000000).default(0),
+  cancellationFee: z.coerce.number().int().min(0).max(1000000).default(0)
+});
+
+const TariffPricePreview = z.object({
+  regionId: z.string().uuid().optional(),
+  tariffId: z.string().uuid().optional(),
+  tariff: TariffPreviewDraft.optional(),
+  distanceKm: z.coerce.number().gt(0).max(300),
+  durationMin: z.coerce.number().gt(0).max(600),
+  waitingMinutes: z.coerce.number().min(0).max(1440).default(0),
+  includeCancellationFee: z.boolean().optional().default(false)
+}).passthrough();
+
 function mapSettings(row) {
   return {
     serviceName: row.service_name,
@@ -82,6 +141,27 @@ function mapSettings(row) {
 
 function numberValue(row, key) {
   return Number(row?.[key] || 0);
+}
+
+function draftToTariffRow(draft) {
+  return {
+    id: draft.id || "preview",
+    region_id: draft.regionId || draft.region_id || null,
+    name: draft.name || "Preview",
+    display_name: draft.displayName || draft.display_name || draft.name || "Preview",
+    base_price: draft.basePrice ?? draft.base_price,
+    price_per_km: draft.pricePerKm ?? draft.price_per_km,
+    price_per_minute: draft.pricePerMinute ?? draft.price_per_minute,
+    min_price: draft.minimumPrice ?? draft.minPrice ?? draft.min_price,
+    service_commission_percent: draft.serviceCommissionPercent ?? draft.service_commission_percent,
+    cashback_percent: draft.cashbackPercent ?? draft.cashback_percent ?? 0,
+    surge_multiplier: draft.surgeMultiplier ?? draft.surge_multiplier,
+    free_waiting_minutes: draft.freeWaitingMinutes ?? draft.free_waiting_minutes ?? 0,
+    waiting_price_per_minute: draft.waitingPricePerMinute ?? draft.waiting_price_per_minute ?? 0,
+    cancellation_fee: draft.cancellationFee ?? draft.cancellation_fee ?? 0,
+    sort_order: draft.sortOrder ?? draft.sort_order ?? 0,
+    is_active: true
+  };
 }
 
 router.get("/dashboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
@@ -320,6 +400,119 @@ router.delete("/regions/:id", requireAuth, requireRole("OWNER"), async (req, res
       return updated;
     });
     res.json({ region: publicRegion(result.region) });
+  } catch (error) { next(error); }
+});
+
+router.get("/tariffs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      regionId: z.string().uuid().optional()
+    }).parse(req.query);
+    const tariffs = await listAdminTariffs(params, query);
+    res.json({ tariffs: tariffs.map(adminTariff) });
+  } catch (error) { next(error); }
+});
+
+router.post("/tariffs/preview-price", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const body = TariffPricePreview.parse(req.body);
+    let tariff;
+    let currency = "KZT";
+
+    if (body.tariffId) {
+      tariff = await getAdminTariff(body.tariffId, query);
+      if (body.regionId && tariff.region_id !== body.regionId) {
+        throw new AppError("Tariff does not belong to selected region", 409, "TARIFF_REGION_MISMATCH");
+      }
+      currency = tariff.currency || currency;
+    } else {
+      const draft = TariffPreviewDraft.parse(body.tariff || body);
+      tariff = draftToTariffRow(draft);
+      if (body.regionId) {
+        const region = (await query("SELECT currency FROM regions WHERE id=$1", [body.regionId])).rows[0];
+        if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+        currency = region.currency || currency;
+      }
+    }
+
+    const preview = calculatePricingComponents(tariff, {
+      distanceKm: body.distanceKm,
+      durationMin: body.durationMin,
+      waitingMinutes: body.waitingMinutes,
+      includeCancellationFee: body.includeCancellationFee
+    });
+
+    const response = {
+      ...preview,
+      currency,
+      tariff: adminTariff(tariff)
+    };
+    res.json({ ...response, preview: response });
+  } catch (error) { next(error); }
+});
+
+router.post("/tariffs", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const body = TariffCreate.parse(req.body);
+    const tariff = await tx(async client => {
+      const region = (await client.query("SELECT id FROM regions WHERE id=$1", [body.regionId])).rows[0];
+      if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+      const created = await createAdminTariff(body, client);
+      await writeAudit(client, {
+        action: "tariff_created",
+        actorUserId: req.user.id,
+        entityType: "tariff",
+        entityId: created.id,
+        metadata: { regionId: created.region_id, name: created.name, isActive: created.is_active },
+        req
+      });
+      return created;
+    });
+    res.status(201).json({ tariff: adminTariff(await getAdminTariff(tariff.id, query)) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/tariffs/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = TariffUpdate.parse(req.body);
+    const result = await tx(async client => {
+      if (body.regionId) {
+        const region = (await client.query("SELECT id FROM regions WHERE id=$1", [body.regionId])).rows[0];
+        if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+      }
+      const updated = await updateAdminTariff(params.id, body, client);
+      await writeAudit(client, {
+        action: "tariff_updated",
+        actorUserId: req.user.id,
+        entityType: "tariff",
+        entityId: params.id,
+        metadata: { before: updated.before, after: updated.tariff },
+        req
+      });
+      return updated.tariff;
+    });
+    res.json({ tariff: adminTariff(await getAdminTariff(result.id, query)) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/tariffs/:id/status", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = TariffStatusUpdate.parse(req.body);
+    const result = await tx(async client => {
+      const updated = await setAdminTariffStatus(params.id, body.isActive, client);
+      await writeAudit(client, {
+        action: body.isActive ? "tariff_activated" : "tariff_deactivated",
+        actorUserId: req.user.id,
+        entityType: "tariff",
+        entityId: params.id,
+        metadata: { before: updated.before, after: updated.tariff },
+        req
+      });
+      return updated.tariff;
+    });
+    res.json({ tariff: adminTariff(await getAdminTariff(result.id, query)) });
   } catch (error) { next(error); }
 });
 

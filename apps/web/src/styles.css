@@ -1857,7 +1857,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-control-shell button,
-.admin-control-shell input {
+.admin-control-shell input,
+.admin-control-shell select {
   font: inherit;
 }
 
@@ -2051,6 +2052,22 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid var(--admin-border);
   border-radius: 16px;
   outline: none;
+}
+
+.admin-control-select {
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--admin-text);
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  outline: none;
+  font-weight: 800;
+}
+
+.admin-control-select:focus {
+  border-color: var(--admin-gold);
+  box-shadow: 0 0 0 4px rgba(201, 154, 46, .16);
 }
 
 .admin-page-toolbar input:focus {
@@ -2426,9 +2443,14 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.admin-card-grid.tariffs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .admin-region-card,
 .admin-application-card,
-.admin-approval-card {
+.admin-approval-card,
+.admin-tariff-card {
   display: grid;
   gap: 16px;
   padding: 18px;
@@ -2441,6 +2463,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-region-card header,
 .admin-application-card header,
 .admin-approval-card header,
+.admin-tariff-card header,
 .admin-detail-hero {
   display: flex;
   align-items: start;
@@ -2451,6 +2474,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-region-card strong,
 .admin-application-card strong,
 .admin-approval-card strong,
+.admin-tariff-card strong,
 .admin-detail-hero h2 {
   display: block;
   margin: 0;
@@ -2463,6 +2487,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-region-card header span,
 .admin-application-card header span,
 .admin-approval-card header span,
+.admin-tariff-card header span,
 .admin-detail-hero p {
   display: block;
   margin: 3px 0 0;
@@ -2478,9 +2503,41 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 10px;
 }
 
+.admin-card-facts.tariff {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-tariff-card p,
+.admin-honest-note {
+  margin: 0;
+  color: var(--admin-secondary);
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 650;
+}
+
+.admin-honest-note {
+  display: block;
+  padding: 10px 12px;
+  background: var(--admin-warm);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+}
+
+.admin-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  background: var(--admin-warm);
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+}
+
 .admin-region-card footer,
 .admin-application-card footer,
 .admin-approval-card footer,
+.admin-tariff-card footer,
 .admin-modal-actions,
 .admin-detail-actions,
 .admin-row-actions {
@@ -2606,6 +2663,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-field input,
+.admin-field select,
 .admin-textarea-field textarea,
 .admin-approval-card input {
   width: 100%;
@@ -2625,6 +2683,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-field input:focus,
+.admin-field select:focus,
 .admin-textarea-field textarea:focus,
 .admin-approval-card input:focus {
   border-color: var(--admin-gold);
@@ -2688,6 +2747,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .admin-settings-grid,
   .admin-card-grid,
   .admin-card-grid.applications,
+  .admin-card-grid.tariffs,
   .admin-approval-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2755,6 +2815,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .admin-segmented-filter,
   .admin-region-card footer > *,
   .admin-application-card footer > *,
+  .admin-tariff-card footer > *,
   .admin-modal-actions > *,
   .admin-detail-actions > * {
     width: 100%;
@@ -2768,9 +2829,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .admin-settings-grid,
   .admin-card-grid,
   .admin-card-grid.applications,
+  .admin-card-grid.tariffs,
   .admin-card-facts,
+  .admin-card-facts.tariff,
   .admin-form-row,
-  .admin-approval-list {
+  .admin-approval-list,
+  .admin-preview-grid {
     grid-template-columns: 1fr;
   }
 

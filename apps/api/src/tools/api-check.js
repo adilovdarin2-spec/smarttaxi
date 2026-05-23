@@ -5,6 +5,7 @@ import "./driver-approval-check.js";
 import "./tariffs-orders-check.js";
 import "./dispatch-realtime-check.js";
 import "./routing-location-check.js";
+import "./admin-tariffs-check.js";
 import fs from "node:fs";
 
 function assert(condition, message) {
@@ -45,6 +46,11 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
   "updateAdminDriverRegion",
   "getAdminDriverApplications",
   "updateAdminDriverApplication",
+  "getAdminTariffs",
+  "createAdminTariff",
+  "updateAdminTariff",
+  "setAdminTariffStatus",
+  "previewAdminTariffPrice",
   "getAdminOrders",
   "getAdminAudit",
   "getAdminSettings"

@@ -88,7 +88,9 @@ CREATE TABLE IF NOT EXISTS driver_locations (
 CREATE TABLE IF NOT EXISTS tariffs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
-  name TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  display_name TEXT,
+  description TEXT,
   base_price INTEGER NOT NULL,
   price_per_km INTEGER NOT NULL,
   price_per_minute INTEGER NOT NULL,
@@ -96,7 +98,13 @@ CREATE TABLE IF NOT EXISTS tariffs (
   service_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
   cashback_percent NUMERIC(5,2) NOT NULL DEFAULT 2,
   surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1,
+  free_waiting_minutes INTEGER NOT NULL DEFAULT 0,
+  waiting_price_per_minute INTEGER NOT NULL DEFAULT 0,
+  cancellation_fee INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(region_id, name)
 );
 
@@ -279,19 +287,20 @@ INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
 VALUES (1, 'SmartTaxi', 'Atakent', 'KZT', '₸')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO tariffs(region_id,name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,is_active)
-SELECT r.id, seed.name, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, 1, true
+INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
+SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, true
 FROM regions r
 CROSS JOIN (
   VALUES
-    ('Economy',400,110,20,700,15,2),
-    ('Comfort',600,150,25,1000,15,2),
-    ('Business',900,220,35,1500,18,2),
-    ('Delivery',500,130,20,800,15,1)
-) AS seed(name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent)
+    ('Economy','Эконом','Базовый тариф для ежедневных поездок',400,110,20,700,15,2,1,3,50,0,10),
+    ('Comfort','Комфорт','Повышенный комфорт для городских поездок',600,150,25,1000,15,2,1,3,60,0,20),
+    ('Delivery','Доставка','Региональная доставка без пассажирской посадки',500,130,20,800,15,1,1,5,45,0,30)
+) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
 WHERE r.code='ATAKENT'
-ON CONFLICT (name) DO UPDATE
+ON CONFLICT (region_id, name) DO UPDATE
 SET region_id=EXCLUDED.region_id,
+    display_name=EXCLUDED.display_name,
+    description=EXCLUDED.description,
     base_price=EXCLUDED.base_price,
     price_per_km=EXCLUDED.price_per_km,
     price_per_minute=EXCLUDED.price_per_minute,
@@ -299,7 +308,12 @@ SET region_id=EXCLUDED.region_id,
     service_commission_percent=EXCLUDED.service_commission_percent,
     cashback_percent=EXCLUDED.cashback_percent,
     surge_multiplier=EXCLUDED.surge_multiplier,
-    is_active=EXCLUDED.is_active;
+    free_waiting_minutes=EXCLUDED.free_waiting_minutes,
+    waiting_price_per_minute=EXCLUDED.waiting_price_per_minute,
+    cancellation_fee=EXCLUDED.cancellation_fee,
+    sort_order=EXCLUDED.sort_order,
+    is_active=EXCLUDED.is_active,
+    updated_at=NOW();
 
 DO $$
 BEGIN

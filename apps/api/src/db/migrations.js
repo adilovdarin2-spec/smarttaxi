@@ -63,23 +63,34 @@ const statements = [
     UNIQUE(driver_id)
   )`,
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE CASCADE",
+  "ALTER TABLE tariffs DROP CONSTRAINT IF EXISTS tariffs_name_key",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS display_name TEXT",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS description TEXT",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS free_waiting_minutes INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS waiting_price_per_minute INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE RESTRICT",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb",
   "UPDATE tariffs SET region_id=(SELECT id FROM regions WHERE code='ATAKENT') WHERE region_id IS NULL",
-  `INSERT INTO tariffs(region_id,name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,is_active)
-   SELECT r.id, seed.name, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, 1, true
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_tariffs_region_name ON tariffs(region_id, name)",
+  `INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
+   SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, true
    FROM regions r
    CROSS JOIN (
      VALUES
-       ('Economy',400,110,20,700,15,2),
-       ('Comfort',600,150,25,1000,15,2),
-       ('Business',900,220,35,1500,18,2),
-       ('Delivery',500,130,20,800,15,1)
-   ) AS seed(name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent)
+       ('Economy','Эконом','Базовый тариф для ежедневных поездок',400,110,20,700,15,2,1,3,50,0,10),
+       ('Comfort','Комфорт','Повышенный комфорт для городских поездок',600,150,25,1000,15,2,1,3,60,0,20),
+       ('Delivery','Доставка','Региональная доставка без пассажирской посадки',500,130,20,800,15,1,1,5,45,0,30)
+   ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
    WHERE r.code='ATAKENT'
-   ON CONFLICT (name) DO UPDATE
+   ON CONFLICT (region_id, name) DO UPDATE
    SET region_id=EXCLUDED.region_id,
+       display_name=EXCLUDED.display_name,
+       description=EXCLUDED.description,
        base_price=EXCLUDED.base_price,
        price_per_km=EXCLUDED.price_per_km,
        price_per_minute=EXCLUDED.price_per_minute,
@@ -87,7 +98,12 @@ const statements = [
        service_commission_percent=EXCLUDED.service_commission_percent,
        cashback_percent=EXCLUDED.cashback_percent,
        surge_multiplier=EXCLUDED.surge_multiplier,
-       is_active=EXCLUDED.is_active`,
+       free_waiting_minutes=EXCLUDED.free_waiting_minutes,
+       waiting_price_per_minute=EXCLUDED.waiting_price_per_minute,
+       cancellation_fee=EXCLUDED.cancellation_fee,
+       sort_order=EXCLUDED.sort_order,
+       is_active=EXCLUDED.is_active,
+       updated_at=NOW()`,
   `CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     action TEXT NOT NULL,
@@ -230,6 +246,17 @@ const statements = [
   `DO $$
   BEGIN
     ALTER TABLE tariffs ADD CONSTRAINT tariffs_surge_multiplier_check CHECK (surge_multiplier > 0 AND surge_multiplier <= 10);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+  `DO $$
+  BEGIN
+    ALTER TABLE tariffs ADD CONSTRAINT tariffs_stage6_pricing_check CHECK (
+      surge_multiplier >= 1 AND surge_multiplier <= 10
+      AND free_waiting_minutes >= 0
+      AND waiting_price_per_minute >= 0
+      AND cancellation_fee >= 0
+      AND sort_order >= 0
+    );
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`
 ];

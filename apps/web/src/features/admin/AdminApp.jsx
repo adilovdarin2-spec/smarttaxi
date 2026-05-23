@@ -4,6 +4,7 @@ import {
   blockAdminDriver,
   clearToken,
   createAdminRegion,
+  createAdminTariff,
   getAdminAudit,
   getAdminDashboard,
   getAdminDriverApplications,
@@ -12,11 +13,15 @@ import {
   getAdminOrders,
   getAdminRegions,
   getAdminSettings,
+  getAdminTariffs,
+  previewAdminTariffPrice,
+  setAdminTariffStatus,
   toggleAdminRegion,
   unblockAdminDriver,
   updateAdminDriverApplication,
   updateAdminDriverRegion,
-  updateAdminRegion
+  updateAdminRegion,
+  updateAdminTariff
 } from "../../lib/mvpApi.js";
 
 const adminRoles = new Set(["OWNER", "OPERATOR", "FINANCE"]);
@@ -56,6 +61,14 @@ function formatDate(value) {
 
 function formatMoney(value) {
   return `${Number(value || 0).toLocaleString("ru-RU")} ₸`;
+}
+
+function formatPercent(value) {
+  return `${Number(value || 0).toLocaleString("ru-RU")}%`;
+}
+
+function formatMultiplier(value) {
+  return `x${Number(value || 1).toLocaleString("ru-RU")}`;
 }
 
 function statusLabel(status) {
@@ -107,6 +120,30 @@ function normalizeRegionForm(region) {
   };
 }
 
+function isTariffActive(tariff) {
+  return Boolean(tariff?.isActive ?? tariff?.is_active);
+}
+
+function normalizeTariffForm(tariff, defaultRegionId = "") {
+  return {
+    regionId: tariff?.regionId || tariff?.region_id || defaultRegionId,
+    name: tariff?.name || "",
+    displayName: tariff?.displayName || tariff?.display_name || "",
+    description: tariff?.description || "",
+    basePrice: String(tariff?.basePrice ?? tariff?.base_price ?? ""),
+    pricePerKm: String(tariff?.pricePerKm ?? tariff?.price_per_km ?? ""),
+    pricePerMinute: String(tariff?.pricePerMinute ?? tariff?.price_per_minute ?? ""),
+    minimumPrice: String(tariff?.minimumPrice ?? tariff?.min_price ?? ""),
+    serviceCommissionPercent: String(tariff?.serviceCommissionPercent ?? tariff?.service_commission_percent ?? 15),
+    surgeMultiplier: String(tariff?.surgeMultiplier ?? tariff?.surge_multiplier ?? 1),
+    freeWaitingMinutes: String(tariff?.freeWaitingMinutes ?? tariff?.free_waiting_minutes ?? 0),
+    waitingPricePerMinute: String(tariff?.waitingPricePerMinute ?? tariff?.waiting_price_per_minute ?? 0),
+    cancellationFee: String(tariff?.cancellationFee ?? tariff?.cancellation_fee ?? 0),
+    sortOrder: String(tariff?.sortOrder ?? tariff?.sort_order ?? 0),
+    isActive: tariff ? isTariffActive(tariff) : true
+  };
+}
+
 export default function AdminApp() {
   const [active, setActive] = useState("dashboard");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -121,6 +158,8 @@ export default function AdminApp() {
   const [regionStatus, setRegionStatus] = useState("all");
   const [driverStatus, setDriverStatus] = useState("all");
   const [applicationStatus, setApplicationStatus] = useState("PENDING");
+  const [tariffStatus, setTariffStatus] = useState("all");
+  const [tariffRegion, setTariffRegion] = useState("all");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
 
   const canAccess = user && adminRoles.has(user.role);
@@ -147,7 +186,7 @@ export default function AdminApp() {
   }, []);
 
   const loadPage = useCallback(async (page) => {
-    if (["dashboard", "tariffs", "finance", "support"].includes(page)) {
+    if (["dashboard", "finance", "support"].includes(page)) {
       setPageState({ loading: false, error: "", payload: null });
       return;
     }
@@ -157,6 +196,10 @@ export default function AdminApp() {
       drivers: getAdminDrivers,
       applications: getAdminDriverApplications,
       orders: getAdminOrders,
+      tariffs: async () => {
+        const [tariffs, regions] = await Promise.all([getAdminTariffs(), getAdminRegions()]);
+        return { tariffs: tariffs.tariffs || [], regions: regions.regions || [] };
+      },
       audit: getAdminAudit,
       settings: getAdminSettings
     };
@@ -208,6 +251,7 @@ export default function AdminApp() {
     if (payload.drivers) return { ...payload, drivers: filter(payload.drivers) };
     if (payload.applications) return { ...payload, applications: filter(payload.applications) };
     if (payload.orders) return { ...payload, orders: filter(payload.orders) };
+    if (payload.tariffs) return { ...payload, tariffs: filter(payload.tariffs), regions: payload.regions || [] };
     if (payload.logs) return { ...payload, logs: filter(payload.logs) };
     return payload;
   }, [pageState.payload, query]);
@@ -295,6 +339,49 @@ export default function AdminApp() {
       await loadPage("applications");
       await loadDashboard();
     }, status === "APPROVED" ? "Заявка одобрена" : "Заявка обновлена");
+  }
+
+  async function saveTariff(form, existing) {
+    await runAction(async () => {
+      const payload = {
+        regionId: form.regionId,
+        name: form.name.trim(),
+        displayName: form.displayName.trim(),
+        description: form.description.trim(),
+        basePrice: Number(form.basePrice),
+        pricePerKm: Number(form.pricePerKm),
+        pricePerMinute: Number(form.pricePerMinute),
+        minimumPrice: Number(form.minimumPrice),
+        serviceCommissionPercent: Number(form.serviceCommissionPercent),
+        surgeMultiplier: Number(form.surgeMultiplier),
+        freeWaitingMinutes: Number(form.freeWaitingMinutes),
+        waitingPricePerMinute: Number(form.waitingPricePerMinute),
+        cancellationFee: Number(form.cancellationFee),
+        sortOrder: Number(form.sortOrder),
+        isActive: form.isActive
+      };
+      if (existing?.id) await updateAdminTariff(existing.id, payload);
+      else await createAdminTariff(payload);
+      setModal(null);
+      await loadPage("tariffs");
+    }, "Тариф сохранён");
+  }
+
+  async function switchTariff(tariff) {
+    await runAction(async () => {
+      await setAdminTariffStatus(tariff.id, !isTariffActive(tariff));
+      await loadPage("tariffs");
+    }, isTariffActive(tariff) ? "Тариф отключён" : "Тариф активирован");
+  }
+
+  async function runTariffPreview(tariff, input) {
+    return previewAdminTariffPrice({
+      regionId: tariff.regionId,
+      tariffId: tariff.id,
+      distanceKm: Number(input.distanceKm),
+      durationMin: Number(input.durationMin),
+      waitingMinutes: Number(input.waitingMinutes)
+    });
   }
 
   if (bootLoading) {
@@ -412,12 +499,20 @@ export default function AdminApp() {
             setDriverStatus={setDriverStatus}
             applicationStatus={applicationStatus}
             setApplicationStatus={setApplicationStatus}
+            tariffStatus={tariffStatus}
+            setTariffStatus={setTariffStatus}
+            tariffRegion={tariffRegion}
+            setTariffRegion={setTariffRegion}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
             onToggleRegion={switchRegion}
             onOpenDriver={openDriver}
             onBlockDriver={setDriverBlocked}
             onOpenApplication={application => setModal({ type: "application", application })}
+            onAddTariff={() => setModal({ type: "tariff", tariff: null })}
+            onEditTariff={tariff => setModal({ type: "tariff", tariff })}
+            onToggleTariff={switchTariff}
+            onPreviewTariff={tariff => setModal({ type: "tariffPreview", tariff })}
           />
         )}
       </section>
@@ -448,6 +543,22 @@ export default function AdminApp() {
           busy={actionState.loading}
           onClose={() => setModal(null)}
           onReview={reviewApplication}
+        />
+      )}
+      {modal?.type === "tariff" && (
+        <TariffEditor
+          tariff={modal.tariff}
+          regions={asArray(pageState.payload, "regions")}
+          onClose={() => setModal(null)}
+          onSave={saveTariff}
+          busy={actionState.loading}
+        />
+      )}
+      {modal?.type === "tariffPreview" && (
+        <TariffPreviewPanel
+          tariff={modal.tariff}
+          onClose={() => setModal(null)}
+          onPreview={runTariffPreview}
         />
       )}
     </main>
@@ -493,16 +604,9 @@ function AdminPage(props) {
   if (active === "drivers") return <DriversPage drivers={asArray(payload, "drivers")} {...props} />;
   if (active === "applications") return <ApplicationsPage applications={asArray(payload, "applications")} {...props} />;
   if (active === "orders") return <OrdersPage orders={asArray(payload, "orders")} />;
+  if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "audit") return <AuditPage logs={asArray(payload, "logs")} />;
   if (active === "settings") return <SettingsPage settings={payload?.settings} />;
-  if (active === "tariffs") {
-    return (
-      <StatePanel
-        title="Управление тарифами будет доработано на отдельном этапе"
-        text="Здесь появятся базовая цена, цена за километр, цена за минуту, минимальная цена, комиссия и проверка итоговой стоимости."
-      />
-    );
-  }
   if (active === "finance") {
     return (
       <StatePanel
@@ -707,6 +811,95 @@ function ApplicationsPage({ applications, applicationStatus, setApplicationStatu
   );
 }
 
+function TariffsPage({
+  tariffs,
+  regions,
+  tariffStatus,
+  setTariffStatus,
+  tariffRegion,
+  setTariffRegion,
+  onAddTariff,
+  onEditTariff,
+  onToggleTariff,
+  onPreviewTariff
+}) {
+  const visible = tariffs.filter(tariff => {
+    if (tariffStatus === "active" && !isTariffActive(tariff)) return false;
+    if (tariffStatus === "inactive" && isTariffActive(tariff)) return false;
+    if (tariffRegion !== "all" && tariff.regionId !== tariffRegion) return false;
+    return true;
+  });
+
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Тарифы" subtitle="Настройка цен, комиссии и условий поездок по регионам">
+        <select className="admin-control-select" value={tariffRegion} onChange={event => setTariffRegion(event.target.value)}>
+          <option value="all">Все регионы</option>
+          {regions.map(region => (
+            <option value={region.id} key={region.id}>{region.name}</option>
+          ))}
+        </select>
+        <SegmentedFilter
+          value={tariffStatus}
+          onChange={setTariffStatus}
+          items={[
+            ["all", "Все"],
+            ["active", "Активные"],
+            ["inactive", "Отключённые"]
+          ]}
+        />
+        <button type="button" className="admin-primary-button" onClick={onAddTariff}>Добавить тариф</button>
+      </PageHeader>
+
+      {!regions.length ? (
+        <StatePanel title="Сначала настройте регионы" text="Тарифы привязываются к активным рабочим регионам SmartTaxi." />
+      ) : !visible.length ? (
+        <StatePanel
+          title="Тарифы пока не настроены"
+          text="Добавьте тариф для выбранного региона, чтобы клиенты могли создавать заказы."
+          action="Добавить тариф"
+          onAction={onAddTariff}
+        />
+      ) : (
+        <section className="admin-card-grid tariffs">
+          {visible.map(tariff => (
+            <article className="admin-tariff-card" key={tariff.id}>
+              <header>
+                <div>
+                  <strong>{tariff.displayName || tariff.name}</strong>
+                  <span>{tariff.regionName || "Регион не выбран"} · {tariff.name}</span>
+                </div>
+                <Badge tone={isTariffActive(tariff) ? "success" : "muted"}>
+                  {isTariffActive(tariff) ? "Активен" : "Отключён"}
+                </Badge>
+              </header>
+              {tariff.description && <p>{tariff.description}</p>}
+              <div className="admin-card-facts tariff">
+                <InfoLine label="База" value={formatMoney(tariff.basePrice)} />
+                <InfoLine label="За км" value={formatMoney(tariff.pricePerKm)} />
+                <InfoLine label="За минуту" value={formatMoney(tariff.pricePerMinute)} />
+                <InfoLine label="Минимум" value={formatMoney(tariff.minimumPrice)} />
+                <InfoLine label="Комиссия" value={formatPercent(tariff.serviceCommissionPercent)} />
+                <InfoLine label="Спрос" value={formatMultiplier(tariff.surgeMultiplier)} />
+                <InfoLine label="Ожидание" value={`${tariff.freeWaitingMinutes || 0} мин бесплатно · ${formatMoney(tariff.waitingPricePerMinute)}/мин`} />
+                <InfoLine label="Сортировка" value={tariff.sortOrder || 0} />
+              </div>
+              <small className="admin-honest-note">Аналитика по средним ценам будет подключена на следующем этапе.</small>
+              <footer>
+                <button type="button" className="admin-secondary-button compact" onClick={() => onPreviewTariff(tariff)}>Предпросмотр</button>
+                <button type="button" className="admin-secondary-button compact" onClick={() => onEditTariff(tariff)}>Редактировать</button>
+                <button type="button" className={isTariffActive(tariff) ? "admin-danger-button compact" : "admin-secondary-button compact"} onClick={() => onToggleTariff(tariff)}>
+                  {isTariffActive(tariff) ? "Отключить" : "Активировать"}
+                </button>
+              </footer>
+            </article>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
 function OrdersPage({ orders }) {
   if (!orders.length) return <StatePanel title="Нет заказов" text="Нет данных для отображения." />;
   return (
@@ -757,6 +950,149 @@ function SettingsPage({ settings }) {
         <InfoLine label="Экстренный номер" value={settings.sosPhone} />
       </div>
     </DataCard>
+  );
+}
+
+function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
+  const [form, setForm] = useState(() => normalizeTariffForm(tariff, regions[0]?.id || ""));
+  const [error, setError] = useState("");
+
+  function setField(field, value) {
+    setForm(current => ({ ...current, [field]: value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    try {
+      if (!form.regionId) throw new Error("Выберите регион");
+      if (!form.name.trim()) throw new Error("Введите название тарифа");
+      const numericFields = [
+        "basePrice",
+        "pricePerKm",
+        "pricePerMinute",
+        "minimumPrice",
+        "serviceCommissionPercent",
+        "surgeMultiplier",
+        "freeWaitingMinutes",
+        "waitingPricePerMinute",
+        "cancellationFee",
+        "sortOrder"
+      ];
+      numericFields.forEach(field => {
+        const value = Number(form[field]);
+        if (!Number.isFinite(value) || value < 0) throw new Error("Проверьте числовые поля");
+      });
+      if (Number(form.serviceCommissionPercent) > 100) throw new Error("Комиссия должна быть от 0 до 100%");
+      if (Number(form.surgeMultiplier) < 1) throw new Error("Коэффициент спроса должен быть не меньше 1");
+      await onSave(form, tariff);
+    } catch (submitError) {
+      setError(submitError.message || "Проверьте данные тарифа");
+    }
+  }
+
+  return (
+    <ModalFrame title={tariff ? "Редактировать тариф" : "Добавить тариф"} onClose={onClose} wide>
+      <form className="admin-form-grid" onSubmit={submit}>
+        <label className="admin-field">
+          <span>Регион</span>
+          <select className="admin-control-select" value={form.regionId} onChange={event => setField("regionId", event.target.value)}>
+            <option value="">Выберите регион</option>
+            {regions.map(region => (
+              <option value={region.id} key={region.id}>{region.name}</option>
+            ))}
+          </select>
+        </label>
+        <div className="admin-form-row">
+          <Field label="Системное имя" value={form.name} onChange={value => setField("name", value)} />
+          <Field label="Название для клиента" value={form.displayName} onChange={value => setField("displayName", value)} />
+        </div>
+        <label className="admin-textarea-field">
+          <span>Описание</span>
+          <textarea value={form.description} onChange={event => setField("description", event.target.value)} rows={3} />
+        </label>
+        <div className="admin-form-row">
+          <Field label="Базовая цена" type="number" value={form.basePrice} onChange={value => setField("basePrice", value)} />
+          <Field label="Цена за км" type="number" value={form.pricePerKm} onChange={value => setField("pricePerKm", value)} />
+        </div>
+        <div className="admin-form-row">
+          <Field label="Цена за минуту" type="number" value={form.pricePerMinute} onChange={value => setField("pricePerMinute", value)} />
+          <Field label="Минимальная цена" type="number" value={form.minimumPrice} onChange={value => setField("minimumPrice", value)} />
+        </div>
+        <div className="admin-form-row">
+          <Field label="Комиссия сервиса %" type="number" value={form.serviceCommissionPercent} onChange={value => setField("serviceCommissionPercent", value)} />
+          <Field label="Коэффициент спроса" type="number" value={form.surgeMultiplier} onChange={value => setField("surgeMultiplier", value)} />
+        </div>
+        <div className="admin-form-row">
+          <Field label="Бесплатное ожидание, мин" type="number" value={form.freeWaitingMinutes} onChange={value => setField("freeWaitingMinutes", value)} />
+          <Field label="Ожидание за минуту" type="number" value={form.waitingPricePerMinute} onChange={value => setField("waitingPricePerMinute", value)} />
+        </div>
+        <div className="admin-form-row">
+          <Field label="Штраф отмены" type="number" value={form.cancellationFee} onChange={value => setField("cancellationFee", value)} />
+          <Field label="Порядок" type="number" value={form.sortOrder} onChange={value => setField("sortOrder", value)} />
+        </div>
+        <label className="admin-toggle-line">
+          <input type="checkbox" checked={form.isActive} onChange={event => setField("isActive", event.target.checked)} />
+          <span>Тариф активен</span>
+        </label>
+        {error && <InlineMessage danger text={error} />}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="submit" className="admin-primary-button" disabled={busy}>{busy ? "Сохраняем..." : "Сохранить"}</button>
+        </div>
+      </form>
+    </ModalFrame>
+  );
+}
+
+function TariffPreviewPanel({ tariff, onClose, onPreview }) {
+  const [form, setForm] = useState({ distanceKm: "5", durationMin: "14", waitingMinutes: "0" });
+  const [state, setState] = useState({ loading: false, error: "", result: null });
+
+  async function calculate(event) {
+    event.preventDefault();
+    setState({ loading: true, error: "", result: null });
+    try {
+      const result = await onPreview(tariff, form);
+      setState({ loading: false, error: "", result: result.preview });
+    } catch (error) {
+      setState({ loading: false, error: readError(error), result: null });
+    }
+  }
+
+  const preview = state.result;
+  return (
+    <ModalFrame title="Предпросмотр цены" onClose={onClose}>
+      <form className="admin-form-grid" onSubmit={calculate}>
+        <div className="admin-detail-hero">
+          <div>
+            <h2>{tariff.displayName || tariff.name}</h2>
+            <p>{tariff.regionName || "Регион не выбран"}</p>
+          </div>
+          <Badge tone={isTariffActive(tariff) ? "success" : "muted"}>{isTariffActive(tariff) ? "Активен" : "Отключён"}</Badge>
+        </div>
+        <div className="admin-form-row">
+          <Field label="Расстояние, км" type="number" value={form.distanceKm} onChange={value => setForm(current => ({ ...current, distanceKm: value }))} />
+          <Field label="Время, мин" type="number" value={form.durationMin} onChange={value => setForm(current => ({ ...current, durationMin: value }))} />
+        </div>
+        <Field label="Ожидание, мин" type="number" value={form.waitingMinutes} onChange={value => setForm(current => ({ ...current, waitingMinutes: value }))} />
+        {state.error && <InlineMessage danger text={state.error} />}
+        {preview && (
+          <div className="admin-preview-grid">
+            <InfoLine label="Базовый расчёт" value={formatMoney(preview.rawPrice)} />
+            <InfoLine label="После спроса" value={formatMoney(preview.surgePrice)} />
+            <InfoLine label="Ожидание" value={formatMoney(preview.waitingPrice)} />
+            <InfoLine label="Итоговая стоимость" value={formatMoney(preview.finalPrice)} />
+            <InfoLine label="Комиссия сервиса" value={formatMoney(preview.serviceCommission)} />
+            <InfoLine label="Доход водителя" value={formatMoney(preview.driverEarning)} />
+          </div>
+        )}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="submit" className="admin-primary-button" disabled={state.loading}>{state.loading ? "Считаем..." : "Рассчитать"}</button>
+        </div>
+      </form>
+    </ModalFrame>
   );
 }
 
@@ -954,11 +1290,11 @@ function SegmentedFilter({ value, onChange, items }) {
   );
 }
 
-function Field({ label, value, onChange }) {
+function Field({ label, value, onChange, type = "text" }) {
   return (
     <label className="admin-field">
       <span>{label}</span>
-      <input value={value} onChange={event => onChange(event.target.value)} />
+      <input type={type} value={value} onChange={event => onChange(event.target.value)} />
     </label>
   );
 }
@@ -1014,7 +1350,7 @@ function InfoLine({ label, value }) {
   return (
     <div className="admin-info-line">
       <span>{label}</span>
-      <strong>{value || "—"}</strong>
+      <strong>{value === 0 || value ? value : "—"}</strong>
     </div>
   );
 }

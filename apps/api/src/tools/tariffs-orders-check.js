@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  calculatePricingComponents,
   calculateOrderPrice,
   prepareOrderPricing
 } from "../modules/orders/order-pricing.service.js";
@@ -16,6 +17,13 @@ const tariffsRoutes = readFileSync(join(root, "modules", "tariffs", "tariffs.rou
 assert.match(schema, /region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "tariffs must belong to regions");
 assert.match(schema, /is_active BOOLEAN NOT NULL DEFAULT true/i, "tariffs must keep active state");
 assert.match(schema, /surge_multiplier NUMERIC\(6,2\) NOT NULL DEFAULT 1/i, "tariffs must store surge multiplier");
+assert.match(schema, /display_name TEXT/i, "tariffs must store display name");
+assert.match(schema, /description TEXT/i, "tariffs must store description");
+assert.match(schema, /free_waiting_minutes INTEGER NOT NULL DEFAULT 0/i, "tariffs must store free waiting minutes");
+assert.match(schema, /waiting_price_per_minute INTEGER NOT NULL DEFAULT 0/i, "tariffs must store waiting price");
+assert.match(schema, /cancellation_fee INTEGER NOT NULL DEFAULT 0/i, "tariffs may store cancellation fee");
+assert.match(schema, /sort_order INTEGER NOT NULL DEFAULT 0/i, "tariffs must support admin ordering");
+assert.doesNotMatch(schema, /name TEXT UNIQUE NOT NULL/i, "tariff names must not be globally unique");
 assert.match(schema, /UNIQUE\(region_id, name\)/i, "tariffs must be unique per region and name");
 assert.match(schema, /region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "orders must store immutable region id");
 assert.match(schema, /pricing_snapshot JSONB NOT NULL DEFAULT '\{\}'::jsonb/i, "orders must store pricing snapshot");
@@ -25,10 +33,14 @@ assert.match(schema, /idx_tariffs_region_active/i, "tariff region active index m
 assert.match(schema, /idx_orders_region_id/i, "order region index must exist");
 
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "migration must add tariff region id");
+assert.match(migrations, /DROP CONSTRAINT IF EXISTS tariffs_name_key/i, "migration must remove global tariff name uniqueness");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS surge_multiplier/i, "migration must add tariff surge multiplier");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS free_waiting_minutes/i, "migration must add free waiting minutes");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS waiting_price_per_minute/i, "migration must add waiting price");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "migration must add order region id");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB/i, "migration must add order pricing snapshot");
 assert.match(migrations, /UPDATE tariffs SET region_id=\(SELECT id FROM regions WHERE code='ATAKENT'\) WHERE region_id IS NULL/i, "migration must attach existing dev tariffs to Atakent");
+assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must upsert by region and name");
 
 assert.match(ordersRoutes, /router\.post\("\/estimate"/, "estimate endpoint must exist");
 assert.match(ordersRoutes, /router\.post\("\/", requireAuth, requireRole\("CLIENT"\)/, "order creation endpoint must require client auth");
@@ -56,6 +68,15 @@ const formulaTariff = {
 assert.equal(calculateOrderPrice(formulaTariff, 3, 10), 900, "price formula must apply distance and duration");
 assert.equal(calculateOrderPrice({ ...formulaTariff, min_price: 1000 }, 1, 1), 1000, "minimum price must apply");
 assert.equal(calculateOrderPrice({ ...formulaTariff, surge_multiplier: 1.5 }, 3, 10), 1350, "surge multiplier must apply");
+const previewComponents = calculatePricingComponents({
+  ...formulaTariff,
+  free_waiting_minutes: 2,
+  waiting_price_per_minute: 50
+}, { distanceKm: 3, durationMin: 10, waitingMinutes: 5 });
+assert.equal(previewComponents.waitingPrice, 150, "waiting price must apply after free minutes");
+assert.equal(previewComponents.finalPrice, 1050, "final price must include waiting");
+assert.equal(previewComponents.serviceCommission, 158, "service commission must be calculated from final price");
+assert.equal(previewComponents.driverEarning, 892, "driver earning must subtract service commission");
 
 function createExecutor() {
   const state = {
@@ -138,6 +159,10 @@ const pricing = await prepareOrderPricing(baseInput, executor);
 assert.equal(pricing.regionId, "region-a", "order inside one active region succeeds");
 assert.equal(pricing.estimatedPrice, 900, "frontend-supplied price must be ignored");
 assert.equal(pricing.pricingSnapshot.serviceCommissionPercent, 15, "service commission percent must be included in pricing snapshot");
+assert.equal(pricing.pricingSnapshot.serviceCommission, 135, "pricing snapshot must include service commission");
+assert.equal(pricing.pricingSnapshot.driverEarning, 765, "pricing snapshot must include driver earning");
+assert.equal(pricing.pricingSnapshot.freeWaitingMinutes, 0, "pricing snapshot must include free waiting minutes");
+assert.equal(pricing.pricingSnapshot.waitingPricePerMinute, 0, "pricing snapshot must include waiting price");
 assert.equal(pricing.pricingSnapshot.regionId, "region-a", "pricing snapshot must include region id");
 assert.equal(pricing.pricingSnapshot.tariffId, "tariff-a", "pricing snapshot must include tariff id");
 
