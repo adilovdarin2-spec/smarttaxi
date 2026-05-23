@@ -4,11 +4,18 @@ import '../theme/app_theme.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState(
-      {super.key, required this.title, required this.text, this.icon});
+      {super.key,
+      required this.title,
+      required this.text,
+      this.icon,
+      this.action,
+      this.onAction});
 
   final String title;
   final String text;
   final IconData? icon;
+  final String? action;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +75,16 @@ class EmptyState extends StatelessWidget {
                     height: 1.38,
                     fontWeight: FontWeight.w600),
               ),
+              if (action != null && onAction != null) ...[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: onAction,
+                    child: Text(action!),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

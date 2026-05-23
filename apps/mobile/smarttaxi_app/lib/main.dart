@@ -10,6 +10,7 @@ import 'features/passenger/passenger_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (details) => const _RuntimeFallbackScreen();
   final authStore = AuthStore();
   final api = ApiClient(authStore);
   final sockets = SocketService(authStore);
@@ -220,6 +221,47 @@ class _GoldLoader extends StatelessWidget {
       ),
       child: const CircularProgressIndicator(
           strokeWidth: 3, color: SmartTaxiColors.gold),
+    );
+  }
+}
+
+class _RuntimeFallbackScreen extends StatelessWidget {
+  const _RuntimeFallbackScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: SmartTaxiColors.appBackground,
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _PremiumCard(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const BrandLogo(large: true),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'SmartTaxi',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Не удалось открыть экран. Перезапустите приложение или попробуйте войти снова.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      height: 1.4,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -50,6 +50,9 @@ void main() {
     expect(pubspec, contains('assets/brand/smarttaxi_icon_2048.png'));
     expect(icon, contains('viewBox="0 0 512 512"'));
     expect(icon, contains('<path'));
+    expect(icon, contains('linearGradient'));
+    expect(icon, contains('stroke-linecap="round"'));
+    expect(icon.toLowerCase(), isNot(contains('<text')));
     expect(icon, isNot(contains('>S<')));
     expect(icon, isNot(contains('>ST<')));
     expect(icon.toLowerCase(), isNot(contains('car')));
@@ -159,6 +162,24 @@ void main() {
       expect(passenger, contains('Заказать'));
     },
   );
+
+  test('post-login passenger shell renders home with safe fallbacks', () {
+    final main = _read('lib/main.dart');
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    expect(main, contains('ErrorWidget.builder'));
+    expect(main, contains('_RuntimeFallbackScreen'));
+    expect(main, contains('AppSession.passenger => PassengerShell'));
+    expect(passenger, contains('PassengerTab _tab = PassengerTab.home'));
+    expect(passenger, contains('AnimatedSwitcher'));
+    expect(passenger, contains('_currentScreen'));
+    expect(passenger, contains('_unknownPassengerSection'));
+    expect(passenger, contains('_MapUnavailableCard'));
+    expect(passenger, contains('mapUnavailable'));
+    expect(passenger, contains('errorTileCallback'));
+    expect(passenger, contains('backgroundColor: SmartTaxiColors.goldSurface'));
+    expect(passenger, isNot(contains('IndexedStack(')));
+  });
 
   test('passenger stage 2 polish keeps one clear CTA and animated states', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');

@@ -46,6 +46,7 @@ class _PassengerShellState extends State<PassengerShell> {
   bool _loading = false;
   bool _previewLoading = false;
   bool _locationLoading = false;
+  bool _mapTilesUnavailable = false;
   String? _error;
   List<TariffOption> _tariffs = const [];
   String? _tariffId;
@@ -86,9 +87,18 @@ class _PassengerShellState extends State<PassengerShell> {
   }
 
   Future<void> _bootstrap() async {
-    await widget.sockets.connect();
-    widget.sockets.onOrderUpdate(_handleOrderUpdate);
-    widget.sockets.onDriverLocation(_handleDriverLocation);
+    try {
+      await widget.sockets.connect();
+      widget.sockets.onOrderUpdate(_handleOrderUpdate);
+      widget.sockets.onDriverLocation(_handleDriverLocation);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _error =
+              'Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.';
+        });
+      }
+    }
     await _loadRegions();
   }
 
@@ -206,6 +216,11 @@ class _PassengerShellState extends State<PassengerShell> {
     if (target == PointTarget.pickup) {
       setState(() => _target = PointTarget.dropoff);
     }
+  }
+
+  void _handleMapTileError() {
+    if (_mapTilesUnavailable || !mounted) return;
+    setState(() => _mapTilesUnavailable = true);
   }
 
   Future<void> _applyPoint(
@@ -448,22 +463,45 @@ class _PassengerShellState extends State<PassengerShell> {
                 ),
               ),
             Expanded(
-              child: IndexedStack(
-                index: _tab.index,
-                children: [
-                  _homeScreen(),
-                  _tripsScreen(),
-                  _profileScreen(),
-                  _driverApplicationScreen(),
-                  _supportScreen(),
-                  _faqScreen(),
-                  _aboutScreen(),
-                  _settingsScreen(),
-                ],
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: KeyedSubtree(
+                  key: ValueKey(_tab),
+                  child: _currentScreen(),
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _currentScreen() {
+    final builders = <PassengerTab, Widget Function()>{
+      PassengerTab.home: _homeScreen,
+      PassengerTab.trips: _tripsScreen,
+      PassengerTab.profile: _profileScreen,
+      PassengerTab.driverApplication: _driverApplicationScreen,
+      PassengerTab.support: _supportScreen,
+      PassengerTab.faq: _faqScreen,
+      PassengerTab.about: _aboutScreen,
+      PassengerTab.settings: _settingsScreen,
+    };
+    return (builders[_tab] ?? _unknownPassengerSection).call();
+  }
+
+  Widget _unknownPassengerSection() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: EmptyState(
+        icon: Icons.apps_rounded,
+        title: 'Раздел недоступен',
+        text: 'Вернитесь на главный экран и попробуйте открыть раздел ещё раз.',
+        action: 'На главную',
+        onAction: () => setState(() => _tab = PassengerTab.home),
       ),
     );
   }
@@ -496,7 +534,9 @@ class _PassengerShellState extends State<PassengerShell> {
             permissionNotice: geolocationNotice,
             routeLoading: _previewLoading,
             routeError: mapRouteError,
+            mapUnavailable: _mapTilesUnavailable,
             onTap: _applyMapTap,
+            onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
             onReset: _resetRoute,
             onMenu: _openDrawer,
@@ -1145,7 +1185,9 @@ class _MapCanvas extends StatelessWidget {
     required this.permissionNotice,
     required this.routeLoading,
     required this.routeError,
+    required this.mapUnavailable,
     required this.onTap,
+    required this.onTileError,
     required this.onUseLocation,
     required this.onReset,
     required this.onMenu,
@@ -1161,7 +1203,9 @@ class _MapCanvas extends StatelessWidget {
   final String? permissionNotice;
   final bool routeLoading;
   final String? routeError;
+  final bool mapUnavailable;
   final ValueChanged<LatLng> onTap;
+  final VoidCallback onTileError;
   final VoidCallback onUseLocation;
   final VoidCallback onReset;
   final VoidCallback onMenu;
@@ -1196,11 +1240,13 @@ class _MapCanvas extends StatelessWidget {
               initialZoom: pickup == null && dropoff == null ? 12 : 14,
               initialCameraFit: initialFit,
               onTap: (_, point) => onTap(point),
+              backgroundColor: SmartTaxiColors.goldSurface,
             ),
             children: [
               TileLayer(
                 urlTemplate: AppConfig.osmTileUrl,
                 userAgentPackageName: 'com.smarttaxi.app',
+                errorTileCallback: (_, __, ___) => onTileError(),
               ),
               if (route.isNotEmpty)
                 PolylineLayer(
@@ -1262,6 +1308,13 @@ class _MapCanvas extends StatelessWidget {
             right: 14,
             child: _MapOverlayHeader(onMenu: onMenu, onProfile: onProfile),
           ),
+          if (mapUnavailable)
+            const Positioned(
+              left: 14,
+              right: 14,
+              bottom: 118,
+              child: _MapUnavailableCard(),
+            ),
           Positioned(
             left: 14,
             top: 84,
@@ -1517,6 +1570,67 @@ class _MapInstructionCard extends StatelessWidget {
             child: const Text('Как выбрать'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MapUnavailableCard extends StatelessWidget {
+  const _MapUnavailableCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.96),
+          border: Border.all(color: SmartTaxiColors.borderStrong),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x18785a14),
+              blurRadius: 24,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.map_outlined,
+              color: SmartTaxiColors.goldDeep,
+              size: 24,
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Карта временно недоступна',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      height: 1.15,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Маршрут и заказ можно выбрать вручную. Карта появится после восстановления соединения.',
+                    style: TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
