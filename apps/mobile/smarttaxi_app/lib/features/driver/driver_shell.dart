@@ -345,6 +345,19 @@ class _DriverShellState extends State<DriverShell> {
 
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
+  void _openRoadAlerts() {
+    Navigator.pop(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _RoadAlertsSheet(
+        api: widget.api,
+        regionId: _regionId,
+      ),
+    );
+  }
+
   void _showDriverDrawerSheet(String title, String text) {
     Navigator.pop(context);
     showModalBottomSheet<void>(
@@ -413,6 +426,7 @@ class _DriverShellState extends State<DriverShell> {
           'Настройки',
           'Настройки водительского режима будут добавлены после запуска базового кабинета.',
         ),
+        onRoadAlerts: _openRoadAlerts,
         onLogout: () {
           Navigator.pop(context);
           widget.onLogout();
@@ -1333,6 +1347,7 @@ class _DriverDrawer extends StatelessWidget {
     required this.onFaq,
     required this.onAbout,
     required this.onSettings,
+    required this.onRoadAlerts,
     required this.onLogout,
   });
 
@@ -1345,6 +1360,7 @@ class _DriverDrawer extends StatelessWidget {
   final VoidCallback onFaq;
   final VoidCallback onAbout;
   final VoidCallback onSettings;
+  final VoidCallback onRoadAlerts;
   final VoidCallback onLogout;
 
   @override
@@ -1385,6 +1401,10 @@ class _DriverDrawer extends StatelessWidget {
                 active: activeTab == 2,
                 onTap: () => onTab(2)),
             _DrawerItem(label: 'Профиль', active: false, onTap: onProfile),
+            _DrawerItem(
+                label: 'Дорожные события',
+                active: false,
+                onTap: onRoadAlerts),
             _DrawerItem(label: 'Поддержка', active: false, onTap: onSupport),
             _DrawerItem(label: 'FAQ', active: false, onTap: onFaq),
             _DrawerItem(label: 'О нас', active: false, onTap: onAbout),
@@ -1397,6 +1417,568 @@ class _DriverDrawer extends StatelessWidget {
             const SizedBox(height: 12),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RoadAlertsSheet extends StatefulWidget {
+  const _RoadAlertsSheet({
+    required this.api,
+    required this.regionId,
+  });
+
+  final ApiClient api;
+  final String? regionId;
+
+  @override
+  State<_RoadAlertsSheet> createState() => _RoadAlertsSheetState();
+}
+
+class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
+  final _commentController = TextEditingController();
+  bool _loading = true;
+  bool _saving = false;
+  bool _mapUnavailable = false;
+  String _selectedType = roadAlertTypes.first;
+  String? _message;
+  Coordinate? _selectedPoint;
+  List<RoadAlert> _alerts = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlerts();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAlerts() async {
+    setState(() {
+      _loading = true;
+      _message = null;
+    });
+    try {
+      final alerts = await widget.api.getDriverRoadAlerts(regionId: widget.regionId);
+      if (!mounted) return;
+      setState(() => _alerts = alerts);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _message = _readableError(error));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _useGps() async {
+    setState(() => _message = null);
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) {
+      setState(() => _message = 'Включите геолокацию или выберите точку на карте.');
+      return;
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      setState(() => _message = 'Разрешите геолокацию или выберите точку на карте.');
+      return;
+    }
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      setState(() {
+        _selectedPoint =
+            Coordinate(lat: position.latitude, lng: position.longitude);
+        _message = 'Координаты выбраны из GPS.';
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _message = 'Не удалось получить геолокацию.');
+      }
+    }
+  }
+
+  Future<void> _submitAlert() async {
+    final point = _selectedPoint;
+    if (point == null) {
+      setState(() => _message = 'Выберите точку события на карте или через GPS.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _message = null;
+    });
+    try {
+      final alert = await widget.api.createDriverRoadAlert(
+        regionId: widget.regionId,
+        type: _selectedType,
+        location: point,
+        comment: _commentController.text.trim(),
+      );
+      if (!mounted) return;
+      _commentController.clear();
+      setState(() {
+        _alerts = [alert, ..._alerts];
+        _selectedPoint = null;
+        _message = 'Событие отправлено для безопасности движения.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _message = _readableError(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.viewInsetsOf(context).bottom;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.88,
+      minChildSize: 0.58,
+      maxChildSize: 0.96,
+      builder: (context, controller) => Container(
+        decoration: const BoxDecoration(
+          color: SmartTaxiColors.appBackground,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: ListView(
+          controller: controller,
+          padding: EdgeInsets.fromLTRB(18, 12, 18, bottomPadding + 24),
+          children: [
+            const Center(child: _SheetHandle()),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: _TitleBlock(
+                    title: 'Дорожные события',
+                    text: 'Сообщения нужны для безопасности движения и соблюдения правил.',
+                  ),
+                ),
+                IconButton.filledTonal(
+                  onPressed: _loadAlerts,
+                  tooltip: 'Обновить',
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _RoadAlertMap(
+              alerts: _alerts,
+              selectedPoint: _selectedPoint,
+              mapUnavailable: _mapUnavailable,
+              onTileError: () => setState(() => _mapUnavailable = true),
+              onTap: (point) => setState(() {
+                _selectedPoint =
+                    Coordinate(lat: point.latitude, lng: point.longitude);
+                _message = 'Координаты выбраны на карте.';
+              }),
+            ),
+            const SizedBox(height: 14),
+            _PremiumCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionLabel(
+                    title: 'Новое событие',
+                    text: 'Выберите тип и точку. Сообщение увидят водители в регионе.',
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final type in roadAlertTypes)
+                        ChoiceChip(
+                          label: Text(roadAlertLabel(type)),
+                          selected: _selectedType == type,
+                          onSelected: (_) => setState(() => _selectedType = type),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _commentController,
+                    maxLines: 3,
+                    maxLength: 300,
+                    decoration: const InputDecoration(
+                      labelText: 'Комментарий',
+                      hintText: 'Например: правая полоса закрыта',
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _saving ? null : _useGps,
+                          icon: const Icon(Icons.my_location_rounded),
+                          label: const Text('GPS'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saving ? null : _submitAlert,
+                          icon: _saving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: SmartTaxiColors.text,
+                                  ),
+                                )
+                              : const Icon(Icons.send_rounded),
+                          label: Text(_saving ? 'Отправляем...' : 'Отправить'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_selectedPoint != null) ...[
+                    const SizedBox(height: 10),
+                    _InlineMessage(
+                      text:
+                          'Точка выбрана: ${_selectedPoint!.lat.toStringAsFixed(5)}, ${_selectedPoint!.lng.toStringAsFixed(5)}',
+                    ),
+                  ],
+                  if (_message != null) ...[
+                    const SizedBox(height: 10),
+                    _InlineMessage(text: _message!),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _PremiumCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionLabel(
+                    title: 'События рядом',
+                    text: 'Показываем только сохранённые активные сообщения.',
+                  ),
+                  const SizedBox(height: 12),
+                  if (_loading)
+                    const _LoadingStrip(text: 'Загружаем события...')
+                  else if (_alerts.isEmpty)
+                    const EmptyState(
+                      title: 'Пока нет дорожных событий рядом',
+                      text: 'Когда водитель отправит сообщение, оно появится здесь.',
+                      icon: Icons.signpost_outlined,
+                    )
+                  else
+                    ..._alerts.map((alert) => _RoadAlertRow(alert: alert)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoadAlertMap extends StatelessWidget {
+  const _RoadAlertMap({
+    required this.alerts,
+    required this.selectedPoint,
+    required this.mapUnavailable,
+    required this.onTileError,
+    required this.onTap,
+  });
+
+  final List<RoadAlert> alerts;
+  final Coordinate? selectedPoint;
+  final bool mapUnavailable;
+  final VoidCallback onTileError;
+  final ValueChanged<LatLng> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final center = selectedPoint?.toLatLng() ??
+        (alerts.isNotEmpty
+            ? alerts.first.toLatLng()
+            : const LatLng(42.3167, 69.5958));
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: SizedBox(
+        height: 250,
+        child: Stack(
+          children: [
+            if (mapUnavailable)
+              const Positioned.fill(child: _RoadAlertMapFallback())
+            else
+              FlutterMap(
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 13,
+                  onTap: (_, point) => onTap(point),
+                  backgroundColor: SmartTaxiColors.goldSurface,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: AppConfig.osmTileUrl,
+                    userAgentPackageName: 'com.smarttaxi.app',
+                    errorTileCallback: (_, __, ___) => onTileError(),
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      for (final alert in alerts) _alertMarker(alert),
+                      if (selectedPoint != null)
+                        Marker(
+                          point: selectedPoint!.toLatLng(),
+                          width: 46,
+                          height: 46,
+                          child: const _RoadAlertPin(
+                            label: '!',
+                            color: SmartTaxiColors.goldDeep,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            Positioned(
+              left: 12,
+              right: 12,
+              top: 12,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.94),
+                  border: Border.all(color: SmartTaxiColors.border),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.shield_outlined,
+                        color: SmartTaxiColors.goldDeep, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Нажмите на карту, чтобы выбрать точку события',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 12,
+              bottom: 12,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.94),
+                  border: Border.all(color: SmartTaxiColors.border),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  AppConfig.mapAttribution,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: SmartTaxiColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Marker _alertMarker(RoadAlert alert) {
+    return Marker(
+      point: alert.toLatLng(),
+      width: 46,
+      height: 46,
+      child: _RoadAlertPin(
+        label: _alertShortLabel(alert.type),
+        color: _alertColor(alert.type),
+      ),
+    );
+  }
+}
+
+class _RoadAlertMapFallback extends StatelessWidget {
+  const _RoadAlertMapFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: SmartTaxiColors.goldSurface,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.94),
+            border: Border.all(color: SmartTaxiColors.border),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.map_outlined, color: SmartTaxiColors.goldDeep),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Карта временно недоступна. Выберите точку через GPS или повторите позже.',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoadAlertPin extends StatelessWidget {
+  const _RoadAlertPin({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.30),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+}
+
+class _RoadAlertRow extends StatelessWidget {
+  const _RoadAlertRow({required this.alert});
+
+  final RoadAlert alert;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _RoadAlertPin(label: _alertShortLabel(alert.type), color: _alertColor(alert.type)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(alert.label,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w900)),
+                if (alert.comment.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    alert.comment,
+                    style: const TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  'Подтверждений: ${alert.confirmationsCount}',
+                  style: const TextStyle(
+                    color: SmartTaxiColors.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _alertShortLabel(String type) {
+  return const {
+        'ROAD_HAZARD': '!',
+        'ACCIDENT': 'ДТП',
+        'ROAD_WORK': 'Р',
+        'SPEED_CAMERA': 'К',
+        'TRAFFIC_JAM': 'П',
+        'ROAD_CLOSED': '⛔',
+        'OTHER': '?',
+      }[type] ??
+      '?';
+}
+
+Color _alertColor(String type) {
+  return const {
+        'ROAD_HAZARD': SmartTaxiColors.warning,
+        'ACCIDENT': SmartTaxiColors.danger,
+        'ROAD_WORK': SmartTaxiColors.goldDeep,
+        'SPEED_CAMERA': SmartTaxiColors.text,
+        'TRAFFIC_JAM': SmartTaxiColors.gold,
+        'ROAD_CLOSED': SmartTaxiColors.danger,
+        'OTHER': SmartTaxiColors.textSecondary,
+      }[type] ??
+      SmartTaxiColors.textSecondary;
+}
+
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 5,
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.borderStrong,
+        borderRadius: BorderRadius.circular(99),
       ),
     );
   }

@@ -500,6 +500,8 @@ class _AuthScreenState extends State<_AuthScreen> {
         : 'Введите номер телефона, чтобы продолжить';
     final size = MediaQuery.sizeOf(context);
     final compact = size.height < 720;
+    final denseAuth = compact || _registerMode;
+    final fieldGap = denseAuth ? 10.0 : 12.0;
     return Scaffold(
       backgroundColor: SmartTaxiColors.appBackground,
       body: Stack(
@@ -509,10 +511,10 @@ class _AuthScreenState extends State<_AuthScreen> {
             child: Center(
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
-                  compact ? 18 : 22,
-                  compact ? 18 : 28,
-                  compact ? 18 : 22,
-                  compact ? 18 : 22,
+                  denseAuth ? 18 : 22,
+                  denseAuth ? 16 : 28,
+                  denseAuth ? 18 : 22,
+                  denseAuth ? 18 : 22,
                 ),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
@@ -521,18 +523,18 @@ class _AuthScreenState extends State<_AuthScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _AuthBrandHeader(compact: compact),
-                      SizedBox(height: compact ? 16 : 24),
+                      _AuthBrandHeader(compact: denseAuth),
+                      SizedBox(height: denseAuth ? 14 : 24),
                       _PremiumCard(
-                        padding: compact ? 18 : 22,
+                        padding: denseAuth ? 18 : 22,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
                               title,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 30,
+                              style: TextStyle(
+                                fontSize: denseAuth ? 28 : 30,
                                 height: 1.08,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.3,
@@ -542,14 +544,14 @@ class _AuthScreenState extends State<_AuthScreen> {
                             Text(
                               subtitle,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: SmartTaxiColors.textSecondary,
-                                fontSize: 15,
+                                fontSize: denseAuth ? 14 : 15,
                                 height: 1.35,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            SizedBox(height: compact ? 18 : 24),
+                            SizedBox(height: denseAuth ? 16 : 24),
                             AutofillGroup(
                               child: Column(
                                 children: [
@@ -572,7 +574,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                                 textInputAction:
                                                     TextInputAction.next,
                                               ),
-                                              const SizedBox(height: 12),
+                                              SizedBox(height: fieldGap),
                                               TextField(
                                                 controller: _nameController,
                                                 decoration:
@@ -588,7 +590,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                                 textInputAction:
                                                     TextInputAction.next,
                                               ),
-                                              const SizedBox(height: 12),
+                                              SizedBox(height: fieldGap),
                                               TextField(
                                                 controller: _surnameController,
                                                 decoration:
@@ -604,7 +606,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                                 textInputAction:
                                                     TextInputAction.next,
                                               ),
-                                              const SizedBox(height: 12),
+                                              SizedBox(height: fieldGap),
                                               TextField(
                                                 controller: _phoneController,
                                                 decoration:
@@ -637,7 +639,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                                 TextInputAction.next,
                                           ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(height: fieldGap),
                                   TextField(
                                     controller: _passwordController,
                                     decoration: InputDecoration(
@@ -665,7 +667,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                         : (_) => _submit(),
                                   ),
                                   if (_registerMode) ...[
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: fieldGap),
                                     TextField(
                                       controller: _passwordRepeatController,
                                       decoration: InputDecoration(
@@ -697,7 +699,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 180),
                               child: _error == null
-                                  ? const SizedBox(height: 12)
+                                  ? SizedBox(height: denseAuth ? 8 : 12)
                                   : Padding(
                                       padding: const EdgeInsets.only(top: 12),
                                       child: Column(
@@ -712,7 +714,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                       ),
                                     ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: denseAuth ? 4 : 6),
                             ElevatedButton(
                               onPressed: _loading ? null : _submit,
                               child: _loading
@@ -721,7 +723,7 @@ class _AuthScreenState extends State<_AuthScreen> {
                                       ? 'Создать аккаунт'
                                       : 'Войти'),
                             ),
-                            const SizedBox(height: 18),
+                            SizedBox(height: denseAuth ? 14 : 18),
                             _AuthSwitchLink(
                               registerMode: _registerMode,
                               onSwitch: () => _switchMode(!_registerMode),
@@ -748,22 +750,32 @@ class _AuthBrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final logo = compact
+        ? SizedBox(
+            width: 72,
+            height: 72,
+            child: FittedBox(child: BrandLogo(large: true)),
+          )
+        : BrandLogo(large: true);
     return Column(
       children: [
-        BrandLogo(large: true),
+        logo,
         SizedBox(height: compact ? 12 : 18),
-        const Text(
+        Text(
           'SmartTaxi',
           style: TextStyle(
-              fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            fontSize: compact ? 30 : 34,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+          ),
         ),
         SizedBox(height: compact ? 5 : 8),
-        const Text(
+        Text(
           'Региональное такси рядом с вами',
           textAlign: TextAlign.center,
           style: TextStyle(
               color: SmartTaxiColors.textSecondary,
-              fontSize: 15,
+              fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w700),
         ),
       ],

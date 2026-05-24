@@ -178,6 +178,34 @@ class ApiClient {
     return RoutePreview.fromJson(Map<String, dynamic>.from(data['route'] ?? data));
   }
 
+  Future<List<RoadAlert>> getDriverRoadAlerts({String? regionId}) async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>(
+      '/api/driver/road-alerts',
+      queryParameters: {if (regionId != null) 'regionId': regionId},
+    );
+    final items = _extractList(response.data, 'alerts');
+    return items.map((item) => RoadAlert.fromJson(item)).toList(growable: false);
+  }
+
+  Future<RoadAlert> createDriverRoadAlert({
+    required String type,
+    required Coordinate location,
+    String? regionId,
+    String comment = '',
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>('/api/driver/road-alerts', data: {
+      if (regionId != null) 'regionId': regionId,
+      'type': type,
+      'comment': comment,
+      'lat': location.lat,
+      'lng': location.lng,
+    });
+    final data = response.data ?? {};
+    return RoadAlert.fromJson(Map<String, dynamic>.from(data['alert'] ?? data));
+  }
+
   Future<void> submitDriverApplication({
     required String fullName,
     required String phone,

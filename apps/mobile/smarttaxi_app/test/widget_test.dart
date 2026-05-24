@@ -49,6 +49,7 @@ void main() {
     expect(logo, contains('placeholderBuilder'));
     expect(logo, contains('errorBuilder'));
     expect(logo, contains('_LogoFallbackMark'));
+    expect(logo, contains('_LogoFallbackPainter'));
     expect(pubspec, contains('assets/brand/smarttaxi_icon.svg'));
     expect(pubspec, contains('assets/brand/smarttaxi_icon_2048.png'));
     expect(icon, contains('viewBox="0 0 512 512"'));
@@ -194,6 +195,7 @@ void main() {
     expect(passenger, contains('_MapUnavailableCard'));
     expect(passenger,
         contains('final showMapFallback = !mapReady || mapUnavailable'));
+    expect(passenger, contains('if (!showMapFallback)'));
     expect(passenger, contains('mapUnavailable'));
     expect(passenger, contains('errorTileCallback'));
     expect(passenger, contains('backgroundColor: SmartTaxiColors.goldSurface'));
@@ -367,10 +369,12 @@ void main() {
 
     expect(driver, contains('_DriverDrawer'));
     expect(driver, contains('_showDriverDrawerSheet'));
+    expect(driver, contains('_RoadAlertsSheet'));
     expect(driver, contains("label: 'Линия'"));
     expect(driver, contains("label: 'Заказы'"));
     expect(driver, contains("label: 'Поездка'"));
     expect(driver, contains("label: 'Профиль'"));
+    expect(driver, contains("label: 'Дорожные события'"));
     expect(driver, contains("label: 'Поддержка'"));
     expect(driver, contains("label: 'FAQ'"));
     expect(driver, contains("label: 'О нас'"));
@@ -467,6 +471,35 @@ void main() {
     expect(driver, contains("if (status == 'DRIVER_ARRIVED')"));
     expect(driver, contains("if (status == 'IN_PROGRESS')"));
     expect(driver, contains('_tripActionLabel'));
+  });
+
+  test('driver road-safety alerts use real server data and safe copy', () {
+    final api = _read('lib/core/api/api_client.dart');
+    final driver = _read('lib/features/driver/driver_shell.dart');
+    final models = _read('lib/features/shared/models.dart');
+
+    expect(api, contains("'/api/driver/road-alerts'"));
+    expect(api, contains('getDriverRoadAlerts'));
+    expect(api, contains('createDriverRoadAlert'));
+    expect(models, contains('class RoadAlert'));
+    expect(models, contains('roadAlertTypes'));
+    expect(models, contains("'ROAD_HAZARD'"));
+    expect(models, contains("'SPEED_CAMERA'"));
+    expect(models, contains("'ROAD_CLOSED'"));
+    expect(driver, contains('Дорожные события'));
+    expect(driver, contains('Сообщения нужны для безопасности движения и соблюдения правил.'));
+    expect(driver, contains('Пока нет дорожных событий рядом'));
+    expect(driver, contains('Нажмите на карту, чтобы выбрать точку события'));
+    expect(models, contains('Камера скорости'));
+    expect(driver, contains('_RoadAlertMap'));
+    expect(driver, contains('FlutterMap'));
+    expect(driver, contains('MarkerLayer'));
+    expect(driver, contains("label: const Text('GPS')"));
+    final unsafeIntent = 'police ${'eva'}sion';
+    final unsafeRouting = 'avoid ${'pol'}ice';
+    expect(driver.toLowerCase(), isNot(contains(unsafeIntent)));
+    expect(driver.toLowerCase(), isNot(contains(unsafeRouting)));
+    expect(RegExp(r'(^|\s)мент(ы)?($|\s|[,.!?])', caseSensitive: false).hasMatch(driver), isFalse);
   });
 
   test('stage 4.5 final visual QA guards compact premium mobile polish', () {

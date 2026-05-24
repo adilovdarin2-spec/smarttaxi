@@ -180,6 +180,72 @@ class DriverLocation {
   }
 }
 
+class RoadAlert {
+  const RoadAlert({
+    required this.id,
+    required this.regionId,
+    required this.type,
+    required this.label,
+    required this.lat,
+    required this.lng,
+    required this.status,
+    required this.confirmationsCount,
+    this.comment = '',
+  });
+
+  final String id;
+  final String regionId;
+  final String type;
+  final String label;
+  final double lat;
+  final double lng;
+  final String status;
+  final int confirmationsCount;
+  final String comment;
+
+  LatLng toLatLng() => LatLng(lat, lng);
+
+  factory RoadAlert.fromJson(Map<String, dynamic> json) {
+    final type = (json['type'] ?? 'OTHER').toString();
+    return RoadAlert(
+      id: '${json['id']}',
+      regionId: '${json['regionId'] ?? json['region_id'] ?? ''}',
+      type: type,
+      label: roadAlertLabel(type),
+      lat: _toDouble(json['lat']),
+      lng: _toDouble(json['lng']),
+      status: '${json['status'] ?? 'ACTIVE'}',
+      confirmationsCount:
+          _toDouble(json['confirmationsCount'] ?? json['confirmations_count'])
+              .round(),
+      comment: (json['comment'] ?? '').toString(),
+    );
+  }
+}
+
+const roadAlertTypes = <String>[
+  'ROAD_HAZARD',
+  'ACCIDENT',
+  'ROAD_WORK',
+  'SPEED_CAMERA',
+  'TRAFFIC_JAM',
+  'ROAD_CLOSED',
+  'OTHER',
+];
+
+String roadAlertLabel(String type) {
+  return const {
+        'ROAD_HAZARD': 'Дорожная опасность',
+        'ACCIDENT': 'ДТП',
+        'ROAD_WORK': 'Ремонт дороги',
+        'SPEED_CAMERA': 'Камера скорости',
+        'TRAFFIC_JAM': 'Пробка',
+        'ROAD_CLOSED': 'Закрытая дорога',
+        'OTHER': 'Другое',
+      }[type] ??
+      'Другое';
+}
+
 List<LatLng> parseGeoJsonLine(dynamic geometry) {
   if (geometry is! Map || geometry['coordinates'] is! List) return const [];
   return (geometry['coordinates'] as List)

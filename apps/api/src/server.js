@@ -21,6 +21,7 @@ import mapsRoutes from "./modules/maps/maps.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import regionsRoutes from "./modules/regions/regions.routes.js";
 import routingRoutes from "./modules/routing/routing.routes.js";
+import roadAlertsRoutes from "./modules/road-alerts/road-alerts.routes.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
 import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
 import {
@@ -99,6 +100,7 @@ app.use("/api/tariffs", tariffsRoutes);
 app.use("/api/finance", financeRoutes);
 app.use("/api/maps", mapsRoutes);
 app.use("/api/routes", routingRoutes);
+app.use("/api/driver/road-alerts", roadAlertsRoutes);
 app.use("/api/regions", regionsRoutes);
 app.use("/api/admin", adminRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));

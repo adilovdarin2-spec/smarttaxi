@@ -1,21 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512" role="img" aria-label="SmartTaxi icon">
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SmartTaxi icon">
   <defs>
-    <linearGradient id="gold" x1="122" y1="58" x2="390" y2="462" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F4D889"/>
-      <stop offset="0.46" stop-color="#C99A2E"/>
+    <linearGradient id="gold" x1="66" y1="54" x2="442" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8E7B4"/>
+      <stop offset="0.45" stop-color="#C99A2E"/>
       <stop offset="1" stop-color="#A97814"/>
     </linearGradient>
-    <linearGradient id="ink" x1="164" y1="124" x2="360" y2="372" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2A2417"/>
-      <stop offset="1" stop-color="#141414"/>
+    <linearGradient id="goldSoft" x1="142" y1="100" x2="382" y2="376" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8E8"/>
+      <stop offset="1" stop-color="#F6E6B8"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="126" y1="156" x2="386" y2="318" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2B2A26"/>
+      <stop offset="1" stop-color="#111111"/>
     </linearGradient>
   </defs>
-  <path fill="url(#gold)" d="M256 32c-94 0-170 74-170 165 0 121 142 260 162 279 4 4 12 4 16 0 20-19 162-158 162-279 0-91-76-165-170-165Z"/>
-  <circle cx="256" cy="196" r="96" fill="#FFFCF6"/>
-  <path d="M176 213c34-36 76-55 126-55 18 0 36 3 54 9" fill="none" stroke="url(#ink)" stroke-width="24" stroke-linecap="round"/>
-  <path d="M164 270c47-43 102-65 168-65" fill="none" stroke="url(#ink)" stroke-width="24" stroke-linecap="round"/>
-  <path d="m335 182 45 9-30 35" fill="none" stroke="url(#ink)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="176" cy="270" r="19" fill="#141414"/>
-  <circle cx="332" cy="205" r="19" fill="#141414"/>
-  <path d="M190 374c43 29 91 31 132 5" fill="none" stroke="#FFFCF6" stroke-width="18" stroke-linecap="round"/>
+
+  <circle cx="256" cy="246" r="210" fill="url(#gold)"/>
+  <circle cx="256" cy="246" r="166" fill="url(#goldSoft)"/>
+  <circle cx="256" cy="246" r="136" fill="#FFFCF6"/>
+
+  <path
+    d="M132 278c54-82 144-116 245-68"
+    stroke="url(#ink)"
+    stroke-width="28"
+    stroke-linecap="round"
+  />
+  <path
+    d="M128 330c58-58 128-84 210-76"
+    stroke="url(#ink)"
+    stroke-width="25"
+    stroke-linecap="round"
+  />
+  <path
+    d="M190 390c40 22 86 24 132 5"
+    stroke="#FFFCF6"
+    stroke-width="18"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M345 169l67 37-70 31"
+    stroke="url(#ink)"
+    stroke-width="24"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="132" cy="330" r="19" fill="#141414"/>
+  <circle cx="256" cy="246" r="40" fill="url(#gold)"/>
+  <circle cx="256" cy="246" r="16" fill="#FFFCF6"/>
+  <path
+    d="M234 456c12 10 32 10 44 0l28-33c8-10 1-25-12-25h-76c-13 0-20 15-12 25l28 33Z"
+    fill="url(#gold)"
+  />
 </svg>

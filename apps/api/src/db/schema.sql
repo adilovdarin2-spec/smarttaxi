@@ -85,6 +85,20 @@ CREATE TABLE IF NOT EXISTS driver_locations (
   UNIQUE(driver_id)
 );
 
+CREATE TABLE IF NOT EXISTS road_alerts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('ROAD_HAZARD','ACCIDENT','ROAD_WORK','SPEED_CAMERA','TRAFFIC_JAM','ROAD_CLOSED','OTHER')),
+  comment TEXT NOT NULL DEFAULT '',
+  lat NUMERIC(10,6) NOT NULL,
+  lng NUMERIC(10,6) NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','EXPIRED')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '2 hours'),
+  confirmations_count INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS tariffs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
@@ -288,6 +302,9 @@ CREATE INDEX IF NOT EXISTS idx_driver_region_approvals_status ON driver_region_a
 CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id);
 CREATE INDEX IF NOT EXISTS idx_driver_locations_region_id ON driver_locations(region_id);
 CREATE INDEX IF NOT EXISTS idx_driver_locations_updated_at ON driver_locations(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_road_alerts_region_status_created_at ON road_alerts(region_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_road_alerts_driver_id ON road_alerts(driver_id);
+CREATE INDEX IF NOT EXISTS idx_road_alerts_expires_at ON road_alerts(expires_at);
 CREATE INDEX IF NOT EXISTS idx_driver_applications_status ON driver_applications(status);
 CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id);
 CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id);

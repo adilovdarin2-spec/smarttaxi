@@ -235,6 +235,14 @@ class _PassengerShellState extends State<PassengerShell> {
     setState(() => _mapTilesUnavailable = true);
   }
 
+  void _retryMap() {
+    setState(() {
+      _mapTilesUnavailable = false;
+      _mapReady = false;
+    });
+    _deferMapStart();
+  }
+
   Future<void> _applyPoint(
     PointTarget target,
     Coordinate coordinate,
@@ -552,6 +560,7 @@ class _PassengerShellState extends State<PassengerShell> {
             onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
             onReset: _resetRoute,
+            onRetryMap: _retryMap,
             onMenu: _openDrawer,
             onProfile: () => setState(() => _tab = PassengerTab.profile),
           ),
@@ -1285,6 +1294,7 @@ class _MapCanvas extends StatelessWidget {
     required this.onTileError,
     required this.onUseLocation,
     required this.onReset,
+    required this.onRetryMap,
     required this.onMenu,
     required this.onProfile,
   });
@@ -1304,6 +1314,7 @@ class _MapCanvas extends StatelessWidget {
   final VoidCallback onTileError;
   final VoidCallback onUseLocation;
   final VoidCallback onReset;
+  final VoidCallback onRetryMap;
   final VoidCallback onMenu;
   final VoidCallback onProfile;
 
@@ -1409,40 +1420,42 @@ class _MapCanvas extends StatelessWidget {
             child: _MapOverlayHeader(onMenu: onMenu, onProfile: onProfile),
           ),
           if (mapUnavailable)
-            const Positioned(
+            Positioned(
               left: 14,
               right: 14,
               bottom: 118,
-              child: _MapUnavailableCard(),
+              child: _MapUnavailableCard(onRetry: onRetryMap),
             ),
-          Positioned(
-            left: 14,
-            top: 84,
-            right: 80,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              child: permissionNotice == null
-                  ? _MapInstructionCard(
-                      key: ValueKey(instruction),
-                      title: instruction,
-                      text: target == PointTarget.pickup
-                          ? 'Нажмите на карту или заполните поле «Откуда».'
-                          : 'Нажмите на карту или заполните поле «Куда».',
-                      onHelp: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Карта ставит только выбранную точку A или B.',
+          if (!showMapFallback)
+            Positioned(
+              left: 14,
+              top: 84,
+              right: 80,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: permissionNotice == null
+                    ? _MapInstructionCard(
+                        key: ValueKey(instruction),
+                        title: instruction,
+                        text: target == PointTarget.pickup
+                            ? 'Нажмите на карту или заполните поле «Откуда».'
+                            : 'Нажмите на карту или заполните поле «Куда».',
+                        onHelp: () =>
+                            ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Карта ставит только выбранную точку A или B.',
+                            ),
                           ),
                         ),
+                      )
+                    : _MapPermissionCard(
+                        key: const ValueKey('permission-notice'),
+                        text: permissionNotice!,
+                        onUseLocation: onUseLocation,
                       ),
-                    )
-                  : _MapPermissionCard(
-                      key: const ValueKey('permission-notice'),
-                      text: permissionNotice!,
-                      onUseLocation: onUseLocation,
-                    ),
+              ),
             ),
-          ),
           Positioned(
             right: 14,
             top: 84,
@@ -1680,141 +1693,70 @@ class _MapFallbackSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(painter: _MapFallbackPainter()),
-          ),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.92),
-                border: Border.all(color: SmartTaxiColors.border),
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14785a14),
-                    blurRadius: 22,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2.2),
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    'Карта загружается',
-                    style: TextStyle(
-                      color: SmartTaxiColors.textSecondary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const ColoredBox(color: SmartTaxiColors.goldSurface);
   }
-}
-
-class _MapFallbackPainter extends CustomPainter {
-  const _MapFallbackPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = SmartTaxiColors.border.withValues(alpha: 0.58)
-      ..strokeWidth = 1;
-    for (var x = -size.width; x < size.width * 2; x += 64) {
-      canvas.drawLine(
-          Offset(x, 0), Offset(x + size.height, size.height), linePaint);
-    }
-    for (var y = 36.0; y < size.height; y += 72) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y + 18), linePaint);
-    }
-
-    final accentPaint = Paint()
-      ..color = SmartTaxiColors.gold.withValues(alpha: 0.20)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 26;
-    canvas.drawCircle(Offset(size.width * 0.74, size.height * 0.34),
-        size.shortestSide * 0.28, accentPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _MapUnavailableCard extends StatelessWidget {
-  const _MapUnavailableCard();
+  const _MapUnavailableCard({required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.96),
-          border: Border.all(color: SmartTaxiColors.borderStrong),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x18785a14),
-              blurRadius: 24,
-              offset: Offset(0, 12),
-            ),
-          ],
-        ),
-        child: const Row(
-          children: [
-            Icon(
-              Icons.map_outlined,
-              color: SmartTaxiColors.goldDeep,
-              size: 24,
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Карта временно недоступна',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      height: 1.15,
-                    ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        border: Border.all(color: SmartTaxiColors.borderStrong),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x18785a14),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.map_outlined,
+            color: SmartTaxiColors.goldDeep,
+            size: 24,
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Карта временно недоступна',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    height: 1.15,
                   ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Маршрут и заказ можно выбрать вручную. Карта появится после восстановления соединения.',
-                    style: TextStyle(
-                      color: SmartTaxiColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12.5,
-                      height: 1.25,
-                    ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Маршрут и заказ можно выбрать вручную. Карта появится после восстановления соединения.',
+                  style: TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
+                    height: 1.25,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Повторить'),
+          ),
+        ],
       ),
     );
   }
