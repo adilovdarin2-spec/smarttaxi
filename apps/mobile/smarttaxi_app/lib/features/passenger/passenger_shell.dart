@@ -637,13 +637,22 @@ class _PassengerShellState extends State<PassengerShell> {
 
   Widget _tripsScreen() {
     if (_order == null) {
-      return const Padding(
-        padding: EdgeInsets.all(20),
-        child: EmptyState(
-          icon: Icons.route_rounded,
-          title: 'Активной поездки нет',
-          text: 'Создайте заказ, и его статус появится здесь.',
-        ),
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const _TitleBlock(
+            title: 'Мои поездки',
+            text: 'Здесь появится активный заказ и его статус',
+          ),
+          const SizedBox(height: 16),
+          EmptyState(
+            icon: Icons.route_rounded,
+            title: 'Активной поездки нет',
+            text: 'Создайте заказ, и его статус появится здесь.',
+            action: 'На главную',
+            onAction: () => setState(() => _tab = PassengerTab.home),
+          ),
+        ],
       );
     }
     final driverText = _order!.driverId == null
@@ -809,44 +818,63 @@ class _PassengerShellState extends State<PassengerShell> {
           ),
         ),
         const SizedBox(height: 14),
+        const _ProfileGroupLabel('Основное'),
+        const SizedBox(height: 8),
         _PremiumCard(
           child: Column(
             children: [
               _MenuLine(
-                  title: 'Мои поездки',
-                  onTap: () => setState(() => _tab = PassengerTab.trips)),
-              _MenuLine(title: 'Стать водителем', onTap: _openDriverEntry),
+                icon: Icons.route_rounded,
+                title: 'Мои поездки',
+                onTap: () => setState(() => _tab = PassengerTab.trips),
+              ),
               _MenuLine(
-                  title: 'Поддержка',
-                  onTap: () => setState(() => _tab = PassengerTab.support)),
+                icon: Icons.badge_outlined,
+                title: 'Стать водителем',
+                onTap: _openDriverEntry,
+              ),
+              _MenuLine(
+                icon: Icons.support_agent_rounded,
+                title: 'Поддержка',
+                onTap: () => setState(() => _tab = PassengerTab.support),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 14),
+        const _ProfileGroupLabel('Приложение'),
+        const SizedBox(height: 8),
         _PremiumCard(
           child: Column(
             children: [
               _MenuLine(
-                  title: 'Настройки',
-                  onTap: () => setState(() => _tab = PassengerTab.settings)),
+                icon: Icons.tune_rounded,
+                title: 'Настройки',
+                onTap: () => setState(() => _tab = PassengerTab.settings),
+              ),
               _MenuLine(
-                  title: 'FAQ',
-                  onTap: () => setState(() => _tab = PassengerTab.faq)),
+                icon: Icons.help_outline_rounded,
+                title: 'FAQ',
+                onTap: () => setState(() => _tab = PassengerTab.faq),
+              ),
               _MenuLine(
-                  title: 'О нас',
-                  onTap: () => setState(() => _tab = PassengerTab.about)),
+                icon: Icons.info_outline_rounded,
+                title: 'О нас',
+                onTap: () => setState(() => _tab = PassengerTab.about),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 14),
-        OutlinedButton(
-          onPressed: widget.onLogout,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: SmartTaxiColors.danger,
-            side: const BorderSide(color: Color(0xfffecaca)),
-            backgroundColor: const Color(0xfffff1f1),
+        const _ProfileGroupLabel('Аккаунт'),
+        const SizedBox(height: 8),
+        _PremiumCard(
+          child: _MenuLine(
+            icon: Icons.logout_rounded,
+            title: 'Выйти',
+            danger: true,
+            onTap: widget.onLogout,
           ),
-          child: const Text('Выйти'),
         ),
       ],
     );
@@ -951,11 +979,10 @@ class _PassengerShellState extends State<PassengerShell> {
                 runSpacing: 8,
                 children: topics
                     .map(
-                      (topic) => ChoiceChip(
-                        label: Text(topic),
+                      (topic) => _SupportTopicChip(
+                        label: topic,
                         selected: _supportTopic == topic,
-                        onSelected: (_) =>
-                            setState(() => _supportTopic = topic),
+                        onTap: () => setState(() => _supportTopic = topic),
                       ),
                     )
                     .toList(),
@@ -1183,6 +1210,60 @@ class _PassengerShellState extends State<PassengerShell> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SupportTopicChip extends StatelessWidget {
+  const _SupportTopicChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: selected ? SmartTaxiColors.goldPale : Colors.white,
+        border: Border.all(
+          color: selected ? SmartTaxiColors.gold : SmartTaxiColors.border,
+          width: selected ? 1.6 : 1,
+        ),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: selected
+            ? const [
+                BoxShadow(
+                  color: Color(0x10785a14),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                )
+              ]
+            : null,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected
+                  ? SmartTaxiColors.text
+                  : SmartTaxiColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2586,8 +2667,10 @@ class _SmartDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final drawerWidth = (width * 0.86).clamp(300.0, 390.0).toDouble();
     return Drawer(
-      width: MediaQuery.sizeOf(context).width * 0.84,
+      width: drawerWidth,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
       ),
@@ -2596,11 +2679,26 @@ class _SmartDrawer extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              color: SmartTaxiColors.goldSurface,
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+              decoration: const BoxDecoration(
+                color: SmartTaxiColors.goldSurface,
+                border: Border(
+                  bottom: BorderSide(color: SmartTaxiColors.border),
+                ),
+              ),
               child: Row(
                 children: [
-                  const BrandLogo(),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      border: Border.all(color: SmartTaxiColors.borderStrong),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const BrandLogo(),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -2632,6 +2730,15 @@ class _SmartDrawer extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Региональное такси',
+                          style: TextStyle(
+                            color: SmartTaxiColors.goldDeep,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2639,48 +2746,64 @@ class _SmartDrawer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            _DrawerItem(
-              label: 'Главная',
-              active: active == PassengerTab.home,
-              onTap: () => onSelect(PassengerTab.home),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _DrawerItem(
+                    icon: Icons.map_rounded,
+                    label: 'Главная',
+                    active: active == PassengerTab.home,
+                    onTap: () => onSelect(PassengerTab.home),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.route_rounded,
+                    label: 'Мои поездки',
+                    active: active == PassengerTab.trips,
+                    onTap: () => onSelect(PassengerTab.trips),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.person_outline_rounded,
+                    label: 'Профиль',
+                    active: active == PassengerTab.profile,
+                    onTap: () => onSelect(PassengerTab.profile),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.badge_outlined,
+                    label: driverLabel,
+                    active: active == PassengerTab.driverApplication,
+                    onTap: onDriver,
+                  ),
+                  const _DrawerDivider(),
+                  _DrawerItem(
+                    icon: Icons.support_agent_rounded,
+                    label: 'Поддержка',
+                    active: active == PassengerTab.support,
+                    onTap: () => onSelect(PassengerTab.support),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.help_outline_rounded,
+                    label: 'FAQ',
+                    active: active == PassengerTab.faq,
+                    onTap: () => onSelect(PassengerTab.faq),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.info_outline_rounded,
+                    label: 'О нас',
+                    active: active == PassengerTab.about,
+                    onTap: () => onSelect(PassengerTab.about),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.tune_rounded,
+                    label: 'Настройки',
+                    active: active == PassengerTab.settings,
+                    onTap: () => onSelect(PassengerTab.settings),
+                  ),
+                ],
+              ),
             ),
             _DrawerItem(
-              label: 'Мои поездки',
-              active: active == PassengerTab.trips,
-              onTap: () => onSelect(PassengerTab.trips),
-            ),
-            _DrawerItem(
-              label: 'Профиль',
-              active: active == PassengerTab.profile,
-              onTap: () => onSelect(PassengerTab.profile),
-            ),
-            _DrawerItem(
-              label: driverLabel,
-              active: active == PassengerTab.driverApplication,
-              onTap: onDriver,
-            ),
-            _DrawerItem(
-              label: 'Поддержка',
-              active: active == PassengerTab.support,
-              onTap: () => onSelect(PassengerTab.support),
-            ),
-            _DrawerItem(
-              label: 'FAQ',
-              active: active == PassengerTab.faq,
-              onTap: () => onSelect(PassengerTab.faq),
-            ),
-            _DrawerItem(
-              label: 'О нас',
-              active: active == PassengerTab.about,
-              onTap: () => onSelect(PassengerTab.about),
-            ),
-            _DrawerItem(
-              label: 'Настройки',
-              active: active == PassengerTab.settings,
-              onTap: () => onSelect(PassengerTab.settings),
-            ),
-            const Spacer(),
-            _DrawerItem(
+              icon: Icons.logout_rounded,
               label: 'Выйти',
               active: false,
               danger: true,
@@ -2696,12 +2819,14 @@ class _SmartDrawer extends StatelessWidget {
 
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
+    required this.icon,
     required this.label,
     required this.active,
     required this.onTap,
     this.danger = false,
   });
 
+  final IconData icon;
   final String label;
   final bool active;
   final bool danger;
@@ -2709,17 +2834,76 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tone = danger
+        ? SmartTaxiColors.danger
+        : active
+            ? SmartTaxiColors.text
+            : SmartTaxiColors.textSecondary;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      child: ListTile(
-        minTileHeight: 52,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        selected: active,
-        selectedTileColor: SmartTaxiColors.goldSurface,
-        textColor: danger ? SmartTaxiColors.danger : SmartTaxiColors.text,
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
-        onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: active ? SmartTaxiColors.goldSurface : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color:
+                    active ? SmartTaxiColors.borderStrong : Colors.transparent,
+              ),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: danger
+                        ? const Color(0xfffff1f1)
+                        : active
+                            ? SmartTaxiColors.goldPale
+                            : Colors.white,
+                    border: Border.all(
+                      color: active
+                          ? SmartTaxiColors.borderStrong
+                          : SmartTaxiColors.border,
+                    ),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, size: 18, color: tone),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: tone, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _DrawerDivider extends StatelessWidget {
+  const _DrawerDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Container(height: 1, color: SmartTaxiColors.border),
     );
   }
 }
@@ -3238,19 +3422,81 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
-class _MenuLine extends StatelessWidget {
-  const _MenuLine({required this.title, required this.onTap});
+class _ProfileGroupLabel extends StatelessWidget {
+  const _ProfileGroupLabel(this.text);
 
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: SmartTaxiColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuLine extends StatelessWidget {
+  const _MenuLine({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
   final String title;
+  final bool danger;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      trailing: const Icon(Icons.chevron_right_rounded),
+    final tone = danger ? SmartTaxiColors.danger : SmartTaxiColors.text;
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: danger
+                    ? const Color(0xfffff1f1)
+                    : SmartTaxiColors.goldSurface,
+                border: Border.all(
+                  color:
+                      danger ? const Color(0xfffecaca) : SmartTaxiColors.border,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: tone, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(color: tone, fontWeight: FontWeight.w900),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color:
+                  danger ? SmartTaxiColors.danger : SmartTaxiColors.textMuted,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

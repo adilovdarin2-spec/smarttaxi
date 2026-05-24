@@ -282,6 +282,12 @@ void main() {
     expect(passenger, contains("label: 'О нас'"));
     expect(passenger, contains("label: 'Настройки'"));
     expect(passenger, contains("label: 'Выйти'"));
+    expect(passenger, contains('drawerWidth'));
+    expect(passenger, contains('_DrawerDivider'));
+    expect(passenger, contains('Icons.map_rounded'));
+    expect(passenger, contains('Icons.support_agent_rounded'));
+    expect(passenger, contains('Icons.tune_rounded'));
+    expect(passenger, contains('Региональное такси'));
     expect(passenger, isNot(contains('NavigationBar(')));
     expect(passenger, isNot(contains('NavigationDestination(')));
     expect(passenger, isNot(contains('class _FloatingNav')));
@@ -291,6 +297,8 @@ void main() {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
     expect(passenger, contains('_supportScreen'));
+    expect(passenger, contains('_SupportTopicChip'));
+    expect(passenger, isNot(contains('ChoiceChip(')));
     expect(passenger, contains('Проблема с поездкой'));
     expect(passenger, contains('Водитель не приехал'));
     expect(passenger, contains('Сообщение'));
@@ -314,6 +322,11 @@ void main() {
     expect(passenger, contains('_aboutScreen'));
     expect(passenger, contains('SmartTaxi'));
     expect(passenger, contains('региональный сервис такси'));
+    expect(passenger, contains('_ProfileGroupLabel'));
+    expect(passenger, contains("const _ProfileGroupLabel('Основное')"));
+    expect(passenger, contains("const _ProfileGroupLabel('Приложение')"));
+    expect(passenger, contains("const _ProfileGroupLabel('Аккаунт')"));
+    expect(passenger, contains("action: 'На главную'"));
   });
 
   test('driver entry is not a public top role switch', () {
