@@ -30,10 +30,11 @@ class RouteFields extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 30,
+            height: 130,
             child: Column(
               children: [
                 const SizedBox(height: 18),

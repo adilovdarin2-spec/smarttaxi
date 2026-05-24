@@ -46,6 +46,9 @@ void main() {
     final icon = _read('assets/brand/smarttaxi_icon.svg');
 
     expect(logo, contains('assets/brand/smarttaxi_icon.svg'));
+    expect(logo, contains('placeholderBuilder'));
+    expect(logo, contains('errorBuilder'));
+    expect(logo, contains('_LogoFallbackMark'));
     expect(pubspec, contains('assets/brand/smarttaxi_icon.svg'));
     expect(pubspec, contains('assets/brand/smarttaxi_icon_2048.png'));
     expect(icon, contains('viewBox="0 0 512 512"'));
@@ -169,12 +172,28 @@ void main() {
 
     expect(main, contains('ErrorWidget.builder'));
     expect(main, contains('_RuntimeFallbackScreen'));
+    expect(main, contains('_RuntimeFallbackLogo'));
+    expect(main, contains('Вернуться на главную'));
     expect(main, contains('AppSession.passenger => PassengerShell'));
+    expect(main, contains('if (!mounted) return;'));
+    expect(main, contains('setState(() => _session = AppSession.passenger)'));
     expect(passenger, contains('PassengerTab _tab = PassengerTab.home'));
+    expect(passenger, contains('bool _mapReady = false'));
+    expect(passenger, contains('WidgetsBinding.instance.addPostFrameCallback'));
     expect(passenger, contains('AnimatedSwitcher'));
     expect(passenger, contains('_currentScreen'));
     expect(passenger, contains('_unknownPassengerSection'));
+    expect(passenger, contains('PassengerTab.home: _homeScreen'));
+    expect(passenger, contains('PassengerTab.trips: _tripsScreen'));
+    expect(passenger, contains('PassengerTab.profile: _profileScreen'));
+    expect(passenger, contains('PassengerTab.support: _supportScreen'));
+    expect(passenger, contains('PassengerTab.faq: _faqScreen'));
+    expect(passenger, contains('PassengerTab.about: _aboutScreen'));
+    expect(passenger, contains('PassengerTab.settings: _settingsScreen'));
+    expect(passenger, contains('_MapFallbackSurface'));
     expect(passenger, contains('_MapUnavailableCard'));
+    expect(passenger,
+        contains('final showMapFallback = !mapReady || mapUnavailable'));
     expect(passenger, contains('mapUnavailable'));
     expect(passenger, contains('errorTileCallback'));
     expect(passenger, contains('backgroundColor: SmartTaxiColors.goldSurface'));
@@ -353,6 +372,11 @@ void main() {
 
     expect(routeFields, contains("label: 'A'"));
     expect(routeFields, contains("label: 'B'"));
+    expect(routeFields, contains('height: 130'));
+    expect(
+      routeFields,
+      isNot(contains('crossAxisAlignment: CrossAxisAlignment.stretch')),
+    );
     expect(
       routeFields,
       isNot(

@@ -56,10 +56,13 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       final me = await widget.api.me();
       await _saveUserFromPayload(me);
       final savedMode = await widget.authStore.readMode();
+      if (!mounted) return;
       if (savedMode == 'driver' && await _canOpenDriver()) {
+        if (!mounted) return;
         setState(() => _session = AppSession.driver);
       } else {
         await widget.authStore.saveMode('passenger');
+        if (!mounted) return;
         setState(() => _session = AppSession.passenger);
       }
     } catch (_) {
@@ -71,6 +74,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   Future<void> _handleLogin(Map<String, dynamic> authPayload) async {
     await _saveUserFromPayload(authPayload);
     await widget.authStore.saveMode('passenger');
+    if (!mounted) return;
     setState(() => _session = AppSession.passenger);
   }
 
@@ -240,7 +244,7 @@ class _RuntimeFallbackScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const BrandLogo(large: true),
+                  const _RuntimeFallbackLogo(),
                   const SizedBox(height: 18),
                   const Text(
                     'SmartTaxi',
@@ -256,11 +260,41 @@ class _RuntimeFallbackScreen extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      child: const Text('Вернуться на главную'),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RuntimeFallbackLogo extends StatelessWidget {
+  const _RuntimeFallbackLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.gold,
+        shape: BoxShape.circle,
+        border: Border.all(color: SmartTaxiColors.goldDeep, width: 6),
+      ),
+      child: const Icon(
+        Icons.near_me_rounded,
+        color: SmartTaxiColors.text,
+        size: 46,
       ),
     );
   }

@@ -47,6 +47,7 @@ class _PassengerShellState extends State<PassengerShell> {
   bool _previewLoading = false;
   bool _locationLoading = false;
   bool _mapTilesUnavailable = false;
+  bool _mapReady = false;
   String? _error;
   List<TariffOption> _tariffs = const [];
   String? _tariffId;
@@ -76,6 +77,7 @@ class _PassengerShellState extends State<PassengerShell> {
   @override
   void initState() {
     super.initState();
+    _deferMapStart();
     _bootstrap();
   }
 
@@ -102,9 +104,18 @@ class _PassengerShellState extends State<PassengerShell> {
     await _loadRegions();
   }
 
+  void _deferMapStart() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+      if (!mounted) return;
+      setState(() => _mapReady = true);
+    });
+  }
+
   Future<void> _loadRegions() async {
     try {
       final regions = await widget.api.getActiveRegions();
+      if (!mounted) return;
       setState(() {
         _mapCenter = regions.isEmpty
             ? const LatLng(42.316, 69.596)
@@ -112,6 +123,7 @@ class _PassengerShellState extends State<PassengerShell> {
                 const LatLng(42.316, 69.596));
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => _mapCenter = const LatLng(42.316, 69.596));
     }
   }
@@ -535,6 +547,7 @@ class _PassengerShellState extends State<PassengerShell> {
             routeLoading: _previewLoading,
             routeError: mapRouteError,
             mapUnavailable: _mapTilesUnavailable,
+            mapReady: _mapReady,
             onTap: _applyMapTap,
             onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
@@ -1186,6 +1199,7 @@ class _MapCanvas extends StatelessWidget {
     required this.routeLoading,
     required this.routeError,
     required this.mapUnavailable,
+    required this.mapReady,
     required this.onTap,
     required this.onTileError,
     required this.onUseLocation,
@@ -1204,6 +1218,7 @@ class _MapCanvas extends StatelessWidget {
   final bool routeLoading;
   final String? routeError;
   final bool mapUnavailable;
+  final bool mapReady;
   final ValueChanged<LatLng> onTap;
   final VoidCallback onTileError;
   final VoidCallback onUseLocation;
@@ -1229,62 +1244,66 @@ class _MapCanvas extends StatelessWidget {
           )
         : null;
     final mapKey = ValueKey(cameraPoints.map(_pointKey).join('|'));
+    final showMapFallback = !mapReady || mapUnavailable;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       child: Stack(
         children: [
-          FlutterMap(
-            key: mapKey,
-            options: MapOptions(
-              initialCenter: center,
-              initialZoom: pickup == null && dropoff == null ? 12 : 14,
-              initialCameraFit: initialFit,
-              onTap: (_, point) => onTap(point),
-              backgroundColor: SmartTaxiColors.goldSurface,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: AppConfig.osmTileUrl,
-                userAgentPackageName: 'com.smarttaxi.app',
-                errorTileCallback: (_, __, ___) => onTileError(),
+          if (showMapFallback)
+            const Positioned.fill(child: _MapFallbackSurface())
+          else
+            FlutterMap(
+              key: mapKey,
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: pickup == null && dropoff == null ? 12 : 14,
+                initialCameraFit: initialFit,
+                onTap: (_, point) => onTap(point),
+                backgroundColor: SmartTaxiColors.goldSurface,
               ),
-              if (route.isNotEmpty)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: route,
-                      color: SmartTaxiColors.goldDeep,
-                      strokeWidth: 5,
-                    ),
+              children: [
+                TileLayer(
+                  urlTemplate: AppConfig.osmTileUrl,
+                  userAgentPackageName: 'com.smarttaxi.app',
+                  errorTileCallback: (_, __, ___) => onTileError(),
+                ),
+                if (route.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: route,
+                        color: SmartTaxiColors.goldDeep,
+                        strokeWidth: 5,
+                      ),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    if (pickup != null)
+                      _marker(
+                        pickup!.toLatLng(),
+                        'A',
+                        SmartTaxiColors.text,
+                        Colors.white,
+                      ),
+                    if (dropoff != null)
+                      _marker(
+                        dropoff!.toLatLng(),
+                        'B',
+                        SmartTaxiColors.gold,
+                        SmartTaxiColors.text,
+                      ),
+                    if (driver != null)
+                      _marker(
+                        driver!.toLatLng(),
+                        'D',
+                        SmartTaxiColors.success,
+                        Colors.white,
+                      ),
                   ],
                 ),
-              MarkerLayer(
-                markers: [
-                  if (pickup != null)
-                    _marker(
-                      pickup!.toLatLng(),
-                      'A',
-                      SmartTaxiColors.text,
-                      Colors.white,
-                    ),
-                  if (dropoff != null)
-                    _marker(
-                      dropoff!.toLatLng(),
-                      'B',
-                      SmartTaxiColors.gold,
-                      SmartTaxiColors.text,
-                    ),
-                  if (driver != null)
-                    _marker(
-                      driver!.toLatLng(),
-                      'D',
-                      SmartTaxiColors.success,
-                      Colors.white,
-                    ),
-                ],
-              ),
-            ],
-          ),
+              ],
+            ),
           const Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -1573,6 +1592,90 @@ class _MapInstructionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MapFallbackSurface extends StatelessWidget {
+  const _MapFallbackSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(painter: _MapFallbackPainter()),
+          ),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.92),
+                border: Border.all(color: SmartTaxiColors.border),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x14785a14),
+                    blurRadius: 22,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2.2),
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'Карта загружается',
+                    style: TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapFallbackPainter extends CustomPainter {
+  const _MapFallbackPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = SmartTaxiColors.border.withValues(alpha: 0.58)
+      ..strokeWidth = 1;
+    for (var x = -size.width; x < size.width * 2; x += 64) {
+      canvas.drawLine(
+          Offset(x, 0), Offset(x + size.height, size.height), linePaint);
+    }
+    for (var y = 36.0; y < size.height; y += 72) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 18), linePaint);
+    }
+
+    final accentPaint = Paint()
+      ..color = SmartTaxiColors.gold.withValues(alpha: 0.20)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 26;
+    canvas.drawCircle(Offset(size.width * 0.74, size.height * 0.34),
+        size.shortestSide * 0.28, accentPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _MapUnavailableCard extends StatelessWidget {
