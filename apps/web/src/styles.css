@@ -3009,3 +3009,1039 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   from { background-position: 100% 0; }
   to { background-position: -100% 0; }
 }
+
+/* Final SmartTaxi client/admin polish */
+.taxi-client-shell {
+  --taxi-bg: #fffcf6;
+  --taxi-card-warm: #fff8e8;
+  --taxi-gold: #d4a72f;
+  --taxi-gold-deep: #9b6814;
+  --taxi-text: #141414;
+  --taxi-secondary: #626262;
+  --taxi-muted: #929292;
+  --taxi-border: #efe2c4;
+  --taxi-border-strong: #d7b75d;
+  color: var(--taxi-text);
+  background: #fffcf6;
+}
+
+.taxi-client-shell .premium-client-header {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  height: 76px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px 8px;
+  color: var(--taxi-text);
+  background: rgba(255, 252, 246, .9);
+  border-bottom: 1px solid rgba(239, 226, 196, .65);
+  backdrop-filter: blur(18px);
+}
+
+.taxi-client-shell .client-icon-button,
+.taxi-client-shell .small-location-button {
+  border: 1px solid rgba(239, 226, 196, .9);
+  color: var(--taxi-text);
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 12px 28px rgba(60, 45, 12, .08);
+}
+
+.taxi-client-shell .client-icon-button {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+}
+
+.taxi-client-shell .client-icon-button.notification { position: relative; }
+.taxi-client-shell .client-icon-button.notification i {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--taxi-gold);
+}
+
+.taxi-client-shell .taxi-brand {
+  min-width: 0;
+  justify-content: center;
+  gap: 10px;
+}
+
+.taxi-client-shell .taxi-brand .smarttaxi-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.taxi-client-shell .taxi-brand span {
+  color: var(--taxi-text);
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 950;
+  letter-spacing: .02em;
+}
+
+.taxi-client-shell .taxi-brand small {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 14px;
+  font-weight: 800;
+}
+
+.taxi-client-shell .taxi-home-layout {
+  min-height: calc(100svh - 76px);
+  padding: 0;
+  background: var(--taxi-bg);
+}
+
+.client-home-screen {
+  position: relative;
+  min-height: calc(100svh - 76px);
+  display: grid;
+  grid-template-rows: minmax(330px, 1fr) auto;
+  overflow: hidden;
+}
+
+.map-view.live-osm {
+  height: 100%;
+  min-height: 360px;
+  background: #eef3ec;
+}
+
+.map-view.live-osm iframe,
+.map-view.live-osm .map-tile-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.map-view.live-osm iframe {
+  border: 0;
+  filter: saturate(1.05) contrast(.98) brightness(1.02);
+}
+
+.map-view.live-osm .map-tile-layer {
+  overflow: hidden;
+  background: #eef3ec;
+  filter: saturate(1.06) contrast(1.02) brightness(1.02);
+}
+
+.map-view.live-osm .map-tile-layer img {
+  position: absolute;
+  display: block;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.map-view.live-osm .map-vignette {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 246, .72), transparent 25%),
+    linear-gradient(0deg, rgba(255, 252, 246, .9), transparent 30%);
+  pointer-events: none;
+}
+
+.map-view.live-osm .route-svg { pointer-events: none; }
+.map-view.live-osm .route-svg path {
+  stroke: var(--taxi-gold);
+  stroke-width: 3.8;
+  filter: drop-shadow(0 2px 4px rgba(155, 104, 20, .22));
+}
+
+.map-view.live-osm .map-marker {
+  transform: translate(-50%, -50%);
+  border-color: #fff;
+  box-shadow: 0 10px 24px rgba(45, 35, 15, .18);
+}
+
+.map-view.live-osm .map-marker.pickup {
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 0 0 12px rgba(37, 99, 235, .14), 0 10px 24px rgba(45, 35, 15, .18);
+}
+
+.map-view.live-osm .map-marker.destination {
+  color: #141414;
+  background: linear-gradient(180deg, #f7d160, #d4a72f);
+}
+
+.map-view.live-osm .map-controls button {
+  width: 52px;
+  height: 52px;
+  color: var(--taxi-gold-deep);
+  background: #fff;
+  border-color: var(--taxi-border);
+  border-radius: 20px;
+  box-shadow: 0 14px 28px rgba(45, 35, 15, .14);
+}
+
+.map-view.live-osm .map-badge {
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  box-shadow: 0 14px 30px rgba(45, 35, 15, .12);
+}
+
+.map-view.live-osm .map-attribution {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  z-index: 4;
+  padding: 2px 5px;
+  color: #56616a;
+  background: rgba(255, 255, 255, .82);
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.floating-route-panel {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  left: 18px;
+  right: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.region-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px;
+  color: var(--taxi-secondary);
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid var(--taxi-border);
+  border-radius: 20px;
+  box-shadow: 0 16px 34px rgba(45, 35, 15, .1);
+  backdrop-filter: blur(14px);
+}
+
+.region-strip::-webkit-scrollbar,
+.premium-tariff-row::-webkit-scrollbar { display: none; }
+
+.region-strip button,
+.region-strip span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 15px;
+  color: var(--taxi-secondary);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.region-strip button.active {
+  color: var(--taxi-text);
+  background: var(--taxi-card-warm);
+  box-shadow: inset 0 0 0 1px var(--taxi-border-strong);
+}
+
+.premium-route-card {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, .96);
+  border: 1px solid var(--taxi-border);
+  border-radius: 30px;
+  box-shadow: 0 18px 40px rgba(45, 35, 15, .12);
+  backdrop-filter: blur(16px);
+}
+
+.premium-route-card .route-input {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  align-content: center;
+  gap: 3px;
+  padding: 12px 4px 12px 0;
+  text-align: left;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(239, 226, 196, .9);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.premium-route-card .route-input:last-child { border-bottom: 0; }
+.premium-route-card .route-input span {
+  display: block;
+  width: 100%;
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.premium-route-card .route-input b {
+  display: block;
+  width: 100%;
+  color: var(--taxi-text);
+  font-size: 18px;
+  line-height: 23px;
+  font-weight: 950;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-route-card .route-input small {
+  display: block;
+  width: 100%;
+  color: var(--taxi-muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  text-align: left;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.premium-order-sheet {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  gap: 12px;
+  padding: 10px 18px 18px;
+  margin-top: -20px;
+  color: var(--taxi-text);
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid var(--taxi-border);
+  border-radius: 34px 34px 0 0;
+  box-shadow: 0 -22px 55px rgba(45, 35, 15, .16);
+}
+
+.sheet-grip {
+  width: 46px;
+  height: 5px;
+  justify-self: center;
+  border-radius: 999px;
+  background: #e7dfcf;
+}
+
+.card-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-topline > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.sheet-title-row > div > span {
+  color: var(--taxi-gold-deep);
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.premium-order-sheet h1 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 28px;
+  font-weight: 950;
+  letter-spacing: -.015em;
+  text-align: left;
+}
+
+.premium-order-sheet p {
+  margin: 2px 0 0;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 19px;
+  text-align: left;
+}
+.small-location-button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.state-note {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.state-note.success {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.state-note.danger {
+  color: #991b1b;
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+
+.tariff-stage-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+  border-radius: 20px;
+  text-align: left;
+}
+
+.tariff-stage-card strong {
+  color: var(--taxi-text);
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 950;
+}
+
+.tariff-stage-card span {
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.premium-tariff-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(150px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.premium-tariff-row button {
+  min-height: 174px;
+  display: grid;
+  grid-template-rows: auto 72px auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: 5px;
+  padding: 12px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 24px;
+  box-shadow: 0 16px 36px rgba(45, 35, 15, .09);
+}
+
+.premium-tariff-row button.selected {
+  border-color: var(--taxi-gold);
+  box-shadow: 0 0 0 2px rgba(212, 167, 47, .28), 0 18px 38px rgba(45, 35, 15, .12);
+}
+
+.premium-tariff-row .tariff-name {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  color: var(--taxi-gold-deep);
+  background: var(--taxi-card-warm);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 950;
+}
+
+.premium-tariff-row img {
+  max-width: 132px;
+  width: 100%;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 16px rgba(20, 20, 20, .16));
+}
+
+.premium-tariff-row b {
+  color: var(--taxi-gold-deep);
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 950;
+}
+
+.premium-tariff-row small {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.premium-price-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 22px;
+}
+
+.premium-price-block div { display: grid; gap: 2px; }
+.premium-price-block span,
+.premium-price-block small {
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 750;
+}
+
+.premium-price-block strong {
+  color: var(--taxi-text);
+  font-size: 20px;
+  line-height: 25px;
+  font-weight: 950;
+}
+
+.premium-payment-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.premium-payment-row button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--taxi-secondary);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.premium-payment-row button.selected {
+  color: var(--taxi-text);
+  background: var(--taxi-card-warm);
+  border-color: var(--taxi-border-strong);
+}
+
+.client-main-cta {
+  min-height: 58px;
+  border-radius: 22px;
+  font-size: 18px;
+}
+
+.client-drawer-backdrop {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: none;
+  background: rgba(20, 20, 20, .28);
+  backdrop-filter: blur(5px);
+}
+
+.client-drawer-backdrop.open { display: block; }
+.client-drawer {
+  position: fixed;
+  z-index: 80;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(340px, calc(100vw - 38px));
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  padding: 20px;
+  color: var(--taxi-text);
+  background: rgba(255, 252, 246, .98);
+  border-right: 1px solid var(--taxi-border);
+  box-shadow: 24px 0 60px rgba(45, 35, 15, .18);
+  transform: translateX(-105%);
+  transition: transform .24s ease;
+}
+
+.client-drawer.open { transform: translateX(0); }
+.client-drawer header {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 24px;
+}
+
+.client-drawer header .smarttaxi-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.client-drawer header strong,
+.client-drawer header span,
+.client-drawer header small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-drawer header strong {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 950;
+}
+
+.client-drawer header span,
+.client-drawer header small {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 750;
+}
+
+.client-drawer nav {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.client-drawer nav button,
+.drawer-logout,
+.profile-actions-grid button,
+.settings-danger {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--taxi-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.client-drawer nav button svg,
+.drawer-logout svg,
+.profile-actions-grid button svg,
+.settings-danger svg {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  color: var(--taxi-gold-deep);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 15px;
+}
+
+.client-drawer nav button.active {
+  background: var(--taxi-card-warm);
+  border-color: var(--taxi-border);
+}
+
+.drawer-logout,
+.settings-danger {
+  color: #dc2626;
+  background: #fff1f1;
+  border-color: #fecaca;
+}
+
+.premium-address-screen {
+  min-height: calc(100svh - 76px);
+  padding: 20px 18px 28px;
+  color: var(--taxi-text);
+  background: var(--taxi-bg);
+}
+
+.premium-address-screen .screen-intro.with-back {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.premium-address-screen .screen-intro.with-back button {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 20px;
+}
+
+.premium-address-screen h1,
+.profile-screen h1,
+.screen-intro h1 { color: var(--taxi-text); }
+
+.address-search-input {
+  display: grid;
+  gap: 8px;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.address-search-input input {
+  min-height: 58px;
+  color: var(--taxi-text);
+  background: #fff;
+  border-color: var(--taxi-border);
+}
+
+.premium-address-list button {
+  grid-template-columns: 42px minmax(0, 1fr);
+  min-height: 64px;
+  gap: 10px;
+  padding: 10px 12px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 20px;
+  box-shadow: 0 12px 28px rgba(45, 35, 15, .07);
+}
+
+.premium-address-list button svg {
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  color: var(--taxi-gold-deep);
+  background: var(--taxi-card-warm);
+  border-radius: 16px;
+}
+
+.premium-address-list button b,
+.premium-address-list button small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-profile-card,
+.premium-support-card,
+.settings-list-premium,
+.about-card-premium,
+.faq-list-premium .app-card,
+.premium-active-order {
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 26px;
+  box-shadow: 0 18px 42px rgba(45, 35, 15, .08);
+}
+
+.profile-avatar-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-avatar-row .smarttaxi-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.profile-avatar-row h2 { margin: 0; }
+.profile-avatar-row span { color: var(--taxi-secondary); }
+.premium-login-form input,
+.profile-actions-grid input {
+  color: var(--taxi-text);
+  background: #fff;
+  border-color: var(--taxi-border);
+}
+
+.profile-actions-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-actions-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.profile-actions-grid button {
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  background: var(--taxi-card-warm);
+  border-color: var(--taxi-border);
+}
+
+.profile-actions-grid button span {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+}
+
+.support-topic-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.support-topic-row button {
+  min-height: 42px;
+  padding: 0 13px;
+  color: var(--taxi-secondary);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.support-topic-row button.selected {
+  color: var(--taxi-text);
+  background: var(--taxi-card-warm);
+  border-color: var(--taxi-border-strong);
+}
+
+.support-textarea textarea {
+  color: var(--taxi-text);
+  background: #fff;
+  border-color: var(--taxi-border);
+}
+
+.settings-list-premium {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-row-premium {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+  border-radius: 19px;
+}
+
+.settings-row-premium svg {
+  width: 42px;
+  height: 42px;
+  padding: 10px;
+  color: var(--taxi-gold-deep);
+  background: #fff;
+  border-radius: 16px;
+}
+
+.settings-row-premium b,
+.settings-row-premium small { display: block; }
+.settings-row-premium small { color: var(--taxi-secondary); }
+.faq-list-premium { display: grid; gap: 10px; }
+.faq-list-premium summary {
+  cursor: pointer;
+  color: var(--taxi-text);
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.faq-list-premium p,
+.about-card-premium p {
+  color: var(--taxi-secondary);
+  line-height: 1.5;
+}
+
+.about-card-premium { justify-items: start; }
+.about-card-premium .smarttaxi-logo {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+}
+
+.region-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.region-chip-list span {
+  padding: 7px 10px;
+  color: var(--taxi-gold-deep);
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-region-presets {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: var(--admin-warm);
+  border: 1px solid var(--admin-border);
+  border-radius: 18px;
+}
+
+.admin-region-presets strong {
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.admin-region-presets div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-region-presets button {
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--admin-secondary);
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-region-presets button.active {
+  color: var(--admin-text);
+  background: var(--admin-gold-soft);
+  border-color: var(--admin-border-strong);
+}
+
+@media (min-width: 960px) {
+  .taxi-client-shell.phone-frame {
+    width: min(100%, 1180px);
+    border-radius: 0;
+    margin: 0 auto;
+  }
+
+  .premium-order-sheet {
+    width: min(430px, calc(100% - 32px));
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    border-radius: 34px;
+    margin: 0;
+  }
+
+  .floating-route-panel {
+    width: min(560px, calc(100% - 48px));
+    right: auto;
+    top: 24px;
+    left: 24px;
+  }
+
+  .map-view.live-osm { min-height: calc(100svh - 76px); }
+}
+
+@media (max-width: 380px) {
+  .taxi-client-shell .premium-client-header {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    padding-inline: 12px;
+  }
+  .taxi-client-shell .client-icon-button {
+    width: 48px;
+    height: 48px;
+  }
+  .premium-order-sheet { padding-inline: 14px; }
+  .premium-tariff-row { grid-auto-columns: minmax(138px, 1fr); }
+  .premium-payment-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .taxi-client-shell.phone-frame {
+    width: min(100vw, 390px);
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .taxi-client-shell .premium-client-header {
+    grid-template-columns: 50px minmax(0, 1fr) 50px;
+    gap: 10px;
+    padding-inline: 14px;
+  }
+
+  .taxi-client-shell .taxi-brand {
+    justify-content: flex-start;
+  }
+
+  .floating-route-panel {
+    left: 16px;
+    right: 16px;
+  }
+
+  .premium-route-card .route-input b {
+    font-size: 17px;
+  }
+
+  .premium-order-sheet {
+    padding: 10px 16px 22px;
+  }
+
+  .card-topline {
+    align-items: flex-start;
+  }
+
+  .small-location-button {
+    width: 46px;
+    min-width: 46px;
+    padding-inline: 10px;
+    justify-content: center;
+    font-size: 0;
+  }
+
+  .small-location-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .premium-price-block {
+    display: grid;
+    justify-content: stretch;
+    gap: 6px;
+  }
+
+  .premium-price-block small {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

@@ -9,7 +9,12 @@ class AppConfig {
   );
   static const osmTileUrl = String.fromEnvironment(
     'OSM_TILE_URL',
-    defaultValue: 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  );
+
+  static const osmFallbackTileUrl = String.fromEnvironment(
+    'OSM_FALLBACK_TILE_URL',
+    defaultValue: 'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
   );
   static const mapAttribution = String.fromEnvironment(
     'MAP_ATTRIBUTION_TEXT',

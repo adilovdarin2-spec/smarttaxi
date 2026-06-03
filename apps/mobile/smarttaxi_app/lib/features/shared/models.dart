@@ -14,12 +14,47 @@ class Coordinate {
   LatLng toLatLng() => LatLng(lat, lng);
 }
 
+class AddressSuggestion {
+  const AddressSuggestion({
+    required this.label,
+    required this.coordinate,
+    this.subtitle,
+    this.city,
+    this.region,
+  });
+
+  final String label;
+  final Coordinate coordinate;
+  final String? subtitle;
+  final String? city;
+  final String? region;
+
+  factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
+    return AddressSuggestion(
+      label: '${json['label'] ?? 'Точка на карте'}',
+      subtitle: json['subtitle']?.toString(),
+      city: json['city']?.toString(),
+      region: json['region']?.toString(),
+      coordinate: Coordinate(
+        lat: _toDouble(json['lat']),
+        lng: _toDouble(json['lng']),
+      ),
+    );
+  }
+}
+
 class RegionOption {
-  const RegionOption({required this.id, required this.name, this.center});
+  const RegionOption({
+    required this.id,
+    required this.name,
+    this.center,
+    this.boundary = const [],
+  });
 
   final String id;
   final String name;
   final Coordinate? center;
+  final List<Coordinate> boundary;
 
   factory RegionOption.fromJson(Map<String, dynamic> json) {
     return RegionOption(
@@ -27,7 +62,27 @@ class RegionOption {
       name: '${json['name'] ?? json['regionName'] ?? 'Регион'}',
       center: _coordinateFromFields(json, ['center_lat', 'centerLat', 'lat'],
           ['center_lng', 'centerLng', 'lng']),
+      boundary: _boundaryFromJson(json['boundary']),
     );
+  }
+
+  bool contains(Coordinate point) {
+    if (boundary.length < 3) return true;
+    var inside = false;
+    var j = boundary.length - 1;
+    for (var i = 0; i < boundary.length; i += 1) {
+      final pi = boundary[i];
+      final pj = boundary[j];
+      final crosses = ((pi.lat > point.lat) != (pj.lat > point.lat)) &&
+          (point.lng <
+              (pj.lng - pi.lng) *
+                      (point.lat - pi.lat) /
+                      ((pj.lat - pi.lat) == 0 ? 1e-12 : (pj.lat - pi.lat)) +
+                  pi.lng);
+      if (crosses) inside = !inside;
+      j = i;
+    }
+    return inside;
   }
 }
 
@@ -63,7 +118,7 @@ class TariffOption {
   factory TariffOption.fromJson(Map<String, dynamic> json) {
     return TariffOption(
       id: '${json['id']}',
-      name: '${json['name'] ?? 'Тариф'}',
+      name: '${json['displayName'] ?? json['name'] ?? 'Тариф'}',
       description: json['description']?.toString(),
     );
   }
@@ -166,17 +221,21 @@ class OrderSummary {
 }
 
 class DriverLocation {
-  const DriverLocation({required this.lat, required this.lng});
+  const DriverLocation({required this.lat, required this.lng, this.heading});
 
   final double lat;
   final double lng;
+  final double? heading;
 
   LatLng toLatLng() => LatLng(lat, lng);
 
   factory DriverLocation.fromJson(Map<String, dynamic> json) {
     return DriverLocation(
         lat: _toDouble(json['lat'] ?? json['driverLat']),
-        lng: _toDouble(json['lng'] ?? json['driverLng']));
+        lng: _toDouble(json['lng'] ?? json['driverLng']),
+        heading: _nullableDouble(
+          json['heading'] ?? json['bearing'] ?? json['driverHeading'],
+        ));
   }
 }
 
@@ -252,6 +311,18 @@ List<LatLng> parseGeoJsonLine(dynamic geometry) {
       .whereType<List>()
       .where((point) => point.length >= 2)
       .map((point) => LatLng(_toDouble(point[1]), _toDouble(point[0])))
+      .toList(growable: false);
+}
+
+List<Coordinate> _boundaryFromJson(dynamic boundary) {
+  if (boundary is! List) return const [];
+  return boundary
+      .whereType<List>()
+      .where((point) => point.length >= 2)
+      .map((point) => Coordinate(
+            lat: _toDouble(point[1]),
+            lng: _toDouble(point[0]),
+          ))
       .toList(growable: false);
 }
 

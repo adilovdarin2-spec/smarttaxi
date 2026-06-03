@@ -22,16 +22,16 @@ const adminApp = read("../../../web/src/features/admin/AdminApp.jsx");
 const adminApi = read("../../../web/src/lib/mvpApi.js");
 
 [
-  "Dashboard",
-  "Regions",
-  "Drivers",
-  "Driver Applications",
-  "Orders",
-  "Tariffs",
-  "Finance",
-  "Settings",
-  "Audit",
-  "Support"
+  "Главная",
+  "Регионы",
+  "Водители",
+  "Заявки",
+  "Заказы",
+  "Тарифы",
+  "Финансы",
+  "Настройки",
+  "Журнал",
+  "Поддержка"
 ].forEach(section => assert(adminApp.includes(section), `Admin shell missing ${section}`));
 
 [
@@ -75,7 +75,7 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
 ].forEach(token => assert(!adminApp.includes(token), `Admin shell contains forbidden token ${token}`));
 
 [
-  "Раздел будет подключён на следующем этапе",
+  "Пока нет обращений",
   "Нет данных для отображения",
   "Не удалось загрузить данные",
   "Нет доступа к панели управления"
@@ -83,7 +83,8 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
 
 [
   "Добавить регион",
-  "Boundary JSON",
+  "Граница региона, координаты полигона",
+  "Быстрый шаблон региона",
   "Редактировать",
   "Активировать",
   "Отключить",

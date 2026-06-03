@@ -71,18 +71,46 @@ async function upsertUser({ name, email, phone, password, role }) {
   `, [name, email || null, phone || null, passwordHash, role])).rows[0];
 }
 
-async function seedRegion() {
+async function seedRegions() {
   return (await query(`
     INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
-    VALUES (
-      'ATAKENT',
-      'Atakent',
-      '[[69.4500,42.2000],[69.7600,42.2000],[69.7600,42.4300],[69.4500,42.4300],[69.4500,42.2000]]'::jsonb,
-      42.316700,
-      69.595800,
-      'KZT',
-      true
-    )
+    VALUES
+      (
+        'ATAKENT',
+        'Атакент',
+        '[[68.4300,40.7800],[68.5700,40.7800],[68.5700,40.9000],[68.4300,40.9000],[68.4300,40.7800]]'::jsonb,
+        40.844435,
+        68.509021,
+        'KZT',
+        true
+      ),
+      (
+        'MYRZAKENT',
+        'Мырзакент',
+        '[[68.4700,40.6000],[68.6000,40.6000],[68.6000,40.7300],[68.4700,40.7300],[68.4700,40.6000]]'::jsonb,
+        40.666108,
+        68.543090,
+        'KZT',
+        true
+      ),
+      (
+        'ZHETYSAY',
+        'Жетысай',
+        '[[68.0500,40.8000],[68.3300,40.8000],[68.3300,41.0000],[68.0500,41.0000],[68.0500,40.8000]]'::jsonb,
+        40.884303,
+        68.212621,
+        'KZT',
+        true
+      ),
+      (
+        'SHYMKENT',
+        'Шымкент',
+        '[[69.3000,42.1000],[69.8500,42.1000],[69.8500,42.4800],[69.3000,42.4800],[69.3000,42.1000]]'::jsonb,
+        42.314696,
+        69.588328,
+        'KZT',
+        true
+      )
     ON CONFLICT (code) DO UPDATE
     SET name=EXCLUDED.name,
         boundary=EXCLUDED.boundary,
@@ -92,18 +120,25 @@ async function seedRegion() {
         is_active=EXCLUDED.is_active,
         updated_at=NOW()
     RETURNING *
-  `)).rows[0];
+  `)).rows;
 }
 
-async function seedTariffs(regionId) {
+async function seedTariffs(regions) {
   await query(`
-    INSERT INTO tariffs(region_id,name,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,is_active)
-    VALUES
-      ($1,'Economy',400,110,20,700,15,2,1,true),
-      ($1,'Comfort',600,150,25,1000,15,2,1,true),
-      ($1,'Delivery',500,130,20,800,15,1,1,true)
-    ON CONFLICT (name) DO UPDATE
+    INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
+    SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, true
+    FROM regions r
+    CROSS JOIN (
+      VALUES
+        ('Economy','Эконом','Быстро и доступно',400,110,20,700,15,2,1,3,50,0,10),
+        ('Comfort','Комфорт','Больше удобства',600,150,25,1000,15,2,1,3,60,0,20),
+        ('Business','Бизнес','Премиальная поездка',900,220,35,1600,15,2,1,3,80,0,30)
+    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
+    WHERE r.code = ANY($1)
+    ON CONFLICT (region_id, name) DO UPDATE
     SET region_id=EXCLUDED.region_id,
+        display_name=EXCLUDED.display_name,
+        description=EXCLUDED.description,
         base_price=EXCLUDED.base_price,
         price_per_km=EXCLUDED.price_per_km,
         price_per_minute=EXCLUDED.price_per_minute,
@@ -111,8 +146,18 @@ async function seedTariffs(regionId) {
         service_commission_percent=EXCLUDED.service_commission_percent,
         cashback_percent=EXCLUDED.cashback_percent,
         surge_multiplier=EXCLUDED.surge_multiplier,
+        free_waiting_minutes=EXCLUDED.free_waiting_minutes,
+        waiting_price_per_minute=EXCLUDED.waiting_price_per_minute,
+        cancellation_fee=EXCLUDED.cancellation_fee,
+        sort_order=EXCLUDED.sort_order,
         is_active=true
-  `, [regionId]);
+  `, [regions.map((region) => region.code)]);
+  await query(`
+    UPDATE tariffs
+    SET is_active=false, updated_at=NOW()
+    WHERE name='Delivery'
+      AND region_id IN (SELECT id FROM regions WHERE code = ANY($1))
+  `, [regions.map((region) => region.code)]);
 }
 
 async function seedClient(user) {
@@ -173,6 +218,23 @@ async function seedDriver({ user, region, owner }) {
   return driver;
 }
 
+async function approveDriverRegions({ driver, regions, owner }) {
+  for (const region of regions) {
+    await query(`
+      INSERT INTO driver_region_approvals(driver_id, region_id, status, approved_by_user_id, approved_at, blocked_by_user_id, blocked_at, block_reason)
+      VALUES($1,$2,'APPROVED',$3,NOW(),NULL,NULL,NULL)
+      ON CONFLICT (driver_id, region_id) DO UPDATE
+      SET status='APPROVED',
+          approved_by_user_id=EXCLUDED.approved_by_user_id,
+          approved_at=NOW(),
+          blocked_by_user_id=NULL,
+          blocked_at=NULL,
+          block_reason=NULL,
+          updated_at=NOW()
+    `, [driver.id, region.id, owner.id]);
+  }
+}
+
 async function seedSettings() {
   await query(`
     INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
@@ -187,9 +249,10 @@ async function seedSettings() {
 }
 
 async function seed() {
-  const region = await seedRegion();
+  const regions = await seedRegions();
+  const region = regions.find((item) => item.code === "ATAKENT") || regions[0];
   await seedSettings();
-  await seedTariffs(region.id);
+  await seedTariffs(regions);
 
   const owner = await upsertUser(ACCOUNTS.owner);
   const client = await upsertUser(ACCOUNTS.client);
@@ -199,10 +262,11 @@ async function seed() {
 
   await seedClient(client);
   const driver = await seedDriver({ user: driverUser, region, owner });
+  await approveDriverRegions({ driver, regions, owner });
 
   console.log("Seed completed");
-  console.log(`Active region: ${region.name} (${region.code})`);
-  console.log(`Driver approved for region: ${driver.name} -> ${region.name}`);
+  console.log(`Active regions: ${regions.map((item) => `${item.name} (${item.code})`).join(", ")}`);
+  console.log(`Driver approved for regions: ${driver.name} -> ${regions.map((item) => item.name).join(", ")}`);
   console.table(Object.values(ACCOUNTS).map(({ role, name, phone, email, password }) => ({
     role,
     name,

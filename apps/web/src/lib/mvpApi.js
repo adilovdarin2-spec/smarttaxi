@@ -19,6 +19,26 @@ export function getTariffs(regionId) {
   return api(`/api/tariffs${query}`);
 }
 
+export function searchAddresses({ q, region, limit = 10 }) {
+  const params = new URLSearchParams();
+  params.set("q", q);
+  if (region) params.set("region", region);
+  params.set("limit", String(limit));
+  return api(`/api/routes/addresses/search?${params.toString()}`);
+}
+
+export function reverseAddress({ lat, lng }) {
+  const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+  return api(`/api/routes/addresses/reverse?${params.toString()}`);
+}
+
+export function previewRoute(payload) {
+  return api("/api/routes/preview", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function estimateOrder(payload) {
   return api("/api/orders/estimate", {
     method: "POST",

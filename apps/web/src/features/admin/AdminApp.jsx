@@ -34,19 +34,50 @@ import {
 const adminRoles = new Set(["OWNER", "OPERATOR", "FINANCE"]);
 
 const navigation = [
-  { key: "dashboard", label: "Dashboard", eyebrow: "Состояние системы" },
-  { key: "regions", label: "Regions", eyebrow: "Активные зоны" },
-  { key: "drivers", label: "Drivers", eyebrow: "Водители" },
-  { key: "applications", label: "Driver Applications", eyebrow: "Заявки" },
-  { key: "orders", label: "Orders", eyebrow: "Поездки" },
-  { key: "tariffs", label: "Tariffs", eyebrow: "Тарифы" },
-  { key: "finance", label: "Finance", eyebrow: "Финансы" },
-  { key: "settings", label: "Settings", eyebrow: "Настройки" },
-  { key: "audit", label: "Audit", eyebrow: "Журнал" },
-  { key: "support", label: "Support", eyebrow: "Поддержка" }
+  { key: "dashboard", label: "Главная", eyebrow: "Состояние системы" },
+  { key: "regions", label: "Регионы", eyebrow: "Активные зоны" },
+  { key: "drivers", label: "Водители", eyebrow: "Доступ и статусы" },
+  { key: "applications", label: "Заявки", eyebrow: "Проверка водителей" },
+  { key: "orders", label: "Заказы", eyebrow: "Поездки клиентов" },
+  { key: "tariffs", label: "Тарифы", eyebrow: "Цены по регионам" },
+  { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
+  { key: "settings", label: "Настройки", eyebrow: "Параметры сервиса" },
+  { key: "audit", label: "Журнал", eyebrow: "Действия системы" },
+  { key: "support", label: "Поддержка", eyebrow: "Обращения клиентов" }
 ];
 
 const pageTitles = Object.fromEntries(navigation.map(item => [item.key, item]));
+
+const regionPresets = [
+  {
+    code: "ATAKENT",
+    name: "Атакент",
+    centerLat: "40.844435",
+    centerLng: "68.509021",
+    boundary: [[68.43, 40.78], [68.57, 40.78], [68.57, 40.90], [68.43, 40.90], [68.43, 40.78]]
+  },
+  {
+    code: "MYRZAKENT",
+    name: "Мырзакент",
+    centerLat: "40.666108",
+    centerLng: "68.543090",
+    boundary: [[68.47, 40.60], [68.60, 40.60], [68.60, 40.73], [68.47, 40.73], [68.47, 40.60]]
+  },
+  {
+    code: "ZHETYSAY",
+    name: "Жетысай",
+    centerLat: "40.884303",
+    centerLng: "68.212621",
+    boundary: [[68.05, 40.80], [68.33, 40.80], [68.33, 41.00], [68.05, 41.00], [68.05, 40.80]]
+  },
+  {
+    code: "SHYMKENT",
+    name: "Шымкент",
+    centerLat: "42.314696",
+    centerLng: "69.588328",
+    boundary: [[69.30, 42.10], [69.85, 42.10], [69.85, 42.48], [69.30, 42.48], [69.30, 42.10]]
+  }
+];
 
 function asArray(payload, key) {
   return Array.isArray(payload?.[key]) ? payload[key] : [];
@@ -120,19 +151,20 @@ function readError(error) {
   if (error?.code === "FORBIDDEN" || error?.message?.includes("Forbidden")) {
     return "Нет доступа к панели управления";
   }
-  if (error?.code === "NOT_FOUND") return "Раздел будет подключён на следующем этапе";
+  if (error?.code === "NOT_FOUND") return "Данные не найдены";
   if (error?.details?.length) return error.details.map(item => item.message).join("; ");
   return error?.message || "Не удалось загрузить данные";
 }
 
 function normalizeRegionForm(region) {
+  const preset = regionPresets[0];
   return {
-    name: region?.name || "",
-    code: region?.code || "",
+    name: region?.name || preset.name,
+    code: region?.code || preset.code,
     currency: region?.currency || "KZT",
-    centerLat: String(region?.centerLat ?? region?.center_lat ?? ""),
-    centerLng: String(region?.centerLng ?? region?.center_lng ?? ""),
-    boundary: JSON.stringify(region?.boundary || [[0, 0], [0, 1], [1, 1], [0, 0]], null, 2),
+    centerLat: String(region?.centerLat ?? region?.center_lat ?? preset.centerLat),
+    centerLng: String(region?.centerLng ?? region?.center_lng ?? preset.centerLng),
+    boundary: JSON.stringify(region?.boundary || preset.boundary, null, 2),
     isActive: isActiveRegion(region)
   };
 }
@@ -788,9 +820,9 @@ function DashboardPage({ dashboard, health }) {
     <div className="admin-page-stack">
       <section className="admin-health-card">
         <div>
-          <small>Статус сервера</small>
+          <small>Состояние системы</small>
           <h2>{health?.status === "ok" ? "Система доступна" : "Статус уточняется"}</h2>
-          <p>{health?.time ? `Последняя проверка: ${formatDate(health.time)}` : "Данные проверки появятся после ответа сервера."}</p>
+          <p>{health?.time ? `Последняя проверка: ${formatDate(health.time)}` : "Данные проверки появятся после обновления."}</p>
         </div>
         <span className={`admin-status-dot ${health?.status === "ok" ? "success" : "warning"}`} />
       </section>
@@ -808,7 +840,7 @@ function DashboardPage({ dashboard, health }) {
       ) : (
         <StatePanel
           title={dashboard?.setup?.title || "Нет данных для отображения"}
-          text={dashboard?.setup?.text || "Dashboard покажет показатели после подключения серверных данных."}
+          text={dashboard?.setup?.text || "Показатели появятся после первых рабочих заказов."}
         />
       )}
     </div>
@@ -828,12 +860,12 @@ function AdminPage(props) {
   if (active === "support") {
     return (
       <StatePanel
-        title="Раздел поддержки будет подключён на следующем этапе"
-        text="Сейчас панель готова к списку обращений, фильтрам и карточке обращения без выдуманных заявок."
+        title="Пока нет обращений"
+        text="Когда клиент отправит обращение, оно появится здесь для обработки оператором."
       />
     );
   }
-  return <StatePanel title="Раздел будет подключён на следующем этапе" text="Нет данных для отображения." />;
+  return <StatePanel title="Нет данных для отображения" text="Выберите раздел меню или обновите страницу." />;
 }
 
 function PageHeader({ title, subtitle, action, children }) {
@@ -1495,7 +1527,7 @@ function AuditPage({ logs }) {
 function SettingsPage({ settings }) {
   if (!settings) return <StatePanel title="Настройки недоступны" text="Не удалось загрузить настройки сервиса." />;
   return (
-    <DataCard title="Настройки сервиса" text="Редактирование будет вынесено в отдельный безопасный этап.">
+    <DataCard title="Настройки сервиса" text="Текущие параметры сервиса и значения, которые влияют на клиентское приложение.">
       <div className="admin-settings-grid">
         <InfoLine label="Название" value={settings.serviceName} />
         <InfoLine label="Город" value={settings.city} />
@@ -1567,12 +1599,12 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
           <textarea value={form.description} onChange={event => setField("description", event.target.value)} rows={3} />
         </label>
         <div className="admin-form-row">
-          <Field label="Базовая цена" type="number" value={form.basePrice} onChange={value => setField("basePrice", value)} />
+          <Field label="Цена от, ₸" type="number" value={form.basePrice} onChange={value => setField("basePrice", value)} />
           <Field label="Цена за км" type="number" value={form.pricePerKm} onChange={value => setField("pricePerKm", value)} />
         </div>
         <div className="admin-form-row">
           <Field label="Цена за минуту" type="number" value={form.pricePerMinute} onChange={value => setField("pricePerMinute", value)} />
-          <Field label="Минимальная цена" type="number" value={form.minimumPrice} onChange={value => setField("minimumPrice", value)} />
+          <Field label="Минимальная цена, ₸" type="number" value={form.minimumPrice} onChange={value => setField("minimumPrice", value)} />
         </div>
         <div className="admin-form-row">
           <Field label="Комиссия сервиса %" type="number" value={form.serviceCommissionPercent} onChange={value => setField("serviceCommissionPercent", value)} />
@@ -1584,7 +1616,7 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
         </div>
         <div className="admin-form-row">
           <Field label="Штраф отмены" type="number" value={form.cancellationFee} onChange={value => setField("cancellationFee", value)} />
-          <Field label="Порядок" type="number" value={form.sortOrder} onChange={value => setField("sortOrder", value)} />
+          <Field label="Порядок показа" type="number" value={form.sortOrder} onChange={value => setField("sortOrder", value)} />
         </div>
         <label className="admin-toggle-line">
           <input type="checkbox" checked={form.isActive} onChange={event => setField("isActive", event.target.checked)} />
@@ -1672,6 +1704,18 @@ function RegionEditor({ region, onClose, onSave, busy }) {
     setForm(current => ({ ...current, [field]: value }));
   }
 
+  function applyPreset(preset) {
+    setForm(current => ({
+      ...current,
+      name: preset.name,
+      code: preset.code,
+      centerLat: preset.centerLat,
+      centerLng: preset.centerLng,
+      boundary: JSON.stringify(preset.boundary, null, 2),
+      isActive: true
+    }));
+  }
+
   async function submit(event) {
     event.preventDefault();
     setError("");
@@ -1691,15 +1735,25 @@ function RegionEditor({ region, onClose, onSave, busy }) {
   return (
     <ModalFrame title={region ? "Редактировать регион" : "Добавить регион"} onClose={onClose}>
       <form className="admin-form-grid" onSubmit={submit}>
+        <section className="admin-region-presets">
+          <strong>Быстрый шаблон региона</strong>
+          <div>
+            {regionPresets.map(preset => (
+              <button type="button" key={preset.code} className={form.code === preset.code ? "active" : ""} onClick={() => applyPreset(preset)}>
+                {preset.name}
+              </button>
+            ))}
+          </div>
+        </section>
         <Field label="Название" value={form.name} onChange={value => setField("name", value)} />
         <Field label="Код" value={form.code} onChange={value => setField("code", value.toUpperCase())} />
         <Field label="Валюта" value={form.currency} onChange={value => setField("currency", value.toUpperCase())} />
         <div className="admin-form-row">
-          <Field label="centerLat" value={form.centerLat} onChange={value => setField("centerLat", value)} />
-          <Field label="centerLng" value={form.centerLng} onChange={value => setField("centerLng", value)} />
+          <Field label="Широта центра" value={form.centerLat} onChange={value => setField("centerLat", value)} />
+          <Field label="Долгота центра" value={form.centerLng} onChange={value => setField("centerLng", value)} />
         </div>
         <label className="admin-textarea-field">
-          <span>Boundary JSON</span>
+          <span>Граница региона, координаты полигона</span>
           <textarea value={form.boundary} onChange={event => setField("boundary", event.target.value)} rows={8} />
         </label>
         <label className="admin-toggle-line">

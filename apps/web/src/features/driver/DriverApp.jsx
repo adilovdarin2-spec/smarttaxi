@@ -97,7 +97,7 @@ function mergeOrder(list, nextOrder) {
 
 export default function DriverApp() {
   const [logged, setLogged] = useState(Boolean(getToken()));
-  const [auth, setAuth] = useState({ phone: "", email: "", password: "" });
+  const [auth, setAuth] = useState({ phone: "", password: "" });
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [driver, setDriver] = useState(null);
@@ -450,10 +450,6 @@ function DriverLogin({ auth, setAuth, onLogin, loading, error }) {
           <input value={auth.phone} onChange={event => setAuth(current => ({ ...current, phone: event.target.value }))} placeholder="+7" autoComplete="tel" />
         </label>
         <label>
-          <span>Email</span>
-          <input value={auth.email} onChange={event => setAuth(current => ({ ...current, email: event.target.value }))} placeholder="Если вход по email" autoComplete="email" />
-        </label>
-        <label>
           <span>Пароль</span>
           <input value={auth.password} onChange={event => setAuth(current => ({ ...current, password: event.target.value }))} type="password" placeholder="Пароль" autoComplete="current-password" />
         </label>
@@ -529,7 +525,7 @@ function OrdersTab({ isOnline, orders, loading, error, actionLoading, onRefresh,
             ))}
           </div>
         ) : (
-          <EmptyState title="Заказов в вашем регионе пока нет" text="Новые заказы появятся здесь после backend-dispatch." />
+          <EmptyState title="Заказов в вашем регионе пока нет" text="Новые заказы появятся здесь после выхода на линию и создания заказа клиентом." />
         )}
         {error && <div className="message error">{error}</div>}
       </AppCard>

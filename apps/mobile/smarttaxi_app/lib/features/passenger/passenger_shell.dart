@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,6 +17,19 @@ import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../shared/models.dart';
+
+const _tariffEconomyAsset =
+    'assets/cars/tariff_economy_white_sedan_flutter.png';
+const _tariffComfortAsset =
+    'assets/cars/tariff_comfort_white_sedan_flutter.png';
+const _tariffBusinessAsset =
+    'assets/cars/tariff_business_white_premium_sedan_flutter.png';
+const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
+const _userLocationMarkerAsset =
+    'assets/map/user_location_marker_blue_gold.png';
+const _destinationMarkerAsset = 'assets/map/destination_pin_gold_white.png';
+const _navigationButtonAsset = 'assets/map/navigation_button_gold_white.png';
+const _atakentFallbackCenter = LatLng(40.84719, 68.503834);
 
 class PassengerShell extends StatefulWidget {
   const PassengerShell({
@@ -48,13 +65,20 @@ class _PassengerShellState extends State<PassengerShell> {
   bool _locationLoading = false;
   bool _mapTilesUnavailable = false;
   bool _mapReady = false;
+  bool _startupRegionPromptShown = false;
+  bool _startupLocationPromptShown = false;
+  bool _skipNextLocationIntro = false;
+  int _mapTileErrorCount = 0;
   String? _error;
+  List<RegionOption> _regions = const [];
+  RegionOption? _selectedRegion;
   List<TariffOption> _tariffs = const [];
   String? _tariffId;
+  Map<String, RoutePreview> _tariffEstimates = const {};
   Coordinate? _pickup;
   Coordinate? _dropoff;
-  String _pickupLabel = 'Выберите точку посадки';
-  String _dropoffLabel = 'Введите точку назначения';
+  String _pickupLabel = 'Выберите точку подачи';
+  String _dropoffLabel = 'Введите адрес назначения';
   PointSource _pickupSource = PointSource.none;
   PointSource _dropoffSource = PointSource.none;
   RoutePreview? _preview;
@@ -63,6 +87,7 @@ class _PassengerShellState extends State<PassengerShell> {
   OrderSummary? _order;
   DriverLocation? _driverLocation;
   LatLng? _mapCenter;
+  String _activeRegionLabel = 'Регион';
   String _driverFullName = '';
   String _driverPhone = '';
   String _driverCarModel = '';
@@ -73,6 +98,7 @@ class _PassengerShellState extends State<PassengerShell> {
   String? _driverApplicationMessage;
   String _supportTopic = 'Проблема с поездкой';
   String? _supportMessage;
+  String _paymentMethod = 'CASH';
 
   @override
   void initState() {
@@ -116,16 +142,107 @@ class _PassengerShellState extends State<PassengerShell> {
     try {
       final regions = await widget.api.getActiveRegions();
       if (!mounted) return;
+      final activeRegion = regions.isEmpty ? null : regions.first;
       setState(() {
-        _mapCenter = regions.isEmpty
-            ? const LatLng(42.316, 69.596)
-            : (regions.first.center?.toLatLng() ??
-                const LatLng(42.316, 69.596));
+        _regions = regions;
+        _selectedRegion = activeRegion;
+        _mapCenter = activeRegion == null
+            ? _atakentFallbackCenter
+            : (activeRegion.center?.toLatLng() ?? _atakentFallbackCenter);
+        _activeRegionLabel = activeRegion?.name ?? 'Регион';
       });
+      if (activeRegion == null) return;
+      if (regions.length > 1) {
+        _maybeAskRegionOnStart();
+      } else {
+        _maybeAskLocationOnStart();
+      }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _mapCenter = const LatLng(42.316, 69.596));
+      setState(() {
+        _regions = const [];
+        _selectedRegion = null;
+        _mapCenter = _atakentFallbackCenter;
+      });
+      _maybeAskLocationOnStart();
     }
+  }
+
+  Future<void> _chooseRegion({bool askLocationAfter = false}) async {
+    if (_regions.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Активные регионы пока не загружены')),
+      );
+      return;
+    }
+    final selected = await showModalBottomSheet<RegionOption>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _RegionSelectSheet(
+        regions: _regions,
+        selectedId: _selectedRegion?.id,
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _selectedRegion = selected;
+      _activeRegionLabel = selected.name;
+      if (selected.center != null) {
+        _mapCenter = selected.center!.toLatLng();
+      }
+      _pickup = null;
+      _dropoff = null;
+      _pickupSource = PointSource.none;
+      _dropoffSource = PointSource.none;
+      _preview = null;
+      _tariffEstimates = const {};
+      _tariffId = null;
+      _error = null;
+    });
+    if (askLocationAfter) {
+      _maybeAskLocationOnStart();
+    }
+  }
+
+  void _maybeAskRegionOnStart() {
+    if (_startupRegionPromptShown) return;
+    _startupRegionPromptShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted || _pickup != null || _regions.length < 2) return;
+      await _chooseRegion(askLocationAfter: true);
+      if (mounted && !_startupLocationPromptShown) {
+        _maybeAskLocationOnStart();
+      }
+    });
+  }
+
+  RegionOption? _regionForPoint(Coordinate point) {
+    for (final region in _regions) {
+      if (region.contains(point)) return region;
+    }
+    return null;
+  }
+
+  void _maybeAskLocationOnStart() {
+    if (_startupLocationPromptShown) return;
+    _startupLocationPromptShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      if (!mounted || _pickup != null) return;
+      final permission = await Geolocator.checkPermission();
+      if (!mounted || _pickup != null) return;
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        final approved = await _showLocationPermissionIntro();
+        if (!mounted || approved != true) return;
+        _skipNextLocationIntro = true;
+        await _usePhoneLocation();
+      } else {
+        await _usePhoneLocation();
+      }
+    });
   }
 
   void _handleOrderUpdate(dynamic data) {
@@ -168,30 +285,113 @@ class _PassengerShellState extends State<PassengerShell> {
       _locationLoading = true;
     });
     try {
-      final permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!mounted) return;
+      if (!serviceEnabled) {
         setState(
           () => _error =
-              'Разрешите геолокацию или выберите точку посадки вручную.',
+              'Геолокация выключена. Включите её в настройках или выберите точку на карте.',
         );
         return;
       }
-      final position = await Geolocator.getCurrentPosition();
+
+      var permission = await Geolocator.checkPermission();
+      if (!mounted) return;
+      if (permission == LocationPermission.denied) {
+        final skipIntro = _skipNextLocationIntro;
+        _skipNextLocationIntro = false;
+        final approved =
+            skipIntro ? true : await _showLocationPermissionIntro();
+        if (!mounted) return;
+        if (approved != true) {
+          setState(
+            () => _error =
+                'Можно выбрать точку подачи на карте без доступа к геолокации.',
+          );
+          return;
+        }
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(
+          () => _error =
+              'Геолокация не включена. Выберите точку подачи на карте вручную.',
+        );
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
       final point = Coordinate(lat: position.latitude, lng: position.longitude);
+      final selectedRegion = _selectedRegion;
+      if (selectedRegion != null && !selectedRegion.contains(point)) {
+        final matchingRegion = _regionForPoint(point);
+        if (matchingRegion != null) {
+          setState(() {
+            _selectedRegion = matchingRegion;
+            _activeRegionLabel = matchingRegion.name;
+            _mapCenter = matchingRegion.center?.toLatLng() ?? point.toLatLng();
+            _pickup = null;
+            _dropoff = null;
+            _pickupSource = PointSource.none;
+            _dropoffSource = PointSource.none;
+            _preview = null;
+            _tariffEstimates = const {};
+            _tariffId = null;
+            _error = null;
+          });
+        } else {
+          setState(() {
+            _locationLoading = false;
+            _error =
+                'Ваше местоположение вне выбранного региона. Выберите точку подачи на карте или смените регион.';
+            if (selectedRegion.center != null) {
+              _mapCenter = selectedRegion.center!.toLatLng();
+            }
+          });
+          return;
+        }
+      }
+      var label = 'Текущее местоположение';
+      try {
+        final address = await widget.api.reverseAddress(point);
+        if (address != null && address.label.trim().isNotEmpty) {
+          label = address.label.trim();
+        }
+      } catch (_) {}
+      if (!mounted) return;
       setState(() {
         _pickup = point;
-        _pickupLabel = 'Текущее местоположение';
+        _pickupLabel = label;
         _pickupSource = PointSource.gps;
         _target = PointTarget.dropoff;
         _mapCenter = point.toLatLng();
       });
       await _refreshPreview();
     } catch (_) {
-      setState(() => _error = 'Не удалось получить геолокацию');
+      if (mounted) {
+        setState(
+          () => _error =
+              'Не удалось получить геолокацию. Выберите точку подачи на карте.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _locationLoading = false);
     }
+  }
+
+  Future<bool?> _showLocationPermissionIntro() {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _LocationPermissionSheet(),
+    );
   }
 
   Future<void> _selectPoint({required PointTarget target}) async {
@@ -203,8 +403,13 @@ class _PassengerShellState extends State<PassengerShell> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (context) => _CoordinateSheet(
+      builder: (context) => _AddressSearchSheet(
+        api: widget.api,
+        region: _selectedRegion?.name,
         title: target == PointTarget.pickup ? 'Откуда' : 'Куда',
+        hint: target == PointTarget.pickup
+            ? 'Введите улицу или место подачи'
+            : 'Введите улицу или место назначения',
       ),
     );
     if (selected == null) return;
@@ -218,10 +423,25 @@ class _PassengerShellState extends State<PassengerShell> {
 
   Future<void> _applyMapTap(LatLng point) async {
     final target = _target;
-    const label = 'Точка на карте';
+    final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
+    final selectedRegion = _selectedRegion;
+    if (selectedRegion != null && !selectedRegion.contains(coordinate)) {
+      setState(() {
+        _error =
+            'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.';
+      });
+      return;
+    }
+    var label = 'Точка выбрана';
+    try {
+      final address = await widget.api.reverseAddress(coordinate);
+      if (address != null && address.label.trim().isNotEmpty) {
+        label = address.label.trim();
+      }
+    } catch (_) {}
     await _applyPoint(
       target,
-      Coordinate(lat: point.latitude, lng: point.longitude),
+      coordinate,
       label,
       PointSource.map,
     );
@@ -232,11 +452,14 @@ class _PassengerShellState extends State<PassengerShell> {
 
   void _handleMapTileError() {
     if (_mapTilesUnavailable || !mounted) return;
+    _mapTileErrorCount += 1;
+    if (_mapTileErrorCount < 16) return;
     setState(() => _mapTilesUnavailable = true);
   }
 
   void _retryMap() {
     setState(() {
+      _mapTileErrorCount = 0;
       _mapTilesUnavailable = false;
       _mapReady = false;
     });
@@ -249,6 +472,15 @@ class _PassengerShellState extends State<PassengerShell> {
     String label,
     PointSource source,
   ) async {
+    final selectedRegion = _selectedRegion;
+    if (selectedRegion != null && !selectedRegion.contains(coordinate)) {
+      if (!mounted) return;
+      setState(() {
+        _error =
+            'Адрес вне выбранного региона. Выберите адрес внутри зоны SmartTaxi или смените регион.';
+      });
+      return;
+    }
     setState(() {
       if (target == PointTarget.pickup) {
         _pickup = coordinate;
@@ -261,6 +493,7 @@ class _PassengerShellState extends State<PassengerShell> {
       }
       _mapCenter = coordinate.toLatLng();
       _preview = null;
+      _tariffEstimates = const {};
       _driverPickupRoute = null;
       _driverRouteError = null;
     });
@@ -273,6 +506,7 @@ class _PassengerShellState extends State<PassengerShell> {
       _previewLoading = true;
       _error = null;
       _preview = null;
+      _tariffEstimates = const {};
     });
     try {
       var preview = await widget.api.previewRoute(
@@ -285,18 +519,41 @@ class _PassengerShellState extends State<PassengerShell> {
         tariffs = await widget.api.getTariffs(preview.regionId);
       }
       var selectedTariffId = _tariffId;
-      if (selectedTariffId == null && tariffs.isNotEmpty) {
-        selectedTariffId = tariffs.first.id;
+      final passengerTariffs = _passengerTariffVisuals(tariffs);
+      final passengerTariffIds =
+          passengerTariffs.map((item) => item.tariff.id).toSet();
+      if (selectedTariffId != null &&
+          !passengerTariffIds.contains(selectedTariffId)) {
+        selectedTariffId = null;
+      }
+      if (selectedTariffId == null && passengerTariffs.isNotEmpty) {
+        selectedTariffId = passengerTariffs.first.tariff.id;
+      }
+      final estimates = <String, RoutePreview>{};
+      for (final item in passengerTariffs) {
+        try {
+          estimates[item.tariff.id] = await widget.api.previewRoute(
+            pickup: _pickup!,
+            dropoff: _dropoff!,
+            tariffId: item.tariff.id,
+          );
+        } catch (_) {}
+      }
+      if (selectedTariffId != null && estimates[selectedTariffId] != null) {
+        preview = estimates[selectedTariffId]!;
+      } else if (selectedTariffId != null) {
         preview = await widget.api.previewRoute(
           pickup: _pickup!,
           dropoff: _dropoff!,
           tariffId: selectedTariffId,
         );
+        estimates[selectedTariffId] = preview;
       }
       setState(() {
         _preview = preview;
         _tariffs = tariffs;
         _tariffId = selectedTariffId;
+        _tariffEstimates = estimates;
       });
     } catch (error) {
       setState(() => _error = _readableError(error));
@@ -336,6 +593,7 @@ class _PassengerShellState extends State<PassengerShell> {
         tariffId: _tariffId!,
         distanceKm: _preview!.distanceMeters / 1000,
         durationMin: _preview!.durationSeconds / 60,
+        paymentMethod: _paymentMethod,
       );
       widget.sockets.joinOrder(order.id);
       setState(() {
@@ -529,9 +787,6 @@ class _PassengerShellState extends State<PassengerShell> {
   Widget _homeScreen() {
     final screen = MediaQuery.sizeOf(context);
     final compact = screen.height < 720 || screen.width < 390;
-    final mapHeight = (screen.height * (compact ? 0.40 : 0.43))
-        .clamp(compact ? 284.0 : 305.0, compact ? 356.0 : 410.0)
-        .toDouble();
     final geolocationNotice = _geolocationNotice;
     final mapRoute = _order?.driverId != null
         ? (_driverPickupRoute?.geometry ?? const <LatLng>[])
@@ -539,18 +794,15 @@ class _PassengerShellState extends State<PassengerShell> {
     final mapRouteError = _order?.driverId != null
         ? _driverRouteError
         : (_routePreviewError ? _error : null);
-    return ListView(
-      padding: EdgeInsets.zero,
+    return Stack(
       children: [
-        SizedBox(
-          height: mapHeight,
+        Positioned.fill(
           child: _MapCanvas(
-            center: _mapCenter ?? const LatLng(42.316, 69.596),
+            center: _mapCenter ?? _atakentFallbackCenter,
             pickup: _pickup,
             dropoff: _dropoff,
             driver: _order?.driverId == null ? null : _driverLocation,
             route: mapRoute,
-            target: _target,
             permissionNotice: geolocationNotice,
             routeLoading: _previewLoading,
             routeError: mapRouteError,
@@ -559,17 +811,38 @@ class _PassengerShellState extends State<PassengerShell> {
             onTap: _applyMapTap,
             onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
-            onReset: _resetRoute,
             onRetryMap: _retryMap,
             onMenu: _openDrawer,
-            onProfile: () => setState(() => _tab = PassengerTab.profile),
+            onNotifications: _openNotifications,
+            onRegionTap: _chooseRegion,
+            regionLabel: _activeRegionLabel,
           ),
         ),
-        Transform.translate(
-          offset: Offset(0, compact ? -24 : -30),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                compact ? 14 : 16, 0, compact ? 14 : 16, compact ? 8 : 12),
+        Positioned(
+          left: compact ? 16 : 22,
+          right: compact ? 16 : 22,
+          top: compact ? 104 : 118,
+          child: _FloatingAddressCard(
+            pickupLabel: _pickupSource == PointSource.none
+                ? 'Моё местоположение'
+                : _pickupLabel,
+            dropoffLabel: _dropoffSource == PointSource.none
+                ? 'Куда едем?'
+                : _dropoffLabel,
+            pickupActive: _target == PointTarget.pickup,
+            dropoffActive: _target == PointTarget.dropoff,
+            loading: _locationLoading,
+            onPickupTap: () => _selectPoint(target: PointTarget.pickup),
+            onDropoffTap: () => _selectPoint(target: PointTarget.dropoff),
+            onUseLocation: _usePhoneLocation,
+          ),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: screen.height * (compact ? 0.46 : 0.41),
+            ),
             child: _OrderSheet(
               pickupLabel: _pickupLabel,
               dropoffLabel: _dropoffLabel,
@@ -581,23 +854,57 @@ class _PassengerShellState extends State<PassengerShell> {
               onDropoffTap: () => _selectPoint(target: PointTarget.dropoff),
               onUseLocation: _usePhoneLocation,
               locationLoading: _locationLoading,
+              paymentMethod: _paymentMethod,
+              paymentLabel: _paymentMethodLabel,
+              onPaymentTap: _choosePaymentMethod,
               tariffs: _tariffs,
               selectedTariffId: _tariffId,
               preview: _preview,
+              tariffEstimates: _tariffEstimates,
               loading: _loading,
               previewLoading: _previewLoading,
               error: _error,
               onTariff: (id) async {
-                setState(() => _tariffId = id);
-                await _refreshPreview();
+                final cached = _tariffEstimates[id];
+                setState(() {
+                  _tariffId = id;
+                  if (cached != null) _preview = cached;
+                });
+                if (cached == null) await _refreshPreview();
               },
               onCreate: _createOrder,
               cta: _ctaText(),
             ),
           ),
         ),
-        const SizedBox(height: 2),
       ],
+    );
+  }
+
+  String get _paymentMethodLabel {
+    return const {
+          'CASH': 'Наличные',
+          'KASPI': 'Kaspi',
+          'CARD': 'Карта',
+        }[_paymentMethod] ??
+        'Наличные';
+  }
+
+  Future<void> _choosePaymentMethod() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PaymentMethodSheet(selected: _paymentMethod),
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _paymentMethod = selected);
+  }
+
+  void _openNotifications() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _NotificationsSheet(),
     );
   }
 
@@ -605,7 +912,7 @@ class _PassengerShellState extends State<PassengerShell> {
     final error = _error;
     if (error == null) return null;
     if (!error.toLowerCase().contains('геолокац')) return null;
-    return 'Разрешите геолокацию или выберите точку посадки вручную.';
+    return 'Можно включить GPS для точной подачи или выбрать точку на карте.';
   }
 
   bool get _routePreviewError {
@@ -617,26 +924,9 @@ class _PassengerShellState extends State<PassengerShell> {
         error.contains('Межгород пока не поддерживается');
   }
 
-  void _resetRoute() {
-    setState(() {
-      _pickup = null;
-      _dropoff = null;
-      _pickupLabel = 'Выберите точку посадки';
-      _dropoffLabel = 'Введите точку назначения';
-      _pickupSource = PointSource.none;
-      _dropoffSource = PointSource.none;
-      _preview = null;
-      _driverPickupRoute = null;
-      _driverRouteError = null;
-      _tariffId = null;
-      _target = PointTarget.pickup;
-      _error = null;
-    });
-  }
-
   String _ctaText() {
     if (_loading) return 'Создаём заказ...';
-    if (_pickup == null || _dropoff == null) return 'Укажите маршрут';
+    if (_pickup == null || _dropoff == null) return 'Выбрать адрес';
     if (_tariffId == null) return 'Выберите тариф';
     if (_preview == null || _preview!.estimatedPrice == null) {
       return 'Рассчитать';
@@ -738,7 +1028,7 @@ class _PassengerShellState extends State<PassengerShell> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${_order!.price!.round()} ₸',
+                    _formatTenge(_order!.price!),
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
@@ -1284,7 +1574,6 @@ class _MapCanvas extends StatelessWidget {
     required this.dropoff,
     required this.driver,
     required this.route,
-    required this.target,
     required this.permissionNotice,
     required this.routeLoading,
     required this.routeError,
@@ -1293,10 +1582,11 @@ class _MapCanvas extends StatelessWidget {
     required this.onTap,
     required this.onTileError,
     required this.onUseLocation,
-    required this.onReset,
     required this.onRetryMap,
     required this.onMenu,
-    required this.onProfile,
+    required this.onNotifications,
+    required this.onRegionTap,
+    required this.regionLabel,
   });
 
   final LatLng center;
@@ -1304,7 +1594,6 @@ class _MapCanvas extends StatelessWidget {
   final Coordinate? dropoff;
   final DriverLocation? driver;
   final List<LatLng> route;
-  final PointTarget target;
   final String? permissionNotice;
   final bool routeLoading;
   final String? routeError;
@@ -1313,248 +1602,226 @@ class _MapCanvas extends StatelessWidget {
   final ValueChanged<LatLng> onTap;
   final VoidCallback onTileError;
   final VoidCallback onUseLocation;
-  final VoidCallback onReset;
   final VoidCallback onRetryMap;
   final VoidCallback onMenu;
-  final VoidCallback onProfile;
+  final VoidCallback onNotifications;
+  final VoidCallback onRegionTap;
+  final String regionLabel;
 
   @override
   Widget build(BuildContext context) {
-    final instruction = pickup == null
-        ? 'Выберите точку посадки на карте'
-        : dropoff == null
-            ? 'Выберите точку назначения на карте'
-            : route.isNotEmpty
-                ? 'Маршрут построен по данным сервиса'
-                : 'Маршрут выбран';
     final cameraPoints = _cameraPoints();
     final initialFit = cameraPoints.length > 1
         ? CameraFit.coordinates(
             coordinates: cameraPoints,
-            padding: const EdgeInsets.fromLTRB(54, 120, 54, 92),
+            padding: const EdgeInsets.fromLTRB(54, 130, 54, 330),
             maxZoom: 15.5,
           )
         : null;
     final mapKey = ValueKey(cameraPoints.map(_pointKey).join('|'));
     final showMapFallback = !mapReady || mapUnavailable;
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-      child: Stack(
-        children: [
-          if (showMapFallback)
-            const Positioned.fill(child: _MapFallbackSurface())
-          else
-            FlutterMap(
-              key: mapKey,
-              options: MapOptions(
-                initialCenter: center,
-                initialZoom: pickup == null && dropoff == null ? 12 : 14,
-                initialCameraFit: initialFit,
-                onTap: (_, point) => onTap(point),
-                backgroundColor: SmartTaxiColors.goldSurface,
+    return Stack(
+      children: [
+        if (showMapFallback)
+          const Positioned.fill(child: _MapFallbackSurface())
+        else
+          FlutterMap(
+            key: mapKey,
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: pickup == null && dropoff == null ? 12 : 14,
+              initialCameraFit: initialFit,
+              onTap: (_, point) => onTap(point),
+              backgroundColor: SmartTaxiColors.appBackground,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: AppConfig.osmTileUrl,
+                userAgentPackageName: 'com.smarttaxi.app',
+                errorTileCallback: (_, __, ___) => onTileError(),
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: AppConfig.osmTileUrl,
-                  userAgentPackageName: 'com.smarttaxi.app',
-                  errorTileCallback: (_, __, ___) => onTileError(),
-                ),
-                if (route.isNotEmpty)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: route,
-                        color: SmartTaxiColors.goldDeep,
-                        strokeWidth: 5,
-                      ),
-                    ],
-                  ),
-                MarkerLayer(
-                  markers: [
-                    if (pickup != null)
-                      _marker(
-                        pickup!.toLatLng(),
-                        'A',
-                        SmartTaxiColors.text,
-                        Colors.white,
-                      ),
-                    if (dropoff != null)
-                      _marker(
-                        dropoff!.toLatLng(),
-                        'B',
-                        SmartTaxiColors.gold,
-                        SmartTaxiColors.text,
-                      ),
-                    if (driver != null)
-                      _marker(
-                        driver!.toLatLng(),
-                        'D',
-                        SmartTaxiColors.success,
-                        Colors.white,
-                      ),
+              if (route.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: route,
+                      color: SmartTaxiColors.gold,
+                      strokeWidth: 6,
+                    ),
                   ],
                 ),
-              ],
-            ),
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x14fff8e6),
-                      Color(0x00fffcf6),
-                      Color(0xd8fffcf6),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 14,
-            top: 12,
-            right: 14,
-            child: _MapOverlayHeader(onMenu: onMenu, onProfile: onProfile),
-          ),
-          if (mapUnavailable)
-            Positioned(
-              left: 14,
-              right: 14,
-              bottom: 118,
-              child: _MapUnavailableCard(onRetry: onRetryMap),
-            ),
-          if (!showMapFallback)
-            Positioned(
-              left: 14,
-              top: 84,
-              right: 80,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                child: permissionNotice == null
-                    ? _MapInstructionCard(
-                        key: ValueKey(instruction),
-                        title: instruction,
-                        text: target == PointTarget.pickup
-                            ? 'Нажмите на карту или заполните поле «Откуда».'
-                            : 'Нажмите на карту или заполните поле «Куда».',
-                        onHelp: () =>
-                            ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Карта ставит только выбранную точку A или B.',
-                            ),
-                          ),
-                        ),
-                      )
-                    : _MapPermissionCard(
-                        key: const ValueKey('permission-notice'),
-                        text: permissionNotice!,
-                        onUseLocation: onUseLocation,
-                      ),
-              ),
-            ),
-          Positioned(
-            right: 14,
-            top: 84,
-            child: Column(
-              children: [
-                _MapRoundButton(
-                  icon: Icons.my_location_rounded,
-                  label: 'Разрешить геолокацию',
-                  onTap: onUseLocation,
-                ),
-                const SizedBox(height: 10),
-                _MapRoundButton(
-                  icon: Icons.add_location_alt_outlined,
-                  label: 'Выбрать точку на карте',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Нажмите на карту, чтобы поставить точку'),
+              MarkerLayer(
+                markers: [
+                  if (pickup != null)
+                    _assetMarker(
+                      point: pickup!.toLatLng(),
+                      asset: _userLocationMarkerAsset,
+                      semanticLabel: 'Точка подачи',
+                      fallbackIcon: Icons.radio_button_checked_rounded,
                     ),
-                  ),
+                  if (dropoff != null)
+                    _assetMarker(
+                      point: dropoff!.toLatLng(),
+                      asset: _destinationMarkerAsset,
+                      semanticLabel: 'Точка назначения',
+                      fallbackIcon: Icons.location_on_rounded,
+                    ),
+                  if (driver != null)
+                    _assetMarker(
+                      point: driver!.toLatLng(),
+                      asset: _driverCarMarkerAsset,
+                      semanticLabel: 'Автомобиль водителя',
+                      size: 58,
+                      rotationRadians: (driver!.heading ?? 0) * math.pi / 180,
+                      fallbackIcon: Icons.local_taxi_rounded,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        const Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x55fffcf6),
+                    Color(0x08fffcf6),
+                    Color(0xaafffcf6),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                _MapRoundButton(
-                  icon: Icons.refresh_rounded,
-                  label: 'Сбросить маршрут',
-                  onTap: onReset,
-                ),
-              ],
+              ),
             ),
           ),
+        ),
+        Positioned(
+          left: 22,
+          top: 28,
+          right: 22,
+          child: _MapOverlayHeader(
+            onMenu: onMenu,
+            onNotifications: onNotifications,
+            onRegionTap: onRegionTap,
+            regionLabel: regionLabel,
+          ),
+        ),
+        if (mapUnavailable)
           Positioned(
-            left: 14,
-            right: 80,
-            bottom: 72,
+            left: 22,
+            right: 22,
+            top: 286,
+            child: _MapUnavailableCard(onRetry: onRetryMap),
+          ),
+        if (!showMapFallback && permissionNotice != null)
+          Positioned(
+            left: 22,
+            right: 22,
+            top: 286,
+            child: _MapPermissionCard(
+              text: permissionNotice!,
+              onUseLocation: onUseLocation,
+            ),
+          ),
+        Positioned(
+          right: 22,
+          bottom: 310,
+          child: _MapRoundButton(
+            icon: Icons.my_location_rounded,
+            label: 'Моё местоположение',
+            asset: _navigationButtonAsset,
+            onTap: onUseLocation,
+          ),
+        ),
+        if (routeError != null || routeLoading)
+          Positioned(
+            left: 22,
+            right: 92,
+            top: 286,
             child: _MapRouteState(
               loading: routeLoading,
               routeReady: route.isNotEmpty,
               error: routeError,
             ),
           ),
-          Positioned(
-            left: 12,
-            bottom: 36,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.94),
-                border: Border.all(color: SmartTaxiColors.border),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x12785a14),
-                    blurRadius: 16,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                child: Text(
-                  AppConfig.mapAttribution,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: SmartTaxiColors.textSecondary,
-                  ),
+        Positioned(
+          left: 14,
+          bottom: 292,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.82),
+              border: Border.all(color: SmartTaxiColors.border),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x66000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              child: Text(
+                AppConfig.mapAttribution,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: SmartTaxiColors.textSecondary,
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Marker _marker(
-    LatLng point,
-    String label,
-    Color background,
-    Color foreground,
-  ) {
+  Marker _assetMarker({
+    required LatLng point,
+    required String asset,
+    required String semanticLabel,
+    required IconData fallbackIcon,
+    double size = 50,
+    double rotationRadians = 0,
+  }) {
     return Marker(
       point: point,
-      width: 46,
-      height: 46,
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: background,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: background.withValues(alpha: 0.32),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+      width: size + 18,
+      height: size + 18,
+      child: Semantics(
+        label: semanticLabel,
+        image: true,
+        child: Transform.rotate(
+          angle: rotationRadians,
+          child: Image.asset(
+            asset,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Container(
+              width: size,
+              height: size,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: SmartTaxiColors.gold, width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x2ed4af37),
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(
+                fallbackIcon,
+                color: SmartTaxiColors.goldDeep,
+                size: size * 0.48,
+              ),
             ),
-          ],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(color: foreground, fontWeight: FontWeight.w900),
+          ),
         ),
       ),
     );
@@ -1585,104 +1852,55 @@ class _MapRoundButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.asset,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final String? asset;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: label,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: Colors.white.withValues(alpha: 0.94),
         shape: const CircleBorder(),
         elevation: 0,
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: Container(
-            width: 46,
-            height: 46,
+            width: 58,
+            height: 58,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: SmartTaxiColors.border),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x12785a14),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
+                  color: Color(0x1f141414),
+                  blurRadius: 22,
+                  offset: Offset(0, 10),
                 ),
               ],
             ),
-            child: Icon(icon, color: SmartTaxiColors.text, size: 21),
+            child: asset == null
+                ? Icon(icon, color: SmartTaxiColors.goldDeep, size: 28)
+                : Image.asset(
+                    asset!,
+                    width: 34,
+                    height: 34,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Icon(
+                      icon,
+                      color: SmartTaxiColors.goldDeep,
+                      size: 28,
+                    ),
+                  ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MapInstructionCard extends StatelessWidget {
-  const _MapInstructionCard({
-    super.key,
-    required this.title,
-    required this.text,
-    required this.onHelp,
-  });
-
-  final String title;
-  final String text;
-  final VoidCallback onHelp;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        border: Border.all(color: SmartTaxiColors.border),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Color(0x16785a14), blurRadius: 22)],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  text,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: onHelp,
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 40),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-            ),
-            child: const Text('Как выбрать'),
-          ),
-        ],
       ),
     );
   }
@@ -1693,7 +1911,48 @@ class _MapFallbackSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(color: SmartTaxiColors.goldSurface);
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment(0.25, -0.35),
+          radius: 1.1,
+          colors: [
+            Color(0xfffff8e6),
+            Color(0xfffffcf6),
+            Color(0xffffffff),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.map_outlined, color: SmartTaxiColors.gold, size: 38),
+              SizedBox(height: 12),
+              Text(
+                'Карта загружается',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: SmartTaxiColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 6),
+              Text(
+                'Подключаем карту города',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1707,7 +1966,7 @@ class _MapUnavailableCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: Colors.white.withValues(alpha: 0.95),
         border: Border.all(color: SmartTaxiColors.borderStrong),
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
@@ -1734,6 +1993,7 @@ class _MapUnavailableCard extends StatelessWidget {
                 Text(
                   'Карта временно недоступна',
                   style: TextStyle(
+                    color: SmartTaxiColors.text,
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
                     height: 1.15,
@@ -1754,6 +2014,8 @@ class _MapUnavailableCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetry,
+            style:
+                TextButton.styleFrom(foregroundColor: SmartTaxiColors.goldDeep),
             child: const Text('Повторить'),
           ),
         ],
@@ -1764,7 +2026,6 @@ class _MapUnavailableCard extends StatelessWidget {
 
 class _MapPermissionCard extends StatelessWidget {
   const _MapPermissionCard({
-    super.key,
     required this.text,
     required this.onUseLocation,
   });
@@ -1777,7 +2038,7 @@ class _MapPermissionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xfffff8e6).withValues(alpha: 0.96),
+        color: Colors.white.withValues(alpha: 0.95),
         border: Border.all(color: SmartTaxiColors.borderStrong),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
@@ -1795,13 +2056,13 @@ class _MapPermissionCard extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: SmartTaxiColors.goldPale,
+              color: SmartTaxiColors.gold,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.near_me_disabled_outlined,
               size: 18,
-              color: SmartTaxiColors.goldDeep,
+              color: SmartTaxiColors.text,
             ),
           ),
           const SizedBox(width: 10),
@@ -1809,6 +2070,7 @@ class _MapPermissionCard extends StatelessWidget {
             child: Text(
               text,
               style: const TextStyle(
+                color: SmartTaxiColors.text,
                 fontSize: 12.5,
                 height: 1.25,
                 fontWeight: FontWeight.w800,
@@ -1818,7 +2080,8 @@ class _MapPermissionCard extends StatelessWidget {
           IconButton(
             onPressed: onUseLocation,
             tooltip: 'Разрешить геолокацию',
-            icon: const Icon(Icons.my_location_rounded),
+            icon: const Icon(Icons.my_location_rounded,
+                color: SmartTaxiColors.gold),
           ),
         ],
       ),
@@ -1856,15 +2119,17 @@ class _MapRouteState extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: danger
-              ? const Color(0xfffff1f1).withValues(alpha: 0.96)
+              ? SmartTaxiColors.danger.withValues(alpha: 0.18)
               : Colors.white.withValues(alpha: 0.94),
           border: Border.all(
-            color: danger ? const Color(0xfffecaca) : SmartTaxiColors.border,
+            color: danger
+                ? SmartTaxiColors.danger.withValues(alpha: 0.34)
+                : SmartTaxiColors.border,
           ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14785a14),
+              color: Color(0x18785a14),
               blurRadius: 18,
               offset: Offset(0, 8),
             ),
@@ -1909,6 +2174,265 @@ class _MapRouteState extends StatelessWidget {
   }
 }
 
+class _HomeOrderPanel extends StatelessWidget {
+  const _HomeOrderPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(38)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            18,
+            12,
+            18,
+            18 + MediaQuery.paddingOf(context).bottom,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.985),
+            border: Border.all(color: SmartTaxiColors.border),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(38)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22785a14),
+                blurRadius: 34,
+                offset: Offset(0, -12),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingAddressCard extends StatelessWidget {
+  const _FloatingAddressCard({
+    required this.pickupLabel,
+    required this.dropoffLabel,
+    required this.pickupActive,
+    required this.dropoffActive,
+    required this.loading,
+    required this.onPickupTap,
+    required this.onDropoffTap,
+    required this.onUseLocation,
+  });
+
+  final String pickupLabel;
+  final String dropoffLabel;
+  final bool pickupActive;
+  final bool dropoffActive;
+  final bool loading;
+  final VoidCallback onPickupTap;
+  final VoidCallback onDropoffTap;
+  final VoidCallback onUseLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 164,
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        border: Border.all(color: SmartTaxiColors.border),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1a785a14),
+            blurRadius: 30,
+            offset: Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 34,
+            child: Column(
+              children: [
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff1d6fff),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xff1d6fff).withValues(alpha: 0.26),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: SmartTaxiColors.borderStrong,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: SmartTaxiColors.gold,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: SmartTaxiColors.gold.withValues(alpha: 0.28),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 8,
+                      height: 8,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              children: [
+                _FloatingAddressRow(
+                  title: 'Откуда',
+                  label: pickupLabel,
+                  active: pickupActive,
+                  onTap: onPickupTap,
+                ),
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  color: SmartTaxiColors.border,
+                ),
+                _FloatingAddressRow(
+                  title: 'Куда',
+                  label: dropoffLabel,
+                  active: dropoffActive,
+                  onTap: onDropoffTap,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Material(
+            color: SmartTaxiColors.gold,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: loading ? null : onDropoffTap,
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: Center(
+                  child: loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          '+',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 36,
+                            height: 0.9,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FloatingAddressRow extends StatelessWidget {
+  const _FloatingAddressRow({
+    required this.title,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String title;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontSize: 12,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: active
+                        ? SmartTaxiColors.goldDeep
+                        : SmartTaxiColors.text,
+                    fontSize: 19,
+                    height: 1.05,
+                    fontWeight: active ? FontWeight.w900 : FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OrderSheet extends StatelessWidget {
   const _OrderSheet({
     required this.pickupLabel,
@@ -1921,9 +2445,13 @@ class _OrderSheet extends StatelessWidget {
     required this.onDropoffTap,
     required this.onUseLocation,
     required this.locationLoading,
+    required this.paymentMethod,
+    required this.paymentLabel,
+    required this.onPaymentTap,
     required this.tariffs,
     required this.selectedTariffId,
     required this.preview,
+    required this.tariffEstimates,
     required this.loading,
     required this.previewLoading,
     required this.error,
@@ -1942,9 +2470,13 @@ class _OrderSheet extends StatelessWidget {
   final VoidCallback onDropoffTap;
   final VoidCallback onUseLocation;
   final bool locationLoading;
+  final String paymentMethod;
+  final String paymentLabel;
+  final VoidCallback onPaymentTap;
   final List<TariffOption> tariffs;
   final String? selectedTariffId;
   final RoutePreview? preview;
+  final Map<String, RoutePreview> tariffEstimates;
   final bool loading;
   final bool previewLoading;
   final String? error;
@@ -1956,6 +2488,8 @@ class _OrderSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final routeError =
         error != null && error!.toLowerCase().contains('маршрут');
+    final routeSelected =
+        pickupSource != PointSource.none && dropoffSource != PointSource.none;
     final canSubmit = !loading &&
         !previewLoading &&
         (cta == 'Рассчитать' || cta == 'Заказать');
@@ -1968,102 +2502,61 @@ class _OrderSheet extends StatelessWidget {
         scale: value,
         child: child,
       ),
-      child: _PremiumCard(
+      child: _HomeOrderPanel(
         child: AnimatedSize(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _SheetHandle(),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Expanded(
-                    child: _TitleBlock(
-                      title: 'Куда едем?',
-                      text: 'Поездки только внутри активного региона',
-                    ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SheetHandle(dark: false),
+                if (routeSelected && !routeError)
+                  _TariffSection(
+                    tariffs: tariffs,
+                    selectedId: selectedTariffId,
+                    estimate: preview,
+                    estimates: tariffEstimates,
+                    loading: previewLoading,
+                    onSelect: onTariff,
+                    dark: false,
+                    showHeader: false,
+                  )
+                else if (routeSelected && routeError)
+                  const _CompactNotice(
+                    icon: Icons.route_outlined,
+                    title: 'Уточните маршрут',
+                    text:
+                        'Не удалось построить маршрут. Измените адрес или выберите точку на карте.',
+                  )
+                else
+                  const _CompactNotice(
+                    icon: Icons.alt_route_rounded,
+                    title: 'Выберите адрес назначения',
+                    text: 'Тарифы и стоимость появятся после выбора маршрута.',
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: SmartTaxiColors.goldPale,
-                      border: Border.all(color: SmartTaxiColors.borderStrong),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'A/B',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
+                if (error != null && !routeError) ...[
+                  const SizedBox(height: 12),
+                  _InlineMessage(text: error!, danger: true, dark: false),
                 ],
-              ),
-              const SizedBox(height: 16),
-              RouteFields(
-                pickupLabel: pickupLabel,
-                dropoffLabel: dropoffLabel,
-                pickupActive: pickupActive,
-                dropoffActive: dropoffActive,
-                onPickupTap: onPickupTap,
-                onDropoffTap: onDropoffTap,
-              ),
-              const SizedBox(height: 10),
-              _RouteSourceSummary(
-                pickupSource: pickupSource,
-                dropoffSource: dropoffSource,
-                pickupActive: pickupActive,
-                dropoffActive: dropoffActive,
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: locationLoading ? null : onUseLocation,
-                icon: locationLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.my_location_rounded, size: 19),
-                label: Text(
-                  locationLoading
-                      ? 'Получаем геолокацию...'
-                      : 'Разрешить геолокацию',
+                const SizedBox(height: 14),
+                _PaymentMethodRow(
+                  enabled: true,
+                  method: paymentMethod,
+                  label: paymentLabel,
+                  onTap: onPaymentTap,
                 ),
-              ),
-              const SizedBox(height: 18),
-              _TariffSection(
-                tariffs: tariffs,
-                selectedId: selectedTariffId,
-                estimate: preview,
-                loading: previewLoading,
-                onSelect: onTariff,
-              ),
-              const SizedBox(height: 16),
-              _PriceSection(
-                preview: preview,
-                loading: previewLoading,
-                routeError: routeError ? error : null,
-              ),
-              if (error != null && !routeError) ...[
-                const SizedBox(height: 12),
-                _InlineMessage(text: error!, danger: true),
+                const SizedBox(height: 14),
+                _GoldCtaButton(
+                  enabled: canSubmit,
+                  loading: loading,
+                  text: cta,
+                  onTap: onCreate,
+                ),
               ],
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: canSubmit ? onCreate : null,
-                child: loading
-                    ? const _ButtonSpinner(text: 'Создаём заказ...')
-                    : Text(cta),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -2071,42 +2564,81 @@ class _OrderSheet extends StatelessWidget {
   }
 }
 
-class _CoordinateSheet extends StatefulWidget {
-  const _CoordinateSheet({required this.title});
+class _AddressSearchSheet extends StatefulWidget {
+  const _AddressSearchSheet({
+    required this.api,
+    required this.region,
+    required this.title,
+    required this.hint,
+  });
 
+  final ApiClient api;
+  final String? region;
   final String title;
+  final String hint;
 
   @override
-  State<_CoordinateSheet> createState() => _CoordinateSheetState();
+  State<_AddressSearchSheet> createState() => _AddressSearchSheetState();
 }
 
-class _CoordinateSheetState extends State<_CoordinateSheet> {
-  final _lat = TextEditingController();
-  final _lng = TextEditingController();
-  final _label = TextEditingController();
+class _AddressSearchSheetState extends State<_AddressSearchSheet> {
+  final _query = TextEditingController();
+  Timer? _debounce;
+  bool _loading = false;
   String? _error;
+  List<AddressSuggestion> _results = const [];
 
   @override
   void dispose() {
-    _lat.dispose();
-    _lng.dispose();
-    _label.dispose();
+    _debounce?.cancel();
+    _query.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    final lat = double.tryParse(_lat.text.replaceAll(',', '.'));
-    final lng = double.tryParse(_lng.text.replaceAll(',', '.'));
-    if (lat == null || lng == null) {
-      setState(() => _error = 'Введите координаты');
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 360), () {
+      _search(value);
+    });
+  }
+
+  Future<void> _search(String value) async {
+    final query = value.trim();
+    if (query.length < 2) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = null;
+        _results = const [];
+      });
       return;
     }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final results = await widget.api.searchAddresses(
+        query,
+        region: widget.region,
+      );
+      if (!mounted) return;
+      setState(() => _results = results);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _results = const [];
+        _error = 'Поиск адреса временно недоступен. Выберите точку на карте.';
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _select(AddressSuggestion item) {
     Navigator.pop(
       context,
-      _PointResult(
-        Coordinate(lat: lat, lng: lng),
-        _label.text.trim().isEmpty ? 'Координаты выбраны' : _label.text.trim(),
-      ),
+      _PointResult(item.coordinate, item.label),
     );
   }
 
@@ -2117,89 +2649,124 @@ class _CoordinateSheetState extends State<_CoordinateSheet> {
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           20,
+          18,
           20,
-          20,
-          20 + MediaQuery.viewInsetsOf(context).bottom,
+          18 + MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.title,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Выберите точку на карте или укажите адрес с координатами.',
-              style: TextStyle(color: SmartTaxiColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _label,
-              decoration: const InputDecoration(
-                labelText: 'Адрес или ориентир',
-              ),
-            ),
-            const SizedBox(height: 12),
+            const _SheetHandle(dark: false),
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _lat,
-                    decoration: const InputDecoration(
-                      labelText: 'Широта',
-                      hintText: '42.3167',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      signed: true,
-                      decimal: true,
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _lng,
-                    decoration: const InputDecoration(
-                      labelText: 'Долгота',
-                      hintText: '69.5958',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      signed: true,
-                      decimal: true,
-                    ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: SmartTaxiColors.goldDeep,
+                  ),
+                  child: const Text(
+                    'Отмена',
+                    style: TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 14),
+            if ((widget.region ?? '').trim().isNotEmpty) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: SmartTaxiColors.goldPale,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: SmartTaxiColors.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.location_city_rounded,
+                      size: 17,
+                      color: SmartTaxiColors.goldDeep,
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      widget.region!,
+                      style: const TextStyle(
+                        color: SmartTaxiColors.text,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: _query,
+              autofocus: true,
+              textInputAction: TextInputAction.search,
+              onChanged: _onQueryChanged,
+              onSubmitted: _search,
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _loading
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: SmartTaxiColors.goldDeep,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
             const SizedBox(height: 12),
-            const _CompactNotice(
+            _CompactNotice(
               icon: Icons.touch_app_outlined,
-              title: 'Можно проще',
-              text: 'Закройте окно и нажмите на карту, чтобы поставить точку.',
+              title: 'Адрес или точка на карте',
+              text: 'Введите улицу, место или выберите точку прямо на карте.',
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               _InlineMessage(text: _error!, danger: true),
             ],
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Выбрать на карте'),
-                  ),
+            const SizedBox(height: 12),
+            if (_query.text.trim().length < 2)
+              const _AddressEmptyHint()
+            else if (!_loading && _results.isEmpty && _error == null)
+              const _AddressEmptyHint(
+                title: 'Ничего не найдено',
+                text: 'Уточните улицу, район или название места.',
+              )
+            else
+              ..._results.map(
+                (item) => _AddressResultTile(
+                  item: item,
+                  onTap: () => _select(item),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _submit,
-                    child: const Text('Готово'),
-                  ),
-                ),
-              ],
+              ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Выбрать точку на карте'),
             ),
           ],
         ),
@@ -2208,72 +2775,265 @@ class _CoordinateSheetState extends State<_CoordinateSheet> {
   }
 }
 
-class _RouteSourceSummary extends StatelessWidget {
-  const _RouteSourceSummary({
-    required this.pickupSource,
-    required this.dropoffSource,
-    required this.pickupActive,
-    required this.dropoffActive,
-  });
+class _AddressResultTile extends StatelessWidget {
+  const _AddressResultTile({required this.item, required this.onTap});
 
-  final PointSource pickupSource;
-  final PointSource dropoffSource;
-  final bool pickupActive;
-  final bool dropoffActive;
+  final AddressSuggestion item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _PointSourceChip(
-          label: 'Откуда',
-          source: pickupSource,
-          active: pickupActive,
+    final subtitle = [
+      if ((item.city ?? '').trim().isNotEmpty) item.city,
+      if ((item.region ?? '').trim().isNotEmpty) item.region,
+      if ((item.subtitle ?? '').trim().isNotEmpty) item.subtitle,
+    ].whereType<String>().join(' • ');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: SmartTaxiColors.cardWarm,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              border: Border.all(color: SmartTaxiColors.border),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: SmartTaxiColors.goldPale,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.place_rounded,
+                    color: SmartTaxiColors.goldDeep,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
+                      ),
+                      if (subtitle.trim().isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: SmartTaxiColors.goldDeep),
+              ],
+            ),
+          ),
         ),
-        _PointSourceChip(
-          label: 'Куда',
-          source: dropoffSource,
-          active: dropoffActive,
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _PointSourceChip extends StatelessWidget {
-  const _PointSourceChip({
-    required this.label,
-    required this.source,
-    required this.active,
+class _AddressEmptyHint extends StatelessWidget {
+  const _AddressEmptyHint({
+    this.title = 'Начните вводить адрес',
+    this.text = 'Напишите улицу, район или название места.',
   });
 
-  final String label;
-  final PointSource source;
-  final bool active;
+  final String title;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    final text = source == PointSource.none
-        ? (active ? 'выбирается' : 'не выбрано')
-        : _pointSourceLabel(source);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: active ? SmartTaxiColors.goldPale : Colors.white,
-        border: Border.all(
-          color: active ? SmartTaxiColors.gold : SmartTaxiColors.border,
+    return _CompactNotice(
+      icon: Icons.manage_search_rounded,
+      title: title,
+      text: text,
+    );
+  }
+}
+
+class _LocationPermissionSheet extends StatelessWidget {
+  const _LocationPermissionSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border:
+              Border.all(color: SmartTaxiColors.gold.withValues(alpha: 0.30)),
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x18785a14),
+              blurRadius: 34,
+              offset: Offset(0, 18),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$label: $text',
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SheetHandle(dark: false),
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: SmartTaxiColors.gold.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: SmartTaxiColors.gold.withValues(alpha: 0.38)),
+              ),
+              child: const Icon(
+                Icons.my_location_rounded,
+                color: SmartTaxiColors.gold,
+                size: 27,
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Геолокация для подачи',
+              style: TextStyle(
+                color: SmartTaxiColors.text,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'SmartTaxi использует ваше реальное местоположение только для точки подачи и расчёта маршрута. Можно выбрать точку на карте вручную.',
+              style: TextStyle(
+                color: SmartTaxiColors.textSecondary,
+                fontSize: 14,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _GoldCtaButton(
+              enabled: true,
+              loading: false,
+              text: 'Разрешить геолокацию',
+              onTap: () => Navigator.pop(context, true),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(
+                foregroundColor: SmartTaxiColors.textSecondary,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: const Text(
+                'Выбрать точку на карте',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _PassengerTariffVisual {
+  const _PassengerTariffVisual({
+    required this.tariff,
+    required this.title,
+    required this.description,
+    required this.asset,
+  });
+
+  final TariffOption tariff;
+  final String title;
+  final String description;
+  final String asset;
+}
+
+List<_PassengerTariffVisual> _passengerTariffVisuals(
+  List<TariffOption> tariffs,
+) {
+  final byClass = <String, _PassengerTariffVisual>{};
+  for (final tariff in tariffs) {
+    final visual = _passengerTariffVisual(tariff);
+    if (visual != null) {
+      byClass.putIfAbsent(visual.title, () => visual);
+    }
+  }
+  return [
+    if (byClass['Эконом'] != null) byClass['Эконом']!,
+    if (byClass['Комфорт'] != null) byClass['Комфорт']!,
+    if (byClass['Бизнес'] != null) byClass['Бизнес']!,
+  ];
+}
+
+_PassengerTariffVisual? _passengerTariffVisual(TariffOption tariff) {
+  final normalized = tariff.name.trim().toLowerCase();
+  if (normalized.contains('econom') || normalized.contains('эконом')) {
+    return _PassengerTariffVisual(
+      tariff: tariff,
+      title: 'Эконом',
+      description: 'Быстро и доступно',
+      asset: _tariffEconomyAsset,
+    );
+  }
+  if (normalized.contains('comfort') || normalized.contains('комфорт')) {
+    return _PassengerTariffVisual(
+      tariff: tariff,
+      title: 'Комфорт',
+      description: 'Больше удобства',
+      asset: _tariffComfortAsset,
+    );
+  }
+  if (normalized.contains('business') || normalized.contains('бизнес')) {
+    return _PassengerTariffVisual(
+      tariff: tariff,
+      title: 'Бизнес',
+      description: 'Премиум класс',
+      asset: _tariffBusinessAsset,
+    );
+  }
+  return null;
+}
+
+String _formatTenge(num value) {
+  final amount = value.round().toString();
+  final spaced = amount.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ' ',
+  );
+  return '$spaced ₸';
 }
 
 class _TariffSection extends StatelessWidget {
@@ -2281,39 +3041,61 @@ class _TariffSection extends StatelessWidget {
     required this.tariffs,
     required this.selectedId,
     required this.estimate,
+    required this.estimates,
     required this.loading,
     required this.onSelect,
+    this.dark = false,
+    this.showHeader = true,
   });
 
   final List<TariffOption> tariffs;
   final String? selectedId;
   final RoutePreview? estimate;
+  final Map<String, RoutePreview> estimates;
   final bool loading;
   final ValueChanged<String> onSelect;
+  final bool dark;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const _TariffSkeleton();
+    if (loading) return _TariffSkeleton(dark: dark);
+    final visibleTariffs = _passengerTariffVisuals(tariffs);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionLabel(title: 'Тариф', text: 'Выберите класс поездки'),
-        const SizedBox(height: 10),
+        if (showHeader) ...[
+          _SectionLabel(
+            title: 'Тариф',
+            text: 'Выберите класс поездки',
+            dark: dark,
+          ),
+          const SizedBox(height: 10),
+        ],
         if (tariffs.isEmpty)
-          const _CompactNotice(
+          _CompactNotice(
             icon: Icons.local_taxi_outlined,
             title: 'Тарифы пока не настроены',
             text: 'Администратор должен добавить тариф для активного региона.',
+            dark: dark,
+          )
+        else if (visibleTariffs.isEmpty)
+          _CompactNotice(
+            icon: Icons.local_taxi_outlined,
+            title: 'Тарифы недоступны',
+            text: 'Для этого региона нужны тарифы Эконом, Комфорт или Бизнес.',
+            dark: dark,
           )
         else
           SizedBox(
-            height: 112,
+            height: 210,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: tariffs.length,
+              itemCount: visibleTariffs.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
-                final tariff = tariffs[index];
+                final item = visibleTariffs[index];
+                final tariff = item.tariff;
                 final selected = tariff.id == selectedId;
                 return InkWell(
                   borderRadius: BorderRadius.circular(20),
@@ -2325,81 +3107,109 @@ class _TariffSection extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       width: 154,
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
-                        color:
-                            selected ? SmartTaxiColors.cardWarm : Colors.white,
+                        color: dark
+                            ? (selected
+                                ? SmartTaxiColors.gold.withValues(alpha: 0.14)
+                                : Colors.white.withValues(alpha: 0.06))
+                            : (selected
+                                ? SmartTaxiColors.cardWarm
+                                : Colors.white),
                         border: Border.all(
                           color: selected
                               ? SmartTaxiColors.gold
-                              : SmartTaxiColors.border,
+                              : (dark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : SmartTaxiColors.border),
                           width: selected ? 2 : 1,
                         ),
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: selected
-                            ? const [
-                                BoxShadow(
-                                  color: Color(0x16785a14),
-                                  blurRadius: 22,
-                                  offset: Offset(0, 10),
-                                ),
-                              ]
-                            : null,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x12141414),
+                            blurRadius: 22,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 28,
-                                height: 28,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: selected
-                                      ? SmartTaxiColors.gold
-                                      : SmartTaxiColors.goldPale,
-                                  shape: BoxShape.circle,
+                          SizedBox(
+                            height: 76,
+                            width: double.infinity,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Image.asset(
+                                  item.asset,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.local_taxi_rounded,
+                                    color: SmartTaxiColors.goldDeep,
+                                    size: 38,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.local_taxi_rounded,
-                                  size: 16,
-                                  color: SmartTaxiColors.text,
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: AnimatedOpacity(
+                                    opacity: selected ? 1 : 0,
+                                    duration: const Duration(milliseconds: 160),
+                                    child: const Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 19,
+                                      color: SmartTaxiColors.goldDeep,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const Spacer(),
-                              if (selected)
-                                const Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 18,
-                                  color: SmartTaxiColors.goldDeep,
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            tariff.name,
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
-                          if (tariff.description != null)
-                            Text(
-                              tariff.description!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: SmartTaxiColors.textSecondary,
-                                fontSize: 12,
-                              ),
+                            item.title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: dark ? Colors.white : SmartTaxiColors.text,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
                             ),
+                          ),
                           const Spacer(),
-                          if (selected && estimate?.estimatedPrice != null)
+                          if (estimates[tariff.id]?.estimatedPrice != null)
                             Text(
-                              '${estimate!.estimatedPrice!.round()} ₸',
-                              style: const TextStyle(
-                                fontSize: 17,
+                              _formatTenge(
+                                estimates[tariff.id]!.estimatedPrice!,
+                              ),
+                              style: TextStyle(
+                                color: dark
+                                    ? SmartTaxiColors.gold
+                                    : SmartTaxiColors.goldDeep,
+                                fontSize: 21,
                                 fontWeight: FontWeight.w900,
                               ),
+                            )
+                          else
+                            Text(
+                              'После расчёта',
+                              style: TextStyle(
+                                color: dark
+                                    ? Colors.white54
+                                    : SmartTaxiColors.textMuted,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
+                          if (estimates[tariff.id] != null) ...[
+                            const SizedBox(height: 7),
+                            _TariffDuration(
+                              preview: estimates[tariff.id]!,
+                              dark: dark,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -2414,14 +3224,16 @@ class _TariffSection extends StatelessWidget {
 }
 
 class _TariffSkeleton extends StatelessWidget {
-  const _TariffSkeleton();
+  const _TariffSkeleton({this.dark = false});
+
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionLabel(title: 'Тариф', text: 'Загружаем тарифы'),
+        _SectionLabel(title: 'Тариф', text: 'Загружаем тарифы', dark: dark),
         const SizedBox(height: 10),
         Row(
           children: List.generate(
@@ -2432,7 +3244,12 @@ class _TariffSkeleton extends StatelessWidget {
                 margin: EdgeInsets.only(right: index < 2 ? 10 : 0),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: SmartTaxiColors.goldSurface,
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : SmartTaxiColors.goldSurface,
+                  border: dark
+                      ? Border.all(color: Colors.white.withValues(alpha: 0.08))
+                      : null,
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: const Column(
@@ -2454,135 +3271,421 @@ class _TariffSkeleton extends StatelessWidget {
   }
 }
 
-class _PriceSection extends StatelessWidget {
-  const _PriceSection({
-    required this.preview,
-    required this.loading,
-    required this.routeError,
-  });
+class _TariffDuration extends StatelessWidget {
+  const _TariffDuration({required this.preview, required this.dark});
 
-  final RoutePreview? preview;
-  final bool loading;
-  final String? routeError;
+  final RoutePreview preview;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.border),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: loading
-          ? const _PriceSkeleton()
-          : routeError != null
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionLabel(
-                      title: 'Стоимость',
-                      text: 'Маршрут не рассчитан',
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      routeError!,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.danger,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                )
-              : preview?.estimatedPrice == null
-                  ? const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SectionLabel(
-                            title: 'Стоимость', text: 'Расчёт поездки'),
-                        SizedBox(height: 10),
-                        Text(
-                          'Укажите маршрут, чтобы рассчитать стоимость.',
-                          style: TextStyle(
-                            color: SmartTaxiColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _SectionLabel(
-                          title: 'Стоимость',
-                          text: 'Цена рассчитана сервером',
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${preview!.estimatedPrice!.round()}',
-                              style: const TextStyle(
-                                fontSize: 36,
-                                height: 0.95,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 2),
-                              child: Text(
-                                '₸',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        _RouteEstimateMeta(preview: preview!),
-                      ],
-                    ),
-    );
-  }
-}
-
-class _PriceSkeleton extends StatelessWidget {
-  const _PriceSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final minutes = math.max(1, (preview.durationSeconds / 60).ceil());
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _SkeletonLine(width: 112, height: 14),
-        SizedBox(height: 12),
-        _SkeletonLine(width: 170, height: 34),
-        SizedBox(height: 10),
-        _SkeletonLine(width: 210, height: 12),
+        Icon(
+          Icons.schedule_rounded,
+          color: dark ? Colors.white60 : SmartTaxiColors.textSecondary,
+          size: 15,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '$minutes мин',
+          style: TextStyle(
+            color: dark ? Colors.white60 : SmartTaxiColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _RouteEstimateMeta extends StatelessWidget {
-  const _RouteEstimateMeta({required this.preview});
+class _PaymentMethodRow extends StatelessWidget {
+  const _PaymentMethodRow({
+    required this.enabled,
+    required this.method,
+    required this.label,
+    required this.onTap,
+  });
 
-  final RoutePreview preview;
+  final bool enabled;
+  final String method;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final distance = (preview.distanceMeters / 1000).toStringAsFixed(1);
-    final minutes = (preview.durationSeconds / 60).round();
-    return Text(
-      'Маршрут: $distance км · $minutes мин',
-      style: const TextStyle(
-        color: SmartTaxiColors.textSecondary,
-        fontWeight: FontWeight.w700,
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      opacity: enabled ? 1 : 0.56,
+      child: Container(
+        height: 58,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: SmartTaxiColors.border),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0f141414),
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: enabled ? onTap : null,
+          child: Row(
+            children: [
+              _PaymentIcon(method: method),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: SmartTaxiColors.text,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color:
+                    enabled ? SmartTaxiColors.text : SmartTaxiColors.textMuted,
+                size: 25,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentIcon extends StatelessWidget {
+  const _PaymentIcon({required this.method});
+
+  final String method;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = switch (method) {
+      'KASPI' => Icons.credit_card_rounded,
+      'CARD' => Icons.credit_card_rounded,
+      _ => Icons.account_balance_wallet_rounded,
+    };
+    return Container(
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        border: Border.all(color: SmartTaxiColors.borderStrong),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(icon, color: SmartTaxiColors.goldDeep, size: 21),
+    );
+  }
+}
+
+class _RegionSelectSheet extends StatelessWidget {
+  const _RegionSelectSheet({
+    required this.regions,
+    required this.selectedId,
+  });
+
+  final List<RegionOption> regions;
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        decoration: const BoxDecoration(
+          color: SmartTaxiColors.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(child: _SheetHandle(dark: false)),
+            const SizedBox(height: 14),
+            const Text(
+              'Выберите регион',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: SmartTaxiColors.text,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Адреса, тарифы и маршруты будут считаться для выбранной зоны.',
+              style: TextStyle(
+                color: SmartTaxiColors.textSecondary,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...regions.map((region) {
+              final selected = region.id == selectedId;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.pop(context, region),
+                    child: Ink(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? SmartTaxiColors.goldPale
+                            : SmartTaxiColors.cardWarm,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected
+                              ? SmartTaxiColors.gold
+                              : SmartTaxiColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? SmartTaxiColors.gold
+                                  : Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: SmartTaxiColors.border),
+                            ),
+                            child: Icon(
+                              Icons.location_city_rounded,
+                              color: selected
+                                  ? SmartTaxiColors.text
+                                  : SmartTaxiColors.goldDeep,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              region.name,
+                              style: const TextStyle(
+                                color: SmartTaxiColors.text,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          if (selected)
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: SmartTaxiColors.success,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentMethodSheet extends StatelessWidget {
+  const _PaymentMethodSheet({required this.selected});
+
+  final String selected;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      ('CASH', 'Наличные', 'Оплата водителю после поездки'),
+      ('KASPI', 'Kaspi', 'Перевод по договорённости с водителем'),
+      ('CARD', 'Карта', 'Безналичная оплата, если доступна'),
+    ];
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33141414),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SheetHandle(),
+            const Text(
+              'Способ оплаты',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 12),
+            ...items.map((item) {
+              final active = item.$1 == selected;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => Navigator.pop(context, item.$1),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 62),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          active ? SmartTaxiColors.goldSurface : Colors.white,
+                      border: Border.all(
+                        color: active
+                            ? SmartTaxiColors.borderStrong
+                            : SmartTaxiColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      children: [
+                        _PaymentIcon(method: item.$1),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.$2,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                item.$3,
+                                style: const TextStyle(
+                                  color: SmartTaxiColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (active)
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: SmartTaxiColors.goldDeep,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationsSheet extends StatelessWidget {
+  const _NotificationsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33141414),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SheetHandle(),
+            Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: SmartTaxiColors.goldSurface,
+                    border: Border.all(color: SmartTaxiColors.borderStrong),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: SmartTaxiColors.goldDeep,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Уведомления',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        'Здесь появятся статусы поездок и важные сообщения.',
+                        style: TextStyle(
+                          color: SmartTaxiColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const _CompactNotice(
+              icon: Icons.check_circle_outline_rounded,
+              title: 'Новых уведомлений нет',
+              text:
+                  'Когда водитель примет заказ или поездка изменит статус, сообщение появится здесь.',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2610,34 +3713,42 @@ class _SmartDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final drawerWidth = (width * 0.86).clamp(300.0, 390.0).toDouble();
+    final drawerWidth = (width * 0.84).clamp(304.0, 382.0).toDouble();
     return Drawer(
       width: drawerWidth,
+      backgroundColor: SmartTaxiColors.appBackground,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(32)),
       ),
       child: SafeArea(
         child: Column(
           children: [
             Container(
+              margin: const EdgeInsets.fromLTRB(14, 14, 14, 10),
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-              decoration: const BoxDecoration(
-                color: SmartTaxiColors.goldSurface,
-                border: Border(
-                  bottom: BorderSide(color: SmartTaxiColors.border),
-                ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: SmartTaxiColors.border),
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x10785a14),
+                    blurRadius: 24,
+                    offset: Offset(0, 10),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 56,
+                    height: 56,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.82),
+                      color: SmartTaxiColors.goldSurface,
                       border: Border.all(color: SmartTaxiColors.borderStrong),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(22),
                     ),
                     child: const BrandLogo(),
                   ),
@@ -2646,11 +3757,23 @@ class _SmartDrawer extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'SmartTaxi',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
+                        RichText(
+                          text: const TextSpan(
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Smart',
+                                style: TextStyle(color: SmartTaxiColors.text),
+                              ),
+                              TextSpan(
+                                text: 'Taxi',
+                                style:
+                                    TextStyle(color: SmartTaxiColors.goldDeep),
+                              ),
+                            ],
                           ),
                         ),
                         Text(
@@ -2673,12 +3796,22 @@ class _SmartDrawer extends StatelessWidget {
                             ),
                           ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Региональное такси',
-                          style: TextStyle(
-                            color: SmartTaxiColors.goldDeep,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SmartTaxiColors.goldSurface,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Text(
+                            'Региональное такси',
+                            style: TextStyle(
+                              color: SmartTaxiColors.goldDeep,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                       ],
@@ -2687,7 +3820,7 @@ class _SmartDrawer extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 2),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -2782,10 +3915,10 @@ class _DrawerItem extends StatelessWidget {
             ? SmartTaxiColors.text
             : SmartTaxiColors.textSecondary;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
       child: Material(
-        color: active ? SmartTaxiColors.goldSurface : Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        color: active ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
@@ -2793,32 +3926,40 @@ class _DrawerItem extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 54),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
+              color: active ? Colors.white : Colors.transparent,
               border: Border.all(
-                color:
-                    active ? SmartTaxiColors.borderStrong : Colors.transparent,
+                color: active ? SmartTaxiColors.border : Colors.transparent,
               ),
               borderRadius: BorderRadius.circular(18),
+              boxShadow: active
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x0f141414),
+                        blurRadius: 18,
+                        offset: Offset(0, 8),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 40,
+                  height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: danger
                         ? const Color(0xfffff1f1)
                         : active
-                            ? SmartTaxiColors.goldPale
-                            : Colors.white,
-                    border: Border.all(
-                      color: active
-                          ? SmartTaxiColors.borderStrong
-                          : SmartTaxiColors.border,
-                    ),
-                    borderRadius: BorderRadius.circular(13),
+                            ? SmartTaxiColors.gold
+                            : SmartTaxiColors.goldSurface,
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Icon(icon, size: 18, color: tone),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: active && !danger ? Colors.white : tone,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -2829,6 +3970,11 @@ class _DrawerItem extends StatelessWidget {
                     style: TextStyle(color: tone, fontWeight: FontWeight.w900),
                   ),
                 ),
+                if (active)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: SmartTaxiColors.goldDeep,
+                  ),
               ],
             ),
           ),
@@ -2892,46 +4038,125 @@ class _AppHeader extends StatelessWidget {
 }
 
 class _MapOverlayHeader extends StatelessWidget {
-  const _MapOverlayHeader({required this.onMenu, required this.onProfile});
+  const _MapOverlayHeader({
+    required this.onMenu,
+    required this.onNotifications,
+    required this.onRegionTap,
+    required this.regionLabel,
+  });
 
   final VoidCallback onMenu;
-  final VoidCallback onProfile;
+  final VoidCallback onNotifications;
+  final VoidCallback onRegionTap;
+  final String regionLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _MapChromeButton(
-          icon: Icons.menu_rounded,
-          label: 'Меню',
-          onTap: onMenu,
-        ),
-        const Spacer(),
-        Container(
-          width: 50,
-          height: 50,
-          alignment: Alignment.center,
+    return SizedBox(
+      height: 60,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _MapChromeButton(
+              icon: Icons.menu_rounded,
+              label: 'Меню',
+              onTap: onMenu,
+            ),
+          ),
+          _MapBrandPill(
+            regionLabel: regionLabel,
+            onTap: onRegionTap,
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _NotificationButton(onTap: onNotifications),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapBrandPill extends StatelessWidget {
+  const _MapBrandPill({required this.regionLabel, required this.onTap});
+
+  final String regionLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Ink(
+          height: 54,
+          padding: const EdgeInsets.fromLTRB(13, 7, 13, 7),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
+            color: Colors.white.withValues(alpha: 0.94),
             border: Border.all(color: SmartTaxiColors.border),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x16785a14),
-                blurRadius: 24,
-                offset: Offset(0, 10),
+                color: Color(0x1a141414),
+                blurRadius: 18,
+                offset: Offset(0, 8),
               ),
             ],
           ),
-          child: const BrandLogo(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BrandLogo(),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: const TextSpan(
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Smart',
+                          style: TextStyle(color: SmartTaxiColors.text),
+                        ),
+                        TextSpan(
+                          text: 'Taxi',
+                          style: TextStyle(color: SmartTaxiColors.goldDeep),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    regionLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 18,
+                color: SmartTaxiColors.goldDeep,
+              ),
+            ],
+          ),
         ),
-        const Spacer(),
-        _MapChromeButton(
-          icon: Icons.person_outline_rounded,
-          label: 'Профиль',
-          onTap: onProfile,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -2952,27 +4177,91 @@ class _MapChromeButton extends StatelessWidget {
     return Tooltip(
       message: label,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
-            width: 50,
-            height: 50,
+            width: 52,
+            height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.94),
               border: Border.all(color: SmartTaxiColors.border),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x14785a14),
-                  blurRadius: 22,
-                  offset: Offset(0, 10),
+                  color: Color(0x17141414),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
                 ),
               ],
             ),
-            child: Icon(icon, color: SmartTaxiColors.text),
+            child: Icon(icon, color: SmartTaxiColors.text, size: 28),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationButton extends StatelessWidget {
+  const _NotificationButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Уведомления',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    border: Border.all(color: SmartTaxiColors.border),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x17141414),
+                        blurRadius: 18,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.notifications_none_rounded,
+                  color: SmartTaxiColors.text,
+                  size: 28,
+                ),
+                Positioned(
+                  right: 9,
+                  top: 9,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: SmartTaxiColors.gold,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -3022,10 +4311,15 @@ class _PremiumCard extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.title, required this.text});
+  const _SectionLabel({
+    required this.title,
+    required this.text,
+    this.dark = false,
+  });
 
   final String title;
   final String text;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
@@ -3037,7 +4331,8 @@ class _SectionLabel extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
+                  color: dark ? Colors.white : SmartTaxiColors.text,
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
@@ -3045,8 +4340,8 @@ class _SectionLabel extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 text,
-                style: const TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                style: TextStyle(
+                  color: dark ? Colors.white60 : SmartTaxiColors.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -3115,6 +4410,74 @@ class _ButtonSpinner extends StatelessWidget {
   }
 }
 
+class _GoldCtaButton extends StatelessWidget {
+  const _GoldCtaButton({
+    required this.enabled,
+    required this.loading,
+    required this.text,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final bool loading;
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : 0.52,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xffffd96a),
+              SmartTaxiColors.gold,
+              Color(0xffcd9d2b)
+            ],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: enabled
+              ? const [
+                  BoxShadow(
+                    color: Color(0x55d4af37),
+                    blurRadius: 26,
+                    offset: Offset(0, 12),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: enabled ? onTap : null,
+            child: SizedBox(
+              height: 58,
+              width: double.infinity,
+              child: Center(
+                child: loading
+                    ? const _ButtonSpinner(text: 'Создаём заказ...')
+                    : Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TitleBlock extends StatelessWidget {
   const _TitleBlock({required this.title, required this.text});
 
@@ -3153,11 +4516,13 @@ class _CompactNotice extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.text,
+    this.dark = false,
   });
 
   final IconData icon;
   final String title;
   final String text;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
@@ -3165,8 +4530,14 @@ class _CompactNotice extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: dark
+            ? Colors.white.withValues(alpha: 0.06)
+            : SmartTaxiColors.goldSurface,
+        border: Border.all(
+          color: dark
+              ? Colors.white.withValues(alpha: 0.08)
+              : SmartTaxiColors.border,
+        ),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -3177,7 +4548,9 @@ class _CompactNotice extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.72),
+              color: dark
+                  ? SmartTaxiColors.gold.withValues(alpha: 0.16)
+                  : Colors.white.withValues(alpha: 0.72),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: SmartTaxiColors.goldDeep, size: 19),
@@ -3189,13 +4562,17 @@ class _CompactNotice extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: dark ? Colors.white : SmartTaxiColors.text,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   text,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color:
+                        dark ? Colors.white70 : SmartTaxiColors.textSecondary,
                     height: 1.35,
                     fontWeight: FontWeight.w600,
                   ),
@@ -3210,10 +4587,15 @@ class _CompactNotice extends StatelessWidget {
 }
 
 class _InlineMessage extends StatelessWidget {
-  const _InlineMessage({required this.text, this.danger = false});
+  const _InlineMessage({
+    required this.text,
+    this.danger = false,
+    this.dark = false,
+  });
 
   final String text;
   final bool danger;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
@@ -3221,17 +4603,26 @@ class _InlineMessage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: danger ? const Color(0xfffff1f1) : SmartTaxiColors.goldSurface,
+        color: dark
+            ? (danger
+                ? SmartTaxiColors.danger.withValues(alpha: 0.16)
+                : Colors.white.withValues(alpha: 0.06))
+            : (danger ? const Color(0xfffff1f1) : SmartTaxiColors.goldSurface),
         border: Border.all(
-          color: danger ? const Color(0xfffecaca) : SmartTaxiColors.border,
+          color: dark
+              ? (danger
+                  ? SmartTaxiColors.danger.withValues(alpha: 0.30)
+                  : Colors.white.withValues(alpha: 0.08))
+              : (danger ? const Color(0xfffecaca) : SmartTaxiColors.border),
         ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color:
-              danger ? SmartTaxiColors.danger : SmartTaxiColors.textSecondary,
+          color: danger
+              ? (dark ? const Color(0xffffb4b4) : SmartTaxiColors.danger)
+              : (dark ? Colors.white70 : SmartTaxiColors.textSecondary),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -3473,7 +4864,9 @@ class _PointResult {
 }
 
 class _SheetHandle extends StatelessWidget {
-  const _SheetHandle();
+  const _SheetHandle({this.dark = false});
+
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
@@ -3483,7 +4876,9 @@ class _SheetHandle extends StatelessWidget {
         height: 5,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: SmartTaxiColors.borderStrong,
+          color: dark
+              ? Colors.white.withValues(alpha: 0.22)
+              : SmartTaxiColors.borderStrong,
           borderRadius: BorderRadius.circular(999),
         ),
       ),
@@ -3558,15 +4953,6 @@ enum PassengerTab {
 enum PointTarget { pickup, dropoff }
 
 enum PointSource { none, gps, map, manual }
-
-String _pointSourceLabel(PointSource source) {
-  return switch (source) {
-    PointSource.gps => 'GPS',
-    PointSource.map => 'карта',
-    PointSource.manual => 'вручную',
-    PointSource.none => 'не выбрано',
-  };
-}
 
 String _driverPickupMeta(RoutePreview route) {
   final distance = (route.distanceMeters / 1000).toStringAsFixed(1);

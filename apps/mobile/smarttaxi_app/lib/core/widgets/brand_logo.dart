@@ -1,24 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class BrandLogo extends StatelessWidget {
-  const BrandLogo({super.key, this.large = false});
+  const BrandLogo({
+    super.key,
+    this.large = false,
+    this.horizontal = false,
+  });
+
+  const BrandLogo.horizontal({
+    super.key,
+    this.large = false,
+  }) : horizontal = true;
+
+  static const iconAssetPath = 'assets/brand/smarttaxi_app_icon_1024.png';
+  static const horizontalAssetPath =
+      'assets/brand/smarttaxi_logo_horizontal_transparent.png';
 
   final bool large;
+  final bool horizontal;
 
   @override
   Widget build(BuildContext context) {
-    final size = large ? 88.0 : 36.0;
-    final fallback = _LogoFallbackMark(size: size);
-    return SizedBox(
-      width: size,
-      height: size,
-      child: SvgPicture.asset(
-        'assets/brand/smarttaxi_icon.svg',
-        fit: BoxFit.contain,
-        semanticsLabel: 'SmartTaxi',
-        placeholderBuilder: (_) => fallback,
-        errorBuilder: (_, __, ___) => fallback,
+    if (horizontal) {
+      final width = large ? 220.0 : 148.0;
+      final height = large ? 74.0 : 42.0;
+      return Semantics(
+        label: 'SmartTaxi',
+        child: SizedBox(
+          width: width,
+          height: height,
+          child: Image.asset(
+            horizontalAssetPath,
+            fit: BoxFit.contain,
+            cacheWidth: (width * 4).round(),
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) => _HorizontalLogoFallback(
+              width: width,
+              height: height,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final size = large ? 78.0 : 40.0;
+    return Semantics(
+      label: 'SmartTaxi',
+      child: SizedBox.square(
+        dimension: size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(large ? 24 : 14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.20),
+                blurRadius: large ? 22 : 12,
+                offset: Offset(0, large ? 9 : 5),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(large ? 24 : 14),
+            child: Image.asset(
+              iconAssetPath,
+              fit: BoxFit.contain,
+              cacheWidth: (size * 5).round(),
+              cacheHeight: (size * 5).round(),
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, __, ___) => _LogoFallbackMark(size: size),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -31,97 +83,73 @@ class _LogoFallbackMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: 'SmartTaxi',
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: CustomPaint(painter: _LogoFallbackPainter()),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size * 0.28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFF4D37B),
+            Color(0xFFD4AF37),
+            Color(0xFF9B6814),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.28),
+            blurRadius: size * 0.36,
+            offset: Offset(0, size * 0.12),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          'ST',
+          style: TextStyle(
+            color: const Color(0xFF080D12),
+            fontSize: size * 0.34,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
+        ),
       ),
     );
   }
 }
 
-class _LogoFallbackPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final w = size.width;
-    final h = size.height;
+class _HorizontalLogoFallback extends StatelessWidget {
+  const _HorizontalLogoFallback({
+    required this.width,
+    required this.height,
+  });
 
-    final gold = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFF8E7B4),
-          Color(0xFFC99A2E),
-          Color(0xFFA97814),
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _LogoFallbackMark(size: height),
+          const SizedBox(width: 10),
+          const Text(
+            'SmartTaxi',
+            style: TextStyle(
+              color: Color(0xFFF5F5F5),
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
         ],
-      ).createShader(rect);
-    final warm = Paint()..color = const Color(0xFFFFFCF6);
-    final ink = Paint()
-      ..color = const Color(0xFF141414)
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = w * 0.095;
-
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.5, h * 0.48),
-        width: w * 0.92,
-        height: h * 0.92,
       ),
-      gold,
     );
-
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.5, h * 0.48),
-        width: w * 0.66,
-        height: h * 0.66,
-      ),
-      warm,
-    );
-
-    final roadTop = Path()
-      ..moveTo(w * 0.25, h * 0.52)
-      ..cubicTo(w * 0.38, h * 0.34, w * 0.57, h * 0.32, w * 0.76, h * 0.42);
-    canvas.drawPath(roadTop, ink);
-
-    final roadBottom = Path()
-      ..moveTo(w * 0.24, h * 0.64)
-      ..cubicTo(w * 0.40, h * 0.52, w * 0.56, h * 0.49, w * 0.72, h * 0.51);
-    canvas.drawPath(roadBottom, ink);
-
-    canvas.drawCircle(
-      Offset(w * 0.25, h * 0.64),
-      w * 0.055,
-      Paint()..color = const Color(0xFF141414),
-    );
-
-    final center = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFFF6E6B8), Color(0xFFA97814)],
-      ).createShader(rect);
-    canvas.drawCircle(Offset(w * 0.50, h * 0.48), w * 0.11, center);
-    canvas.drawCircle(Offset(w * 0.50, h * 0.48), w * 0.044, warm);
-
-    final arrow = Path()
-      ..moveTo(w * 0.68, h * 0.34)
-      ..lineTo(w * 0.88, h * 0.44)
-      ..lineTo(w * 0.69, h * 0.53);
-    canvas.drawPath(arrow, ink);
-
-    final point = Path()
-      ..moveTo(w * 0.42, h * 0.88)
-      ..quadraticBezierTo(w * 0.50, h * 0.98, w * 0.58, h * 0.88)
-      ..close();
-    canvas.drawPath(point, gold);
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

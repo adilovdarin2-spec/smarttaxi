@@ -3,7 +3,7 @@ import { z } from "zod";
 import { query } from "../../db/pool.js";
 import { requireAuth } from "../../common/auth.js";
 import { rateLimit } from "../../common/rateLimit.js";
-import { buildDriverToPickupRoute, buildRoutePreview } from "./routing.service.js";
+import { buildDriverToPickupRoute, buildRoutePreview, reverseAddress, searchAddresses } from "./routing.service.js";
 
 const router = Router();
 
@@ -17,6 +17,33 @@ const RoutePreviewBody = z.object({
 
 const DriverToPickupBody = z.object({
   orderId: z.string().uuid()
+});
+
+const AddressSearchQuery = z.object({
+  q: z.string().trim().min(2).max(160),
+  region: z.string().trim().min(2).max(80).optional(),
+  limit: z.coerce.number().int().min(1).max(12).optional()
+});
+
+const ReverseAddressQuery = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180)
+});
+
+router.get("/addresses/search", rateLimit({ prefix: "addresses-search", windowMs: 60_000, max: 80 }), async (req, res, next) => {
+  try {
+    const query = AddressSearchQuery.parse(req.query);
+    const addresses = await searchAddresses(query);
+    res.json({ addresses });
+  } catch (e) { next(e); }
+});
+
+router.get("/addresses/reverse", rateLimit({ prefix: "addresses-reverse", windowMs: 60_000, max: 80 }), async (req, res, next) => {
+  try {
+    const query = ReverseAddressQuery.parse(req.query);
+    const address = await reverseAddress(query);
+    res.json({ address });
+  } catch (e) { next(e); }
 });
 
 router.post("/preview", rateLimit({ prefix: "routes-preview", windowMs: 60_000, max: 80 }), async (req, res, next) => {

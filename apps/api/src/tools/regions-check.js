@@ -20,22 +20,28 @@ const admin = readFileSync(join(root, "modules", "admin", "admin.routes.js"), "u
 const regionsRoutes = readFileSync(join(root, "modules", "regions", "regions.routes.js"), "utf8");
 
 const atakentBoundary = [
-  [69.45, 42.2],
-  [69.76, 42.2],
-  [69.76, 42.43],
-  [69.45, 42.43],
-  [69.45, 42.2]
+  [68.43, 40.78],
+  [68.57, 40.78],
+  [68.57, 40.90],
+  [68.43, 40.90],
+  [68.43, 40.78]
 ];
+
+const launchRegionCodes = ["ATAKENT", "MYRZAKENT", "ZHETYSAY", "SHYMKENT"];
 
 assert.match(schema, /CREATE TABLE IF NOT EXISTS regions/i, "schema must create regions table");
 assert.match(schema, /code TEXT UNIQUE NOT NULL/i, "regions must have unique code");
 assert.match(schema, /boundary JSONB NOT NULL/i, "regions must store JSON boundary");
 assert.match(schema, /is_active BOOLEAN NOT NULL DEFAULT true/i, "regions must have active flag");
 assert.match(schema, /INSERT INTO regions\(code, name, boundary/i, "schema must seed a launch region");
-assert.match(schema, /'ATAKENT'/, "schema must seed ATAKENT");
+for (const code of launchRegionCodes) {
+  assert.match(schema, new RegExp(`'${code}'`), `schema must seed ${code}`);
+}
 
 assert.match(migrations, /CREATE TABLE IF NOT EXISTS regions/i, "migrations must create regions table");
-assert.match(migrations, /'ATAKENT'/, "migrations must seed ATAKENT");
+for (const code of launchRegionCodes) {
+  assert.match(migrations, new RegExp(`'${code}'`), `migrations must seed ${code}`);
+}
 assert.match(server, /regionsRoutes/, "server must import region routes");
 assert.match(server, /app\.use\("\/api\/regions", regionsRoutes\)/, "server must mount /api/regions");
 assert.match(regionsRoutes, /router\.get\("\/active"/, "public active regions endpoint must exist");
@@ -45,7 +51,7 @@ assert.match(admin, /router\.post\("\/regions"/, "admin region create endpoint m
 assert.match(admin, /router\.patch\("\/regions\/:id"/, "admin region update endpoint must exist");
 assert.match(admin, /router\.delete\("\/regions\/:id"/, "admin region delete/deactivate endpoint must exist");
 
-assert.equal(pointInPolygon({ lat: 42.3167, lng: 69.5958 }, atakentBoundary), true, "Atakent center must be inside polygon");
+assert.equal(pointInPolygon({ lat: 40.844435, lng: 68.509021 }, atakentBoundary), true, "Atakent center must be inside polygon");
 assert.equal(pointInPolygon({ lat: 43.25, lng: 76.95 }, atakentBoundary), false, "Almaty-like point must be outside Atakent polygon");
 
 const activeRegion = {
@@ -74,7 +80,7 @@ const mockExecutor = async (sql) => {
   return { rows: [activeRegion] };
 };
 
-const found = await findActiveRegionForPoint({ lat: 42.3167, lng: 69.5958 }, mockExecutor);
+const found = await findActiveRegionForPoint({ lat: 40.844435, lng: 68.509021 }, mockExecutor);
 assert.equal(found?.id, activeRegion.id, "inside point must resolve to active region");
 
 const missing = await findActiveRegionForPoint({ lat: 15, lng: 15 }, mockExecutor);
@@ -152,8 +158,8 @@ const created = await createRegion({
   code: "TEST",
   name: "Test Region",
   boundary: atakentBoundary,
-  centerLat: 42.3167,
-  centerLng: 69.5958,
+  centerLat: 40.844435,
+  centerLng: 68.509021,
   currency: "KZT",
   isActive: true
 }, crudExecutor);

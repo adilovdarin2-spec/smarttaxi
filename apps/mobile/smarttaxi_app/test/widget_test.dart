@@ -43,24 +43,39 @@ void main() {
   test('official icon-only logo asset is wired', () {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
-    final icon = _read('assets/brand/smarttaxi_icon.svg');
 
-    expect(logo, contains('assets/brand/smarttaxi_icon.svg'));
-    expect(logo, contains('placeholderBuilder'));
+    expect(logo, contains('assets/brand/smarttaxi_app_icon_1024.png'));
+    expect(
+      logo,
+      contains('assets/brand/smarttaxi_logo_horizontal_transparent.png'),
+    );
     expect(logo, contains('errorBuilder'));
     expect(logo, contains('_LogoFallbackMark'));
-    expect(logo, contains('_LogoFallbackPainter'));
-    expect(pubspec, contains('assets/brand/smarttaxi_icon.svg'));
-    expect(pubspec, contains('assets/brand/smarttaxi_icon_2048.png'));
-    expect(icon, contains('viewBox="0 0 512 512"'));
-    expect(icon, contains('<path'));
-    expect(icon, contains('linearGradient'));
-    expect(icon, contains('stroke-linecap="round"'));
-    expect(icon.toLowerCase(), isNot(contains('<text')));
-    expect(icon, isNot(contains('>S<')));
-    expect(icon, isNot(contains('>ST<')));
-    expect(icon.toLowerCase(), isNot(contains('car')));
-    expect(icon.toLowerCase(), isNot(contains('shield')));
+    expect(logo, contains('_HorizontalLogoFallback'));
+    expect(pubspec, contains('assets/brand/smarttaxi_app_icon_1024.png'));
+    expect(
+      pubspec,
+      contains('assets/brand/smarttaxi_logo_horizontal_transparent.png'),
+    );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+    );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_comfort_white_sedan_flutter.png'),
+    );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
+    );
+    expect(pubspec, contains('assets/map/driver_car_topview_white.png'));
+    expect(
+      pubspec,
+      contains('assets/map/user_location_marker_blue_gold.png'),
+    );
+    expect(pubspec, contains('assets/map/destination_pin_gold_white.png'));
+    expect(pubspec, contains('assets/map/navigation_button_gold_white.png'));
   });
 
   test('auth screen is production-only and starts before main app', () {
@@ -139,30 +154,59 @@ void main() {
       expect(passenger, contains('_OrderSheet'));
       expect(passenger, contains('_MapOverlayHeader'));
       expect(passenger, contains('_MapRoundButton'));
-      expect(passenger, contains('_MapInstructionCard'));
+      expect(passenger, contains('_FloatingAddressCard'));
       expect(passenger, contains('_MapPermissionCard'));
       expect(passenger, contains('_MapRouteState'));
       expect(passenger, contains('Выбрать точку на карте'));
       expect(
         passenger,
-        contains('Разрешите геолокацию или выберите точку посадки вручную.'),
+        contains(
+            'Можно включить GPS для точной подачи или выбрать точку на карте.'),
       );
       expect(passenger, contains('Куда едем?'));
-      expect(passenger, contains('Выберите точку посадки'));
-      expect(passenger, contains('Выберите точку посадки на карте'));
-      expect(passenger, contains('Выберите точку назначения на карте'));
-      expect(passenger, contains('Введите точку назначения'));
-      expect(passenger, contains('Адрес или ориентир'));
-      expect(passenger, contains('Можно проще'));
-      expect(passenger, contains('Координаты выбраны'));
+      expect(passenger, contains('Выберите точку подачи'));
+      expect(passenger, contains('Моё местоположение'));
+      expect(passenger, contains('Введите адрес назначения'));
+      expect(passenger, contains('Введите адрес назначения'));
+      expect(passenger, contains('_AddressSearchSheet'));
+      expect(passenger, contains('Введите улицу или место подачи'));
+      expect(passenger, contains('Введите улицу или место назначения'));
+      expect(passenger, contains('Ничего не найдено'));
+      expect(passenger, contains('Выбрать точку на карте'));
+      expect(passenger, contains('Выберите адрес назначения'));
+      expect(passenger, contains('Тарифы и стоимость появятся'));
+      expect(passenger, contains('_FloatingAddressCard'));
+      expect(passenger, contains('_PaymentMethodRow'));
+      expect(passenger, contains('Наличные'));
+      expect(passenger, isNot(contains('Широта')));
+      expect(passenger, isNot(contains('Долгота')));
+      expect(passenger, isNot(contains('Координаты выбраны')));
       expect(passenger, contains('Тариф'));
       expect(passenger, contains('_TariffSection'));
+      expect(passenger, contains('Эконом'));
+      expect(passenger, contains('Комфорт'));
+      expect(passenger, contains('Бизнес'));
+      expect(
+        passenger,
+        contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+      );
+      expect(
+        passenger,
+        contains('assets/cars/tariff_comfort_white_sedan_flutter.png'),
+      );
+      expect(
+        passenger,
+        contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
+      );
+      expect(passenger, isNot(contains('Delivery')));
       expect(passenger, contains('Тарифы пока не настроены'));
-      expect(passenger, contains('_PriceSection'));
-      expect(passenger, contains('Стоимость'));
+      expect(passenger, contains('_PaymentMethodRow'));
+      expect(passenger, contains('стоимость'));
       expect(passenger, contains('Маршрут временно недоступен.'));
       expect(passenger, contains('Считаем маршрут...'));
-      expect(passenger, contains('Цена рассчитана сервером'));
+      expect(passenger, contains('Map<String, RoutePreview> _tariffEstimates'));
+      expect(passenger, contains('estimates[tariff.id]!.estimatedPrice'));
+      expect(passenger, contains('_formatTenge'));
       expect(passenger, contains('Заказать'));
     },
   );
@@ -195,10 +239,11 @@ void main() {
     expect(passenger, contains('_MapUnavailableCard'));
     expect(passenger,
         contains('final showMapFallback = !mapReady || mapUnavailable'));
-    expect(passenger, contains('if (!showMapFallback)'));
+    expect(passenger, contains('showMapFallback'));
     expect(passenger, contains('mapUnavailable'));
     expect(passenger, contains('errorTileCallback'));
-    expect(passenger, contains('backgroundColor: SmartTaxiColors.goldSurface'));
+    expect(
+        passenger, contains('backgroundColor: SmartTaxiColors.appBackground'));
     expect(passenger, isNot(contains('IndexedStack(')));
   });
 
@@ -227,18 +272,28 @@ void main() {
     final api = _read('lib/core/api/api_client.dart');
     final models = _read('lib/features/shared/models.dart');
 
+    expect(api, contains("'/api/routes/addresses/search'"));
+    expect(api, contains("'/api/routes/addresses/reverse'"));
+    expect(api, contains('searchAddresses'));
+    expect(api, contains('reverseAddress'));
+    expect(models, contains('class AddressSuggestion'));
     expect(api, contains("'/api/routes/preview'"));
     expect(api, contains("'/api/routes/driver-to-pickup'"));
     expect(passenger, contains('PointSource.gps'));
     expect(passenger, contains('PointSource.map'));
     expect(passenger, contains('PointSource.manual'));
     expect(passenger, contains('PointSource.none'));
-    expect(passenger, contains('Точка на карте'));
-    expect(passenger, contains('Получаем геолокацию...'));
+    expect(passenger, contains('Точка выбрана'));
+    expect(passenger, contains('Геолокация для подачи'));
     expect(passenger, contains('initialCameraFit'));
     expect(passenger, contains('CameraFit.coordinates'));
     expect(passenger, contains('if (route.isNotEmpty)'));
     expect(passenger, contains('PolylineLayer'));
+    expect(
+        passenger, contains('assets/map/user_location_marker_blue_gold.png'));
+    expect(passenger, contains('assets/map/destination_pin_gold_white.png'));
+    expect(passenger, contains('assets/map/driver_car_topview_white.png'));
+    expect(passenger, contains('assets/map/navigation_button_gold_white.png'));
     expect(passenger, contains('_driverPickupRoute'));
     expect(passenger, contains('_driverRouteError'));
     expect(passenger, contains('Маршрут водителя временно недоступен.'));
@@ -252,6 +307,8 @@ void main() {
     );
     expect(models, contains('_routeDistanceMeters'));
     expect(models, contains('_routeDurationSeconds'));
+    expect(models, contains('final double? heading;'));
+    expect(models, contains("json['driverHeading']"));
   });
 
   test('passenger order API sends required rider phone contract', () {
@@ -487,7 +544,10 @@ void main() {
     expect(models, contains("'SPEED_CAMERA'"));
     expect(models, contains("'ROAD_CLOSED'"));
     expect(driver, contains('Дорожные события'));
-    expect(driver, contains('Сообщения нужны для безопасности движения и соблюдения правил.'));
+    expect(
+        driver,
+        contains(
+            'Сообщения нужны для безопасности движения и соблюдения правил.'));
     expect(driver, contains('Пока нет дорожных событий рядом'));
     expect(driver, contains('Нажмите на карту, чтобы выбрать точку события'));
     expect(models, contains('Камера скорости'));
@@ -499,7 +559,10 @@ void main() {
     final unsafeRouting = 'avoid ${'pol'}ice';
     expect(driver.toLowerCase(), isNot(contains(unsafeIntent)));
     expect(driver.toLowerCase(), isNot(contains(unsafeRouting)));
-    expect(RegExp(r'(^|\s)мент(ы)?($|\s|[,.!?])', caseSensitive: false).hasMatch(driver), isFalse);
+    expect(
+        RegExp(r'(^|\s)мент(ы)?($|\s|[,.!?])', caseSensitive: false)
+            .hasMatch(driver),
+        isFalse);
   });
 
   test('stage 4.5 final visual QA guards compact premium mobile polish', () {

@@ -1,3 +1,4 @@
+import https from "node:https";
 import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors.js";
 import { query as defaultQuery } from "../../db/pool.js";
@@ -19,6 +20,263 @@ function toNullableNumber(value, min, max, code) {
 
 function routeUnavailable(message = "Routing provider is unavailable") {
   return new AppError(message, 503, "ROUTE_UNAVAILABLE");
+}
+
+function addressSearchUnavailable(message = "Address search provider is unavailable") {
+  return new AppError(message, 503, "ADDRESS_SEARCH_UNAVAILABLE");
+}
+
+function nominatimHeaders() {
+  return {
+    "User-Agent": "SmartTaxi/1.0 support@smarttaxi.local",
+    "Accept": "application/json"
+  };
+}
+
+function compactText(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizedText(value) {
+  return compactText(value).toLocaleLowerCase("ru-KZ");
+}
+
+function buildAddressSearchQuery(query, region) {
+  const cleanQuery = compactText(query);
+  const cleanRegion = compactText(region || env.CITY);
+  const lowerQuery = normalizedText(cleanQuery);
+  const parts = [cleanQuery];
+  if (cleanRegion && !lowerQuery.includes(normalizedText(cleanRegion))) {
+    parts.push(cleanRegion);
+  }
+  if (!lowerQuery.includes("kazakhstan") && !lowerQuery.includes("казахстан")) {
+    parts.push("Kazakhstan");
+  }
+  return parts.join(" ");
+}
+
+function sortAddressSuggestions(addresses, regionHint) {
+  const hint = normalizedText(regionHint || env.CITY);
+  if (!hint) return addresses;
+  return [...addresses].sort((left, right) => {
+    const leftText = normalizedText(
+      [left.label, left.subtitle, left.city, left.region].filter(Boolean).join(" ")
+    );
+    const rightText = normalizedText(
+      [right.label, right.subtitle, right.city, right.region].filter(Boolean).join(" ")
+    );
+    const leftLocal = leftText.includes(hint) ? 0 : 1;
+    const rightLocal = rightText.includes(hint) ? 0 : 1;
+    return leftLocal - rightLocal;
+  });
+}
+
+function shouldUseDevCertificateFallback(error) {
+  if (env.NODE_ENV === "production") return false;
+  const code = error?.cause?.code || error?.code || "";
+  const message = `${error?.cause?.message || ""} ${error?.message || ""}`;
+  return /CERT|VERIFY|TLS|UNABLE_TO_VERIFY|SELF_SIGNED|LEAF_SIGNATURE/i.test(`${code} ${message}`);
+}
+
+function getJsonViaHttps(url, { headers = {}, rejectUnauthorized = true } = {}) {
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, {
+      headers,
+      rejectUnauthorized,
+      timeout: 20_000
+    }, response => {
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", chunk => { body += chunk; });
+      response.on("end", () => {
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          resolve({ ok: false, status: response.statusCode, data: null });
+          return;
+        }
+        try {
+          resolve({ ok: true, status: response.statusCode, data: JSON.parse(body) });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    request.on("timeout", () => {
+      request.destroy(new Error("HTTPS request timeout"));
+    });
+    request.on("error", reject);
+  });
+}
+
+async function getJson(url, { headers = {}, fetchImpl = fetch } = {}) {
+  if (fetchImpl !== fetch) {
+    const response = await fetchImpl(url, { headers });
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: response.ok ? await response.json().catch(() => null) : null
+    };
+  }
+  try {
+    const response = await fetchImpl(url, { headers });
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: response.ok ? await response.json().catch(() => null) : null
+    };
+  } catch (error) {
+    if (!shouldUseDevCertificateFallback(error)) throw error;
+    return getJsonViaHttps(url, { headers, rejectUnauthorized: false });
+  }
+}
+
+function publicAddressSuggestion(item) {
+  const lat = Number(item?.lat);
+  const lng = Number(item?.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const address = item.address || {};
+  const city = address.city || address.town || address.village || address.county || "";
+  const region = address.state || address.region || "";
+  const shortParts = [
+    address.road || address.pedestrian || address.neighbourhood || address.suburb,
+    address.house_number,
+    city
+  ].filter(Boolean);
+  const label = shortParts.length
+    ? shortParts.join(address.house_number ? ", " : " ")
+    : String(item.display_name || "Точка на карте").split(",").slice(0, 3).join(",").trim();
+  return {
+    label,
+    subtitle: String(item.display_name || "").split(",").slice(1, 5).join(",").trim(),
+    city,
+    region,
+    lat,
+    lng
+  };
+}
+
+function publicPhotonAddressSuggestion(feature) {
+  const coordinates = feature?.geometry?.coordinates;
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+  const lng = Number(coordinates[0]);
+  const lat = Number(coordinates[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const properties = feature.properties || {};
+  if (properties.countrycode && String(properties.countrycode).toUpperCase() !== "KZ") return null;
+  const city = properties.city || properties.town || properties.village || properties.district || properties.county || "";
+  const region = properties.state || "";
+  const name = properties.name || properties.street || properties.osm_value || "Точка на карте";
+  const house = properties.housenumber || properties.house_number || "";
+  const label = [name, house].filter(Boolean).join(", ");
+  const subtitle = [
+    properties.district,
+    city,
+    region,
+    properties.country
+  ].filter(Boolean).join(", ");
+  return {
+    label,
+    subtitle,
+    city,
+    region,
+    lat,
+    lng
+  };
+}
+
+async function searchAddressesWithPhoton({ q, region, limit = 8 }, fetchImpl = fetch) {
+  const query = String(q || "").trim();
+  if (query.length < 2) return [];
+  const url = new URL("https://photon.komoot.io/api/");
+  url.searchParams.set("q", buildAddressSearchQuery(query, region));
+  url.searchParams.set("limit", String(Math.min(Math.max(Number(limit) || 8, 1), 12)));
+  const response = await getJson(url, { fetchImpl });
+  if (!response.ok) return [];
+  const features = response.data?.features;
+  if (!Array.isArray(features)) return [];
+  return sortAddressSuggestions(
+    features.map(publicPhotonAddressSuggestion).filter(Boolean),
+    region
+  );
+}
+
+async function reverseAddressWithPhoton({ lat, lng }, fetchImpl = fetch) {
+  const point = normalizePoint({ lat, lng });
+  const url = new URL("https://photon.komoot.io/reverse");
+  url.searchParams.set("lat", String(point.lat));
+  url.searchParams.set("lon", String(point.lng));
+  const response = await getJson(url, { fetchImpl });
+  if (!response.ok) return null;
+  const features = response.data?.features;
+  if (!Array.isArray(features) || features.length === 0) return null;
+  return publicPhotonAddressSuggestion(features[0]);
+}
+
+export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz" }, fetchImpl = fetch) {
+  const query = String(q || "").trim();
+  if (query.length < 2) return [];
+  const photonFirst = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
+  if (photonFirst.length > 0) return photonFirst;
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("limit", String(Math.min(Math.max(Number(limit) || 8, 1), 12)));
+  url.searchParams.set("q", buildAddressSearchQuery(query, region));
+  if (countrycodes) url.searchParams.set("countrycodes", countrycodes);
+  let response;
+  try {
+    response = await getJson(url, { headers: nominatimHeaders(), fetchImpl });
+  } catch {
+    const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
+    if (fallback.length > 0) return fallback;
+    throw addressSearchUnavailable();
+  }
+  if (!response.ok) {
+    const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
+    if (fallback.length > 0) return fallback;
+    throw addressSearchUnavailable();
+  }
+  const data = response.data;
+  if (!Array.isArray(data)) {
+    const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
+    if (fallback.length > 0) return fallback;
+    throw addressSearchUnavailable();
+  }
+  const addresses = sortAddressSuggestions(
+    data.map(publicAddressSuggestion).filter(Boolean),
+    region
+  );
+  if (addresses.length > 0) return addresses;
+  return searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl);
+}
+
+export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
+  const point = normalizePoint({ lat, lng });
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("lat", String(point.lat));
+  url.searchParams.set("lon", String(point.lng));
+  let response;
+  try {
+    response = await getJson(url, { headers: nominatimHeaders(), fetchImpl });
+  } catch {
+    const fallback = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+    if (fallback) return fallback;
+    throw addressSearchUnavailable();
+  }
+  if (!response.ok) {
+    const fallback = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+    if (fallback) return fallback;
+    throw addressSearchUnavailable();
+  }
+  const data = response.data;
+  const suggestion = publicAddressSuggestion(data);
+  if (!suggestion) {
+    const fallback = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+    if (fallback) return fallback;
+    throw addressSearchUnavailable("Address is unavailable for selected point");
+  }
+  return suggestion;
 }
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {
@@ -44,12 +302,12 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   const url = `${base}/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=false`;
   let response;
   try {
-    response = await fetchImpl(url);
+    response = await getJson(url, { fetchImpl });
   } catch {
     throw routeUnavailable();
   }
   if (!response.ok) throw routeUnavailable();
-  const data = await response.json().catch(() => null);
+  const data = response.data;
   const route = data?.routes?.[0];
   if (!route || !Number.isFinite(Number(route.distance)) || !Number.isFinite(Number(route.duration)) || !route.geometry) {
     throw routeUnavailable();

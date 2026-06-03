@@ -15,15 +15,43 @@ const statements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
-   VALUES (
-     'ATAKENT',
-     'Atakent',
-     '[[69.4500,42.2000],[69.7600,42.2000],[69.7600,42.4300],[69.4500,42.4300],[69.4500,42.2000]]'::jsonb,
-     42.316700,
-     69.595800,
-     'KZT',
-     true
-   )
+   VALUES
+     (
+       'ATAKENT',
+       'Атакент',
+       '[[68.4300,40.7800],[68.5700,40.7800],[68.5700,40.9000],[68.4300,40.9000],[68.4300,40.7800]]'::jsonb,
+       40.844435,
+       68.509021,
+       'KZT',
+       true
+     ),
+     (
+       'MYRZAKENT',
+       'Мырзакент',
+       '[[68.4700,40.6000],[68.6000,40.6000],[68.6000,40.7300],[68.4700,40.7300],[68.4700,40.6000]]'::jsonb,
+       40.666108,
+       68.543090,
+       'KZT',
+       true
+     ),
+     (
+       'ZHETYSAY',
+       'Жетысай',
+       '[[68.0500,40.8000],[68.3300,40.8000],[68.3300,41.0000],[68.0500,41.0000],[68.0500,40.8000]]'::jsonb,
+       40.884303,
+       68.212621,
+       'KZT',
+       true
+     ),
+     (
+       'SHYMKENT',
+       'Шымкент',
+       '[[69.3000,42.1000],[69.8500,42.1000],[69.8500,42.4800],[69.3000,42.4800],[69.3000,42.1000]]'::jsonb,
+       42.314696,
+       69.588328,
+       'KZT',
+       true
+     )
    ON CONFLICT (code) DO UPDATE
    SET name=EXCLUDED.name,
        boundary=EXCLUDED.boundary,
@@ -95,11 +123,11 @@ const statements = [
    FROM regions r
    CROSS JOIN (
      VALUES
-       ('Economy','Эконом','Базовый тариф для ежедневных поездок',400,110,20,700,15,2,1,3,50,0,10),
-       ('Comfort','Комфорт','Повышенный комфорт для городских поездок',600,150,25,1000,15,2,1,3,60,0,20),
-       ('Delivery','Доставка','Региональная доставка без пассажирской посадки',500,130,20,800,15,1,1,5,45,0,30)
+       ('Economy','Эконом','Быстро и доступно для ежедневных поездок',400,110,20,700,15,2,1,3,50,0,10),
+       ('Comfort','Комфорт','Больше удобства для городских поездок',600,150,25,1000,15,2,1,3,60,0,20),
+       ('Business','Бизнес','Премиальный автомобиль и спокойная поездка',900,220,35,1600,15,2,1,3,80,0,30)
    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
-   WHERE r.code='ATAKENT'
+   WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT')
    ON CONFLICT (region_id, name) DO UPDATE
    SET region_id=EXCLUDED.region_id,
        display_name=EXCLUDED.display_name,
@@ -117,6 +145,12 @@ const statements = [
        sort_order=EXCLUDED.sort_order,
        is_active=EXCLUDED.is_active,
        updated_at=NOW()`,
+  `UPDATE tariffs
+   SET is_active=false, updated_at=NOW()
+   WHERE name='Delivery'
+     AND region_id IN (
+       SELECT id FROM regions WHERE code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT')
+     )`,
   `CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     action TEXT NOT NULL,

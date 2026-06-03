@@ -11,6 +11,7 @@ class RouteFields extends StatelessWidget {
     required this.onDropoffTap,
     this.pickupActive = false,
     this.dropoffActive = false,
+    this.dark = false,
   });
 
   final String pickupLabel;
@@ -19,14 +20,23 @@ class RouteFields extends StatelessWidget {
   final VoidCallback onDropoffTap;
   final bool pickupActive;
   final bool dropoffActive;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
+    final panelColor = dark
+        ? const Color(0xe614181f)
+        : SmartTaxiColors.cardWarm.withValues(alpha: 0.72);
+    final borderColor =
+        dark ? Colors.white.withValues(alpha: 0.08) : SmartTaxiColors.border;
+    final lineColor = dark
+        ? Colors.white.withValues(alpha: 0.20)
+        : SmartTaxiColors.borderStrong;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.cardWarm.withValues(alpha: 0.72),
-        border: Border.all(color: SmartTaxiColors.border),
+        color: panelColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -38,15 +48,16 @@ class RouteFields extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 18),
-                const _RouteMarker(
+                _RouteMarker(
                     label: 'A',
-                    background: SmartTaxiColors.text,
+                    background:
+                        dark ? SmartTaxiColors.gold : SmartTaxiColors.text,
                     foreground: Colors.white),
                 Expanded(
                   child: Container(
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 7),
-                      color: SmartTaxiColors.borderStrong),
+                      color: lineColor),
                 ),
                 const _RouteMarker(
                     label: 'B',
@@ -64,13 +75,15 @@ class RouteFields extends StatelessWidget {
                     label: 'Откуда',
                     value: pickupLabel,
                     active: pickupActive,
-                    onTap: onPickupTap),
+                    onTap: onPickupTap,
+                    dark: dark),
                 const SizedBox(height: 10),
                 _RouteButton(
                     label: 'Куда',
                     value: dropoffLabel,
                     active: dropoffActive,
-                    onTap: onDropoffTap),
+                    onTap: onDropoffTap,
+                    dark: dark),
               ],
             ),
           ),
@@ -119,15 +132,31 @@ class _RouteButton extends StatelessWidget {
       {required this.label,
       required this.value,
       required this.active,
-      required this.onTap});
+      required this.onTap,
+      required this.dark});
 
   final String label;
   final String value;
   final bool active;
   final VoidCallback onTap;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
+    final background = dark
+        ? (active
+            ? SmartTaxiColors.gold.withValues(alpha: 0.15)
+            : const Color(0xcc1f232b))
+        : (active ? SmartTaxiColors.goldPale : Colors.white);
+    final border = active
+        ? SmartTaxiColors.gold
+        : (dark
+            ? Colors.white.withValues(alpha: 0.08)
+            : SmartTaxiColors.border);
+    final labelColor = dark
+        ? Colors.white.withValues(alpha: 0.60)
+        : SmartTaxiColors.textSecondary;
+    final valueColor = dark ? Colors.white : SmartTaxiColors.text;
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
@@ -137,15 +166,13 @@ class _RouteButton extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 60),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: active ? SmartTaxiColors.goldPale : Colors.white,
-          border: Border.all(
-              color: active ? SmartTaxiColors.gold : SmartTaxiColors.border,
-              width: active ? 1.8 : 1),
+          color: background,
+          border: Border.all(color: border, width: active ? 1.8 : 1),
           borderRadius: BorderRadius.circular(18),
           boxShadow: active
               ? const [
                   BoxShadow(
-                      color: Color(0x14785a14),
+                      color: Color(0x2ed4af37),
                       blurRadius: 18,
                       offset: Offset(0, 8))
                 ]
@@ -155,16 +182,18 @@ class _RouteButton extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                style: TextStyle(
+                    color: labelColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 5),
             Text(value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                style: TextStyle(
+                    color: valueColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900)),
           ],
         ),
       ),

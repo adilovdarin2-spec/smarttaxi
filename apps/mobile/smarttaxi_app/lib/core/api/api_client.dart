@@ -25,15 +25,20 @@ class ApiClient {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
-  Future<Map<String, dynamic>> login({String? phone, String? email, required String password}) async {
-    final response = await _dio.post<Map<String, dynamic>>('/api/auth/login', data: {
+  Future<Map<String, dynamic>> login(
+      {String? phone, String? email, required String password}) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/auth/login', data: {
       if (phone != null && phone.isNotEmpty) 'phone': phone,
       if (email != null && email.isNotEmpty) 'email': email,
       'password': password,
     });
     final data = response.data ?? {};
     final token = data['token']?.toString() ?? data['accessToken']?.toString();
-    if (token != null && token.isNotEmpty) await _authStore.saveToken(token);
+    if (token != null && token.isNotEmpty) {
+      await _authStore.saveToken(token);
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+    }
     return data;
   }
 
@@ -43,7 +48,8 @@ class ApiClient {
     String? email,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>('/api/auth/register', data: {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/auth/register', data: {
       'name': name,
       'phone': phone,
       if (email != null && email.isNotEmpty) 'email': email,
@@ -51,7 +57,10 @@ class ApiClient {
     });
     final data = response.data ?? {};
     final token = data['token']?.toString() ?? data['accessToken']?.toString();
-    if (token != null && token.isNotEmpty) await _authStore.saveToken(token);
+    if (token != null && token.isNotEmpty) {
+      await _authStore.saveToken(token);
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+    }
     return data;
   }
 
@@ -64,13 +73,47 @@ class ApiClient {
   Future<List<RegionOption>> getActiveRegions() async {
     final response = await _dio.get<dynamic>('/api/regions/active');
     final items = _extractList(response.data, 'regions');
-    return items.map((item) => RegionOption.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => RegionOption.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<List<TariffOption>> getTariffs(String regionId) async {
-    final response = await _dio.get<dynamic>('/api/tariffs', queryParameters: {'regionId': regionId});
+    final response = await _dio
+        .get<dynamic>('/api/tariffs', queryParameters: {'regionId': regionId});
     final items = _extractList(response.data, 'tariffs');
-    return items.map((item) => TariffOption.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => TariffOption.fromJson(item))
+        .toList(growable: false);
+  }
+
+  Future<List<AddressSuggestion>> searchAddresses(
+    String query, {
+    String? region,
+  }) async {
+    final response = await _dio.get<dynamic>(
+      '/api/routes/addresses/search',
+      queryParameters: {
+        'q': query,
+        'limit': 8,
+        if (region != null && region.trim().isNotEmpty) 'region': region.trim(),
+      },
+    );
+    final items = _extractList(response.data, 'addresses');
+    return items
+        .map((item) => AddressSuggestion.fromJson(item))
+        .toList(growable: false);
+  }
+
+  Future<AddressSuggestion?> reverseAddress(Coordinate coordinate) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/routes/addresses/reverse',
+      queryParameters: {'lat': coordinate.lat, 'lng': coordinate.lng},
+    );
+    final data = response.data ?? {};
+    final address = data['address'];
+    if (address is! Map) return null;
+    return AddressSuggestion.fromJson(Map<String, dynamic>.from(address));
   }
 
   Future<RoutePreview> previewRoute({
@@ -79,7 +122,8 @@ class ApiClient {
     String? tariffId,
   }) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>('/api/routes/preview', data: {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/routes/preview', data: {
       'pickupLat': pickup.lat,
       'pickupLng': pickup.lng,
       'dropoffLat': dropoff.lat,
@@ -87,7 +131,8 @@ class ApiClient {
       if (tariffId != null) 'tariffId': tariffId,
     });
     final data = response.data ?? {};
-    return RoutePreview.fromJson(Map<String, dynamic>.from(data['route'] ?? data));
+    return RoutePreview.fromJson(
+        Map<String, dynamic>.from(data['route'] ?? data));
   }
 
   Future<OrderSummary> createOrder({
@@ -102,7 +147,8 @@ class ApiClient {
     String paymentMethod = 'CASH',
   }) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>('/api/orders', data: {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/orders', data: {
       'pickupLat': pickup.lat,
       'pickupLng': pickup.lng,
       'dropoffLat': dropoff.lat,
@@ -116,19 +162,24 @@ class ApiClient {
       'paymentMethod': paymentMethod,
     });
     final data = response.data ?? {};
-    return OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
+    return OrderSummary.fromJson(
+        Map<String, dynamic>.from(data['order'] ?? data));
   }
 
-  Future<void> cancelPublicOrder(String orderId, {required String riderPhone}) async {
+  Future<void> cancelPublicOrder(String orderId,
+      {required String riderPhone}) async {
     await _attachToken();
-    await _dio.post('/api/orders/$orderId/cancel-public', data: {'riderPhone': riderPhone});
+    await _dio.post('/api/orders/$orderId/cancel-public',
+        data: {'riderPhone': riderPhone});
   }
 
   Future<List<DriverRegion>> getDriverRegions() async {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/drivers/me/regions');
     final items = _extractList(response.data, 'regions');
-    return items.map((item) => DriverRegion.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => DriverRegion.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<void> selectDriverRegion(String regionId) async {
@@ -162,20 +213,30 @@ class ApiClient {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/orders');
     final items = _extractList(response.data, 'orders');
-    return items.map((item) => OrderSummary.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => OrderSummary.fromJson(item))
+        .toList(growable: false);
   }
 
-  Future<OrderSummary> acceptOrder(String orderId) => _postOrderAction('/api/orders/$orderId/accept');
-  Future<OrderSummary> arrived(String orderId) => _postOrderAction('/api/orders/$orderId/arrived');
-  Future<OrderSummary> startTrip(String orderId) => _postOrderAction('/api/orders/$orderId/start');
-  Future<OrderSummary> completeTrip(String orderId) => _postOrderAction('/api/orders/$orderId/complete');
-  Future<OrderSummary> cancelDriverOrder(String orderId) => _postOrderAction('/api/orders/$orderId/cancel');
+  Future<OrderSummary> acceptOrder(String orderId) =>
+      _postOrderAction('/api/orders/$orderId/accept');
+  Future<OrderSummary> arrived(String orderId) =>
+      _postOrderAction('/api/orders/$orderId/arrived');
+  Future<OrderSummary> startTrip(String orderId) =>
+      _postOrderAction('/api/orders/$orderId/start');
+  Future<OrderSummary> completeTrip(String orderId) =>
+      _postOrderAction('/api/orders/$orderId/complete');
+  Future<OrderSummary> cancelDriverOrder(String orderId) =>
+      _postOrderAction('/api/orders/$orderId/cancel');
 
   Future<RoutePreview> driverToPickupRoute(String orderId) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>('/api/routes/driver-to-pickup', data: {'orderId': orderId});
+    final response = await _dio.post<Map<String, dynamic>>(
+        '/api/routes/driver-to-pickup',
+        data: {'orderId': orderId});
     final data = response.data ?? {};
-    return RoutePreview.fromJson(Map<String, dynamic>.from(data['route'] ?? data));
+    return RoutePreview.fromJson(
+        Map<String, dynamic>.from(data['route'] ?? data));
   }
 
   Future<List<RoadAlert>> getDriverRoadAlerts({String? regionId}) async {
@@ -185,7 +246,9 @@ class ApiClient {
       queryParameters: {if (regionId != null) 'regionId': regionId},
     );
     final items = _extractList(response.data, 'alerts');
-    return items.map((item) => RoadAlert.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => RoadAlert.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<RoadAlert> createDriverRoadAlert({
@@ -195,7 +258,8 @@ class ApiClient {
     String comment = '',
   }) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>('/api/driver/road-alerts', data: {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/driver/road-alerts', data: {
       if (regionId != null) 'regionId': regionId,
       'type': type,
       'comment': comment,
@@ -230,16 +294,28 @@ class ApiClient {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(path);
     final data = response.data ?? {};
-    return OrderSummary.fromJson(Map<String, dynamic>.from(data['order'] ?? data));
+    return OrderSummary.fromJson(
+        Map<String, dynamic>.from(data['order'] ?? data));
   }
 
   List<Map<String, dynamic>> _extractList(dynamic data, String key) {
-    if (data is List) return data.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(growable: false);
+    }
     if (data is Map && data[key] is List) {
-      return (data[key] as List).whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+      return (data[key] as List)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(growable: false);
     }
     if (data is Map && data['items'] is List) {
-      return (data['items'] as List).whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+      return (data['items'] as List)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(growable: false);
     }
     return const [];
   }

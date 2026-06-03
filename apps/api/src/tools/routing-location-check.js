@@ -18,6 +18,8 @@ const routingServiceText = readFileSync(join(root, "modules", "routing", "routin
 const {
   buildDriverToPickupRoute,
   buildRoutePreview,
+  reverseAddress,
+  searchAddresses,
   updateDriverLocation
 } = await import("../modules/routing/routing.service.js");
 
@@ -26,12 +28,44 @@ assert.match(schema, /idx_driver_locations_driver_id/i, "schema must index drive
 assert.match(migrations, /CREATE TABLE IF NOT EXISTS driver_locations/i, "migration must create driver_locations");
 assert.match(routingRoutes, /router\.post\("\/preview"/, "route preview endpoint must exist");
 assert.match(routingRoutes, /router\.post\("\/driver-to-pickup"/, "driver-to-pickup endpoint must exist");
+assert.match(routingRoutes, /router\.get\("\/addresses\/search"/, "address search endpoint must exist");
+assert.match(routingRoutes, /router\.get\("\/addresses\/reverse"/, "reverse address endpoint must exist");
 assert.match(driversRoutes, /router\.patch\("\/me\/location"/, "driver location endpoint must exist");
 assert.match(server, /assertCanAccessOrderLocation/, "join_order must validate order room access");
 assert.match(server, /updateDriverLocation/, "socket driver location updates must use backend location service");
 assert.match(routingServiceText, /ROUTE_UNAVAILABLE/, "routing provider failure must return ROUTE_UNAVAILABLE");
 assert.match(routingServiceText, /DRIVER_LOCATION_UNAVAILABLE/, "driver-to-pickup must handle missing driver location");
 assert.doesNotMatch(routingServiceText, /Math\.random\(\)/, "routing/location service must not fake routes or locations");
+
+function mockAddressFetch() {
+  return async (url) => ({
+    ok: true,
+    async json() {
+      const value = url.toString();
+      if (value.includes("/reverse")) {
+        return {
+          lat: "42.316",
+          lon: "69.596",
+          display_name: "улица Абая, Шымкент, Казахстан",
+          address: { road: "улица Абая", city: "Шымкент", state: "Туркестанская область" }
+        };
+      }
+      return [{
+        lat: "42.316",
+        lon: "69.596",
+        display_name: "улица Абая, Шымкент, Казахстан",
+        address: { road: "улица Абая", city: "Шымкент", state: "Туркестанская область" }
+      }];
+    }
+  });
+}
+
+const addressResults = await searchAddresses({ q: "Абая", limit: 3 }, mockAddressFetch());
+assert.equal(addressResults.length, 1, "address search returns real provider results");
+assert.equal(addressResults[0].label, "улица Абая Шымкент", "address search formats a human label");
+assert.equal(addressResults[0].lat, 42.316, "address search returns provider latitude");
+const reversed = await reverseAddress({ lat: 42.316, lng: 69.596 }, mockAddressFetch());
+assert.equal(reversed.city, "Шымкент", "reverse address returns city");
 
 const regionA = {
   id: "region-a",

@@ -25,5 +25,20 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/brand/smarttaxi_icon.svg
-    - assets/brand/smarttaxi_icon_2048.png
+    - assets/brand/smarttaxi_logo_horizontal.svg
+    - assets/brand/smarttaxi_logo_horizontal_transparent.png
+    - assets/brand/smarttaxi_app_icon.svg
+    - assets/brand/smarttaxi_app_icon_1024.png
+    - assets/brand/smarttaxi_icon_foreground_transparent.png
+    - assets/brand/smarttaxi_icon_foreground_transparent.svg
+    - assets/auth/auth_bg_final.png
+    - assets/auth/auth_hero_city_final.png
+    - assets/splash/splash_bg_final.png
+    - assets/splash/native_splash_no_text.png
+    - assets/cars/tariff_economy_white_sedan_flutter.png
+    - assets/cars/tariff_comfort_white_sedan_flutter.png
+    - assets/cars/tariff_business_white_premium_sedan_flutter.png
+    - assets/map/driver_car_topview_white.png
+    - assets/map/user_location_marker_blue_gold.png
+    - assets/map/destination_pin_gold_white.png
+    - assets/map/navigation_button_gold_white.png

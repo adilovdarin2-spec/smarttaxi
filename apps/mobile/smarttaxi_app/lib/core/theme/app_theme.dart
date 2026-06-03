@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
 class SmartTaxiColors {
-  static const gold = Color(0xffc99a2e);
-  static const goldDeep = Color(0xffa97814);
-  static const goldSoft = Color(0xfff7e8be);
+  static const gold = Color(0xfff5c542);
+  static const goldDeep = Color(0xff9a6b11);
+  static const goldSoft = Color(0xfff6e6b8);
   static const goldPale = Color(0xfffff3d6);
   static const goldSurface = Color(0xfffff8e6);
+  static const bgDark = Color(0xff050505);
+  static const bgDark2 = Color(0xff0c0c0c);
+  static const cardDark = Color(0xff14181f);
+  static const cardDark2 = Color(0xff1f232b);
   static const background = Color(0xffffffff);
   static const appBackground = Color(0xfffffcf6);
   static const card = Color(0xffffffff);
@@ -14,7 +18,7 @@ class SmartTaxiColors {
   static const textSecondary = Color(0xff666666);
   static const textMuted = Color(0xff9a9a9a);
   static const border = Color(0xffefe2c4);
-  static const borderStrong = Color(0xffddc88b);
+  static const borderStrong = Color(0xffd4af37);
   static const success = Color(0xff16a34a);
   static const successSoft = Color(0xffecfdf3);
   static const danger = Color(0xffdc2626);
@@ -64,7 +68,7 @@ ThemeData buildSmartTaxiTheme() {
       clipBehavior: Clip.antiAlias,
     ),
     drawerTheme: const DrawerThemeData(
-      backgroundColor: SmartTaxiColors.background,
+      backgroundColor: SmartTaxiColors.appBackground,
       surfaceTintColor: Colors.transparent,
     ),
     snackBarTheme: SnackBarThemeData(

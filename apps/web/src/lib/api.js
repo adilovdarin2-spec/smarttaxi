@@ -1,4 +1,8 @@
-export const API_URL = (import.meta.env.VITE_API_URL || "https://api.smarttaxi.kz").replace(/\/$/, "");
+const localApiUrl = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:4000"
+  : "https://api.smarttaxi.kz";
+
+export const API_URL = (import.meta.env.VITE_API_URL || localApiUrl).replace(/\/$/, "");
 export function getToken(){ return localStorage.getItem("smarttaxi_token") || ""; }
 export function setToken(token){ localStorage.setItem("smarttaxi_token", token); }
 export function clearToken(){ localStorage.removeItem("smarttaxi_token"); }
