@@ -12,7 +12,8 @@
     "test": "node src/tools/regions-check.js && node src/tools/auth-seed-check.js && node src/tools/driver-approval-check.js && node src/tools/tariffs-orders-check.js && node src/tools/dispatch-realtime-check.js && node src/tools/routing-location-check.js",
     "smoke:stage2": "node src/tools/stage2-smoke.js",
     "smoke:stage3": "node src/tools/stage3-client-flow-smoke.js",
-    "smoke:stage9": "node src/tools/stage9-payment-rating-smoke.js"
+    "smoke:stage9": "node src/tools/stage9-payment-rating-smoke.js",
+    "smoke:stage11": "node src/tools/stage11-driver-core-smoke.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

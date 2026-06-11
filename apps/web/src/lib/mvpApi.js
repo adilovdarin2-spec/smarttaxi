@@ -137,6 +137,10 @@ export function getDriverRegions() {
   return api("/api/drivers/me/regions");
 }
 
+export function getDriverProfile() {
+  return api("/api/driver/profile");
+}
+
 export function selectDriverRegion(regionId) {
   return api("/api/drivers/me/region", {
     method: "PATCH",
@@ -145,6 +149,12 @@ export function selectDriverRegion(regionId) {
 }
 
 export function setDriverStatus(status) {
+  if (status === "FREE" || status === "ONLINE") {
+    return api("/api/driver/status/online", { method: "POST" });
+  }
+  if (status === "OFFLINE") {
+    return api("/api/driver/status/offline", { method: "POST" });
+  }
   return api("/api/drivers/me/status", {
     method: "PATCH",
     body: JSON.stringify({ status })
@@ -152,27 +162,55 @@ export function setDriverStatus(status) {
 }
 
 export function getDriverOrders() {
-  return api("/api/orders");
+  return api("/api/driver/orders/incoming");
+}
+
+export function getDriverActiveOrder() {
+  return api("/api/driver/orders/active");
+}
+
+export function getDriverEarningsToday() {
+  return api("/api/driver/earnings/today");
+}
+
+export function getDriverDebt() {
+  return api("/api/driver/debt");
 }
 
 export function acceptOrder(orderId) {
-  return api(`/api/orders/${orderId}/accept`, { method: "POST" });
+  return api(`/api/driver/orders/${orderId}/accept`, { method: "POST" });
+}
+
+export function rejectDriverOrder(orderId) {
+  return api(`/api/driver/orders/${orderId}/reject`, { method: "POST" });
+}
+
+export function markDriverGoingToClient(orderId) {
+  return api(`/api/driver/orders/${orderId}/going-to-client`, { method: "POST" });
 }
 
 export function markDriverArrived(orderId) {
-  return api(`/api/orders/${orderId}/arrived`, { method: "POST" });
+  return api(`/api/driver/orders/${orderId}/arrived`, { method: "POST" });
+}
+
+export function markDriverWaiting(orderId) {
+  return api(`/api/driver/orders/${orderId}/waiting`, { method: "POST" });
 }
 
 export function startTrip(orderId) {
-  return api(`/api/orders/${orderId}/start`, { method: "POST" });
+  return api(`/api/driver/orders/${orderId}/start`, { method: "POST" });
 }
 
 export function completeTrip(orderId) {
-  return api(`/api/orders/${orderId}/complete`, { method: "POST" });
+  return api(`/api/driver/orders/${orderId}/complete`, { method: "POST" });
 }
 
 export function cancelDriverOrder(orderId) {
-  return api(`/api/orders/${orderId}/cancel`, { method: "POST" });
+  return api(`/api/driver/orders/${orderId}/cancel`, { method: "POST" });
+}
+
+export function noShowDriverOrder(orderId) {
+  return api(`/api/driver/orders/${orderId}/no-show`, { method: "POST" });
 }
 
 export function getDriverRoadAlerts(params = {}) {
