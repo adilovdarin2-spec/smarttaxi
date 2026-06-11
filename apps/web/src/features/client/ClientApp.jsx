@@ -17,6 +17,7 @@ import {
   getTariffs,
   getToken,
   loginUser,
+  rateOrder,
   registerUser,
   requestPasswordReset,
   reverseAddress,
@@ -314,7 +315,7 @@ function clientLifecycleStage(status, order) {
       badge: label,
       canCancel: false,
       canContact: false,
-      canStartNewTrip: true
+      canStartNewTrip: false
     },
     PAYMENT_PENDING: {
       title: "Поездка завершена",
@@ -322,15 +323,15 @@ function clientLifecycleStage(status, order) {
       badge: label,
       canCancel: false,
       canContact: false,
-      canStartNewTrip: true
+      canStartNewTrip: false
     },
     PAID: {
       title: "Оплата получена",
-      subtitle: "Спасибо за поездку со SmartTaxi",
+      subtitle: "Оцените поездку, чтобы завершить заказ",
       badge: label,
       canCancel: false,
       canContact: false,
-      canStartNewTrip: true
+      canStartNewTrip: false
     },
     RATED: {
       title: "Спасибо за оценку",
@@ -1377,7 +1378,7 @@ export default function ClientApp() {
                 if (!next) return;
                 if (!pickup) {
                   const center = regionCenter(selectedRegion) || regionCenter(fallbackRegion);
-                  setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: selectedRegionName, ...center });
+                  setPickup({ title: "Моё местоположение", subtitle: selectedRegionName, ...center });
                 }
                 setDestination(next);
               }}
@@ -1398,7 +1399,7 @@ export default function ClientApp() {
               onSubmit={submitOrder}
             />
           )}
-          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} />}
+          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} onOrderUpdate={next => setOrder(normalizeOrder(next))} />}
           {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
           {section === "support" && <SupportSection />}
           {section === "faq" && <FaqSection />}
@@ -1791,33 +1792,33 @@ function HomeSection(props) {
   const showOrderSheet = showOrderOptions || hasRouteError || Boolean(message);
   const sheetTitle = pickup && destination
     ? hasRouteError
-      ? "РњР°СЂС€СЂСѓС‚ РЅРµРґРѕСЃС‚СѓРїРµРЅ"
-      : "Р’С‹Р±РµСЂРёС‚Рµ С‚Р°СЂРёС„"
+      ? "Маршрут недоступен"
+      : "Выберите тариф"
     : !pickup
-      ? "РџРѕРґР°С‡Р° С‚Р°РєСЃРё"
-      : "РљСѓРґР° РµРґРµРј?";
+      ? "Подача такси"
+      : "Куда едем?";
   const sheetHelper = pickup && destination
     ? hasRouteError
-      ? "РР·РјРµРЅРёС‚Рµ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ РёР»Рё РІС‹Р±РµСЂРёС‚Рµ С‚РѕС‡РєСѓ Р±Р»РёР¶Рµ Рє РІС‹Р±СЂР°РЅРЅРѕРјСѓ СЂРµРіРёРѕРЅСѓ"
-      : "РџСЂРѕРІРµСЂСЊС‚Рµ РєР»Р°СЃСЃ РїРѕРµР·РґРєРё, С†РµРЅСѓ Рё РѕРїР»Р°С‚Сѓ"
+      ? "Измените адрес назначения или выберите точку ближе к выбранному региону"
+      : "Проверьте класс поездки, цену и оплату"
     : !pickup
-      ? "РЈРєР°Р¶РёС‚Рµ РјРµСЃС‚Рѕ, РіРґРµ РІРѕРґРёС‚РµР»СЊ РґРѕР»Р¶РµРЅ РІР°СЃ Р·Р°Р±СЂР°С‚СЊ."
-      : "РўРµРїРµСЂСЊ РІС‹Р±РµСЂРёС‚Рµ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ.";
+      ? "Укажите место, где водитель должен вас забрать."
+      : "Теперь выберите адрес назначения.";
   const ctaText = hasRouteError
-    ? "РР·РјРµРЅРёС‚СЊ Р°РґСЂРµСЃ"
+    ? "Изменить адрес"
     : !pickup
-    ? "РЈРєР°Р·Р°С‚СЊ С‚РѕС‡РєСѓ РїРѕРґР°С‡Рё"
+    ? "Указать точку подачи"
     : !destination
-      ? "Р’С‹Р±СЂР°С‚СЊ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ"
+      ? "Выбрать адрес назначения"
       : !authenticated
-        ? "Р’РѕР№С‚Рё Рё Р·Р°РєР°Р·Р°С‚СЊ"
+        ? "Войти и заказать"
         : !tariff
-        ? "Р’С‹Р±СЂР°С‚СЊ С‚Р°СЂРёС„"
+        ? "Выбрать тариф"
         : routeLoading
-          ? "РЎС‡РёС‚Р°РµРј СЃС‚РѕРёРјРѕСЃС‚СЊ..."
+          ? "Считаем стоимость..."
           : estimate
-            ? "Р—Р°РєР°Р·Р°С‚СЊ"
-            : "Р Р°СЃСЃС‡РёС‚Р°С‚СЊ";
+            ? "Заказать"
+            : "Рассчитать";
 
   const handleCta = () => {
     if (!pickup) {
@@ -1842,7 +1843,7 @@ function HomeSection(props) {
         destination={destination}
         route={route}
         center={mapCenter}
-        status={routeLoading ? "РџСЂРѕРєР»Р°РґС‹РІР°РµРј РјР°СЂС€СЂСѓС‚" : ""}
+        status={routeLoading ? "Прокладываем маршрут" : ""}
         onUseLocation={onUseLocation}
       />
       <section className="floating-route-panel">
@@ -1857,14 +1858,14 @@ function HomeSection(props) {
           {(showOrderOptions || hasRouteError) && (
             <SelectedRouteSummary pickup={pickup} destination={destination} onPickup={onPickup} onDestination={onDestination} />
           )}
-          {message && <p className={message.includes("Р РµРіРёРѕРЅ") || message.includes("РІС‹Р±СЂР°") || message.includes("Р’С…РѕРґ") ? "state-note success" : "state-note danger"}>{message}</p>}
+          {message && <p className={message.includes("Регион") || message.includes("выбра") || message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
           {hasRouteError && <RouteUnavailableCard message={routeError} />}
           <TariffSelector tariffs={tariffs} tariff={tariff} setTariff={setTariff} loading={tariffsLoading} error={tariffsError} enabled={showOrderOptions} estimate={estimate} />
           {showOrderOptions && <PaymentSelector payment={payment} setPayment={setPayment} />}
           {(showOrderOptions || hasRouteError) && (
             <Button className="wide primary-gold client-main-cta" disabled={loading || routeLoading || (!hasRouteError && !canCreate && authenticated && pickup && destination)} onClick={handleCta}>
-              {loading ? "РЎРѕР·РґР°С‘Рј Р·Р°РєР°Р·..." : ctaText}
-              {canCreate && estimate?.estimatedPrice ? <> В· <Money value={estimate.estimatedPrice} /></> : null}
+              {loading ? "Создаём заказ..." : ctaText}
+              {canCreate && estimate?.estimatedPrice ? <> · <Money value={estimate.estimatedPrice} /></> : null}
             </Button>
           )}
         </section>
@@ -1879,13 +1880,13 @@ function RouteSheetTitle({ title, helper, route }) {
   return (
     <div className="card-topline sheet-title-row">
       <div>
-        <span>РџРѕРµР·РґРєР°</span>
+        <span>Поездка</span>
         <h1>{title}</h1>
         <p>{helper}</p>
       </div>
       {(distance || duration) && (
         <small className="route-meta-pill">
-          {distance ? `${distance} РєРј` : ""}{distance && duration ? " В· " : ""}{duration ? `${duration} РјРёРЅ` : ""}
+          {distance ? `${distance} км` : ""}{distance && duration ? " · " : ""}{duration ? `${duration} мин` : ""}
         </small>
       )}
     </div>
@@ -1897,8 +1898,8 @@ function RouteUnavailableCard({ message }) {
     <section className="route-unavailable-card">
       <Icon name="route" size={21} />
       <div>
-        <strong>{message || "РњР°СЂС€СЂСѓС‚ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ"}</strong>
-        <span>РџСЂРѕРІРµСЂСЊС‚Рµ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ РёР»Рё СѓС‚РѕС‡РЅРёС‚Рµ СѓР»РёС†Сѓ, РґРѕРј Рё СЂРµРіРёРѕРЅ.</span>
+        <strong>{message || "Маршрут временно недоступен"}</strong>
+        <span>Проверьте адрес назначения или уточните улицу, дом и регион.</span>
       </div>
     </section>
   );
@@ -1911,8 +1912,8 @@ function RouteCard({ pickup, destination, onPickup, onDestination }) {
       <button className="destination-command" type="button" onClick={onDestination}>
         <span className="destination-command-icon"><Icon name="search" size={19} /></span>
         <span className="destination-command-copy">
-          <small>{destination ? "РљСѓРґР°" : "Р’РІРµРґРёС‚Рµ Р°РґСЂРµСЃ РёР»Рё РјРµСЃС‚Рѕ"}</small>
-          <b>{destination?.title || "РљСѓРґР° РµРґРµРј?"}</b>
+          <small>{destination ? "Куда" : "Введите адрес или место"}</small>
+          <b>{destination?.title || "Куда едем?"}</b>
         </span>
         <span className="destination-command-action"><Icon name="chevron" size={18} /></span>
       </button>
@@ -1921,16 +1922,16 @@ function RouteCard({ pickup, destination, onPickup, onDestination }) {
           <span className="pickup-command-dot" />
         </span>
         <span>
-          <small>РћС‚РєСѓРґР°</small>
-          <b>{pickup?.title || "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ"}</b>
+          <small>Откуда</small>
+          <b>{pickup?.title || "Моё местоположение"}</b>
         </span>
         <em aria-hidden="true"><Icon name="chevron" size={16} /></em>
       </button>
       {(pickup || destination) && (
         <div className="route-mini-status" aria-hidden="true">
-          <span className={pickup ? "ready" : ""}>РџРѕРґР°С‡Р°</span>
+          <span className={pickup ? "ready" : ""}>Подача</span>
           <i />
-          <span className={destination ? "ready" : ""}>РќР°Р·РЅР°С‡РµРЅРёРµ</span>
+          <span className={destination ? "ready" : ""}>Назначение</span>
         </div>
       )}
     </section>
@@ -1943,15 +1944,15 @@ function SelectedRouteSummary({ pickup, destination, onPickup, onDestination }) 
       <button type="button" className="route-summary-row pickup" onClick={onPickup}>
         <span className="route-summary-marker" aria-hidden="true"><i /></span>
         <span className="route-summary-copy">
-          <em>РћС‚РєСѓРґР°</em>
-          <strong>{pickup?.title || "РђРґСЂРµСЃ РїРѕРґР°С‡Рё"}</strong>
+          <em>Откуда</em>
+          <strong>{pickup?.title || "Адрес подачи"}</strong>
         </span>
       </button>
       <button type="button" className="route-summary-row destination" onClick={onDestination}>
         <span className="route-summary-marker" aria-hidden="true"><i /></span>
         <span className="route-summary-copy">
-          <em>РљСѓРґР°</em>
-          <strong>{destination?.title || "РљСѓРґР° РµРґРµРј?"}</strong>
+          <em>Куда</em>
+          <strong>{destination?.title || "Куда едем?"}</strong>
         </span>
       </button>
     </section>
@@ -1964,7 +1965,7 @@ function TariffSelector({ tariffs, tariff, setTariff, loading, error, enabled, e
   }
   if (loading) return <section className="tariff-stage-card"><div className="skeleton-list"><span /><span /><span /></div></section>;
   if (error) return <p className="state-note danger">{error}</p>;
-  if (!tariffs.length) return <p className="state-note">Р’ РІС‹Р±СЂР°РЅРЅРѕРј СЂРµРіРёРѕРЅРµ РЅРµС‚ Р°РєС‚РёРІРЅС‹С… С‚Р°СЂРёС„РѕРІ</p>;
+  if (!tariffs.length) return <p className="state-note">В выбранном регионе нет активных тарифов</p>;
   return (
     <section className="premium-tariff-list">
       {tariffs.map(item => {
@@ -1983,8 +1984,8 @@ function TariffSelector({ tariffs, tariff, setTariff, loading, error, enabled, e
               <small>{tariffSubtitle(item)}</small>
             </span>
             <span className="tariff-price-copy">
-              <b>{price ? <Money value={price} /> : minPrice ? <>РѕС‚ <Money value={minPrice} /></> : "Р’С‹Р±СЂР°С‚СЊ"}</b>
-              <small>{selected ? "РІС‹Р±СЂР°РЅРѕ" : "РІС‹Р±СЂР°С‚СЊ"}</small>
+              <b>{price ? <Money value={price} /> : minPrice ? <>от <Money value={minPrice} /></> : "Выбрать"}</b>
+              <small>{selected ? "выбрано" : "выбрать"}</small>
             </span>
           </button>
         );
@@ -1999,21 +2000,21 @@ function PriceBlock({ estimate, route, loading, error, hasRoute }) {
   return (
     <section className="premium-price-block">
       <div>
-        <span>РЎС‚РѕРёРјРѕСЃС‚СЊ</span>
+        <span>Стоимость</span>
         {loading ? (
-          <strong>РЎС‡РёС‚Р°РµРј...</strong>
+          <strong>Считаем...</strong>
         ) : estimate?.estimatedPrice ? (
           <strong><Money value={estimate.estimatedPrice} /></strong>
         ) : error ? (
-          <strong>РќРµРґРѕСЃС‚СѓРїРЅР°</strong>
+          <strong>Недоступна</strong>
         ) : (
-          <strong>{hasRoute ? "Р’С‹Р±РµСЂРёС‚Рµ С‚Р°СЂРёС„" : "РЈРєР°Р¶РёС‚Рµ РјР°СЂС€СЂСѓС‚"}</strong>
+          <strong>{hasRoute ? "Выберите тариф" : "Укажите маршрут"}</strong>
         )}
       </div>
       {distance || duration ? (
-        <small>{distance ? `${distance} РєРј` : ""}{distance && duration ? " В· " : ""}{duration ? `${duration} РјРёРЅ` : ""}</small>
+        <small>{distance ? `${distance} км` : ""}{distance && duration ? " · " : ""}{duration ? `${duration} мин` : ""}</small>
       ) : (
-        <small>РњР°СЂС€СЂСѓС‚ Рё С†РµРЅР° СЂР°СЃСЃС‡РёС‚С‹РІР°СЋС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё</small>
+        <small>Маршрут и цена рассчитываются автоматически</small>
       )}
     </section>
   );
@@ -2144,13 +2145,27 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   );
 }
 
-function TripsSection({ order, pickup, destination, route, estimate, loading, onCancel, onHome }) {
+function TripsSection({ order, pickup, destination, route, estimate, loading, onCancel, onHome, onOrderUpdate }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [ratingTags, setRatingTags] = useState([]);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState("");
+  useEffect(() => {
+    setDetailsOpen(false);
+    setRatingValue(5);
+    setRatingTags([]);
+    setRatingComment("");
+    setRatingError("");
+    setRatingSubmitting(false);
+  }, [order?.id]);
+
   if (!order) {
     return (
       <section className="screen-grid trip-stage-screen">
-        <section className="screen-intro"><h1>РњРѕРё РїРѕРµР·РґРєРё</h1><p>РђРєС‚РёРІРЅС‹Рµ РїРѕРµР·РґРєРё Рё РёСЃС‚РѕСЂРёСЏ Р·Р°РєР°Р·РѕРІ.</p></section>
-        <EmptyState title="РџРѕРµР·РґРѕРє РїРѕРєР° РЅРµС‚" text="Р’С‹Р±РµСЂРёС‚Рµ РјР°СЂС€СЂСѓС‚ РЅР° РіР»Р°РІРЅРѕРј СЌРєСЂР°РЅРµ, С‡С‚РѕР±С‹ СЃРѕР·РґР°С‚СЊ Р·Р°РєР°Р·." action="Р—Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ" onAction={onHome} />
+        <section className="screen-intro"><h1>Мои поездки</h1><p>Активные поездки и история заказов.</p></section>
+        <EmptyState title="Поездок пока нет" text="Выберите маршрут на главном экране, чтобы создать заказ." action="Заказать поездку" onAction={onHome} />
       </section>
     );
   }
@@ -2173,6 +2188,30 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   const driverPoint = driverMapPoint(order);
   const stage = clientLifecycleStage(status, order);
   const statusTone = tripStatusTone(status);
+  const showRating = status === "PAID";
+
+  async function submitRating(event) {
+    event.preventDefault();
+    if (!order?.id || ratingSubmitting) return;
+    setRatingSubmitting(true);
+    setRatingError("");
+    try {
+      const data = await rateOrder(order.id, {
+        rating: ratingValue,
+        tags: ratingTags,
+        comment: ratingComment
+      });
+      onOrderUpdate?.(data.order);
+    } catch (error) {
+      setRatingError(formatError(error));
+    } finally {
+      setRatingSubmitting(false);
+    }
+  }
+
+  function toggleRatingTag(tag) {
+    setRatingTags(current => current.includes(tag) ? current.filter(item => item !== tag) : [...current, tag]);
+  }
 
   if (status === "SEARCHING_DRIVER") {
     return (
@@ -2245,6 +2284,21 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
         <DriverFoundMeta order={order} estimate={estimate} />
         <RideStatusNote status={status} order={order} destination={tripDestination} />
+        {showRating && (
+          <TripRatingCard
+            order={order}
+            driverName={driverName}
+            rating={ratingValue}
+            setRating={setRatingValue}
+            tags={ratingTags}
+            onToggleTag={toggleRatingTag}
+            comment={ratingComment}
+            setComment={setRatingComment}
+            submitting={ratingSubmitting}
+            error={ratingError}
+            onSubmit={submitRating}
+          />
+        )}
         <div className="trip-action-row">
           <button type="button" className="trip-details-button" onClick={() => setDetailsOpen(true)}>
             <Icon name="info" size={18} /> Детали поездки
@@ -2412,7 +2466,7 @@ function RideStatusNote({ status, order, destination }) {
     icon = "card";
   } else if (status === "PAID") {
     title = "Оплата подтверждена";
-    text = "Можно создать новую поездку.";
+    text = "Оцените поездку, чтобы завершить заказ.";
     icon = "check";
   } else if (status === "RATED") {
     title = "Поездка закрыта";
@@ -2433,6 +2487,79 @@ function RideStatusNote({ status, order, destination }) {
         {["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(status) && <em>{payment}</em>}
       </span>
     </div>
+  );
+}
+
+const ratingTagOptions = [
+  ["polite_driver", "Вежливый водитель"],
+  ["clean_car", "Чистая машина"],
+  ["fast_arrival", "Быстро приехал"],
+  ["good_route", "Хороший маршрут"]
+];
+
+function TripRatingCard({
+  order,
+  driverName,
+  rating,
+  setRating,
+  tags,
+  onToggleTag,
+  comment,
+  setComment,
+  submitting,
+  error,
+  onSubmit
+}) {
+  return (
+    <form className="trip-rating-card" onSubmit={onSubmit}>
+      <div className="trip-rating-head">
+        <span className="trip-driver-avatar neutral success"><Icon name="user" size={22} /></span>
+        <div>
+          <small>Завершение поездки</small>
+          <h2>Оцените поездку</h2>
+          <p>{driverName || "Водитель SmartTaxi"} · заказ {order.short_id || order.id}</p>
+        </div>
+      </div>
+      <div className="trip-rating-stars" role="group" aria-label="Оценка поездки">
+        {[1, 2, 3, 4, 5].map(value => (
+          <button
+            type="button"
+            key={value}
+            className={value <= rating ? "selected" : ""}
+            onClick={() => setRating(value)}
+            aria-label={`${value} из 5`}
+          >
+            <Icon name="star" size={21} />
+          </button>
+        ))}
+      </div>
+      <div className="trip-rating-tags">
+        {ratingTagOptions.map(([key, label]) => (
+          <button
+            type="button"
+            key={key}
+            className={tags.includes(key) ? "selected" : ""}
+            onClick={() => onToggleTag(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <label className="trip-rating-comment">
+        <span>Комментарий</span>
+        <textarea
+          value={comment}
+          onChange={event => setComment(event.target.value)}
+          placeholder="Можно оставить пустым"
+          rows={2}
+          maxLength={500}
+        />
+      </label>
+      {error && <p className="trip-rating-error">{error}</p>}
+      <button type="submit" className="trip-rating-submit" disabled={submitting}>
+        {submitting ? "Отправляем..." : "Отправить оценку"}
+      </button>
+    </form>
   );
 }
 
@@ -2472,6 +2599,12 @@ function DriverFoundMeta({ order, estimate }) {
 
 function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, canCancel = false, cancelDisabled }) {
   if (!open) return null;
+  const detailRows = [
+    ["Статус", statusLabel(status)],
+    ["Тариф", orderTariffLabel(order, estimate)],
+    ["Оплата", paymentLabel(order.payment_method)],
+    ["Цена", <Money value={tripPrice(order, estimate)} />]
+  ];
   return (
     <>
       <div className="trip-details-backdrop" onClick={onClose} />
@@ -2484,12 +2617,6 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
           <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
         </header>
         <CompactRoute pickup={pickup?.title || order.pickup_text} dropoff={destination?.title || order.dropoff_text} />
-        <div className="trip-details-grid">
-          <span><small>Статус</small><b>{statusLabel(status)}</b></span>
-          <span><small>Цена</small><b><Money value={order.price || estimate?.estimatedPrice} /></b></span>
-          <span><small>Оплата</small><b>{paymentLabel(order.payment_method)}</b></span>
-          <span><small>Тариф</small><b>{orderTariffLabel(order, estimate)}</b></span>
-        </div>
         <div className="trip-driver-mini">
           <span className="trip-driver-avatar neutral"><Icon name="user" size={22} /></span>
           <div>
@@ -2497,6 +2624,14 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
             <b>{order.driver_name ? driverName : "Водитель ещё не назначен"}</b>
             <em>{order.driver_name ? carLine || "Автомобиль SmartTaxi" : "Появится после принятия заказа"}</em>
           </div>
+        </div>
+        <div className="trip-details-list">
+          {detailRows.map(([label, value]) => (
+            <span key={label}>
+              <small>{label}</small>
+              <b>{value}</b>
+            </span>
+          ))}
         </div>
         <div className="trip-details-actions">
           {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Связаться с водителем</a>}

@@ -43,6 +43,11 @@ export function calcPrice(tariff, distanceKm, durationMin) {
 
 const OrderStatus = z.enum(ORDER_STATUSES);
 const IdParam = z.object({ id: z.string().uuid() });
+const RateOrder = z.object({
+  rating: z.coerce.number().int().min(1).max(5),
+  tags: z.array(z.string().trim().min(1).max(60)).max(8).optional().default([]),
+  comment: z.string().trim().max(500).optional().default("")
+});
 
 function normalizeText(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
@@ -272,6 +277,60 @@ router.get("/:id/status-history", requireAuth, async (req, res, next) => {
       ORDER BY created_at ASC
     `, [id])).rows;
     res.json({ order: publicOrderResponse(order), history });
+  } catch (e) { next(e); }
+});
+
+router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = RateOrder.parse(req.body);
+    const order = await tx(async (client) => {
+      const existing = (await client.query(`
+        SELECT o.*, d.name AS driver_name, d.phone AS driver_phone, d.car_model AS driver_car_model,
+               d.plate AS driver_plate, d.rating AS driver_rating
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+        FOR UPDATE OF o
+      `, [id])).rows[0];
+      if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      const clientProfile = (await client.query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
+      if (!clientProfile || clientProfile.id !== existing.client_id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      const previous = (await client.query("SELECT id FROM driver_reviews WHERE order_id=$1 LIMIT 1", [existing.id])).rows[0];
+      if (previous) throw new AppError("Order already rated", 409, "ORDER_ALREADY_RATED");
+      if (existing.status !== "PAID") {
+        throw new AppError("Order must be paid before rating", 409, "ORDER_NOT_PAID", {
+          currentStatus: existing.status,
+          requiredStatus: "PAID"
+        });
+      }
+      if (!existing.driver_id) throw new AppError("Order has no driver to rate", 409, "ORDER_DRIVER_MISSING");
+
+      await client.query(`
+        INSERT INTO driver_reviews(order_id, driver_id, client_id, rating, tags, comment)
+        VALUES($1,$2,$3,$4,$5,$6)
+      `, [existing.id, existing.driver_id, existing.client_id, body.rating, body.tags, body.comment || null]);
+      const rating = (await client.query("SELECT AVG(rating)::numeric(3,2) rating FROM driver_reviews WHERE driver_id=$1", [existing.driver_id])).rows[0];
+      await client.query("UPDATE drivers SET rating=$1 WHERE id=$2", [rating.rating || body.rating, existing.driver_id]);
+      await client.query("UPDATE orders SET status='RATED' WHERE id=$1", [existing.id]);
+      await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'RATED','Client rated trip',$2)", [existing.id, req.user.id]);
+      await writeAudit(client, {
+        action: "order_rated",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: existing.id,
+        metadata: { rating: body.rating, tags: body.tags },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [existing.id])).rows[0];
+    });
+    emitOrderUpdated(req.io, order, "order.rated");
+    res.status(201).json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });
 

@@ -126,6 +126,13 @@ export function getOrderStatusHistory(orderId) {
   return api(`/api/orders/${orderId}/status-history`);
 }
 
+export function rateOrder(orderId, payload) {
+  return api(`/api/orders/${orderId}/rate`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getDriverRegions() {
   return api("/api/drivers/me/regions");
 }
