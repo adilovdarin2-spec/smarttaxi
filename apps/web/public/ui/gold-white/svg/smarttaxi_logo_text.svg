@@ -1,0 +1,12 @@
+<svg width="900" height="240" viewBox="0 0 900 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="95" cy="110" r="75" fill="#D89A05" stroke="#A96F00" stroke-width="5"/>
+<path d="M60 170H130L95 222L60 170Z" fill="#D89A05"/>
+<circle cx="95" cy="109" r="39" fill="white"/>
+<path d="M73 116H117L111 101C109.8 98 107.2 96 104 96H86C82.8 96 80.2 98 79 101L73 116Z" fill="#111111"/>
+<rect x="73" y="115" width="44" height="24" rx="6" fill="#111111"/>
+<circle cx="84" cy="139" r="5" fill="white"/>
+<circle cx="106" cy="139" r="5" fill="white"/>
+<text x="205" y="125" font-family="Inter, Arial, sans-serif" font-size="86" font-weight="800" fill="#111111">Smart</text>
+<text x="490" y="125" font-family="Inter, Arial, sans-serif" font-size="86" font-weight="800" fill="#D89A05">Taxi</text>
+<text x="210" y="178" font-family="Inter, Arial, sans-serif" font-size="28" fill="#6B7280">premium ride service</text>
+</svg>

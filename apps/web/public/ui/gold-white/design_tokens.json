@@ -1,0 +1,19 @@
+{
+  "colors": {
+    "gold": "#D89A05",
+    "goldDark": "#A96F00",
+    "text": "#111111",
+    "muted": "#6B7280",
+    "cream": "#FFF8E8",
+    "white": "#FFFFFF"
+  },
+  "sizes": {
+    "iconSmall": 16,
+    "iconNormal": 20,
+    "iconAction": 24,
+    "mapMarker": "28-34px",
+    "buttonHeight": "48-52px",
+    "driverActionHeight": "52-56px",
+    "bottomSheetRadius": 24
+  }
+}

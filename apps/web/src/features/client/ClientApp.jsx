@@ -27,19 +27,19 @@ import {
 import { createSocket } from "../../lib/socket.js";
 
 const paymentOptions = [
-  { id: "CASH", title: "РќР°Р»РёС‡РЅС‹Рµ", note: "РћРїР»Р°С‚Р° РїРѕСЃР»Рµ РїРѕРµР·РґРєРё" },
-  { id: "KASPI", title: "Kaspi", note: "РџРµСЂРµРІРѕРґ РїРѕ Р·Р°РєР°Р·Сѓ" }
+  { id: "CASH", title: "Наличные", note: "Оплата после поездки" },
+  { id: "KASPI", title: "Kaspi", note: "Перевод по заказу" }
 ];
 
 const menuItems = [
-  ["home", "Р“Р»Р°РІРЅР°СЏ", "home"],
-  ["trips", "РњРѕРё РїРѕРµР·РґРєРё", "clock"],
-  ["profile", "РџСЂРѕС„РёР»СЊ", "user"],
-  ["driver", "РЎС‚Р°С‚СЊ РІРѕРґРёС‚РµР»РµРј", "shield"],
-  ["support", "РџРѕРґРґРµСЂР¶РєР°", "support"],
+  ["home", "Главная", "home"],
+  ["trips", "Мои поездки", "clock"],
+  ["profile", "Профиль", "user"],
+  ["driver", "Стать водителем", "shield"],
+  ["support", "Поддержка", "support"],
   ["faq", "FAQ", "chat"],
-  ["about", "Рћ РЅР°СЃ", "star"],
-  ["settings", "РќР°СЃС‚СЂРѕР№РєРё", "settings"]
+  ["about", "О нас", "star"],
+  ["settings", "Настройки", "settings"]
 ];
 
 const carImages = {
@@ -76,19 +76,19 @@ const goldIcons = {
 };
 
 const referenceRecentAddresses = [
-  { title: "РўР Р¦ РђС‚Р°РєРµРЅС‚ РњРѕР»Р»", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РђР±Р°СЏ 1Рђ", lat: 40.84803, lng: 68.50768, icon: "work" },
-  { title: "Р‘Р°Р·Р°СЂ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ СЂС‹РЅРѕРє", lat: 40.84473, lng: 68.51162, icon: "trips" },
-  { title: "РЁРєРѕР»Р° в„–3", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РЁРєРѕР»СЊРЅР°СЏ 12", lat: 40.84276, lng: 68.51344, icon: "home" }
+  { title: "ТРЦ Атакент Молл", subtitle: "Атакент, ул. Абая 1А", lat: 40.84803, lng: 68.50768, icon: "work" },
+  { title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips" },
+  { title: "Школа №3", subtitle: "Атакент, ул. Школьная 12", lat: 40.84276, lng: 68.51344, icon: "home" }
 ];
 
 const clientRegionPresets = [
   {
     id: "LOCAL_ATAKENT",
     code: "ATAKENT",
-    name: "РђС‚Р°РєРµРЅС‚",
-    displayName: "РђС‚Р°РєРµРЅС‚",
-    alias: "РР»СЊРёС‡",
-    subtitle: "РњР°Т›С‚Р°Р°СЂР°Р»СЊСЃРєРёР№ СЂР°Р№РѕРЅ",
+    name: "Атакент",
+    displayName: "Атакент",
+    alias: "Ильич",
+    subtitle: "Мактааральский район",
     centerLat: 40.844435,
     centerLng: 68.509021,
     currency: "KZT"
@@ -96,10 +96,10 @@ const clientRegionPresets = [
   {
     id: "LOCAL_MYRZAKENT",
     code: "MYRZAKENT",
-    name: "РњС‹СЂР·Р°РєРµРЅС‚",
-    displayName: "РњС‹СЂР·Р°РєРµРЅС‚",
-    alias: "РЎР»Р°РІСЏРЅ",
-    subtitle: "РњР°Т›С‚Р°Р°СЂР°Р»СЊСЃРєРёР№ СЂР°Р№РѕРЅ",
+    name: "Мырзакент",
+    displayName: "Мырзакент",
+    alias: "Славян",
+    subtitle: "Мактааральский район",
     centerLat: 40.666108,
     centerLng: 68.54309,
     currency: "KZT"
@@ -107,10 +107,10 @@ const clientRegionPresets = [
   {
     id: "LOCAL_ZHETYSAY",
     code: "ZHETYSAY",
-    name: "Р–РµС‚С‹СЃР°Р№",
-    displayName: "Р–РµС‚С‹СЃР°Р№",
-    alias: "Р–РµС‚РёСЃР°Р№",
-    subtitle: "Р–РµС‚С‹СЃР°Р№СЃРєРёР№ СЂР°Р№РѕРЅ",
+    name: "Жетысай",
+    displayName: "Жетысай",
+    alias: "Жетисай",
+    subtitle: "Жетысайский район",
     centerLat: 40.884303,
     centerLng: 68.212621,
     currency: "KZT"
@@ -118,10 +118,10 @@ const clientRegionPresets = [
   {
     id: "LOCAL_SHYMKENT",
     code: "SHYMKENT",
-    name: "РЁС‹РјРєРµРЅС‚",
-    displayName: "РЁС‹РјРєРµРЅС‚",
-    alias: "Р§РёРјРєРµРЅС‚",
-    subtitle: "Р“РѕСЂРѕРґ РЁС‹РјРєРµРЅС‚",
+    name: "Шымкент",
+    displayName: "Шымкент",
+    alias: "Чимкент",
+    subtitle: "Город Шымкент",
     centerLat: 42.314696,
     centerLng: 69.588328,
     currency: "KZT"
@@ -129,50 +129,50 @@ const clientRegionPresets = [
 ];
 
 const clientAddressCatalog = [
-  { region: "ATAKENT", title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["С‚РµРєСѓС‰РµРµ", "РіРµРѕР»РѕРєР°С†РёСЏ", "С†РµРЅС‚СЂ"] },
-  { region: "ATAKENT", title: "РўР Р¦ РђС‚Р°РєРµРЅС‚ РњРѕР»Р»", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РђР±Р°СЏ 1Рђ", lat: 40.84803, lng: 68.50768, icon: "work", tags: ["С‚СЂС†", "РјРѕР»Р»", "РјР°РіР°Р·РёРЅ", "Р°Р±Р°СЏ", "abai"] },
-  { region: "ATAKENT", title: "Р‘Р°Р·Р°СЂ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ СЂС‹РЅРѕРє", lat: 40.84473, lng: 68.51162, icon: "trips", tags: ["Р±Р°Р·Р°СЂ", "СЂС‹РЅРѕРє", "С†РµРЅС‚СЂР°Р»СЊРЅС‹Р№"] },
-  { region: "ATAKENT", title: "РЁРєРѕР»Р° в„–3", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РЁРєРѕР»СЊРЅР°СЏ 12", lat: 40.84276, lng: 68.51344, icon: "home", tags: ["С€РєРѕР»Р°", "РјРµРєС‚РµРї", "3", "С€РєРѕР»СЊРЅР°СЏ"] },
-  { region: "ATAKENT", title: "РђРІС‚РѕРІРѕРєР·Р°Р» РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, РѕСЃС‚Р°РЅРѕРІРєР° Сѓ С†РµРЅС‚СЂР°", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»", "РѕСЃС‚Р°РЅРѕРІРєР°"] },
-  { region: "ATAKENT", title: "РЈР»РёС†Р° РђР±Р°СЏ", subtitle: "РђС‚Р°РєРµРЅС‚, СЂР°Р№РѕРЅ С†РµРЅС‚СЂР°Р»СЊРЅРѕР№ СѓР»РёС†С‹", lat: 40.84803, lng: 68.50768, icon: "pin", tags: ["Р°Р±Р°СЏ", "Р°Р±Р°Р№", "abai", "СѓР» Р°Р±Р°СЏ"] },
-  { region: "ATAKENT", title: "РЈР»РёС†Р° Р–Р°РјР±С‹Р»Р°", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.84536, lng: 68.51574, icon: "pin", tags: ["Р¶Р°РјР±С‹Р»", "zhambyl"] },
-  { region: "ATAKENT", title: "РЈР»РёС†Р° РЎР°С‚РїР°РµРІР°", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.83995, lng: 68.50884, icon: "pin", tags: ["СЃР°С‚РїР°РµРІ", "satpayev"] },
-  { region: "ATAKENT", title: "РЈР»РёС†Р° РўРѕР»Рµ Р±Рё", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.85072, lng: 68.51212, icon: "pin", tags: ["С‚РѕР»Рµ", "С‚У©Р»Рµ", "tole bi"] },
-  { region: "ATAKENT", title: "РђС‚Р°РєРµРЅС‚ С†РµРЅС‚СЂ", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ РїР»РѕС‰Р°РґСЊ", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["С†РµРЅС‚СЂ", "РїР»РѕС‰Р°РґСЊ", "РёР»РёС‡", "РёР»СЊРёС‡"] },
-  { region: "ATAKENT", title: "РћСЃС‚Р°РЅРѕРІРєР° Р¦РµРЅС‚СЂ", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ РѕСЃС‚Р°РЅРѕРІРєР°", lat: 40.84544, lng: 68.50872, icon: "trips", tags: ["РѕСЃС‚Р°РЅРѕРІРєР°", "С†РµРЅС‚СЂ", "РјР°СЂС€СЂСѓС‚РєР°"] },
-  { region: "ATAKENT", title: "РђРєРёРјР°С‚ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂ", lat: 40.84518, lng: 68.50971, icon: "work", tags: ["Р°РєРёРјР°С‚", "Р°РґРјРёРЅРёСЃС‚СЂР°С†РёСЏ"] },
-  { region: "ATAKENT", title: "РњРµС‡РµС‚СЊ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ РјРµС‡РµС‚СЊ", lat: 40.84386, lng: 68.51432, icon: "pin", tags: ["РјРµС‡РµС‚СЊ", "РјРµС€С–С‚", "РЅР°РјР°Р·"] },
-  { region: "ATAKENT", title: "Р‘РѕР»СЊРЅРёС†Р° РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, РјРµРґРїСѓРЅРєС‚", lat: 40.84686, lng: 68.51602, icon: "work", tags: ["Р±РѕР»СЊРЅРёС†Р°", "РїРѕР»РёРєР»РёРЅРёРєР°", "Р°РїС‚РµРєР°", "РјРµРґ"] },
+  { region: "ATAKENT", title: "Моё местоположение", subtitle: "Атакент", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["текущее", "геолокация", "центр"] },
+  { region: "ATAKENT", title: "ТРЦ Атакент Молл", subtitle: "Атакент, ул. Абая 1А", lat: 40.84803, lng: 68.50768, icon: "work", tags: ["трц", "молл", "магазин", "абая", "abai"] },
+  { region: "ATAKENT", title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips", tags: ["базар", "рынок", "центральный"] },
+  { region: "ATAKENT", title: "Школа №3", subtitle: "Атакент, ул. Школьная 12", lat: 40.84276, lng: 68.51344, icon: "home", tags: ["школа", "мектеп", "3", "школьная"] },
+  { region: "ATAKENT", title: "Автовокзал Атакент", subtitle: "Атакент, остановка у центра", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
+  { region: "ATAKENT", title: "Улица Абая", subtitle: "Атакент, район центральной улицы", lat: 40.84803, lng: 68.50768, icon: "pin", tags: ["абая", "абай", "abai", "ул абая"] },
+  { region: "ATAKENT", title: "Улица Жамбыла", subtitle: "Атакент", lat: 40.84536, lng: 68.51574, icon: "pin", tags: ["жамбыл", "zhambyl"] },
+  { region: "ATAKENT", title: "Улица Сатпаева", subtitle: "Атакент", lat: 40.83995, lng: 68.50884, icon: "pin", tags: ["сатпаев", "satpayev"] },
+  { region: "ATAKENT", title: "Улица Толе би", subtitle: "Атакент", lat: 40.85072, lng: 68.51212, icon: "pin", tags: ["толе", "төле", "tole bi"] },
+  { region: "ATAKENT", title: "Атакент центр", subtitle: "Атакент, центральная площадь", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["центр", "площадь", "илич", "ильич"] },
+  { region: "ATAKENT", title: "Остановка Центр", subtitle: "Атакент, центральная остановка", lat: 40.84544, lng: 68.50872, icon: "trips", tags: ["остановка", "центр", "маршрутка"] },
+  { region: "ATAKENT", title: "Акимат Атакент", subtitle: "Атакент, центр", lat: 40.84518, lng: 68.50971, icon: "work", tags: ["акимат", "администрация"] },
+  { region: "ATAKENT", title: "Мечеть Атакент", subtitle: "Атакент, центральная мечеть", lat: 40.84386, lng: 68.51432, icon: "pin", tags: ["мечеть", "мешіт", "намаз"] },
+  { region: "ATAKENT", title: "Больница Атакент", subtitle: "Атакент, медпункт", lat: 40.84686, lng: 68.51602, icon: "work", tags: ["больница", "поликлиника", "аптека", "мед"] },
 
-  { region: "MYRZAKENT", title: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", subtitle: "Р¦РµРЅС‚СЂ РїРѕСЃС‘Р»РєР°", lat: 40.666108, lng: 68.54309, icon: "target", tags: ["РјС‹СЂР·Р°РєРµРЅС‚", "СЃР»Р°РІСЏРЅ", "СЃР»Р°РІСЏРЅРєР°", "myrzakent", "slavyan"] },
-  { region: "MYRZAKENT", title: "Р‘Р°Р·Р°СЂ РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ), СЂС‹РЅРѕРє", lat: 40.66718, lng: 68.5452, icon: "trips", tags: ["Р±Р°Р·Р°СЂ", "СЂС‹РЅРѕРє", "СЃР»Р°РІСЏРЅ"] },
-  { region: "MYRZAKENT", title: "РђРІС‚РѕРІРѕРєР·Р°Р» РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66533, lng: 68.54092, icon: "trips", tags: ["Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»", "РѕСЃС‚Р°РЅРѕРІРєР°"] },
-  { region: "MYRZAKENT", title: "РЁРєРѕР»Р° РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66822, lng: 68.54183, icon: "home", tags: ["С€РєРѕР»Р°", "РјРµРєС‚РµРї"] },
-  { region: "MYRZAKENT", title: "РњРµС‡РµС‚СЊ РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66491, lng: 68.54611, icon: "pin", tags: ["РјРµС‡РµС‚СЊ", "РјРµС€С–С‚"] },
-  { region: "MYRZAKENT", title: "РђРєРёРјР°С‚ РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ), С†РµРЅС‚СЂ", lat: 40.66662, lng: 68.54222, icon: "work", tags: ["Р°РєРёРјР°С‚", "Р°РґРјРёРЅРёСЃС‚СЂР°С†РёСЏ", "С†РµРЅС‚СЂ"] },
-  { region: "MYRZAKENT", title: "РџРѕР»РёРєР»РёРЅРёРєР° РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66762, lng: 68.54418, icon: "work", tags: ["Р±РѕР»СЊРЅРёС†Р°", "РїРѕР»РёРєР»РёРЅРёРєР°", "РјРµРґ", "Р°РїС‚РµРєР°"] },
+  { region: "MYRZAKENT", title: "Мырзакент (Славян)", subtitle: "Центр посёлка", lat: 40.666108, lng: 68.54309, icon: "target", tags: ["мырзакент", "славян", "славянка", "myrzakent", "slavyan"] },
+  { region: "MYRZAKENT", title: "Базар Мырзакент", subtitle: "Мырзакент (Славян), рынок", lat: 40.66718, lng: 68.5452, icon: "trips", tags: ["базар", "рынок", "славян"] },
+  { region: "MYRZAKENT", title: "Автовокзал Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66533, lng: 68.54092, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
+  { region: "MYRZAKENT", title: "Школа Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66822, lng: 68.54183, icon: "home", tags: ["школа", "мектеп"] },
+  { region: "MYRZAKENT", title: "Мечеть Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66491, lng: 68.54611, icon: "pin", tags: ["мечеть", "мешіт"] },
+  { region: "MYRZAKENT", title: "Акимат Мырзакент", subtitle: "Мырзакент (Славян), центр", lat: 40.66662, lng: 68.54222, icon: "work", tags: ["акимат", "администрация", "центр"] },
+  { region: "MYRZAKENT", title: "Поликлиника Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66762, lng: 68.54418, icon: "work", tags: ["больница", "поликлиника", "мед", "аптека"] },
 
-  { region: "ZHETYSAY", title: "Р–РµС‚С‹СЃР°Р№ (Р–РµС‚РёСЃР°Р№)", subtitle: "Р¦РµРЅС‚СЂ РіРѕСЂРѕРґР°", lat: 40.884303, lng: 68.212621, icon: "target", tags: ["Р¶РµС‚С‹СЃР°Р№", "Р¶РµС‚РёСЃР°Р№", "zhetysay"] },
-  { region: "ZHETYSAY", title: "Р‘Р°Р·Р°СЂ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№, С†РµРЅС‚СЂР°Р»СЊРЅС‹Р№ СЂС‹РЅРѕРє", lat: 40.88531, lng: 68.21506, icon: "trips", tags: ["Р±Р°Р·Р°СЂ", "СЂС‹РЅРѕРє"] },
-  { region: "ZHETYSAY", title: "РђРІС‚РѕРІРѕРєР·Р°Р» Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№", lat: 40.88191, lng: 68.20951, icon: "trips", tags: ["Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»"] },
-  { region: "ZHETYSAY", title: "РђРєРёРјР°С‚ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№, С†РµРЅС‚СЂ", lat: 40.88494, lng: 68.21107, icon: "work", tags: ["Р°РєРёРјР°С‚", "Р°РґРјРёРЅРёСЃС‚СЂР°С†РёСЏ"] },
-  { region: "ZHETYSAY", title: "РњРµС‡РµС‚СЊ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№", lat: 40.887, lng: 68.21604, icon: "pin", tags: ["РјРµС‡РµС‚СЊ", "РјРµС€С–С‚"] },
-  { region: "ZHETYSAY", title: "Р‘РѕР»СЊРЅРёС†Р° Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№", lat: 40.88288, lng: 68.21649, icon: "work", tags: ["Р±РѕР»СЊРЅРёС†Р°", "РїРѕР»РёРєР»РёРЅРёРєР°", "РјРµРґ"] },
-  { region: "ZHETYSAY", title: "Р¦РµРЅС‚СЂР°Р»СЊРЅР°СЏ РїР»РѕС‰Р°РґСЊ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№, С†РµРЅС‚СЂ", lat: 40.884303, lng: 68.212621, icon: "pin", tags: ["С†РµРЅС‚СЂ", "РїР»РѕС‰Р°РґСЊ"] },
+  { region: "ZHETYSAY", title: "Жетысай (Жетисай)", subtitle: "Центр города", lat: 40.884303, lng: 68.212621, icon: "target", tags: ["жетысай", "жетисай", "zhetysay"] },
+  { region: "ZHETYSAY", title: "Базар Жетысай", subtitle: "Жетысай, центральный рынок", lat: 40.88531, lng: 68.21506, icon: "trips", tags: ["базар", "рынок"] },
+  { region: "ZHETYSAY", title: "Автовокзал Жетысай", subtitle: "Жетысай", lat: 40.88191, lng: 68.20951, icon: "trips", tags: ["автовокзал", "вокзал"] },
+  { region: "ZHETYSAY", title: "Акимат Жетысай", subtitle: "Жетысай, центр", lat: 40.88494, lng: 68.21107, icon: "work", tags: ["акимат", "администрация"] },
+  { region: "ZHETYSAY", title: "Мечеть Жетысай", subtitle: "Жетысай", lat: 40.887, lng: 68.21604, icon: "pin", tags: ["мечеть", "мешіт"] },
+  { region: "ZHETYSAY", title: "Больница Жетысай", subtitle: "Жетысай", lat: 40.88288, lng: 68.21649, icon: "work", tags: ["больница", "поликлиника", "мед"] },
+  { region: "ZHETYSAY", title: "Центральная площадь Жетысай", subtitle: "Жетысай, центр", lat: 40.884303, lng: 68.212621, icon: "pin", tags: ["центр", "площадь"] },
 
-  { region: "SHYMKENT", title: "РЁС‹РјРєРµРЅС‚ (Р§РёРјРєРµРЅС‚)", subtitle: "Р¦РµРЅС‚СЂ РіРѕСЂРѕРґР°", lat: 42.314696, lng: 69.588328, icon: "target", tags: ["С€С‹РјРєРµРЅС‚", "С‡РёРјРєРµРЅС‚", "shymkent"] },
-  { region: "SHYMKENT", title: "Mega Planet Shymkent", subtitle: "РЁС‹РјРєРµРЅС‚, РўР Р¦", lat: 42.31638, lng: 69.59307, icon: "work", tags: ["mega", "РјРµРіР°", "С‚СЂС†", "РїР»Р°РЅРµС‚"] },
-  { region: "SHYMKENT", title: "РђСЂР±Р°С‚ РЁС‹РјРєРµРЅС‚", subtitle: "РЁС‹РјРєРµРЅС‚, РїСЂРѕРіСѓР»РѕС‡РЅР°СЏ Р·РѕРЅР°", lat: 42.31803, lng: 69.596, icon: "favorite", tags: ["Р°СЂР±Р°С‚", "С†РµРЅС‚СЂ"] },
-  { region: "SHYMKENT", title: "Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ РїР°СЂРє", subtitle: "РЁС‹РјРєРµРЅС‚", lat: 42.32151, lng: 69.59202, icon: "home", tags: ["РїР°СЂРє", "С†РµРЅС‚СЂ"] },
-  { region: "SHYMKENT", title: "РђРІС‚РѕРІРѕРєР·Р°Р» РЎР°РјР°Р»", subtitle: "РЁС‹РјРєРµРЅС‚", lat: 42.28852, lng: 69.61765, icon: "trips", tags: ["СЃР°РјР°Р»", "Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»"] },
-  { region: "SHYMKENT", title: "РљРѕР»РѕСЃ", subtitle: "РЁС‹РјРєРµРЅС‚, РїРѕРїСѓР»СЏСЂРЅС‹Р№ РѕСЂРёРµРЅС‚РёСЂ", lat: 42.31356, lng: 69.59394, icon: "pin", tags: ["РєРѕР»РѕСЃ", "РѕСЂРёРµРЅС‚РёСЂ"] },
-  { region: "SHYMKENT", title: "РќСѓСЂСЃР°С‚", subtitle: "РЁС‹РјРєРµРЅС‚, СЂР°Р№РѕРЅ РќСѓСЂСЃР°С‚", lat: 42.34116, lng: 69.60894, icon: "pin", tags: ["РЅСѓСЂСЃР°С‚", "СЂР°Р№РѕРЅ"] }
+  { region: "SHYMKENT", title: "Шымкент (Чимкент)", subtitle: "Центр города", lat: 42.314696, lng: 69.588328, icon: "target", tags: ["шымкент", "чимкент", "shymkent"] },
+  { region: "SHYMKENT", title: "Mega Planet Shymkent", subtitle: "Шымкент, ТРЦ", lat: 42.31638, lng: 69.59307, icon: "work", tags: ["mega", "мега", "трц", "планет"] },
+  { region: "SHYMKENT", title: "Арбат Шымкент", subtitle: "Шымкент, прогулочная зона", lat: 42.31803, lng: 69.596, icon: "favorite", tags: ["арбат", "центр"] },
+  { region: "SHYMKENT", title: "Центральный парк", subtitle: "Шымкент", lat: 42.32151, lng: 69.59202, icon: "home", tags: ["парк", "центр"] },
+  { region: "SHYMKENT", title: "Автовокзал Самал", subtitle: "Шымкент", lat: 42.28852, lng: 69.61765, icon: "trips", tags: ["самал", "автовокзал", "вокзал"] },
+  { region: "SHYMKENT", title: "Колос", subtitle: "Шымкент, популярный ориентир", lat: 42.31356, lng: 69.59394, icon: "pin", tags: ["колос", "ориентир"] },
+  { region: "SHYMKENT", title: "Нурсат", subtitle: "Шымкент, район Нурсат", lat: 42.34116, lng: 69.60894, icon: "pin", tags: ["нурсат", "район"] }
 ];
 
 const fallbackRegion = {
   id: "ATAKENT_FALLBACK",
   code: "ATAKENT",
-  name: "РђС‚Р°РєРµРЅС‚",
+  name: "Атакент",
   centerLat: 40.844435,
   centerLng: 68.509021,
   currency: "KZT"
@@ -194,20 +194,20 @@ const orderSteps = [
 ];
 
 const errorMessages = {
-  PICKUP_REGION_INACTIVE: "Р’ СЌС‚РѕРј РјРµСЃС‚Рµ СЃРµСЂРІРёСЃ РїРѕРєР° РЅРµРґРѕСЃС‚СѓРїРµРЅ",
-  DROPOFF_REGION_INACTIVE: "РўРѕС‡РєР° РЅР°Р·РЅР°С‡РµРЅРёСЏ РІРЅРµ Р°РєС‚РёРІРЅРѕРіРѕ СЂРµРіРёРѕРЅР°",
-  INTERCITY_NOT_SUPPORTED: "РњРµР¶РіРѕСЂРѕРґ РїРѕРєР° РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ",
-  ROUTE_UNAVAILABLE: "РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕСЃС‚СЂРѕРёС‚СЊ РјР°СЂС€СЂСѓС‚",
-  ADDRESS_SEARCH_UNAVAILABLE: "РџРѕРёСЃРє Р°РґСЂРµСЃРѕРІ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ",
-  TARIFF_INACTIVE: "Р­С‚РѕС‚ С‚Р°СЂРёС„ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ",
-  TARIFF_REGION_MISMATCH: "РўР°СЂРёС„ РЅРµРґРѕСЃС‚СѓРїРµРЅ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ СЂРµРіРёРѕРЅР°",
-  ORDER_ALREADY_ACCEPTED: "Р—Р°РєР°Р· СѓР¶Рµ РїСЂРёРЅСЏС‚ РґСЂСѓРіРёРј РІРѕРґРёС‚РµР»РµРј",
-  UNAUTHORIZED: "Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ Р·Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ",
-  FORBIDDEN: "РЈ Р°РєРєР°СѓРЅС‚Р° РЅРµС‚ РїСЂР°РІ РїР°СЃСЃР°Р¶РёСЂР°"
+  PICKUP_REGION_INACTIVE: "В этом месте сервис пока недоступен",
+  DROPOFF_REGION_INACTIVE: "Точка назначения вне активного региона",
+  INTERCITY_NOT_SUPPORTED: "Межгород пока не поддерживается",
+  ROUTE_UNAVAILABLE: "Не удалось построить маршрут",
+  ADDRESS_SEARCH_UNAVAILABLE: "Поиск адресов временно недоступен",
+  TARIFF_INACTIVE: "Этот тариф временно недоступен",
+  TARIFF_REGION_MISMATCH: "Тариф недоступен для выбранного региона",
+  ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
+  UNAUTHORIZED: "Войдите, чтобы заказать поездку",
+  FORBIDDEN: "У аккаунта нет прав пассажира"
 };
 
 function formatError(error) {
-  return errorMessages[error?.code] || error?.message || "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹РїРѕР»РЅРёС‚СЊ Р·Р°РїСЂРѕСЃ";
+  return errorMessages[error?.code] || error?.message || "Не удалось выполнить запрос";
 }
 
 function publicStatus(status) {
@@ -269,8 +269,8 @@ function normalizeOrder(order) {
   return {
     ...order,
     short_id: order.short_id || order.shortId || order.id,
-    pickup_text: order.pickup_text || order.pickupText || order.pickup || "РўРѕС‡РєР° РїРѕСЃР°РґРєРё",
-    dropoff_text: order.dropoff_text || order.dropoffText || order.dropoff || "РўРѕС‡РєР° РЅР°Р·РЅР°С‡РµРЅРёСЏ",
+    pickup_text: order.pickup_text || order.pickupText || order.pickup || "Точка посадки",
+    dropoff_text: order.dropoff_text || order.dropoffText || order.dropoff || "Точка назначения",
     payment_method: order.payment_method || order.paymentMethod,
     public_status: publicStatus(order.public_status || order.publicStatus || order.status)
   };
@@ -282,8 +282,8 @@ function normalizeAddress(address) {
   const lng = Number(address.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return {
-    title: address.label || address.title || "РўРѕС‡РєР° РЅР° РєР°СЂС‚Рµ",
-    subtitle: address.subtitle || address.city || address.region || "РђРґСЂРµСЃ РІС‹Р±СЂР°РЅ",
+    title: address.label || address.title || "Точка на карте",
+    subtitle: address.subtitle || address.city || address.region || "Адрес выбран",
     icon: address.icon || "pin",
     region: address.region || address.regionCode || address.city || "",
     tags: address.tags || [],
@@ -400,7 +400,7 @@ function mergeAddressResults(primary, fallback, limit = 10) {
 }
 
 function tariffTitle(tariff) {
-  return tariff?.displayName || tariff?.display_name || tariff?.title || tariff?.name || "РўР°СЂРёС„";
+  return tariff?.displayName || tariff?.display_name || tariff?.title || tariff?.name || "Тариф";
 }
 
 function tariffMinPrice(tariff) {
@@ -411,11 +411,11 @@ function tariffMinPrice(tariff) {
 function tariffSubtitle(tariff) {
   const title = tariffTitle(tariff).toLowerCase();
   const name = String(tariff?.name || "").toLowerCase();
-  if (title.includes("СЌРєРѕРЅРѕРј") || name.includes("economy")) return "Р‘С‹СЃС‚СЂРѕ Рё РґРѕСЃС‚СѓРїРЅРѕ";
-  if (title.includes("РєРѕРјС„РѕСЂС‚") || name.includes("comfort")) return "Р‘РѕР»СЊС€Рµ СѓРґРѕР±СЃС‚РІР°";
-  if (title.includes("Р±РёР·РЅРµСЃ") || name.includes("business")) return "РџСЂРµРјРёР°Р»СЊРЅР°СЏ РїРѕРµР·РґРєР°";
-  if (title.includes("РґРѕСЃС‚Р°РІ") || name.includes("delivery")) return "РџРµСЂРµРґР°С‚СЊ РїРѕСЃС‹Р»РєСѓ";
-  return tariff?.description || "РџРѕРµР·РґРєР° РїРѕ СЂРµРіРёРѕРЅСѓ";
+  if (title.includes("эконом") || title.includes("СЌРєРѕРЅРѕРј") || name.includes("economy")) return "Быстро и доступно";
+  if (title.includes("комфорт") || title.includes("РєРѕРјС„РѕСЂС‚") || name.includes("comfort")) return "Больше удобства";
+  if (title.includes("бизнес") || title.includes("Р±РёР·РЅРµСЃ") || name.includes("business")) return "Премиальная поездка";
+  if (title.includes("достав") || title.includes("РґРѕСЃС‚Р°РІ") || name.includes("delivery")) return "Передать посылку";
+  return tariff?.description || "Поездка по региону";
 }
 
 function regionCenter(region) {
@@ -468,14 +468,14 @@ function durationMinFromRoute(route) {
   return Math.max(1, Math.ceil(Number(route.durationSeconds) / 60));
 }
 
-function formatTripKm(route, fallback = "5,2 РєРј") {
+function formatTripKm(route, fallback = "5,2 км") {
   const distance = distanceKmFromRoute(route);
-  return distance ? `${String(distance).replace(".", ",")} РєРј` : fallback;
+  return distance ? `${String(distance).replace(".", ",")} км` : fallback;
 }
 
-function formatTripMin(route, fallback = "12 РјРёРЅ") {
+function formatTripMin(route, fallback = "12 мин") {
   const duration = durationMinFromRoute(route);
-  return duration ? `${duration} РјРёРЅ` : fallback;
+  return duration ? `${duration} мин` : fallback;
 }
 
 function IconAsset({ name, className = "", alt = "" }) {
@@ -485,9 +485,9 @@ function IconAsset({ name, className = "", alt = "" }) {
 
 function cleanTariffKey(tariff) {
   const raw = `${tariff?.name || ""} ${tariffTitle(tariff)}`.toLowerCase();
-  if (raw.includes("comfort") || raw.includes("РєРѕРјС„РѕСЂС‚")) return "Comfort";
-  if (raw.includes("business") || raw.includes("Р±РёР·РЅРµСЃ")) return "Business";
-  if (raw.includes("delivery") || raw.includes("РґРѕСЃС‚Р°РІ")) return "Delivery";
+  if (raw.includes("comfort") || raw.includes("комфорт") || raw.includes("РєРѕРјС„РѕСЂС‚")) return "Comfort";
+  if (raw.includes("business") || raw.includes("бизнес") || raw.includes("Р±РёР·РЅРµСЃ")) return "Business";
+  if (raw.includes("delivery") || raw.includes("достав") || raw.includes("РґРѕСЃС‚Р°РІ")) return "Delivery";
   return "Economy";
 }
 
@@ -513,10 +513,10 @@ const localTariffProfiles = {
 };
 
 const localTariffNames = {
-  Economy: "Р­РєРѕРЅРѕРј",
-  Comfort: "РљРѕРјС„РѕСЂС‚",
-  Business: "Р‘РёР·РЅРµСЃ",
-  Delivery: "Р”РѕСЃС‚Р°РІРєР°"
+  Economy: "Эконом",
+  Comfort: "Комфорт",
+  Business: "Бизнес",
+  Delivery: "Доставка"
 };
 
 function localTariffProfile(region) {
@@ -580,10 +580,10 @@ function referenceTariffRows(tariffs, selectedTariff, estimate, route) {
   const byKey = new Map();
   tariffs.forEach(item => byKey.set(cleanTariffKey(item), item));
   const rows = [
-    { key: "Economy", title: "Р­РєРѕРЅРѕРј", subtitle: "Р‘С‹СЃС‚СЂР°СЏ РїРѕРґР°С‡Р°", price: 1200, image: carImages.Economy, seats: 4, recommended: true },
-    { key: "Comfort", title: "РљРѕРјС„РѕСЂС‚", subtitle: "РџСЂРѕСЃС‚РѕСЂРЅС‹Рµ Р°РІС‚Рѕ", price: 1700, image: carImages.Comfort, seats: 4 },
-    { key: "Business", title: "Р‘РёР·РЅРµСЃ", subtitle: "РџСЂРµРјРёР°Р»СЊРЅС‹Рµ Р°РІС‚Рѕ", price: 2500, image: carImages.Business, seats: 4 },
-    { key: "Delivery", title: "Р”РѕСЃС‚Р°РІРєР°", subtitle: "Р”Рѕ 20 РєРі", price: 800, image: carImages.Delivery, seats: null, delivery: true }
+    { key: "Economy", title: "Эконом", subtitle: "Быстрая подача", price: 1200, image: carImages.Economy, seats: 4, recommended: true },
+    { key: "Comfort", title: "Комфорт", subtitle: "Просторные авто", price: 1700, image: carImages.Comfort, seats: 4 },
+    { key: "Business", title: "Бизнес", subtitle: "Премиальные авто", price: 2500, image: carImages.Business, seats: 4 },
+    { key: "Delivery", title: "Доставка", subtitle: "До 20 кг", price: 800, image: carImages.Delivery, seats: null, delivery: true }
   ];
   const mapped = rows.map((row, index) => {
     const apiTariff = byKey.get(row.key);
@@ -595,8 +595,8 @@ function referenceTariffRows(tariffs, selectedTariff, estimate, route) {
       disabled: false,
       selected,
       displayPrice: selected && estimate?.estimatedPrice ? estimate.estimatedPrice : basePrice,
-      eta: formatTripMin(route, `${12 + index * 2} РјРёРЅ`),
-      km: formatTripKm(route, `${(5.2 + index * 0.2).toFixed(1).replace(".", ",")} РєРј`)
+      eta: formatTripMin(route, `${12 + index * 2} мин`),
+      km: formatTripKm(route, `${(5.2 + index * 0.2).toFixed(1).replace(".", ",")} км`)
     };
   });
   if (!mapped.some(row => row.selected)) {
@@ -651,6 +651,13 @@ export default function ClientApp() {
   const authScreenActive = section === "profile" && (!authenticated || authMode === "success");
 
   useEffect(() => {
+    if (section !== "home" || addressMode) return;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+  }, [section, addressMode, pickup?.lat, pickup?.lng, destination?.lat, destination?.lng]);
+
+  useEffect(() => {
     if (!getToken()) return undefined;
     let ignore = false;
     getCurrentUser()
@@ -658,15 +665,15 @@ export default function ClientApp() {
         if (ignore) return;
         const user = payload.user || {};
         if (user.role !== "CLIENT") {
-          setAuthenticated(false);
-          setRider({ name: "РџР°СЃСЃР°Р¶РёСЂ", phone: "" });
-          return;
-        }
-        setAuthenticated(true);
-        setRider({
-          name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "РџР°СЃСЃР°Р¶РёСЂ",
-          phone: user.phone || ""
-        });
+        setAuthenticated(false);
+        setRider({ name: "Пассажир", phone: "" });
+        return;
+      }
+      setAuthenticated(true);
+      setRider({
+        name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
+        phone: user.phone || ""
+      });
       })
       .catch(() => {
         if (!ignore) setAuthenticated(false);
@@ -722,7 +729,7 @@ export default function ClientApp() {
         const nextTariffs = apiTariffs.length ? apiTariffs : localTariffsForRegion(selectedRegion);
         setTariffs(nextTariffs);
         setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
-        setTariffsError(apiTariffs.length ? "" : "Р›РѕРєР°Р»СЊРЅС‹Рµ С†РµРЅС‹ СЂРµРіРёРѕРЅР°");
+        setTariffsError(apiTariffs.length ? "" : "Локальные цены региона");
       })
       .catch(() => {
         if (ignore) return;
@@ -1070,7 +1077,7 @@ export default function ClientApp() {
   async function useCurrentLocation() {
     setMessage("");
     if (!navigator.geolocation) {
-      setMessage("Р“РµРѕР»РѕРєР°С†РёСЏ РЅРµРґРѕСЃС‚СѓРїРЅР° РІ СЌС‚РѕРј Р±СЂР°СѓР·РµСЂРµ");
+      setMessage("Геолокация недоступна в этом браузере");
       return;
     }
     navigator.geolocation.getCurrentPosition(async position => {
@@ -1082,15 +1089,15 @@ export default function ClientApp() {
       if (matched) setSelectedRegionId(matched.id);
       try {
         const data = await reverseAddress(point);
-        const address = normalizeAddress(data.address) || { title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: "РўРѕС‡РєР° РѕРїСЂРµРґРµР»РµРЅР°", ...point };
+        const address = normalizeAddress(data.address) || { title: "Моё местоположение", subtitle: "Точка определена", ...point };
         setPickup(address);
-        setMessage(matched ? `Р РµРіРёРѕРЅ: ${matched.name}` : "РњРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ РІС‹Р±СЂР°РЅРѕ");
+        setMessage(matched ? `Регион: ${matched.name}` : "Местоположение выбрано");
       } catch {
-        setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: "РўРѕС‡РєР° РѕРїСЂРµРґРµР»РµРЅР°", ...point });
-        setMessage(matched ? `Р РµРіРёРѕРЅ: ${matched.name}` : "РњРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ РІС‹Р±СЂР°РЅРѕ");
+        setPickup({ title: "Моё местоположение", subtitle: "Точка определена", ...point });
+        setMessage(matched ? `Регион: ${matched.name}` : "Местоположение выбрано");
       }
     }, () => {
-      setMessage("Р Р°Р·СЂРµС€РёС‚Рµ РґРѕСЃС‚СѓРї Рє РіРµРѕР»РѕРєР°С†РёРё РёР»Рё РІС‹Р±РµСЂРёС‚Рµ Р°РґСЂРµСЃ РІСЂСѓС‡РЅСѓСЋ");
+      setMessage("Разрешите доступ к геолокации или выберите адрес вручную");
     }, {
       enableHighAccuracy: true,
       timeout: 12000,
@@ -1105,7 +1112,7 @@ export default function ClientApp() {
     if (addressMode === "destination") {
       if (!pickup) {
         const center = regionCenter(selectedRegion) || regionCenter(fallbackRegion);
-        if (center) setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: selectedRegionName, ...center });
+        if (center) setPickup({ title: "Моё местоположение", subtitle: selectedRegionName, ...center });
       }
       setDestination(next);
     }
@@ -1121,7 +1128,7 @@ export default function ClientApp() {
     setRoute(null);
     setRouteError("");
     if (center) {
-      setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: regionLabel(region), ...center });
+      setPickup({ title: "Моё местоположение", subtitle: regionLabel(region), ...center });
     }
   }
 
@@ -1136,7 +1143,7 @@ export default function ClientApp() {
     const distanceKm = distanceKmFromRoute(route);
     const durationMin = durationMinFromRoute(route);
     if (!distanceKm || !durationMin) {
-      setRouteError("РњР°СЂС€СЂСѓС‚ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ");
+      setRouteError("Маршрут временно недоступен");
       return;
     }
     setLoading(true);
@@ -1301,14 +1308,14 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
   if (routeReady) {
     return (
       <header className="taxi-app-header premium-client-header reference-client-header tariff-mode">
-        <button type="button" className="client-icon-button" onClick={onBackRoute} aria-label="РќР°Р·Р°Рґ">
+        <button type="button" className="client-icon-button" onClick={onBackRoute} aria-label="Назад">
           <IconAsset name="back" />
         </button>
         <div className="reference-title-stack">
-          <strong>Р’С‹Р±РѕСЂ С‚Р°СЂРёС„Р°</strong>
-          <small>{formatTripMin(route)} В· {formatTripKm(route)}</small>
+          <strong>Выбор тарифа</strong>
+          <small>{formatTripMin(route)} · {formatTripKm(route)}</small>
         </div>
-        <button type="button" className="client-icon-button" aria-label="РРЅС„РѕСЂРјР°С†РёСЏ">
+        <button type="button" className="client-icon-button" aria-label="Информация">
           <IconAsset name="info" />
         </button>
       </header>
@@ -1316,15 +1323,15 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
   }
   return (
     <header className="taxi-app-header premium-client-header reference-client-header address-mode">
-      <button type="button" className="client-icon-button" onClick={onMenu} aria-label="РћС‚РєСЂС‹С‚СЊ РјРµРЅСЋ">
+      <button type="button" className="client-icon-button" onClick={onMenu} aria-label="Открыть меню">
         <IconAsset name="menu" />
       </button>
-      <button type="button" className="reference-region-chip" onClick={onRegion} aria-label="Р РµРіРёРѕРЅ">
+      <button type="button" className="reference-region-chip" onClick={onRegion} aria-label="Регион">
         <Icon name="pin" size={18} />
-        <span>{regionName || "РђС‚Р°РєРµРЅС‚"}</span>
+        <span>{regionName || "Атакент"}</span>
         <Icon name="chevron" size={15} />
       </button>
-      <button type="button" className="client-icon-button notification" onClick={onBell} aria-label="РЈРІРµРґРѕРјР»РµРЅРёСЏ">
+      <button type="button" className="client-icon-button notification" onClick={onBell} aria-label="Уведомления">
         <Icon name="bell" size={20} />
         <i />
       </button>
@@ -1345,17 +1352,17 @@ function RegionSheet({ open, regions, selectedRegionId, loading, error, onClose,
       <section className={`client-region-sheet ${open ? "open" : ""}`} aria-hidden={!open}>
         <header>
           <div>
-            <strong>Р’С‹Р±РµСЂРёС‚Рµ СЂРµРіРёРѕРЅ</strong>
-            <span>Р РµРіРёРѕРЅ РЅСѓР¶РµРЅ РґР»СЏ С‚Р°СЂРёС„РѕРІ, Р°РґСЂРµСЃРѕРІ Рё РїРѕРґР°С‡Рё РІРѕРґРёС‚РµР»СЏ.</span>
+            <strong>Выберите регион</strong>
+            <span>Регион нужен для тарифов, адресов и подачи водителя.</span>
           </div>
-          <button type="button" onClick={onClose} aria-label="Р—Р°РєСЂС‹С‚СЊ"><Icon name="close" size={20} /></button>
+          <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
         </header>
         <label className="client-region-search">
           <Icon name="search" size={18} />
-          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="РќР°Р№С‚Рё РіРѕСЂРѕРґ РёР»Рё СЂР°Р№РѕРЅ" />
+          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Найти город или район" />
         </label>
-        {loading && <p className="region-sheet-note">Р—Р°РіСЂСѓР¶Р°РµРј СЂРµРіРёРѕРЅС‹...</p>}
-        {error && <p className="region-sheet-note muted">Р›РѕРєР°Р»СЊРЅС‹Р№ СЃРїРёСЃРѕРє СЂРµРіРёРѕРЅРѕРІ РІРєР»СЋС‡С‘РЅ.</p>}
+        {loading && <p className="region-sheet-note">Загружаем регионы...</p>}
+        {error && <p className="region-sheet-note muted">Локальный список регионов включён.</p>}
         <div className="client-region-list">
           {list.map(region => {
             const selected = region.id === selectedRegionId;
@@ -1384,9 +1391,9 @@ function ClientDrawer({ open, active, rider, regionName, authenticated, onClose,
         <header>
           <SmartTaxiLogo large />
           <div>
-            <strong>{authenticated ? rider.name || "РџР°СЃСЃР°Р¶РёСЂ" : "SmartTaxi"}</strong>
-            <span>{authenticated ? rider.phone || "РўРµР»РµС„РѕРЅ РЅРµ СѓРєР°Р·Р°РЅ" : "Р’РѕР№РґРёС‚Рµ РґР»СЏ Р·Р°РєР°Р·Р°"}</span>
-            <small>{regionName || "Р РµРіРёРѕРЅ РЅРµ РІС‹Р±СЂР°РЅ"}</small>
+            <strong>{authenticated ? rider.name || "Пассажир" : "SmartTaxi"}</strong>
+            <span>{authenticated ? rider.phone || "Телефон не указан" : "Войдите для заказа"}</span>
+            <small>{regionName || "Регион не выбран"}</small>
           </div>
         </header>
         <nav>
@@ -1399,7 +1406,7 @@ function ClientDrawer({ open, active, rider, regionName, authenticated, onClose,
         </nav>
         <button type="button" className="drawer-logout" onClick={onLogout}>
           <Icon name="logout" size={20} />
-          <span>Р’С‹Р№С‚Рё</span>
+          <span>Выйти</span>
         </button>
       </aside>
     </>
@@ -1442,7 +1449,9 @@ function ReferenceHomeSection(props) {
   const rows = referenceTariffRows(tariffs, tariff, estimate, route);
   const selectedRow = rows.find(row => row.selected) || rows.find(row => row.apiTariff) || rows[0];
   const totalPrice = estimate?.estimatedPrice || selectedRow?.displayPrice || 1200;
-  const recentPlaces = popularAddressesForRegion(selectedRegion, 3);
+  const recentPlaces = popularAddressesForRegion(selectedRegion, 6)
+    .filter(place => !normalizeText(place.title).includes("местоположение"))
+    .slice(0, 3);
 
   if (routeReady) {
     return (
@@ -1457,25 +1466,23 @@ function ReferenceHomeSection(props) {
             <b />
           </div>
           <div className="reference-route-copy">
-            <span>РћС‚РєСѓРґР°</span>
-            <strong>{pickup?.title || "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ"}</strong>
-            <small>{pickup?.subtitle || selectedRegionName || "РђС‚Р°РєРµРЅС‚"}</small>
-            <span>РљСѓРґР°</span>
-            <strong>{destination?.title || "РўР Р¦ РђС‚Р°РєРµРЅС‚ РњРѕР»Р»"}</strong>
-            <small>{destination?.subtitle || "РђС‚Р°РєРµРЅС‚, СѓР». РђР±Р°СЏ 1Рђ"}</small>
+            <span>Откуда</span>
+            <strong>{pickup?.title || "Моё местоположение"}</strong>
+            <small>{pickup?.subtitle || selectedRegionName || "Атакент"}</small>
+            <span>Куда</span>
+            <strong>{destination?.title || "ТРЦ Атакент Молл"}</strong>
+            <small>{destination?.subtitle || "Атакент, ул. Абая 1А"}</small>
           </div>
           <button type="button" className="reference-edit-route" onClick={onDestination}>
             <IconAsset name="edit" />
-            <span>РР·РјРµРЅРёС‚СЊ<br />РјР°СЂС€СЂСѓС‚</span>
+            <span>Изменить<br />маршрут</span>
           </button>
         </section>
 
-        <ReferencePaymentRow payment={payment} setPayment={setPayment} />
-
         <section className="reference-tariffs-block">
           <div className="reference-section-title">
-            <strong>Р’С‹Р±РµСЂРёС‚Рµ С‚Р°СЂРёС„</strong>
-            {routeLoading ? <span>РЎС‡РёС‚Р°РµРј РјР°СЂС€СЂСѓС‚</span> : <span>{formatTripMin(route)} В· {formatTripKm(route)}</span>}
+            <strong>Выберите тариф</strong>
+            {routeLoading ? <span>Считаем маршрут</span> : <span>{formatTripMin(route)} · {formatTripKm(route)}</span>}
           </div>
           {routeError && <p className="reference-state-error">{routeError}</p>}
           {tariffsError && <p className="reference-state-hint">{tariffsError}</p>}
@@ -1486,16 +1493,18 @@ function ReferenceHomeSection(props) {
           )}
         </section>
 
-        {message && <p className={message.includes("Р’С…РѕРґ") || message.includes("Р РµРіРёРѕРЅ") ? "reference-note success" : "reference-note"}>{message}</p>}
+        <ReferencePaymentRow payment={payment} setPayment={setPayment} />
+
+        {message && <p className={message.includes("Вход") || message.includes("Регион") ? "reference-note success" : "reference-note"}>{message}</p>}
 
         <section className="reference-sticky-order">
           <div className="reference-total">
-            <span>РС‚РѕРіРѕ</span>
+            <span>Итого</span>
             <strong><Money value={totalPrice} /></strong>
-            <small>Р’РєР»СЋС‡Р°СЏ РїРѕРґР°С‡Сѓ</small>
+            <small>Включая подачу</small>
           </div>
           <button type="button" className="reference-order-button" disabled={loading || routeLoading || !actionReady} onClick={onSubmit}>
-            <span>{`Р—Р°РєР°Р·Р°С‚СЊ ${selectedRow?.title || "Р­РєРѕРЅРѕРј"}`}</span>
+            <span>{`Заказать ${selectedRow?.title || "Эконом"}`}</span>
             <b><Money value={totalPrice} /></b>
             <Icon name="chevron" size={24} />
           </button>
@@ -1514,8 +1523,8 @@ function ReferenceHomeSection(props) {
         <button type="button" className="reference-address-row" onClick={onPickup}>
           <span className="reference-point-icon"><IconAsset name="pickup" className="ui-asset-icon ui-asset-icon-lg" /></span>
           <span className="reference-address-text">
-            <small>РћС‚РєСѓРґР°</small>
-            <strong>{pickup?.title || "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ"}</strong>
+            <small>Откуда</small>
+            <strong>{pickup?.title || "Моё местоположение"}</strong>
           </span>
           <em className="reference-address-action" onClick={event => { event.stopPropagation(); onUseLocation(); }}>
             <IconAsset name="target" className="ui-asset-icon ui-asset-icon-md" />
@@ -1524,8 +1533,8 @@ function ReferenceHomeSection(props) {
         <button type="button" className="reference-address-row destination" onClick={onDestination}>
           <span className="reference-point-icon"><IconAsset name="destination" className="ui-asset-icon ui-asset-icon-lg" /></span>
           <span className="reference-address-text">
-            <small>РљСѓРґР° РµРґРµРј?</small>
-            <strong>{destination?.title || "Р’С‹Р±РµСЂРёС‚Рµ РїСѓРЅРєС‚ РЅР°Р·РЅР°С‡РµРЅРёСЏ"}</strong>
+            <small>Куда едем?</small>
+            <strong>{destination?.title || "Выберите пункт назначения"}</strong>
           </span>
           <em className="reference-address-action">
             <Icon name="chevron" size={23} />
@@ -1535,8 +1544,8 @@ function ReferenceHomeSection(props) {
 
       <section className="reference-recents reference-recent-section">
         <header className="reference-section-head">
-          <strong>РќРµРґР°РІРЅРёРµ Р°РґСЂРµСЃР°</strong>
-          <button type="button" onClick={onDestination}>Р’СЃРµ</button>
+          <strong>Недавние адреса</strong>
+          <button type="button" onClick={onDestination}>Все</button>
         </header>
         <div className="reference-recent-list">
           {recentPlaces.map(place => (
@@ -1552,7 +1561,7 @@ function ReferenceHomeSection(props) {
         </div>
       </section>
 
-      {message && <p className={message.includes("Р РµРіРёРѕРЅ") || message.includes("РІС‹Р±СЂР°РЅРѕ") ? "reference-note success" : "reference-note"}>{message}</p>}
+      {message && <p className={message.includes("Регион") || message.includes("выбрано") ? "reference-note success" : "reference-note"}>{message}</p>}
       <ReferenceBottomNav onNavigate={onNavigate} activeSection={activeSection} />
     </section>
   );
@@ -1575,23 +1584,23 @@ function ReferenceTariffList({ rows, setTariff, route }) {
           <span className="reference-tariff-copy">
             <span className="reference-tariff-title-row">
               <strong className="reference-tariff-title">{row.title}</strong>
-              {row.recommended ? <span className="reference-tariff-recommended">РџРѕРїСѓР»СЏСЂРЅС‹Р№</span> : null}
+              {row.recommended ? <span className="reference-tariff-recommended">Популярный</span> : null}
             </span>
             <span className="reference-tariff-meta">
               {row.seats ? (
                 <>
                   <Icon name="user" size={13} />
-                  <small>{row.seats} РјРµСЃС‚Р°</small>
+                  <small>{row.seats} места</small>
                 </>
               ) : (
                 <>
                   <Icon name="gift" size={13} />
-                  <small>Р”РѕСЃС‚Р°РІРєР°</small>
+                  <small>посылка</small>
                 </>
               )}
             </span>
             <em>{row.subtitle}</em>
-            <i>{row.eta || formatTripMin(route)} В· {row.km || formatTripKm(route)}</i>
+            <i>{row.eta || formatTripMin(route)} · {row.km || formatTripKm(route)}</i>
           </span>
           <span className="reference-tariff-actions">
             <span className="reference-tariff-price"><Money value={row.displayPrice} /></span>
@@ -1611,10 +1620,10 @@ function ReferencePaymentRow({ payment, setPayment }) {
         <IconAsset name="card" className="ui-asset-icon ui-asset-icon-md" />
       </span>
       <span className="reference-payment-copy">
-        <small>РЎРїРѕСЃРѕР± РѕРїР»Р°С‚С‹</small>
-        <strong>{payment?.title || "РќР°Р»РёС‡РЅС‹Рµ"}</strong>
+        <small>Способ оплаты</small>
+        <strong>{payment?.title || "Наличные"}</strong>
       </span>
-      <span className="reference-payment-value">{payment?.note || "РћРїР»Р°С‚Р° РїРѕСЃР»Рµ РїРѕРµР·РґРєРё"}</span>
+      <span className="reference-payment-value">{payment?.note || "Оплата после поездки"}</span>
       <Icon name="chevron" size={18} />
     </button>
   );
@@ -1622,13 +1631,13 @@ function ReferencePaymentRow({ payment, setPayment }) {
 
 function ReferenceBottomNav({ onNavigate, activeSection = "home" }) {
   const items = [
-    { key: "home", icon: "home", title: "Р“Р»Р°РІРЅР°СЏ", section: "home" },
-    { key: "trips", icon: "clock", title: "РџРѕРµР·РґРєРё", section: "trips" },
-    { key: "favorite", icon: "favorite", title: "РР·Р±СЂР°РЅРЅРѕРµ", section: "profile" },
-    { key: "profile", icon: "user", title: "РџСЂРѕС„РёР»СЊ", section: "profile" }
+    { key: "home", icon: "home", title: "Главная", section: "home" },
+    { key: "trips", icon: "clock", title: "Поездки", section: "trips" },
+    { key: "favorite", icon: "favorite", title: "Избранное", section: "profile" },
+    { key: "profile", icon: "user", title: "Профиль", section: "profile" }
   ];
   return (
-    <nav className="reference-bottom-nav" aria-label="РќР°РІРёРіР°С†РёСЏ">
+    <nav className="reference-bottom-nav" aria-label="Навигация">
       {items.map(({ key, icon, title, section }) => (
         <button
           type="button"
@@ -1923,7 +1932,7 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   const [loading, setLoading] = useState(false);
   const [mapPickLoading, setMapPickLoading] = useState(false);
   const [error, setError] = useState("");
-  const label = mode === "pickup" ? "РћС‚РєСѓРґР°" : "РљСѓРґР°";
+  const label = mode === "pickup" ? "Откуда?" : "Куда едем?";
   const popular = useMemo(() => localAddressesForRegion(region).slice(0, 8), [region?.id, region?.code, region?.name]);
   const pickerCenter = regionCenter(region) || regionCenter(fallbackRegion);
 
@@ -1952,7 +1961,7 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
         .catch(() => {
           if (ignore) return;
           setResults(localMatches.map(normalizeAddress).filter(Boolean));
-          if (!localMatches.length) setError("РќРµ РЅР°С€Р»Рё Р°РґСЂРµСЃ. РЈС‚РѕС‡РЅРёС‚Рµ СѓР»РёС†Сѓ, РґРѕРј РёР»Рё РѕСЂРёРµРЅС‚РёСЂ.");
+          if (!localMatches.length) setError("Не нашли точный адрес. Укажите точку на карте.");
         })
         .finally(() => !ignore && setLoading(false));
     }, 280);
@@ -1968,14 +1977,14 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
     try {
       const data = await reverseAddress(point);
       const address = normalizeAddress(data.address) || {
-        title: "РўРѕС‡РєР° РЅР° РєР°СЂС‚Рµ",
+        title: "Точка на карте",
         subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
         ...point
       };
       onSelect(address);
     } catch {
       onSelect({
-        title: "РўРѕС‡РєР° РЅР° РєР°СЂС‚Рµ",
+        title: "Точка на карте",
         subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
         ...point
       });
@@ -1987,18 +1996,18 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   return (
     <main className="app-content address-screen premium-address-screen">
       <div className="screen-intro with-back">
-        <button type="button" onClick={onBack} aria-label="РќР°Р·Р°Рґ"><Icon name="back" /></button>
+        <button type="button" onClick={onBack} aria-label="Назад"><Icon name="back" /></button>
         <div>
           <h1>{label}</h1>
-          <p>{region?.name ? `РџРѕРёСЃРє РїРѕ СЂРµРіРёРѕРЅСѓ: ${region.name}` : "РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРёС‚Рµ СЂРµРіРёРѕРЅ"}</p>
+          <p>{region?.name ? `Поиск по региону: ${region.name}` : "Сначала выберите регион"}</p>
         </div>
       </div>
       <label className="single-input address-search-input">
-        РђРґСЂРµСЃ
-        <input value={query} onChange={event => setQuery(event.target.value)} autoFocus placeholder="РЈР»РёС†Р°, РґРѕРј РёР»Рё РјРµСЃС‚Рѕ" />
+        Адрес
+        <input value={query} onChange={event => setQuery(event.target.value)} autoFocus placeholder="Улица, дом или место" />
       </label>
       <section className="address-map-picker-card">
-        <MapView pickup={pickerCenter} center={pickerCenter} compact status={mapPickLoading ? "РћРїСЂРµРґРµР»СЏРµРј Р°РґСЂРµСЃ..." : "РќР°Р¶РјРёС‚Рµ РЅР° РєР°СЂС‚Сѓ"} onMapPick={pickPointOnMap} />
+        <MapView pickup={pickerCenter} center={pickerCenter} compact status={mapPickLoading ? "Определяем адрес..." : "Нажмите на карту"} onMapPick={pickPointOnMap} />
       </section>
       {loading && !results.length && <div className="skeleton-list"><span /><span /><span /></div>}
       {error && <p className="state-note danger">{error}</p>}
@@ -2006,12 +2015,12 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
         <section className="address-start-hint">
           <IconAsset name="target" className="ui-asset-icon ui-asset-icon-md" />
           <div>
-            <strong>РџРѕРїСѓР»СЏСЂРЅС‹Рµ РјРµСЃС‚Р° СЂСЏРґРѕРј</strong>
-            <span>РњРѕР¶РЅРѕ РёСЃРєР°С‚СЊ СѓР»РёС†Сѓ, РґРѕРј, С€РєРѕР»Сѓ, Р±Р°Р·Р°СЂ, РјРµС‡РµС‚СЊ РёР»Рё РјРµСЃС‚РЅРѕРµ РЅР°Р·РІР°РЅРёРµ.</span>
+            <strong>Популярные места рядом</strong>
+            <span>Можно искать улицу, дом, школу, базар, мечеть или местное название.</span>
           </div>
         </section>
       )}
-      {!loading && query.trim().length >= 2 && !error && !results.length && <p className="state-note">РќРµ РЅР°С€Р»Рё С‚РѕС‡РЅС‹Р№ Р°РґСЂРµСЃ. РЈС‚РѕС‡РЅРёС‚Рµ СѓР»РёС†Сѓ, РґРѕРј РёР»Рё РѕСЂРёРµРЅС‚РёСЂ.</p>}
+      {!loading && query.trim().length >= 2 && !error && !results.length && <p className="state-note">Не нашли точный адрес. Укажите точку на карте.</p>}
       <section className="address-list-clean premium-address-list">
         {results.map(place => (
           <button type="button" key={`${place.title}-${place.subtitle}-${place.lat}-${place.lng}`} onClick={() => onSelect(place)}>

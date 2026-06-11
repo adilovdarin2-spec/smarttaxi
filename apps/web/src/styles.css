@@ -3743,27 +3743,32 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .premium-address-screen {
   min-height: calc(100svh - 76px);
-  padding: 18px 16px 28px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 12px 12px 18px;
   color: var(--taxi-text);
-  background: var(--taxi-bg);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 246, 213, .8), transparent 38%),
+    linear-gradient(180deg, #fffaf0 0%, #fff 50%, #f8f4ec 100%);
 }
 
 .premium-address-screen .screen-intro.with-back {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .premium-address-screen .screen-intro.with-back button {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   color: var(--taxi-text);
   background: #fff;
   border: 1px solid var(--taxi-border);
-  border-radius: 20px;
+  border-radius: 16px;
 }
 
 .premium-address-screen h1,
@@ -3779,7 +3784,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .address-search-input input {
-  min-height: 54px;
+  min-height: 50px;
   color: var(--taxi-text);
   background: #fff;
   border-color: var(--taxi-border);
@@ -3838,7 +3843,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .premium-address-list button {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
-  min-height: 58px;
+  min-height: 56px;
   align-items: center;
   gap: 11px;
   padding: 9px 11px;
@@ -4158,7 +4163,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   position: relative;
   min-height: calc(100svh - 76px);
   overflow: hidden;
-  padding: 0 14px 94px;
+  padding: 0 12px 94px;
   color: var(--taxi-text);
   background: transparent;
 }
@@ -4166,25 +4171,25 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-tariff-state {
   min-height: calc(100svh - 76px);
   overflow-y: auto;
-  padding-bottom: 152px;
+  padding-bottom: 156px;
 }
 
 .taxi-client-shell .reference-tariff-state .reference-map-ghost {
-  height: clamp(152px, 23svh, 196px);
-  min-height: 152px;
-  border-radius: 22px;
+  height: clamp(168px, 25svh, 218px);
+  min-height: 168px;
+  border-radius: 24px;
 }
 
 .taxi-client-shell .reference-tariff-state .reference-map-ghost .map-view {
-  border-radius: 22px;
+  border-radius: 24px;
 }
 
 .taxi-client-shell .reference-map-ambient,
 .taxi-client-shell .reference-map-ghost {
   position: relative;
-  height: clamp(228px, 36svh, 312px);
-  min-height: 228px;
-  border-radius: 24px;
+  height: clamp(286px, 45svh, 390px);
+  min-height: 286px;
+  border-radius: 26px;
   overflow: hidden;
   border: 1px solid var(--taxi-border);
   box-shadow: 0 18px 36px rgba(45, 35, 15, .16);
@@ -4194,7 +4199,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-map-ghost .map-view {
   height: 100%;
   min-height: 0;
-  border-radius: 24px;
+  border-radius: 26px;
 }
 
 .taxi-client-shell .reference-map-ambient .map-view.live-osm,
@@ -4258,24 +4263,30 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-address-card {
   position: relative;
   z-index: 3;
-  margin-top: -30px;
+  margin-top: -48px;
   display: grid;
-  gap: 8px;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 25px;
+  background: rgba(255, 255, 255, .88);
+  border: 1px solid rgba(255, 255, 255, .72);
+  box-shadow: 0 18px 46px rgba(45, 35, 15, .16);
+  backdrop-filter: blur(16px);
 }
 
 .taxi-client-shell .reference-address-row {
-  min-height: 62px;
+  min-height: 58px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 9px 11px;
   border-radius: 18px;
   color: var(--taxi-text);
   background: #fff;
   border: 1px solid var(--taxi-border);
   text-align: left;
-  box-shadow: 0 10px 24px rgba(45, 35, 15, .07);
+  box-shadow: none;
 }
 
 .taxi-client-shell .reference-address-row.destination {
@@ -4314,8 +4325,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-address-text strong {
   color: var(--taxi-text);
-  font-size: 16px;
-  line-height: 21px;
+  font-size: 15px;
+  line-height: 20px;
   font-weight: 950;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4374,7 +4385,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-recent-section {
-  margin-top: 6px;
+  margin-top: 10px;
 }
 
 .taxi-client-shell .reference-section-head {
@@ -4404,12 +4415,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-recent-row {
-  min-height: 62px;
+  min-height: 58px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
-  padding: 9px 11px;
+  padding: 8px 10px;
   border: 1px solid var(--taxi-border);
   border-radius: 17px;
   background: #fff;
@@ -4462,7 +4473,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-route-card {
-  margin-top: 7px;
+  margin-top: -32px;
+  position: relative;
+  z-index: 4;
   padding: 11px 12px;
   background: #fff;
   border: 1px solid var(--taxi-border);
@@ -4471,6 +4484,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 10px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
+  box-shadow: 0 16px 38px rgba(45, 35, 15, .13);
 }
 
 .taxi-client-shell .reference-route-line {
@@ -4555,8 +4569,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-section-title strong {
-  font-size: 19px;
-  line-height: 23px;
+  font-size: 18px;
+  line-height: 22px;
   letter-spacing: -.01em;
 }
 
@@ -4604,17 +4618,17 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-list {
   display: grid;
-  gap: 9px;
+  gap: 10px;
 }
 
 .taxi-client-shell .reference-tariff-card {
-  min-height: 108px;
+  min-height: 104px;
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr) minmax(70px, auto);
-  gap: 14px;
+  grid-template-columns: 118px minmax(0, 1fr) minmax(74px, auto);
+  gap: 16px;
   align-items: center;
-  padding: 12px 12px 12px 13px;
-  border-radius: 21px;
+  padding: 12px 12px 12px 14px;
+  border-radius: 22px;
   color: var(--taxi-text);
   background: #fff;
   border: 1px solid var(--taxi-border);
@@ -4634,8 +4648,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-car {
   position: relative;
-  width: 112px;
-  height: 74px;
+  width: 118px;
+  height: 76px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4659,27 +4673,28 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-tariff-car img {
   position: relative;
   z-index: 1;
-  width: 122px;
-  height: 66px;
+  width: 130px;
+  height: 70px;
   object-fit: contain;
   object-position: center;
   display: block;
-  transform: translateX(-3px);
+  transform: translateX(-2px);
 }
 
 .taxi-client-shell .reference-tariff-copy {
   min-width: 0;
   display: grid;
-  gap: 4px;
-  padding: 0 4px 0 2px;
+  gap: 3px;
+  padding: 0 8px 0 4px;
 }
 
 .taxi-client-shell .reference-tariff-title-row {
-  display: grid;
-  align-items: start;
-  justify-content: start;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .taxi-client-shell .reference-tariff-title {
@@ -4694,7 +4709,6 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-recommended {
   flex: 0 0 auto;
-  justify-self: start;
   font-size: 10px;
   line-height: 13px;
   color: var(--taxi-gold-deep);
@@ -4741,8 +4755,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: grid;
   justify-items: end;
   align-items: center;
-  gap: 9px;
-  min-width: 70px;
+  gap: 10px;
+  min-width: 74px;
 }
 
 .taxi-client-shell .reference-tariff-radio {
@@ -4775,13 +4789,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-payment-row {
-  min-height: 60px;
+  min-height: 56px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) minmax(86px, auto) 18px;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 13px 14px;
+  padding: 11px 13px;
   border-radius: 18px;
   border: 1px solid var(--taxi-border);
   color: var(--taxi-text);
@@ -4850,12 +4864,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   margin: 0;
   background: rgba(255, 252, 246, .96);
   border: 1px solid var(--taxi-border);
-  border-radius: 24px;
+  border-radius: 22px;
   box-shadow: 0 18px 54px rgba(45, 35, 15, .22);
-  padding: 11px;
+  padding: 10px;
   backdrop-filter: blur(16px);
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-columns: 86px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
@@ -4884,14 +4898,14 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-order-button {
-  height: 54px;
+  height: 52px;
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 6px;
   padding: 0 12px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 17px;
   color: #141414;
   font-size: 14px;
   font-weight: 900;
@@ -5730,8 +5744,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .address-map-picker-card {
-  height: 190px;
-  border-radius: 24px;
+  height: clamp(238px, 34svh, 300px);
+  border-radius: 26px;
   overflow: hidden;
   border: 1px solid rgba(17, 17, 17, .08);
   box-shadow: 0 16px 34px rgba(17, 17, 17, .10);
@@ -5741,7 +5755,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .address-map-picker-card .map-view {
   height: 100%;
   min-height: 0;
-  border-radius: 24px;
+  border-radius: 26px;
   cursor: crosshair;
 }
 
@@ -5758,6 +5772,21 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: 0 0 0 8px rgba(216, 154, 5, .18), 0 8px 18px rgba(17, 17, 17, .16);
   pointer-events: none;
   z-index: 7;
+}
+
+.map-view.pickable::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 13px);
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: rgba(216, 154, 5, .94);
+  box-shadow: 0 7px 12px rgba(17, 17, 17, .16);
+  pointer-events: none;
+  z-index: 6;
 }
 
 .map-error-chip {
@@ -6114,36 +6143,38 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-tariff-state {
-  padding-bottom: 220px;
+  padding-bottom: 168px;
 }
 
 .taxi-client-shell .reference-tariff-list {
-  gap: 8px;
+  gap: 10px;
 }
 
 .taxi-client-shell .reference-tariff-card {
-  min-height: 92px;
-  grid-template-columns: 98px minmax(0, 1fr) minmax(66px, auto);
-  gap: 10px;
-  padding: 10px 10px 10px 11px;
-  border-radius: 20px;
+  min-height: 104px;
+  grid-template-columns: 118px minmax(0, 1fr) minmax(74px, auto);
+  gap: 16px;
+  padding: 12px 12px 12px 14px;
+  border-radius: 22px;
 }
 
 .taxi-client-shell .reference-tariff-car {
-  width: 98px;
-  height: 62px;
-  border-radius: 17px;
+  width: 118px;
+  height: 76px;
+  border-radius: 19px;
 }
 
 .taxi-client-shell .reference-car-thumb img,
 .taxi-client-shell .reference-tariff-car img {
-  width: 106px;
-  height: 58px;
+  width: 130px;
+  height: 70px;
   transform: translateX(-2px);
 }
 
 .taxi-client-shell .reference-tariff-copy {
-  gap: 2px;
+  gap: 3px;
+  padding-left: 4px;
+  padding-right: 8px;
 }
 
 .taxi-client-shell .reference-tariff-title {
@@ -6154,11 +6185,72 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-tariff-meta,
 .taxi-client-shell .reference-tariff-copy em,
 .taxi-client-shell .reference-tariff-copy i {
-  font-size: 10px;
-  line-height: 13px;
+  font-size: 11px;
+  line-height: 14px;
 }
 
 .taxi-client-shell .reference-tariff-price {
   font-size: 17px;
   line-height: 20px;
+}
+
+@media (max-width: 380px) {
+  .taxi-client-shell .client-reference-screen {
+    padding-inline: 10px;
+  }
+
+  .taxi-client-shell .reference-map-ambient {
+    height: clamp(270px, 42svh, 350px);
+    min-height: 270px;
+  }
+
+  .taxi-client-shell .reference-route-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .taxi-client-shell .reference-edit-route {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    flex-direction: row;
+  }
+
+  .taxi-client-shell .reference-tariff-card {
+    grid-template-columns: 94px minmax(0, 1fr) minmax(62px, auto);
+    gap: 10px;
+    min-height: 94px;
+    padding: 10px;
+  }
+
+  .taxi-client-shell .reference-tariff-car {
+    width: 94px;
+    height: 62px;
+  }
+
+  .taxi-client-shell .reference-car-thumb img,
+  .taxi-client-shell .reference-tariff-car img {
+    width: 106px;
+    height: 58px;
+  }
+
+  .taxi-client-shell .reference-payment-row {
+    grid-template-columns: 34px minmax(0, 1fr) 18px;
+  }
+
+  .taxi-client-shell .reference-payment-value {
+    display: none;
+  }
+
+  .taxi-client-shell .reference-sticky-order {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .taxi-client-shell .reference-order-button {
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+
+  .premium-address-screen {
+    padding-inline: 10px;
+  }
 }
