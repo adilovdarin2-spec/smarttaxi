@@ -6189,6 +6189,31 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7), 0 12px 22px rgba(216, 154, 5, .15);
 }
 
+.trip-driver-avatar.neutral.success {
+  color: #166534;
+  background:
+    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, .92), transparent 34%),
+    linear-gradient(180deg, #ecfdf5, #bbf7d0);
+  border-color: rgba(34, 197, 94, .24);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .75), 0 12px 22px rgba(22, 101, 52, .12);
+}
+
+.trip-driver-avatar.neutral.waiting {
+  color: #92400e;
+  background:
+    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, .92), transparent 34%),
+    linear-gradient(180deg, #fff7ed, #fed7aa);
+  border-color: rgba(251, 146, 60, .28);
+}
+
+.trip-driver-avatar.neutral.warning {
+  color: #991b1b;
+  background:
+    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, .92), transparent 34%),
+    linear-gradient(180deg, #fff1f2, #fecdd3);
+  border-color: rgba(244, 63, 94, .24);
+}
+
 .trip-driver-avatar svg {
   width: 30px;
   height: 30px;
@@ -6258,6 +6283,53 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   line-height: 16px;
 }
 
+.ride-status-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px 1px 0;
+}
+
+.ride-status-rail span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: var(--taxi-muted);
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ride-status-rail i {
+  height: 4px;
+  border-radius: 999px;
+  background: #ece3d3;
+}
+
+.ride-status-rail span.done,
+.ride-status-rail span.active {
+  color: var(--taxi-text);
+}
+
+.ride-status-rail span.done i {
+  background: #d9b85f;
+}
+
+.ride-status-rail span.active i {
+  background: linear-gradient(90deg, #ffe08a, #d89a05);
+  box-shadow: 0 5px 12px rgba(216, 154, 5, .2);
+}
+
+.ride-status-rail.warning {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ride-status-rail.warning span.active i {
+  background: linear-gradient(90deg, #fecdd3, #fb7185);
+}
+
 .trip-car-plate-row {
   display: flex;
   justify-content: space-between;
@@ -6317,6 +6389,79 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ride-status-note {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 18px;
+  color: var(--taxi-text);
+  background: #fffaf0;
+  border: 1px solid rgba(216, 154, 5, .15);
+}
+
+.ride-status-note.success {
+  background: #f0fdf4;
+  border-color: rgba(34, 197, 94, .18);
+}
+
+.ride-status-note.waiting {
+  background: #fff7ed;
+  border-color: rgba(251, 146, 60, .2);
+}
+
+.ride-status-note.warning {
+  background: #fff1f2;
+  border-color: rgba(244, 63, 94, .18);
+}
+
+.ride-status-note-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  color: var(--taxi-gold-deep);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(216, 154, 5, .14);
+}
+
+.ride-status-note.success .ride-status-note-icon { color: #166534; box-shadow: inset 0 0 0 1px rgba(34, 197, 94, .18); }
+.ride-status-note.waiting .ride-status-note-icon { color: #92400e; box-shadow: inset 0 0 0 1px rgba(251, 146, 60, .2); }
+.ride-status-note.warning .ride-status-note-icon { color: #991b1b; box-shadow: inset 0 0 0 1px rgba(244, 63, 94, .18); }
+
+.ride-status-note small {
+  display: block;
+  color: var(--taxi-secondary);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 900;
+}
+
+.ride-status-note b {
+  display: block;
+  margin-top: 2px;
+  color: var(--taxi-text);
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 900;
+}
+
+.ride-status-note em {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--taxi-gold-deep);
+  background: rgba(216, 154, 5, .1);
+  font-size: 11px;
+  line-height: 13px;
+  font-style: normal;
+  font-weight: 900;
 }
 
 .trip-action-row {
@@ -6464,6 +6609,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   .trip-search-card,
   .trip-driver-card { padding: 14px; border-radius: 24px; }
   .trip-summary-line { grid-template-columns: 1fr; }
+  .trip-driver-found-screen .driver-found-sheet { gap: 10px; margin-top: -30px; }
+  .driver-found-head { grid-template-columns: 44px minmax(0, 1fr); }
+  .driver-found-head .status-badge { grid-column: 1 / -1; justify-self: start; }
+  .driver-found-profile { padding: 10px 12px; }
+  .driver-found-meta { grid-template-columns: 1fr 1fr; }
+  .ride-status-rail span { font-size: 9px; }
+  .ride-status-note { grid-template-columns: 34px minmax(0, 1fr); padding: 10px; }
+  .ride-status-note-icon { width: 34px; height: 34px; border-radius: 13px; }
+  .trip-driver-found-screen .trip-action-row { grid-template-columns: 1fr; }
+  .trip-driver-found-screen .trip-cancel-button.secondary { grid-column: auto; }
 }
 
 .taxi-client-shell .reference-tariff-state {

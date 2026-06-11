@@ -277,7 +277,7 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: false
     },
     DRIVER_GOING_TO_CLIENT: {
-      title: "Водитель едет к вам",
+      title: "Водитель найден",
       subtitle: driverEtaText(order),
       badge: label,
       canCancel: true,
@@ -286,7 +286,7 @@ function clientLifecycleStage(status, order) {
     },
     DRIVER_ARRIVED: {
       title: "Водитель на месте",
-      subtitle: "Машина подъехала к точке подачи",
+      subtitle: "Ожидает вас у точки подачи",
       badge: label,
       canCancel: true,
       canContact: true,
@@ -301,8 +301,8 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: false
     },
     TRIP_STARTED: {
-      title: "Вы в пути",
-      subtitle: "Поездка началась, едем к пункту назначения",
+      title: "Поездка началась",
+      subtitle: "Едем к месту назначения",
       badge: label,
       canCancel: false,
       canContact: true,
@@ -317,7 +317,7 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: true
     },
     PAYMENT_PENDING: {
-      title: "Ожидаем оплату",
+      title: "Поездка завершена",
       subtitle: `Способ оплаты: ${payment}`,
       badge: label,
       canCancel: false,
@@ -325,7 +325,7 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: true
     },
     PAID: {
-      title: "Поездка оплачена",
+      title: "Оплата получена",
       subtitle: "Спасибо за поездку со SmartTaxi",
       badge: label,
       canCancel: false,
@@ -333,15 +333,15 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: true
     },
     RATED: {
-      title: "Поездка закрыта",
-      subtitle: "Можно создать новый заказ",
+      title: "Спасибо за оценку",
+      subtitle: "Можно создать новую поездку",
       badge: label,
       canCancel: false,
       canContact: false,
       canStartNewTrip: true
     },
     NO_SHOW: {
-      title: "Поездка закрыта",
+      title: "Поездка не состоялась",
       subtitle: "Заказ закрыт как неявка клиента",
       badge: label,
       canCancel: false,
@@ -898,6 +898,7 @@ export default function ClientApp() {
     socket.on("order.trip_completed", updateOrder);
     socket.on("order.payment_pending", updateOrder);
     socket.on("order.paid", updateOrder);
+    socket.on("order.rated", updateOrder);
     socket.on("order.no_show", updateOrder);
     socket.on("order.cancelled", updateOrder);
     const poll = window.setInterval(() => {
@@ -922,6 +923,7 @@ export default function ClientApp() {
       socket.off("order.trip_completed", updateOrder);
       socket.off("order.payment_pending", updateOrder);
       socket.off("order.paid", updateOrder);
+      socket.off("order.rated", updateOrder);
       socket.off("order.no_show", updateOrder);
       socket.off("order.cancelled", updateOrder);
       window.clearInterval(poll);
@@ -2170,6 +2172,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   const carLine = driverVehicleLine(order);
   const driverPoint = driverMapPoint(order);
   const stage = clientLifecycleStage(status, order);
+  const statusTone = tripStatusTone(status);
 
   if (status === "SEARCHING_DRIVER") {
     return (
@@ -2213,17 +2216,18 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   }
 
   return (
-    <section className="trip-stage-screen trip-driver-found-screen">
+    <section className={`trip-stage-screen trip-driver-found-screen trip-status-${status.toLowerCase().replace(/_/g, "-")}`}>
       <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={route} status="" mode="driver-found" />
       <section className="trip-driver-card driver-found-sheet">
         <div className="trip-driver-topline driver-found-head">
-          <span className="trip-driver-avatar neutral"><Icon name="user" size={24} /></span>
+          <span className={`trip-driver-avatar neutral ${statusTone}`}><Icon name="user" size={24} /></span>
           <div>
             <small>{stage.subtitle}</small>
             <h1>{stage.title}</h1>
           </div>
           <StatusBadge label={stage.badge} tone={terminal ? "muted" : "gold"} />
         </div>
+        <RideStatusRail status={status} />
         <div className="driver-found-profile">
           <div>
             <span>Водитель</span>
@@ -2240,6 +2244,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         </div>
         <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
         <DriverFoundMeta order={order} estimate={estimate} />
+        <RideStatusNote status={status} order={order} destination={tripDestination} />
         <div className="trip-action-row">
           <button type="button" className="trip-details-button" onClick={() => setDetailsOpen(true)}>
             <Icon name="info" size={18} /> Детали поездки
@@ -2316,6 +2321,121 @@ function driverMapPoint(order) {
   return { lat, lng };
 }
 
+function tripStatusTone(status) {
+  if (["TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status)) return "success";
+  if (["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(status)) return "waiting";
+  if (status === "NO_SHOW") return "warning";
+  return "active";
+}
+
+function tripPrice(order, estimate) {
+  return Number(order?.price || estimate?.estimatedPrice || 0);
+}
+
+function waitingInfo(order) {
+  const started = order?.waiting_started_at || order?.waitingStartedAt || order?.driver_arrived_at || order?.arrived_at;
+  const freeUntil = order?.free_waiting_until || order?.freeWaitingUntil;
+  const total = Number(order?.waiting_total ?? order?.waitingTotal ?? 0);
+  const perMinute = Number(order?.waiting_price_per_minute ?? order?.waitingPricePerMinute ?? 0);
+  const parts = [];
+  if (started) parts.push("Ожидание началось");
+  if (freeUntil) parts.push(`бесплатно до ${formatShortTime(freeUntil)}`);
+  if (perMinute > 0) parts.push(`${perMinute} ₸/мин после бесплатного времени`);
+  if (total > 0) parts.push(`начислено ${total} ₸`);
+  return parts.length ? parts.join(" · ") : "Водитель ждёт у точки подачи. Пожалуйста, подойдите к машине.";
+}
+
+function formatShortTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+function paymentInstruction(order) {
+  if (order?.payment_method === "KASPI") return "Переведите сумму водителю через Kaspi и покажите подтверждение.";
+  return "Оплатите поездку наличными водителю.";
+}
+
+function RideStatusRail({ status }) {
+  const steps = [
+    { key: "DRIVER_FOUND", label: "Водитель" },
+    { key: "DRIVER_ARRIVED", label: "Подача" },
+    { key: "TRIP_STARTED", label: "В пути" },
+    { key: "TRIP_COMPLETED", label: "Финиш" }
+  ];
+  const order = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"];
+  const currentIndex = order.indexOf(status);
+  if (status === "NO_SHOW") {
+    return (
+      <div className="ride-status-rail warning">
+        <span className="done"><i />Водитель</span>
+        <span className="done"><i />Подача</span>
+        <span className="active"><i />Не состоялась</span>
+      </div>
+    );
+  }
+  return (
+    <div className="ride-status-rail">
+      {steps.map(step => {
+        const stepIndex = order.indexOf(step.key);
+        const active = status === step.key || (step.key === "DRIVER_FOUND" && status === "DRIVER_GOING_TO_CLIENT") || (step.key === "DRIVER_ARRIVED" && status === "WAITING_CLIENT") || (step.key === "TRIP_COMPLETED" && ["PAYMENT_PENDING", "PAID", "RATED"].includes(status));
+        const done = currentIndex > stepIndex || ["PAYMENT_PENDING", "PAID", "RATED"].includes(status);
+        return <span key={step.key} className={active ? "active" : done ? "done" : ""}><i />{step.label}</span>;
+      })}
+    </div>
+  );
+}
+
+function RideStatusNote({ status, order, destination }) {
+  const payment = paymentLabel(order.payment_method);
+  const price = tripPrice(order);
+  const destinationTitle = destination?.title || order.dropoff_text || "пункт назначения";
+  let title = "Статус поездки";
+  let text = "Следим за изменениями заказа.";
+  let icon = "route";
+
+  if (["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT"].includes(status)) {
+    title = "Водитель принял заказ";
+    text = driverEtaText(order);
+    icon = "car";
+  } else if (["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(status)) {
+    title = status === "WAITING_CLIENT" ? "Идёт ожидание" : "Водитель на месте";
+    text = waitingInfo(order);
+    icon = "clock";
+  } else if (status === "TRIP_STARTED") {
+    title = "Маршрут активен";
+    text = `Едем к адресу: ${destinationTitle}`;
+    icon = "route";
+  } else if (["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(status)) {
+    title = price ? `К оплате ${price.toLocaleString("ru-RU")} ₸` : "Оплата поездки";
+    text = paymentInstruction(order);
+    icon = "card";
+  } else if (status === "PAID") {
+    title = "Оплата подтверждена";
+    text = "Можно создать новую поездку.";
+    icon = "check";
+  } else if (status === "RATED") {
+    title = "Поездка закрыта";
+    text = "Спасибо, что помогаете делать SmartTaxi лучше.";
+    icon = "star";
+  } else if (status === "NO_SHOW") {
+    title = "Заказ закрыт";
+    text = order.cancel_reason || order.no_show_reason || "Клиент не вышел к машине.";
+    icon = "info";
+  }
+
+  return (
+    <div className={`ride-status-note ${tripStatusTone(status)}`}>
+      <span className="ride-status-note-icon"><Icon name={icon} size={18} /></span>
+      <span>
+        <small>{title}</small>
+        <b>{text}</b>
+        {["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(status) && <em>{payment}</em>}
+      </span>
+    </div>
+  );
+}
+
 function SearchingOrderMeta({ order, estimate }) {
   return (
     <div className="search-order-meta">
@@ -2340,7 +2460,7 @@ function DriverFoundMeta({ order, estimate }) {
     <div className="driver-found-meta">
       <span>
         <small>Цена</small>
-        <b><Money value={order.price || estimate?.estimatedPrice} /></b>
+        <b><Money value={tripPrice(order, estimate)} /></b>
       </span>
       <span>
         <small>Оплата</small>
