@@ -11,6 +11,7 @@ import {
   selectDriverRegion
 } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { updateDriverLocation } from "../routing/routing.service.js";
+import { ACTIVE_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 const router = Router();
 
 router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
@@ -69,7 +70,7 @@ router.get("/me/active-order", requireAuth, requireRole("DRIVER"), async (req, r
       WHERE o.driver_id=$1 AND o.status = ANY($2::text[])
       ORDER BY o.created_at DESC
       LIMIT 1
-    `, [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0] || null;
+    `, [driver.id, ACTIVE_ORDER_STATUSES])).rows[0] || null;
     res.json({ driver, activeOrder });
   } catch (e) { next(e); }
 });
@@ -86,7 +87,7 @@ router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, 
     }
 
     if (["OFFLINE", "BREAK"].includes(body.status)) {
-      const active = await query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]]);
+      const active = await query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ACTIVE_ORDER_STATUSES]);
       if (active.rows[0]) throw new AppError("Driver has active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
     }
 
@@ -137,8 +138,8 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
     const stats = await query(`
       SELECT COUNT(*)::int orders_total,
-             COUNT(*) FILTER (WHERE status='COMPLETED')::int completed_orders,
-             COALESCE(SUM(price) FILTER (WHERE status='COMPLETED'),0)::int revenue_total
+             COUNT(*) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED'))::int completed_orders,
+             COALESCE(SUM(price) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED')),0)::int revenue_total
       FROM orders
       WHERE driver_id=$1 AND created_at >= date_trunc('day', NOW())
     `, [driver.id]);
@@ -148,7 +149,7 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
       WHERE driver_id=$1 AND status = ANY($2::text[])
       ORDER BY created_at DESC
       LIMIT 1
-    `, [driver.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0] || null;
+    `, [driver.id, ACTIVE_ORDER_STATUSES])).rows[0] || null;
     res.json({
       driver,
       activeOrder,

@@ -20,6 +20,12 @@ assert.doesNotMatch(schema, /name TEXT UNIQUE NOT NULL/i, "tariff name must not 
   "free_waiting_minutes",
   "waiting_price_per_minute",
   "cancellation_fee",
+  "included_km",
+  "included_minutes",
+  "no_show_fee",
+  "zone_surcharge",
+  "night_coefficient",
+  "demand_coefficient",
   "sort_order"
 ].forEach(column => assert.match(schema, new RegExp(column, "i"), `tariff schema missing ${column}`));
 
@@ -39,8 +45,8 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
 [
   "listAdminTariffAnalytics",
   "pricing_snapshot",
-  "status='COMPLETED'",
-  "status='CANCELLED'",
+  "TRIP_COMPLETED",
+  "CANCELLED_BY_CLIENT",
   "average_final_price",
   "service_commission_total",
   "driver_earning_total",
@@ -52,7 +58,10 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
 ));
 
 [
-  "raw = basePrice + distanceKm * pricePerKm + durationMin * pricePerMinute",
+  "billableDistanceKm",
+  "billableDurationMin",
+  "nightCoefficient",
+  "demandCoefficient",
   "waitingPrice",
   "serviceCommission",
   "driverEarning",

@@ -2,6 +2,18 @@ import { query } from "./pool.js";
 
 const statements = [
   `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
+  `CREATE TABLE IF NOT EXISTS auth_sms_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    phone TEXT NOT NULL,
+    code_hash TEXT NOT NULL,
+    purpose TEXT NOT NULL CHECK (purpose IN ('REGISTER','RESET_PASSWORD')),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    verified_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "ALTER TABLE auth_sms_codes ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ",
+  "CREATE INDEX IF NOT EXISTS idx_auth_sms_codes_phone_purpose_created_at ON auth_sms_codes(phone, purpose, created_at DESC)",
   `CREATE TABLE IF NOT EXISTS regions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code TEXT UNIQUE NOT NULL,
@@ -19,7 +31,7 @@ const statements = [
      (
        'ATAKENT',
        'Атакент',
-       '[[68.4300,40.7800],[68.5700,40.7800],[68.5700,40.9000],[68.4300,40.9000],[68.4300,40.7800]]'::jsonb,
+       '[[68.4750,40.8200],[68.5350,40.8200],[68.5350,40.8750],[68.4750,40.8750],[68.4750,40.8200]]'::jsonb,
        40.844435,
        68.509021,
        'KZT',
@@ -49,6 +61,87 @@ const statements = [
        '[[69.3000,42.1000],[69.8500,42.1000],[69.8500,42.4800],[69.3000,42.4800],[69.3000,42.1000]]'::jsonb,
        42.314696,
        69.588328,
+       'KZT',
+       true
+     ),
+     (
+       'KIROV',
+       'Киров',
+       '[[68.5000,40.7500],[68.5700,40.7500],[68.5700,40.8200],[68.5000,40.8200],[68.5000,40.7500]]'::jsonb,
+       40.786900,
+       68.534400,
+       'KZT',
+       true
+     ),
+     (
+       'ASYKATA',
+       'Асыката',
+       '[[68.3200,40.8600],[68.4100,40.8600],[68.4100,40.9300],[68.3200,40.9300],[68.3200,40.8600]]'::jsonb,
+       40.894700,
+       68.363500,
+       'KZT',
+       true
+     ),
+     (
+       'DOSTYK',
+       'Достык',
+       '[[68.4200,40.7800],[68.4900,40.7800],[68.4900,40.8400],[68.4200,40.8400],[68.4200,40.7800]]'::jsonb,
+       40.807200,
+       68.459200,
+       'KZT',
+       true
+     ),
+     (
+       'YNTYMAK',
+       'Ынтымак',
+       '[[68.4600,40.7300],[68.5300,40.7300],[68.5300,40.7900],[68.4600,40.7900],[68.4600,40.7300]]'::jsonb,
+       40.760600,
+       68.497900,
+       'KZT',
+       true
+     ),
+     (
+       'BIRLIK',
+       'Бирлик',
+       '[[68.3700,40.7900],[68.4350,40.7900],[68.4350,40.8550],[68.3700,40.8550],[68.3700,40.7900]]'::jsonb,
+       40.822500,
+       68.401800,
+       'KZT',
+       true
+     ),
+     (
+       'FIRDOUSI',
+       'Фирдоуси',
+       '[[68.4700,40.6900],[68.5350,40.6900],[68.5350,40.7550],[68.4700,40.7550],[68.4700,40.6900]]'::jsonb,
+       40.723100,
+       68.501600,
+       'KZT',
+       true
+     ),
+     (
+       'ZHANA_ZHOL',
+       'Жана Жол',
+       '[[68.5300,40.7250],[68.6000,40.7250],[68.6000,40.7900],[68.5300,40.7900],[68.5300,40.7250]]'::jsonb,
+       40.756700,
+       68.566100,
+       'KZT',
+       true
+     ),
+     (
+       'MAKTAARAL',
+       'Мақтаарал',
+       '[[68.5050,40.7050],[68.5700,40.7050],[68.5700,40.7650],[68.5050,40.7650],[68.5050,40.7050]]'::jsonb,
+       40.735800,
+       68.536400,
+       'KZT',
+       true
+     ),
+     (
+       'ATAMEKEN',
+       'Атамекен',
+       '[[68.5450,40.7800],[68.6200,40.7800],[68.6200,40.8450],[68.5450,40.8450],[68.5450,40.7800]]'::jsonb,
+       40.812100,
+       68.583900,
        'KZT',
        true
      )
@@ -94,28 +187,63 @@ const statements = [
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
     driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('ROAD_HAZARD','ACCIDENT','ROAD_WORK','SPEED_CAMERA','TRAFFIC_JAM','ROAD_CLOSED','OTHER')),
+    type TEXT NOT NULL CHECK (type IN ('ROAD_HAZARD','ACCIDENT','ROAD_WORK','SPEED_CAMERA','POLICE','TRAFFIC_JAM','ROAD_CLOSED','BAD_ROAD','POTHOLE','SPEED_BUMP','ICY_ROAD','SCHOOL_ZONE','TEMPORARY_SPEED_LIMIT','DANGEROUS_TURN','RAILROAD_CROSSING','PEDESTRIAN_CROSSING','OTHER')),
     comment TEXT NOT NULL DEFAULT '',
     lat NUMERIC(10,6) NOT NULL,
     lng NUMERIC(10,6) NOT NULL,
+    speed_limit INTEGER,
     status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','EXPIRED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '2 hours'),
-    confirmations_count INTEGER NOT NULL DEFAULT 0
+    confirmations_count INTEGER NOT NULL DEFAULT 0,
+    dismissals_count INTEGER NOT NULL DEFAULT 0,
+    confidence_score INTEGER NOT NULL DEFAULT 50
   )`,
+  "ALTER TABLE road_alerts ADD COLUMN IF NOT EXISTS speed_limit INTEGER",
+  "ALTER TABLE road_alerts ADD COLUMN IF NOT EXISTS dismissals_count INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE road_alerts ADD COLUMN IF NOT EXISTS confidence_score INTEGER NOT NULL DEFAULT 50",
+  "ALTER TABLE road_alerts DROP CONSTRAINT IF EXISTS road_alerts_type_check",
+  `ALTER TABLE road_alerts ADD CONSTRAINT road_alerts_type_check
+   CHECK (type IN ('ROAD_HAZARD','ACCIDENT','ROAD_WORK','SPEED_CAMERA','POLICE','TRAFFIC_JAM','ROAD_CLOSED','BAD_ROAD','POTHOLE','SPEED_BUMP','ICY_ROAD','SCHOOL_ZONE','TEMPORARY_SPEED_LIMIT','DANGEROUS_TURN','RAILROAD_CROSSING','PEDESTRIAN_CROSSING','OTHER'))`,
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE CASCADE",
   "ALTER TABLE tariffs DROP CONSTRAINT IF EXISTS tariffs_name_key",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS display_name TEXT",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS description TEXT",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS included_km NUMERIC(8,2) NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS included_minutes INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS free_waiting_minutes INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS waiting_price_per_minute INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS cancellation_fee INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS no_show_fee INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS zone_surcharge INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS intercity_override INTEGER",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS night_coefficient NUMERIC(6,2) NOT NULL DEFAULT 1",
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS demand_coefficient NUMERIC(6,2) NOT NULL DEFAULT 1",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()",
   "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE RESTRICT",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb",
+  "ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'SEARCHING_DRIVER'",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_arrived_at TIMESTAMPTZ",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS waiting_started_at TIMESTAMPTZ",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS free_waiting_until TIMESTAMPTZ",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_waiting_started_at TIMESTAMPTZ",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS waiting_price_per_minute INTEGER",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS waiting_total INTEGER NOT NULL DEFAULT 0",
+  `CREATE TABLE IF NOT EXISTS payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    method TEXT NOT NULL CHECK (method IN ('CASH','KASPI')),
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','PAID','FAILED','CANCELLED')),
+    amount INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'KZT',
+    provider_reference TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id)",
   "UPDATE tariffs SET region_id=(SELECT id FROM regions WHERE code='ATAKENT') WHERE region_id IS NULL",
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_tariffs_region_name ON tariffs(region_id, name)",
   `INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
@@ -123,11 +251,12 @@ const statements = [
    FROM regions r
    CROSS JOIN (
      VALUES
-       ('Economy','Эконом','Быстро и доступно для ежедневных поездок',400,110,20,700,15,2,1,3,50,0,10),
-       ('Comfort','Комфорт','Больше удобства для городских поездок',600,150,25,1000,15,2,1,3,60,0,20),
-       ('Business','Бизнес','Премиальный автомобиль и спокойная поездка',900,220,35,1600,15,2,1,3,80,0,30)
+      ('Economy','Эконом','Быстро и доступно для ежедневных поездок',350,110,18,500,15,2,1,3,50,0,10),
+      ('Comfort','Комфорт','Больше удобства для городских поездок',500,140,22,750,15,2,1,3,60,0,20),
+      ('Business','Бизнес','Премиальный автомобиль и спокойная поездка',800,210,35,1200,15,2,1,3,80,0,30),
+      ('Delivery','Доставка','Передать посылку по региону',300,80,12,450,15,0,1,3,50,0,40)
    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
-   WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT')
+   WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
    ON CONFLICT (region_id, name) DO UPDATE
    SET region_id=EXCLUDED.region_id,
        display_name=EXCLUDED.display_name,
@@ -145,12 +274,6 @@ const statements = [
        sort_order=EXCLUDED.sort_order,
        is_active=EXCLUDED.is_active,
        updated_at=NOW()`,
-  `UPDATE tariffs
-   SET is_active=false, updated_at=NOW()
-   WHERE name='Delivery'
-     AND region_id IN (
-       SELECT id FROM regions WHERE code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT')
-     )`,
   `CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     action TEXT NOT NULL,
@@ -241,6 +364,8 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id)",
   "CREATE INDEX IF NOT EXISTS idx_orders_region_id ON orders(region_id)",
   "CREATE INDEX IF NOT EXISTS idx_orders_region_status_created_at ON orders(region_id, status, created_at DESC)",
+  "DROP INDEX IF EXISTS idx_orders_one_active_per_driver",
+  "DROP INDEX IF EXISTS idx_orders_one_active_per_client",
   `DO $$
   BEGIN
     IF NOT EXISTS (
@@ -249,15 +374,34 @@ const statements = [
         SELECT driver_id
         FROM orders
         WHERE driver_id IS NOT NULL
-          AND status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS')
+          AND status IN ('DRIVER_FOUND','DRIVER_GOING_TO_CLIENT','DRIVER_ARRIVED','WAITING_CLIENT','TRIP_STARTED','DRIVER_ASSIGNED','IN_PROGRESS')
         GROUP BY driver_id
         HAVING COUNT(*) > 1
       ) duplicate_active_driver_orders
     ) THEN
       CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_one_active_per_driver ON orders(driver_id)
-        WHERE driver_id IS NOT NULL AND status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS');
+        WHERE driver_id IS NOT NULL AND status IN ('DRIVER_FOUND','DRIVER_GOING_TO_CLIENT','DRIVER_ARRIVED','WAITING_CLIENT','TRIP_STARTED','DRIVER_ASSIGNED','IN_PROGRESS');
     ELSE
       RAISE NOTICE 'Skipping idx_orders_one_active_per_driver because duplicate active driver orders exist';
+    END IF;
+  END $$`,
+  `DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM (
+        SELECT client_id
+        FROM orders
+        WHERE client_id IS NOT NULL
+          AND status IN ('SEARCHING_DRIVER','NEW','DRIVER_FOUND','DRIVER_GOING_TO_CLIENT','DRIVER_ARRIVED','WAITING_CLIENT','TRIP_STARTED','TRIP_COMPLETED','PAYMENT_PENDING','DRIVER_ASSIGNED','IN_PROGRESS')
+        GROUP BY client_id
+        HAVING COUNT(*) > 1
+      ) duplicate_active_client_orders
+    ) THEN
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_one_active_per_client ON orders(client_id)
+        WHERE client_id IS NOT NULL AND status IN ('SEARCHING_DRIVER','NEW','DRIVER_FOUND','DRIVER_GOING_TO_CLIENT','DRIVER_ARRIVED','WAITING_CLIENT','TRIP_STARTED','TRIP_COMPLETED','PAYMENT_PENDING','DRIVER_ASSIGNED','IN_PROGRESS');
+    ELSE
+      RAISE NOTICE 'Skipping idx_orders_one_active_per_client because duplicate active client orders exist';
     END IF;
   END $$`,
   "CREATE INDEX IF NOT EXISTS idx_financial_transactions_order_id ON financial_transactions(order_id)",
@@ -298,11 +442,8 @@ const statements = [
     ALTER TABLE drivers ADD CONSTRAINT drivers_status_check CHECK (status IN ('OFFLINE','FREE','BUSY','BREAK'));
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`,
-  `DO $$
-  BEGIN
-    ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK (status IN ('NEW','DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS','COMPLETED','CANCELLED'));
-  EXCEPTION WHEN duplicate_object THEN NULL;
-  END $$`,
+  "ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check",
+  `ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK (status IN ('SEARCHING_DRIVER','DRIVER_FOUND','DRIVER_GOING_TO_CLIENT','DRIVER_ARRIVED','WAITING_CLIENT','TRIP_STARTED','TRIP_COMPLETED','PAYMENT_PENDING','PAID','RATED','CANCELLED_BY_CLIENT','CANCELLED_BY_DRIVER','CANCELLED_BY_OPERATOR','NO_SHOW','NEW','DRIVER_ASSIGNED','IN_PROGRESS','COMPLETED','CANCELLED'))`,
   `DO $$
   BEGIN
     ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('CASH','KASPI','CARD','CASHBACK','MIXED'));
@@ -334,6 +475,12 @@ const statements = [
       AND free_waiting_minutes >= 0
       AND waiting_price_per_minute >= 0
       AND cancellation_fee >= 0
+      AND included_km >= 0
+      AND included_minutes >= 0
+      AND no_show_fee >= 0
+      AND zone_surcharge >= 0
+      AND night_coefficient >= 1
+      AND demand_coefficient >= 1
       AND sort_order >= 0
     );
   EXCEPTION WHEN duplicate_object THEN NULL;

@@ -17,16 +17,27 @@ const tariffsRoutes = readFileSync(join(root, "modules", "tariffs", "tariffs.rou
 assert.match(schema, /region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "tariffs must belong to regions");
 assert.match(schema, /is_active BOOLEAN NOT NULL DEFAULT true/i, "tariffs must keep active state");
 assert.match(schema, /surge_multiplier NUMERIC\(6,2\) NOT NULL DEFAULT 1/i, "tariffs must store surge multiplier");
+assert.match(schema, /included_km NUMERIC\(8,2\) NOT NULL DEFAULT 0/i, "tariffs must store included km");
+assert.match(schema, /included_minutes INTEGER NOT NULL DEFAULT 0/i, "tariffs must store included minutes");
 assert.match(schema, /display_name TEXT/i, "tariffs must store display name");
 assert.match(schema, /description TEXT/i, "tariffs must store description");
 assert.match(schema, /free_waiting_minutes INTEGER NOT NULL DEFAULT 0/i, "tariffs must store free waiting minutes");
 assert.match(schema, /waiting_price_per_minute INTEGER NOT NULL DEFAULT 0/i, "tariffs must store waiting price");
 assert.match(schema, /cancellation_fee INTEGER NOT NULL DEFAULT 0/i, "tariffs may store cancellation fee");
+assert.match(schema, /no_show_fee INTEGER NOT NULL DEFAULT 0/i, "tariffs must store no-show fee");
+assert.match(schema, /zone_surcharge INTEGER NOT NULL DEFAULT 0/i, "tariffs must store zone surcharge");
+assert.match(schema, /night_coefficient NUMERIC\(6,2\) NOT NULL DEFAULT 1/i, "tariffs must store night coefficient");
+assert.match(schema, /demand_coefficient NUMERIC\(6,2\) NOT NULL DEFAULT 1/i, "tariffs must store demand coefficient");
 assert.match(schema, /sort_order INTEGER NOT NULL DEFAULT 0/i, "tariffs must support admin ordering");
 assert.doesNotMatch(schema, /name TEXT UNIQUE NOT NULL/i, "tariff names must not be globally unique");
 assert.match(schema, /UNIQUE\(region_id, name\)/i, "tariffs must be unique per region and name");
 assert.match(schema, /region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "orders must store immutable region id");
 assert.match(schema, /pricing_snapshot JSONB NOT NULL DEFAULT '\{\}'::jsonb/i, "orders must store pricing snapshot");
+assert.match(schema, /status TEXT NOT NULL DEFAULT 'SEARCHING_DRIVER'/i, "new orders must default to canonical SEARCHING_DRIVER status");
+assert.match(schema, /waiting_started_at TIMESTAMPTZ/i, "orders must store waiting start timestamp");
+assert.match(schema, /free_waiting_until TIMESTAMPTZ/i, "orders must store free waiting deadline");
+assert.match(schema, /CREATE TABLE IF NOT EXISTS payments/i, "schema must include payments foundation");
+assert.match(schema, /method TEXT NOT NULL CHECK \(method IN \('CASH','KASPI'\)\)/i, "payments must support Cash and Kaspi only");
 assert.doesNotMatch(schema, /reject_reason/i, "Milestone 3 must not persist rejected order attempts");
 assert.match(schema, /idx_tariffs_region_id/i, "tariff region index must exist");
 assert.match(schema, /idx_tariffs_region_active/i, "tariff region active index must exist");
@@ -35,22 +46,32 @@ assert.match(schema, /idx_orders_region_id/i, "order region index must exist");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "migration must add tariff region id");
 assert.match(migrations, /DROP CONSTRAINT IF EXISTS tariffs_name_key/i, "migration must remove global tariff name uniqueness");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS surge_multiplier/i, "migration must add tariff surge multiplier");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS included_km/i, "migration must add included km");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS included_minutes/i, "migration must add included minutes");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS free_waiting_minutes/i, "migration must add free waiting minutes");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS waiting_price_per_minute/i, "migration must add waiting price");
+assert.match(migrations, /DROP CONSTRAINT IF EXISTS orders_status_check/i, "migration must replace legacy order status check");
+assert.match(migrations, /TRIP_STARTED/i, "migration must allow canonical order lifecycle statuses");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "migration must add order region id");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB/i, "migration must add order pricing snapshot");
+assert.match(migrations, /CREATE TABLE IF NOT EXISTS payments/i, "migration must include payments foundation");
 assert.match(migrations, /UPDATE tariffs SET region_id=\(SELECT id FROM regions WHERE code='ATAKENT'\) WHERE region_id IS NULL/i, "migration must attach existing dev tariffs to Atakent");
 assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must upsert by region and name");
 
 assert.match(ordersRoutes, /router\.post\("\/estimate"/, "estimate endpoint must exist");
+assert.match(tariffsRoutes, /router\.post\("\/estimate"/, "tariff estimate endpoint must exist");
 assert.match(ordersRoutes, /router\.post\("\/", requireAuth, requireRole\("CLIENT"\)/, "order creation endpoint must require client auth");
 assert.match(ordersRoutes, /prepareOrderPricing\(body, client\)/, "order creation must use backend pricing validation");
-assert.match(ordersRoutes, /INSERT INTO orders\(short_id, region_id,[\s\S]*pricing_snapshot/i, "order insert must store region id and pricing snapshot");
+assert.match(ordersRoutes, /INSERT INTO orders\(short_id, status, region_id,[\s\S]*pricing_snapshot/i, "order insert must store canonical status, region id and pricing snapshot");
+assert.match(ordersRoutes, /INSERT INTO payments\(order_id, method, status, amount, currency\)/i, "order creation must create payment row");
+assert.match(ordersRoutes, /CLIENT_ACTIVE_ORDER_STATUSES/, "order creation must define client active order states");
+assert.match(ordersRoutes, /CLIENT_HAS_ACTIVE_ORDER/, "order creation must prevent duplicate active client orders");
 const createRouteSource = ordersRoutes.slice(
   ordersRoutes.indexOf('router.post("/",'),
   ordersRoutes.indexOf('router.post("/:id/cancel-public"')
 );
 assert.doesNotMatch(createRouteSource, /\.emit\(/, "Milestone 3 order creation must not emit realtime matching events");
+assert.match(createRouteSource, /SELECT id, short_id, status[\s\S]*FROM orders[\s\S]*client_id=\$1[\s\S]*CLIENT_ACTIVE_ORDER_STATUSES/i, "duplicate client order check must happen inside create transaction");
 assert.match(tariffsRoutes, /regionId/, "tariff listing must support region scoping");
 
 const formulaTariff = {
@@ -68,6 +89,8 @@ const formulaTariff = {
 assert.equal(calculateOrderPrice(formulaTariff, 3, 10), 900, "price formula must apply distance and duration");
 assert.equal(calculateOrderPrice({ ...formulaTariff, min_price: 1000 }, 1, 1), 1000, "minimum price must apply");
 assert.equal(calculateOrderPrice({ ...formulaTariff, surge_multiplier: 1.5 }, 3, 10), 1350, "surge multiplier must apply");
+assert.equal(calculateOrderPrice({ ...formulaTariff, included_km: 1, included_minutes: 5 }, 3, 10), 700, "included distance/minutes must reduce billable metrics");
+assert.equal(calculateOrderPrice({ ...formulaTariff, zone_surcharge: 100, night_coefficient: 1.2, demand_coefficient: 1.1 }, 3, 10), 1320, "zone/night/demand coefficients must apply");
 const previewComponents = calculatePricingComponents({
   ...formulaTariff,
   free_waiting_minutes: 2,

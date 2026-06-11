@@ -36,12 +36,19 @@ export function calculatePricingComponents(tariff, { distanceKm, durationMin, wa
   const pricePerMinute = Number(tariff.price_per_minute);
   const minimumPrice = Number(tariff.min_price);
   const surgeMultiplier = Number(tariff.surge_multiplier ?? 1);
+  const includedKm = Number(tariff.included_km ?? 0);
+  const includedMinutes = Number(tariff.included_minutes ?? 0);
   const freeWaitingMinutes = Number(tariff.free_waiting_minutes ?? 0);
   const waitingPricePerMinute = Number(tariff.waiting_price_per_minute ?? 0);
   const cancellationFee = includeCancellationFee ? Number(tariff.cancellation_fee ?? 0) : 0;
+  const zoneSurcharge = Number(tariff.zone_surcharge ?? 0);
+  const nightCoefficient = Number(tariff.night_coefficient ?? 1);
+  const demandCoefficient = Number(tariff.demand_coefficient ?? 1);
   const serviceCommissionPercent = Number(tariff.service_commission_percent ?? 0);
-  const raw = basePrice + distanceKm * pricePerKm + durationMin * pricePerMinute;
-  const surged = raw * surgeMultiplier;
+  const billableDistanceKm = Math.max(0, distanceKm - includedKm);
+  const billableDurationMin = Math.max(0, durationMin - includedMinutes);
+  const raw = basePrice + billableDistanceKm * pricePerKm + billableDurationMin * pricePerMinute + zoneSurcharge;
+  const surged = raw * surgeMultiplier * nightCoefficient * demandCoefficient;
   const withMinimum = Math.max(minimumPrice, surged);
   const billableWaitingMinutes = Math.max(0, waitingMinutes - freeWaitingMinutes);
   const waitingPrice = billableWaitingMinutes * waitingPricePerMinute;
@@ -62,6 +69,13 @@ export function calculatePricingComponents(tariff, { distanceKm, durationMin, wa
       pricePerMinute,
       minimumPrice,
       surgeMultiplier,
+      nightCoefficient,
+      demandCoefficient,
+      includedKm,
+      includedMinutes,
+      billableDistanceKm,
+      billableDurationMin,
+      zoneSurcharge,
       distanceKm,
       durationMin,
       freeWaitingMinutes,
@@ -89,6 +103,13 @@ export function buildPricingSnapshot({ region, tariff, distanceKm, durationMin, 
     pricePerMinute: Number(tariff.price_per_minute),
     minimumPrice: Number(tariff.min_price),
     surgeMultiplier: Number(tariff.surge_multiplier ?? 1),
+    includedKm: Number(tariff.included_km ?? 0),
+    includedMinutes: Number(tariff.included_minutes ?? 0),
+    zoneSurcharge: Number(tariff.zone_surcharge ?? 0),
+    intercityOverride: tariff.intercity_override === null || tariff.intercity_override === undefined ? null : Number(tariff.intercity_override),
+    nightCoefficient: Number(tariff.night_coefficient ?? 1),
+    demandCoefficient: Number(tariff.demand_coefficient ?? 1),
+    noShowFee: Number(tariff.no_show_fee ?? 0),
     freeWaitingMinutes: Number(tariff.free_waiting_minutes ?? 0),
     waitingPricePerMinute: Number(tariff.waiting_price_per_minute ?? 0),
     distanceKm,

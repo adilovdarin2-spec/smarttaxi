@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { env } from "../../config/env.js";
 import { query } from "../../db/pool.js";
+import { buildRoutePreview, reverseAddress, searchAddresses } from "../routing/routing.service.js";
 
 const router = Router();
 
@@ -13,6 +14,27 @@ const EstimateSchema = z.object({
   dropoffLat: z.coerce.number().min(-90).max(90).optional(),
   dropoffLng: z.coerce.number().min(-180).max(180).optional(),
   tariff: z.string().trim().min(2).max(40).optional().default("Economy")
+});
+
+const GeocodeSchema = z.object({
+  q: z.string().trim().min(2).max(160),
+  region: z.string().trim().min(2).max(80).optional(),
+  limit: z.coerce.number().int().min(1).max(12).optional()
+});
+
+const ReverseGeocodeSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180)
+});
+
+const RouteSchema = z.object({
+  pickupLat: z.coerce.number().min(-90).max(90),
+  pickupLng: z.coerce.number().min(-180).max(180),
+  dropoffLat: z.coerce.number().min(-90).max(90),
+  dropoffLng: z.coerce.number().min(-180).max(180),
+  tariffId: z.string().uuid().optional(),
+  tariff: z.string().trim().min(2).max(40).optional(),
+  tariffName: z.string().trim().min(2).max(40).optional()
 });
 
 function hasCoordinates(body) {
@@ -109,6 +131,28 @@ export async function estimateRoute(body) {
 async function handleEstimate(input, res, next) {
   try {
     const body = EstimateSchema.parse(input);
+    if (hasCoordinates(body)) {
+      const preview = await buildRoutePreview({
+        pickupLat: body.pickupLat,
+        pickupLng: body.pickupLng,
+        dropoffLat: body.dropoffLat,
+        dropoffLng: body.dropoffLng,
+        tariff: body.tariff
+      }, query);
+      const payload = {
+        distanceKm: Math.round((preview.distanceMeters / 1000) * 10) / 10,
+        durationMin: Math.max(1, Math.ceil(preview.durationSeconds / 60)),
+        source: "backend",
+        provider: "pricing_core",
+        tariff: preview.estimate?.tariff?.name || body.tariff,
+        price: preview.estimate?.estimatedPrice || 0,
+        priceKzt: preview.estimate?.estimatedPrice || 0,
+        currency: preview.region?.currency || "KZT",
+        route: preview,
+        estimate: preview.estimate
+      };
+      return res.json(payload);
+    }
     const estimate = await estimateRoute(body);
     res.json({ ...estimate, estimate });
   } catch (error) {
@@ -122,6 +166,56 @@ router.get("/estimate", async (req, res, next) => {
 
 router.post("/estimate", async (req, res, next) => {
   await handleEstimate(req.body, res, next);
+});
+
+router.get("/geocode", async (req, res, next) => {
+  try {
+    const params = GeocodeSchema.parse(req.query);
+    const addresses = await searchAddresses(params);
+    res.json({ addresses, provider: "address_core" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/reverse-geocode", async (req, res, next) => {
+  try {
+    const params = ReverseGeocodeSchema.parse(req.query);
+    const address = await reverseAddress(params);
+    res.json({ address, provider: "address_core" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/route", async (req, res, next) => {
+  try {
+    const body = RouteSchema.parse(req.body);
+    const route = await buildRoutePreview(body, query);
+    res.json({ route, provider: "routing_core" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/estimate-v2", async (req, res, next) => {
+  try {
+    const body = RouteSchema.refine(value => value.tariffId || value.tariff || value.tariffName, "tariffId or tariff is required").parse(req.body);
+    const preview = await buildRoutePreview(body, query);
+    res.json({
+      estimate: preview.estimate,
+      tariff: preview.estimate?.tariff || null,
+      distanceKm: Math.round((preview.distanceMeters / 1000) * 10) / 10,
+      durationMin: Math.max(1, Math.ceil(preview.durationSeconds / 60)),
+      priceKzt: preview.estimate?.estimatedPrice || null,
+      currency: preview.region?.currency || "KZT",
+      route: preview,
+      source: "backend",
+      provider: "pricing_core"
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

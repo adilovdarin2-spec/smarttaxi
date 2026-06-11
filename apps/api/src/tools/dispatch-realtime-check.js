@@ -21,7 +21,9 @@ const server = readFileSync(join(root, "server.js"), "utf8");
 
 assert.match(schema, /idx_orders_region_status_created_at/i, "schema must add region/status order index");
 assert.match(schema, /idx_orders_one_active_per_driver/i, "schema should enforce one active order per driver on fresh databases");
+assert.match(schema, /idx_orders_one_active_per_client/i, "schema should enforce one active order per client on fresh databases");
 assert.match(migrations, /duplicate_active_driver_orders/i, "migration must avoid destructive cleanup before partial unique index");
+assert.match(migrations, /duplicate_active_client_orders/i, "migration must avoid destructive cleanup before client active-order index");
 assert.match(dispatchService, /SELECT \* FROM drivers WHERE user_id=\$1 FOR UPDATE/i, "accept must lock driver row");
 assert.match(dispatchService, /SELECT \* FROM orders WHERE id=\$1 FOR UPDATE/i, "accept must lock order row");
 assert.match(ordersRoutes, /listOrdersForDriver/i, "driver order listing must use region-scoped dispatch service");
@@ -46,9 +48,12 @@ assert.doesNotMatch(dispatchService, forbiddenAccountingPattern, "M4 dispatch se
 assert.equal(driverRegionRoom("region-a"), "region:region-a:drivers", "driver realtime room is region scoped");
 assert.equal(dispatchRegionRoom("region-a"), "region:region-a:dispatch", "dispatch realtime room is region scoped");
 assert.equal(orderRoom("order-a"), "order:order-a", "order room is order scoped");
-assert.equal(publicOrderStatus("NEW"), "SEARCHING", "NEW maps to SEARCHING");
-assert.equal(publicOrderStatus("DRIVER_ASSIGNED"), "ACCEPTED", "DRIVER_ASSIGNED maps to ACCEPTED");
-assert.equal(publicOrderStatus("CANCELLED"), "CANCELED", "CANCELLED maps to CANCELED");
+assert.equal(publicOrderStatus("SEARCHING_DRIVER"), "SEARCHING_DRIVER", "SEARCHING_DRIVER is public");
+assert.equal(publicOrderStatus("DRIVER_FOUND"), "DRIVER_FOUND", "DRIVER_FOUND is public");
+assert.equal(publicOrderStatus("TRIP_STARTED"), "TRIP_STARTED", "TRIP_STARTED is public");
+assert.equal(publicOrderStatus("NEW"), "SEARCHING_DRIVER", "legacy NEW maps to SEARCHING_DRIVER");
+assert.equal(publicOrderStatus("DRIVER_ASSIGNED"), "DRIVER_FOUND", "legacy DRIVER_ASSIGNED maps to DRIVER_FOUND");
+assert.equal(publicOrderStatus("CANCELLED"), "CANCELLED_BY_CLIENT", "legacy CANCELLED maps to CANCELLED_BY_CLIENT");
 
 function createExecutor() {
   const state = {
@@ -74,10 +79,10 @@ function createExecutor() {
       { id: "driver-active-order", user_id: "user-active-order", current_region_id: "region-a", is_blocked: false, status: "FREE", debt: 0 }
     ],
     orders: [
-      { id: "order-a", region_id: "region-a", status: "NEW", driver_id: null, created_at: 10 },
-      { id: "order-b", region_id: "region-b", status: "NEW", driver_id: null, created_at: 9 },
-      { id: "order-active", region_id: "region-a", status: "DRIVER_ASSIGNED", driver_id: "driver-active-order", created_at: 8 },
-      { id: "order-assigned", region_id: "region-a", status: "DRIVER_ASSIGNED", driver_id: "driver-already", created_at: 7 }
+      { id: "order-a", region_id: "region-a", status: "SEARCHING_DRIVER", driver_id: null, created_at: 10 },
+      { id: "order-b", region_id: "region-b", status: "SEARCHING_DRIVER", driver_id: null, created_at: 9 },
+      { id: "order-active", region_id: "region-a", status: "DRIVER_FOUND", driver_id: "driver-active-order", created_at: 8 },
+      { id: "order-assigned", region_id: "region-a", status: "DRIVER_FOUND", driver_id: "driver-already", created_at: 7 }
     ],
     history: []
   };
@@ -100,9 +105,9 @@ function createExecutor() {
       if (/SELECT \* FROM orders WHERE id=\$1 FOR UPDATE/i.test(sql)) {
         return { rows: state.orders.filter(order => order.id === params[0]) };
       }
-      if (/UPDATE orders SET status='DRIVER_ASSIGNED'/i.test(sql)) {
+      if (/UPDATE orders SET status='DRIVER_FOUND'/i.test(sql)) {
         const order = state.orders.find(row => row.id === params[1]);
-        order.status = "DRIVER_ASSIGNED";
+        order.status = "DRIVER_FOUND";
         order.driver_id = params[0];
         order.accepted_at = "2026-01-01T00:00:00.000Z";
         return { rows: [order] };
@@ -122,13 +127,13 @@ function createExecutor() {
         if (/AND o.status=\$3/i.test(sql)) {
           rows = state.orders.filter(order =>
             order.region_id === regionId &&
-            ((order.status === "NEW" && order.driver_id === null) || order.driver_id === driverId) &&
+            ((["SEARCHING_DRIVER", "NEW"].includes(order.status) && order.driver_id === null) || order.driver_id === driverId) &&
             order.status === filter
           );
         } else {
           rows = state.orders.filter(order =>
             order.region_id === regionId &&
-            ((order.status === "NEW" && order.driver_id === null) || (order.driver_id === driverId && filter.includes(order.status)))
+            ((["SEARCHING_DRIVER", "NEW"].includes(order.status) && order.driver_id === null) || (order.driver_id === driverId && filter.includes(order.status)))
           );
         }
         return { rows: rows.sort((a, b) => b.created_at - a.created_at).slice(0, limit) };
@@ -189,7 +194,7 @@ await assert.rejects(
 const acceptExecutor = createExecutor();
 const accepted = await acceptOrderForDriver({ orderId: "order-a", userId: "user-1", executor: acceptExecutor });
 assert.equal(accepted.order.driver_id, "driver-1", "accept sets order driver_id");
-assert.equal(accepted.order.status, "DRIVER_ASSIGNED", "accept sets DRIVER_ASSIGNED status");
+assert.equal(accepted.order.status, "DRIVER_FOUND", "accept sets DRIVER_FOUND status");
 assert.equal(accepted.driver.status, "BUSY", "accept marks driver busy");
 
 await assert.rejects(
@@ -198,17 +203,22 @@ await assert.rejects(
   "two drivers cannot accept the same order"
 );
 
-let status = "NEW";
-assert.doesNotThrow(() => assertStatusTransition({ status }, "DRIVER_ASSIGNED"), "NEW -> DRIVER_ASSIGNED succeeds");
-status = "DRIVER_ASSIGNED";
-assert.doesNotThrow(() => assertStatusTransition({ status }, "DRIVER_ARRIVED"), "DRIVER_ASSIGNED -> DRIVER_ARRIVED succeeds");
+let status = "SEARCHING_DRIVER";
+assert.doesNotThrow(() => assertStatusTransition({ status }, "DRIVER_FOUND"), "SEARCHING_DRIVER -> DRIVER_FOUND succeeds");
+status = "DRIVER_FOUND";
+assert.doesNotThrow(() => assertStatusTransition({ status }, "DRIVER_GOING_TO_CLIENT"), "DRIVER_FOUND -> DRIVER_GOING_TO_CLIENT succeeds");
+status = "DRIVER_GOING_TO_CLIENT";
+assert.doesNotThrow(() => assertStatusTransition({ status }, "DRIVER_ARRIVED"), "DRIVER_GOING_TO_CLIENT -> DRIVER_ARRIVED succeeds");
 status = "DRIVER_ARRIVED";
-assert.doesNotThrow(() => assertStatusTransition({ status }, "IN_PROGRESS"), "DRIVER_ARRIVED -> IN_PROGRESS succeeds");
-status = "IN_PROGRESS";
-assert.doesNotThrow(() => assertStatusTransition({ status }, "COMPLETED"), "IN_PROGRESS -> COMPLETED succeeds");
-assert.throws(() => assertStatusTransition({ status: "NEW" }, "IN_PROGRESS"), { code: "INVALID_STATUS_TRANSITION" }, "invalid transition fails");
-assert.throws(() => assertStatusTransition({ status: "COMPLETED" }, "CANCELLED"), { code: "INVALID_STATUS_TRANSITION" }, "completed order is terminal");
-assert.throws(() => assertStatusTransition({ status: "CANCELLED" }, "DRIVER_ASSIGNED"), { code: "INVALID_STATUS_TRANSITION" }, "cancelled order is terminal");
+assert.doesNotThrow(() => assertStatusTransition({ status }, "WAITING_CLIENT"), "DRIVER_ARRIVED -> WAITING_CLIENT succeeds");
+status = "WAITING_CLIENT";
+assert.doesNotThrow(() => assertStatusTransition({ status }, "TRIP_STARTED"), "WAITING_CLIENT -> TRIP_STARTED succeeds");
+status = "TRIP_STARTED";
+assert.doesNotThrow(() => assertStatusTransition({ status }, "TRIP_COMPLETED"), "TRIP_STARTED -> TRIP_COMPLETED succeeds");
+assert.throws(() => assertStatusTransition({ status: "SEARCHING_DRIVER" }, "TRIP_STARTED"), { code: "INVALID_STATUS_TRANSITION" }, "invalid transition fails");
+assert.throws(() => assertStatusTransition({ status: "PAID" }, "CANCELLED_BY_CLIENT"), { code: "INVALID_STATUS_TRANSITION" }, "paid order is terminal");
+assert.throws(() => assertStatusTransition({ status: "CANCELLED_BY_CLIENT" }, "DRIVER_FOUND"), { code: "INVALID_STATUS_TRANSITION" }, "cancelled order is terminal");
 assert.match(ordersRoutes, /existing\.driver_id !== driver\.id/, "driver cannot update order they do not own");
+assert.match(ordersRoutes, /CLIENT_HAS_ACTIVE_ORDER/, "client cannot create duplicate active orders");
 
 console.log("Dispatch and realtime checks ok");

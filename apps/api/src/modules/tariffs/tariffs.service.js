@@ -24,9 +24,16 @@ export function publicTariff(tariff) {
     serviceCommissionPercent: Number(tariff.service_commission_percent),
     cashbackPercent: Number(tariff.cashback_percent),
     surgeMultiplier: Number(tariff.surge_multiplier ?? 1),
+    includedKm: Number(tariff.included_km ?? 0),
+    includedMinutes: Number(tariff.included_minutes ?? 0),
     freeWaitingMinutes: Number(tariff.free_waiting_minutes ?? 0),
     waitingPricePerMinute: Number(tariff.waiting_price_per_minute ?? 0),
     cancellationFee: Number(tariff.cancellation_fee ?? 0),
+    noShowFee: Number(tariff.no_show_fee ?? 0),
+    zoneSurcharge: Number(tariff.zone_surcharge ?? 0),
+    intercityOverride: tariff.intercity_override === null || tariff.intercity_override === undefined ? null : Number(tariff.intercity_override),
+    nightCoefficient: Number(tariff.night_coefficient ?? 1),
+    demandCoefficient: Number(tariff.demand_coefficient ?? 1),
     sortOrder: Number(tariff.sort_order ?? 0),
     isActive: tariff.is_active
   };
@@ -59,9 +66,16 @@ function dbInput(input) {
     serviceCommissionPercent: "service_commission_percent",
     cashbackPercent: "cashback_percent",
     surgeMultiplier: "surge_multiplier",
+    includedKm: "included_km",
+    includedMinutes: "included_minutes",
     freeWaitingMinutes: "free_waiting_minutes",
     waitingPricePerMinute: "waiting_price_per_minute",
     cancellationFee: "cancellation_fee",
+    noShowFee: "no_show_fee",
+    zoneSurcharge: "zone_surcharge",
+    intercityOverride: "intercity_override",
+    nightCoefficient: "night_coefficient",
+    demandCoefficient: "demand_coefficient",
     sortOrder: "sort_order",
     isActive: "is_active"
   };
@@ -152,14 +166,14 @@ export async function listAdminTariffAnalytics({
     LEFT JOIN LATERAL (
       SELECT
         COUNT(o.id)::int order_count,
-        COUNT(o.id) FILTER (WHERE o.status='COMPLETED')::int completed_order_count,
-        COUNT(o.id) FILTER (WHERE o.status='CANCELLED')::int cancelled_order_count,
-        AVG(base.final_price) FILTER (WHERE o.status='COMPLETED' AND base.final_price IS NOT NULL) average_final_price,
-        AVG(base.distance_km) FILTER (WHERE o.status='COMPLETED' AND base.distance_km IS NOT NULL) average_distance_km,
-        AVG(base.duration_min) FILTER (WHERE o.status='COMPLETED' AND base.duration_min IS NOT NULL) average_duration_min,
-        COALESCE(SUM(base.final_price) FILTER (WHERE o.status='COMPLETED'), 0) gross_total,
-        COALESCE(SUM(commission.service_commission) FILTER (WHERE o.status='COMPLETED'), 0) service_commission_total,
-        COALESCE(SUM(earning.driver_earning) FILTER (WHERE o.status='COMPLETED'), 0) driver_earning_total
+        COUNT(o.id) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED'))::int completed_order_count,
+        COUNT(o.id) FILTER (WHERE o.status IN ('CANCELLED_BY_CLIENT','CANCELLED_BY_DRIVER','CANCELLED_BY_OPERATOR','NO_SHOW','CANCELLED'))::int cancelled_order_count,
+        AVG(base.final_price) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED') AND base.final_price IS NOT NULL) average_final_price,
+        AVG(base.distance_km) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED') AND base.distance_km IS NOT NULL) average_distance_km,
+        AVG(base.duration_min) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED') AND base.duration_min IS NOT NULL) average_duration_min,
+        COALESCE(SUM(base.final_price) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED')), 0) gross_total,
+        COALESCE(SUM(commission.service_commission) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED')), 0) service_commission_total,
+        COALESCE(SUM(earning.driver_earning) FILTER (WHERE o.status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED')), 0) driver_earning_total
       FROM orders o
       CROSS JOIN LATERAL (
         SELECT
@@ -250,8 +264,8 @@ export async function createAdminTariff(input, executor = defaultQuery) {
   const body = dbInput(input);
   try {
     const result = await run(executor, `
-      INSERT INTO tariffs(region_id, name, display_name, description, base_price, price_per_km, price_per_minute, min_price, service_commission_percent, cashback_percent, surge_multiplier, free_waiting_minutes, waiting_price_per_minute, cancellation_fee, sort_order, is_active)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+      INSERT INTO tariffs(region_id, name, display_name, description, base_price, price_per_km, price_per_minute, min_price, service_commission_percent, cashback_percent, surge_multiplier, included_km, included_minutes, free_waiting_minutes, waiting_price_per_minute, cancellation_fee, no_show_fee, zone_surcharge, intercity_override, night_coefficient, demand_coefficient, sort_order, is_active)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
       RETURNING *
     `, [
       body.region_id,
@@ -265,9 +279,16 @@ export async function createAdminTariff(input, executor = defaultQuery) {
       body.service_commission_percent,
       body.cashback_percent ?? 0,
       body.surge_multiplier,
+      body.included_km ?? 0,
+      body.included_minutes ?? 0,
       body.free_waiting_minutes,
       body.waiting_price_per_minute,
       body.cancellation_fee,
+      body.no_show_fee ?? 0,
+      body.zone_surcharge ?? 0,
+      body.intercity_override ?? null,
+      body.night_coefficient ?? 1,
+      body.demand_coefficient ?? 1,
       body.sort_order,
       body.is_active
     ]);
