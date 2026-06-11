@@ -391,48 +391,46 @@ function normalizeAddress(address) {
 function normalizeText(value) {
   return String(value || "")
     .toLowerCase()
-    .replace(/С‘/g, "Рµ")
-    .replace(/С–/g, "Рё")
-    .replace(/ТЈ/g, "РЅ")
-    .replace(/Т“/g, "Рі")
-    .replace(/ТЇ/g, "Сѓ")
-    .replace(/Т±/g, "Сѓ")
-    .replace(/Т›/g, "Рє")
-    .replace(/У™/g, "Р°")
-    .replace(/Т»/g, "С…")
+    .replace(/ё/g, "е")
+    .replace(/і/g, "и")
+    .replace(/[ұү]/g, "у")
+    .replace(/ғ/g, "г")
+    .replace(/қ/g, "к")
+    .replace(/ә/g, "а")
+    .replace(/һ/g, "х")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 function regionCode(region) {
   const raw = String(region?.code || region?.name || "").toUpperCase();
-  if (raw.includes("MYR") || raw.includes("РњР«Р ") || raw.includes("РЎР›РђР’")) return "MYRZAKENT";
-  if (raw.includes("ZHET") || raw.includes("Р–Р•Рў")) return "ZHETYSAY";
-  if (raw.includes("SHYM") || raw.includes("РЁР«Рњ") || raw.includes("Р§РРњ")) return "SHYMKENT";
-  if (raw.includes("KIROV") || raw.includes("РљРР ")) return "KIROV";
-  if (raw.includes("ASYK") || raw.includes("РђРЎР«")) return "ASYKATA";
-  if (raw.includes("DOST") || raw.includes("Р”РћРЎРў")) return "DOSTYK";
-  if (raw.includes("YNTY") || raw.includes("Р«РќРў")) return "YNTYMAK";
-  if (raw.includes("BIRL") || raw.includes("Р‘РР ") || raw.includes("Р‘Р†Р ")) return "BIRLIK";
-  if (raw.includes("FIRD") || raw.includes("Р¤РР ") || raw.includes("Р¤Р•Р ")) return "FIRDOUSI";
-  if (raw.includes("ZHANA") || raw.includes("Р–РђРќРђ") || raw.includes("Р–РђТўРђ")) return "ZHANA_ZHOL";
-  if (raw.includes("MAKTA") || raw.includes("РњРђТљ") || raw.includes("РњРђРљ")) return "MAKTAARAL";
-  if (raw.includes("ATAMEKEN") || raw.includes("РђРўРђРњР•РљР•Рќ") || raw.includes("РђРўРђ РњР•РљР•Рќ")) return "ATAMEKEN";
-  if (raw.includes("TURK") || raw.includes("РўРЈР Рљ") || raw.includes("РўТ®Р Рљ")) return "TURKISTAN";
-  if (raw.includes("SARY") || raw.includes("РЎРђР Р«")) return "SARYAGASH";
-  if (raw.includes("KAZYG") || raw.includes("ТљРђР—") || raw.includes("РљРђР—")) return "KAZYGURT";
-  if (raw.includes("ALMATY") || raw.includes("РђР›Рњ")) return "ALMATY";
-  if (raw.includes("ASTANA") || raw.includes("РђРЎРў") || raw.includes("РќРЈР ")) return "ASTANA";
+  if (raw.includes("MYR") || raw.includes("МЫР") || raw.includes("СЛАВ")) return "MYRZAKENT";
+  if (raw.includes("ZHET") || raw.includes("ЖЕТ")) return "ZHETYSAY";
+  if (raw.includes("SHYM") || raw.includes("ШЫМ") || raw.includes("ЧИМ")) return "SHYMKENT";
+  if (raw.includes("KIROV") || raw.includes("КИР")) return "KIROV";
+  if (raw.includes("ASYK") || raw.includes("АСЫ")) return "ASYKATA";
+  if (raw.includes("DOST") || raw.includes("ДОСТ")) return "DOSTYK";
+  if (raw.includes("YNTY") || raw.includes("ЫНТ")) return "YNTYMAK";
+  if (raw.includes("BIRL") || raw.includes("БИР") || raw.includes("БІР")) return "BIRLIK";
+  if (raw.includes("FIRD") || raw.includes("ФИР") || raw.includes("ФЕР")) return "FIRDOUSI";
+  if (raw.includes("ZHANA") || raw.includes("ЖАНА") || raw.includes("ЖАҢА")) return "ZHANA_ZHOL";
+  if (raw.includes("MAKTA") || raw.includes("МАҚ") || raw.includes("МАК")) return "MAKTAARAL";
+  if (raw.includes("ATAMEKEN") || raw.includes("АТАМЕКЕН") || raw.includes("АТА МЕКЕН")) return "ATAMEKEN";
+  if (raw.includes("TURK") || raw.includes("ТУРК") || raw.includes("ТҮРК")) return "TURKISTAN";
+  if (raw.includes("SARY") || raw.includes("САРЫ")) return "SARYAGASH";
+  if (raw.includes("KAZYG") || raw.includes("ҚАЗ") || raw.includes("КАЗ")) return "KAZYGURT";
+  if (raw.includes("ALMATY") || raw.includes("АЛМ")) return "ALMATY";
+  if (raw.includes("ASTANA") || raw.includes("АСТ") || raw.includes("НУР")) return "ASTANA";
   return "ATAKENT";
 }
 
 function regionLabel(region) {
-  const name = region?.displayName || region?.name || "РђС‚Р°РєРµРЅС‚";
+  const name = region?.displayName || region?.name || "Атакент";
   return region?.alias ? `${name} (${region.alias})` : name;
 }
 
 function regionShortLabel(region) {
-  return region?.displayName || region?.name || "РђС‚Р°РєРµРЅС‚";
+  return region?.displayName || region?.name || "Атакент";
 }
 
 function mergeRegions(apiRegions = []) {
@@ -459,7 +457,7 @@ function localAddressesForRegion(region) {
 }
 
 function popularAddressesForRegion(region, limit = 3) {
-  return localAddressesForRegion(region).filter(item => item.title !== "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ").slice(0, limit);
+  return localAddressesForRegion(region).filter(item => item.title !== "Моё местоположение").slice(0, limit);
 }
 
 function searchLocalClientAddresses(query, region, limit = 8) {
@@ -507,10 +505,10 @@ function tariffMinPrice(tariff) {
 function tariffSubtitle(tariff) {
   const title = tariffTitle(tariff).toLowerCase();
   const name = String(tariff?.name || "").toLowerCase();
-  if (title.includes("эконом") || title.includes("СЌРєРѕРЅРѕРј") || name.includes("economy")) return "Быстро и доступно";
-  if (title.includes("комфорт") || title.includes("РєРѕРјС„РѕСЂС‚") || name.includes("comfort")) return "Больше удобства";
-  if (title.includes("бизнес") || title.includes("Р±РёР·РЅРµСЃ") || name.includes("business")) return "Премиальная поездка";
-  if (title.includes("достав") || title.includes("РґРѕСЃС‚Р°РІ") || name.includes("delivery")) return "Передать посылку";
+  if (title.includes("эконом") || name.includes("economy")) return "Быстро и доступно";
+  if (title.includes("комфорт") || name.includes("comfort")) return "Больше удобства";
+  if (title.includes("бизнес") || name.includes("business")) return "Премиальная поездка";
+  if (title.includes("достав") || name.includes("delivery")) return "Передать посылку";
   return tariff?.description || "Поездка по региону";
 }
 
@@ -581,9 +579,9 @@ function IconAsset({ name, className = "", alt = "" }) {
 
 function cleanTariffKey(tariff) {
   const raw = `${tariff?.name || ""} ${tariffTitle(tariff)}`.toLowerCase();
-  if (raw.includes("comfort") || raw.includes("комфорт") || raw.includes("РєРѕРјС„РѕСЂС‚")) return "Comfort";
-  if (raw.includes("business") || raw.includes("бизнес") || raw.includes("Р±РёР·РЅРµСЃ")) return "Business";
-  if (raw.includes("delivery") || raw.includes("достав") || raw.includes("РґРѕСЃС‚Р°РІ")) return "Delivery";
+  if (raw.includes("comfort") || raw.includes("комфорт")) return "Comfort";
+  if (raw.includes("business") || raw.includes("бизнес")) return "Business";
+  if (raw.includes("delivery") || raw.includes("достав")) return "Delivery";
   return "Economy";
 }
 
@@ -821,7 +819,8 @@ export default function ClientApp() {
     getTariffs(backendRegionId || selectedRegionId)
       .then(data => {
         if (ignore) return;
-        const apiTariffs = (data.tariffs || []).filter(item => ["Economy", "Comfort", "Business", "Delivery", "Р­РєРѕРЅРѕРј", "РљРѕРјС„РѕСЂС‚", "Р‘РёР·РЅРµСЃ", "Р”РѕСЃС‚Р°РІРєР°"].includes(item.name) || ["Р­РєРѕРЅРѕРј", "РљРѕРјС„РѕСЂС‚", "Р‘РёР·РЅРµСЃ", "Р”РѕСЃС‚Р°РІРєР°"].includes(item.displayName || item.display_name));
+        const allowedTariffs = ["Economy", "Comfort", "Business", "Delivery", "Эконом", "Комфорт", "Бизнес", "Доставка"];
+        const apiTariffs = (data.tariffs || []).filter(item => allowedTariffs.includes(item.name) || allowedTariffs.includes(item.displayName || item.display_name));
         const nextTariffs = apiTariffs.length ? apiTariffs : localTariffsForRegion(selectedRegion);
         setTariffs(nextTariffs);
         setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
@@ -832,7 +831,7 @@ export default function ClientApp() {
         const nextTariffs = localTariffsForRegion(selectedRegion);
         setTariffs(nextTariffs);
         setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
-        setTariffsError("Р›РѕРєР°Р»СЊРЅС‹Рµ С†РµРЅС‹ СЂРµРіРёРѕРЅР°");
+        setTariffsError("Показываем локальные цены региона");
       })
       .finally(() => !ignore && setTariffsLoading(false));
     return () => { ignore = true; };
@@ -1255,7 +1254,7 @@ export default function ClientApp() {
         tariff: tariff.name || "Economy",
         distanceKm,
         durationMin,
-        riderName: rider.name || "РџР°СЃСЃР°Р¶РёСЂ",
+        riderName: rider.name || "Пассажир",
         riderPhone: rider.phone || auth.phone,
         pickupText: pickup.title,
         dropoffText: destination.title,
@@ -2979,13 +2978,13 @@ function ProfileSection({
   return (
     <section className={`screen-grid profile-screen ${authenticated ? "" : "auth-profile-screen"} ${!authenticated && isRegister ? "register-mode" : ""}`}>
       {authenticated ? (
-        <section className="screen-intro"><h1>РџСЂРѕС„РёР»СЊ</h1><p>РђРєРєР°СѓРЅС‚ РїР°СЃСЃР°Р¶РёСЂР°</p></section>
+        <section className="screen-intro"><h1>Профиль</h1><p>Аккаунт пассажира</p></section>
       ) : (
         <section className="auth-hero-panel">
           <SmartTaxiLogo large />
           <div>
             <strong>SmartTaxi</strong>
-            <span>{isRegister ? "РЎРѕР·РґР°Р№С‚Рµ Р°РєРєР°СѓРЅС‚ РґР»СЏ РїРѕРµР·РґРѕРє" : "Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ Р·Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ"}</span>
+            <span>{isRegister ? "Создайте аккаунт для поездок" : "Войдите, чтобы заказать поездку"}</span>
           </div>
         </section>
       )}
@@ -2993,45 +2992,45 @@ function ProfileSection({
         <div className={`profile-avatar-row ${authenticated ? "" : "auth-card-title"}`}>
           <SmartTaxiLogo />
           <div>
-            <h2>{authenticated ? rider.name || "РџР°СЃСЃР°Р¶РёСЂ" : isRegister ? "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚" : "Р’С…РѕРґ"}</h2>
-            <span>{authenticated ? rider.phone || "РўРµР»РµС„РѕРЅ РЅРµ СѓРєР°Р·Р°РЅ" : isRegister ? "РРјСЏ, С‚РµР»РµС„РѕРЅ Рё РїР°СЂРѕР»СЊ" : "РўРµР»РµС„РѕРЅ Рё РїР°СЂРѕР»СЊ"}</span>
+            <h2>{authenticated ? rider.name || "Пассажир" : isRegister ? "Создать аккаунт" : "Вход"}</h2>
+            <span>{authenticated ? rider.phone || "Телефон не указан" : isRegister ? "Имя, телефон и пароль" : "Телефон и пароль"}</span>
           </div>
         </div>
         {!authenticated ? (
           <>
-            <div className="auth-mode-switch" aria-label="Р’С‹Р±РѕСЂ РІС…РѕРґР°">
-              <button type="button" className={!isRegister ? "active" : ""} onClick={() => setAuthMode("login")}>Р’РѕР№С‚Рё</button>
-              <button type="button" className={isRegister ? "active" : ""} onClick={() => setAuthMode("register")}>Р РµРіРёСЃС‚СЂР°С†РёСЏ</button>
+            <div className="auth-mode-switch" aria-label="Выбор входа">
+              <button type="button" className={!isRegister ? "active" : ""} onClick={() => setAuthMode("login")}>Войти</button>
+              <button type="button" className={isRegister ? "active" : ""} onClick={() => setAuthMode("register")}>Регистрация</button>
             </div>
             {isRegister ? (
               <form className="form-grid premium-login-form" onSubmit={onRegister}>
-                <label>РРјСЏ<input value={registerForm.name} onChange={event => setRegisterForm({ ...registerForm, name: event.target.value })} placeholder="Р’Р°С€Рµ РёРјСЏ" autoComplete="name" /></label>
-                <label>РўРµР»РµС„РѕРЅ<input value={registerForm.phone} onChange={event => setRegisterForm({ ...registerForm, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
+                <label>Имя<input value={registerForm.name} onChange={event => setRegisterForm({ ...registerForm, name: event.target.value })} placeholder="Ваше имя" autoComplete="name" /></label>
+                <label>Телефон<input value={registerForm.phone} onChange={event => setRegisterForm({ ...registerForm, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
                 <button type="button" className="auth-sms-button" onClick={onSendSms} disabled={loading || !registerForm.phone.trim()}>
-                  {registerForm.smsSent ? "РћС‚РїСЂР°РІРёС‚СЊ РєРѕРґ РµС‰С‘ СЂР°Р·" : "РџРѕР»СѓС‡РёС‚СЊ SMS-РєРѕРґ"}
+                  {registerForm.smsSent ? "Отправить код ещё раз" : "Получить SMS-код"}
                 </button>
-                <label>SMS-РєРѕРґ<input value={registerForm.code} onChange={event => setRegisterForm({ ...registerForm, code: event.target.value })} placeholder={registerForm.devCode || "6 С†РёС„СЂ"} inputMode="numeric" autoComplete="one-time-code" /></label>
-                <label>РџР°СЂРѕР»СЊ<input value={registerForm.password} onChange={event => setRegisterForm({ ...registerForm, password: event.target.value })} placeholder="РњРёРЅРёРјСѓРј 6 СЃРёРјРІРѕР»РѕРІ" type="password" autoComplete="new-password" /></label>
-                <label>РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ<input value={registerForm.repeat} onChange={event => setRegisterForm({ ...registerForm, repeat: event.target.value })} placeholder="РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ" type="password" autoComplete="new-password" /></label>
-                {message && <p className={message.includes("СЃРѕР·РґР°РЅ") ? "state-note success" : "state-note danger"}>{message}</p>}
-                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "РЎРѕР·РґР°С‘Рј..." : "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚"}</Button>
+                <label>SMS-код<input value={registerForm.code} onChange={event => setRegisterForm({ ...registerForm, code: event.target.value })} placeholder={registerForm.devCode || "6 цифр"} inputMode="numeric" autoComplete="one-time-code" /></label>
+                <label>Пароль<input value={registerForm.password} onChange={event => setRegisterForm({ ...registerForm, password: event.target.value })} placeholder="Минимум 6 символов" type="password" autoComplete="new-password" /></label>
+                <label>Повторите пароль<input value={registerForm.repeat} onChange={event => setRegisterForm({ ...registerForm, repeat: event.target.value })} placeholder="Повторите пароль" type="password" autoComplete="new-password" /></label>
+                {message && <p className={message.includes("создан") ? "state-note success" : "state-note danger"}>{message}</p>}
+                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Создаём..." : "Создать аккаунт"}</Button>
               </form>
             ) : (
               <form className="form-grid premium-login-form" onSubmit={onSubmit}>
-                <label>РўРµР»РµС„РѕРЅ<input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
-                <label>РџР°СЂРѕР»СЊ<input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="РџР°СЂРѕР»СЊ" type="password" autoComplete="current-password" /></label>
-                {message && <p className={message.includes("Р’С…РѕРґ") ? "state-note success" : "state-note danger"}>{message}</p>}
-                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Р’С…РѕРґРёРј..." : "Р’РѕР№С‚Рё"}</Button>
+                <label>Телефон<input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
+                <label>Пароль<input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="Пароль" type="password" autoComplete="current-password" /></label>
+                {message && <p className={message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
+                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</Button>
               </form>
             )}
           </>
         ) : (
           <div className="profile-actions-grid">
-            <label>РРјСЏ<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
-            <label>РўРµР»РµС„РѕРЅ РґР»СЏ Р·Р°РєР°Р·Р°<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
-            <article><Icon name="star" /> РР·Р±СЂР°РЅРЅС‹Рµ Р°РґСЂРµСЃР° <span>Р”РѕР±Р°РІР»СЏСЋС‚СЃСЏ РёР· РїРѕРµР·РґРѕРє</span></article>
-            <article><Icon name="card" /> РЎРїРѕСЃРѕР±С‹ РѕРїР»Р°С‚С‹ <span>РќР°Р»РёС‡РЅС‹Рµ РёР»Рё Kaspi РїСЂРё Р·Р°РєР°Р·Рµ</span></article>
-            <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Р’С‹Р№С‚Рё</button>
+            <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
+            <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
+            <article><Icon name="star" /> Избранные адреса <span>Добавляются из поездок</span></article>
+            <article><Icon name="card" /> Способы оплаты <span>Наличные или Kaspi при заказе</span></article>
+            <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
           </div>
         )}
       </section>
@@ -3040,23 +3039,23 @@ function ProfileSection({
 }
 
 function SupportSection() {
-  const [topic, setTopic] = useState("РџСЂРѕР±Р»РµРјР° СЃ РїРѕРµР·РґРєРѕР№");
+  const [topic, setTopic] = useState("Проблема с поездкой");
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
-  const topics = ["РџСЂРѕР±Р»РµРјР° СЃ РїРѕРµР·РґРєРѕР№", "Р’РѕРґРёС‚РµР»СЊ РЅРµ РїСЂРёРµС…Р°Р»", "Р—Р°Р±С‹Р» РІРµС‰СЊ", "РћРїР»Р°С‚Р°", "Р”СЂСѓРіРѕРµ"];
+  const topics = ["Проблема с поездкой", "Водитель не приехал", "Забыл вещь", "Оплата", "Другое"];
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>РџРѕРґРґРµСЂР¶РєР°</h1><p>РћРїРёС€РёС‚Рµ СЃРёС‚СѓР°С†РёСЋ, РѕРїРµСЂР°С‚РѕСЂ СѓРІРёРґРёС‚ С‚РµРјСѓ Рё С‚РµРєСЃС‚ РѕР±СЂР°С‰РµРЅРёСЏ.</p></section>
+      <section className="screen-intro"><h1>Поддержка</h1><p>Опишите ситуацию, оператор увидит тему и текст обращения.</p></section>
       <section className="app-card premium-support-card">
         <div className="support-topic-row">
           {topics.map(item => <button type="button" key={item} className={topic === item ? "selected" : ""} onClick={() => setTopic(item)}>{item}</button>)}
         </div>
         <label className="admin-textarea-field support-textarea">
-          <span>РЎРѕРѕР±С‰РµРЅРёРµ</span>
-          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); }} placeholder="РќР°РїРёС€РёС‚Рµ СЃРѕРѕР±С‰РµРЅРёРµ..." rows={5} />
+          <span>Сообщение</span>
+          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); }} placeholder="Напишите сообщение..." rows={5} />
         </label>
-        {sent && <p className="state-note success">РЎРѕРѕР±С‰РµРЅРёРµ РїРѕРґРіРѕС‚РѕРІР»РµРЅРѕ. РџСЂРѕРІРµСЂСЊС‚Рµ С‚РµРєСЃС‚ РїРµСЂРµРґ РѕС‚РїСЂР°РІРєРѕР№ РѕРїРµСЂР°С‚РѕСЂСѓ.</p>}
-        <Button className="wide primary-gold" disabled={!text.trim()} onClick={() => setSent(true)}>РћС‚РїСЂР°РІРёС‚СЊ</Button>
+        {sent && <p className="state-note success">Сообщение подготовлено. Проверьте текст перед отправкой оператору.</p>}
+        <Button className="wide primary-gold" disabled={!text.trim()} onClick={() => setSent(true)}>Отправить</Button>
       </section>
     </section>
   );
@@ -3065,14 +3064,14 @@ function SupportSection() {
 function SettingsSection({ regionName, onLogout }) {
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>РќР°СЃС‚СЂРѕР№РєРё</h1><p>РџР°СЂР°РјРµС‚СЂС‹ Р°РєРєР°СѓРЅС‚Р° Рё РїСЂРёР»РѕР¶РµРЅРёСЏ.</p></section>
+      <section className="screen-intro"><h1>Настройки</h1><p>Параметры аккаунта и приложения.</p></section>
       <section className="app-card settings-list-premium">
-        <SettingsRow icon="user" title="РђРєРєР°СѓРЅС‚" text="РРјСЏ Рё С‚РµР»РµС„РѕРЅ РІ РїСЂРѕС„РёР»Рµ" />
-        <SettingsRow icon="pin" title="Р“РѕСЂРѕРґ Рё СЂРµРіРёРѕРЅ" text={regionName || "Р РµРіРёРѕРЅ РЅРµ РІС‹Р±СЂР°РЅ"} />
-        <SettingsRow icon="support" title="РЈРІРµРґРѕРјР»РµРЅРёСЏ" text="РЎС‚Р°С‚СѓСЃС‹ РїРѕРµР·РґРєРё Рё РѕС‚РІРµС‚С‹ РїРѕРґРґРµСЂР¶РєРё" />
-        <SettingsRow icon="shield" title="Р‘РµР·РѕРїР°СЃРЅРѕСЃС‚СЊ" text="РџР°СЂРѕР»СЊ Р°РєРєР°СѓРЅС‚Р°" />
-        <SettingsRow icon="settings" title="РўРµРјР°" text="РЎРІРµС‚Р»Р°СЏ Р·РѕР»РѕС‚Р°СЏ" />
-        <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Р’С‹Р№С‚Рё</button>
+        <SettingsRow icon="user" title="Аккаунт" text="Имя и телефон в профиле" />
+        <SettingsRow icon="pin" title="Город и регион" text={regionName || "Регион не выбран"} />
+        <SettingsRow icon="support" title="Уведомления" text="Статусы поездки и ответы поддержки" />
+        <SettingsRow icon="shield" title="Безопасность" text="Пароль аккаунта" />
+        <SettingsRow icon="settings" title="Тема" text="Светлая золотая" />
+        <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
       </section>
     </section>
   );
@@ -3084,15 +3083,15 @@ function SettingsRow({ icon, title, text, muted = false }) {
 
 function FaqSection() {
   const items = [
-    ["РљР°Рє Р·Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ?", "Р’С‹Р±РµСЂРёС‚Рµ С‚РѕС‡РєСѓ РїРѕРґР°С‡Рё, Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ, С‚Р°СЂРёС„ Рё РЅР°Р¶РјРёС‚Рµ РєРЅРѕРїРєСѓ Р·Р°РєР°Р·Р°."],
-    ["РџРѕС‡РµРјСѓ РЅСѓР¶РЅРѕ РІС‹Р±СЂР°С‚СЊ СЂРµРіРёРѕРЅ?", "SmartTaxi СЂР°Р±РѕС‚Р°РµС‚ РїРѕ Р°РєС‚РёРІРЅС‹Рј СЂРµРіРёРѕРЅР°Рј. РўР°СЂРёС„С‹ Рё РґРѕСЃС‚СѓРї РІРѕРґРёС‚РµР»РµР№ Р·Р°РІРёСЃСЏС‚ РѕС‚ РІС‹Р±СЂР°РЅРЅРѕР№ Р·РѕРЅС‹."],
-    ["РљР°Рє СЃС‡РёС‚Р°РµС‚СЃСЏ С†РµРЅР°?", "РЎРёСЃС‚РµРјР° СЃС‚СЂРѕРёС‚ РјР°СЂС€СЂСѓС‚, СѓС‡РёС‚С‹РІР°РµС‚ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ Рё РїСЂРёРјРµРЅСЏРµС‚ С‚Р°СЂРёС„ РІС‹Р±СЂР°РЅРЅРѕРіРѕ СЂРµРіРёРѕРЅР°."],
-    ["РљРѕРіРґР° РїРѕСЏРІРёС‚СЃСЏ РІРѕРґРёС‚РµР»СЊ?", "РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РІРѕРґРёС‚РµР»Рµ РїРѕСЏРІРёС‚СЃСЏ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РїСЂРёРЅСЏС‚РёСЏ Р·Р°РєР°Р·Р°."],
-    ["РљР°Рє РѕС‚РјРµРЅРёС‚СЊ Р·Р°РєР°Р·?", "РћС‚РєСЂРѕР№С‚Рµ С‚РµРєСѓС‰СѓСЋ РїРѕРµР·РґРєСѓ Рё РЅР°Р¶РјРёС‚Рµ РєРЅРѕРїРєСѓ РѕС‚РјРµРЅС‹, РµСЃР»Рё СЃС‚Р°С‚СѓСЃ РїРѕР·РІРѕР»СЏРµС‚ РѕС‚РјРµРЅСѓ."]
+    ["Как заказать поездку?", "Выберите точку подачи, адрес назначения, тариф и нажмите кнопку заказа."],
+    ["Почему нужно выбрать регион?", "SmartTaxi работает по активным регионам. Тарифы и доступ водителей зависят от выбранной зоны."],
+    ["Как считается цена?", "Система строит маршрут, учитывает длительность и применяет тариф выбранного региона."],
+    ["Когда появится водитель?", "Информация о водителе появится только после принятия заказа."],
+    ["Как отменить заказ?", "Откройте текущую поездку и нажмите кнопку отмены, если статус позволяет отмену."]
   ];
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>FAQ</h1><p>РљРѕСЂРѕС‚РєРёРµ РѕС‚РІРµС‚С‹ РїРѕ РїРѕРµР·РґРєР°Рј.</p></section>
+      <section className="screen-intro"><h1>FAQ</h1><p>Короткие ответы по поездкам.</p></section>
       <section className="faq-list-premium">
         {items.map(([title, text]) => <details key={title} className="app-card"><summary>{title}</summary><p>{text}</p></details>)}
       </section>
@@ -3103,11 +3102,11 @@ function FaqSection() {
 function AboutSection({ regions }) {
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>Рћ SmartTaxi</h1><p>Р РµРіРёРѕРЅР°Р»СЊРЅС‹Р№ СЃРµСЂРІРёСЃ РїРѕРµР·РґРѕРє РґР»СЏ РєР»РёРµРЅС‚РѕРІ Рё РІРѕРґРёС‚РµР»РµР№.</p></section>
+      <section className="screen-intro"><h1>О SmartTaxi</h1><p>Региональный сервис поездок для клиентов и водителей.</p></section>
       <section className="app-card about-card-premium">
         <SmartTaxiLogo large />
         <h2>SmartTaxi</h2>
-        <p>РЎРµСЂРІРёСЃ СЂР°Р±РѕС‚Р°РµС‚ РІ Р°РєС‚РёРІРЅС‹С… СЂРµРіРёРѕРЅР°С…, РіРґРµ РЅР°СЃС‚СЂРѕРµРЅС‹ С‚Р°СЂРёС„С‹ Рё РґРѕСЃС‚СѓРї РІРѕРґРёС‚РµР»РµР№. РњРµР¶РіРѕСЂРѕРґ РЅРµ РІС…РѕРґРёС‚ РІ С‚РµРєСѓС‰СѓСЋ РјРѕРґРµР»СЊ Р·Р°РєР°Р·РѕРІ.</p>
+        <p>Сервис работает в активных регионах, где настроены тарифы и доступ водителей. Межгород не входит в текущую модель заказов.</p>
         <div className="region-chip-list">{regions.map(region => <span key={region.id}>{region.name}</span>)}</div>
       </section>
     </section>

@@ -4386,6 +4386,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-recent-section {
   margin-top: 10px;
+  padding: 0 10px 112px;
 }
 
 .taxi-client-shell .reference-section-head {
