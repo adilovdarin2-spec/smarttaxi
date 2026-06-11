@@ -264,6 +264,101 @@ function statusLabel(status) {
   return map[status] || status || "Статус заказа";
 }
 
+function clientLifecycleStage(status, order) {
+  const label = statusLabel(status);
+  const payment = paymentLabel(order?.payment_method);
+  const map = {
+    DRIVER_FOUND: {
+      title: "Водитель найден",
+      subtitle: driverEtaText(order),
+      badge: label,
+      canCancel: true,
+      canContact: true,
+      canStartNewTrip: false
+    },
+    DRIVER_GOING_TO_CLIENT: {
+      title: "Водитель едет к вам",
+      subtitle: driverEtaText(order),
+      badge: label,
+      canCancel: true,
+      canContact: true,
+      canStartNewTrip: false
+    },
+    DRIVER_ARRIVED: {
+      title: "Водитель на месте",
+      subtitle: "Машина подъехала к точке подачи",
+      badge: label,
+      canCancel: true,
+      canContact: true,
+      canStartNewTrip: false
+    },
+    WAITING_CLIENT: {
+      title: "Идёт ожидание",
+      subtitle: "Водитель ждёт вас у точки подачи",
+      badge: label,
+      canCancel: true,
+      canContact: true,
+      canStartNewTrip: false
+    },
+    TRIP_STARTED: {
+      title: "Вы в пути",
+      subtitle: "Поездка началась, едем к пункту назначения",
+      badge: label,
+      canCancel: false,
+      canContact: true,
+      canStartNewTrip: false
+    },
+    TRIP_COMPLETED: {
+      title: "Поездка завершена",
+      subtitle: `Проверьте сумму и оплату: ${payment}`,
+      badge: label,
+      canCancel: false,
+      canContact: false,
+      canStartNewTrip: true
+    },
+    PAYMENT_PENDING: {
+      title: "Ожидаем оплату",
+      subtitle: `Способ оплаты: ${payment}`,
+      badge: label,
+      canCancel: false,
+      canContact: false,
+      canStartNewTrip: true
+    },
+    PAID: {
+      title: "Поездка оплачена",
+      subtitle: "Спасибо за поездку со SmartTaxi",
+      badge: label,
+      canCancel: false,
+      canContact: false,
+      canStartNewTrip: true
+    },
+    RATED: {
+      title: "Поездка закрыта",
+      subtitle: "Можно создать новый заказ",
+      badge: label,
+      canCancel: false,
+      canContact: false,
+      canStartNewTrip: true
+    },
+    NO_SHOW: {
+      title: "Поездка закрыта",
+      subtitle: "Заказ закрыт как неявка клиента",
+      badge: label,
+      canCancel: false,
+      canContact: false,
+      canStartNewTrip: true
+    }
+  };
+  return map[status] || {
+    title: label,
+    subtitle: "Следим за статусом поездки",
+    badge: label,
+    canCancel: false,
+    canContact: Boolean(order?.driver_phone),
+    canStartNewTrip: false
+  };
+}
+
 function normalizeOrder(order) {
   if (!order) return null;
   return {
@@ -1189,6 +1284,15 @@ export default function ClientApp() {
     }
   }
 
+  function startNewTrip() {
+    setOrder(null);
+    setDestination(null);
+    setRoute(null);
+    setRouteError("");
+    setMessage("");
+    setSection("home");
+  }
+
   function logout() {
     clearToken();
     setAuthenticated(false);
@@ -1292,7 +1396,7 @@ export default function ClientApp() {
               onSubmit={submitOrder}
             />
           )}
-          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={() => setSection("home")} />}
+          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} />}
           {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
           {section === "support" && <SupportSection />}
           {section === "faq" && <FaqSection />}
@@ -2049,7 +2153,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
     );
   }
   const status = publicStatus(order.public_status || order.status);
-  const terminal = ["TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN", "CANCELED"].includes(status);
+  const terminal = ["TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED", "NO_SHOW", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN", "CANCELED"].includes(status);
   const tripPickup = pickup || {
     title: order.pickup_text,
     lat: order.pickup_lat,
@@ -2063,7 +2167,9 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   const hasDriver = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status) || order.driver_name;
   const cancelled = ["CANCELLED", "CANCELED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN"].includes(status);
   const driverName = order.driver_name || "Водитель SmartTaxi";
-  const carLine = [order.driver_car_model || "Автомобиль", order.driver_plate].filter(Boolean).join(" · ");
+  const carLine = driverVehicleLine(order);
+  const driverPoint = driverMapPoint(order);
+  const stage = clientLifecycleStage(status, order);
 
   if (status === "SEARCHING_DRIVER") {
     return (
@@ -2108,32 +2214,41 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
 
   return (
     <section className="trip-stage-screen trip-driver-found-screen">
-      <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status={statusLabel(status)} />
-      <section className="trip-driver-card">
-        <div className="trip-driver-topline">
-          <span className="trip-driver-avatar"><VehicleIcon /></span>
+      <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={route} status="" mode="driver-found" />
+      <section className="trip-driver-card driver-found-sheet">
+        <div className="trip-driver-topline driver-found-head">
+          <span className="trip-driver-avatar neutral"><Icon name="user" size={24} /></span>
           <div>
-            <small>{hasDriver ? "Р’РѕРґРёС‚РµР»СЊ РЅР°Р№РґРµРЅ" : "Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё"}</small>
-            <h1>{hasDriver ? driverName : statusLabel(status)}</h1>
+            <small>{stage.subtitle}</small>
+            <h1>{stage.title}</h1>
           </div>
-          <StatusBadge label={statusLabel(status)} tone={terminal ? "muted" : "gold"} />
+          <StatusBadge label={stage.badge} tone={terminal ? "muted" : "gold"} />
         </div>
-        {hasDriver && (
-          <div className="trip-car-plate-row">
-            <span>{carLine}</span>
-            <b>{order.driver_rating ? Number(order.driver_rating).toFixed(1) : "5.0"}</b>
+        <div className="driver-found-profile">
+          <div>
+            <span>Водитель</span>
+            <strong>{hasDriver ? driverName : "Назначаем водителя"}</strong>
           </div>
-        )}
-        <StatusStepper status={status} />
+          <div className="driver-rating-pill">
+            <Icon name="star" size={14} />
+            <b>{driverRatingLabel(order)}</b>
+          </div>
+        </div>
+        <div className="trip-car-plate-row driver-found-car">
+          <span>{carLine}</span>
+          <b>{orderTariffLabel(order, estimate)}</b>
+        </div>
         <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
-        <TripSummaryLine order={order} estimate={estimate} />
+        <DriverFoundMeta order={order} estimate={estimate} />
         <div className="trip-action-row">
           <button type="button" className="trip-details-button" onClick={() => setDetailsOpen(true)}>
-            <Icon name="info" size={18} /> Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё
+            <Icon name="info" size={18} /> Детали поездки
           </button>
-          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> РџРѕР·РІРѕРЅРёС‚СЊ</a>}
-          {!terminal && <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={loading}>{loading ? "РћС‚РјРµРЅСЏРµРј..." : "РћС‚РјРµРЅРёС‚СЊ"}</button>}
-          {terminal && <button type="button" className="trip-home-button" onClick={onHome}>РќРѕРІР°СЏ РїРѕРµР·РґРєР°</button>}
+          {stage.canContact && order.driver_phone
+            ? <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Связаться с водителем</a>
+            : !terminal && <button type="button" className="trip-call-button disabled" disabled><Icon name="phone" size={18} /> Номер появится скоро</button>}
+          {stage.canCancel && <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={loading}>{loading ? "Отменяем..." : "Отменить"}</button>}
+          {stage.canStartNewTrip && <button type="button" className="trip-home-button" onClick={onHome}>Новая поездка</button>}
         </div>
       </section>
       <TripDetailsSheet
@@ -2147,7 +2262,8 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         estimate={estimate}
         onClose={() => setDetailsOpen(false)}
         onCancel={onCancel}
-        cancelDisabled={loading || terminal}
+        canCancel={stage.canCancel}
+        cancelDisabled={loading || !stage.canCancel}
       />
     </section>
   );
@@ -2173,6 +2289,33 @@ function paymentLabel(method) {
   return method === "KASPI" ? "Kaspi" : "Наличные";
 }
 
+function driverEtaText(order) {
+  const eta = Number(order?.driver_eta_min ?? order?.driverEtaMin ?? order?.etaMin ?? 0);
+  if (Number.isFinite(eta) && eta > 0) return `Приедет через ${Math.ceil(eta)} мин`;
+  if (publicStatus(order?.public_status || order?.status) === "DRIVER_GOING_TO_CLIENT") return "Водитель едет к точке подачи";
+  return "Водитель подтвердил заказ";
+}
+
+function driverRatingLabel(order) {
+  const rating = Number(order?.driver_rating);
+  if (Number.isFinite(rating) && rating > 0) return rating.toFixed(1);
+  return "5.0";
+}
+
+function driverVehicleLine(order) {
+  const color = order?.driver_car_color || order?.driverCarColor || "";
+  const model = order?.driver_car_model || order?.driverCarModel || "Автомобиль SmartTaxi";
+  const plate = order?.driver_plate || order?.driverPlate || "";
+  return [[color, model].filter(Boolean).join(" "), plate].filter(Boolean).join(" · ");
+}
+
+function driverMapPoint(order) {
+  const lat = Number(order?.driver_lat ?? order?.driverLat);
+  const lng = Number(order?.driver_lng ?? order?.driverLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
 function SearchingOrderMeta({ order, estimate }) {
   return (
     <div className="search-order-meta">
@@ -2192,49 +2335,66 @@ function SearchingOrderMeta({ order, estimate }) {
   );
 }
 
-function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, cancelDisabled }) {
+function DriverFoundMeta({ order, estimate }) {
+  return (
+    <div className="driver-found-meta">
+      <span>
+        <small>Цена</small>
+        <b><Money value={order.price || estimate?.estimatedPrice} /></b>
+      </span>
+      <span>
+        <small>Оплата</small>
+        <b>{paymentLabel(order.payment_method)}</b>
+      </span>
+    </div>
+  );
+}
+
+function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, canCancel = false, cancelDisabled }) {
   if (!open) return null;
   return (
     <>
       <div className="trip-details-backdrop" onClick={onClose} />
-      <section className="trip-details-sheet" role="dialog" aria-modal="true" aria-label="Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё">
+      <section className="trip-details-sheet" role="dialog" aria-modal="true" aria-label="Детали поездки">
         <header>
           <div>
-            <span>Р—Р°РєР°Р· {order.short_id || order.id}</span>
-            <h2>Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё</h2>
+            <span>Заказ {order.short_id || order.id}</span>
+            <h2>Детали поездки</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Р—Р°РєСЂС‹С‚СЊ"><Icon name="close" size={20} /></button>
+          <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
         </header>
         <CompactRoute pickup={pickup?.title || order.pickup_text} dropoff={destination?.title || order.dropoff_text} />
         <div className="trip-details-grid">
-          <span><small>РЎС‚Р°С‚СѓСЃ</small><b>{statusLabel(status)}</b></span>
-          <span><small>Р¦РµРЅР°</small><b><Money value={order.price || estimate?.estimatedPrice} /></b></span>
-          <span><small>РћРїР»Р°С‚Р°</small><b>{order.payment_method === "KASPI" ? "Kaspi" : "РќР°Р»РёС‡РЅС‹Рµ"}</b></span>
-          <span><small>РўР°СЂРёС„</small><b>{order.tariff || estimate?.tariff?.displayName || "Economy"}</b></span>
+          <span><small>Статус</small><b>{statusLabel(status)}</b></span>
+          <span><small>Цена</small><b><Money value={order.price || estimate?.estimatedPrice} /></b></span>
+          <span><small>Оплата</small><b>{paymentLabel(order.payment_method)}</b></span>
+          <span><small>Тариф</small><b>{orderTariffLabel(order, estimate)}</b></span>
         </div>
         <div className="trip-driver-mini">
-          <span className="trip-driver-avatar"><VehicleIcon /></span>
+          <span className="trip-driver-avatar neutral"><Icon name="user" size={22} /></span>
           <div>
-            <small>Р’РѕРґРёС‚РµР»СЊ</small>
-            <b>{order.driver_name ? driverName : "Р’РѕРґРёС‚РµР»СЊ РµС‰С‘ РЅРµ РЅР°Р·РЅР°С‡РµРЅ"}</b>
-            <em>{order.driver_name ? carLine || "РђРІС‚РѕРјРѕР±РёР»СЊ SmartTaxi" : "РџРѕСЏРІРёС‚СЃСЏ РїРѕСЃР»Рµ РїСЂРёРЅСЏС‚РёСЏ Р·Р°РєР°Р·Р°"}</em>
+            <small>Водитель</small>
+            <b>{order.driver_name ? driverName : "Водитель ещё не назначен"}</b>
+            <em>{order.driver_name ? carLine || "Автомобиль SmartTaxi" : "Появится после принятия заказа"}</em>
           </div>
         </div>
         <div className="trip-details-actions">
-          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> РЎРІСЏР·Р°С‚СЊСЃСЏ СЃ РІРѕРґРёС‚РµР»РµРј</a>}
-          <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={cancelDisabled}>
-            РћС‚РјРµРЅРёС‚СЊ РїРѕРµР·РґРєСѓ
-          </button>
+          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Связаться с водителем</a>}
+          {canCancel && (
+            <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={cancelDisabled}>
+              Отменить поездку
+            </button>
+          )}
         </div>
       </section>
     </>
   );
 }
 
-function TripMapCard({ pickup, destination, route, status, mode = "" }) {
+function TripMapCard({ pickup, destination, driver, route, status, mode = "" }) {
   return (
     <section className={`trip-map-card ${mode ? `trip-map-${mode}` : ""}`}>
-      <MapView pickup={pickup} destination={destination} route={route} center={pickup || destination} compact status={status} />
+      <MapView pickup={pickup} destination={destination} driver={driver} route={route} center={driver || pickup || destination} compact status={status} />
     </section>
   );
 }
@@ -2242,9 +2402,9 @@ function TripMapCard({ pickup, destination, route, status, mode = "" }) {
 function TripSummaryLine({ order, estimate }) {
   return (
     <div className="trip-summary-line">
-      <span><b><Money value={order.price || estimate?.estimatedPrice} /></b><small>Р¦РµРЅР°</small></span>
-      <span><b>{order.tariff || estimate?.tariff?.displayName || "Economy"}</b><small>РўР°СЂРёС„</small></span>
-      <span><b>{order.payment_method === "KASPI" ? "Kaspi" : "РќР°Р»РёС‡РЅС‹Рµ"}</b><small>РћРїР»Р°С‚Р°</small></span>
+      <span><b><Money value={order.price || estimate?.estimatedPrice} /></b><small>Цена</small></span>
+      <span><b>{orderTariffLabel(order, estimate)}</b><small>Тариф</small></span>
+      <span><b>{paymentLabel(order.payment_method)}</b><small>Оплата</small></span>
     </div>
   );
 }
