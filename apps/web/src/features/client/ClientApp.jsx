@@ -961,18 +961,19 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
-      const phoneState = await checkAuthPhone(auth.phone.trim());
+      const phone = normalizeKzPhone(auth.phone);
+      const phoneState = await checkAuthPhone(phone);
       if (!phoneState.exists) {
-        const data = await sendAuthSms(phoneState.phone || auth.phone.trim(), "REGISTER");
+        const data = await sendAuthSms(phoneState.phone || phone, "REGISTER");
         setRegisterForm(current => ({
           ...current,
-          phone: data.phone || phoneState.phone || auth.phone.trim(),
+          phone: data.phone || phoneState.phone || phone,
           smsSent: true,
           devCode: data.devCode || "",
           verificationToken: ""
         }));
         setAuthMode("registerCode");
-        setMessage(data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код подтверждения отправлен по SMS");
+        setMessage(import.meta.env.DEV && data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код подтверждения отправлен по SMS");
         return;
       }
       setAuth(current => ({ ...current, phone: phoneState.phone || current.phone }));
@@ -990,7 +991,7 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
-      const payload = await loginUser({ phone: auth.phone.trim(), password: auth.password });
+      const payload = await loginUser({ phone: normalizeKzPhone(auth.phone), password: auth.password });
       const user = payload.user || {};
       setAuthenticated(true);
       setRider({
@@ -1010,7 +1011,7 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
-      const data = await sendAuthSms(registerForm.phone || auth.phone, "REGISTER");
+      const data = await sendAuthSms(normalizeKzPhone(registerForm.phone || auth.phone), "REGISTER");
       setRegisterForm(current => ({
         ...current,
         phone: data.phone || current.phone,
@@ -1018,7 +1019,7 @@ export default function ClientApp() {
         verificationToken: "",
         devCode: data.devCode || ""
       }));
-      setMessage(data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код подтверждения отправлен по SMS");
+      setMessage(import.meta.env.DEV && data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код подтверждения отправлен по SMS");
     } catch (error) {
       setMessage(authMessage(error));
     } finally {
@@ -1036,7 +1037,7 @@ export default function ClientApp() {
         return;
       }
       const verified = await verifyAuthSms({
-        phone: registerForm.phone.trim(),
+        phone: normalizeKzPhone(registerForm.phone),
         code: registerForm.code.trim(),
         purpose: "REGISTER"
       });
@@ -1069,7 +1070,7 @@ export default function ClientApp() {
       }
       const payload = await registerUser({
         name: registerForm.name.trim(),
-        phone: registerForm.phone.trim(),
+        phone: normalizeKzPhone(registerForm.phone),
         verificationToken: registerForm.verificationToken,
         password: registerForm.password
       });
@@ -1095,7 +1096,7 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
-      const data = await requestPasswordReset(resetForm.phone || auth.phone);
+      const data = await requestPasswordReset(normalizeKzPhone(resetForm.phone || auth.phone));
       setResetForm(current => ({
         ...current,
         phone: data.phone || current.phone || auth.phone,
@@ -1104,7 +1105,7 @@ export default function ClientApp() {
         devCode: data.devCode || ""
       }));
       setAuthMode("resetCode");
-      setMessage(data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код для восстановления отправлен по SMS");
+      setMessage(import.meta.env.DEV && data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код для восстановления отправлен по SMS");
     } catch (error) {
       setMessage(authMessage(error));
     } finally {
@@ -1122,7 +1123,7 @@ export default function ClientApp() {
         return;
       }
       const verified = await verifyAuthSms({
-        phone: resetForm.phone.trim(),
+        phone: normalizeKzPhone(resetForm.phone),
         code: resetForm.code.trim(),
         purpose: "RESET_PASSWORD"
       });
@@ -1150,7 +1151,7 @@ export default function ClientApp() {
         return;
       }
       const payload = await confirmPasswordReset({
-        phone: resetForm.phone.trim(),
+        phone: normalizeKzPhone(resetForm.phone),
         verificationToken: resetForm.verificationToken,
         password: resetForm.password
       });
@@ -2663,6 +2664,39 @@ function TripSummaryLine({ order, estimate }) {
   );
 }
 
+function normalizeKzPhone(value = "") {
+  const digits = String(value).replace(/\D/g, "");
+  if (!digits) return "";
+  let local = digits;
+  if (local.length > 10 && local.startsWith("8")) local = local.slice(1);
+  if (local.length > 10 && local.startsWith("7")) local = local.slice(1);
+  return `+7${local.slice(0, 10)}`;
+}
+
+function kzPhoneDigits(value = "") {
+  return normalizeKzPhone(value).replace(/\D/g, "").slice(1);
+}
+
+function formatKzPhoneInput(value = "") {
+  const local = kzPhoneDigits(value);
+  const groups = [local.slice(0, 3), local.slice(3, 6), local.slice(6, 8), local.slice(8, 10)].filter(Boolean);
+  return groups.join(" ");
+}
+
+function isValidKzPhone(value = "") {
+  return kzPhoneDigits(value).length === 10;
+}
+
+function maskKzPhone(value = "") {
+  const local = kzPhoneDigits(value);
+  if (local.length < 4) return "+7";
+  return `+7 ${local.slice(0, 3)} *** ** ${local.slice(-2)}`;
+}
+
+function formatAuthTimer(seconds) {
+  return `0:${String(Math.max(0, seconds)).padStart(2, "0")}`;
+}
+
 function PremiumAuthFlow({
   auth,
   setAuth,
@@ -2694,8 +2728,21 @@ function PremiumAuthFlow({
   const isNewPassword = authMode === "newPassword";
   const isSuccess = authMode === "success";
   const currentPhone = isResetCode || isNewPassword || isForgot ? resetForm.phone : registerForm.phone || auth.phone;
+  const phoneReady = isValidKzPhone(auth.phone);
+  const resetPhoneReady = isValidKzPhone(resetForm.phone);
+  const registerCodeReady = registerForm.code.trim().length === 6;
+  const resetCodeReady = resetForm.code.trim().length === 6;
+  const [resendSeconds, setResendSeconds] = useState(45);
+  useEffect(() => {
+    if (isRegisterCode || isResetCode) setResendSeconds(45);
+  }, [isRegisterCode, isResetCode, currentPhone]);
+  useEffect(() => {
+    if ((!isRegisterCode && !isResetCode) || resendSeconds <= 0) return undefined;
+    const timer = window.setTimeout(() => setResendSeconds(seconds => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [isRegisterCode, isResetCode, resendSeconds]);
   const title = isPhone
-    ? "Вход / Регистрация"
+    ? "Вход и регистрация"
     : isPassword
       ? "Введите пароль"
       : isRegisterCode || isResetCode
@@ -2708,15 +2755,15 @@ function PremiumAuthFlow({
               ? "Новый пароль"
               : "Готово!";
   const subtitle = isPhone
-    ? "Введите номер телефона, мы определим следующий шаг"
+    ? "Введите номер телефона. Мы проверим аккаунт и откроем следующий шаг."
     : isPassword
-      ? `Аккаунт ${auth.phone || ""}`
+      ? `Аккаунт ${maskKzPhone(auth.phone)}`
       : isRegisterCode
-        ? `Код отправлен на ${registerForm.phone || auth.phone}`
+        ? `Код отправлен на ${maskKzPhone(registerForm.phone || auth.phone)}`
         : isResetCode
-          ? `Код отправлен на ${resetForm.phone}`
+          ? `Код отправлен на ${maskKzPhone(resetForm.phone)}`
           : isCreatePassword
-            ? "Осталось указать имя и надёжный пароль"
+            ? "Укажите имя и надёжный пароль для поездок"
             : isForgot
               ? "Мы отправим SMS-код для сброса пароля"
               : isNewPassword
@@ -2777,7 +2824,7 @@ function PremiumAuthFlow({
             {isPhone && (
               <form className="auth-form" onSubmit={onPhoneSubmit}>
                 <PhoneField value={auth.phone} onChange={phone => setAuth(current => ({ ...current, phone }))} autoFocus />
-                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || auth.phone.trim().length < 6}>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !phoneReady}>
                   {loading ? "Проверяем..." : "Продолжить"}
                 </Button>
               </form>
@@ -2800,10 +2847,10 @@ function PremiumAuthFlow({
             {isRegisterCode && (
               <form className="auth-form" onSubmit={onRegisterCodeSubmit}>
                 <SmsCodeField value={registerForm.code} onChange={code => setRegisterForm(current => ({ ...current, code }))} />
-                <button type="button" className="auth-link-button" onClick={onSendSms} disabled={loading}>
-                  {loading ? "Отправляем..." : "Отправить код ещё раз"}
+                <button type="button" className="auth-link-button" onClick={() => { setResendSeconds(45); onSendSms(); }} disabled={loading || resendSeconds > 0}>
+                  {loading ? "Отправляем..." : resendSeconds > 0 ? `Повторно через ${formatAuthTimer(resendSeconds)}` : "Отправить код ещё раз"}
                 </button>
-                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || registerForm.code.trim().length < 4}>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !registerCodeReady}>
                   Подтвердить код
                 </Button>
               </form>
@@ -2824,7 +2871,7 @@ function PremiumAuthFlow({
             {isForgot && (
               <form className="auth-form" onSubmit={onResetRequest}>
                 <PhoneField value={resetForm.phone} onChange={phone => setResetForm(current => ({ ...current, phone }))} autoFocus />
-                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || resetForm.phone.trim().length < 6}>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !resetPhoneReady}>
                   {loading ? "Отправляем..." : "Получить код"}
                 </Button>
                 <button type="button" className="auth-link-button" onClick={() => { setMessage(""); setAuthMode("password"); }}>Я вспомнил пароль</button>
@@ -2834,10 +2881,10 @@ function PremiumAuthFlow({
             {isResetCode && (
               <form className="auth-form" onSubmit={onResetCodeSubmit}>
                 <SmsCodeField value={resetForm.code} onChange={code => setResetForm(current => ({ ...current, code }))} />
-                <button type="button" className="auth-link-button" onClick={onResetRequest} disabled={loading}>
-                  {loading ? "Отправляем..." : "Отправить код повторно"}
+                <button type="button" className="auth-link-button" onClick={() => { setResendSeconds(45); onResetRequest(); }} disabled={loading || resendSeconds > 0}>
+                  {loading ? "Отправляем..." : resendSeconds > 0 ? `Повторно через ${formatAuthTimer(resendSeconds)}` : "Отправить код повторно"}
                 </button>
-                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || resetForm.code.trim().length < 4}>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !resetCodeReady}>
                   Подтвердить код
                 </Button>
               </form>
@@ -2865,13 +2912,15 @@ function PremiumAuthFlow({
 }
 
 function PhoneField({ value, onChange, autoFocus = false }) {
+  const formattedValue = formatKzPhoneInput(value);
+  const complete = isValidKzPhone(value);
   return (
-    <label className="auth-field">
+    <label className={`auth-field ${complete ? "complete" : ""}`}>
       <span>Номер телефона</span>
       <div className="auth-phone-input">
         <b>KZ</b>
         <small>+7</small>
-        <input value={value} onChange={event => onChange(event.target.value)} placeholder="701 123 45 67" inputMode="tel" autoComplete="tel" autoFocus={autoFocus} />
+        <input value={formattedValue} onChange={event => onChange(normalizeKzPhone(event.target.value))} placeholder="701 123 45 67" inputMode="tel" autoComplete="tel" autoFocus={autoFocus} />
       </div>
     </label>
   );
@@ -2887,12 +2936,16 @@ function AuthTextField({ label, value, onChange, placeholder, autoComplete }) {
 }
 
 function PasswordField({ label, value, onChange, autoComplete }) {
+  const [visible, setVisible] = useState(false);
   return (
     <label className="auth-field">
       <span>{label}</span>
       <div className="auth-password-input">
         <Icon name="shield" size={18} />
-        <input value={value} onChange={event => onChange(event.target.value)} placeholder="Минимум 6 символов" type="password" autoComplete={autoComplete} />
+        <input value={value} onChange={event => onChange(event.target.value)} placeholder="Минимум 6 символов" type={visible ? "text" : "password"} autoComplete={autoComplete} />
+        <button type="button" className="auth-eye-toggle" onClick={() => setVisible(current => !current)} aria-label={visible ? "Скрыть пароль" : "Показать пароль"}>
+          {visible ? "Скрыть" : "Показать"}
+        </button>
       </div>
     </label>
   );
