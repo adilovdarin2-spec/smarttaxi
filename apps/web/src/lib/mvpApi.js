@@ -41,6 +41,22 @@ export function verifyAuthSms({ phone, code, purpose = "REGISTER" }) {
   });
 }
 
+export function requestPasswordReset(phone) {
+  return api("/api/auth/password/reset/request", {
+    method: "POST",
+    body: JSON.stringify({ phone })
+  });
+}
+
+export async function confirmPasswordReset(payload) {
+  const data = await api("/api/auth/password/reset/confirm", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  setToken(data.token);
+  return data;
+}
+
 export function getCurrentUser() {
   return api("/api/auth/me");
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon, VehicleIcon } from "../../core/icons.jsx";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
@@ -8,6 +8,7 @@ import {
   cancelPublicOrder,
   checkAuthPhone,
   clearToken,
+  confirmPasswordReset,
   createOrder,
   estimateTariff,
   getActiveRegions,
@@ -17,6 +18,7 @@ import {
   getToken,
   loginUser,
   registerUser,
+  requestPasswordReset,
   reverseAddress,
   searchAddresses,
   sendAuthSms,
@@ -25,19 +27,19 @@ import {
 import { createSocket } from "../../lib/socket.js";
 
 const paymentOptions = [
-  { id: "CASH", title: "Наличные", note: "Оплата после поездки" },
-  { id: "KASPI", title: "Kaspi", note: "Перевод по заказу" }
+  { id: "CASH", title: "РќР°Р»РёС‡РЅС‹Рµ", note: "РћРїР»Р°С‚Р° РїРѕСЃР»Рµ РїРѕРµР·РґРєРё" },
+  { id: "KASPI", title: "Kaspi", note: "РџРµСЂРµРІРѕРґ РїРѕ Р·Р°РєР°Р·Сѓ" }
 ];
 
 const menuItems = [
-  ["home", "Главная", "home"],
-  ["trips", "Мои поездки", "clock"],
-  ["profile", "Профиль", "user"],
-  ["driver", "Стать водителем", "shield"],
-  ["support", "Поддержка", "support"],
+  ["home", "Р“Р»Р°РІРЅР°СЏ", "home"],
+  ["trips", "РњРѕРё РїРѕРµР·РґРєРё", "clock"],
+  ["profile", "РџСЂРѕС„РёР»СЊ", "user"],
+  ["driver", "РЎС‚Р°С‚СЊ РІРѕРґРёС‚РµР»РµРј", "shield"],
+  ["support", "РџРѕРґРґРµСЂР¶РєР°", "support"],
   ["faq", "FAQ", "chat"],
-  ["about", "О нас", "star"],
-  ["settings", "Настройки", "settings"]
+  ["about", "Рћ РЅР°СЃ", "star"],
+  ["settings", "РќР°СЃС‚СЂРѕР№РєРё", "settings"]
 ];
 
 const carImages = {
@@ -74,19 +76,19 @@ const goldIcons = {
 };
 
 const referenceRecentAddresses = [
-  { title: "ТРЦ Атакент Молл", subtitle: "Атакент, ул. Абая 1А", lat: 40.84803, lng: 68.50768, icon: "work" },
-  { title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips" },
-  { title: "Школа №3", subtitle: "Атакент, ул. Школьная 12", lat: 40.84276, lng: 68.51344, icon: "home" }
+  { title: "РўР Р¦ РђС‚Р°РєРµРЅС‚ РњРѕР»Р»", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РђР±Р°СЏ 1Рђ", lat: 40.84803, lng: 68.50768, icon: "work" },
+  { title: "Р‘Р°Р·Р°СЂ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ СЂС‹РЅРѕРє", lat: 40.84473, lng: 68.51162, icon: "trips" },
+  { title: "РЁРєРѕР»Р° в„–3", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РЁРєРѕР»СЊРЅР°СЏ 12", lat: 40.84276, lng: 68.51344, icon: "home" }
 ];
 
 const clientRegionPresets = [
   {
     id: "LOCAL_ATAKENT",
     code: "ATAKENT",
-    name: "Атакент",
-    displayName: "Атакент",
-    alias: "Ильич",
-    subtitle: "Мақтааральский район",
+    name: "РђС‚Р°РєРµРЅС‚",
+    displayName: "РђС‚Р°РєРµРЅС‚",
+    alias: "РР»СЊРёС‡",
+    subtitle: "РњР°Т›С‚Р°Р°СЂР°Р»СЊСЃРєРёР№ СЂР°Р№РѕРЅ",
     centerLat: 40.844435,
     centerLng: 68.509021,
     currency: "KZT"
@@ -94,10 +96,10 @@ const clientRegionPresets = [
   {
     id: "LOCAL_MYRZAKENT",
     code: "MYRZAKENT",
-    name: "Мырзакент",
-    displayName: "Мырзакент",
-    alias: "Славян",
-    subtitle: "Мақтааральский район",
+    name: "РњС‹СЂР·Р°РєРµРЅС‚",
+    displayName: "РњС‹СЂР·Р°РєРµРЅС‚",
+    alias: "РЎР»Р°РІСЏРЅ",
+    subtitle: "РњР°Т›С‚Р°Р°СЂР°Р»СЊСЃРєРёР№ СЂР°Р№РѕРЅ",
     centerLat: 40.666108,
     centerLng: 68.54309,
     currency: "KZT"
@@ -105,10 +107,10 @@ const clientRegionPresets = [
   {
     id: "LOCAL_ZHETYSAY",
     code: "ZHETYSAY",
-    name: "Жетысай",
-    displayName: "Жетысай",
-    alias: "Жетисай",
-    subtitle: "Жетысайский район",
+    name: "Р–РµС‚С‹СЃР°Р№",
+    displayName: "Р–РµС‚С‹СЃР°Р№",
+    alias: "Р–РµС‚РёСЃР°Р№",
+    subtitle: "Р–РµС‚С‹СЃР°Р№СЃРєРёР№ СЂР°Р№РѕРЅ",
     centerLat: 40.884303,
     centerLng: 68.212621,
     currency: "KZT"
@@ -116,10 +118,10 @@ const clientRegionPresets = [
   {
     id: "LOCAL_SHYMKENT",
     code: "SHYMKENT",
-    name: "Шымкент",
-    displayName: "Шымкент",
-    alias: "Чимкент",
-    subtitle: "Город Шымкент",
+    name: "РЁС‹РјРєРµРЅС‚",
+    displayName: "РЁС‹РјРєРµРЅС‚",
+    alias: "Р§РёРјРєРµРЅС‚",
+    subtitle: "Р“РѕСЂРѕРґ РЁС‹РјРєРµРЅС‚",
     centerLat: 42.314696,
     centerLng: 69.588328,
     currency: "KZT"
@@ -127,50 +129,50 @@ const clientRegionPresets = [
 ];
 
 const clientAddressCatalog = [
-  { region: "ATAKENT", title: "Моё местоположение", subtitle: "Атакент", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["текущее", "геолокация", "центр"] },
-  { region: "ATAKENT", title: "ТРЦ Атакент Молл", subtitle: "Атакент, ул. Абая 1А", lat: 40.84803, lng: 68.50768, icon: "work", tags: ["трц", "молл", "магазин", "абая", "abai"] },
-  { region: "ATAKENT", title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips", tags: ["базар", "рынок", "центральный"] },
-  { region: "ATAKENT", title: "Школа №3", subtitle: "Атакент, ул. Школьная 12", lat: 40.84276, lng: 68.51344, icon: "home", tags: ["школа", "мектеп", "3", "школьная"] },
-  { region: "ATAKENT", title: "Автовокзал Атакент", subtitle: "Атакент, остановка у центра", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
-  { region: "ATAKENT", title: "Улица Абая", subtitle: "Атакент, район центральной улицы", lat: 40.84803, lng: 68.50768, icon: "pin", tags: ["абая", "абай", "abai", "ул абая"] },
-  { region: "ATAKENT", title: "Улица Жамбыла", subtitle: "Атакент", lat: 40.84536, lng: 68.51574, icon: "pin", tags: ["жамбыл", "zhambyl"] },
-  { region: "ATAKENT", title: "Улица Сатпаева", subtitle: "Атакент", lat: 40.83995, lng: 68.50884, icon: "pin", tags: ["сатпаев", "satpayev"] },
-  { region: "ATAKENT", title: "Улица Толе би", subtitle: "Атакент", lat: 40.85072, lng: 68.51212, icon: "pin", tags: ["толе", "төле", "tole bi"] },
-  { region: "ATAKENT", title: "Атакент центр", subtitle: "Атакент, центральная площадь", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["центр", "площадь", "илич", "ильич"] },
-  { region: "ATAKENT", title: "Остановка Центр", subtitle: "Атакент, центральная остановка", lat: 40.84544, lng: 68.50872, icon: "trips", tags: ["остановка", "центр", "маршрутка"] },
-  { region: "ATAKENT", title: "Акимат Атакент", subtitle: "Атакент, центр", lat: 40.84518, lng: 68.50971, icon: "work", tags: ["акимат", "администрация"] },
-  { region: "ATAKENT", title: "Мечеть Атакент", subtitle: "Атакент, центральная мечеть", lat: 40.84386, lng: 68.51432, icon: "pin", tags: ["мечеть", "мешіт", "намаз"] },
-  { region: "ATAKENT", title: "Больница Атакент", subtitle: "Атакент, медпункт", lat: 40.84686, lng: 68.51602, icon: "work", tags: ["больница", "поликлиника", "аптека", "мед"] },
+  { region: "ATAKENT", title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["С‚РµРєСѓС‰РµРµ", "РіРµРѕР»РѕРєР°С†РёСЏ", "С†РµРЅС‚СЂ"] },
+  { region: "ATAKENT", title: "РўР Р¦ РђС‚Р°РєРµРЅС‚ РњРѕР»Р»", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РђР±Р°СЏ 1Рђ", lat: 40.84803, lng: 68.50768, icon: "work", tags: ["С‚СЂС†", "РјРѕР»Р»", "РјР°РіР°Р·РёРЅ", "Р°Р±Р°СЏ", "abai"] },
+  { region: "ATAKENT", title: "Р‘Р°Р·Р°СЂ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ СЂС‹РЅРѕРє", lat: 40.84473, lng: 68.51162, icon: "trips", tags: ["Р±Р°Р·Р°СЂ", "СЂС‹РЅРѕРє", "С†РµРЅС‚СЂР°Р»СЊРЅС‹Р№"] },
+  { region: "ATAKENT", title: "РЁРєРѕР»Р° в„–3", subtitle: "РђС‚Р°РєРµРЅС‚, СѓР». РЁРєРѕР»СЊРЅР°СЏ 12", lat: 40.84276, lng: 68.51344, icon: "home", tags: ["С€РєРѕР»Р°", "РјРµРєС‚РµРї", "3", "С€РєРѕР»СЊРЅР°СЏ"] },
+  { region: "ATAKENT", title: "РђРІС‚РѕРІРѕРєР·Р°Р» РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, РѕСЃС‚Р°РЅРѕРІРєР° Сѓ С†РµРЅС‚СЂР°", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»", "РѕСЃС‚Р°РЅРѕРІРєР°"] },
+  { region: "ATAKENT", title: "РЈР»РёС†Р° РђР±Р°СЏ", subtitle: "РђС‚Р°РєРµРЅС‚, СЂР°Р№РѕРЅ С†РµРЅС‚СЂР°Р»СЊРЅРѕР№ СѓР»РёС†С‹", lat: 40.84803, lng: 68.50768, icon: "pin", tags: ["Р°Р±Р°СЏ", "Р°Р±Р°Р№", "abai", "СѓР» Р°Р±Р°СЏ"] },
+  { region: "ATAKENT", title: "РЈР»РёС†Р° Р–Р°РјР±С‹Р»Р°", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.84536, lng: 68.51574, icon: "pin", tags: ["Р¶Р°РјР±С‹Р»", "zhambyl"] },
+  { region: "ATAKENT", title: "РЈР»РёС†Р° РЎР°С‚РїР°РµРІР°", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.83995, lng: 68.50884, icon: "pin", tags: ["СЃР°С‚РїР°РµРІ", "satpayev"] },
+  { region: "ATAKENT", title: "РЈР»РёС†Р° РўРѕР»Рµ Р±Рё", subtitle: "РђС‚Р°РєРµРЅС‚", lat: 40.85072, lng: 68.51212, icon: "pin", tags: ["С‚РѕР»Рµ", "С‚У©Р»Рµ", "tole bi"] },
+  { region: "ATAKENT", title: "РђС‚Р°РєРµРЅС‚ С†РµРЅС‚СЂ", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ РїР»РѕС‰Р°РґСЊ", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["С†РµРЅС‚СЂ", "РїР»РѕС‰Р°РґСЊ", "РёР»РёС‡", "РёР»СЊРёС‡"] },
+  { region: "ATAKENT", title: "РћСЃС‚Р°РЅРѕРІРєР° Р¦РµРЅС‚СЂ", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ РѕСЃС‚Р°РЅРѕРІРєР°", lat: 40.84544, lng: 68.50872, icon: "trips", tags: ["РѕСЃС‚Р°РЅРѕРІРєР°", "С†РµРЅС‚СЂ", "РјР°СЂС€СЂСѓС‚РєР°"] },
+  { region: "ATAKENT", title: "РђРєРёРјР°С‚ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂ", lat: 40.84518, lng: 68.50971, icon: "work", tags: ["Р°РєРёРјР°С‚", "Р°РґРјРёРЅРёСЃС‚СЂР°С†РёСЏ"] },
+  { region: "ATAKENT", title: "РњРµС‡РµС‚СЊ РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ РјРµС‡РµС‚СЊ", lat: 40.84386, lng: 68.51432, icon: "pin", tags: ["РјРµС‡РµС‚СЊ", "РјРµС€С–С‚", "РЅР°РјР°Р·"] },
+  { region: "ATAKENT", title: "Р‘РѕР»СЊРЅРёС†Р° РђС‚Р°РєРµРЅС‚", subtitle: "РђС‚Р°РєРµРЅС‚, РјРµРґРїСѓРЅРєС‚", lat: 40.84686, lng: 68.51602, icon: "work", tags: ["Р±РѕР»СЊРЅРёС†Р°", "РїРѕР»РёРєР»РёРЅРёРєР°", "Р°РїС‚РµРєР°", "РјРµРґ"] },
 
-  { region: "MYRZAKENT", title: "Мырзакент (Славян)", subtitle: "Центр посёлка", lat: 40.666108, lng: 68.54309, icon: "target", tags: ["мырзакент", "славян", "славянка", "myrzakent", "slavyan"] },
-  { region: "MYRZAKENT", title: "Базар Мырзакент", subtitle: "Мырзакент (Славян), рынок", lat: 40.66718, lng: 68.5452, icon: "trips", tags: ["базар", "рынок", "славян"] },
-  { region: "MYRZAKENT", title: "Автовокзал Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66533, lng: 68.54092, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
-  { region: "MYRZAKENT", title: "Школа Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66822, lng: 68.54183, icon: "home", tags: ["школа", "мектеп"] },
-  { region: "MYRZAKENT", title: "Мечеть Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66491, lng: 68.54611, icon: "pin", tags: ["мечеть", "мешіт"] },
-  { region: "MYRZAKENT", title: "Акимат Мырзакент", subtitle: "Мырзакент (Славян), центр", lat: 40.66662, lng: 68.54222, icon: "work", tags: ["акимат", "администрация", "центр"] },
-  { region: "MYRZAKENT", title: "Поликлиника Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66762, lng: 68.54418, icon: "work", tags: ["больница", "поликлиника", "мед", "аптека"] },
+  { region: "MYRZAKENT", title: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", subtitle: "Р¦РµРЅС‚СЂ РїРѕСЃС‘Р»РєР°", lat: 40.666108, lng: 68.54309, icon: "target", tags: ["РјС‹СЂР·Р°РєРµРЅС‚", "СЃР»Р°РІСЏРЅ", "СЃР»Р°РІСЏРЅРєР°", "myrzakent", "slavyan"] },
+  { region: "MYRZAKENT", title: "Р‘Р°Р·Р°СЂ РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ), СЂС‹РЅРѕРє", lat: 40.66718, lng: 68.5452, icon: "trips", tags: ["Р±Р°Р·Р°СЂ", "СЂС‹РЅРѕРє", "СЃР»Р°РІСЏРЅ"] },
+  { region: "MYRZAKENT", title: "РђРІС‚РѕРІРѕРєР·Р°Р» РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66533, lng: 68.54092, icon: "trips", tags: ["Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»", "РѕСЃС‚Р°РЅРѕРІРєР°"] },
+  { region: "MYRZAKENT", title: "РЁРєРѕР»Р° РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66822, lng: 68.54183, icon: "home", tags: ["С€РєРѕР»Р°", "РјРµРєС‚РµРї"] },
+  { region: "MYRZAKENT", title: "РњРµС‡РµС‚СЊ РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66491, lng: 68.54611, icon: "pin", tags: ["РјРµС‡РµС‚СЊ", "РјРµС€С–С‚"] },
+  { region: "MYRZAKENT", title: "РђРєРёРјР°С‚ РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ), С†РµРЅС‚СЂ", lat: 40.66662, lng: 68.54222, icon: "work", tags: ["Р°РєРёРјР°С‚", "Р°РґРјРёРЅРёСЃС‚СЂР°С†РёСЏ", "С†РµРЅС‚СЂ"] },
+  { region: "MYRZAKENT", title: "РџРѕР»РёРєР»РёРЅРёРєР° РњС‹СЂР·Р°РєРµРЅС‚", subtitle: "РњС‹СЂР·Р°РєРµРЅС‚ (РЎР»Р°РІСЏРЅ)", lat: 40.66762, lng: 68.54418, icon: "work", tags: ["Р±РѕР»СЊРЅРёС†Р°", "РїРѕР»РёРєР»РёРЅРёРєР°", "РјРµРґ", "Р°РїС‚РµРєР°"] },
 
-  { region: "ZHETYSAY", title: "Жетысай (Жетисай)", subtitle: "Центр города", lat: 40.884303, lng: 68.212621, icon: "target", tags: ["жетысай", "жетисай", "zhetysay"] },
-  { region: "ZHETYSAY", title: "Базар Жетысай", subtitle: "Жетысай, центральный рынок", lat: 40.88531, lng: 68.21506, icon: "trips", tags: ["базар", "рынок"] },
-  { region: "ZHETYSAY", title: "Автовокзал Жетысай", subtitle: "Жетысай", lat: 40.88191, lng: 68.20951, icon: "trips", tags: ["автовокзал", "вокзал"] },
-  { region: "ZHETYSAY", title: "Акимат Жетысай", subtitle: "Жетысай, центр", lat: 40.88494, lng: 68.21107, icon: "work", tags: ["акимат", "администрация"] },
-  { region: "ZHETYSAY", title: "Мечеть Жетысай", subtitle: "Жетысай", lat: 40.887, lng: 68.21604, icon: "pin", tags: ["мечеть", "мешіт"] },
-  { region: "ZHETYSAY", title: "Больница Жетысай", subtitle: "Жетысай", lat: 40.88288, lng: 68.21649, icon: "work", tags: ["больница", "поликлиника", "мед"] },
-  { region: "ZHETYSAY", title: "Центральная площадь Жетысай", subtitle: "Жетысай, центр", lat: 40.884303, lng: 68.212621, icon: "pin", tags: ["центр", "площадь"] },
+  { region: "ZHETYSAY", title: "Р–РµС‚С‹СЃР°Р№ (Р–РµС‚РёСЃР°Р№)", subtitle: "Р¦РµРЅС‚СЂ РіРѕСЂРѕРґР°", lat: 40.884303, lng: 68.212621, icon: "target", tags: ["Р¶РµС‚С‹СЃР°Р№", "Р¶РµС‚РёСЃР°Р№", "zhetysay"] },
+  { region: "ZHETYSAY", title: "Р‘Р°Р·Р°СЂ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№, С†РµРЅС‚СЂР°Р»СЊРЅС‹Р№ СЂС‹РЅРѕРє", lat: 40.88531, lng: 68.21506, icon: "trips", tags: ["Р±Р°Р·Р°СЂ", "СЂС‹РЅРѕРє"] },
+  { region: "ZHETYSAY", title: "РђРІС‚РѕРІРѕРєР·Р°Р» Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№", lat: 40.88191, lng: 68.20951, icon: "trips", tags: ["Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»"] },
+  { region: "ZHETYSAY", title: "РђРєРёРјР°С‚ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№, С†РµРЅС‚СЂ", lat: 40.88494, lng: 68.21107, icon: "work", tags: ["Р°РєРёРјР°С‚", "Р°РґРјРёРЅРёСЃС‚СЂР°С†РёСЏ"] },
+  { region: "ZHETYSAY", title: "РњРµС‡РµС‚СЊ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№", lat: 40.887, lng: 68.21604, icon: "pin", tags: ["РјРµС‡РµС‚СЊ", "РјРµС€С–С‚"] },
+  { region: "ZHETYSAY", title: "Р‘РѕР»СЊРЅРёС†Р° Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№", lat: 40.88288, lng: 68.21649, icon: "work", tags: ["Р±РѕР»СЊРЅРёС†Р°", "РїРѕР»РёРєР»РёРЅРёРєР°", "РјРµРґ"] },
+  { region: "ZHETYSAY", title: "Р¦РµРЅС‚СЂР°Р»СЊРЅР°СЏ РїР»РѕС‰Р°РґСЊ Р–РµС‚С‹СЃР°Р№", subtitle: "Р–РµС‚С‹СЃР°Р№, С†РµРЅС‚СЂ", lat: 40.884303, lng: 68.212621, icon: "pin", tags: ["С†РµРЅС‚СЂ", "РїР»РѕС‰Р°РґСЊ"] },
 
-  { region: "SHYMKENT", title: "Шымкент (Чимкент)", subtitle: "Центр города", lat: 42.314696, lng: 69.588328, icon: "target", tags: ["шымкент", "чимкент", "shymkent"] },
-  { region: "SHYMKENT", title: "Mega Planet Shymkent", subtitle: "Шымкент, ТРЦ", lat: 42.31638, lng: 69.59307, icon: "work", tags: ["mega", "мега", "трц", "планет"] },
-  { region: "SHYMKENT", title: "Арбат Шымкент", subtitle: "Шымкент, прогулочная зона", lat: 42.31803, lng: 69.596, icon: "favorite", tags: ["арбат", "центр"] },
-  { region: "SHYMKENT", title: "Центральный парк", subtitle: "Шымкент", lat: 42.32151, lng: 69.59202, icon: "home", tags: ["парк", "центр"] },
-  { region: "SHYMKENT", title: "Автовокзал Самал", subtitle: "Шымкент", lat: 42.28852, lng: 69.61765, icon: "trips", tags: ["самал", "автовокзал", "вокзал"] },
-  { region: "SHYMKENT", title: "Колос", subtitle: "Шымкент, популярный ориентир", lat: 42.31356, lng: 69.59394, icon: "pin", tags: ["колос", "ориентир"] },
-  { region: "SHYMKENT", title: "Нурсат", subtitle: "Шымкент, район Нурсат", lat: 42.34116, lng: 69.60894, icon: "pin", tags: ["нурсат", "район"] }
+  { region: "SHYMKENT", title: "РЁС‹РјРєРµРЅС‚ (Р§РёРјРєРµРЅС‚)", subtitle: "Р¦РµРЅС‚СЂ РіРѕСЂРѕРґР°", lat: 42.314696, lng: 69.588328, icon: "target", tags: ["С€С‹РјРєРµРЅС‚", "С‡РёРјРєРµРЅС‚", "shymkent"] },
+  { region: "SHYMKENT", title: "Mega Planet Shymkent", subtitle: "РЁС‹РјРєРµРЅС‚, РўР Р¦", lat: 42.31638, lng: 69.59307, icon: "work", tags: ["mega", "РјРµРіР°", "С‚СЂС†", "РїР»Р°РЅРµС‚"] },
+  { region: "SHYMKENT", title: "РђСЂР±Р°С‚ РЁС‹РјРєРµРЅС‚", subtitle: "РЁС‹РјРєРµРЅС‚, РїСЂРѕРіСѓР»РѕС‡РЅР°СЏ Р·РѕРЅР°", lat: 42.31803, lng: 69.596, icon: "favorite", tags: ["Р°СЂР±Р°С‚", "С†РµРЅС‚СЂ"] },
+  { region: "SHYMKENT", title: "Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ РїР°СЂРє", subtitle: "РЁС‹РјРєРµРЅС‚", lat: 42.32151, lng: 69.59202, icon: "home", tags: ["РїР°СЂРє", "С†РµРЅС‚СЂ"] },
+  { region: "SHYMKENT", title: "РђРІС‚РѕРІРѕРєР·Р°Р» РЎР°РјР°Р»", subtitle: "РЁС‹РјРєРµРЅС‚", lat: 42.28852, lng: 69.61765, icon: "trips", tags: ["СЃР°РјР°Р»", "Р°РІС‚РѕРІРѕРєР·Р°Р»", "РІРѕРєР·Р°Р»"] },
+  { region: "SHYMKENT", title: "РљРѕР»РѕСЃ", subtitle: "РЁС‹РјРєРµРЅС‚, РїРѕРїСѓР»СЏСЂРЅС‹Р№ РѕСЂРёРµРЅС‚РёСЂ", lat: 42.31356, lng: 69.59394, icon: "pin", tags: ["РєРѕР»РѕСЃ", "РѕСЂРёРµРЅС‚РёСЂ"] },
+  { region: "SHYMKENT", title: "РќСѓСЂСЃР°С‚", subtitle: "РЁС‹РјРєРµРЅС‚, СЂР°Р№РѕРЅ РќСѓСЂСЃР°С‚", lat: 42.34116, lng: 69.60894, icon: "pin", tags: ["РЅСѓСЂСЃР°С‚", "СЂР°Р№РѕРЅ"] }
 ];
 
 const fallbackRegion = {
   id: "ATAKENT_FALLBACK",
   code: "ATAKENT",
-  name: "Атакент",
+  name: "РђС‚Р°РєРµРЅС‚",
   centerLat: 40.844435,
   centerLng: 68.509021,
   currency: "KZT"
@@ -180,32 +182,32 @@ const mergedClientAddressCatalog = [...clientAddressCatalog, ...extraClientAddre
 const mergedClientRegionPresets = [...clientRegionPresets, ...extraClientRegionPresets];
 
 const orderSteps = [
-  ["SEARCHING_DRIVER", "Поиск"],
-  ["DRIVER_FOUND", "Водитель"],
-  ["DRIVER_GOING_TO_CLIENT", "Едет"],
-  ["DRIVER_ARRIVED", "Прибыл"],
-  ["WAITING_CLIENT", "Ожидание"],
-  ["TRIP_STARTED", "В пути"],
-  ["TRIP_COMPLETED", "Готово"],
-  ["PAYMENT_PENDING", "Оплата"],
-  ["PAID", "Оплачено"]
+  ["SEARCHING_DRIVER", "РџРѕРёСЃРє"],
+  ["DRIVER_FOUND", "Р’РѕРґРёС‚РµР»СЊ"],
+  ["DRIVER_GOING_TO_CLIENT", "Р•РґРµС‚"],
+  ["DRIVER_ARRIVED", "РџСЂРёР±С‹Р»"],
+  ["WAITING_CLIENT", "РћР¶РёРґР°РЅРёРµ"],
+  ["TRIP_STARTED", "Р’ РїСѓС‚Рё"],
+  ["TRIP_COMPLETED", "Р“РѕС‚РѕРІРѕ"],
+  ["PAYMENT_PENDING", "РћРїР»Р°С‚Р°"],
+  ["PAID", "РћРїР»Р°С‡РµРЅРѕ"]
 ];
 
 const errorMessages = {
-  PICKUP_REGION_INACTIVE: "В этом месте сервис пока недоступен",
-  DROPOFF_REGION_INACTIVE: "Точка назначения вне активного региона",
-  INTERCITY_NOT_SUPPORTED: "Межгород пока не поддерживается",
-  ROUTE_UNAVAILABLE: "Не удалось построить маршрут",
-  ADDRESS_SEARCH_UNAVAILABLE: "Поиск адресов временно недоступен",
-  TARIFF_INACTIVE: "Этот тариф временно недоступен",
-  TARIFF_REGION_MISMATCH: "Тариф недоступен для выбранного региона",
-  ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
-  UNAUTHORIZED: "Войдите, чтобы заказать поездку",
-  FORBIDDEN: "У аккаунта нет прав пассажира"
+  PICKUP_REGION_INACTIVE: "Р’ СЌС‚РѕРј РјРµСЃС‚Рµ СЃРµСЂРІРёСЃ РїРѕРєР° РЅРµРґРѕСЃС‚СѓРїРµРЅ",
+  DROPOFF_REGION_INACTIVE: "РўРѕС‡РєР° РЅР°Р·РЅР°С‡РµРЅРёСЏ РІРЅРµ Р°РєС‚РёРІРЅРѕРіРѕ СЂРµРіРёРѕРЅР°",
+  INTERCITY_NOT_SUPPORTED: "РњРµР¶РіРѕСЂРѕРґ РїРѕРєР° РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ",
+  ROUTE_UNAVAILABLE: "РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕСЃС‚СЂРѕРёС‚СЊ РјР°СЂС€СЂСѓС‚",
+  ADDRESS_SEARCH_UNAVAILABLE: "РџРѕРёСЃРє Р°РґСЂРµСЃРѕРІ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ",
+  TARIFF_INACTIVE: "Р­С‚РѕС‚ С‚Р°СЂРёС„ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ",
+  TARIFF_REGION_MISMATCH: "РўР°СЂРёС„ РЅРµРґРѕСЃС‚СѓРїРµРЅ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ СЂРµРіРёРѕРЅР°",
+  ORDER_ALREADY_ACCEPTED: "Р—Р°РєР°Р· СѓР¶Рµ РїСЂРёРЅСЏС‚ РґСЂСѓРіРёРј РІРѕРґРёС‚РµР»РµРј",
+  UNAUTHORIZED: "Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ Р·Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ",
+  FORBIDDEN: "РЈ Р°РєРєР°СѓРЅС‚Р° РЅРµС‚ РїСЂР°РІ РїР°СЃСЃР°Р¶РёСЂР°"
 };
 
 function formatError(error) {
-  return errorMessages[error?.code] || error?.message || "Не удалось выполнить запрос";
+  return errorMessages[error?.code] || error?.message || "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹РїРѕР»РЅРёС‚СЊ Р·Р°РїСЂРѕСЃ";
 }
 
 function publicStatus(status) {
@@ -237,29 +239,29 @@ function publicStatus(status) {
 
 function statusLabel(status) {
   const map = {
-    NEW: "Поиск",
-    SEARCHING: "Ищем водителя",
-    SEARCHING_DRIVER: "Ищем водителя",
-    DRIVER_FOUND: "Водитель найден",
-    DRIVER_GOING_TO_CLIENT: "Водитель едет к вам",
-    DRIVER_ASSIGNED: "Водитель назначен",
-    DRIVER_ARRIVED: "Водитель подъехал",
-    IN_PROGRESS: "Поездка началась",
-    TRIP_STARTED: "Поездка началась",
-    COMPLETED: "Поездка завершена",
-    TRIP_COMPLETED: "Поездка завершена",
-    PAYMENT_PENDING: "Ожидаем оплату",
-    PAID: "Оплачено",
-    RATED: "Поездка закрыта",
-    CANCELLED: "Заказ отменён",
-    CANCELED: "Заказ отменён",
-    CANCELLED_BY_CLIENT: "Заказ отменён",
-    CANCELLED_BY_DRIVER: "Заказ отменён водителем",
-    CANCELLED_BY_ADMIN: "Заказ отменён оператором",
-    CANCELLED_BY_OPERATOR: "Заказ отменён оператором",
-    NO_SHOW: "Клиент не вышел"
+    NEW: "РџРѕРёСЃРє",
+    SEARCHING: "РС‰РµРј РІРѕРґРёС‚РµР»СЏ",
+    SEARCHING_DRIVER: "РС‰РµРј РІРѕРґРёС‚РµР»СЏ",
+    DRIVER_FOUND: "Р’РѕРґРёС‚РµР»СЊ РЅР°Р№РґРµРЅ",
+    DRIVER_GOING_TO_CLIENT: "Р’РѕРґРёС‚РµР»СЊ РµРґРµС‚ Рє РІР°Рј",
+    DRIVER_ASSIGNED: "Р’РѕРґРёС‚РµР»СЊ РЅР°Р·РЅР°С‡РµРЅ",
+    DRIVER_ARRIVED: "Р’РѕРґРёС‚РµР»СЊ РїРѕРґСЉРµС…Р°Р»",
+    IN_PROGRESS: "РџРѕРµР·РґРєР° РЅР°С‡Р°Р»Р°СЃСЊ",
+    TRIP_STARTED: "РџРѕРµР·РґРєР° РЅР°С‡Р°Р»Р°СЃСЊ",
+    COMPLETED: "РџРѕРµР·РґРєР° Р·Р°РІРµСЂС€РµРЅР°",
+    TRIP_COMPLETED: "РџРѕРµР·РґРєР° Р·Р°РІРµСЂС€РµРЅР°",
+    PAYMENT_PENDING: "РћР¶РёРґР°РµРј РѕРїР»Р°С‚Сѓ",
+    PAID: "РћРїР»Р°С‡РµРЅРѕ",
+    RATED: "РџРѕРµР·РґРєР° Р·Р°РєСЂС‹С‚Р°",
+    CANCELLED: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ",
+    CANCELED: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ",
+    CANCELLED_BY_CLIENT: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ",
+    CANCELLED_BY_DRIVER: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ РІРѕРґРёС‚РµР»РµРј",
+    CANCELLED_BY_ADMIN: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ РѕРїРµСЂР°С‚РѕСЂРѕРј",
+    CANCELLED_BY_OPERATOR: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ РѕРїРµСЂР°С‚РѕСЂРѕРј",
+    NO_SHOW: "РљР»РёРµРЅС‚ РЅРµ РІС‹С€РµР»"
   };
-  return map[status] || status || "Статус заказа";
+  return map[status] || status || "РЎС‚Р°С‚СѓСЃ Р·Р°РєР°Р·Р°";
 }
 
 function normalizeOrder(order) {
@@ -267,8 +269,8 @@ function normalizeOrder(order) {
   return {
     ...order,
     short_id: order.short_id || order.shortId || order.id,
-    pickup_text: order.pickup_text || order.pickupText || order.pickup || "Точка посадки",
-    dropoff_text: order.dropoff_text || order.dropoffText || order.dropoff || "Точка назначения",
+    pickup_text: order.pickup_text || order.pickupText || order.pickup || "РўРѕС‡РєР° РїРѕСЃР°РґРєРё",
+    dropoff_text: order.dropoff_text || order.dropoffText || order.dropoff || "РўРѕС‡РєР° РЅР°Р·РЅР°С‡РµРЅРёСЏ",
     payment_method: order.payment_method || order.paymentMethod,
     public_status: publicStatus(order.public_status || order.publicStatus || order.status)
   };
@@ -280,8 +282,8 @@ function normalizeAddress(address) {
   const lng = Number(address.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return {
-    title: address.label || address.title || "Точка на карте",
-    subtitle: address.subtitle || address.city || address.region || "Адрес выбран",
+    title: address.label || address.title || "РўРѕС‡РєР° РЅР° РєР°СЂС‚Рµ",
+    subtitle: address.subtitle || address.city || address.region || "РђРґСЂРµСЃ РІС‹Р±СЂР°РЅ",
     icon: address.icon || "pin",
     region: address.region || address.regionCode || address.city || "",
     tags: address.tags || [],
@@ -293,48 +295,48 @@ function normalizeAddress(address) {
 function normalizeText(value) {
   return String(value || "")
     .toLowerCase()
-    .replace(/ё/g, "е")
-    .replace(/і/g, "и")
-    .replace(/ң/g, "н")
-    .replace(/ғ/g, "г")
-    .replace(/ү/g, "у")
-    .replace(/ұ/g, "у")
-    .replace(/қ/g, "к")
-    .replace(/ә/g, "а")
-    .replace(/һ/g, "х")
+    .replace(/С‘/g, "Рµ")
+    .replace(/С–/g, "Рё")
+    .replace(/ТЈ/g, "РЅ")
+    .replace(/Т“/g, "Рі")
+    .replace(/ТЇ/g, "Сѓ")
+    .replace(/Т±/g, "Сѓ")
+    .replace(/Т›/g, "Рє")
+    .replace(/У™/g, "Р°")
+    .replace(/Т»/g, "С…")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 function regionCode(region) {
   const raw = String(region?.code || region?.name || "").toUpperCase();
-  if (raw.includes("MYR") || raw.includes("МЫР") || raw.includes("СЛАВ")) return "MYRZAKENT";
-  if (raw.includes("ZHET") || raw.includes("ЖЕТ")) return "ZHETYSAY";
-  if (raw.includes("SHYM") || raw.includes("ШЫМ") || raw.includes("ЧИМ")) return "SHYMKENT";
-  if (raw.includes("KIROV") || raw.includes("КИР")) return "KIROV";
-  if (raw.includes("ASYK") || raw.includes("АСЫ")) return "ASYKATA";
-  if (raw.includes("DOST") || raw.includes("ДОСТ")) return "DOSTYK";
-  if (raw.includes("YNTY") || raw.includes("ЫНТ")) return "YNTYMAK";
-  if (raw.includes("BIRL") || raw.includes("БИР") || raw.includes("БІР")) return "BIRLIK";
-  if (raw.includes("FIRD") || raw.includes("ФИР") || raw.includes("ФЕР")) return "FIRDOUSI";
-  if (raw.includes("ZHANA") || raw.includes("ЖАНА") || raw.includes("ЖАҢА")) return "ZHANA_ZHOL";
-  if (raw.includes("MAKTA") || raw.includes("МАҚ") || raw.includes("МАК")) return "MAKTAARAL";
-  if (raw.includes("ATAMEKEN") || raw.includes("АТАМЕКЕН") || raw.includes("АТА МЕКЕН")) return "ATAMEKEN";
-  if (raw.includes("TURK") || raw.includes("ТУРК") || raw.includes("ТҮРК")) return "TURKISTAN";
-  if (raw.includes("SARY") || raw.includes("САРЫ")) return "SARYAGASH";
-  if (raw.includes("KAZYG") || raw.includes("ҚАЗ") || raw.includes("КАЗ")) return "KAZYGURT";
-  if (raw.includes("ALMATY") || raw.includes("АЛМ")) return "ALMATY";
-  if (raw.includes("ASTANA") || raw.includes("АСТ") || raw.includes("НУР")) return "ASTANA";
+  if (raw.includes("MYR") || raw.includes("РњР«Р ") || raw.includes("РЎР›РђР’")) return "MYRZAKENT";
+  if (raw.includes("ZHET") || raw.includes("Р–Р•Рў")) return "ZHETYSAY";
+  if (raw.includes("SHYM") || raw.includes("РЁР«Рњ") || raw.includes("Р§РРњ")) return "SHYMKENT";
+  if (raw.includes("KIROV") || raw.includes("РљРР ")) return "KIROV";
+  if (raw.includes("ASYK") || raw.includes("РђРЎР«")) return "ASYKATA";
+  if (raw.includes("DOST") || raw.includes("Р”РћРЎРў")) return "DOSTYK";
+  if (raw.includes("YNTY") || raw.includes("Р«РќРў")) return "YNTYMAK";
+  if (raw.includes("BIRL") || raw.includes("Р‘РР ") || raw.includes("Р‘Р†Р ")) return "BIRLIK";
+  if (raw.includes("FIRD") || raw.includes("Р¤РР ") || raw.includes("Р¤Р•Р ")) return "FIRDOUSI";
+  if (raw.includes("ZHANA") || raw.includes("Р–РђРќРђ") || raw.includes("Р–РђТўРђ")) return "ZHANA_ZHOL";
+  if (raw.includes("MAKTA") || raw.includes("РњРђТљ") || raw.includes("РњРђРљ")) return "MAKTAARAL";
+  if (raw.includes("ATAMEKEN") || raw.includes("РђРўРђРњР•РљР•Рќ") || raw.includes("РђРўРђ РњР•РљР•Рќ")) return "ATAMEKEN";
+  if (raw.includes("TURK") || raw.includes("РўРЈР Рљ") || raw.includes("РўТ®Р Рљ")) return "TURKISTAN";
+  if (raw.includes("SARY") || raw.includes("РЎРђР Р«")) return "SARYAGASH";
+  if (raw.includes("KAZYG") || raw.includes("ТљРђР—") || raw.includes("РљРђР—")) return "KAZYGURT";
+  if (raw.includes("ALMATY") || raw.includes("РђР›Рњ")) return "ALMATY";
+  if (raw.includes("ASTANA") || raw.includes("РђРЎРў") || raw.includes("РќРЈР ")) return "ASTANA";
   return "ATAKENT";
 }
 
 function regionLabel(region) {
-  const name = region?.displayName || region?.name || "Атакент";
+  const name = region?.displayName || region?.name || "РђС‚Р°РєРµРЅС‚";
   return region?.alias ? `${name} (${region.alias})` : name;
 }
 
 function regionShortLabel(region) {
-  return region?.displayName || region?.name || "Атакент";
+  return region?.displayName || region?.name || "РђС‚Р°РєРµРЅС‚";
 }
 
 function mergeRegions(apiRegions = []) {
@@ -361,7 +363,7 @@ function localAddressesForRegion(region) {
 }
 
 function popularAddressesForRegion(region, limit = 3) {
-  return localAddressesForRegion(region).filter(item => item.title !== "Моё местоположение").slice(0, limit);
+  return localAddressesForRegion(region).filter(item => item.title !== "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ").slice(0, limit);
 }
 
 function searchLocalClientAddresses(query, region, limit = 8) {
@@ -398,7 +400,7 @@ function mergeAddressResults(primary, fallback, limit = 10) {
 }
 
 function tariffTitle(tariff) {
-  return tariff?.displayName || tariff?.display_name || tariff?.title || tariff?.name || "Тариф";
+  return tariff?.displayName || tariff?.display_name || tariff?.title || tariff?.name || "РўР°СЂРёС„";
 }
 
 function tariffMinPrice(tariff) {
@@ -409,11 +411,11 @@ function tariffMinPrice(tariff) {
 function tariffSubtitle(tariff) {
   const title = tariffTitle(tariff).toLowerCase();
   const name = String(tariff?.name || "").toLowerCase();
-  if (title.includes("эконом") || name.includes("economy")) return "Быстро и доступно";
-  if (title.includes("комфорт") || name.includes("comfort")) return "Больше удобства";
-  if (title.includes("бизнес") || name.includes("business")) return "Премиальная поездка";
-  if (title.includes("достав") || name.includes("delivery")) return "Передать посылку";
-  return tariff?.description || "Поездка по региону";
+  if (title.includes("СЌРєРѕРЅРѕРј") || name.includes("economy")) return "Р‘С‹СЃС‚СЂРѕ Рё РґРѕСЃС‚СѓРїРЅРѕ";
+  if (title.includes("РєРѕРјС„РѕСЂС‚") || name.includes("comfort")) return "Р‘РѕР»СЊС€Рµ СѓРґРѕР±СЃС‚РІР°";
+  if (title.includes("Р±РёР·РЅРµСЃ") || name.includes("business")) return "РџСЂРµРјРёР°Р»СЊРЅР°СЏ РїРѕРµР·РґРєР°";
+  if (title.includes("РґРѕСЃС‚Р°РІ") || name.includes("delivery")) return "РџРµСЂРµРґР°С‚СЊ РїРѕСЃС‹Р»РєСѓ";
+  return tariff?.description || "РџРѕРµР·РґРєР° РїРѕ СЂРµРіРёРѕРЅСѓ";
 }
 
 function regionCenter(region) {
@@ -466,14 +468,14 @@ function durationMinFromRoute(route) {
   return Math.max(1, Math.ceil(Number(route.durationSeconds) / 60));
 }
 
-function formatTripKm(route, fallback = "5,2 км") {
+function formatTripKm(route, fallback = "5,2 РєРј") {
   const distance = distanceKmFromRoute(route);
-  return distance ? `${String(distance).replace(".", ",")} км` : fallback;
+  return distance ? `${String(distance).replace(".", ",")} РєРј` : fallback;
 }
 
-function formatTripMin(route, fallback = "12 мин") {
+function formatTripMin(route, fallback = "12 РјРёРЅ") {
   const duration = durationMinFromRoute(route);
-  return duration ? `${duration} мин` : fallback;
+  return duration ? `${duration} РјРёРЅ` : fallback;
 }
 
 function IconAsset({ name, className = "", alt = "" }) {
@@ -483,9 +485,9 @@ function IconAsset({ name, className = "", alt = "" }) {
 
 function cleanTariffKey(tariff) {
   const raw = `${tariff?.name || ""} ${tariffTitle(tariff)}`.toLowerCase();
-  if (raw.includes("comfort") || raw.includes("комфорт")) return "Comfort";
-  if (raw.includes("business") || raw.includes("бизнес")) return "Business";
-  if (raw.includes("delivery") || raw.includes("достав")) return "Delivery";
+  if (raw.includes("comfort") || raw.includes("РєРѕРјС„РѕСЂС‚")) return "Comfort";
+  if (raw.includes("business") || raw.includes("Р±РёР·РЅРµСЃ")) return "Business";
+  if (raw.includes("delivery") || raw.includes("РґРѕСЃС‚Р°РІ")) return "Delivery";
   return "Economy";
 }
 
@@ -511,10 +513,10 @@ const localTariffProfiles = {
 };
 
 const localTariffNames = {
-  Economy: "Эконом",
-  Comfort: "Комфорт",
-  Business: "Бизнес",
-  Delivery: "Доставка"
+  Economy: "Р­РєРѕРЅРѕРј",
+  Comfort: "РљРѕРјС„РѕСЂС‚",
+  Business: "Р‘РёР·РЅРµСЃ",
+  Delivery: "Р”РѕСЃС‚Р°РІРєР°"
 };
 
 function localTariffProfile(region) {
@@ -578,10 +580,10 @@ function referenceTariffRows(tariffs, selectedTariff, estimate, route) {
   const byKey = new Map();
   tariffs.forEach(item => byKey.set(cleanTariffKey(item), item));
   const rows = [
-    { key: "Economy", title: "Эконом", subtitle: "Быстрая подача", price: 1200, image: carImages.Economy, seats: 4, recommended: true },
-    { key: "Comfort", title: "Комфорт", subtitle: "Просторные авто", price: 1700, image: carImages.Comfort, seats: 4 },
-    { key: "Business", title: "Бизнес", subtitle: "Премиальные авто", price: 2500, image: carImages.Business, seats: 4 },
-    { key: "Delivery", title: "Доставка", subtitle: "До 20 кг", price: 800, image: carImages.Delivery, seats: null, delivery: true }
+    { key: "Economy", title: "Р­РєРѕРЅРѕРј", subtitle: "Р‘С‹СЃС‚СЂР°СЏ РїРѕРґР°С‡Р°", price: 1200, image: carImages.Economy, seats: 4, recommended: true },
+    { key: "Comfort", title: "РљРѕРјС„РѕСЂС‚", subtitle: "РџСЂРѕСЃС‚РѕСЂРЅС‹Рµ Р°РІС‚Рѕ", price: 1700, image: carImages.Comfort, seats: 4 },
+    { key: "Business", title: "Р‘РёР·РЅРµСЃ", subtitle: "РџСЂРµРјРёР°Р»СЊРЅС‹Рµ Р°РІС‚Рѕ", price: 2500, image: carImages.Business, seats: 4 },
+    { key: "Delivery", title: "Р”РѕСЃС‚Р°РІРєР°", subtitle: "Р”Рѕ 20 РєРі", price: 800, image: carImages.Delivery, seats: null, delivery: true }
   ];
   const mapped = rows.map((row, index) => {
     const apiTariff = byKey.get(row.key);
@@ -593,8 +595,8 @@ function referenceTariffRows(tariffs, selectedTariff, estimate, route) {
       disabled: false,
       selected,
       displayPrice: selected && estimate?.estimatedPrice ? estimate.estimatedPrice : basePrice,
-      eta: formatTripMin(route, `${12 + index * 2} мин`),
-      km: formatTripKm(route, `${(5.2 + index * 0.2).toFixed(1).replace(".", ",")} км`)
+      eta: formatTripMin(route, `${12 + index * 2} РјРёРЅ`),
+      km: formatTripKm(route, `${(5.2 + index * 0.2).toFixed(1).replace(".", ",")} РєРј`)
     };
   });
   if (!mapped.some(row => row.selected)) {
@@ -627,8 +629,9 @@ export default function ClientApp() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [auth, setAuth] = useState({ phone: "", password: "" });
-  const [authMode, setAuthMode] = useState("login");
+  const [authMode, setAuthMode] = useState("phone");
   const [registerForm, setRegisterForm] = useState({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
+  const [resetForm, setResetForm] = useState({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
   const [rider, setRider] = useState({ name: "Пассажир", phone: "" });
   const [authenticated, setAuthenticated] = useState(false);
   const socketRef = useRef(null);
@@ -645,6 +648,7 @@ export default function ClientApp() {
   const estimate = route?.estimate || null;
   const canShowTariffs = Boolean(pickup && destination);
   const canCreate = Boolean(authenticated && pickup && destination && tariff && route && estimate && !routeError);
+  const authScreenActive = section === "profile" && (!authenticated || authMode === "success");
 
   useEffect(() => {
     if (!getToken()) return undefined;
@@ -655,12 +659,12 @@ export default function ClientApp() {
         const user = payload.user || {};
         if (user.role !== "CLIENT") {
           setAuthenticated(false);
-          setRider({ name: "Пассажир", phone: "" });
+          setRider({ name: "РџР°СЃСЃР°Р¶РёСЂ", phone: "" });
           return;
         }
         setAuthenticated(true);
         setRider({
-          name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
+          name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "РџР°СЃСЃР°Р¶РёСЂ",
           phone: user.phone || ""
         });
       })
@@ -714,18 +718,18 @@ export default function ClientApp() {
     getTariffs(backendRegionId || selectedRegionId)
       .then(data => {
         if (ignore) return;
-        const apiTariffs = (data.tariffs || []).filter(item => ["Economy", "Comfort", "Business", "Delivery", "Эконом", "Комфорт", "Бизнес", "Доставка"].includes(item.name) || ["Эконом", "Комфорт", "Бизнес", "Доставка"].includes(item.displayName || item.display_name));
+        const apiTariffs = (data.tariffs || []).filter(item => ["Economy", "Comfort", "Business", "Delivery", "Р­РєРѕРЅРѕРј", "РљРѕРјС„РѕСЂС‚", "Р‘РёР·РЅРµСЃ", "Р”РѕСЃС‚Р°РІРєР°"].includes(item.name) || ["Р­РєРѕРЅРѕРј", "РљРѕРјС„РѕСЂС‚", "Р‘РёР·РЅРµСЃ", "Р”РѕСЃС‚Р°РІРєР°"].includes(item.displayName || item.display_name));
         const nextTariffs = apiTariffs.length ? apiTariffs : localTariffsForRegion(selectedRegion);
         setTariffs(nextTariffs);
         setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
-        setTariffsError(apiTariffs.length ? "" : "Локальные цены региона");
+        setTariffsError(apiTariffs.length ? "" : "Р›РѕРєР°Р»СЊРЅС‹Рµ С†РµРЅС‹ СЂРµРіРёРѕРЅР°");
       })
       .catch(() => {
         if (ignore) return;
         const nextTariffs = localTariffsForRegion(selectedRegion);
         setTariffs(nextTariffs);
         setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
-        setTariffsError("Локальные цены региона");
+        setTariffsError("Р›РѕРєР°Р»СЊРЅС‹Рµ С†РµРЅС‹ СЂРµРіРёРѕРЅР°");
       })
       .finally(() => !ignore && setTariffsLoading(false));
     return () => { ignore = true; };
@@ -833,29 +837,66 @@ export default function ClientApp() {
     setDrawerOpen(false);
   }
 
-  async function submitLogin(event) {
+  function authMessage(error) {
+    const code = error?.code || "";
+    const map = {
+      INVALID_PHONE: "Введите корректный номер телефона",
+      INVALID_CREDENTIALS: "Неверный телефон или пароль",
+      USER_ALREADY_EXISTS: "Этот номер уже зарегистрирован",
+      SMS_CODE_EXPIRED: "Код истёк. Получите новый SMS-код",
+      INVALID_SMS_CODE: "Неверный SMS-код",
+      SMS_CODE_ATTEMPTS_EXCEEDED: "Слишком много попыток. Получите новый код",
+      SMS_VERIFICATION_EXPIRED: "Подтверждение истекло. Получите новый код",
+      USER_NOT_FOUND: "Аккаунт с таким номером не найден"
+    };
+    return map[code] || error?.message || "Не удалось выполнить действие";
+  }
+
+  async function submitAuthPhone(event) {
     event.preventDefault();
     setLoading(true);
     setMessage("");
     try {
-      const phoneState = await checkAuthPhone(auth.phone);
+      const phoneState = await checkAuthPhone(auth.phone.trim());
       if (!phoneState.exists) {
-        setAuthMode("register");
-        setRegisterForm(current => ({ ...current, phone: phoneState.phone || auth.phone }));
-        setMessage("Телефон не найден. Подтвердите номер через SMS и создайте пароль.");
+        const data = await sendAuthSms(phoneState.phone || auth.phone.trim(), "REGISTER");
+        setRegisterForm(current => ({
+          ...current,
+          phone: data.phone || phoneState.phone || auth.phone.trim(),
+          smsSent: true,
+          devCode: data.devCode || "",
+          verificationToken: ""
+        }));
+        setAuthMode("registerCode");
+        setMessage(data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код подтверждения отправлен по SMS");
         return;
       }
-      const payload = await loginUser({ phone: auth.phone, password: auth.password });
+      setAuth(current => ({ ...current, phone: phoneState.phone || current.phone }));
+      setAuthMode("password");
+      setMessage("");
+    } catch (error) {
+      setMessage(authMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitPasswordLogin(event) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      const payload = await loginUser({ phone: auth.phone.trim(), password: auth.password });
       const user = payload.user || {};
       setAuthenticated(true);
       setRider({
         name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
         phone: user.phone || auth.phone
       });
-      setMessage("Вход выполнен");
+      setMessage("");
       setSection("home");
     } catch (error) {
-      setMessage(formatError(error));
+      setMessage(authMessage(error));
     } finally {
       setLoading(false);
     }
@@ -865,16 +906,41 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
-      const data = await sendAuthSms(registerForm.phone, "REGISTER");
+      const data = await sendAuthSms(registerForm.phone || auth.phone, "REGISTER");
       setRegisterForm(current => ({
         ...current,
         phone: data.phone || current.phone,
         smsSent: true,
+        verificationToken: "",
         devCode: data.devCode || ""
       }));
       setMessage(data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код подтверждения отправлен по SMS");
     } catch (error) {
-      setMessage(formatError(error));
+      setMessage(authMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyRegistrationSms(event) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      if (!registerForm.smsSent || !registerForm.code.trim()) {
+        setMessage("Введите SMS-код");
+        return;
+      }
+      const verified = await verifyAuthSms({
+        phone: registerForm.phone.trim(),
+        code: registerForm.code.trim(),
+        purpose: "REGISTER"
+      });
+      setRegisterForm(current => ({ ...current, verificationToken: verified.verificationToken || "" }));
+      setAuthMode("createPassword");
+      setMessage("");
+    } catch (error) {
+      setMessage(authMessage(error));
     } finally {
       setLoading(false);
     }
@@ -885,28 +951,22 @@ export default function ClientApp() {
     setLoading(true);
     setMessage("");
     try {
+      if (registerForm.name.trim().length < 2) {
+        setMessage("Введите имя");
+        return;
+      }
+      if (registerForm.password.length < 6) {
+        setMessage("Пароль должен быть не короче 6 символов");
+        return;
+      }
       if (registerForm.password !== registerForm.repeat) {
         setMessage("Пароли не совпадают");
         return;
       }
-      let verificationToken = registerForm.verificationToken;
-      if (!verificationToken) {
-        if (!registerForm.smsSent || !registerForm.code.trim()) {
-          setMessage("Сначала получите SMS-код и введите его.");
-          return;
-        }
-        const verified = await verifyAuthSms({
-          phone: registerForm.phone.trim(),
-          code: registerForm.code.trim(),
-          purpose: "REGISTER"
-        });
-        verificationToken = verified.verificationToken;
-        setRegisterForm(current => ({ ...current, verificationToken }));
-      }
       const payload = await registerUser({
         name: registerForm.name.trim(),
         phone: registerForm.phone.trim(),
-        verificationToken,
+        verificationToken: registerForm.verificationToken,
         password: registerForm.password
       });
       const user = payload.user || {};
@@ -916,12 +976,92 @@ export default function ClientApp() {
         phone: user.phone || registerForm.phone
       });
       setAuth({ phone: user.phone || registerForm.phone, password: "" });
-      setAuthMode("login");
+      setAuthMode("success");
       setRegisterForm({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
       setMessage("Аккаунт создан");
-      setSection("home");
     } catch (error) {
-      setMessage(formatError(error));
+      setMessage(authMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function sendResetSms(event) {
+    event?.preventDefault?.();
+    setLoading(true);
+    setMessage("");
+    try {
+      const data = await requestPasswordReset(resetForm.phone || auth.phone);
+      setResetForm(current => ({
+        ...current,
+        phone: data.phone || current.phone || auth.phone,
+        smsSent: true,
+        verificationToken: "",
+        devCode: data.devCode || ""
+      }));
+      setAuthMode("resetCode");
+      setMessage(data.devCode ? `Код отправлен. Для локального теста: ${data.devCode}` : "Код для восстановления отправлен по SMS");
+    } catch (error) {
+      setMessage(authMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyResetSms(event) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      if (!resetForm.code.trim()) {
+        setMessage("Введите SMS-код");
+        return;
+      }
+      const verified = await verifyAuthSms({
+        phone: resetForm.phone.trim(),
+        code: resetForm.code.trim(),
+        purpose: "RESET_PASSWORD"
+      });
+      setResetForm(current => ({ ...current, verificationToken: verified.verificationToken || "" }));
+      setAuthMode("newPassword");
+      setMessage("");
+    } catch (error) {
+      setMessage(authMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitResetPassword(event) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      if (resetForm.password.length < 6) {
+        setMessage("Пароль должен быть не короче 6 символов");
+        return;
+      }
+      if (resetForm.password !== resetForm.repeat) {
+        setMessage("Пароли не совпадают");
+        return;
+      }
+      const payload = await confirmPasswordReset({
+        phone: resetForm.phone.trim(),
+        verificationToken: resetForm.verificationToken,
+        password: resetForm.password
+      });
+      const user = payload.user || {};
+      setAuthenticated(true);
+      setRider({
+        name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
+        phone: user.phone || resetForm.phone
+      });
+      setAuth({ phone: user.phone || resetForm.phone, password: "" });
+      setResetForm({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
+      setAuthMode("success");
+      setMessage("Пароль изменён");
+    } catch (error) {
+      setMessage(authMessage(error));
     } finally {
       setLoading(false);
     }
@@ -930,7 +1070,7 @@ export default function ClientApp() {
   async function useCurrentLocation() {
     setMessage("");
     if (!navigator.geolocation) {
-      setMessage("Геолокация недоступна в этом браузере");
+      setMessage("Р“РµРѕР»РѕРєР°С†РёСЏ РЅРµРґРѕСЃС‚СѓРїРЅР° РІ СЌС‚РѕРј Р±СЂР°СѓР·РµСЂРµ");
       return;
     }
     navigator.geolocation.getCurrentPosition(async position => {
@@ -942,15 +1082,15 @@ export default function ClientApp() {
       if (matched) setSelectedRegionId(matched.id);
       try {
         const data = await reverseAddress(point);
-        const address = normalizeAddress(data.address) || { title: "Моё местоположение", subtitle: "Точка определена", ...point };
+        const address = normalizeAddress(data.address) || { title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: "РўРѕС‡РєР° РѕРїСЂРµРґРµР»РµРЅР°", ...point };
         setPickup(address);
-        setMessage(matched ? `Регион: ${matched.name}` : "Местоположение выбрано");
+        setMessage(matched ? `Р РµРіРёРѕРЅ: ${matched.name}` : "РњРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ РІС‹Р±СЂР°РЅРѕ");
       } catch {
-        setPickup({ title: "Моё местоположение", subtitle: "Точка определена", ...point });
-        setMessage(matched ? `Регион: ${matched.name}` : "Местоположение выбрано");
+        setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: "РўРѕС‡РєР° РѕРїСЂРµРґРµР»РµРЅР°", ...point });
+        setMessage(matched ? `Р РµРіРёРѕРЅ: ${matched.name}` : "РњРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ РІС‹Р±СЂР°РЅРѕ");
       }
     }, () => {
-      setMessage("Разрешите доступ к геолокации или выберите адрес вручную");
+      setMessage("Р Р°Р·СЂРµС€РёС‚Рµ РґРѕСЃС‚СѓРї Рє РіРµРѕР»РѕРєР°С†РёРё РёР»Рё РІС‹Р±РµСЂРёС‚Рµ Р°РґСЂРµСЃ РІСЂСѓС‡РЅСѓСЋ");
     }, {
       enableHighAccuracy: true,
       timeout: 12000,
@@ -965,7 +1105,7 @@ export default function ClientApp() {
     if (addressMode === "destination") {
       if (!pickup) {
         const center = regionCenter(selectedRegion) || regionCenter(fallbackRegion);
-        if (center) setPickup({ title: "Моё местоположение", subtitle: selectedRegionName, ...center });
+        if (center) setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: selectedRegionName, ...center });
       }
       setDestination(next);
     }
@@ -981,7 +1121,7 @@ export default function ClientApp() {
     setRoute(null);
     setRouteError("");
     if (center) {
-      setPickup({ title: "Моё местоположение", subtitle: regionLabel(region), ...center });
+      setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: regionLabel(region), ...center });
     }
   }
 
@@ -996,7 +1136,7 @@ export default function ClientApp() {
     const distanceKm = distanceKmFromRoute(route);
     const durationMin = durationMinFromRoute(route);
     if (!distanceKm || !durationMin) {
-      setRouteError("Маршрут временно недоступен");
+      setRouteError("РњР°СЂС€СЂСѓС‚ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ");
       return;
     }
     setLoading(true);
@@ -1010,7 +1150,7 @@ export default function ClientApp() {
         tariff: tariff.name || "Economy",
         distanceKm,
         durationMin,
-        riderName: rider.name || "Пассажир",
+        riderName: rider.name || "РџР°СЃСЃР°Р¶РёСЂ",
         riderPhone: rider.phone || auth.phone,
         pickupText: pickup.title,
         dropoffText: destination.title,
@@ -1048,14 +1188,15 @@ export default function ClientApp() {
     setRider({ name: "Пассажир", phone: "" });
     setAuth({ phone: "", password: "" });
     setRegisterForm({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
-    setAuthMode("login");
+    setResetForm({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
+    setAuthMode("phone");
     setSection("profile");
     setDrawerOpen(false);
   }
 
   return (
     <PhoneFrame className="taxi-pwa passenger-pwa taxi-client-shell">
-      {!addressMode && (
+      {!addressMode && !authScreenActive && (
         <>
           <ClientHeader
             regionName={regionShortLabel(selectedRegion)}
@@ -1123,7 +1264,7 @@ export default function ClientApp() {
                 if (!next) return;
                 if (!pickup) {
                   const center = regionCenter(selectedRegion) || regionCenter(fallbackRegion);
-                  setPickup({ title: "Моё местоположение", subtitle: selectedRegionName, ...center });
+                  setPickup({ title: "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ", subtitle: selectedRegionName, ...center });
                 }
                 setDestination(next);
               }}
@@ -1145,7 +1286,7 @@ export default function ClientApp() {
             />
           )}
           {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={() => setSection("home")} />}
-          {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} message={message} loading={loading} onSubmit={submitLogin} onRegister={submitRegister} onSendSms={sendRegistrationSms} onLogout={logout} />}
+          {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
           {section === "support" && <SupportSection />}
           {section === "faq" && <FaqSection />}
           {section === "about" && <AboutSection regions={regions} />}
@@ -1160,14 +1301,14 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
   if (routeReady) {
     return (
       <header className="taxi-app-header premium-client-header reference-client-header tariff-mode">
-        <button type="button" className="client-icon-button" onClick={onBackRoute} aria-label="Назад">
+        <button type="button" className="client-icon-button" onClick={onBackRoute} aria-label="РќР°Р·Р°Рґ">
           <IconAsset name="back" />
         </button>
         <div className="reference-title-stack">
-          <strong>Выбор тарифа</strong>
-          <small>{formatTripMin(route)} · {formatTripKm(route)}</small>
+          <strong>Р’С‹Р±РѕСЂ С‚Р°СЂРёС„Р°</strong>
+          <small>{formatTripMin(route)} В· {formatTripKm(route)}</small>
         </div>
-        <button type="button" className="client-icon-button" aria-label="Информация">
+        <button type="button" className="client-icon-button" aria-label="РРЅС„РѕСЂРјР°С†РёСЏ">
           <IconAsset name="info" />
         </button>
       </header>
@@ -1175,15 +1316,15 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
   }
   return (
     <header className="taxi-app-header premium-client-header reference-client-header address-mode">
-      <button type="button" className="client-icon-button" onClick={onMenu} aria-label="Открыть меню">
+      <button type="button" className="client-icon-button" onClick={onMenu} aria-label="РћС‚РєСЂС‹С‚СЊ РјРµРЅСЋ">
         <IconAsset name="menu" />
       </button>
-      <button type="button" className="reference-region-chip" onClick={onRegion} aria-label="Регион">
+      <button type="button" className="reference-region-chip" onClick={onRegion} aria-label="Р РµРіРёРѕРЅ">
         <Icon name="pin" size={18} />
-        <span>{regionName || "Атакент"}</span>
+        <span>{regionName || "РђС‚Р°РєРµРЅС‚"}</span>
         <Icon name="chevron" size={15} />
       </button>
-      <button type="button" className="client-icon-button notification" onClick={onBell} aria-label="Уведомления">
+      <button type="button" className="client-icon-button notification" onClick={onBell} aria-label="РЈРІРµРґРѕРјР»РµРЅРёСЏ">
         <Icon name="bell" size={20} />
         <i />
       </button>
@@ -1204,17 +1345,17 @@ function RegionSheet({ open, regions, selectedRegionId, loading, error, onClose,
       <section className={`client-region-sheet ${open ? "open" : ""}`} aria-hidden={!open}>
         <header>
           <div>
-            <strong>Выберите регион</strong>
-            <span>Регион нужен для тарифов, адресов и подачи водителя.</span>
+            <strong>Р’С‹Р±РµСЂРёС‚Рµ СЂРµРіРёРѕРЅ</strong>
+            <span>Р РµРіРёРѕРЅ РЅСѓР¶РµРЅ РґР»СЏ С‚Р°СЂРёС„РѕРІ, Р°РґСЂРµСЃРѕРІ Рё РїРѕРґР°С‡Рё РІРѕРґРёС‚РµР»СЏ.</span>
           </div>
-          <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
+          <button type="button" onClick={onClose} aria-label="Р—Р°РєСЂС‹С‚СЊ"><Icon name="close" size={20} /></button>
         </header>
         <label className="client-region-search">
           <Icon name="search" size={18} />
-          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Найти город или район" />
+          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="РќР°Р№С‚Рё РіРѕСЂРѕРґ РёР»Рё СЂР°Р№РѕРЅ" />
         </label>
-        {loading && <p className="region-sheet-note">Загружаем регионы...</p>}
-        {error && <p className="region-sheet-note muted">Локальный список регионов включён.</p>}
+        {loading && <p className="region-sheet-note">Р—Р°РіСЂСѓР¶Р°РµРј СЂРµРіРёРѕРЅС‹...</p>}
+        {error && <p className="region-sheet-note muted">Р›РѕРєР°Р»СЊРЅС‹Р№ СЃРїРёСЃРѕРє СЂРµРіРёРѕРЅРѕРІ РІРєР»СЋС‡С‘РЅ.</p>}
         <div className="client-region-list">
           {list.map(region => {
             const selected = region.id === selectedRegionId;
@@ -1243,9 +1384,9 @@ function ClientDrawer({ open, active, rider, regionName, authenticated, onClose,
         <header>
           <SmartTaxiLogo large />
           <div>
-            <strong>{authenticated ? rider.name || "Пассажир" : "SmartTaxi"}</strong>
-            <span>{authenticated ? rider.phone || "Телефон не указан" : "Войдите для заказа"}</span>
-            <small>{regionName || "Регион не выбран"}</small>
+            <strong>{authenticated ? rider.name || "РџР°СЃСЃР°Р¶РёСЂ" : "SmartTaxi"}</strong>
+            <span>{authenticated ? rider.phone || "РўРµР»РµС„РѕРЅ РЅРµ СѓРєР°Р·Р°РЅ" : "Р’РѕР№РґРёС‚Рµ РґР»СЏ Р·Р°РєР°Р·Р°"}</span>
+            <small>{regionName || "Р РµРіРёРѕРЅ РЅРµ РІС‹Р±СЂР°РЅ"}</small>
           </div>
         </header>
         <nav>
@@ -1258,7 +1399,7 @@ function ClientDrawer({ open, active, rider, regionName, authenticated, onClose,
         </nav>
         <button type="button" className="drawer-logout" onClick={onLogout}>
           <Icon name="logout" size={20} />
-          <span>Выйти</span>
+          <span>Р’С‹Р№С‚Рё</span>
         </button>
       </aside>
     </>
@@ -1316,16 +1457,16 @@ function ReferenceHomeSection(props) {
             <b />
           </div>
           <div className="reference-route-copy">
-            <span>Откуда</span>
-            <strong>{pickup?.title || "Моё местоположение"}</strong>
-            <small>{pickup?.subtitle || selectedRegionName || "Атакент"}</small>
-            <span>Куда</span>
-            <strong>{destination?.title || "ТРЦ Атакент Молл"}</strong>
-            <small>{destination?.subtitle || "Атакент, ул. Абая 1А"}</small>
+            <span>РћС‚РєСѓРґР°</span>
+            <strong>{pickup?.title || "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ"}</strong>
+            <small>{pickup?.subtitle || selectedRegionName || "РђС‚Р°РєРµРЅС‚"}</small>
+            <span>РљСѓРґР°</span>
+            <strong>{destination?.title || "РўР Р¦ РђС‚Р°РєРµРЅС‚ РњРѕР»Р»"}</strong>
+            <small>{destination?.subtitle || "РђС‚Р°РєРµРЅС‚, СѓР». РђР±Р°СЏ 1Рђ"}</small>
           </div>
           <button type="button" className="reference-edit-route" onClick={onDestination}>
             <IconAsset name="edit" />
-            <span>Изменить<br />маршрут</span>
+            <span>РР·РјРµРЅРёС‚СЊ<br />РјР°СЂС€СЂСѓС‚</span>
           </button>
         </section>
 
@@ -1333,8 +1474,8 @@ function ReferenceHomeSection(props) {
 
         <section className="reference-tariffs-block">
           <div className="reference-section-title">
-            <strong>Выберите тариф</strong>
-            {routeLoading ? <span>Считаем маршрут</span> : <span>{formatTripMin(route)} · {formatTripKm(route)}</span>}
+            <strong>Р’С‹Р±РµСЂРёС‚Рµ С‚Р°СЂРёС„</strong>
+            {routeLoading ? <span>РЎС‡РёС‚Р°РµРј РјР°СЂС€СЂСѓС‚</span> : <span>{formatTripMin(route)} В· {formatTripKm(route)}</span>}
           </div>
           {routeError && <p className="reference-state-error">{routeError}</p>}
           {tariffsError && <p className="reference-state-hint">{tariffsError}</p>}
@@ -1345,16 +1486,16 @@ function ReferenceHomeSection(props) {
           )}
         </section>
 
-        {message && <p className={message.includes("Вход") || message.includes("Регион") ? "reference-note success" : "reference-note"}>{message}</p>}
+        {message && <p className={message.includes("Р’С…РѕРґ") || message.includes("Р РµРіРёРѕРЅ") ? "reference-note success" : "reference-note"}>{message}</p>}
 
         <section className="reference-sticky-order">
           <div className="reference-total">
-            <span>Итого</span>
+            <span>РС‚РѕРіРѕ</span>
             <strong><Money value={totalPrice} /></strong>
-            <small>Включая подачу</small>
+            <small>Р’РєР»СЋС‡Р°СЏ РїРѕРґР°С‡Сѓ</small>
           </div>
           <button type="button" className="reference-order-button" disabled={loading || routeLoading || !actionReady} onClick={onSubmit}>
-            <span>{`Заказать ${selectedRow?.title || "Эконом"}`}</span>
+            <span>{`Р—Р°РєР°Р·Р°С‚СЊ ${selectedRow?.title || "Р­РєРѕРЅРѕРј"}`}</span>
             <b><Money value={totalPrice} /></b>
             <Icon name="chevron" size={24} />
           </button>
@@ -1373,8 +1514,8 @@ function ReferenceHomeSection(props) {
         <button type="button" className="reference-address-row" onClick={onPickup}>
           <span className="reference-point-icon"><IconAsset name="pickup" className="ui-asset-icon ui-asset-icon-lg" /></span>
           <span className="reference-address-text">
-            <small>Откуда</small>
-            <strong>{pickup?.title || "Моё местоположение"}</strong>
+            <small>РћС‚РєСѓРґР°</small>
+            <strong>{pickup?.title || "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ"}</strong>
           </span>
           <em className="reference-address-action" onClick={event => { event.stopPropagation(); onUseLocation(); }}>
             <IconAsset name="target" className="ui-asset-icon ui-asset-icon-md" />
@@ -1383,8 +1524,8 @@ function ReferenceHomeSection(props) {
         <button type="button" className="reference-address-row destination" onClick={onDestination}>
           <span className="reference-point-icon"><IconAsset name="destination" className="ui-asset-icon ui-asset-icon-lg" /></span>
           <span className="reference-address-text">
-            <small>Куда едем?</small>
-            <strong>{destination?.title || "Выберите пункт назначения"}</strong>
+            <small>РљСѓРґР° РµРґРµРј?</small>
+            <strong>{destination?.title || "Р’С‹Р±РµСЂРёС‚Рµ РїСѓРЅРєС‚ РЅР°Р·РЅР°С‡РµРЅРёСЏ"}</strong>
           </span>
           <em className="reference-address-action">
             <Icon name="chevron" size={23} />
@@ -1394,8 +1535,8 @@ function ReferenceHomeSection(props) {
 
       <section className="reference-recents reference-recent-section">
         <header className="reference-section-head">
-          <strong>Недавние адреса</strong>
-          <button type="button" onClick={onDestination}>Все</button>
+          <strong>РќРµРґР°РІРЅРёРµ Р°РґСЂРµСЃР°</strong>
+          <button type="button" onClick={onDestination}>Р’СЃРµ</button>
         </header>
         <div className="reference-recent-list">
           {recentPlaces.map(place => (
@@ -1411,7 +1552,7 @@ function ReferenceHomeSection(props) {
         </div>
       </section>
 
-      {message && <p className={message.includes("Регион") || message.includes("выбрано") ? "reference-note success" : "reference-note"}>{message}</p>}
+      {message && <p className={message.includes("Р РµРіРёРѕРЅ") || message.includes("РІС‹Р±СЂР°РЅРѕ") ? "reference-note success" : "reference-note"}>{message}</p>}
       <ReferenceBottomNav onNavigate={onNavigate} activeSection={activeSection} />
     </section>
   );
@@ -1434,23 +1575,23 @@ function ReferenceTariffList({ rows, setTariff, route }) {
           <span className="reference-tariff-copy">
             <span className="reference-tariff-title-row">
               <strong className="reference-tariff-title">{row.title}</strong>
-              {row.recommended ? <span className="reference-tariff-recommended">Популярный</span> : null}
+              {row.recommended ? <span className="reference-tariff-recommended">РџРѕРїСѓР»СЏСЂРЅС‹Р№</span> : null}
             </span>
             <span className="reference-tariff-meta">
               {row.seats ? (
                 <>
                   <Icon name="user" size={13} />
-                  <small>{row.seats} места</small>
+                  <small>{row.seats} РјРµСЃС‚Р°</small>
                 </>
               ) : (
                 <>
                   <Icon name="gift" size={13} />
-                  <small>Доставка</small>
+                  <small>Р”РѕСЃС‚Р°РІРєР°</small>
                 </>
               )}
             </span>
             <em>{row.subtitle}</em>
-            <i>{row.eta || formatTripMin(route)} · {row.km || formatTripKm(route)}</i>
+            <i>{row.eta || formatTripMin(route)} В· {row.km || formatTripKm(route)}</i>
           </span>
           <span className="reference-tariff-actions">
             <span className="reference-tariff-price"><Money value={row.displayPrice} /></span>
@@ -1470,10 +1611,10 @@ function ReferencePaymentRow({ payment, setPayment }) {
         <IconAsset name="card" className="ui-asset-icon ui-asset-icon-md" />
       </span>
       <span className="reference-payment-copy">
-        <small>Способ оплаты</small>
-        <strong>{payment?.title || "Наличные"}</strong>
+        <small>РЎРїРѕСЃРѕР± РѕРїР»Р°С‚С‹</small>
+        <strong>{payment?.title || "РќР°Р»РёС‡РЅС‹Рµ"}</strong>
       </span>
-      <span className="reference-payment-value">{payment?.note || "Оплата после поездки"}</span>
+      <span className="reference-payment-value">{payment?.note || "РћРїР»Р°С‚Р° РїРѕСЃР»Рµ РїРѕРµР·РґРєРё"}</span>
       <Icon name="chevron" size={18} />
     </button>
   );
@@ -1481,13 +1622,13 @@ function ReferencePaymentRow({ payment, setPayment }) {
 
 function ReferenceBottomNav({ onNavigate, activeSection = "home" }) {
   const items = [
-    { key: "home", icon: "home", title: "Главная", section: "home" },
-    { key: "trips", icon: "clock", title: "Поездки", section: "trips" },
-    { key: "favorite", icon: "favorite", title: "Избранное", section: "profile" },
-    { key: "profile", icon: "user", title: "Профиль", section: "profile" }
+    { key: "home", icon: "home", title: "Р“Р»Р°РІРЅР°СЏ", section: "home" },
+    { key: "trips", icon: "clock", title: "РџРѕРµР·РґРєРё", section: "trips" },
+    { key: "favorite", icon: "favorite", title: "РР·Р±СЂР°РЅРЅРѕРµ", section: "profile" },
+    { key: "profile", icon: "user", title: "РџСЂРѕС„РёР»СЊ", section: "profile" }
   ];
   return (
-    <nav className="reference-bottom-nav" aria-label="Навигация">
+    <nav className="reference-bottom-nav" aria-label="РќР°РІРёРіР°С†РёСЏ">
       {items.map(({ key, icon, title, section }) => (
         <button
           type="button"
@@ -1535,33 +1676,33 @@ function HomeSection(props) {
   const showOrderSheet = showOrderOptions || hasRouteError || Boolean(message);
   const sheetTitle = pickup && destination
     ? hasRouteError
-      ? "Маршрут недоступен"
-      : "Выберите тариф"
+      ? "РњР°СЂС€СЂСѓС‚ РЅРµРґРѕСЃС‚СѓРїРµРЅ"
+      : "Р’С‹Р±РµСЂРёС‚Рµ С‚Р°СЂРёС„"
     : !pickup
-      ? "Подача такси"
-      : "Куда едем?";
+      ? "РџРѕРґР°С‡Р° С‚Р°РєСЃРё"
+      : "РљСѓРґР° РµРґРµРј?";
   const sheetHelper = pickup && destination
     ? hasRouteError
-      ? "Измените адрес назначения или выберите точку ближе к выбранному региону"
-      : "Проверьте класс поездки, цену и оплату"
+      ? "РР·РјРµРЅРёС‚Рµ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ РёР»Рё РІС‹Р±РµСЂРёС‚Рµ С‚РѕС‡РєСѓ Р±Р»РёР¶Рµ Рє РІС‹Р±СЂР°РЅРЅРѕРјСѓ СЂРµРіРёРѕРЅСѓ"
+      : "РџСЂРѕРІРµСЂСЊС‚Рµ РєР»Р°СЃСЃ РїРѕРµР·РґРєРё, С†РµРЅСѓ Рё РѕРїР»Р°С‚Сѓ"
     : !pickup
-      ? "Укажите место, где водитель должен вас забрать."
-      : "Теперь выберите адрес назначения.";
+      ? "РЈРєР°Р¶РёС‚Рµ РјРµСЃС‚Рѕ, РіРґРµ РІРѕРґРёС‚РµР»СЊ РґРѕР»Р¶РµРЅ РІР°СЃ Р·Р°Р±СЂР°С‚СЊ."
+      : "РўРµРїРµСЂСЊ РІС‹Р±РµСЂРёС‚Рµ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ.";
   const ctaText = hasRouteError
-    ? "Изменить адрес"
+    ? "РР·РјРµРЅРёС‚СЊ Р°РґСЂРµСЃ"
     : !pickup
-    ? "Указать точку подачи"
+    ? "РЈРєР°Р·Р°С‚СЊ С‚РѕС‡РєСѓ РїРѕРґР°С‡Рё"
     : !destination
-      ? "Выбрать адрес назначения"
+      ? "Р’С‹Р±СЂР°С‚СЊ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ"
       : !authenticated
-        ? "Войти и заказать"
+        ? "Р’РѕР№С‚Рё Рё Р·Р°РєР°Р·Р°С‚СЊ"
         : !tariff
-        ? "Выбрать тариф"
+        ? "Р’С‹Р±СЂР°С‚СЊ С‚Р°СЂРёС„"
         : routeLoading
-          ? "Считаем стоимость..."
+          ? "РЎС‡РёС‚Р°РµРј СЃС‚РѕРёРјРѕСЃС‚СЊ..."
           : estimate
-            ? "Заказать"
-            : "Рассчитать";
+            ? "Р—Р°РєР°Р·Р°С‚СЊ"
+            : "Р Р°СЃСЃС‡РёС‚Р°С‚СЊ";
 
   const handleCta = () => {
     if (!pickup) {
@@ -1586,7 +1727,7 @@ function HomeSection(props) {
         destination={destination}
         route={route}
         center={mapCenter}
-        status={routeLoading ? "Прокладываем маршрут" : ""}
+        status={routeLoading ? "РџСЂРѕРєР»Р°РґС‹РІР°РµРј РјР°СЂС€СЂСѓС‚" : ""}
         onUseLocation={onUseLocation}
       />
       <section className="floating-route-panel">
@@ -1601,14 +1742,14 @@ function HomeSection(props) {
           {(showOrderOptions || hasRouteError) && (
             <SelectedRouteSummary pickup={pickup} destination={destination} onPickup={onPickup} onDestination={onDestination} />
           )}
-          {message && <p className={message.includes("Регион") || message.includes("выбра") || message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
+          {message && <p className={message.includes("Р РµРіРёРѕРЅ") || message.includes("РІС‹Р±СЂР°") || message.includes("Р’С…РѕРґ") ? "state-note success" : "state-note danger"}>{message}</p>}
           {hasRouteError && <RouteUnavailableCard message={routeError} />}
           <TariffSelector tariffs={tariffs} tariff={tariff} setTariff={setTariff} loading={tariffsLoading} error={tariffsError} enabled={showOrderOptions} estimate={estimate} />
           {showOrderOptions && <PaymentSelector payment={payment} setPayment={setPayment} />}
           {(showOrderOptions || hasRouteError) && (
             <Button className="wide primary-gold client-main-cta" disabled={loading || routeLoading || (!hasRouteError && !canCreate && authenticated && pickup && destination)} onClick={handleCta}>
-              {loading ? "Создаём заказ..." : ctaText}
-              {canCreate && estimate?.estimatedPrice ? <> · <Money value={estimate.estimatedPrice} /></> : null}
+              {loading ? "РЎРѕР·РґР°С‘Рј Р·Р°РєР°Р·..." : ctaText}
+              {canCreate && estimate?.estimatedPrice ? <> В· <Money value={estimate.estimatedPrice} /></> : null}
             </Button>
           )}
         </section>
@@ -1623,13 +1764,13 @@ function RouteSheetTitle({ title, helper, route }) {
   return (
     <div className="card-topline sheet-title-row">
       <div>
-        <span>Поездка</span>
+        <span>РџРѕРµР·РґРєР°</span>
         <h1>{title}</h1>
         <p>{helper}</p>
       </div>
       {(distance || duration) && (
         <small className="route-meta-pill">
-          {distance ? `${distance} км` : ""}{distance && duration ? " · " : ""}{duration ? `${duration} мин` : ""}
+          {distance ? `${distance} РєРј` : ""}{distance && duration ? " В· " : ""}{duration ? `${duration} РјРёРЅ` : ""}
         </small>
       )}
     </div>
@@ -1641,8 +1782,8 @@ function RouteUnavailableCard({ message }) {
     <section className="route-unavailable-card">
       <Icon name="route" size={21} />
       <div>
-        <strong>{message || "Маршрут временно недоступен"}</strong>
-        <span>Проверьте адрес назначения или уточните улицу, дом и регион.</span>
+        <strong>{message || "РњР°СЂС€СЂСѓС‚ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ"}</strong>
+        <span>РџСЂРѕРІРµСЂСЊС‚Рµ Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ РёР»Рё СѓС‚РѕС‡РЅРёС‚Рµ СѓР»РёС†Сѓ, РґРѕРј Рё СЂРµРіРёРѕРЅ.</span>
       </div>
     </section>
   );
@@ -1655,8 +1796,8 @@ function RouteCard({ pickup, destination, onPickup, onDestination }) {
       <button className="destination-command" type="button" onClick={onDestination}>
         <span className="destination-command-icon"><Icon name="search" size={19} /></span>
         <span className="destination-command-copy">
-          <small>{destination ? "Куда" : "Введите адрес или место"}</small>
-          <b>{destination?.title || "Куда едем?"}</b>
+          <small>{destination ? "РљСѓРґР°" : "Р’РІРµРґРёС‚Рµ Р°РґСЂРµСЃ РёР»Рё РјРµСЃС‚Рѕ"}</small>
+          <b>{destination?.title || "РљСѓРґР° РµРґРµРј?"}</b>
         </span>
         <span className="destination-command-action"><Icon name="chevron" size={18} /></span>
       </button>
@@ -1665,16 +1806,16 @@ function RouteCard({ pickup, destination, onPickup, onDestination }) {
           <span className="pickup-command-dot" />
         </span>
         <span>
-          <small>Откуда</small>
-          <b>{pickup?.title || "Моё местоположение"}</b>
+          <small>РћС‚РєСѓРґР°</small>
+          <b>{pickup?.title || "РњРѕС‘ РјРµСЃС‚РѕРїРѕР»РѕР¶РµРЅРёРµ"}</b>
         </span>
         <em aria-hidden="true"><Icon name="chevron" size={16} /></em>
       </button>
       {(pickup || destination) && (
         <div className="route-mini-status" aria-hidden="true">
-          <span className={pickup ? "ready" : ""}>Подача</span>
+          <span className={pickup ? "ready" : ""}>РџРѕРґР°С‡Р°</span>
           <i />
-          <span className={destination ? "ready" : ""}>Назначение</span>
+          <span className={destination ? "ready" : ""}>РќР°Р·РЅР°С‡РµРЅРёРµ</span>
         </div>
       )}
     </section>
@@ -1687,15 +1828,15 @@ function SelectedRouteSummary({ pickup, destination, onPickup, onDestination }) 
       <button type="button" className="route-summary-row pickup" onClick={onPickup}>
         <span className="route-summary-marker" aria-hidden="true"><i /></span>
         <span className="route-summary-copy">
-          <em>Откуда</em>
-          <strong>{pickup?.title || "Адрес подачи"}</strong>
+          <em>РћС‚РєСѓРґР°</em>
+          <strong>{pickup?.title || "РђРґСЂРµСЃ РїРѕРґР°С‡Рё"}</strong>
         </span>
       </button>
       <button type="button" className="route-summary-row destination" onClick={onDestination}>
         <span className="route-summary-marker" aria-hidden="true"><i /></span>
         <span className="route-summary-copy">
-          <em>Куда</em>
-          <strong>{destination?.title || "Куда едем?"}</strong>
+          <em>РљСѓРґР°</em>
+          <strong>{destination?.title || "РљСѓРґР° РµРґРµРј?"}</strong>
         </span>
       </button>
     </section>
@@ -1708,7 +1849,7 @@ function TariffSelector({ tariffs, tariff, setTariff, loading, error, enabled, e
   }
   if (loading) return <section className="tariff-stage-card"><div className="skeleton-list"><span /><span /><span /></div></section>;
   if (error) return <p className="state-note danger">{error}</p>;
-  if (!tariffs.length) return <p className="state-note">В выбранном регионе нет активных тарифов</p>;
+  if (!tariffs.length) return <p className="state-note">Р’ РІС‹Р±СЂР°РЅРЅРѕРј СЂРµРіРёРѕРЅРµ РЅРµС‚ Р°РєС‚РёРІРЅС‹С… С‚Р°СЂРёС„РѕРІ</p>;
   return (
     <section className="premium-tariff-list">
       {tariffs.map(item => {
@@ -1727,8 +1868,8 @@ function TariffSelector({ tariffs, tariff, setTariff, loading, error, enabled, e
               <small>{tariffSubtitle(item)}</small>
             </span>
             <span className="tariff-price-copy">
-              <b>{price ? <Money value={price} /> : minPrice ? <>от <Money value={minPrice} /></> : "Выбрать"}</b>
-              <small>{selected ? "выбрано" : "выбрать"}</small>
+              <b>{price ? <Money value={price} /> : minPrice ? <>РѕС‚ <Money value={minPrice} /></> : "Р’С‹Р±СЂР°С‚СЊ"}</b>
+              <small>{selected ? "РІС‹Р±СЂР°РЅРѕ" : "РІС‹Р±СЂР°С‚СЊ"}</small>
             </span>
           </button>
         );
@@ -1743,21 +1884,21 @@ function PriceBlock({ estimate, route, loading, error, hasRoute }) {
   return (
     <section className="premium-price-block">
       <div>
-        <span>Стоимость</span>
+        <span>РЎС‚РѕРёРјРѕСЃС‚СЊ</span>
         {loading ? (
-          <strong>Считаем...</strong>
+          <strong>РЎС‡РёС‚Р°РµРј...</strong>
         ) : estimate?.estimatedPrice ? (
           <strong><Money value={estimate.estimatedPrice} /></strong>
         ) : error ? (
-          <strong>Недоступна</strong>
+          <strong>РќРµРґРѕСЃС‚СѓРїРЅР°</strong>
         ) : (
-          <strong>{hasRoute ? "Выберите тариф" : "Укажите маршрут"}</strong>
+          <strong>{hasRoute ? "Р’С‹Р±РµСЂРёС‚Рµ С‚Р°СЂРёС„" : "РЈРєР°Р¶РёС‚Рµ РјР°СЂС€СЂСѓС‚"}</strong>
         )}
       </div>
       {distance || duration ? (
-        <small>{distance ? `${distance} км` : ""}{distance && duration ? " · " : ""}{duration ? `${duration} мин` : ""}</small>
+        <small>{distance ? `${distance} РєРј` : ""}{distance && duration ? " В· " : ""}{duration ? `${duration} РјРёРЅ` : ""}</small>
       ) : (
-        <small>Маршрут и цена рассчитываются автоматически</small>
+        <small>РњР°СЂС€СЂСѓС‚ Рё С†РµРЅР° СЂР°СЃСЃС‡РёС‚С‹РІР°СЋС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё</small>
       )}
     </section>
   );
@@ -1782,7 +1923,7 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   const [loading, setLoading] = useState(false);
   const [mapPickLoading, setMapPickLoading] = useState(false);
   const [error, setError] = useState("");
-  const label = mode === "pickup" ? "Откуда" : "Куда";
+  const label = mode === "pickup" ? "РћС‚РєСѓРґР°" : "РљСѓРґР°";
   const popular = useMemo(() => localAddressesForRegion(region).slice(0, 8), [region?.id, region?.code, region?.name]);
   const pickerCenter = regionCenter(region) || regionCenter(fallbackRegion);
 
@@ -1811,7 +1952,7 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
         .catch(() => {
           if (ignore) return;
           setResults(localMatches.map(normalizeAddress).filter(Boolean));
-          if (!localMatches.length) setError("Не нашли адрес. Уточните улицу, дом или ориентир.");
+          if (!localMatches.length) setError("РќРµ РЅР°С€Р»Рё Р°РґСЂРµСЃ. РЈС‚РѕС‡РЅРёС‚Рµ СѓР»РёС†Сѓ, РґРѕРј РёР»Рё РѕСЂРёРµРЅС‚РёСЂ.");
         })
         .finally(() => !ignore && setLoading(false));
     }, 280);
@@ -1827,14 +1968,14 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
     try {
       const data = await reverseAddress(point);
       const address = normalizeAddress(data.address) || {
-        title: "Точка на карте",
+        title: "РўРѕС‡РєР° РЅР° РєР°СЂС‚Рµ",
         subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
         ...point
       };
       onSelect(address);
     } catch {
       onSelect({
-        title: "Точка на карте",
+        title: "РўРѕС‡РєР° РЅР° РєР°СЂС‚Рµ",
         subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
         ...point
       });
@@ -1846,18 +1987,18 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   return (
     <main className="app-content address-screen premium-address-screen">
       <div className="screen-intro with-back">
-        <button type="button" onClick={onBack} aria-label="Назад"><Icon name="back" /></button>
+        <button type="button" onClick={onBack} aria-label="РќР°Р·Р°Рґ"><Icon name="back" /></button>
         <div>
           <h1>{label}</h1>
-          <p>{region?.name ? `Поиск по региону: ${region.name}` : "Сначала выберите регион"}</p>
+          <p>{region?.name ? `РџРѕРёСЃРє РїРѕ СЂРµРіРёРѕРЅСѓ: ${region.name}` : "РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРёС‚Рµ СЂРµРіРёРѕРЅ"}</p>
         </div>
       </div>
       <label className="single-input address-search-input">
-        Адрес
-        <input value={query} onChange={event => setQuery(event.target.value)} autoFocus placeholder="Улица, дом или место" />
+        РђРґСЂРµСЃ
+        <input value={query} onChange={event => setQuery(event.target.value)} autoFocus placeholder="РЈР»РёС†Р°, РґРѕРј РёР»Рё РјРµСЃС‚Рѕ" />
       </label>
       <section className="address-map-picker-card">
-        <MapView pickup={pickerCenter} center={pickerCenter} compact status={mapPickLoading ? "Определяем адрес..." : "Нажмите на карту"} onMapPick={pickPointOnMap} />
+        <MapView pickup={pickerCenter} center={pickerCenter} compact status={mapPickLoading ? "РћРїСЂРµРґРµР»СЏРµРј Р°РґСЂРµСЃ..." : "РќР°Р¶РјРёС‚Рµ РЅР° РєР°СЂС‚Сѓ"} onMapPick={pickPointOnMap} />
       </section>
       {loading && !results.length && <div className="skeleton-list"><span /><span /><span /></div>}
       {error && <p className="state-note danger">{error}</p>}
@@ -1865,12 +2006,12 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
         <section className="address-start-hint">
           <IconAsset name="target" className="ui-asset-icon ui-asset-icon-md" />
           <div>
-            <strong>Популярные места рядом</strong>
-            <span>Можно искать улицу, дом, школу, базар, мечеть или местное название.</span>
+            <strong>РџРѕРїСѓР»СЏСЂРЅС‹Рµ РјРµСЃС‚Р° СЂСЏРґРѕРј</strong>
+            <span>РњРѕР¶РЅРѕ РёСЃРєР°С‚СЊ СѓР»РёС†Сѓ, РґРѕРј, С€РєРѕР»Сѓ, Р±Р°Р·Р°СЂ, РјРµС‡РµС‚СЊ РёР»Рё РјРµСЃС‚РЅРѕРµ РЅР°Р·РІР°РЅРёРµ.</span>
           </div>
         </section>
       )}
-      {!loading && query.trim().length >= 2 && !error && !results.length && <p className="state-note">Не нашли точный адрес. Уточните улицу, дом или ориентир.</p>}
+      {!loading && query.trim().length >= 2 && !error && !results.length && <p className="state-note">РќРµ РЅР°С€Р»Рё С‚РѕС‡РЅС‹Р№ Р°РґСЂРµСЃ. РЈС‚РѕС‡РЅРёС‚Рµ СѓР»РёС†Сѓ, РґРѕРј РёР»Рё РѕСЂРёРµРЅС‚РёСЂ.</p>}
       <section className="address-list-clean premium-address-list">
         {results.map(place => (
           <button type="button" key={`${place.title}-${place.subtitle}-${place.lat}-${place.lng}`} onClick={() => onSelect(place)}>
@@ -1893,8 +2034,8 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   if (!order) {
     return (
       <section className="screen-grid trip-stage-screen">
-        <section className="screen-intro"><h1>Мои поездки</h1><p>Активные поездки и история заказов.</p></section>
-        <EmptyState title="Поездок пока нет" text="Выберите маршрут на главном экране, чтобы создать заказ." action="Заказать поездку" onAction={onHome} />
+        <section className="screen-intro"><h1>РњРѕРё РїРѕРµР·РґРєРё</h1><p>РђРєС‚РёРІРЅС‹Рµ РїРѕРµР·РґРєРё Рё РёСЃС‚РѕСЂРёСЏ Р·Р°РєР°Р·РѕРІ.</p></section>
+        <EmptyState title="РџРѕРµР·РґРѕРє РїРѕРєР° РЅРµС‚" text="Р’С‹Р±РµСЂРёС‚Рµ РјР°СЂС€СЂСѓС‚ РЅР° РіР»Р°РІРЅРѕРј СЌРєСЂР°РЅРµ, С‡С‚РѕР±С‹ СЃРѕР·РґР°С‚СЊ Р·Р°РєР°Р·." action="Р—Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ" onAction={onHome} />
       </section>
     );
   }
@@ -1911,23 +2052,23 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
     lng: order.dropoff_lng
   };
   const hasDriver = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status) || order.driver_name;
-  const driverName = order.driver_name || "Водитель SmartTaxi";
-  const carLine = [order.driver_car_model || "Автомобиль", order.driver_plate].filter(Boolean).join(" · ");
+  const driverName = order.driver_name || "Р’РѕРґРёС‚РµР»СЊ SmartTaxi";
+  const carLine = [order.driver_car_model || "РђРІС‚РѕРјРѕР±РёР»СЊ", order.driver_plate].filter(Boolean).join(" В· ");
 
   if (status === "SEARCHING_DRIVER") {
     return (
       <section className="trip-stage-screen trip-searching-screen">
-        <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status="Ищем водителя" />
+        <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status="РС‰РµРј РІРѕРґРёС‚РµР»СЏ" />
         <section className="trip-search-card">
           <span className="trip-radar" aria-hidden="true"><i /><i /><i /></span>
           <div>
-            <h1>Ищем водителя</h1>
-            <p>Проверяем свободные машины рядом и передаём заказ водителям вашего региона.</p>
+            <h1>РС‰РµРј РІРѕРґРёС‚РµР»СЏ</h1>
+            <p>РџСЂРѕРІРµСЂСЏРµРј СЃРІРѕР±РѕРґРЅС‹Рµ РјР°С€РёРЅС‹ СЂСЏРґРѕРј Рё РїРµСЂРµРґР°С‘Рј Р·Р°РєР°Р· РІРѕРґРёС‚РµР»СЏРј РІР°С€РµРіРѕ СЂРµРіРёРѕРЅР°.</p>
           </div>
           <TripSummaryLine order={order} estimate={estimate} />
           <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
           <button type="button" className="trip-cancel-button" onClick={onCancel} disabled={loading}>
-            {loading ? "Отменяем..." : "Отменить поиск"}
+            {loading ? "РћС‚РјРµРЅСЏРµРј..." : "РћС‚РјРµРЅРёС‚СЊ РїРѕРёСЃРє"}
           </button>
         </section>
       </section>
@@ -1941,7 +2082,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         <div className="trip-driver-topline">
           <span className="trip-driver-avatar"><VehicleIcon /></span>
           <div>
-            <small>{hasDriver ? "Водитель найден" : "Детали поездки"}</small>
+            <small>{hasDriver ? "Р’РѕРґРёС‚РµР»СЊ РЅР°Р№РґРµРЅ" : "Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё"}</small>
             <h1>{hasDriver ? driverName : statusLabel(status)}</h1>
           </div>
           <StatusBadge label={statusLabel(status)} tone={terminal ? "muted" : "gold"} />
@@ -1957,11 +2098,11 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         <TripSummaryLine order={order} estimate={estimate} />
         <div className="trip-action-row">
           <button type="button" className="trip-details-button" onClick={() => setDetailsOpen(true)}>
-            <Icon name="info" size={18} /> Детали поездки
+            <Icon name="info" size={18} /> Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё
           </button>
-          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Позвонить</a>}
-          {!terminal && <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={loading}>{loading ? "Отменяем..." : "Отменить"}</button>}
-          {terminal && <button type="button" className="trip-home-button" onClick={onHome}>Новая поездка</button>}
+          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> РџРѕР·РІРѕРЅРёС‚СЊ</a>}
+          {!terminal && <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={loading}>{loading ? "РћС‚РјРµРЅСЏРµРј..." : "РћС‚РјРµРЅРёС‚СЊ"}</button>}
+          {terminal && <button type="button" className="trip-home-button" onClick={onHome}>РќРѕРІР°СЏ РїРѕРµР·РґРєР°</button>}
         </div>
       </section>
       <TripDetailsSheet
@@ -1986,33 +2127,33 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
   return (
     <>
       <div className="trip-details-backdrop" onClick={onClose} />
-      <section className="trip-details-sheet" role="dialog" aria-modal="true" aria-label="Детали поездки">
+      <section className="trip-details-sheet" role="dialog" aria-modal="true" aria-label="Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё">
         <header>
           <div>
-            <span>Заказ {order.short_id || order.id}</span>
-            <h2>Детали поездки</h2>
+            <span>Р—Р°РєР°Р· {order.short_id || order.id}</span>
+            <h2>Р”РµС‚Р°Р»Рё РїРѕРµР·РґРєРё</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
+          <button type="button" onClick={onClose} aria-label="Р—Р°РєСЂС‹С‚СЊ"><Icon name="close" size={20} /></button>
         </header>
         <CompactRoute pickup={pickup?.title || order.pickup_text} dropoff={destination?.title || order.dropoff_text} />
         <div className="trip-details-grid">
-          <span><small>Статус</small><b>{statusLabel(status)}</b></span>
-          <span><small>Цена</small><b><Money value={order.price || estimate?.estimatedPrice} /></b></span>
-          <span><small>Оплата</small><b>{order.payment_method === "KASPI" ? "Kaspi" : "Наличные"}</b></span>
-          <span><small>Тариф</small><b>{order.tariff || estimate?.tariff?.displayName || "Economy"}</b></span>
+          <span><small>РЎС‚Р°С‚СѓСЃ</small><b>{statusLabel(status)}</b></span>
+          <span><small>Р¦РµРЅР°</small><b><Money value={order.price || estimate?.estimatedPrice} /></b></span>
+          <span><small>РћРїР»Р°С‚Р°</small><b>{order.payment_method === "KASPI" ? "Kaspi" : "РќР°Р»РёС‡РЅС‹Рµ"}</b></span>
+          <span><small>РўР°СЂРёС„</small><b>{order.tariff || estimate?.tariff?.displayName || "Economy"}</b></span>
         </div>
         <div className="trip-driver-mini">
           <span className="trip-driver-avatar"><VehicleIcon /></span>
           <div>
-            <small>Водитель</small>
-            <b>{order.driver_name ? driverName : "Водитель ещё не назначен"}</b>
-            <em>{order.driver_name ? carLine || "Автомобиль SmartTaxi" : "Появится после принятия заказа"}</em>
+            <small>Р’РѕРґРёС‚РµР»СЊ</small>
+            <b>{order.driver_name ? driverName : "Р’РѕРґРёС‚РµР»СЊ РµС‰С‘ РЅРµ РЅР°Р·РЅР°С‡РµРЅ"}</b>
+            <em>{order.driver_name ? carLine || "РђРІС‚РѕРјРѕР±РёР»СЊ SmartTaxi" : "РџРѕСЏРІРёС‚СЃСЏ РїРѕСЃР»Рµ РїСЂРёРЅСЏС‚РёСЏ Р·Р°РєР°Р·Р°"}</em>
           </div>
         </div>
         <div className="trip-details-actions">
-          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Связаться с водителем</a>}
+          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> РЎРІСЏР·Р°С‚СЊСЃСЏ СЃ РІРѕРґРёС‚РµР»РµРј</a>}
           <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={cancelDisabled}>
-            Отменить поездку
+            РћС‚РјРµРЅРёС‚СЊ РїРѕРµР·РґРєСѓ
           </button>
         </div>
       </section>
@@ -2031,9 +2172,268 @@ function TripMapCard({ pickup, destination, route, status }) {
 function TripSummaryLine({ order, estimate }) {
   return (
     <div className="trip-summary-line">
-      <span><b><Money value={order.price || estimate?.estimatedPrice} /></b><small>Цена</small></span>
-      <span><b>{order.tariff || estimate?.tariff?.displayName || "Economy"}</b><small>Тариф</small></span>
-      <span><b>{order.payment_method === "KASPI" ? "Kaspi" : "Наличные"}</b><small>Оплата</small></span>
+      <span><b><Money value={order.price || estimate?.estimatedPrice} /></b><small>Р¦РµРЅР°</small></span>
+      <span><b>{order.tariff || estimate?.tariff?.displayName || "Economy"}</b><small>РўР°СЂРёС„</small></span>
+      <span><b>{order.payment_method === "KASPI" ? "Kaspi" : "РќР°Р»РёС‡РЅС‹Рµ"}</b><small>РћРїР»Р°С‚Р°</small></span>
+    </div>
+  );
+}
+
+function PremiumAuthFlow({
+  auth,
+  setAuth,
+  authMode,
+  setAuthMode,
+  registerForm,
+  setRegisterForm,
+  resetForm,
+  setResetForm,
+  message,
+  setMessage,
+  loading,
+  onPhoneSubmit,
+  onPasswordSubmit,
+  onRegisterCodeSubmit,
+  onRegister,
+  onSendSms,
+  onResetRequest,
+  onResetCodeSubmit,
+  onResetPassword,
+  onAuthDone
+}) {
+  const isPhone = authMode === "phone";
+  const isPassword = authMode === "password";
+  const isRegisterCode = authMode === "registerCode";
+  const isCreatePassword = authMode === "createPassword";
+  const isForgot = authMode === "forgot";
+  const isResetCode = authMode === "resetCode";
+  const isNewPassword = authMode === "newPassword";
+  const isSuccess = authMode === "success";
+  const currentPhone = isResetCode || isNewPassword || isForgot ? resetForm.phone : registerForm.phone || auth.phone;
+  const title = isPhone
+    ? "Вход / Регистрация"
+    : isPassword
+      ? "Введите пароль"
+      : isRegisterCode || isResetCode
+        ? "Введите код из SMS"
+        : isCreatePassword
+          ? "Придумайте пароль"
+          : isForgot
+            ? "Восстановление пароля"
+            : isNewPassword
+              ? "Новый пароль"
+              : "Готово!";
+  const subtitle = isPhone
+    ? "Введите номер телефона, мы определим следующий шаг"
+    : isPassword
+      ? `Аккаунт ${auth.phone || ""}`
+      : isRegisterCode
+        ? `Код отправлен на ${registerForm.phone || auth.phone}`
+        : isResetCode
+          ? `Код отправлен на ${resetForm.phone}`
+          : isCreatePassword
+            ? "Осталось указать имя и надёжный пароль"
+            : isForgot
+              ? "Мы отправим SMS-код для сброса пароля"
+              : isNewPassword
+                ? "Создайте новый пароль для аккаунта"
+                : "Теперь можно продолжить поездку";
+  const registerPasswordReady = registerForm.password.length >= 6 && registerForm.password === registerForm.repeat && registerForm.name.trim().length >= 2;
+  const resetPasswordReady = resetForm.password.length >= 6 && resetForm.password === resetForm.repeat;
+  const canGoBack = !isPhone && !isSuccess;
+  const goBack = () => {
+    setMessage("");
+    if (isPassword || isRegisterCode || isForgot) setAuthMode("phone");
+    else if (isCreatePassword) setAuthMode("registerCode");
+    else if (isResetCode) setAuthMode("forgot");
+    else if (isNewPassword) setAuthMode("resetCode");
+  };
+
+  return (
+    <section className="premium-auth-screen" aria-label="Вход и регистрация SmartTaxi">
+      <div className={`auth-topbar ${isPhone ? "welcome" : ""}`}>
+        {canGoBack ? (
+          <button type="button" className="auth-back-button" onClick={goBack} aria-label="Назад">
+            <IconAsset name="back" />
+          </button>
+        ) : <span />}
+        {isPhone ? <span /> : <SmartTaxiLogo />}
+        <span />
+      </div>
+
+      {isPhone ? (
+        <section className="auth-welcome-card">
+          <SmartTaxiLogo large />
+          <div className="auth-route-art" aria-hidden="true">
+            <span className="auth-route-dot start" />
+            <span className="auth-route-line one" />
+            <span className="auth-route-line two" />
+            <span className="auth-route-pin"><IconAsset name="mark" /></span>
+          </div>
+          <h1>SmartTaxi</h1>
+          <p>Комфортные поездки на каждый день</p>
+        </section>
+      ) : null}
+
+      <section className={`auth-panel ${isSuccess ? "success" : ""}`}>
+        {isSuccess ? (
+          <>
+            <div className="auth-success-mark"><IconAsset name="check" /></div>
+            <h1>{title}</h1>
+            <p>{message || "Доступ к аккаунту подтверждён."}</p>
+            <Button className="wide primary-gold auth-primary-button" type="button" onClick={onAuthDone}>Продолжить</Button>
+          </>
+        ) : (
+          <>
+            <div className="auth-title-block">
+              <h1>{title}</h1>
+              <p>{subtitle}</p>
+            </div>
+
+            {isPhone && (
+              <form className="auth-form" onSubmit={onPhoneSubmit}>
+                <PhoneField value={auth.phone} onChange={phone => setAuth(current => ({ ...current, phone }))} autoFocus />
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || auth.phone.trim().length < 6}>
+                  {loading ? "Проверяем..." : "Продолжить"}
+                </Button>
+              </form>
+            )}
+
+            {isPassword && (
+              <form className="auth-form" onSubmit={onPasswordSubmit}>
+                <PasswordField label="Пароль" value={auth.password} onChange={password => setAuth(current => ({ ...current, password }))} autoComplete="current-password" />
+                <button type="button" className="auth-link-button" onClick={() => {
+                  setMessage("");
+                  setResetForm(current => ({ ...current, phone: auth.phone }));
+                  setAuthMode("forgot");
+                }}>Забыли пароль?</button>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || auth.password.length < 6}>
+                  {loading ? "Входим..." : "Войти"}
+                </Button>
+              </form>
+            )}
+
+            {isRegisterCode && (
+              <form className="auth-form" onSubmit={onRegisterCodeSubmit}>
+                <SmsCodeField value={registerForm.code} onChange={code => setRegisterForm(current => ({ ...current, code }))} />
+                <button type="button" className="auth-link-button" onClick={onSendSms} disabled={loading}>
+                  {loading ? "Отправляем..." : "Отправить код ещё раз"}
+                </button>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || registerForm.code.trim().length < 4}>
+                  Подтвердить код
+                </Button>
+              </form>
+            )}
+
+            {isCreatePassword && (
+              <form className="auth-form" onSubmit={onRegister}>
+                <AuthTextField label="Имя" value={registerForm.name} onChange={name => setRegisterForm(current => ({ ...current, name }))} placeholder="Ваше имя" autoComplete="name" />
+                <PasswordField label="Пароль" value={registerForm.password} onChange={password => setRegisterForm(current => ({ ...current, password }))} autoComplete="new-password" />
+                <PasswordField label="Повторите пароль" value={registerForm.repeat} onChange={repeat => setRegisterForm(current => ({ ...current, repeat }))} autoComplete="new-password" />
+                <PasswordChecklist password={registerForm.password} repeat={registerForm.repeat} />
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !registerPasswordReady}>
+                  {loading ? "Создаём..." : "Создать аккаунт"}
+                </Button>
+              </form>
+            )}
+
+            {isForgot && (
+              <form className="auth-form" onSubmit={onResetRequest}>
+                <PhoneField value={resetForm.phone} onChange={phone => setResetForm(current => ({ ...current, phone }))} autoFocus />
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || resetForm.phone.trim().length < 6}>
+                  {loading ? "Отправляем..." : "Получить код"}
+                </Button>
+                <button type="button" className="auth-link-button" onClick={() => { setMessage(""); setAuthMode("password"); }}>Я вспомнил пароль</button>
+              </form>
+            )}
+
+            {isResetCode && (
+              <form className="auth-form" onSubmit={onResetCodeSubmit}>
+                <SmsCodeField value={resetForm.code} onChange={code => setResetForm(current => ({ ...current, code }))} />
+                <button type="button" className="auth-link-button" onClick={onResetRequest} disabled={loading}>
+                  {loading ? "Отправляем..." : "Отправить код повторно"}
+                </button>
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || resetForm.code.trim().length < 4}>
+                  Подтвердить код
+                </Button>
+              </form>
+            )}
+
+            {isNewPassword && (
+              <form className="auth-form" onSubmit={onResetPassword}>
+                <PasswordField label="Новый пароль" value={resetForm.password} onChange={password => setResetForm(current => ({ ...current, password }))} autoComplete="new-password" />
+                <PasswordField label="Повторите пароль" value={resetForm.repeat} onChange={repeat => setResetForm(current => ({ ...current, repeat }))} autoComplete="new-password" />
+                <PasswordChecklist password={resetForm.password} repeat={resetForm.repeat} />
+                <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !resetPasswordReady}>
+                  {loading ? "Сохраняем..." : "Сохранить пароль"}
+                </Button>
+              </form>
+            )}
+
+            {message && <p className={`auth-message ${/создан|измен|отправлен|подтвержд/i.test(message) ? "success" : "danger"}`}>{message}</p>}
+          </>
+        )}
+      </section>
+
+      <p className="auth-legal">Продолжая, вы соглашаетесь с условиями SmartTaxi и политикой конфиденциальности.</p>
+    </section>
+  );
+}
+
+function PhoneField({ value, onChange, autoFocus = false }) {
+  return (
+    <label className="auth-field">
+      <span>Номер телефона</span>
+      <div className="auth-phone-input">
+        <b>KZ</b>
+        <small>+7</small>
+        <input value={value} onChange={event => onChange(event.target.value)} placeholder="701 123 45 67" inputMode="tel" autoComplete="tel" autoFocus={autoFocus} />
+      </div>
+    </label>
+  );
+}
+
+function AuthTextField({ label, value, onChange, placeholder, autoComplete }) {
+  return (
+    <label className="auth-field">
+      <span>{label}</span>
+      <input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} autoComplete={autoComplete} />
+    </label>
+  );
+}
+
+function PasswordField({ label, value, onChange, autoComplete }) {
+  return (
+    <label className="auth-field">
+      <span>{label}</span>
+      <div className="auth-password-input">
+        <Icon name="shield" size={18} />
+        <input value={value} onChange={event => onChange(event.target.value)} placeholder="Минимум 6 символов" type="password" autoComplete={autoComplete} />
+      </div>
+    </label>
+  );
+}
+
+function SmsCodeField({ value, onChange }) {
+  const chars = value.padEnd(6, " ").slice(0, 6).split("");
+  return (
+    <label className="auth-field">
+      <span>SMS-код</span>
+      <input className="auth-hidden-code-input" value={value} onChange={event => onChange(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" aria-label="SMS-код" />
+      <div className="auth-code-grid" aria-hidden="true">
+        {chars.map((char, index) => <span key={index} className={value.length === index ? "active" : ""}>{char.trim()}</span>)}
+      </div>
+    </label>
+  );
+}
+
+function PasswordChecklist({ password, repeat }) {
+  const longEnough = password.length >= 6;
+  const same = Boolean(repeat) && password === repeat;
+  return (
+    <div className="auth-checklist">
+      <span className={longEnough ? "ok" : ""}><Icon name="check" size={14} /> Минимум 6 символов</span>
+      <span className={same ? "ok" : ""}><Icon name="check" size={14} /> Пароли совпадают</span>
     </div>
   );
 }
@@ -2048,24 +2448,59 @@ function ProfileSection({
   setAuthMode,
   registerForm,
   setRegisterForm,
+  resetForm,
+  setResetForm,
   message,
+  setMessage,
   loading,
-  onSubmit,
+  onPhoneSubmit,
+  onPasswordSubmit,
+  onRegisterCodeSubmit,
   onRegister,
   onSendSms,
-  onLogout
+  onResetRequest,
+  onResetCodeSubmit,
+  onResetPassword,
+  onLogout,
+  onAuthDone
 }) {
+  if (!authenticated || authMode === "success") {
+    return (
+      <PremiumAuthFlow
+        auth={auth}
+        setAuth={setAuth}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        registerForm={registerForm}
+        setRegisterForm={setRegisterForm}
+        resetForm={resetForm}
+        setResetForm={setResetForm}
+        message={message}
+        setMessage={setMessage}
+        loading={loading}
+        onPhoneSubmit={onPhoneSubmit}
+        onPasswordSubmit={onPasswordSubmit}
+        onRegisterCodeSubmit={onRegisterCodeSubmit}
+        onRegister={onRegister}
+        onSendSms={onSendSms}
+        onResetRequest={onResetRequest}
+        onResetCodeSubmit={onResetCodeSubmit}
+        onResetPassword={onResetPassword}
+        onAuthDone={onAuthDone}
+      />
+    );
+  }
   const isRegister = authMode === "register";
   return (
     <section className={`screen-grid profile-screen ${authenticated ? "" : "auth-profile-screen"} ${!authenticated && isRegister ? "register-mode" : ""}`}>
       {authenticated ? (
-        <section className="screen-intro"><h1>Профиль</h1><p>Аккаунт пассажира</p></section>
+        <section className="screen-intro"><h1>РџСЂРѕС„РёР»СЊ</h1><p>РђРєРєР°СѓРЅС‚ РїР°СЃСЃР°Р¶РёСЂР°</p></section>
       ) : (
         <section className="auth-hero-panel">
           <SmartTaxiLogo large />
           <div>
             <strong>SmartTaxi</strong>
-            <span>{isRegister ? "Создайте аккаунт для поездок" : "Войдите, чтобы заказать поездку"}</span>
+            <span>{isRegister ? "РЎРѕР·РґР°Р№С‚Рµ Р°РєРєР°СѓРЅС‚ РґР»СЏ РїРѕРµР·РґРѕРє" : "Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ Р·Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ"}</span>
           </div>
         </section>
       )}
@@ -2073,45 +2508,45 @@ function ProfileSection({
         <div className={`profile-avatar-row ${authenticated ? "" : "auth-card-title"}`}>
           <SmartTaxiLogo />
           <div>
-            <h2>{authenticated ? rider.name || "Пассажир" : isRegister ? "Создать аккаунт" : "Вход"}</h2>
-            <span>{authenticated ? rider.phone || "Телефон не указан" : isRegister ? "Имя, телефон и пароль" : "Телефон и пароль"}</span>
+            <h2>{authenticated ? rider.name || "РџР°СЃСЃР°Р¶РёСЂ" : isRegister ? "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚" : "Р’С…РѕРґ"}</h2>
+            <span>{authenticated ? rider.phone || "РўРµР»РµС„РѕРЅ РЅРµ СѓРєР°Р·Р°РЅ" : isRegister ? "РРјСЏ, С‚РµР»РµС„РѕРЅ Рё РїР°СЂРѕР»СЊ" : "РўРµР»РµС„РѕРЅ Рё РїР°СЂРѕР»СЊ"}</span>
           </div>
         </div>
         {!authenticated ? (
           <>
-            <div className="auth-mode-switch" aria-label="Выбор входа">
-              <button type="button" className={!isRegister ? "active" : ""} onClick={() => setAuthMode("login")}>Войти</button>
-              <button type="button" className={isRegister ? "active" : ""} onClick={() => setAuthMode("register")}>Регистрация</button>
+            <div className="auth-mode-switch" aria-label="Р’С‹Р±РѕСЂ РІС…РѕРґР°">
+              <button type="button" className={!isRegister ? "active" : ""} onClick={() => setAuthMode("login")}>Р’РѕР№С‚Рё</button>
+              <button type="button" className={isRegister ? "active" : ""} onClick={() => setAuthMode("register")}>Р РµРіРёСЃС‚СЂР°С†РёСЏ</button>
             </div>
             {isRegister ? (
               <form className="form-grid premium-login-form" onSubmit={onRegister}>
-                <label>Имя<input value={registerForm.name} onChange={event => setRegisterForm({ ...registerForm, name: event.target.value })} placeholder="Ваше имя" autoComplete="name" /></label>
-                <label>Телефон<input value={registerForm.phone} onChange={event => setRegisterForm({ ...registerForm, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
+                <label>РРјСЏ<input value={registerForm.name} onChange={event => setRegisterForm({ ...registerForm, name: event.target.value })} placeholder="Р’Р°С€Рµ РёРјСЏ" autoComplete="name" /></label>
+                <label>РўРµР»РµС„РѕРЅ<input value={registerForm.phone} onChange={event => setRegisterForm({ ...registerForm, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
                 <button type="button" className="auth-sms-button" onClick={onSendSms} disabled={loading || !registerForm.phone.trim()}>
-                  {registerForm.smsSent ? "Отправить код ещё раз" : "Получить SMS-код"}
+                  {registerForm.smsSent ? "РћС‚РїСЂР°РІРёС‚СЊ РєРѕРґ РµС‰С‘ СЂР°Р·" : "РџРѕР»СѓС‡РёС‚СЊ SMS-РєРѕРґ"}
                 </button>
-                <label>SMS-код<input value={registerForm.code} onChange={event => setRegisterForm({ ...registerForm, code: event.target.value })} placeholder={registerForm.devCode || "6 цифр"} inputMode="numeric" autoComplete="one-time-code" /></label>
-                <label>Пароль<input value={registerForm.password} onChange={event => setRegisterForm({ ...registerForm, password: event.target.value })} placeholder="Минимум 6 символов" type="password" autoComplete="new-password" /></label>
-                <label>Повторите пароль<input value={registerForm.repeat} onChange={event => setRegisterForm({ ...registerForm, repeat: event.target.value })} placeholder="Повторите пароль" type="password" autoComplete="new-password" /></label>
-                {message && <p className={message.includes("создан") ? "state-note success" : "state-note danger"}>{message}</p>}
-                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Создаём..." : "Создать аккаунт"}</Button>
+                <label>SMS-РєРѕРґ<input value={registerForm.code} onChange={event => setRegisterForm({ ...registerForm, code: event.target.value })} placeholder={registerForm.devCode || "6 С†РёС„СЂ"} inputMode="numeric" autoComplete="one-time-code" /></label>
+                <label>РџР°СЂРѕР»СЊ<input value={registerForm.password} onChange={event => setRegisterForm({ ...registerForm, password: event.target.value })} placeholder="РњРёРЅРёРјСѓРј 6 СЃРёРјРІРѕР»РѕРІ" type="password" autoComplete="new-password" /></label>
+                <label>РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ<input value={registerForm.repeat} onChange={event => setRegisterForm({ ...registerForm, repeat: event.target.value })} placeholder="РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ" type="password" autoComplete="new-password" /></label>
+                {message && <p className={message.includes("СЃРѕР·РґР°РЅ") ? "state-note success" : "state-note danger"}>{message}</p>}
+                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "РЎРѕР·РґР°С‘Рј..." : "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚"}</Button>
               </form>
             ) : (
               <form className="form-grid premium-login-form" onSubmit={onSubmit}>
-                <label>Телефон<input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
-                <label>Пароль<input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="Пароль" type="password" autoComplete="current-password" /></label>
-                {message && <p className={message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
-                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</Button>
+                <label>РўРµР»РµС„РѕРЅ<input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
+                <label>РџР°СЂРѕР»СЊ<input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="РџР°СЂРѕР»СЊ" type="password" autoComplete="current-password" /></label>
+                {message && <p className={message.includes("Р’С…РѕРґ") ? "state-note success" : "state-note danger"}>{message}</p>}
+                <Button className="wide primary-gold" type="submit" disabled={loading}>{loading ? "Р’С…РѕРґРёРј..." : "Р’РѕР№С‚Рё"}</Button>
               </form>
             )}
           </>
         ) : (
           <div className="profile-actions-grid">
-            <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
-            <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
-            <article><Icon name="star" /> Избранные адреса <span>Добавляются из поездок</span></article>
-            <article><Icon name="card" /> Способы оплаты <span>Наличные или Kaspi при заказе</span></article>
-            <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
+            <label>РРјСЏ<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
+            <label>РўРµР»РµС„РѕРЅ РґР»СЏ Р·Р°РєР°Р·Р°<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
+            <article><Icon name="star" /> РР·Р±СЂР°РЅРЅС‹Рµ Р°РґСЂРµСЃР° <span>Р”РѕР±Р°РІР»СЏСЋС‚СЃСЏ РёР· РїРѕРµР·РґРѕРє</span></article>
+            <article><Icon name="card" /> РЎРїРѕСЃРѕР±С‹ РѕРїР»Р°С‚С‹ <span>РќР°Р»РёС‡РЅС‹Рµ РёР»Рё Kaspi РїСЂРё Р·Р°РєР°Р·Рµ</span></article>
+            <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Р’С‹Р№С‚Рё</button>
           </div>
         )}
       </section>
@@ -2120,23 +2555,23 @@ function ProfileSection({
 }
 
 function SupportSection() {
-  const [topic, setTopic] = useState("Проблема с поездкой");
+  const [topic, setTopic] = useState("РџСЂРѕР±Р»РµРјР° СЃ РїРѕРµР·РґРєРѕР№");
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
-  const topics = ["Проблема с поездкой", "Водитель не приехал", "Забыл вещь", "Оплата", "Другое"];
+  const topics = ["РџСЂРѕР±Р»РµРјР° СЃ РїРѕРµР·РґРєРѕР№", "Р’РѕРґРёС‚РµР»СЊ РЅРµ РїСЂРёРµС…Р°Р»", "Р—Р°Р±С‹Р» РІРµС‰СЊ", "РћРїР»Р°С‚Р°", "Р”СЂСѓРіРѕРµ"];
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>Поддержка</h1><p>Опишите ситуацию, оператор увидит тему и текст обращения.</p></section>
+      <section className="screen-intro"><h1>РџРѕРґРґРµСЂР¶РєР°</h1><p>РћРїРёС€РёС‚Рµ СЃРёС‚СѓР°С†РёСЋ, РѕРїРµСЂР°С‚РѕСЂ СѓРІРёРґРёС‚ С‚РµРјСѓ Рё С‚РµРєСЃС‚ РѕР±СЂР°С‰РµРЅРёСЏ.</p></section>
       <section className="app-card premium-support-card">
         <div className="support-topic-row">
           {topics.map(item => <button type="button" key={item} className={topic === item ? "selected" : ""} onClick={() => setTopic(item)}>{item}</button>)}
         </div>
         <label className="admin-textarea-field support-textarea">
-          <span>Сообщение</span>
-          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); }} placeholder="Напишите сообщение..." rows={5} />
+          <span>РЎРѕРѕР±С‰РµРЅРёРµ</span>
+          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); }} placeholder="РќР°РїРёС€РёС‚Рµ СЃРѕРѕР±С‰РµРЅРёРµ..." rows={5} />
         </label>
-        {sent && <p className="state-note success">Сообщение подготовлено. Проверьте текст перед отправкой оператору.</p>}
-        <Button className="wide primary-gold" disabled={!text.trim()} onClick={() => setSent(true)}>Отправить</Button>
+        {sent && <p className="state-note success">РЎРѕРѕР±С‰РµРЅРёРµ РїРѕРґРіРѕС‚РѕРІР»РµРЅРѕ. РџСЂРѕРІРµСЂСЊС‚Рµ С‚РµРєСЃС‚ РїРµСЂРµРґ РѕС‚РїСЂР°РІРєРѕР№ РѕРїРµСЂР°С‚РѕСЂСѓ.</p>}
+        <Button className="wide primary-gold" disabled={!text.trim()} onClick={() => setSent(true)}>РћС‚РїСЂР°РІРёС‚СЊ</Button>
       </section>
     </section>
   );
@@ -2145,14 +2580,14 @@ function SupportSection() {
 function SettingsSection({ regionName, onLogout }) {
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>Настройки</h1><p>Параметры аккаунта и приложения.</p></section>
+      <section className="screen-intro"><h1>РќР°СЃС‚СЂРѕР№РєРё</h1><p>РџР°СЂР°РјРµС‚СЂС‹ Р°РєРєР°СѓРЅС‚Р° Рё РїСЂРёР»РѕР¶РµРЅРёСЏ.</p></section>
       <section className="app-card settings-list-premium">
-        <SettingsRow icon="user" title="Аккаунт" text="Имя и телефон в профиле" />
-        <SettingsRow icon="pin" title="Город и регион" text={regionName || "Регион не выбран"} />
-        <SettingsRow icon="support" title="Уведомления" text="Статусы поездки и ответы поддержки" />
-        <SettingsRow icon="shield" title="Безопасность" text="Пароль аккаунта" />
-        <SettingsRow icon="settings" title="Тема" text="Светлая золотая" />
-        <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
+        <SettingsRow icon="user" title="РђРєРєР°СѓРЅС‚" text="РРјСЏ Рё С‚РµР»РµС„РѕРЅ РІ РїСЂРѕС„РёР»Рµ" />
+        <SettingsRow icon="pin" title="Р“РѕСЂРѕРґ Рё СЂРµРіРёРѕРЅ" text={regionName || "Р РµРіРёРѕРЅ РЅРµ РІС‹Р±СЂР°РЅ"} />
+        <SettingsRow icon="support" title="РЈРІРµРґРѕРјР»РµРЅРёСЏ" text="РЎС‚Р°С‚СѓСЃС‹ РїРѕРµР·РґРєРё Рё РѕС‚РІРµС‚С‹ РїРѕРґРґРµСЂР¶РєРё" />
+        <SettingsRow icon="shield" title="Р‘РµР·РѕРїР°СЃРЅРѕСЃС‚СЊ" text="РџР°СЂРѕР»СЊ Р°РєРєР°СѓРЅС‚Р°" />
+        <SettingsRow icon="settings" title="РўРµРјР°" text="РЎРІРµС‚Р»Р°СЏ Р·РѕР»РѕС‚Р°СЏ" />
+        <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Р’С‹Р№С‚Рё</button>
       </section>
     </section>
   );
@@ -2164,15 +2599,15 @@ function SettingsRow({ icon, title, text, muted = false }) {
 
 function FaqSection() {
   const items = [
-    ["Как заказать поездку?", "Выберите точку подачи, адрес назначения, тариф и нажмите кнопку заказа."],
-    ["Почему нужно выбрать регион?", "SmartTaxi работает по активным регионам. Тарифы и доступ водителей зависят от выбранной зоны."],
-    ["Как считается цена?", "Система строит маршрут, учитывает длительность и применяет тариф выбранного региона."],
-    ["Когда появится водитель?", "Информация о водителе появится только после принятия заказа."],
-    ["Как отменить заказ?", "Откройте текущую поездку и нажмите кнопку отмены, если статус позволяет отмену."]
+    ["РљР°Рє Р·Р°РєР°Р·Р°С‚СЊ РїРѕРµР·РґРєСѓ?", "Р’С‹Р±РµСЂРёС‚Рµ С‚РѕС‡РєСѓ РїРѕРґР°С‡Рё, Р°РґСЂРµСЃ РЅР°Р·РЅР°С‡РµРЅРёСЏ, С‚Р°СЂРёС„ Рё РЅР°Р¶РјРёС‚Рµ РєРЅРѕРїРєСѓ Р·Р°РєР°Р·Р°."],
+    ["РџРѕС‡РµРјСѓ РЅСѓР¶РЅРѕ РІС‹Р±СЂР°С‚СЊ СЂРµРіРёРѕРЅ?", "SmartTaxi СЂР°Р±РѕС‚Р°РµС‚ РїРѕ Р°РєС‚РёРІРЅС‹Рј СЂРµРіРёРѕРЅР°Рј. РўР°СЂРёС„С‹ Рё РґРѕСЃС‚СѓРї РІРѕРґРёС‚РµР»РµР№ Р·Р°РІРёСЃСЏС‚ РѕС‚ РІС‹Р±СЂР°РЅРЅРѕР№ Р·РѕРЅС‹."],
+    ["РљР°Рє СЃС‡РёС‚Р°РµС‚СЃСЏ С†РµРЅР°?", "РЎРёСЃС‚РµРјР° СЃС‚СЂРѕРёС‚ РјР°СЂС€СЂСѓС‚, СѓС‡РёС‚С‹РІР°РµС‚ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ Рё РїСЂРёРјРµРЅСЏРµС‚ С‚Р°СЂРёС„ РІС‹Р±СЂР°РЅРЅРѕРіРѕ СЂРµРіРёРѕРЅР°."],
+    ["РљРѕРіРґР° РїРѕСЏРІРёС‚СЃСЏ РІРѕРґРёС‚РµР»СЊ?", "РРЅС„РѕСЂРјР°С†РёСЏ Рѕ РІРѕРґРёС‚РµР»Рµ РїРѕСЏРІРёС‚СЃСЏ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РїСЂРёРЅСЏС‚РёСЏ Р·Р°РєР°Р·Р°."],
+    ["РљР°Рє РѕС‚РјРµРЅРёС‚СЊ Р·Р°РєР°Р·?", "РћС‚РєСЂРѕР№С‚Рµ С‚РµРєСѓС‰СѓСЋ РїРѕРµР·РґРєСѓ Рё РЅР°Р¶РјРёС‚Рµ РєРЅРѕРїРєСѓ РѕС‚РјРµРЅС‹, РµСЃР»Рё СЃС‚Р°С‚СѓСЃ РїРѕР·РІРѕР»СЏРµС‚ РѕС‚РјРµРЅСѓ."]
   ];
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>FAQ</h1><p>Короткие ответы по поездкам.</p></section>
+      <section className="screen-intro"><h1>FAQ</h1><p>РљРѕСЂРѕС‚РєРёРµ РѕС‚РІРµС‚С‹ РїРѕ РїРѕРµР·РґРєР°Рј.</p></section>
       <section className="faq-list-premium">
         {items.map(([title, text]) => <details key={title} className="app-card"><summary>{title}</summary><p>{text}</p></details>)}
       </section>
@@ -2183,11 +2618,11 @@ function FaqSection() {
 function AboutSection({ regions }) {
   return (
     <section className="screen-grid">
-      <section className="screen-intro"><h1>О SmartTaxi</h1><p>Региональный сервис поездок для клиентов и водителей.</p></section>
+      <section className="screen-intro"><h1>Рћ SmartTaxi</h1><p>Р РµРіРёРѕРЅР°Р»СЊРЅС‹Р№ СЃРµСЂРІРёСЃ РїРѕРµР·РґРѕРє РґР»СЏ РєР»РёРµРЅС‚РѕРІ Рё РІРѕРґРёС‚РµР»РµР№.</p></section>
       <section className="app-card about-card-premium">
         <SmartTaxiLogo large />
         <h2>SmartTaxi</h2>
-        <p>Сервис работает в активных регионах, где настроены тарифы и доступ водителей. Межгород не входит в текущую модель заказов.</p>
+        <p>РЎРµСЂРІРёСЃ СЂР°Р±РѕС‚Р°РµС‚ РІ Р°РєС‚РёРІРЅС‹С… СЂРµРіРёРѕРЅР°С…, РіРґРµ РЅР°СЃС‚СЂРѕРµРЅС‹ С‚Р°СЂРёС„С‹ Рё РґРѕСЃС‚СѓРї РІРѕРґРёС‚РµР»РµР№. РњРµР¶РіРѕСЂРѕРґ РЅРµ РІС…РѕРґРёС‚ РІ С‚РµРєСѓС‰СѓСЋ РјРѕРґРµР»СЊ Р·Р°РєР°Р·РѕРІ.</p>
         <div className="region-chip-list">{regions.map(region => <span key={region.id}>{region.name}</span>)}</div>
       </section>
     </section>
