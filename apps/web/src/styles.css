@@ -5818,6 +5818,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     linear-gradient(180deg, #fffaf0 0%, #fff 52%, #f7f3ea 100%);
 }
 
+.trip-searching-screen {
+  min-height: calc(100svh - 76px);
+  align-content: stretch;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  padding: 0 12px 12px;
+  background: #fffaf0;
+  overflow: hidden;
+}
+
 .trip-map-card {
   height: clamp(220px, 38svh, 330px);
   overflow: hidden;
@@ -5825,6 +5835,19 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid rgba(17, 17, 17, .08);
   background: #edf2ea;
   box-shadow: 0 20px 42px rgba(17, 17, 17, .12);
+}
+
+.trip-searching-screen .trip-map-card {
+  height: auto;
+  min-height: 0;
+  margin: 0 -12px;
+  border-radius: 0 0 30px 30px;
+  border-width: 0 0 1px;
+  box-shadow: 0 16px 36px rgba(17, 17, 17, .14);
+}
+
+.trip-searching-screen .trip-map-card .map-view {
+  border-radius: 0 0 30px 30px;
 }
 
 .trip-map-card .map-view {
@@ -5842,6 +5865,34 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: rgba(255, 255, 255, .96);
   border: 1px solid rgba(17, 17, 17, .07);
   box-shadow: 0 22px 48px rgba(17, 17, 17, .12);
+}
+
+.trip-searching-screen .search-driver-sheet {
+  position: relative;
+  z-index: 5;
+  margin-top: -34px;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, .97);
+  border-color: rgba(216, 154, 5, .14);
+  box-shadow: 0 22px 58px rgba(45, 35, 15, .18);
+  backdrop-filter: blur(18px);
+}
+
+.search-driver-head {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.search-driver-head small {
+  color: var(--taxi-gold-deep);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 950;
+  text-transform: uppercase;
 }
 
 .trip-search-card h1,
@@ -5870,6 +5921,21 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: 0 16px 30px rgba(216, 154, 5, .26);
 }
 
+.trip-radar.search-pulse {
+  width: 54px;
+  height: 54px;
+  box-shadow: 0 12px 26px rgba(216, 154, 5, .24);
+}
+
+.trip-radar.search-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 154, 5, .3);
+  animation: searchPulse 1.5s ease-out infinite;
+}
+
 .trip-radar::after {
   content: "";
   width: 18px;
@@ -5887,6 +5953,99 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .trip-radar i:nth-child(2) { inset: -4px; opacity: .5; }
 .trip-radar i:nth-child(3) { inset: -15px; opacity: .2; }
+
+.search-progress-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-progress-steps li {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: var(--taxi-muted);
+  font-size: 10px;
+  line-height: 13px;
+  font-weight: 900;
+}
+
+.search-progress-steps li span {
+  height: 4px;
+  border-radius: 999px;
+  background: #efe7d8;
+}
+
+.search-progress-steps li.done span,
+.search-progress-steps li.active span {
+  background: linear-gradient(90deg, #f1cc65, #d89a05);
+}
+
+.search-progress-steps li.active {
+  color: var(--taxi-text);
+}
+
+.search-order-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.search-order-meta span {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 17px;
+  background: #fff8e8;
+  border: 1px solid rgba(216, 154, 5, .14);
+}
+
+.search-order-meta small {
+  display: block;
+  color: var(--taxi-secondary);
+  font-size: 10px;
+  line-height: 13px;
+  font-weight: 900;
+}
+
+.search-order-meta b {
+  display: block;
+  margin-top: 3px;
+  color: var(--taxi-text);
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-cancel-button {
+  min-height: 48px;
+  border-radius: 17px;
+  color: #9a3412;
+  background: #fff3ed;
+  border: 1px solid #fed7aa;
+}
+
+.trip-cancelled-card {
+  text-align: center;
+  justify-items: center;
+}
+
+.cancelled-mark {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  color: #9a3412;
+  background: #fff3ed;
+  border: 1px solid #fed7aa;
+}
 
 .trip-summary-line {
   display: grid;
@@ -5916,6 +6075,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   margin-top: 3px;
   color: var(--taxi-secondary);
   font-size: 11px;
+}
+
+@keyframes searchPulse {
+  0% { transform: scale(.92); opacity: .75; }
+  100% { transform: scale(1.28); opacity: 0; }
 }
 
 .trip-cancel-button,

@@ -182,15 +182,15 @@ const mergedClientAddressCatalog = [...clientAddressCatalog, ...extraClientAddre
 const mergedClientRegionPresets = [...clientRegionPresets, ...extraClientRegionPresets];
 
 const orderSteps = [
-  ["SEARCHING_DRIVER", "РџРѕРёСЃРє"],
-  ["DRIVER_FOUND", "Р’РѕРґРёС‚РµР»СЊ"],
-  ["DRIVER_GOING_TO_CLIENT", "Р•РґРµС‚"],
-  ["DRIVER_ARRIVED", "РџСЂРёР±С‹Р»"],
-  ["WAITING_CLIENT", "РћР¶РёРґР°РЅРёРµ"],
-  ["TRIP_STARTED", "Р’ РїСѓС‚Рё"],
-  ["TRIP_COMPLETED", "Р“РѕС‚РѕРІРѕ"],
-  ["PAYMENT_PENDING", "РћРїР»Р°С‚Р°"],
-  ["PAID", "РћРїР»Р°С‡РµРЅРѕ"]
+  ["SEARCHING_DRIVER", "Поиск"],
+  ["DRIVER_FOUND", "Водитель"],
+  ["DRIVER_GOING_TO_CLIENT", "Едет"],
+  ["DRIVER_ARRIVED", "Прибыл"],
+  ["WAITING_CLIENT", "Ожидание"],
+  ["TRIP_STARTED", "В пути"],
+  ["TRIP_COMPLETED", "Готово"],
+  ["PAYMENT_PENDING", "Оплата"],
+  ["PAID", "Оплачено"]
 ];
 
 const errorMessages = {
@@ -239,29 +239,29 @@ function publicStatus(status) {
 
 function statusLabel(status) {
   const map = {
-    NEW: "РџРѕРёСЃРє",
-    SEARCHING: "РС‰РµРј РІРѕРґРёС‚РµР»СЏ",
-    SEARCHING_DRIVER: "РС‰РµРј РІРѕРґРёС‚РµР»СЏ",
-    DRIVER_FOUND: "Р’РѕРґРёС‚РµР»СЊ РЅР°Р№РґРµРЅ",
-    DRIVER_GOING_TO_CLIENT: "Р’РѕРґРёС‚РµР»СЊ РµРґРµС‚ Рє РІР°Рј",
-    DRIVER_ASSIGNED: "Р’РѕРґРёС‚РµР»СЊ РЅР°Р·РЅР°С‡РµРЅ",
-    DRIVER_ARRIVED: "Р’РѕРґРёС‚РµР»СЊ РїРѕРґСЉРµС…Р°Р»",
-    IN_PROGRESS: "РџРѕРµР·РґРєР° РЅР°С‡Р°Р»Р°СЃСЊ",
-    TRIP_STARTED: "РџРѕРµР·РґРєР° РЅР°С‡Р°Р»Р°СЃСЊ",
-    COMPLETED: "РџРѕРµР·РґРєР° Р·Р°РІРµСЂС€РµРЅР°",
-    TRIP_COMPLETED: "РџРѕРµР·РґРєР° Р·Р°РІРµСЂС€РµРЅР°",
-    PAYMENT_PENDING: "РћР¶РёРґР°РµРј РѕРїР»Р°С‚Сѓ",
-    PAID: "РћРїР»Р°С‡РµРЅРѕ",
-    RATED: "РџРѕРµР·РґРєР° Р·Р°РєСЂС‹С‚Р°",
-    CANCELLED: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ",
-    CANCELED: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ",
-    CANCELLED_BY_CLIENT: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ",
-    CANCELLED_BY_DRIVER: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ РІРѕРґРёС‚РµР»РµРј",
-    CANCELLED_BY_ADMIN: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ РѕРїРµСЂР°С‚РѕСЂРѕРј",
-    CANCELLED_BY_OPERATOR: "Р—Р°РєР°Р· РѕС‚РјРµРЅС‘РЅ РѕРїРµСЂР°С‚РѕСЂРѕРј",
-    NO_SHOW: "РљР»РёРµРЅС‚ РЅРµ РІС‹С€РµР»"
+    NEW: "Поиск",
+    SEARCHING: "Ищем водителя",
+    SEARCHING_DRIVER: "Ищем водителя",
+    DRIVER_FOUND: "Водитель найден",
+    DRIVER_GOING_TO_CLIENT: "Водитель едет к вам",
+    DRIVER_ASSIGNED: "Водитель назначен",
+    DRIVER_ARRIVED: "Водитель подъехал",
+    IN_PROGRESS: "Поездка началась",
+    TRIP_STARTED: "Поездка началась",
+    COMPLETED: "Поездка завершена",
+    TRIP_COMPLETED: "Поездка завершена",
+    PAYMENT_PENDING: "Ожидаем оплату",
+    PAID: "Оплачено",
+    RATED: "Поездка закрыта",
+    CANCELLED: "Заказ отменён",
+    CANCELED: "Заказ отменён",
+    CANCELLED_BY_CLIENT: "Заказ отменён",
+    CANCELLED_BY_DRIVER: "Заказ отменён водителем",
+    CANCELLED_BY_ADMIN: "Заказ отменён оператором",
+    CANCELLED_BY_OPERATOR: "Заказ отменён оператором",
+    NO_SHOW: "Клиент не вышел"
   };
-  return map[status] || status || "РЎС‚Р°С‚СѓСЃ Р·Р°РєР°Р·Р°";
+  return map[status] || status || "Статус заказа";
 }
 
 function normalizeOrder(order) {
@@ -2061,24 +2061,46 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
     lng: order.dropoff_lng
   };
   const hasDriver = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status) || order.driver_name;
-  const driverName = order.driver_name || "Р’РѕРґРёС‚РµР»СЊ SmartTaxi";
-  const carLine = [order.driver_car_model || "РђРІС‚РѕРјРѕР±РёР»СЊ", order.driver_plate].filter(Boolean).join(" В· ");
+  const cancelled = ["CANCELLED", "CANCELED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN"].includes(status);
+  const driverName = order.driver_name || "Водитель SmartTaxi";
+  const carLine = [order.driver_car_model || "Автомобиль", order.driver_plate].filter(Boolean).join(" · ");
 
   if (status === "SEARCHING_DRIVER") {
     return (
       <section className="trip-stage-screen trip-searching-screen">
-        <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status="РС‰РµРј РІРѕРґРёС‚РµР»СЏ" />
-        <section className="trip-search-card">
-          <span className="trip-radar" aria-hidden="true"><i /><i /><i /></span>
-          <div>
-            <h1>РС‰РµРј РІРѕРґРёС‚РµР»СЏ</h1>
-            <p>РџСЂРѕРІРµСЂСЏРµРј СЃРІРѕР±РѕРґРЅС‹Рµ РјР°С€РёРЅС‹ СЂСЏРґРѕРј Рё РїРµСЂРµРґР°С‘Рј Р·Р°РєР°Р· РІРѕРґРёС‚РµР»СЏРј РІР°С€РµРіРѕ СЂРµРіРёРѕРЅР°.</p>
-          </div>
-          <TripSummaryLine order={order} estimate={estimate} />
+        <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status="" mode="searching" />
+        <section className="trip-search-card search-driver-sheet" data-order-id={order.id || ""}>
+          <header className="search-driver-head">
+            <span className="trip-radar search-pulse" aria-hidden="true"><i /><i /><i /></span>
+            <div>
+              <small>Заказ создан</small>
+              <h1>Ищем водителя</h1>
+              <p>Предлагаем заказ ближайшим водителям</p>
+            </div>
+          </header>
+          <SearchProgress />
           <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
-          <button type="button" className="trip-cancel-button" onClick={onCancel} disabled={loading}>
-            {loading ? "РћС‚РјРµРЅСЏРµРј..." : "РћС‚РјРµРЅРёС‚СЊ РїРѕРёСЃРє"}
+          <SearchingOrderMeta order={order} estimate={estimate} />
+          <button type="button" className="trip-cancel-button search-cancel-button" onClick={onCancel} disabled={loading}>
+            {loading ? "Отменяем..." : "Отменить поиск"}
           </button>
+        </section>
+      </section>
+    );
+  }
+
+  if (cancelled) {
+    return (
+      <section className="trip-stage-screen trip-cancelled-screen">
+        <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status={statusLabel(status)} />
+        <section className="trip-search-card trip-cancelled-card">
+          <span className="cancelled-mark"><Icon name="close" size={20} /></span>
+          <div>
+            <h1>Заказ отменён</h1>
+            <p>Поиск водителя остановлен. Можно изменить маршрут или создать новый заказ.</p>
+          </div>
+          <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
+          <button type="button" className="trip-home-button" onClick={onHome}>Новая поездка</button>
         </section>
       </section>
     );
@@ -2131,6 +2153,45 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   );
 }
 
+function SearchProgress() {
+  return (
+    <ol className="search-progress-steps" aria-label="Статус поиска">
+      <li className="done"><span />Создаём заказ</li>
+      <li className="active"><span />Ищем водителя</li>
+      <li><span />Ожидаем ответ</li>
+    </ol>
+  );
+}
+
+function orderTariffLabel(order, estimate) {
+  const raw = order?.tariff || estimate?.tariff?.displayName || estimate?.tariff?.display_name || estimate?.tariff?.name || "Economy";
+  const key = cleanTariffKey({ name: raw, displayName: raw });
+  return localTariffNames[key] || raw || "Эконом";
+}
+
+function paymentLabel(method) {
+  return method === "KASPI" ? "Kaspi" : "Наличные";
+}
+
+function SearchingOrderMeta({ order, estimate }) {
+  return (
+    <div className="search-order-meta">
+      <span>
+        <small>Тариф</small>
+        <b>{orderTariffLabel(order, estimate)}</b>
+      </span>
+      <span>
+        <small>Цена</small>
+        <b><Money value={order.price || estimate?.estimatedPrice} /></b>
+      </span>
+      <span>
+        <small>Оплата</small>
+        <b>{paymentLabel(order.payment_method)}</b>
+      </span>
+    </div>
+  );
+}
+
 function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, cancelDisabled }) {
   if (!open) return null;
   return (
@@ -2170,9 +2231,9 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
   );
 }
 
-function TripMapCard({ pickup, destination, route, status }) {
+function TripMapCard({ pickup, destination, route, status, mode = "" }) {
   return (
-    <section className="trip-map-card">
+    <section className={`trip-map-card ${mode ? `trip-map-${mode}` : ""}`}>
       <MapView pickup={pickup} destination={destination} route={route} center={pickup || destination} compact status={status} />
     </section>
   );
