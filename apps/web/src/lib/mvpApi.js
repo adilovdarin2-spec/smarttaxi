@@ -1,9 +1,44 @@
-import { API_URL, api, clearToken, getToken, login as apiLogin } from "./api.js";
+import { API_URL, api, clearToken, getToken, login as apiLogin, setToken } from "./api.js";
 
 export { clearToken, getToken };
 
 export async function loginUser(payload) {
-  return apiLogin(payload);
+  const data = await api("/api/auth/login/password", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  setToken(data.token);
+  return data;
+}
+
+export async function registerUser(payload) {
+  const data = await api("/api/auth/register/password", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  setToken(data.token);
+  return data;
+}
+
+export function checkAuthPhone(phone) {
+  return api("/api/auth/phone/check", {
+    method: "POST",
+    body: JSON.stringify({ phone })
+  });
+}
+
+export function sendAuthSms(phone, purpose = "REGISTER") {
+  return api("/api/auth/sms/send", {
+    method: "POST",
+    body: JSON.stringify({ phone, purpose })
+  });
+}
+
+export function verifyAuthSms({ phone, code, purpose = "REGISTER" }) {
+  return api("/api/auth/sms/verify", {
+    method: "POST",
+    body: JSON.stringify({ phone, code, purpose })
+  });
 }
 
 export function getCurrentUser() {
@@ -24,12 +59,12 @@ export function searchAddresses({ q, region, limit = 10 }) {
   params.set("q", q);
   if (region) params.set("region", region);
   params.set("limit", String(limit));
-  return api(`/api/routes/addresses/search?${params.toString()}`);
+  return api(`/api/maps/geocode?${params.toString()}`);
 }
 
 export function reverseAddress({ lat, lng }) {
   const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
-  return api(`/api/routes/addresses/reverse?${params.toString()}`);
+  return api(`/api/maps/reverse-geocode?${params.toString()}`);
 }
 
 export function previewRoute(payload) {
@@ -37,6 +72,17 @@ export function previewRoute(payload) {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export function estimateTariff(payload) {
+  return api("/api/tariffs/estimate", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getLocalGeoCatalog(params = {}) {
+  return api(`/api/routes/catalog${queryString(params)}`);
 }
 
 export function estimateOrder(payload) {
@@ -58,6 +104,10 @@ export function cancelPublicOrder(orderId, riderPhone) {
     method: "POST",
     body: JSON.stringify({ riderPhone })
   });
+}
+
+export function getOrderStatusHistory(orderId) {
+  return api(`/api/orders/${orderId}/status-history`);
 }
 
 export function getDriverRegions() {
@@ -100,6 +150,25 @@ export function completeTrip(orderId) {
 
 export function cancelDriverOrder(orderId) {
   return api(`/api/orders/${orderId}/cancel`, { method: "POST" });
+}
+
+export function getDriverRoadAlerts(params = {}) {
+  return api(`/api/driver/road-alerts${queryString(params)}`);
+}
+
+export function createDriverRoadAlert(payload) {
+  return api("/api/driver/road-alerts", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function confirmDriverRoadAlert(alertId) {
+  return api(`/api/driver/road-alerts/${alertId}/confirm`, { method: "PATCH" });
+}
+
+export function expireDriverRoadAlert(alertId) {
+  return api(`/api/driver/road-alerts/${alertId}/expire`, { method: "PATCH" });
 }
 
 export async function getAdminDashboard() {
@@ -285,6 +354,14 @@ export function getAdminOrders() {
 
 export function getAdminAudit() {
   return api("/api/admin/audit-logs");
+}
+
+export function getAdminRoadAlerts(params = {}) {
+  return api(`/api/admin/road-alerts${queryString(params)}`);
+}
+
+export function expireAdminRoadAlert(alertId) {
+  return api(`/api/admin/road-alerts/${alertId}/expire`, { method: "PATCH" });
 }
 
 export function getAdminSettings() {

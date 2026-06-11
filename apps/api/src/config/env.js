@@ -37,7 +37,7 @@ function jwtSecret() {
 }
 
 function corsOrigins() {
-  return (process.env.CORS_ORIGINS || "http://localhost:5173")
+  return (process.env.CORS_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5179,http://127.0.0.1:5179")
     .split(",")
     .map(origin => origin.trim())
     .filter(Boolean)

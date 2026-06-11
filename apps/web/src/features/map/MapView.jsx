@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Icon, VehicleIcon } from "../../core/icons.jsx";
 
-const DEFAULT_CENTER = { lat: 42.314696, lng: 69.588328 };
-const DEFAULT_ZOOM = 14;
+const DEFAULT_CENTER = { lat: 40.844435, lng: 68.509021 };
+const DEFAULT_ZOOM = 15;
 
 function validPoint(point) {
   const lat = Number(point?.lat);
@@ -26,6 +26,15 @@ function lonToTileX(lng, zoom) {
 function latToTileY(lat, zoom) {
   const radians = (lat * Math.PI) / 180;
   return ((1 - Math.log(Math.tan(radians) + (1 / Math.cos(radians))) / Math.PI) / 2) * (2 ** zoom);
+}
+
+function tileXToLng(x, zoom) {
+  return (x / (2 ** zoom)) * 360 - 180;
+}
+
+function tileYToLat(y, zoom) {
+  const n = Math.PI - (2 * Math.PI * y) / (2 ** zoom);
+  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
 
 function buildTileWindow(points, center, zoom) {
@@ -98,6 +107,22 @@ function projectedPath(points, window) {
     .join(" ");
 }
 
+function MapMarker({ type, style }) {
+  if (type === "pickup") {
+    return (
+      <span className="map-marker pickup pickup-marker" style={style} aria-label="Точка подачи">
+        <img src="/map/user_location_marker_cropped.png" alt="" loading="eager" decoding="async" />
+      </span>
+    );
+  }
+
+  return (
+    <span className="map-marker destination destination-marker" style={style} aria-label="Точка назначения">
+      <img src="/map/destination_pin_gold_cropped.png" alt="" loading="eager" decoding="async" />
+    </span>
+  );
+}
+
 export default function MapView({
   pickup,
   destination,
@@ -107,8 +132,11 @@ export default function MapView({
   status = "",
   compact = false,
   onUseLocation,
-  onRetry
+  onRetry,
+  onMapPick
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [tileErrors, setTileErrors] = useState(0);
   const pickupPoint = validPoint(pickup);
   const destinationPoint = validPoint(destination);
   const driverPoint = validPoint(driver);
@@ -123,9 +151,24 @@ export default function MapView({
     [tileWindow.minX, tileWindow.minY, tileWindow.spanX, tileWindow.spanY, tileWindow.zoom]
   );
   const path = projectedPath(routePoints, tileWindow);
+  function handleMapClick(event) {
+    if (!onMapPick || event.target.closest("button")) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const xRatio = (event.clientX - rect.left) / rect.width;
+    const yRatio = (event.clientY - rect.top) / rect.height;
+    const tileX = tileWindow.minX + tileWindow.spanX * xRatio;
+    const tileY = tileWindow.minY + tileWindow.spanY * yRatio;
+    onMapPick({
+      lat: Number(tileYToLat(tileY, tileWindow.zoom).toFixed(6)),
+      lng: Number(tileXToLng(tileX, tileWindow.zoom).toFixed(6))
+    });
+  }
 
   return (
-    <section className={`map-view live-osm ${compact ? "compact" : ""}`}>
+    <section
+      className={`map-view live-osm ${compact ? "compact" : ""} ${expanded ? "expanded-map" : ""} ${onMapPick ? "pickable" : ""}`}
+      onClick={handleMapClick}
+    >
       <div className="map-tile-layer" aria-label="Карта SmartTaxi">
         {tiles.map(tile => (
           <img
@@ -133,7 +176,8 @@ export default function MapView({
             src={tile.src}
             alt=""
             loading="eager"
-            referrerPolicy="no-referrer"
+          referrerPolicy="no-referrer"
+            onError={() => setTileErrors(value => Math.min(value + 1, 3))}
             style={{ left: tile.left, top: tile.top, width: tile.width, height: tile.height }}
           />
         ))}
@@ -144,13 +188,26 @@ export default function MapView({
           <path d={path} />
         </svg>
       )}
-      {pickupPoint && <span className="map-marker pickup" style={projectOnTiles(pickupPoint, tileWindow)}>A</span>}
-      {destinationPoint && <span className="map-marker destination" style={projectOnTiles(destinationPoint, tileWindow)}>B</span>}
+      {pickupPoint && <MapMarker type="pickup" style={projectOnTiles(pickupPoint, tileWindow)} />}
+      {destinationPoint && <MapMarker type="destination" style={projectOnTiles(destinationPoint, tileWindow)} />}
       {driverPoint && <span className="car-marker" style={projectOnTiles(driverPoint, tileWindow)}><VehicleIcon /></span>}
       <div className="map-controls">
+        <button
+          type="button"
+          className="map-expand-button"
+          aria-label={expanded ? "Свернуть карту" : "Развернуть карту"}
+          onClick={() => setExpanded(value => !value)}
+        >
+          <Icon name={expanded ? "close" : "expand"} />
+        </button>
         {onUseLocation && <button type="button" aria-label="Моё местоположение" onClick={onUseLocation}><Icon name="pin" /></button>}
         {onRetry && <button type="button" aria-label="Повторить загрузку карты" onClick={onRetry}><Icon name="search" /></button>}
       </div>
+      {tileErrors >= 3 && (
+        <div className="map-error-chip">
+          Карта грузится нестабильно. Проверьте интернет или повторите позже.
+        </div>
+      )}
       {status && <div className="map-badge">{status}</div>}
       <small className="map-attribution">© OpenStreetMap</small>
     </section>

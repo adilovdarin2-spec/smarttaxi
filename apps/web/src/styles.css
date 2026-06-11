@@ -3014,8 +3014,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell {
   --taxi-bg: #fffcf6;
   --taxi-card-warm: #fff8e8;
-  --taxi-gold: #d4a72f;
-  --taxi-gold-deep: #9b6814;
+  --taxi-gold: #d89a05;
+  --taxi-gold-deep: #a96f00;
   --taxi-text: #141414;
   --taxi-secondary: #626262;
   --taxi-muted: #929292;
@@ -3050,11 +3050,53 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .client-icon-button {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   display: grid;
   place-items: center;
-  border-radius: 20px;
+  border-radius: 18px;
+}
+
+.taxi-client-shell .client-icon-button svg {
+  width: 20px;
+  height: 20px;
+  color: var(--taxi-text);
+  stroke-width: 1.9;
+}
+
+.taxi-client-shell .ui-asset-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.taxi-client-shell .ui-asset-icon-xs {
+  width: 14px;
+  height: 14px;
+}
+
+.taxi-client-shell .ui-asset-icon-sm {
+  width: 18px;
+  height: 18px;
+}
+
+.taxi-client-shell .ui-asset-icon-md {
+  width: 22px;
+  height: 22px;
+}
+
+.taxi-client-shell .ui-asset-icon-lg {
+  width: 26px;
+  height: 26px;
+}
+
+.taxi-client-shell .client-icon-button .ui-asset-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .taxi-client-shell .client-icon-button.notification { position: relative; }
@@ -3066,6 +3108,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 8px;
   border-radius: 99px;
   background: var(--taxi-gold);
+  border: 1px solid #fff;
 }
 
 .taxi-client-shell .taxi-brand {
@@ -3157,20 +3200,38 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .map-view.live-osm .map-marker {
+  width: 34px;
+  height: 34px;
   transform: translate(-50%, -50%);
-  border-color: #fff;
-  box-shadow: 0 10px 24px rgba(45, 35, 15, .18);
+  border: 0;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .map-view.live-osm .map-marker.pickup {
-  color: #fff;
-  background: #2563eb;
-  box-shadow: 0 0 0 12px rgba(37, 99, 235, .14), 0 10px 24px rgba(45, 35, 15, .18);
+  color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .map-view.live-osm .map-marker.destination {
-  color: #141414;
-  background: linear-gradient(180deg, #f7d160, #d4a72f);
+  color: transparent;
+  background: transparent;
+}
+
+.map-view.live-osm .map-marker img {
+  width: 34px;
+  height: 34px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(45, 35, 15, .22));
+}
+
+.map-view.live-osm .map-marker.pickup img {
+  width: 32px;
+  height: 32px;
 }
 
 .map-view.live-osm .map-controls button {
@@ -3682,7 +3743,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .premium-address-screen {
   min-height: calc(100svh - 76px);
-  padding: 20px 18px 28px;
+  padding: 18px 16px 28px;
   color: var(--taxi-text);
   background: var(--taxi-bg);
 }
@@ -3718,31 +3779,90 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .address-search-input input {
-  min-height: 58px;
+  min-height: 54px;
   color: var(--taxi-text);
   background: #fff;
   border-color: var(--taxi-border);
 }
 
+.premium-address-screen .address-start-hint {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--taxi-text);
+  background: #fffaf0;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+}
+
+.premium-address-screen .address-start-hint > .ui-asset-icon {
+  width: 22px;
+  height: 22px;
+  justify-self: center;
+}
+
+.premium-address-screen .address-start-hint div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.premium-address-screen .address-start-hint strong {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 950;
+}
+
+.premium-address-screen .address-start-hint span {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.premium-address-screen .premium-address-list {
+  gap: 8px;
+}
+
+.premium-address-screen .skeleton-list {
+  gap: 8px;
+}
+
+.premium-address-screen .skeleton-list span {
+  height: 48px;
+  border-radius: 17px;
+  background: linear-gradient(90deg, #fffaf0, #f8e9c2, #fffaf0);
+}
+
 .premium-address-list button {
-  grid-template-columns: 42px minmax(0, 1fr);
-  min-height: 64px;
-  gap: 10px;
-  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  min-height: 58px;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
   color: var(--taxi-text);
   background: #fff;
   border: 1px solid var(--taxi-border);
-  border-radius: 20px;
-  box-shadow: 0 12px 28px rgba(45, 35, 15, .07);
+  border-radius: 17px;
+  box-shadow: 0 10px 24px rgba(45, 35, 15, .06);
 }
 
-.premium-address-list button svg {
-  width: 42px;
-  height: 42px;
-  padding: 10px;
-  color: var(--taxi-gold-deep);
+.premium-address-list .address-result-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--taxi-card-warm);
-  border-radius: 16px;
+  border: 1px solid var(--taxi-border);
+  border-radius: 14px;
+}
+
+.premium-address-list .address-result-icon .ui-asset-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .premium-address-list button b,
@@ -3946,6 +4066,1065 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border-color: var(--admin-border-strong);
 }
 
+.taxi-client-shell .wide {
+  width: 100%;
+}
+
+.taxi-client-shell .primary-gold,
+.taxi-client-shell .app-button.primary-gold,
+.primary-gold {
+  min-height: 54px;
+  color: #141414;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #e9b84a 0%, #d4a72f 52%, #a36f18 100%);
+  box-shadow: 0 12px 28px rgba(155, 104, 20, .24);
+  font-weight: 900;
+}
+
+.taxi-client-shell .primary-gold:hover:not(:disabled) {
+  filter: saturate(1.05) brightness(1.03);
+}
+
+.taxi-client-shell .primary-gold:active:not(:disabled) {
+  transform: translateY(1px) scale(0.995);
+}
+
+.taxi-client-shell .reference-client-header,
+.taxi-client-shell .reference-title-stack {
+  display: flex;
+  align-items: center;
+}
+
+.taxi-client-shell .reference-title-stack {
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.taxi-client-shell .reference-title-stack strong {
+  color: var(--taxi-text);
+  font-size: 18px;
+  line-height: 21px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+.taxi-client-shell .reference-title-stack small {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.taxi-client-shell .reference-region-chip {
+  height: 50px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px 0 14px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 14px 30px rgba(45, 35, 15, .12);
+  overflow: hidden;
+}
+
+.taxi-client-shell .reference-region-chip > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .reference-region-chip svg {
+  width: 16px;
+  height: 16px;
+  color: var(--taxi-gold-deep);
+}
+
+.taxi-client-shell .reference-region-chip svg:last-child {
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  color: var(--taxi-secondary);
+}
+
+.taxi-client-shell .client-reference-screen {
+  position: relative;
+  min-height: calc(100svh - 76px);
+  overflow: hidden;
+  padding: 0 14px 94px;
+  color: var(--taxi-text);
+  background: transparent;
+}
+
+.taxi-client-shell .reference-tariff-state {
+  min-height: calc(100svh - 76px);
+  overflow-y: auto;
+  padding-bottom: 152px;
+}
+
+.taxi-client-shell .reference-tariff-state .reference-map-ghost {
+  height: clamp(152px, 23svh, 196px);
+  min-height: 152px;
+  border-radius: 22px;
+}
+
+.taxi-client-shell .reference-tariff-state .reference-map-ghost .map-view {
+  border-radius: 22px;
+}
+
+.taxi-client-shell .reference-map-ambient,
+.taxi-client-shell .reference-map-ghost {
+  position: relative;
+  height: clamp(228px, 36svh, 312px);
+  min-height: 228px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--taxi-border);
+  box-shadow: 0 18px 36px rgba(45, 35, 15, .16);
+}
+
+.taxi-client-shell .reference-map-ambient .map-view,
+.taxi-client-shell .reference-map-ghost .map-view {
+  height: 100%;
+  min-height: 0;
+  border-radius: 24px;
+}
+
+.taxi-client-shell .reference-map-ambient .map-view.live-osm,
+.taxi-client-shell .reference-map-ghost .map-view.live-osm {
+  min-height: 0;
+}
+
+.taxi-client-shell .reference-hero {
+  position: relative;
+  margin-top: 10px;
+  margin-bottom: 9px;
+  padding: 12px 14px 14px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #fffdfa, #fff8e8);
+  border: 1px solid var(--taxi-border);
+  box-shadow: 0 12px 28px rgba(45, 35, 15, .1);
+}
+
+.taxi-client-shell .reference-brand-line {
+  margin: 0 0 6px;
+}
+
+.taxi-client-shell .reference-brand-line img {
+  width: 118px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.taxi-client-shell .reference-hero h1 {
+  margin: 0 0 5px;
+  color: var(--taxi-text);
+  font-size: 25px;
+  line-height: 1.05;
+  letter-spacing: -.01em;
+  font-weight: 950;
+}
+
+.taxi-client-shell .reference-hero h1 span {
+  color: var(--taxi-gold-deep);
+}
+
+.taxi-client-shell .reference-hero p {
+  margin: 0;
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.taxi-client-shell .reference-hero-car {
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  width: 132px;
+  height: 78px;
+  object-fit: contain;
+  opacity: .9;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+
+.taxi-client-shell .reference-address-card {
+  position: relative;
+  z-index: 3;
+  margin-top: -30px;
+  display: grid;
+  gap: 8px;
+}
+
+.taxi-client-shell .reference-address-row {
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 18px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(45, 35, 15, .07);
+}
+
+.taxi-client-shell .reference-address-row.destination {
+  border-color: var(--taxi-border-strong);
+  background: linear-gradient(180deg, #fff, #fffbf1);
+}
+
+.taxi-client-shell .reference-point-icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--taxi-gold-deep);
+  background: #fff8e8;
+  border: 1px solid var(--taxi-border);
+  border-radius: 50%;
+}
+
+.taxi-client-shell .reference-point-icon .ui-asset-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.taxi-client-shell .reference-address-text {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.taxi-client-shell .reference-address-text small {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-address-text strong {
+  color: var(--taxi-text);
+  font-size: 16px;
+  line-height: 21px;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .reference-address-action {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--taxi-gold-deep);
+  background: var(--taxi-card-warm);
+}
+
+.taxi-client-shell .reference-quick-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.taxi-client-shell .reference-quick-card {
+  min-height: 86px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 7px;
+  padding: 12px 6px;
+  border: 1px solid var(--taxi-border);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--taxi-text);
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(45, 35, 15, .09);
+}
+
+.taxi-client-shell .reference-quick-card svg {
+  width: 26px;
+  height: 26px;
+  color: var(--taxi-gold-deep);
+}
+
+.taxi-client-shell .reference-quick-card strong {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-quick-card small {
+  color: var(--taxi-secondary);
+  font-size: 10px;
+  line-height: 13px;
+}
+
+.taxi-client-shell .reference-recent-section {
+  margin-top: 6px;
+}
+
+.taxi-client-shell .reference-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.taxi-client-shell .reference-section-head strong {
+  color: var(--taxi-text);
+  font-size: 18px;
+  line-height: 22px;
+}
+
+.taxi-client-shell .reference-section-head button {
+  color: var(--taxi-gold-deep);
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-recent-list {
+  display: grid;
+  gap: 9px;
+}
+
+.taxi-client-shell .reference-recent-row {
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid var(--taxi-border);
+  border-radius: 17px;
+  background: #fff;
+  text-align: left;
+}
+
+.taxi-client-shell .reference-recent-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--taxi-gold-deep);
+  background: #fff8e8;
+  border: 1px solid var(--taxi-border);
+  border-radius: 12px;
+}
+
+.taxi-client-shell .reference-recent-icon .ui-asset-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.taxi-client-shell .reference-recent-row strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.taxi-client-shell .reference-recent-row span small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.taxi-client-shell .reference-recent-row .star {
+  color: #c7a34a;
+}
+
+.taxi-client-shell .reference-tariffs-block {
+  margin-top: 8px;
+  display: grid;
+  gap: 10px;
+}
+
+.taxi-client-shell .reference-route-card {
+  margin-top: 7px;
+  padding: 11px 12px;
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 21px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.taxi-client-shell .reference-route-line {
+  width: 12px;
+  height: 36px;
+  display: inline-grid;
+  align-content: space-between;
+}
+
+.taxi-client-shell .reference-route-line span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--taxi-gold);
+}
+
+.taxi-client-shell .reference-route-line i {
+  width: 4px;
+  height: 100%;
+  margin-inline: auto;
+  background: linear-gradient(180deg, var(--taxi-gold-deep), rgba(170, 111, 0, .25));
+}
+
+.taxi-client-shell .reference-route-line b {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--taxi-gold-deep);
+}
+
+.taxi-client-shell .reference-route-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.taxi-client-shell .reference-route-copy span {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-route-copy strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--taxi-text);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.taxi-client-shell .reference-route-copy small {
+  color: var(--taxi-muted);
+  font-size: 11px;
+}
+
+.taxi-client-shell .reference-edit-route {
+  min-width: 78px;
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: 16px;
+  color: var(--taxi-text);
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+  font-size: 11px;
+  line-height: 13px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--taxi-text);
+}
+
+.taxi-client-shell .reference-section-title strong {
+  font-size: 19px;
+  line-height: 23px;
+  letter-spacing: -.01em;
+}
+
+.taxi-client-shell .reference-section-title span {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-note {
+  margin: 4px 0 0;
+  border-radius: 18px;
+  color: var(--taxi-secondary);
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border);
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+}
+
+.taxi-client-shell .reference-note.success {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.taxi-client-shell .reference-state-error,
+.taxi-client-shell .reference-state-hint {
+  margin-top: 2px;
+}
+
+.taxi-client-shell .reference-tariff-skeleton {
+  display: grid;
+  gap: 9px;
+}
+
+.taxi-client-shell .reference-tariff-skeleton span {
+  height: 86px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(255, 248, 232, .75), rgba(255, 255, 255, .98), rgba(255, 248, 232, .75));
+  background-size: 220px 100%;
+  animation: mapShimmer 1.1s linear infinite;
+}
+
+.taxi-client-shell .reference-tariff-list {
+  display: grid;
+  gap: 9px;
+}
+
+.taxi-client-shell .reference-tariff-card {
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) minmax(70px, auto);
+  gap: 14px;
+  align-items: center;
+  padding: 12px 12px 12px 13px;
+  border-radius: 21px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  box-shadow: 0 12px 30px rgba(45, 35, 15, .08);
+  overflow: hidden;
+}
+
+.taxi-client-shell .reference-tariff-card.disabled {
+  opacity: .55;
+}
+
+.taxi-client-shell .reference-tariff-card.selected {
+  border-color: #d0a02a;
+  background: linear-gradient(180deg, #fff 0%, #fffaf4 100%);
+  box-shadow: 0 0 0 2px rgba(212, 167, 47, .16), 0 14px 34px rgba(45, 35, 15, .12);
+}
+
+.taxi-client-shell .reference-tariff-car {
+  position: relative;
+  width: 112px;
+  height: 74px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 19px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff4d2 100%);
+  border: 1px solid rgba(216, 154, 5, .22);
+  overflow: hidden;
+}
+
+.taxi-client-shell .reference-tariff-car::before {
+  content: "";
+  position: absolute;
+  inset: auto 8px 8px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(154, 108, 18, .15);
+  filter: blur(6px);
+}
+
+.taxi-client-shell .reference-car-thumb img,
+.taxi-client-shell .reference-tariff-car img {
+  position: relative;
+  z-index: 1;
+  width: 122px;
+  height: 66px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  transform: translateX(-3px);
+}
+
+.taxi-client-shell .reference-tariff-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 0 4px 0 2px;
+}
+
+.taxi-client-shell .reference-tariff-title-row {
+  display: grid;
+  align-items: start;
+  justify-content: start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.taxi-client-shell .reference-tariff-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 950;
+}
+
+.taxi-client-shell .reference-tariff-recommended {
+  flex: 0 0 auto;
+  justify-self: start;
+  font-size: 10px;
+  line-height: 13px;
+  color: var(--taxi-gold-deep);
+  font-weight: 900;
+  background: var(--taxi-card-warm);
+  border: 1px solid var(--taxi-border-strong);
+  border-radius: 999px;
+  padding: 2px 7px 3px;
+}
+
+.taxi-client-shell .reference-tariff-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--taxi-secondary);
+  font-size: 11px;
+}
+
+.taxi-client-shell .reference-tariff-copy em {
+  color: var(--taxi-secondary);
+  font-style: normal;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.taxi-client-shell .reference-tariff-copy i {
+  color: var(--taxi-gold-deep);
+  font-style: normal;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-tariff-price {
+  justify-self: end;
+  color: var(--taxi-text);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .reference-tariff-actions {
+  display: grid;
+  justify-items: end;
+  align-items: center;
+  gap: 9px;
+  min-width: 70px;
+}
+
+.taxi-client-shell .reference-tariff-radio {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--taxi-gold-deep);
+  border: 1.5px solid rgba(169, 111, 0, .28);
+  border-radius: 999px;
+  background: #fffdfa;
+}
+
+.taxi-client-shell .reference-tariff-card.selected .reference-tariff-radio {
+  color: #fff;
+  border-color: #a96f00;
+  background: linear-gradient(180deg, #e7b846 0%, #b98212 100%);
+  box-shadow: 0 7px 14px rgba(169, 111, 0, .22);
+}
+
+.taxi-client-shell .reference-tariff-card.selected .reference-tariff-radio::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.taxi-client-shell .reference-payment-row {
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(86px, auto) 18px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--taxi-border);
+  color: var(--taxi-text);
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(45, 35, 15, .08);
+}
+
+.taxi-client-shell .reference-payment-row .payment-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: var(--taxi-gold-deep);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--taxi-border);
+}
+
+.taxi-client-shell .reference-payment-row strong {
+  justify-self: end;
+  color: var(--taxi-text);
+}
+
+.taxi-client-shell .reference-payment-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.taxi-client-shell .reference-payment-copy strong {
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 18px;
+  letter-spacing: 0;
+}
+
+.taxi-client-shell .reference-payment-copy small {
+  color: var(--taxi-secondary);
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.taxi-client-shell .reference-payment-value {
+  justify-self: end;
+  color: var(--taxi-text);
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 850;
+}
+
+.taxi-client-shell .reference-payment-row svg:last-child {
+  color: var(--taxi-secondary);
+}
+
+.taxi-client-shell .reference-sticky-order {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 75;
+  margin: 0;
+  background: rgba(255, 252, 246, .96);
+  border: 1px solid var(--taxi-border);
+  border-radius: 24px;
+  box-shadow: 0 18px 54px rgba(45, 35, 15, .22);
+  padding: 11px;
+  backdrop-filter: blur(16px);
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.taxi-client-shell .reference-total {
+  display: grid;
+  gap: 2px;
+}
+
+.taxi-client-shell .reference-total span {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-total strong {
+  color: var(--taxi-text);
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 950;
+}
+
+.taxi-client-shell .reference-total small {
+  color: var(--taxi-muted);
+  font-size: 11px;
+}
+
+.taxi-client-shell .reference-order-button {
+  height: 54px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 18px;
+  color: #141414;
+  font-size: 14px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #e9b84a 0%, #d4a72f 52%, #a36f18 100%);
+}
+
+.taxi-client-shell .reference-order-button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .reference-order-button b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .reference-order-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.taxi-client-shell .reference-order-button:disabled {
+  opacity: .52;
+}
+
+.taxi-client-shell .reference-bottom-nav {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  border-radius: 20px;
+  padding: 10px;
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid var(--taxi-border);
+  box-shadow: 0 16px 44px rgba(45, 35, 15, .2);
+  backdrop-filter: blur(18px);
+}
+
+.taxi-client-shell .reference-nav-item {
+  min-height: 52px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--taxi-secondary);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.taxi-client-shell .reference-nav-item.active {
+  color: #141414;
+  background: var(--taxi-card-warm);
+  box-shadow: inset 0 0 0 1px var(--taxi-border-strong);
+}
+
+.taxi-client-shell .reference-nav-item svg {
+  width: 20px;
+  height: 20px;
+}
+
+.taxi-client-shell .reference-nav-item .ui-asset-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.taxi-client-shell .reference-nav-label {
+  white-space: nowrap;
+}
+
+.taxi-client-shell .client-region-sheet {
+  position: fixed;
+  inset: 8vh 10px 10px;
+  z-index: 90;
+  display: grid;
+  gap: 11px;
+  align-content: start;
+  padding: 14px;
+  color: var(--taxi-text);
+  background: #fff;
+  border: 1px solid var(--taxi-border);
+  border-radius: 24px;
+  transform: translateY(30px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  box-shadow: 0 28px 72px rgba(45, 35, 15, .22);
+}
+
+.taxi-client-shell .client-region-sheet.open {
+  pointer-events: auto;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.taxi-client-shell .client-region-sheet header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: start;
+  gap: 10px;
+}
+
+.taxi-client-shell .client-region-sheet header > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.taxi-client-shell .client-region-sheet header strong {
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--taxi-text);
+}
+
+.taxi-client-shell .client-region-sheet header span {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.taxi-client-shell .client-region-sheet header button {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  justify-self: end;
+  border: 1px solid var(--taxi-border);
+  background: var(--taxi-card-warm);
+  color: var(--taxi-text);
+}
+
+.taxi-client-shell .client-region-search {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--taxi-border);
+  border-radius: 13px;
+  background: #fff;
+}
+
+.taxi-client-shell .client-region-search input {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  min-height: 44px;
+  color: var(--taxi-text);
+  font-size: 14px;
+}
+
+.taxi-client-shell .region-sheet-note {
+  margin: 0;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 18px;
+  padding: 3px 2px 0;
+}
+
+.taxi-client-shell .region-sheet-note.muted { color: #9a4b4b; }
+.taxi-client-shell .region-sheet-note.muted {
+  color: var(--taxi-secondary);
+  background: #fffaf0;
+  border: 1px solid var(--taxi-border);
+  border-radius: 14px;
+  padding: 8px 10px;
+}
+
+.taxi-client-shell .client-region-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(46vh, 280px);
+  overflow: auto;
+}
+
+.taxi-client-shell .client-region-list button {
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--taxi-border);
+  background: #fff;
+  color: var(--taxi-text);
+  text-align: left;
+}
+
+.taxi-client-shell .client-region-list button.selected {
+  border-color: var(--taxi-gold);
+  background: #fffdf4;
+}
+
+.taxi-client-shell .client-region-list strong {
+  display: block;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.taxi-client-shell .client-region-list small {
+  color: var(--taxi-secondary);
+  font-size: 12px;
+}
+
+.taxi-client-shell .region-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--taxi-border);
+  color: var(--taxi-gold-deep);
+  background: #fff8e8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.taxi-client-shell .client-region-sheet [aria-hidden="true"] + .client-region-list {
+  margin-top: 2px;
+}
+
+@keyframes mapShimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 @media (min-width: 960px) {
   .taxi-client-shell.phone-frame {
     width: min(100%, 1180px);
@@ -4044,4 +5223,518 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     white-space: normal;
     overflow-wrap: anywhere;
   }
+}
+
+.auth-sms-button {
+  min-height: 46px;
+  border: 1px solid rgba(216, 154, 5, .28);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffdf7 0%, #fff7df 100%);
+  color: var(--taxi-gold-deep);
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(169, 111, 0, .08);
+}
+
+.auth-sms-button:disabled {
+  opacity: .55;
+  box-shadow: none;
+}
+
+.taxi-client-shell .auth-profile-screen {
+  padding: 12px 14px 18px;
+  align-content: start;
+  background:
+    radial-gradient(circle at 80% -10%, rgba(216, 154, 5, .16), transparent 30%),
+    linear-gradient(180deg, #fffaf0 0%, #fff 48%, #f8f4ec 100%);
+}
+
+.taxi-client-shell .auth-hero-panel {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .76);
+  border: 1px solid rgba(216, 154, 5, .14);
+  box-shadow: 0 16px 34px rgba(45, 35, 15, .08);
+}
+
+.taxi-client-shell .auth-hero-panel .smarttaxi-logo {
+  width: 64px;
+  height: 64px;
+}
+
+.taxi-client-shell .auth-hero-panel strong {
+  display: block;
+  color: var(--taxi-text);
+  font-size: 22px;
+  line-height: 26px;
+  letter-spacing: 0;
+}
+
+.taxi-client-shell .auth-hero-panel span {
+  display: block;
+  margin-top: 3px;
+  color: var(--taxi-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.taxi-client-shell .auth-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 16px;
+  background: #f7f1e4;
+}
+
+.taxi-client-shell .auth-mode-switch button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--taxi-secondary);
+  font-weight: 850;
+}
+
+.taxi-client-shell .auth-mode-switch button.active {
+  color: var(--taxi-text);
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(45, 35, 15, .10);
+}
+
+.address-map-picker-card {
+  height: 190px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(17, 17, 17, .08);
+  box-shadow: 0 16px 34px rgba(17, 17, 17, .10);
+  background: #eef3ec;
+}
+
+.address-map-picker-card .map-view {
+  height: 100%;
+  min-height: 0;
+  border-radius: 24px;
+  cursor: crosshair;
+}
+
+.map-view.pickable::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: rgba(216, 154, 5, .92);
+  box-shadow: 0 0 0 8px rgba(216, 154, 5, .18), 0 8px 18px rgba(17, 17, 17, .16);
+  pointer-events: none;
+  z-index: 7;
+}
+
+.map-error-chip {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 38px;
+  z-index: 11;
+  padding: 9px 11px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .94);
+  border: 1px solid rgba(216, 154, 5, .22);
+  color: var(--taxi-text);
+  box-shadow: 0 12px 24px rgba(17, 17, 17, .14);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 16px;
+}
+
+.trip-stage-screen {
+  min-height: calc(100svh - 76px);
+  padding: 12px 14px 18px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  color: var(--taxi-text);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 246, 213, .9), transparent 38%),
+    linear-gradient(180deg, #fffaf0 0%, #fff 52%, #f7f3ea 100%);
+}
+
+.trip-map-card {
+  height: clamp(220px, 38svh, 330px);
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(17, 17, 17, .08);
+  background: #edf2ea;
+  box-shadow: 0 20px 42px rgba(17, 17, 17, .12);
+}
+
+.trip-map-card .map-view {
+  height: 100%;
+  min-height: 0;
+  border-radius: 28px;
+}
+
+.trip-search-card,
+.trip-driver-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .96);
+  border: 1px solid rgba(17, 17, 17, .07);
+  box-shadow: 0 22px 48px rgba(17, 17, 17, .12);
+}
+
+.trip-search-card h1,
+.trip-driver-card h1 {
+  margin: 0;
+  color: var(--taxi-text);
+  font-size: 25px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.trip-search-card p {
+  margin: 6px 0 0;
+  color: var(--taxi-secondary);
+  line-height: 1.45;
+}
+
+.trip-radar {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7c95b, #d89a05);
+  box-shadow: 0 16px 30px rgba(216, 154, 5, .26);
+}
+
+.trip-radar::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.trip-radar i {
+  position: absolute;
+  inset: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .78);
+}
+
+.trip-radar i:nth-child(2) { inset: -4px; opacity: .5; }
+.trip-radar i:nth-child(3) { inset: -15px; opacity: .2; }
+
+.trip-summary-line {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trip-summary-line span {
+  min-width: 0;
+  padding: 11px 10px;
+  border-radius: 18px;
+  background: #fff8e8;
+  border: 1px solid rgba(216, 154, 5, .14);
+}
+
+.trip-summary-line b {
+  display: block;
+  color: var(--taxi-text);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-summary-line small {
+  display: block;
+  margin-top: 3px;
+  color: var(--taxi-secondary);
+  font-size: 11px;
+}
+
+.trip-cancel-button,
+.trip-home-button,
+.trip-call-button,
+.trip-details-button {
+  min-height: 50px;
+  border-radius: 18px;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.trip-cancel-button {
+  color: #8a1f1f;
+  background: #fff0ee;
+}
+
+.trip-cancel-button.secondary {
+  color: var(--taxi-secondary);
+  background: #f7f4ed;
+}
+
+.trip-details-button {
+  color: var(--taxi-text);
+  background: #fff8e8;
+  border: 1px solid rgba(216, 154, 5, .18);
+}
+
+.trip-home-button,
+.trip-call-button {
+  color: #111;
+  background: linear-gradient(180deg, #f7c95b, #d89a05);
+  box-shadow: 0 12px 24px rgba(216, 154, 5, .24);
+}
+
+.trip-driver-topline {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.trip-driver-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #111;
+  background: #fff8e8;
+  border: 1px solid rgba(216, 154, 5, .18);
+}
+
+.trip-driver-avatar svg {
+  width: 30px;
+  height: 30px;
+}
+
+.trip-driver-topline small {
+  color: var(--taxi-secondary);
+  font-weight: 700;
+}
+
+.trip-car-plate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: #f8f5ee;
+  color: var(--taxi-text);
+}
+
+.trip-car-plate-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-car-plate-row b {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #111;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, .08);
+}
+
+.trip-action-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 9px;
+}
+
+.trip-details-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(17, 17, 17, .24);
+  backdrop-filter: blur(3px);
+}
+
+.trip-details-sheet {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 121;
+  display: grid;
+  gap: 13px;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 17px;
+  border-radius: 28px;
+  color: var(--taxi-text);
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid rgba(17, 17, 17, .08);
+  box-shadow: 0 26px 70px rgba(17, 17, 17, .28);
+}
+
+.trip-details-sheet header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trip-details-sheet header span {
+  display: block;
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trip-details-sheet h2 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 26px;
+  letter-spacing: 0;
+}
+
+.trip-details-sheet header button {
+  width: 42px;
+  height: 42px;
+  border-radius: 15px;
+  border: 1px solid rgba(17, 17, 17, .08);
+  background: #fffaf0;
+  color: var(--taxi-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trip-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trip-details-grid span {
+  min-width: 0;
+  padding: 11px;
+  border-radius: 17px;
+  background: #fff8e8;
+  border: 1px solid rgba(216, 154, 5, .14);
+}
+
+.trip-details-grid small,
+.trip-driver-mini small {
+  display: block;
+  color: var(--taxi-secondary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.trip-details-grid b,
+.trip-driver-mini b {
+  display: block;
+  margin-top: 3px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.trip-driver-mini {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 20px;
+  background: #f8f5ee;
+}
+
+.trip-driver-mini em {
+  display: block;
+  margin-top: 2px;
+  color: var(--taxi-secondary);
+  font-size: 12px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-details-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 380px) {
+  .trip-stage-screen { padding-inline: 10px; }
+  .trip-search-card,
+  .trip-driver-card { padding: 14px; border-radius: 24px; }
+  .trip-summary-line { grid-template-columns: 1fr; }
+}
+
+.taxi-client-shell .reference-tariff-state {
+  padding-bottom: 220px;
+}
+
+.taxi-client-shell .reference-tariff-list {
+  gap: 8px;
+}
+
+.taxi-client-shell .reference-tariff-card {
+  min-height: 92px;
+  grid-template-columns: 98px minmax(0, 1fr) minmax(66px, auto);
+  gap: 10px;
+  padding: 10px 10px 10px 11px;
+  border-radius: 20px;
+}
+
+.taxi-client-shell .reference-tariff-car {
+  width: 98px;
+  height: 62px;
+  border-radius: 17px;
+}
+
+.taxi-client-shell .reference-car-thumb img,
+.taxi-client-shell .reference-tariff-car img {
+  width: 106px;
+  height: 58px;
+  transform: translateX(-2px);
+}
+
+.taxi-client-shell .reference-tariff-copy {
+  gap: 2px;
+}
+
+.taxi-client-shell .reference-tariff-title {
+  font-size: 15px;
+  line-height: 18px;
+}
+
+.taxi-client-shell .reference-tariff-meta,
+.taxi-client-shell .reference-tariff-copy em,
+.taxi-client-shell .reference-tariff-copy i {
+  font-size: 10px;
+  line-height: 13px;
+}
+
+.taxi-client-shell .reference-tariff-price {
+  font-size: 17px;
+  line-height: 20px;
 }

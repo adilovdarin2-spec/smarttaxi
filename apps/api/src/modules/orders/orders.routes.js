@@ -249,7 +249,12 @@ router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE", "DRIVER
 router.get("/:id/status-history", requireAuth, async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
-    const order = (await query("SELECT * FROM orders WHERE id=$1", [id])).rows[0];
+    const order = (await query(`
+      SELECT ${ORDER_SELECT}
+      FROM orders o
+      LEFT JOIN drivers d ON d.id=o.driver_id
+      WHERE o.id=$1
+    `, [id])).rows[0];
     if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
     if (req.user.role === "CLIENT") {
       const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
