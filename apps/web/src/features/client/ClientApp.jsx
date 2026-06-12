@@ -51,7 +51,7 @@ const carImages = {
 };
 
 const goldUi = "/ui/gold-white";
-const authWelcomeUi = "/ui/auth-welcome";
+const authWelcomeUi = "/ui/auth-clean-photo";
 const goldIcons = {
   logo: `${goldUi}/svg/smarttaxi_logo_text.svg`,
   authLogo: `${goldUi}/svg/smarttaxi_auth_logo.svg`,
@@ -78,13 +78,12 @@ const goldIcons = {
   support: `${goldUi}/svg/info_circle.svg`
 };
 const authWelcomeAssets = {
-  wordmark: `${authWelcomeUi}/smarttaxi_wordmark.svg`,
-  routeHero: `${authWelcomeUi}/auth_premium_hero.svg`,
-  car: `${authWelcomeUi}/auth_car_top.svg`,
-  kzFlag: `${authWelcomeUi}/kz_flag.svg`,
-  arrowRight: `${authWelcomeUi}/arrow_right.svg`,
-  chevronDown: `${authWelcomeUi}/chevron_down.svg`,
-  shield: `${authWelcomeUi}/shield.svg`
+  wordmark: `${authWelcomeUi}/svg/brand/smarttaxi_wordmark.svg`,
+  sMark: `${authWelcomeUi}/svg/brand/smarttaxi_s_mark.svg`,
+  heroPhoto: `${authWelcomeUi}/background/auth_hero_photo_soft.png`,
+  bottomOverlay: `${authWelcomeUi}/background/white_bottom_gradient_overlay.png`,
+  arrowRight: `${authWelcomeUi}/svg/icons/arrow_right.svg`,
+  shield: `${authWelcomeUi}/svg/icons/shield.svg`
 };
 
 const referenceRecentAddresses = [
@@ -2806,10 +2805,11 @@ function PremiumAuthFlow({
 
       {isPhone ? (
         <section className="auth-welcome-hero" aria-hidden="true">
-          <img className="auth-brand-wordmark" src={authWelcomeAssets.wordmark} alt="" />
-          <p>Ваш комфорт. Наша забота</p>
-          <img className="auth-route-hero-image" src={authWelcomeAssets.routeHero} alt="" />
-          <img className="auth-hero-car" src={authWelcomeAssets.car} alt="" />
+          <div className="auth-photo-brand">
+            <img className="auth-s-mark" src={authWelcomeAssets.sMark} alt="" />
+            <img className="auth-brand-wordmark" src={authWelcomeAssets.wordmark} alt="" />
+            <p>Ваш комфорт. Наша забота</p>
+          </div>
         </section>
       ) : null}
 
@@ -2951,9 +2951,8 @@ function PhoneField({ value, onChange, autoFocus = false, variant = "default" })
     <label className={`auth-field ${complete ? "complete" : ""}`}>
       <span>Номер телефона</span>
       <div className={`auth-phone-input ${isWelcome ? "welcome" : ""}`}>
-        {isWelcome ? <img className="auth-phone-flag" src={authWelcomeAssets.kzFlag} alt="" /> : <b>KZ</b>}
+        {isWelcome ? null : <b>KZ</b>}
         <small>+7</small>
-        {isWelcome ? <img className="auth-phone-chevron" src={authWelcomeAssets.chevronDown} alt="" /> : null}
         <input value={formattedValue} onChange={event => onChange(normalizeKzPhone(event.target.value))} placeholder={isWelcome ? "Номер телефона" : "701 123 45 67"} inputMode="tel" autoComplete="tel" autoFocus={autoFocus} />
       </div>
     </label>
