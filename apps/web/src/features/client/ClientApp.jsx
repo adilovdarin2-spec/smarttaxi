@@ -51,6 +51,7 @@ const carImages = {
 };
 
 const goldUi = "/ui/gold-white";
+const authWelcomeUi = "/ui/auth-welcome";
 const goldIcons = {
   logo: `${goldUi}/svg/smarttaxi_logo_text.svg`,
   authLogo: `${goldUi}/svg/smarttaxi_auth_logo.svg`,
@@ -75,6 +76,14 @@ const goldIcons = {
   edit: `${goldUi}/svg/edit_pencil.svg`,
   back: `${goldUi}/svg/back_arrow.svg`,
   support: `${goldUi}/svg/info_circle.svg`
+};
+const authWelcomeAssets = {
+  wordmark: `${authWelcomeUi}/smarttaxi_wordmark.svg`,
+  routeHero: `${authWelcomeUi}/auth_route_hero.svg`,
+  kzFlag: `${authWelcomeUi}/kz_flag.svg`,
+  arrowRight: `${authWelcomeUi}/arrow_right.svg`,
+  chevronDown: `${authWelcomeUi}/chevron_down.svg`,
+  shield: `${authWelcomeUi}/shield.svg`
 };
 
 const referenceRecentAddresses = [
@@ -2743,7 +2752,7 @@ function PremiumAuthFlow({
     return () => window.clearTimeout(timer);
   }, [isRegisterCode, isResetCode, resendSeconds]);
   const title = isPhone
-    ? "Вход / Регистрация"
+    ? "Вход и регистрация"
     : isPassword
       ? "Введите пароль"
       : isRegisterCode || isResetCode
@@ -2756,7 +2765,7 @@ function PremiumAuthFlow({
               ? "Новый пароль"
               : "Готово!";
   const subtitle = isPhone
-    ? "Комфортные поездки на каждый день"
+    ? "Введите номер телефона, чтобы продолжить"
     : isPassword
       ? "Добро пожаловать обратно! Введите пароль для входа"
       : isRegisterCode
@@ -2796,14 +2805,9 @@ function PremiumAuthFlow({
 
       {isPhone ? (
         <section className="auth-welcome-hero" aria-hidden="true">
-          <img className="auth-brand-wordmark" src={goldIcons.authLogo} alt="" />
-          <p>Комфортные поездки<br />на каждый день</p>
-          <div className="auth-route-art" aria-hidden="true">
-            <span className="auth-route-dot start" />
-            <span className="auth-route-line one" />
-            <span className="auth-route-line two" />
-            <span className="auth-route-pin"><IconAsset name="mark" /></span>
-          </div>
+          <img className="auth-brand-wordmark" src={authWelcomeAssets.wordmark} alt="" />
+          <p>Ваш комфорт. Наша забота</p>
+          <img className="auth-route-hero-image" src={authWelcomeAssets.routeHero} alt="" />
         </section>
       ) : null}
 
@@ -2824,10 +2828,15 @@ function PremiumAuthFlow({
 
             {isPhone && (
               <form className="auth-form" onSubmit={onPhoneSubmit}>
-                <PhoneField value={auth.phone} onChange={phone => setAuth(current => ({ ...current, phone }))} />
+                <PhoneField value={auth.phone} onChange={phone => setAuth(current => ({ ...current, phone }))} variant="welcome" />
                 <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !phoneReady}>
-                  {loading ? "Проверяем..." : "Продолжить"}
+                  <span>{loading ? "Проверяем..." : "Продолжить"}</span>
+                  <img className="auth-button-arrow" src={authWelcomeAssets.arrowRight} alt="" />
                 </Button>
+                <div className="auth-sms-notice">
+                  <img src={authWelcomeAssets.shield} alt="" />
+                  <span>Мы отправим SMS с кодом подтверждения.<br />Это быстро и безопасно.</span>
+                </div>
               </form>
             )}
 
@@ -2907,7 +2916,18 @@ function PremiumAuthFlow({
         )}
       </section>
 
-      <p className="auth-legal">Продолжая, вы соглашаетесь с условиями SmartTaxi и политикой конфиденциальности.</p>
+      <div className="auth-legal">
+        <span className="auth-legal-row">
+          <span className="auth-legal-line" />
+          <span>Продолжая, вы соглашаетесь с</span>
+          <span className="auth-legal-line" />
+        </span>
+        <span className="auth-legal-links">
+          <span className="auth-legal-link">Условиями использования</span>
+          <span> и </span>
+          <span className="auth-legal-link">Политикой конфиденциальности</span>
+        </span>
+      </div>
     </section>
   );
 }
@@ -2921,16 +2941,18 @@ function AuthStatusBar() {
   );
 }
 
-function PhoneField({ value, onChange, autoFocus = false }) {
+function PhoneField({ value, onChange, autoFocus = false, variant = "default" }) {
   const formattedValue = formatKzPhoneInput(value);
   const complete = isValidKzPhone(value);
+  const isWelcome = variant === "welcome";
   return (
     <label className={`auth-field ${complete ? "complete" : ""}`}>
       <span>Номер телефона</span>
-      <div className="auth-phone-input">
-        <b>KZ</b>
+      <div className={`auth-phone-input ${isWelcome ? "welcome" : ""}`}>
+        {isWelcome ? <img className="auth-phone-flag" src={authWelcomeAssets.kzFlag} alt="" /> : <b>KZ</b>}
         <small>+7</small>
-        <input value={formattedValue} onChange={event => onChange(normalizeKzPhone(event.target.value))} placeholder="701 123 45 67" inputMode="tel" autoComplete="tel" autoFocus={autoFocus} />
+        {isWelcome ? <img className="auth-phone-chevron" src={authWelcomeAssets.chevronDown} alt="" /> : null}
+        <input value={formattedValue} onChange={event => onChange(normalizeKzPhone(event.target.value))} placeholder={isWelcome ? "Номер телефона" : "701 123 45 67"} inputMode="tel" autoComplete="tel" autoFocus={autoFocus} />
       </div>
     </label>
   );
