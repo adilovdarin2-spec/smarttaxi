@@ -1,0 +1,8 @@
+<svg width="260" height="72" viewBox="0 0 260 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <text x="0" y="52" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="900" fill="#111111">Smart</text>
+  <text x="132" y="52" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="900" fill="#FFC400">Taxi</text>
+  <rect x="238" y="18" width="10" height="10" fill="#FFC400"/>
+  <rect x="250" y="18" width="10" height="10" fill="#FFC400"/>
+  <rect x="226" y="30" width="10" height="10" fill="#111111"/>
+  <rect x="238" y="30" width="10" height="10" fill="#111111"/>
+</svg>

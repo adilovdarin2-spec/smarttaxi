@@ -53,6 +53,7 @@ const carImages = {
 const goldUi = "/ui/gold-white";
 const goldIcons = {
   logo: `${goldUi}/svg/smarttaxi_logo_text.svg`,
+  authLogo: `${goldUi}/svg/smarttaxi_auth_logo.svg`,
   pin: `${goldUi}/svg/target_location.svg`,
   mark: `${goldUi}/svg/logo_mark_pin_car.svg`,
   menu: `${goldUi}/svg/menu.svg`,
@@ -2742,7 +2743,7 @@ function PremiumAuthFlow({
     return () => window.clearTimeout(timer);
   }, [isRegisterCode, isResetCode, resendSeconds]);
   const title = isPhone
-    ? "Вход и регистрация"
+    ? "Вход / Регистрация"
     : isPassword
       ? "Введите пароль"
       : isRegisterCode || isResetCode
@@ -2755,20 +2756,20 @@ function PremiumAuthFlow({
               ? "Новый пароль"
               : "Готово!";
   const subtitle = isPhone
-    ? "Введите номер телефона. Мы проверим аккаунт и откроем следующий шаг."
+    ? "Комфортные поездки на каждый день"
     : isPassword
-      ? `Аккаунт ${maskKzPhone(auth.phone)}`
+      ? "Добро пожаловать обратно! Введите пароль для входа"
       : isRegisterCode
         ? `Код отправлен на ${maskKzPhone(registerForm.phone || auth.phone)}`
         : isResetCode
           ? `Код отправлен на ${maskKzPhone(resetForm.phone)}`
           : isCreatePassword
-            ? "Укажите имя и надёжный пароль для поездок"
+            ? "Пароль должен содержать не менее 6 символов"
             : isForgot
-              ? "Мы отправим SMS-код для сброса пароля"
+              ? "Введите номер телефона, и мы отправим SMS с кодом для сброса пароля"
               : isNewPassword
-                ? "Создайте новый пароль для аккаунта"
-                : "Теперь можно продолжить поездку";
+                ? "Придумайте новый пароль для своего аккаунта"
+                : "Пароль успешно изменён. Теперь вы можете войти в свой аккаунт.";
   const registerPasswordReady = registerForm.password.length >= 6 && registerForm.password === registerForm.repeat && registerForm.name.trim().length >= 2;
   const resetPasswordReady = resetForm.password.length >= 6 && resetForm.password === resetForm.repeat;
   const canGoBack = !isPhone && !isSuccess;
@@ -2781,28 +2782,28 @@ function PremiumAuthFlow({
   };
 
   return (
-    <section className="premium-auth-screen" aria-label="Вход и регистрация SmartTaxi">
+    <section className={`premium-auth-screen ${isPhone ? "auth-reference-welcome-screen" : "auth-reference-step-screen"} ${isSuccess ? "auth-reference-success-screen" : ""}`} aria-label="Вход и регистрация SmartTaxi">
+      <AuthStatusBar />
       <div className={`auth-topbar ${isPhone ? "welcome" : ""}`}>
         {canGoBack ? (
           <button type="button" className="auth-back-button" onClick={goBack} aria-label="Назад">
             <IconAsset name="back" />
           </button>
         ) : <span />}
-        {isPhone ? <span /> : <SmartTaxiLogo />}
+        <span />
         <span />
       </div>
 
       {isPhone ? (
-        <section className="auth-welcome-card">
-          <SmartTaxiLogo large />
+        <section className="auth-welcome-hero" aria-hidden="true">
+          <img className="auth-brand-wordmark" src={goldIcons.authLogo} alt="" />
+          <p>Комфортные поездки<br />на каждый день</p>
           <div className="auth-route-art" aria-hidden="true">
             <span className="auth-route-dot start" />
             <span className="auth-route-line one" />
             <span className="auth-route-line two" />
             <span className="auth-route-pin"><IconAsset name="mark" /></span>
           </div>
-          <h1>SmartTaxi</h1>
-          <p>Комфортные поездки на каждый день</p>
         </section>
       ) : null}
 
@@ -2812,7 +2813,7 @@ function PremiumAuthFlow({
             <div className="auth-success-mark"><IconAsset name="check" /></div>
             <h1>{title}</h1>
             <p>{message || "Доступ к аккаунту подтверждён."}</p>
-            <Button className="wide primary-gold auth-primary-button" type="button" onClick={onAuthDone}>Продолжить</Button>
+            <Button className="wide primary-gold auth-primary-button" type="button" onClick={onAuthDone}>Войти</Button>
           </>
         ) : (
           <>
@@ -2823,7 +2824,7 @@ function PremiumAuthFlow({
 
             {isPhone && (
               <form className="auth-form" onSubmit={onPhoneSubmit}>
-                <PhoneField value={auth.phone} onChange={phone => setAuth(current => ({ ...current, phone }))} autoFocus />
+                <PhoneField value={auth.phone} onChange={phone => setAuth(current => ({ ...current, phone }))} />
                 <Button className="wide primary-gold auth-primary-button" type="submit" disabled={loading || !phoneReady}>
                   {loading ? "Проверяем..." : "Продолжить"}
                 </Button>
@@ -2911,6 +2912,15 @@ function PremiumAuthFlow({
   );
 }
 
+function AuthStatusBar() {
+  return (
+    <div className="auth-status-bar" aria-hidden="true">
+      <span>9:41</span>
+      <span className="auth-status-icons"><i /><i /><i /></span>
+    </div>
+  );
+}
+
 function PhoneField({ value, onChange, autoFocus = false }) {
   const formattedValue = formatKzPhoneInput(value);
   const complete = isValidKzPhone(value);
@@ -2935,14 +2945,14 @@ function AuthTextField({ label, value, onChange, placeholder, autoComplete }) {
   );
 }
 
-function PasswordField({ label, value, onChange, autoComplete }) {
+function PasswordField({ label, value, onChange, autoComplete, placeholder = label }) {
   const [visible, setVisible] = useState(false);
   return (
     <label className="auth-field">
       <span>{label}</span>
       <div className="auth-password-input">
         <Icon name="shield" size={18} />
-        <input value={value} onChange={event => onChange(event.target.value)} placeholder="Минимум 6 символов" type={visible ? "text" : "password"} autoComplete={autoComplete} />
+        <input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} type={visible ? "text" : "password"} autoComplete={autoComplete} />
         <button type="button" className="auth-eye-toggle" onClick={() => setVisible(current => !current)} aria-label={visible ? "Скрыть пароль" : "Показать пароль"}>
           {visible ? "Скрыть" : "Показать"}
         </button>
