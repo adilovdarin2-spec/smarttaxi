@@ -79,7 +79,8 @@ const goldIcons = {
 };
 const authWelcomeAssets = {
   wordmark: `${authWelcomeUi}/smarttaxi_wordmark.svg`,
-  routeHero: `${authWelcomeUi}/auth_route_hero.svg`,
+  routeHero: `${authWelcomeUi}/auth_premium_hero.svg`,
+  car: `${authWelcomeUi}/auth_car_top.svg`,
   kzFlag: `${authWelcomeUi}/kz_flag.svg`,
   arrowRight: `${authWelcomeUi}/arrow_right.svg`,
   chevronDown: `${authWelcomeUi}/chevron_down.svg`,
@@ -2808,6 +2809,7 @@ function PremiumAuthFlow({
           <img className="auth-brand-wordmark" src={authWelcomeAssets.wordmark} alt="" />
           <p>Ваш комфорт. Наша забота</p>
           <img className="auth-route-hero-image" src={authWelcomeAssets.routeHero} alt="" />
+          <img className="auth-hero-car" src={authWelcomeAssets.car} alt="" />
         </section>
       ) : null}
 
