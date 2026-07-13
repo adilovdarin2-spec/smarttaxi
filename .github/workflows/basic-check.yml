@@ -1,12 +1,32 @@
-name: Basic check
+name: CI
 on:
   pull_request:
   push:
     branches: [ main, dev ]
+
 jobs:
-  basic:
+  api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show files
-        run: find . -maxdepth 3 -type f | sort
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run syntax
+      - run: npm test
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile/smarttaxi_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
