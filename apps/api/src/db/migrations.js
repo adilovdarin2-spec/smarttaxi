@@ -692,7 +692,17 @@ const statements = [
     UNIQUE(client_id, driver_id)
   )`,
   "CREATE INDEX IF NOT EXISTS idx_client_driver_preferences_client_id ON client_driver_preferences(client_id)",
-  "CREATE INDEX IF NOT EXISTS idx_client_driver_preferences_driver_id ON client_driver_preferences(driver_id)"
+  "CREATE INDEX IF NOT EXISTS idx_client_driver_preferences_driver_id ON client_driver_preferences(driver_id)",
+
+  // --- Stage: referral program ---
+  "ALTER TABLE clients ADD COLUMN IF NOT EXISTS referral_code TEXT",
+  `DO $$
+  BEGIN
+    ALTER TABLE clients ADD CONSTRAINT clients_referral_code_key UNIQUE (referral_code);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+  "ALTER TABLE clients ADD COLUMN IF NOT EXISTS referred_by_client_id UUID REFERENCES clients(id) ON DELETE SET NULL",
+  "ALTER TABLE service_settings ADD COLUMN IF NOT EXISTS referral_bonus_kzt INTEGER NOT NULL DEFAULT 500"
 ];
 
 export async function runMigrations() {

@@ -27,6 +27,7 @@ import { assertDriverDispatchReady } from "../driver-region-approvals/driver-reg
 import { createOrderCancelledTransaction, createOrderCompletedTransaction } from "../finance/finance.service.js";
 import { notifyOrderClient, notifyOrderDriver } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
+import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
 
 const router = Router();
 // Anti-fraud: auto-suspend a driver whose rolling average drops below this
@@ -804,6 +805,7 @@ async function updateStatus(req, res, next, status) {
         if (updated.client_id) {
           const c = await client.query("UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance", [cashback, updated.client_id]);
           await client.query("INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after) VALUES($1,$2,'EARN',$3,$4)", [updated.client_id, updated.id, cashback, c.rows[0].cashback_balance]);
+          await awardReferralBonusOnFirstCompletedOrder({ clientId: updated.client_id, orderId: updated.id, executor: client });
         }
         if (updated.driver_id) {
           if (["CASH", "KASPI"].includes(updated.payment_method)) {

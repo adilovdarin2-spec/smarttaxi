@@ -30,6 +30,7 @@ import supportRoutes, { adminSupportRouter } from "./modules/support/support.rou
 import walletRoutes from "./modules/wallet/wallet.routes.js";
 import driverDocumentsRoutes, { driverApplicationDocumentsRouter } from "./modules/driver-documents/driver-documents.routes.js";
 import favoritesRoutes from "./modules/favorites/favorites.routes.js";
+import referralsRoutes from "./modules/referrals/referrals.routes.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
 import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
 import {
@@ -132,6 +133,7 @@ app.use("/api/drivers/me/wallet", walletRoutes);
 app.use("/api/drivers/me/documents", driverDocumentsRoutes);
 app.use("/api/driver-applications", driverApplicationDocumentsRouter);
 app.use("/api/favorites", favoritesRoutes);
+app.use("/api/referrals", referralsRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);

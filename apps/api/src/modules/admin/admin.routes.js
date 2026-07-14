@@ -62,7 +62,8 @@ const SettingsUpdate = z.object({
   autoApproveDrivers: z.boolean().optional(),
   autoAssignOrders: z.boolean().optional(),
   supportPhone: z.string().trim().min(3).max(32).optional(),
-  sosPhone: z.string().trim().min(3).max(32).optional()
+  sosPhone: z.string().trim().min(3).max(32).optional(),
+  referralBonusKzt: z.coerce.number().int().min(0).max(1_000_000).optional()
 }).refine(value => Object.keys(value).length > 0, "at least one field is required");
 
 const Review = z.object({
@@ -192,6 +193,7 @@ function mapSettings(row) {
     autoAssignOrders: row.auto_assign_orders,
     supportPhone: row.support_phone,
     sosPhone: row.sos_phone,
+    referralBonusKzt: Number(row.referral_bonus_kzt),
     updatedAt: row.updated_at
   };
 }
@@ -1065,7 +1067,8 @@ router.patch("/settings", requireAuth, requireRole("OWNER"), async (req, res, ne
       autoApproveDrivers: "auto_approve_drivers",
       autoAssignOrders: "auto_assign_orders",
       supportPhone: "support_phone",
-      sosPhone: "sos_phone"
+      sosPhone: "sos_phone",
+      referralBonusKzt: "referral_bonus_kzt"
     };
     const entries = Object.entries(body);
     const values = entries.map(([, value]) => value);

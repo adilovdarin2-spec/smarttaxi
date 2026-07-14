@@ -8,8 +8,20 @@ import { AppError } from "../../common/errors.js";
 import { writeAudit, publicUser } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
 import { env } from "../../config/env.js";
+import { sendSmsCode, smsDeliveryMode } from "./sms.provider.js";
+import { applyReferralCode, ensureReferralCode } from "../referrals/referrals.service.js";
 
 const router = Router();
+
+// Kazakhstan mobile numbers only: +7 shared with Russia, but every KZ
+// operator code (700-708, 747, 750-759, 760-769, 775-778) starts with a
+// second 7 right after the country code, so +7 7XXXXXXXXX distinguishes
+// them from Russian (+7 9XX...) and other countries' numbers. Enforced here
+// because the SMS provider can only deliver to Kazakhstan numbers.
+const KZ_PHONE_REGEX = /^\+77\d{9}$/;
+const kzPhone = () =>
+  z.string().trim().min(6).max(32)
+    .regex(KZ_PHONE_REGEX, "Only Kazakhstan phone numbers (+7 7XX...) are supported");
 
 const LoginSchema = z.object({
   email: z.string().trim().toLowerCase().email().optional(),
@@ -19,13 +31,14 @@ const LoginSchema = z.object({
 
 const RegisterSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  phone: z.string().trim().min(6).max(32),
+  phone: kzPhone(),
   email: z.string().trim().toLowerCase().email().optional(),
-  password: z.string().min(6).max(128)
+  password: z.string().min(6).max(128),
+  referralCode: z.string().trim().min(1).max(16).optional()
 });
 
 const PhoneSchema = z.object({
-  phone: z.string().trim().min(6).max(32)
+  phone: kzPhone()
 });
 
 const SmsPurpose = z.enum(["REGISTER", "RESET_PASSWORD"]);
@@ -39,10 +52,11 @@ const SmsVerifySchema = SmsSendSchema.extend({
 });
 
 const RegisterPasswordSchema = z.object({
-  phone: z.string().trim().min(6).max(32),
+  phone: kzPhone(),
   verificationToken: z.string().min(16),
   name: z.string().trim().min(2).max(120),
-  password: z.string().min(6).max(128)
+  password: z.string().min(6).max(128),
+  referralCode: z.string().trim().min(1).max(16).optional()
 });
 
 const LoginPasswordSchema = z.object({
@@ -79,7 +93,7 @@ async function findUserByPhone(phoneInput) {
 }
 
 function smsCode() {
-  if (env.NODE_ENV !== "production") return "111111";
+  if (env.SMS_PROVIDER !== "infobip" && env.NODE_ENV !== "production") return env.SMS_DEV_CODE;
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
@@ -163,22 +177,31 @@ router.post("/sms/send", rateLimit({ prefix: "auth-sms-send", windowMs: 60_000, 
     const { phone } = normalizePhone(body.phone);
     const code = smsCode();
     const codeHash = await bcrypt.hash(code, 10);
-    await query(`
+    const inserted = await query(`
       INSERT INTO auth_sms_codes(phone, code_hash, purpose, expires_at)
       VALUES($1,$2,$3,NOW() + INTERVAL '10 minutes')
+      RETURNING id
     `, [phone, codeHash, body.purpose]);
+    let delivery;
+    try {
+      delivery = await sendSmsCode({ phone, code, purpose: body.purpose });
+    } catch (error) {
+      await query("DELETE FROM auth_sms_codes WHERE id=$1 AND verified_at IS NULL", [inserted.rows[0].id]).catch(() => {});
+      throw error;
+    }
     await writeAudit(query, {
       action: "sms_code_requested",
       entityType: "auth_sms_code",
-      metadata: { phone, purpose: body.purpose, provider: env.NODE_ENV === "production" ? "configured_sms_provider" : "dev" },
+      entityId: inserted.rows[0].id,
+      metadata: { phone, purpose: body.purpose, provider: delivery.provider, messageId: delivery.messageId || null, status: delivery.status || null },
       req
     });
     res.json({
       phone,
       purpose: body.purpose,
       expiresInSeconds: 600,
-      delivery: env.NODE_ENV === "production" ? "SMS_PROVIDER" : "DEV_CONSOLE",
-      ...(env.NODE_ENV === "production" ? {} : { devCode: code })
+      delivery: smsDeliveryMode(),
+      ...(delivery.provider === "dev" ? { devCode: code } : {})
     });
   } catch (e) { next(e); }
 });
@@ -224,20 +247,23 @@ router.post("/register/password", rateLimit({ prefix: "auth-register-password", 
       RETURNING *
     `, [body.name, normalized.phone, passwordHash])).rows[0];
 
-    await query(`
+    const client = (await query(`
       INSERT INTO clients(user_id, name, phone)
       VALUES($1,$2,$3)
       ON CONFLICT (phone) DO UPDATE
       SET user_id=EXCLUDED.user_id,
           name=EXCLUDED.name
-    `, [user.id, user.name, user.phone]);
+      RETURNING *
+    `, [user.id, user.name, user.phone])).rows[0];
+    await ensureReferralCode(client.id);
+    if (body.referralCode) await applyReferralCode(client.id, body.referralCode);
 
     await writeAudit(query, {
       action: "client_registered",
       actorUserId: user.id,
       entityType: "user",
       entityId: user.id,
-      metadata: { role: user.role, method: "phone_sms" },
+      metadata: { role: user.role, method: "phone_sms", referralCode: body.referralCode || null },
       req
     });
 
@@ -260,19 +286,35 @@ router.post("/password/reset/request", rateLimit({ prefix: "auth-password-reset-
     if (user) {
       const code = smsCode();
       const codeHash = await bcrypt.hash(code, 10);
-      await query(`
+      const inserted = await query(`
         INSERT INTO auth_sms_codes(phone, code_hash, purpose, expires_at)
         VALUES($1,$2,'RESET_PASSWORD',NOW() + INTERVAL '10 minutes')
+        RETURNING id
       `, [phone, codeHash]);
+      let delivery;
+      try {
+        delivery = await sendSmsCode({ phone, code, purpose: "RESET_PASSWORD" });
+      } catch (error) {
+        await query("DELETE FROM auth_sms_codes WHERE id=$1 AND verified_at IS NULL", [inserted.rows[0].id]).catch(() => {});
+        throw error;
+      }
+      await writeAudit(query, {
+        action: "password_reset_sms_requested",
+        actorUserId: user.id,
+        entityType: "auth_sms_code",
+        entityId: inserted.rows[0].id,
+        metadata: { phone, provider: delivery.provider, messageId: delivery.messageId || null, status: delivery.status || null },
+        req
+      });
       return res.json({
         phone,
         purpose: "RESET_PASSWORD",
         expiresInSeconds: 600,
-        delivery: env.NODE_ENV === "production" ? "SMS_PROVIDER" : "DEV_CONSOLE",
-        ...(env.NODE_ENV === "production" ? {} : { devCode: code })
+        delivery: smsDeliveryMode(),
+        ...(delivery.provider === "dev" ? { devCode: code } : {})
       });
     }
-    res.json({ phone, purpose: "RESET_PASSWORD", expiresInSeconds: 600, delivery: "SMS_PROVIDER" });
+    res.json({ phone, purpose: "RESET_PASSWORD", expiresInSeconds: 600, delivery: smsDeliveryMode() });
   } catch (e) { next(e); }
 });
 
@@ -359,20 +401,23 @@ router.post("/register", rateLimit({ prefix: "auth-register", windowMs: 60_000, 
     `, [body.name, body.email || null, normalized.phone, passwordHash]);
     const user = result.rows[0];
 
-    await query(`
+    const client = (await query(`
       INSERT INTO clients(user_id, name, phone)
       VALUES($1,$2,$3)
       ON CONFLICT (phone) DO UPDATE
       SET user_id=EXCLUDED.user_id,
           name=EXCLUDED.name
-    `, [user.id, user.name, user.phone]);
+      RETURNING *
+    `, [user.id, user.name, user.phone])).rows[0];
+    await ensureReferralCode(client.id);
+    if (body.referralCode) await applyReferralCode(client.id, body.referralCode);
 
     await writeAudit(query, {
       action: "client_registered",
       actorUserId: user.id,
       entityType: "user",
       entityId: user.id,
-      metadata: { role: user.role, method: body.email ? "email" : "phone" },
+      metadata: { role: user.role, method: body.email ? "email" : "phone", referralCode: body.referralCode || null },
       req
     });
 
