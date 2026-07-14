@@ -71,19 +71,74 @@ Scope: `apps/mobile/smarttaxi_app/**` only. Branch `dev`. Verified via `flutter 
   was left untouched — no replacement asset was provided for it and the spec's
   "same visual style" note reads as "don't let it clash", which it doesn't.
 
-## Not started tonight (scope too large for this session)
+## [3] Торг ценой (price-offer) — done, backend already existed
 
-Sections 3–16 of the brief are each a real feature (new backend contracts,
-new screens, or both) — torg/price-offer, recurring bookings, driver navigator
-camera/speed-limit voice alerts, "забыл вещь" support flow, SOS escalation to
-support, share-trip polish, favorite addresses, favorite/blocked drivers,
-in-ride quick messages, referrals, RU/KZ locale switch, client/driver profile
-screens, settings screen, demand-zone hint, and the final full-app polish
-pass. None of these were started — flagging honestly rather than claiming
-partial/mocked coverage that isn't there yet. Recommend picking these up in
-the same priority order next session, starting with §3 (price offer) since
-it's explicitly numbered next and has a defined API contract to build against
-or mock.
+Discovered `apps/api` already shipped `POST /orders/:id/price-offer` and
+`/price-offer/respond` (another parallel session, see
+`docs/status/server-overnight-2026-07-15.md`), so this was real wiring, not
+mocking.
+
+- `OrderSummary` (models.dart): added `driverOfferPriceKzt`,
+  `driverOfferStatus`, `driverOfferByDriverId` (reads both `driver_offer_*`
+  snake_case and camelCase, matching every other field in this model),
+  plus `hasPendingDriverOffer` getter.
+- `ApiClient`: `submitDriverPriceOffer({orderId, priceKzt})` (driver role) and
+  `respondToDriverPriceOffer({orderId, accept})` (client role) — exact
+  endpoint paths/body shape cross-checked against
+  `apps/api/src/modules/orders/orders.routes.js` directly, not guessed.
+- Client (`passenger_shell.dart`): new `_DriverPriceOfferPanel` — takes over
+  `_TripStatusPanel`'s slot (higher priority than the normal status view,
+  same pattern as the cancelled/rated/paid special panels) whenever
+  `order.hasPendingDriverOffer`. Shows "X ₸ вместо Y ₸", Согласиться
+  (green CTA) / Отказаться (outline), calls `_respondToDriverPriceOffer`,
+  toasts the result via `AppToast`.
+- Driver (`driver_order_widgets.dart` + `driver_shell.dart`): `OrderCard` got
+  an optional `onOfferPrice` — when null, hides the row entirely (used once
+  a ride is already accepted, torg only applies to open orders); otherwise
+  shows either a "Предложить свою цену" text button or, once
+  `driverOfferStatus == 'PENDING'`, a disabled "Ожидаем ответа: N ₸" row.
+  Tapping it opens a new `_PriceOfferSheet` bottom sheet (price input,
+  200–1,000,000 ₸ range mirroring the server's `offeredPriceBounds()`),
+  which posts via `_offerPrice()`.
+- **Verified:** `flutter analyze` — 0 new issues project-wide. Fresh
+  `flutter build apk --debug` succeeds. **Not verified live on-device**
+  end-to-end (needs a real order in `SEARCHING_DRIVER`/assigned state with
+  a second driver account to actually submit an offer — no such multi-role
+  live setup was available this session).
+- **Note on git history:** while this was in progress, a concurrent session
+  committed unrelated web-side work and its commit swept up these
+  already-edited mobile files too (`611d783`, message doesn't mention
+  mobile). Confirmed via `git show HEAD:<file> | grep` that this
+  session's code is intact in that commit and `flutter analyze` still
+  passes clean — nothing was lost or overwritten, just not committed under
+  a mobile-specific message. Flagging for transparency, not because
+  anything is broken.
+
+## Not started yet — items 4–16
+
+Recommend picking these up in the same priority order, checking
+`docs/status/server-overnight-2026-07-15.md` and
+`docs/status/web-overnight-2026-07-15.md` first each time — tonight's other
+sessions have already shipped several of the underlying backend contracts
+(and in some cases a web reference implementation) confirmed while
+investigating §3:
+- **§9 favorite addresses**: `GET/POST/DELETE /api/favorites/addresses`
+  already wired on web tonight.
+- **§11 quick messages**: `POST /orders/:id/quick-message`, fixed
+  `QUICK_MESSAGES` vocabulary (`I_ARRIVED`, `WAITING_AT_ENTRANCE`,
+  `RUNNING_LATE_2MIN`, `PLEASE_COME_OUT`, `ON_MY_WAY`) — already wired on
+  web tonight, confirmed exact keys.
+- **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
+  original brief guessed) already wired on web tonight.
+- **§6 "забыл вещь"**: the support topic must be sent as the literal string
+  `LOST_ITEM`, not the Russian label, for the backend to notify the right
+  order's driver — found and fixed on web tonight, applies identically here.
+- **§4 recurring bookings**: backend module exists and is mounted
+  (`/api/recurring-bookings`), not yet wired anywhere per either status doc.
+- **§5 navigator voice alerts**: `osm-navigation.service.js` exists per
+  brief, not yet cross-checked against a status doc.
+None of §4–16 were implemented on mobile yet — flagging honestly rather
+than claiming partial coverage that isn't there.
 
 ## Verification method note
 
