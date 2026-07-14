@@ -173,6 +173,38 @@ investigating §3:
   order's driver — found and fixed on web tonight, applies identically here.
 - **§4 recurring bookings**: backend module exists and is mounted
   (`/api/recurring-bookings`), not yet wired anywhere per either status doc.
+  Full contract read directly from
+  `apps/api/src/modules/recurring-bookings/recurring-bookings.routes.js`
+  tonight, saved here so the next pass doesn't have to re-derive it:
+  - `POST /api/recurring-bookings` (role CLIENT) — body `{driverId (uuid),
+    pickupText, pickupLat, pickupLng, dropoffText, dropoffLat, dropoffLng,
+    daysOfWeek: [1-5] (Mon-Fri, 1-5 items), timeOfDay: "HH:MM", priceKzt
+    (int, 1-1000000), notes?}` → `{booking}`. Creates in status
+    `PENDING_DRIVER`. 404s if `driverId` doesn't exist, 403 if the driver
+    is blocked or the client has this driver on their own blocked list
+    (client_driver_preferences type=BLOCKED — ties into §10).
+  - `POST /api/recurring-bookings/:id/respond` (role DRIVER) — body
+    `{accept: bool}` → `{booking}`. 409 if not currently `PENDING_DRIVER`.
+  - `GET /api/recurring-bookings/mine` (role CLIENT) → `{bookings: []}`.
+  - `GET /api/recurring-bookings/driver` (role DRIVER) → `{bookings: []}`.
+  - `PATCH /api/recurring-bookings/:id/status` (CLIENT or DRIVER, must own
+    it) — body `{status: ACTIVE|PAUSED|CANCELLED}` → `{booking}`. 409 if
+    still `PENDING_DRIVER` (must go through /respond first, except you can
+    always CANCELLED) or already `CANCELLED`.
+  - Response shape (camelCase): `id, clientId, driverId, driverName?,
+    clientName?, pickupText, pickupLat, pickupLng, dropoffText,
+    dropoffLat, dropoffLng, daysOfWeek, timeOfDay, priceKzt, status,
+    notes, lastTriggeredDate, createdAt, updatedAt`.
+  - **Open design question for next pass**: creating a booking needs a
+    known `driverId` up front — there's no "search drivers" endpoint.
+    Planned approach: let the client pick from distinct
+    driverId/driverName pairs seen in their own completed trip history
+    (`OrderSummary` list already loaded elsewhere), not from a driver
+    search screen that doesn't exist. Address entry (pickupLat/Lng
+    required, not just text) will reuse whatever the existing address
+    search sheet component exposes rather than rebuilding it, and rather
+    than touching the actual tariff/address *screens*, which stay
+    off-limits per earlier instructions in this conversation.
 - **§5 navigator voice alerts**: `osm-navigation.service.js` exists per
   brief, not yet cross-checked against a status doc.
 None of §4–16 were implemented on mobile yet — flagging honestly rather
