@@ -20530,6 +20530,12 @@ body {
   font-weight: 700;
 }
 
+.track-map-wrap {
+  margin-top: 4px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
 .track-route {
   display: flex;
   flex-direction: column;
