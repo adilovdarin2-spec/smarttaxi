@@ -8,6 +8,13 @@ messages. Everything below is committed in small, per-feature commits on
 Mobile and web-chat: sync your API clients against this list — paths and
 field names here are exact, not paraphrased.
 
+**Mid-session addition**: the admin web panel (`apps/web`) got wired up
+against tonight's endpoints in parallel, on the same branch, and expected
+two admin-overview endpoints that weren't in the original spec:
+`GET /api/admin/recurring-bookings` and `GET /api/admin/referrals` (plus
+`GET /api/referrals/me` as an alias for `/referrals/mine`, since the web
+client was already written calling `/me`). Added both — see §2 and §7.
+
 ---
 
 ## 1. Driver price counter-offer ("торг")
@@ -80,6 +87,14 @@ adjusted to that reference. Flagging this now rather than guessing at an
 offset — worth a real fix once the app has a service-wide time zone
 setting.
 
+**Admin overview** (added mid-session, see note at top):
+`GET /api/admin/recurring-bookings?status=` (optional status filter) —
+role `OWNER`/`OPERATOR`/`FINANCE`, every booking with both client and
+driver name/phone joined in: `{ recurringBookings: [{ id, clientId,
+clientName, clientPhone, driverId, driverName, driverPhone, pickupText,
+dropoffText, daysOfWeek, timeOfDay, priceKzt, status, notes,
+lastTriggeredDate, createdAt }] }`.
+
 ---
 
 ## 3. Promo codes — deletion
@@ -151,8 +166,15 @@ existing `PATCH /api/admin/settings` as `referralBonusKzt`).
   idempotent), `referral_bonus_kzt` is credited to **both** the referred
   client and the referrer via the existing `cashback_transactions` ledger,
   `type='REFERRAL_BONUS'`.
-- `GET /api/referrals/mine` — role `CLIENT` → `{ code, invitedCount,
-  totalBonusEarned }`.
+- `GET /api/referrals/mine` (and `GET /api/referrals/me`, same handler —
+  added mid-session, see note at top) — role `CLIENT` → `{ code,
+  invitedCount, totalBonusEarned }`.
+- `GET /api/admin/referrals` (added mid-session) — role
+  `OWNER`/`OPERATOR`/`FINANCE`, one row per referred client:
+  `{ referrals: [{ id, inviterName, inviterPhone, inviteeName,
+  inviteePhone, rewardCreditedAt, rewardKzt }] }`. `rewardCreditedAt`/
+  `rewardKzt` are `null` until that client's first completed order fires
+  the bonus.
 
 ---
 
