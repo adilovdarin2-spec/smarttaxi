@@ -144,6 +144,28 @@ export function getOrderStatusHistory(orderId) {
   return api(`/api/orders/${orderId}/status-history`);
 }
 
+export function respondPriceOffer(orderId, accept) {
+  return api(`/api/orders/${orderId}/price-offer/respond`, {
+    method: "POST",
+    body: JSON.stringify({ accept })
+  });
+}
+
+export function sendQuickMessage(orderId, messageKey) {
+  return api(`/api/orders/${orderId}/quick-message`, {
+    method: "POST",
+    body: JSON.stringify({ messageKey })
+  });
+}
+
+export function getNotifications(params = {}) {
+  return api(`/api/notifications${queryString(params)}`);
+}
+
+export function markNotificationRead(notificationId) {
+  return api(`/api/notifications/${notificationId}/read`, { method: "POST" });
+}
+
 export function rateOrder(orderId, payload) {
   return api(`/api/orders/${orderId}/rate`, {
     method: "POST",

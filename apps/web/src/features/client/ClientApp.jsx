@@ -18,17 +18,21 @@ import {
   getClientActiveOrder,
   getCurrentUser,
   getFavoriteAddresses,
+  getNotifications,
   getOrderStatusHistory,
   getReferralSummary,
   getTariffs,
   getToken,
   loginUser,
+  markNotificationRead,
   rateOrder,
   registerUser,
   requestPasswordReset,
+  respondPriceOffer,
   reverseAddress,
   searchAddresses,
   sendAuthSms,
+  sendQuickMessage,
   validatePromoCode,
   verifyAuthSms
 } from "../../lib/mvpApi.js";
@@ -789,6 +793,8 @@ export default function ClientApp() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [incomingMessage, setIncomingMessage] = useState(null);
+  const seenNotificationIdsRef = useRef(new Set());
   const [mainMapCandidate, setMainMapCandidate] = useState(null);
   const [mainMapPickLoading, setMainMapPickLoading] = useState(false);
   const [mainMapCandidateReady, setMainMapCandidateReady] = useState(true);
@@ -1022,6 +1028,41 @@ export default function ClientApp() {
       socketRef.current = null;
     };
   }, [order?.id]);
+
+  useEffect(() => {
+    if (!order?.id || !getToken()) return undefined;
+    let cancelled = false;
+    async function poll() {
+      try {
+        const data = await getNotifications({ limit: 10 });
+        const match = (data.notifications || []).find(item =>
+          item.type === "QUICK_MESSAGE" &&
+          item.order_id === order.id &&
+          !item.read_at &&
+          !seenNotificationIdsRef.current.has(item.id)
+        );
+        if (match && !cancelled) {
+          seenNotificationIdsRef.current.add(match.id);
+          setIncomingMessage({ id: match.id, body: match.body });
+          markNotificationRead(match.id).catch(() => {});
+        }
+      } catch {
+        // Transient poll failure — next tick retries, no need to surface it.
+      }
+    }
+    poll();
+    const interval = window.setInterval(poll, 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [order?.id]);
+
+  useEffect(() => {
+    if (!incomingMessage) return undefined;
+    const timer = window.setTimeout(() => setIncomingMessage(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [incomingMessage]);
 
   useEffect(() => {
     if (section === "favorites" && authenticated) loadFavorites();
@@ -1510,6 +1551,12 @@ export default function ClientApp() {
 
   return (
     <PhoneFrame className="taxi-pwa passenger-pwa taxi-client-shell">
+      {incomingMessage && (
+        <div className="quick-message-toast" role="status" onClick={() => setIncomingMessage(null)}>
+          <Icon name="chat" size={18} />
+          <span>{incomingMessage.body}</span>
+        </div>
+      )}
       {!addressMode && !authScreenActive && (
         <>
           <ClientHeader
@@ -2627,6 +2674,9 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
             </div>
             <img className="search-driver-car-route" src={searchDriverAssets.carRoute} alt="" loading="eager" decoding="async" />
           </header>
+          {order.driver_offer_status === "PENDING" && order.driver_offer_price_kzt != null && (
+            <PriceOfferCard order={order} onOrderUpdate={onOrderUpdate} />
+          )}
           <SearchRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
           <SearchingOrderMeta order={order} estimate={estimate} route={route} />
           <SearchProgress />
@@ -2699,6 +2749,8 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
             <DriverFoundInfoRow icon={driverFoundAssets.wallet} label="Оплата" value={paymentLabel(order.payment_method)} />
             <DriverFoundInfoRow icon={driverFoundAssets.priceTag} label="Стоимость" value={<Money value={tripPrice(order, estimate)} />} />
           </section>
+
+          <QuickMessagesBar orderId={order.id} />
 
           <div className="driver-found-actions">
             <button type="button" className="driver-found-details-button" onClick={() => setDetailsOpen(true)}>
@@ -2783,6 +2835,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         </div>
         <DriverFoundMeta order={order} estimate={estimate} />
         <RideStatusNote status={status} order={order} destination={tripDestination} />
+        {!terminal && <QuickMessagesBar orderId={order.id} />}
         {showRating && (
           <TripRatingCard
             order={order}
@@ -2889,6 +2942,76 @@ function SearchRouteCard({ pickup, dropoff }) {
         Маршрут
       </span>
     </section>
+  );
+}
+
+function PriceOfferCard({ order, onOrderUpdate }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function respond(accept) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const data = await respondPriceOffer(order.id, accept);
+      onOrderUpdate?.(data.order);
+    } catch (submitError) {
+      setError(formatError(submitError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="price-offer-card" aria-label="Предложение водителя по цене">
+      <strong>Водитель предлагает {order.driver_offer_price_kzt} ₸</strong>
+      <span>Вместо {order.price} ₸ за поездку</span>
+      {error && <p className="state-note danger">{error}</p>}
+      <div className="price-offer-actions">
+        <button type="button" className="price-offer-decline" disabled={busy} onClick={() => respond(false)}>Отказаться</button>
+        <button type="button" className="price-offer-accept" disabled={busy} onClick={() => respond(true)}>{busy ? "Отправляем..." : "Согласиться"}</button>
+      </div>
+    </section>
+  );
+}
+
+const quickMessageOptions = [
+  { code: "I_ARRIVED", label: "Я приехал" },
+  { code: "WAITING_AT_ENTRANCE", label: "Жду у входа" },
+  { code: "RUNNING_LATE_2MIN", label: "Опаздываю на 2 минуты" },
+  { code: "PLEASE_COME_OUT", label: "Пожалуйста, выходите" },
+  { code: "ON_MY_WAY", label: "Уже еду к вам" }
+];
+
+function QuickMessagesBar({ orderId }) {
+  const [sendingKey, setSendingKey] = useState("");
+  const [error, setError] = useState("");
+
+  async function send(code) {
+    if (sendingKey) return;
+    setSendingKey(code);
+    setError("");
+    try {
+      await sendQuickMessage(orderId, code);
+    } catch (submitError) {
+      setError(formatError(submitError));
+    } finally {
+      setSendingKey("");
+    }
+  }
+
+  return (
+    <div>
+      <div className="quick-message-bar" role="group" aria-label="Быстрые сообщения водителю">
+        {quickMessageOptions.map(item => (
+          <button type="button" key={item.code} disabled={Boolean(sendingKey)} onClick={() => send(item.code)}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {error && <p className="state-note danger">{error}</p>}
+    </div>
   );
 }
 
