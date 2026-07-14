@@ -28,6 +28,18 @@ import {
   getFinanceSummary,
   getTransactions
 } from "../finance/finance.service.js";
+import { publicPayoutRequest, reviewPayoutRequest } from "../wallet/wallet.service.js";
+import { notifyUser } from "../notifications/notification.service.js";
+import {
+  getDriverDocumentById,
+  listDocumentsForApplication,
+  listDocumentsForDriver,
+  publicDriverDocument,
+  reviewDriverDocument
+} from "../driver-documents/driver-documents.service.js";
+import { UPLOAD_ROOT } from "../driver-documents/upload.middleware.js";
+import { createReadStream, existsSync } from "node:fs";
+import { join } from "node:path";
 
 const router = Router();
 
@@ -134,6 +146,12 @@ const FinanceReportQuery = FinanceQuery.extend({
   groupBy: z.enum(["day", "region", "driver", "tariff", "paymentMethod"]).default("day")
 });
 
+const AdminRoadAlertQuery = z.object({
+  regionId: z.string().uuid().optional(),
+  status: z.enum(["ACTIVE", "EXPIRED", "ALL"]).default("ACTIVE"),
+  limit: z.coerce.number().int().min(1).max(200).default(100)
+});
+
 const FinanceDebtAdjustment = z.object({
   amount: z.coerce.number().finite().refine(value => value !== 0, "amount must not be zero"),
   reason: z.string().trim().min(3).max(500),
@@ -175,6 +193,28 @@ function mapSettings(row) {
     supportPhone: row.support_phone,
     sosPhone: row.sos_phone,
     updatedAt: row.updated_at
+  };
+}
+
+function publicAdminRoadAlert(row) {
+  return {
+    id: row.id,
+    regionId: row.region_id,
+    regionName: row.region_name,
+    driverId: row.driver_id,
+    driverName: row.driver_name,
+    driverPhone: row.driver_phone,
+    type: row.type,
+    comment: row.comment || "",
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    status: row.status,
+    confirmationsCount: Number(row.confirmations_count || 0),
+    dismissalsCount: Number(row.dismissals_count || 0),
+    confidenceScore: Number(row.confidence_score || 50),
+    speedLimit: row.speed_limit == null ? null : Number(row.speed_limit),
+    createdAt: row.created_at,
+    expiresAt: row.expires_at
   };
 }
 
@@ -439,6 +479,62 @@ router.get("/audit-logs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE
   } catch (error) { next(error); }
 });
 
+router.get("/road-alerts", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = AdminRoadAlertQuery.parse(req.query);
+    const filters = [];
+    const values = [];
+    if (params.regionId) {
+      values.push(params.regionId);
+      filters.push(`ra.region_id=$${values.length}`);
+    }
+    if (params.status !== "ALL") {
+      values.push(params.status);
+      filters.push(`ra.status=$${values.length}`);
+    }
+    values.push(params.limit);
+    const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+    const result = await query(`
+      SELECT
+        ra.*,
+        r.name AS region_name,
+        d.name AS driver_name,
+        d.phone AS driver_phone
+      FROM road_alerts ra
+      LEFT JOIN regions r ON r.id=ra.region_id
+      LEFT JOIN drivers d ON d.id=ra.driver_id
+      ${where}
+      ORDER BY ra.created_at DESC
+      LIMIT $${values.length}
+    `, values);
+    res.json({ alerts: result.rows.map(publicAdminRoadAlert) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/road-alerts/:id/expire", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const result = await query(`
+      UPDATE road_alerts
+      SET status='EXPIRED',
+          expires_at=LEAST(expires_at, NOW()),
+          confidence_score=GREATEST(0, confidence_score - 25)
+      WHERE id=$1
+      RETURNING *
+    `, [params.id]);
+    if (!result.rows[0]) throw new AppError("Road alert not found", 404, "ROAD_ALERT_NOT_FOUND");
+    await writeAudit(query, {
+      action: "road_alert_moderated",
+      actorUserId: req.user.id,
+      entityType: "road_alert",
+      entityId: params.id,
+      metadata: { status: "EXPIRED" },
+      req
+    });
+    res.json({ alert: publicAdminRoadAlert(result.rows[0]) });
+  } catch (error) { next(error); }
+});
+
 router.get("/regions", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
   try {
     const regions = await listRegions(query);
@@ -649,6 +745,146 @@ router.patch("/tariffs/:id/status", requireAuth, requireRole("OWNER", "FINANCE")
       return updated.tariff;
     });
     res.json({ tariff: adminTariff(await getAdminTariff(result.id, query)) });
+  } catch (error) { next(error); }
+});
+
+const PromoCodeCreate = z.object({
+  code: z.string().trim().min(2).max(40).transform(value => value.toUpperCase()),
+  regionId: z.string().uuid().optional(),
+  discountType: z.enum(["PERCENT", "FIXED"]),
+  discountValue: z.coerce.number().int().positive(),
+  maxDiscountKzt: z.coerce.number().int().positive().optional(),
+  minOrderPriceKzt: z.coerce.number().int().min(0).default(0),
+  usageLimit: z.coerce.number().int().positive().optional(),
+  perClientLimit: z.coerce.number().int().positive().default(1),
+  validFrom: z.string().datetime().optional(),
+  validUntil: z.string().datetime().optional()
+});
+
+const PromoCodeStatusUpdate = z.object({ isActive: z.boolean() });
+
+function publicPromoCode(promo) {
+  if (!promo) return null;
+  return {
+    id: promo.id,
+    code: promo.code,
+    regionId: promo.region_id,
+    discountType: promo.discount_type,
+    discountValue: promo.discount_value,
+    maxDiscountKzt: promo.max_discount_kzt,
+    minOrderPriceKzt: promo.min_order_price_kzt,
+    usageLimit: promo.usage_limit,
+    perClientLimit: promo.per_client_limit,
+    validFrom: promo.valid_from,
+    validUntil: promo.valid_until,
+    isActive: promo.is_active,
+    createdAt: promo.created_at
+  };
+}
+
+router.get("/promo-codes", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const rows = (await query("SELECT * FROM promo_codes ORDER BY created_at DESC")).rows;
+    res.json({ promoCodes: rows.map(publicPromoCode) });
+  } catch (error) { next(error); }
+});
+
+router.post("/promo-codes", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const body = PromoCodeCreate.parse(req.body);
+    const created = await tx(async client => {
+      const row = (await client.query(`
+        INSERT INTO promo_codes(code, region_id, discount_type, discount_value, max_discount_kzt, min_order_price_kzt, usage_limit, per_client_limit, valid_from, valid_until)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        RETURNING *
+      `, [
+        body.code,
+        body.regionId || null,
+        body.discountType,
+        body.discountValue,
+        body.maxDiscountKzt ?? null,
+        body.minOrderPriceKzt,
+        body.usageLimit ?? null,
+        body.perClientLimit,
+        body.validFrom ?? null,
+        body.validUntil ?? null
+      ])).rows[0];
+      await writeAudit(client, {
+        action: "promo_code_created",
+        actorUserId: req.user.id,
+        entityType: "promo_code",
+        entityId: row.id,
+        metadata: { code: row.code, discountType: row.discount_type, discountValue: row.discount_value },
+        req
+      });
+      return row;
+    });
+    res.status(201).json({ promoCode: publicPromoCode(created) });
+  } catch (error) {
+    if (error.code === "23505") return next(new AppError("Promo code already exists", 409, "PROMO_CODE_EXISTS"));
+    next(error);
+  }
+});
+
+router.patch("/promo-codes/:id/status", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = PromoCodeStatusUpdate.parse(req.body);
+    const updated = await tx(async client => {
+      const row = (await client.query(
+        "UPDATE promo_codes SET is_active=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
+        [body.isActive, params.id]
+      )).rows[0];
+      if (!row) throw new AppError("Promo code not found", 404, "PROMO_NOT_FOUND");
+      await writeAudit(client, {
+        action: body.isActive ? "promo_code_activated" : "promo_code_deactivated",
+        actorUserId: req.user.id,
+        entityType: "promo_code",
+        entityId: row.id,
+        metadata: { code: row.code },
+        req
+      });
+      return row;
+    });
+    res.json({ promoCode: publicPromoCode(updated) });
+  } catch (error) { next(error); }
+});
+
+// Blocks deletion once a promo has real redemption history instead of
+// cascading — a redeemed code is part of the financial record (it's what
+// explains why an order's price doesn't match the tariff estimate), so
+// losing that silently would make past orders' pricing_snapshot look wrong
+// with no explanation. Deactivate (PATCH .../status) is the right tool for
+// "stop this code from being used again"; delete is only for a code that
+// was created by mistake and never actually used.
+router.delete("/promo-codes/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    await tx(async client => {
+      const promo = (await client.query("SELECT * FROM promo_codes WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
+      if (!promo) throw new AppError("Promo code not found", 404, "PROMO_NOT_FOUND");
+      const redemption = (await client.query(
+        "SELECT id FROM promo_code_redemptions WHERE promo_code_id=$1 LIMIT 1",
+        [params.id]
+      )).rows[0];
+      if (redemption) {
+        throw new AppError(
+          "Promo code has already been redeemed and can't be deleted — deactivate it instead",
+          409,
+          "PROMO_CODE_HAS_REDEMPTIONS"
+        );
+      }
+      await client.query("DELETE FROM promo_codes WHERE id=$1", [params.id]);
+      await writeAudit(client, {
+        action: "promo_code_deleted",
+        actorUserId: req.user.id,
+        entityType: "promo_code",
+        entityId: promo.id,
+        metadata: { code: promo.code },
+        req
+      });
+    });
+    res.status(204).end();
   } catch (error) { next(error); }
 });
 
@@ -961,6 +1197,153 @@ router.get("/leaderboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
       LIMIT 100
     `);
     res.json({ leaderboard: result.rows });
+  } catch (error) { next(error); }
+});
+
+router.get("/driver-applications/:id/documents", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const documents = await listDocumentsForApplication(params.id, query);
+    res.json({ documents: documents.map(publicDriverDocument) });
+  } catch (error) { next(error); }
+});
+
+router.get("/drivers/:id/documents", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const documents = await listDocumentsForDriver(params.id, query);
+    res.json({ documents: documents.map(publicDriverDocument) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/driver-documents/:id", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      status: z.enum(["APPROVED", "REJECTED"]),
+      reason: z.string().trim().max(300).optional().default("")
+    }).parse(req.body);
+
+    const document = await tx(async client => {
+      const reviewed = await reviewDriverDocument({
+        id: params.id,
+        status: body.status,
+        reason: body.reason,
+        actorUserId: req.user.id
+      }, client);
+      await writeAudit(client, {
+        action: "driver_document_reviewed",
+        actorUserId: req.user.id,
+        entityType: "driver_document",
+        entityId: params.id,
+        metadata: { status: body.status, reason: body.reason },
+        req
+      });
+      return reviewed;
+    });
+
+    if (document.driver_id) {
+      const driverUser = (await query("SELECT user_id FROM drivers WHERE id=$1", [document.driver_id])).rows[0];
+      if (driverUser?.user_id) {
+        const notifyByStatus = {
+          APPROVED: { title: "Документ проверен", body: "Ваш документ прошёл проверку" },
+          REJECTED: { title: "Документ отклонён", body: body.reason || "Документ отклонён. Загрузите его заново" }
+        }[body.status];
+        notifyUser(driverUser.user_id, { ...notifyByStatus, type: "DRIVER_DOCUMENT_STATUS" })
+          .catch((error) => console.error("[push] notifyUser failed", error));
+      }
+    }
+
+    res.json({ document: publicDriverDocument(document) });
+  } catch (error) { next(error); }
+});
+
+router.get("/driver-documents/:id/file", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const document = await getDriverDocumentById(params.id, query);
+    if (!document) throw new AppError("Document not found", 404, "DRIVER_DOCUMENT_NOT_FOUND");
+    const absolutePath = join(UPLOAD_ROOT, document.file_path);
+    if (!existsSync(absolutePath)) throw new AppError("Document file is missing", 404, "DRIVER_DOCUMENT_FILE_MISSING");
+    res.setHeader("Content-Type", document.mime_type);
+    createReadStream(absolutePath).pipe(res);
+  } catch (error) { next(error); }
+});
+
+router.get("/payout-requests", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      status: z.enum(["PENDING", "APPROVED", "PAID", "REJECTED", "CANCELLED"]).optional(),
+      driverId: z.string().uuid().optional(),
+      limit: z.coerce.number().int().min(1).max(200).optional().default(100)
+    }).parse(req.query);
+
+    const conditions = [];
+    const values = [];
+    if (params.status) { values.push(params.status); conditions.push(`p.status=$${values.length}`); }
+    if (params.driverId) { values.push(params.driverId); conditions.push(`p.driver_id=$${values.length}`); }
+    values.push(params.limit);
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    const result = await query(`
+      SELECT p.*, d.name driver_name, d.phone driver_phone
+      FROM driver_payout_requests p
+      JOIN drivers d ON d.id = p.driver_id
+      ${where}
+      ORDER BY p.created_at DESC
+      LIMIT $${values.length}
+    `, values);
+
+    res.json({
+      payoutRequests: result.rows.map(row => ({
+        ...publicPayoutRequest(row),
+        driverName: row.driver_name,
+        driverPhone: row.driver_phone
+      }))
+    });
+  } catch (error) { next(error); }
+});
+
+router.patch("/payout-requests/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      status: z.enum(["APPROVED", "PAID", "REJECTED"]),
+      reason: z.string().trim().max(300).optional().default(""),
+      providerReference: z.string().trim().max(120).optional()
+    }).parse(req.body);
+
+    const result = await tx(async client => {
+      const reviewed = await reviewPayoutRequest({
+        id: params.id,
+        status: body.status,
+        reason: body.reason,
+        providerReference: body.providerReference || null,
+        actorUserId: req.user.id
+      }, client);
+      await writeAudit(client, {
+        action: "driver_payout_reviewed",
+        actorUserId: req.user.id,
+        entityType: "driver_payout_request",
+        entityId: params.id,
+        metadata: { status: body.status, reason: body.reason },
+        req
+      });
+      const driverUser = (await client.query("SELECT user_id FROM drivers WHERE id=$1", [reviewed.payoutRequest.driverId])).rows[0];
+      return { ...reviewed, driverUserId: driverUser?.user_id || null };
+    });
+
+    const notifyByStatus = {
+      APPROVED: { title: "Выплата одобрена", body: `Заявка на ${result.payoutRequest.amountKzt} ₸ одобрена и готовится к переводу` },
+      PAID: { title: "Выплата отправлена", body: `${result.payoutRequest.amountKzt} ₸ переведены на ваш счёт` },
+      REJECTED: { title: "Выплата отклонена", body: body.reason || "Заявка на выплату отклонена. Подробности уточните в поддержке" }
+    }[body.status];
+    if (result.driverUserId && notifyByStatus) {
+      notifyUser(result.driverUserId, { ...notifyByStatus, type: "DRIVER_PAYOUT_STATUS" })
+        .catch((error) => console.error("[push] notifyUser failed", error));
+    }
+
+    res.json({ payoutRequest: result.payoutRequest, driver: result.driver });
   } catch (error) { next(error); }
 });
 
