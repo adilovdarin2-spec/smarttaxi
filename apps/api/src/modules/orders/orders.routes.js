@@ -675,6 +675,53 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
   } catch (e) { next(e); }
 });
 
+// Fixed vocabulary, not free text — keeps this a lightweight status ping
+// (no chat UI, no moderation surface to build) while still covering the
+// handful of things riders and drivers actually need to say mid-trip.
+const QUICK_MESSAGES = {
+  I_ARRIVED: "Я приехал",
+  WAITING_AT_ENTRANCE: "Жду у входа",
+  RUNNING_LATE_2MIN: "Опаздываю на 2 минуты",
+  PLEASE_COME_OUT: "Пожалуйста, выходите",
+  ON_MY_WAY: "Уже еду к вам"
+};
+
+const QuickMessageBody = z.object({
+  messageKey: z.enum(Object.keys(QUICK_MESSAGES))
+});
+
+router.post("/:id/quick-message", requireAuth, requireRole("CLIENT", "DRIVER"), rateLimit({ prefix: "orders-quick-message", windowMs: 60_000, max: 10 }), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = QuickMessageBody.parse(req.body);
+    const order = (await query(`
+      SELECT ${ORDER_SELECT}
+      FROM orders o
+      LEFT JOIN drivers d ON d.id=o.driver_id
+      WHERE o.id=$1
+    `, [id])).rows[0];
+    if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+
+    let notifyDriver;
+    if (req.user.role === "CLIENT") {
+      const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
+      if (!client || client.id !== order.client_id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      notifyDriver = true;
+    } else {
+      const driver = (await query("SELECT id FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+      if (!driver || driver.id !== order.driver_id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      notifyDriver = false;
+    }
+
+    const text = QUICK_MESSAGES[body.messageKey];
+    const payload = { title: notifyDriver ? "Сообщение от клиента" : "Сообщение от водителя", body: text, type: "QUICK_MESSAGE", data: { messageKey: body.messageKey } };
+    (notifyDriver ? notifyOrderDriver(order, payload) : notifyOrderClient(order, payload))
+      .catch((error) => console.error("[push] quick-message notify failed", error));
+
+    res.status(201).json({ delivered: true, messageKey: body.messageKey, text });
+  } catch (e) { next(e); }
+});
+
 router.post("/:id/assign-driver", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
