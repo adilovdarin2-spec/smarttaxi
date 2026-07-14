@@ -31,6 +31,8 @@ import walletRoutes from "./modules/wallet/wallet.routes.js";
 import driverDocumentsRoutes, { driverApplicationDocumentsRouter } from "./modules/driver-documents/driver-documents.routes.js";
 import favoritesRoutes from "./modules/favorites/favorites.routes.js";
 import referralsRoutes from "./modules/referrals/referrals.routes.js";
+import recurringBookingsRoutes from "./modules/recurring-bookings/recurring-bookings.routes.js";
+import { startRecurringBookingsScheduler } from "./modules/recurring-bookings/recurring-bookings.scheduler.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
 import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
 import {
@@ -134,6 +136,7 @@ app.use("/api/drivers/me/documents", driverDocumentsRoutes);
 app.use("/api/driver-applications", driverApplicationDocumentsRouter);
 app.use("/api/favorites", favoritesRoutes);
 app.use("/api/referrals", referralsRoutes);
+app.use("/api/recurring-bookings", recurringBookingsRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);
@@ -142,6 +145,7 @@ async function bootstrap() {
   await connectRedis();
   await runMigrations();
   await query("SELECT 1");
+  startRecurringBookingsScheduler(io);
   server.listen(env.API_PORT, () => console.log(`[API] SmartTaxi running on ${env.API_PORT}`));
 }
 process.on("SIGTERM", async () => { await pool.end(); process.exit(0); });

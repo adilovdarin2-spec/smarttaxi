@@ -702,7 +702,36 @@ const statements = [
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`,
   "ALTER TABLE clients ADD COLUMN IF NOT EXISTS referred_by_client_id UUID REFERENCES clients(id) ON DELETE SET NULL",
-  "ALTER TABLE service_settings ADD COLUMN IF NOT EXISTS referral_bonus_kzt INTEGER NOT NULL DEFAULT 500"
+  "ALTER TABLE service_settings ADD COLUMN IF NOT EXISTS referral_bonus_kzt INTEGER NOT NULL DEFAULT 500",
+
+  // --- Stage: recurring bookings ("школьный маршрут") ---
+  // last_triggered_date isn't in the original spec but is required to
+  // actually satisfy "не дублировать в один день" — the scheduler sets it
+  // the moment it successfully creates today's order and skips any booking
+  // already stamped with today's date.
+  `CREATE TABLE IF NOT EXISTS recurring_bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    pickup_text TEXT NOT NULL,
+    pickup_lat NUMERIC(10,6) NOT NULL,
+    pickup_lng NUMERIC(10,6) NOT NULL,
+    dropoff_text TEXT NOT NULL,
+    dropoff_lat NUMERIC(10,6) NOT NULL,
+    dropoff_lng NUMERIC(10,6) NOT NULL,
+    days_of_week INTEGER[] NOT NULL,
+    time_of_day TIME NOT NULL,
+    price_kzt INTEGER NOT NULL CHECK (price_kzt > 0),
+    status TEXT NOT NULL DEFAULT 'PENDING_DRIVER' CHECK (status IN ('PENDING_DRIVER','ACTIVE','PAUSED','CANCELLED')),
+    notes TEXT NOT NULL DEFAULT '',
+    last_triggered_date DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_recurring_bookings_client_id ON recurring_bookings(client_id)",
+  "CREATE INDEX IF NOT EXISTS idx_recurring_bookings_driver_id ON recurring_bookings(driver_id)",
+  "CREATE INDEX IF NOT EXISTS idx_recurring_bookings_status ON recurring_bookings(status)",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS recurring_booking_id UUID REFERENCES recurring_bookings(id) ON DELETE SET NULL"
 ];
 
 export async function runMigrations() {
