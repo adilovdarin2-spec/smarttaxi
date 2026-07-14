@@ -75,7 +75,7 @@ export function searchAddresses({ q, region, limit = 10 }) {
   params.set("q", q);
   if (region) params.set("region", region);
   params.set("limit", String(limit));
-  return api(`/api/maps/geocode?${params.toString()}`);
+  return api(`/api/maps/search?${params.toString()}`);
 }
 
 export function reverseAddress({ lat, lng }) {
@@ -108,11 +108,29 @@ export function estimateOrder(payload) {
   });
 }
 
+export function driverToPickupRoute(orderId) {
+  return api("/api/routes/driver-to-pickup", {
+    method: "POST",
+    body: JSON.stringify({ orderId })
+  });
+}
+
+export function updateDriverLocation(payload) {
+  return api("/api/drivers/me/location", {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function createOrder(payload) {
   return api("/api/orders", {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export function getClientActiveOrder() {
+  return api("/api/orders/me/active");
 }
 
 export function cancelPublicOrder(orderId, riderPhone) {
@@ -233,6 +251,19 @@ export function expireDriverRoadAlert(alertId) {
 }
 
 export async function getAdminDashboard() {
+  if (!getToken()) {
+    const health = await api("/api/health/ready").catch(() => null);
+    return {
+      user: null,
+      health,
+      cards: [],
+      setup: {
+        title: "Панель управления",
+        text: "Войдите под владельцем, оператором или финансовым пользователем, чтобы открыть рабочие данные."
+      }
+    };
+  }
+
   const [me, health, dashboard] = await Promise.allSettled([
     getCurrentUser(),
     api("/api/health/ready"),
@@ -409,8 +440,19 @@ export async function exportAdminFinanceTransactionsCsv(params = {}) {
   return response.text();
 }
 
-export function getAdminOrders() {
-  return api("/api/orders?limit=100");
+export function getAdminOrders(params = {}) {
+  return api(`/api/orders${queryString({ limit: 100, ...params })}`);
+}
+
+export function assignAdminOrderDriver(orderId, driverId) {
+  return api(`/api/orders/${orderId}/assign-driver`, {
+    method: "POST",
+    body: JSON.stringify({ driverId })
+  });
+}
+
+export function markOperatorOrderStatus(orderId, action) {
+  return api(`/api/orders/${orderId}/${action}`, { method: "POST" });
 }
 
 export function getAdminAudit() {
@@ -425,6 +467,96 @@ export function expireAdminRoadAlert(alertId) {
   return api(`/api/admin/road-alerts/${alertId}/expire`, { method: "PATCH" });
 }
 
+export function updateAdminSettings(payload) {
+  return api("/api/admin/settings", { method: "PATCH", body: JSON.stringify(payload) });
+}
+
+export function getAdminSupport(params = {}) {
+  return api(`/api/admin/support${queryString(params)}`);
+}
+
+export function respondAdminSupport(id, payload) {
+  return api(`/api/admin/support/${id}/respond`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function reopenAdminSupport(id) {
+  return api(`/api/admin/support/${id}/reopen`, { method: "PATCH" });
+}
+
 export function getAdminSettings() {
   return api("/api/admin/settings");
+}
+
+export function getAdminReviews() {
+  return api("/api/admin/reviews");
+}
+
+export function getAdminLeaderboard() {
+  return api("/api/admin/leaderboard");
+}
+
+export function getAdminPromoCodes() {
+  return api("/api/admin/promo-codes");
+}
+
+export function createAdminPromoCode(payload) {
+  return api("/api/admin/promo-codes", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function setAdminPromoCodeStatus(promoCodeId, isActive) {
+  return api(`/api/admin/promo-codes/${promoCodeId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive })
+  });
+}
+
+export function deleteAdminPromoCode(promoCodeId) {
+  return api(`/api/admin/promo-codes/${promoCodeId}`, { method: "DELETE" });
+}
+
+export function validatePromoCode(payload) {
+  return api("/api/orders/promo/validate", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function createSupportMessage(payload) {
+  return api("/api/support", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getFavoriteAddresses() {
+  return api("/api/favorites/addresses");
+}
+
+export function addFavoriteAddress(payload) {
+  return api("/api/favorites/addresses", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteFavoriteAddress(favoriteId) {
+  return api(`/api/favorites/addresses/${favoriteId}`, { method: "DELETE" });
+}
+
+export function getReferralSummary() {
+  return api("/api/referrals/me");
+}
+
+export function getAdminReferrals() {
+  return api("/api/admin/referrals");
+}
+
+export function getAdminRecurringBookings(params = {}) {
+  return api(`/api/admin/recurring-bookings${queryString(params)}`);
 }

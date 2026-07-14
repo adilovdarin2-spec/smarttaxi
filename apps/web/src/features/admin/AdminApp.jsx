@@ -4,8 +4,10 @@ import {
   adjustAdminDriverDebt,
   blockAdminDriver,
   clearToken,
+  createAdminPromoCode,
   createAdminRegion,
   createAdminTariff,
+  deleteAdminPromoCode,
   exportAdminFinanceTransactionsCsv,
   getAdminAudit,
   getAdminDashboard,
@@ -16,18 +18,31 @@ import {
   getAdminFinanceReports,
   getAdminFinanceSummary,
   getAdminFinanceTransactions,
+  getAdminLeaderboard,
   getAdminOrders,
+  getAdminPromoCodes,
+  getAdminRecurringBookings,
+  getAdminReferrals,
   getAdminRegions,
+  getAdminReviews,
+  getAdminRoadAlerts,
   getAdminSettings,
+  getAdminSupport,
   getAdminTariffAnalytics,
   getAdminTariffs,
+  loginUser,
   previewAdminTariffPrice,
+  reopenAdminSupport,
+  respondAdminSupport,
+  setAdminPromoCodeStatus,
   setAdminTariffStatus,
   toggleAdminRegion,
   unblockAdminDriver,
+  expireAdminRoadAlert,
   updateAdminDriverApplication,
   updateAdminDriverRegion,
   updateAdminRegion,
+  updateAdminSettings,
   updateAdminTariff
 } from "../../lib/mvpApi.js";
 
@@ -40,7 +55,12 @@ const navigation = [
   { key: "applications", label: "Заявки", eyebrow: "Проверка водителей" },
   { key: "orders", label: "Заказы", eyebrow: "Поездки клиентов" },
   { key: "tariffs", label: "Тарифы", eyebrow: "Цены по регионам" },
+  { key: "promoCodes", label: "Промокоды", eyebrow: "Скидки и акции" },
+  { key: "recurringBookings", label: "Регулярные поездки", eyebrow: "Постоянные привязки" },
   { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
+  { key: "roadAlerts", label: "Дорога", eyebrow: "События и безопасность" },
+  { key: "quality", label: "Качество", eyebrow: "Отзывы и рейтинг" },
+  { key: "referrals", label: "Рефералы", eyebrow: "Приглашения клиентов" },
   { key: "settings", label: "Настройки", eyebrow: "Параметры сервиса" },
   { key: "audit", label: "Журнал", eyebrow: "Действия системы" },
   { key: "support", label: "Поддержка", eyebrow: "Обращения клиентов" }
@@ -122,11 +142,24 @@ function formatMultiplier(value) {
 function statusLabel(status) {
   return {
     NEW: "Поиск",
+    SEARCHING_DRIVER: "Поиск водителя",
+    DRIVER_FOUND: "Водитель найден",
+    DRIVER_GOING_TO_CLIENT: "Едет к клиенту",
     DRIVER_ASSIGNED: "Принят",
     DRIVER_ARRIVED: "Прибыл",
+    WAITING_CLIENT: "Ждёт клиента",
+    TRIP_STARTED: "В пути",
     IN_PROGRESS: "В пути",
+    TRIP_COMPLETED: "Поездка завершена",
+    PAYMENT_PENDING: "Ждёт оплаты",
+    PAID: "Оплачен",
+    RATED: "Оценён",
     COMPLETED: "Завершён",
     CANCELLED: "Отменён",
+    CANCELLED_BY_CLIENT: "Отменён клиентом",
+    CANCELLED_BY_DRIVER: "Отменён водителем",
+    CANCELLED_BY_OPERATOR: "Отменён оператором",
+    NO_SHOW: "Клиент не вышел",
     FREE: "На линии",
     BUSY: "Занят",
     OFFLINE: "Не на линии",
@@ -141,15 +174,33 @@ function statusLabel(status) {
 }
 
 function badgeTone(status) {
-  if (["APPROVED", "FREE", "COMPLETED"].includes(status)) return "success";
-  if (["BLOCKED", "REJECTED", "CANCELLED"].includes(status)) return "danger";
-  if (["BUSY", "PENDING", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"].includes(status)) return "warning";
+  if (["APPROVED", "FREE", "COMPLETED", "PAID", "RATED", "TRIP_COMPLETED"].includes(status)) return "success";
+  if (["BLOCKED", "REJECTED", "CANCELLED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "NO_SHOW"].includes(status)) return "danger";
+  if (["BUSY", "PENDING", "SEARCHING_DRIVER", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ASSIGNED", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "IN_PROGRESS", "PAYMENT_PENDING"].includes(status)) return "warning";
   return "muted";
 }
 
+const orderStatusOptions = [
+  ["all", "Все статусы"],
+  ["SEARCHING_DRIVER", "Поиск водителя"],
+  ["DRIVER_FOUND", "Водитель найден"],
+  ["DRIVER_GOING_TO_CLIENT", "Едет к клиенту"],
+  ["DRIVER_ARRIVED", "Прибыл"],
+  ["WAITING_CLIENT", "Ждёт клиента"],
+  ["TRIP_STARTED", "В пути"],
+  ["TRIP_COMPLETED", "Поездка завершена"],
+  ["PAYMENT_PENDING", "Ждёт оплаты"],
+  ["PAID", "Оплачен"],
+  ["RATED", "Оценён"],
+  ["CANCELLED_BY_CLIENT", "Отменён клиентом"],
+  ["CANCELLED_BY_DRIVER", "Отменён водителем"],
+  ["CANCELLED_BY_OPERATOR", "Отменён оператором"],
+  ["NO_SHOW", "Клиент не вышел"]
+];
+
 function readError(error) {
   if (error?.code === "FORBIDDEN" || error?.message?.includes("Forbidden")) {
-    return "Нет доступа к панели управления";
+    return "Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем, оператором или финансовым пользователем.";
   }
   if (error?.code === "NOT_FOUND") return "Данные не найдены";
   if (error?.details?.length) return error.details.map(item => item.message).join("; ");
@@ -216,6 +267,28 @@ function paymentMethodLabel(method) {
   }[method] || method || "—";
 }
 
+function roadAlertLabel(type) {
+  return {
+    ROAD_HAZARD: "Дорожная опасность",
+    ACCIDENT: "ДТП",
+    ROADWORK: "Ремонт дороги",
+    SPEED_CAMERA: "Камера скорости",
+    TRAFFIC_JAM: "Пробка",
+    ROAD_CLOSED: "Закрытая дорога",
+    BAD_ROAD: "Плохая дорога",
+    PIT: "Яма",
+    SPEED_BUMP: "Лежачий полицейский",
+    ICY_ROAD: "Скользкая дорога",
+    SCHOOL_ZONE: "Школьная зона",
+    SPEED_LIMIT: "Ограничение скорости",
+    DANGEROUS_TURN: "Опасный поворот",
+    RAILROAD_CROSSING: "Ж/д переезд",
+    PEDESTRIAN_CROSSING: "Пешеходный переход",
+    POLICE: "Пост контроля",
+    OTHER: "Другое"
+  }[type] || type || "Событие";
+}
+
 function financeGroupLabel(groupBy) {
   return {
     day: "День",
@@ -258,12 +331,16 @@ export default function AdminApp() {
   const [user, setUser] = useState(null);
   const [bootLoading, setBootLoading] = useState(true);
   const [accessError, setAccessError] = useState("");
+  const [loginAuth, setLoginAuth] = useState({ phone: "", password: "" });
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [pageState, setPageState] = useState({ loading: false, error: "", payload: null });
   const [modal, setModal] = useState(null);
   const [actionState, setActionState] = useState({ loading: false, error: "", message: "" });
   const [regionStatus, setRegionStatus] = useState("all");
   const [driverStatus, setDriverStatus] = useState("all");
   const [applicationStatus, setApplicationStatus] = useState("PENDING");
+  const [orderStatus, setOrderStatus] = useState("all");
   const [tariffStatus, setTariffStatus] = useState("all");
   const [tariffRegion, setTariffRegion] = useState("all");
   const [tariffDatePreset, setTariffDatePreset] = useState("30d");
@@ -277,6 +354,11 @@ export default function AdminApp() {
   const [financeDatePreset, setFinanceDatePreset] = useState("30d");
   const [financeDateFrom, setFinanceDateFrom] = useState("");
   const [financeDateTo, setFinanceDateTo] = useState("");
+  const [roadAlertStatus, setRoadAlertStatus] = useState("ACTIVE");
+  const [roadAlertRegion, setRoadAlertRegion] = useState("all");
+  const [supportStatus, setSupportStatus] = useState("OPEN");
+  const [promoCodeStatus, setPromoCodeStatus] = useState("all");
+  const [recurringBookingStatus, setRecurringBookingStatus] = useState("all");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
 
   const canAccess = user && adminRoles.has(user.role);
@@ -293,7 +375,7 @@ export default function AdminApp() {
       if (!resolvedUser) {
         setAccessError("Войдите под владельцем, оператором или финансовым пользователем.");
       } else if (!adminRoles.has(resolvedUser.role)) {
-        setAccessError("Нет доступа к панели управления");
+        setAccessError("Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем, оператором или финансовым пользователем.");
       }
     } catch (error) {
       setAccessError(readError(error));
@@ -303,7 +385,7 @@ export default function AdminApp() {
   }, []);
 
   const loadPage = useCallback(async (page) => {
-    if (["dashboard", "support"].includes(page)) {
+    if (page === "dashboard") {
       setPageState({ loading: false, error: "", payload: null });
       return;
     }
@@ -312,7 +394,11 @@ export default function AdminApp() {
       regions: getAdminRegions,
       drivers: getAdminDrivers,
       applications: getAdminDriverApplications,
-      orders: getAdminOrders,
+      orders: async () => {
+        const status = orderStatus !== "all" ? orderStatus : undefined;
+        const data = await getAdminOrders({ status });
+        return { orders: data.orders || [] };
+      },
       tariffs: async () => {
         const selectedRegionId = tariffRegion !== "all" ? tariffRegion : undefined;
         const dateParams = tariffDateParams(tariffDatePreset, tariffDateFrom, tariffDateTo);
@@ -368,6 +454,47 @@ export default function AdminApp() {
           dateRange: summary.dateRange || dateParams
         };
       },
+      roadAlerts: async () => {
+        const selectedRegionId = roadAlertRegion !== "all" ? roadAlertRegion : undefined;
+        const [alerts, regions] = await Promise.all([
+          getAdminRoadAlerts({ status: roadAlertStatus, regionId: selectedRegionId, limit: 120 }),
+          getAdminRegions()
+        ]);
+        return {
+          alerts: alerts.alerts || [],
+          regions: regions.regions || []
+        };
+      },
+      quality: async () => {
+        const [reviews, leaderboard] = await Promise.all([
+          getAdminReviews(),
+          getAdminLeaderboard()
+        ]);
+        return {
+          reviews: reviews.reviews || [],
+          leaderboard: leaderboard.leaderboard || []
+        };
+      },
+      support: async () => {
+        const support = await getAdminSupport({ status: supportStatus });
+        return { messages: support.messages || [] };
+      },
+      promoCodes: async () => {
+        const [promoCodes, regions] = await Promise.all([
+          getAdminPromoCodes(),
+          getAdminRegions()
+        ]);
+        return { promoCodes: promoCodes.promoCodes || [], regions: regions.regions || [] };
+      },
+      recurringBookings: async () => {
+        const status = recurringBookingStatus !== "all" ? recurringBookingStatus : undefined;
+        const data = await getAdminRecurringBookings({ status });
+        return { recurringBookings: data.recurringBookings || data.bookings || [] };
+      },
+      referrals: async () => {
+        const data = await getAdminReferrals();
+        return { referrals: data.referrals || [] };
+      },
       audit: getAdminAudit,
       settings: getAdminSettings
     };
@@ -385,7 +512,7 @@ export default function AdminApp() {
     } catch (error) {
       setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
@@ -420,6 +547,14 @@ export default function AdminApp() {
     if (payload.applications) return { ...payload, applications: filter(payload.applications) };
     if (payload.orders) return { ...payload, orders: filter(payload.orders) };
     if (payload.tariffs) return { ...payload, tariffs: filter(payload.tariffs), regions: payload.regions || [] };
+    if (payload.alerts) return { ...payload, alerts: filter(payload.alerts), regions: payload.regions || [] };
+    if (payload.reviews || payload.leaderboard) {
+      return {
+        ...payload,
+        reviews: filter(payload.reviews || []),
+        leaderboard: filter(payload.leaderboard || [])
+      };
+    }
     if (payload.transactions || payload.driverDebts) {
       return {
         ...payload,
@@ -429,6 +564,10 @@ export default function AdminApp() {
       };
     }
     if (payload.logs) return { ...payload, logs: filter(payload.logs) };
+    if (payload.messages) return { ...payload, messages: filter(payload.messages) };
+    if (payload.promoCodes) return { ...payload, promoCodes: filter(payload.promoCodes), regions: payload.regions || [] };
+    if (payload.recurringBookings) return { ...payload, recurringBookings: filter(payload.recurringBookings) };
+    if (payload.referrals) return { ...payload, referrals: filter(payload.referrals) };
     return payload;
   }, [pageState.payload, query]);
 
@@ -444,6 +583,24 @@ export default function AdminApp() {
   function logout() {
     clearToken();
     window.location.href = "/";
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const data = await loginUser(loginAuth);
+      if (!adminRoles.has(data.user?.role)) {
+        clearToken();
+        throw new Error("Этот аккаунт не имеет доступа к панели управления");
+      }
+      await loadDashboard();
+    } catch (error) {
+      setLoginError(error?.message || "Не удалось войти. Проверьте телефон и пароль.");
+    } finally {
+      setLoginLoading(false);
+    }
   }
 
   async function runAction(work, successMessage) {
@@ -599,6 +756,69 @@ export default function AdminApp() {
     }, "CSV экспорт подготовлен");
   }
 
+  async function hideRoadAlert(alert) {
+    await runAction(async () => {
+      await expireAdminRoadAlert(alert.id);
+      await loadPage("roadAlerts");
+    }, "Дорожное событие скрыто");
+  }
+
+  async function savePromoCode(form) {
+    await runAction(async () => {
+      const payload = {
+        code: form.code.trim().toUpperCase(),
+        regionId: form.regionId || undefined,
+        discountType: form.discountType,
+        discountValue: Number(form.discountValue),
+        maxDiscountKzt: form.maxDiscountKzt ? Number(form.maxDiscountKzt) : undefined,
+        minOrderPriceKzt: Number(form.minOrderPriceKzt || 0),
+        usageLimit: form.usageLimit ? Number(form.usageLimit) : undefined,
+        perClientLimit: Number(form.perClientLimit || 1),
+        validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : undefined,
+        validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : undefined
+      };
+      await createAdminPromoCode(payload);
+      setModal(null);
+      await loadPage("promoCodes");
+    }, "Промокод создан");
+  }
+
+  async function togglePromoCode(promoCode) {
+    await runAction(async () => {
+      await setAdminPromoCodeStatus(promoCode.id, !promoCode.isActive);
+      await loadPage("promoCodes");
+    }, promoCode.isActive ? "Промокод отключён" : "Промокод активирован");
+  }
+
+  async function deletePromoCode(promoCode) {
+    await runAction(async () => {
+      await deleteAdminPromoCode(promoCode.id);
+      setModal(null);
+      await loadPage("promoCodes");
+    }, "Промокод удалён");
+  }
+
+  async function respondSupport(message, response, resolve) {
+    await runAction(async () => {
+      await respondAdminSupport(message.id, { response, resolve });
+      await loadPage("support");
+    }, resolve ? "Ответ отправлен, обращение закрыто" : "Ответ отправлен");
+  }
+
+  async function reopenSupport(message) {
+    await runAction(async () => {
+      await reopenAdminSupport(message.id);
+      await loadPage("support");
+    }, "Обращение возвращено в очередь");
+  }
+
+  async function saveSettings(payload) {
+    await runAction(async () => {
+      await updateAdminSettings(payload);
+      await loadPage("settings");
+    }, "Настройки сохранены");
+  }
+
   if (bootLoading) {
     return (
       <main className="admin-control-shell">
@@ -617,11 +837,34 @@ export default function AdminApp() {
       <main className="admin-control-shell">
         <section className="admin-access-card">
           <SmartTaxiLogo large />
-          <h1>Нет доступа к панели управления</h1>
-          <p>{accessError || "Для входа нужен аккаунт владельца, оператора или финансового пользователя."}</p>
-          <button type="button" className="admin-primary-button" onClick={logout}>
-            Вернуться ко входу
-          </button>
+          <h1>Войдите в панель управления</h1>
+          <p>{accessError || "Доступ есть у владельца, оператора и финансового пользователя."}</p>
+          <form className="admin-login-form" onSubmit={handleLogin}>
+            <label>
+              Телефон
+              <input
+                value={loginAuth.phone}
+                onChange={event => setLoginAuth(prev => ({ ...prev, phone: event.target.value }))}
+                placeholder="+7 700 000 00 00"
+                autoComplete="tel"
+                inputMode="tel"
+              />
+            </label>
+            <label>
+              Пароль
+              <input
+                value={loginAuth.password}
+                onChange={event => setLoginAuth(prev => ({ ...prev, password: event.target.value }))}
+                placeholder="Пароль"
+                autoComplete="current-password"
+                type="password"
+              />
+            </label>
+            {loginError && <div className="admin-login-error">{loginError}</div>}
+            <button type="submit" className="admin-primary-button" disabled={loginLoading}>
+              {loginLoading ? "Входим..." : "Войти"}
+            </button>
+          </form>
         </section>
       </main>
     );
@@ -694,7 +937,7 @@ export default function AdminApp() {
         {actionState.message && <InlineMessage text={actionState.message} />}
 
         {active === "dashboard" ? (
-          <DashboardPage dashboard={dashboard} health={dashboard?.health} />
+          <DashboardPage dashboard={dashboard} health={dashboard?.health} onSelectPage={selectPage} />
         ) : pageState.loading ? (
           <LoadingState />
         ) : pageState.error ? (
@@ -714,6 +957,8 @@ export default function AdminApp() {
             setDriverStatus={setDriverStatus}
             applicationStatus={applicationStatus}
             setApplicationStatus={setApplicationStatus}
+            orderStatus={orderStatus}
+            setOrderStatus={setOrderStatus}
             tariffStatus={tariffStatus}
             setTariffStatus={setTariffStatus}
             tariffRegion={tariffRegion}
@@ -740,6 +985,23 @@ export default function AdminApp() {
             setFinanceDateFrom={setFinanceDateFrom}
             financeDateTo={financeDateTo}
             setFinanceDateTo={setFinanceDateTo}
+            roadAlertStatus={roadAlertStatus}
+            setRoadAlertStatus={setRoadAlertStatus}
+            roadAlertRegion={roadAlertRegion}
+            setRoadAlertRegion={setRoadAlertRegion}
+            supportStatus={supportStatus}
+            setSupportStatus={setSupportStatus}
+            onRespondSupport={respondSupport}
+            onReopenSupport={reopenSupport}
+            promoCodeStatus={promoCodeStatus}
+            setPromoCodeStatus={setPromoCodeStatus}
+            onAddPromoCode={() => setModal({ type: "promoCode" })}
+            onTogglePromoCode={togglePromoCode}
+            onDeletePromoCode={promoCode => setModal({ type: "promoCodeDelete", promoCode })}
+            recurringBookingStatus={recurringBookingStatus}
+            setRecurringBookingStatus={setRecurringBookingStatus}
+            onSaveSettings={saveSettings}
+            canEditSettings={user?.role === "OWNER"}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
             onToggleRegion={switchRegion}
@@ -753,6 +1015,7 @@ export default function AdminApp() {
             canAdjustFinance={user?.role === "OWNER" || user?.role === "FINANCE"}
             onAdjustDebt={driver => setModal({ type: "debtAdjustment", driver })}
             onExportFinanceCsv={exportFinanceCsv}
+            onHideRoadAlert={hideRoadAlert}
           />
         )}
       </section>
@@ -810,14 +1073,53 @@ export default function AdminApp() {
           busy={actionState.loading}
         />
       )}
+      {modal?.type === "promoCode" && (
+        <PromoCodeEditor
+          regions={asArray(pageState.payload, "regions")}
+          onClose={() => setModal(null)}
+          onSave={savePromoCode}
+          busy={actionState.loading}
+        />
+      )}
+      {modal?.type === "promoCodeDelete" && (
+        <ConfirmPanel
+          title="Удалить промокод"
+          text={`Промокод ${modal.promoCode.code} будет удалён без возможности восстановления.`}
+          confirmLabel="Удалить"
+          busy={actionState.loading}
+          danger
+          onClose={() => setModal(null)}
+          onConfirm={() => deletePromoCode(modal.promoCode)}
+        />
+      )}
     </main>
   );
 }
 
-function DashboardPage({ dashboard, health }) {
+function DashboardPage({ dashboard, health, onSelectPage }) {
   const cards = Array.isArray(dashboard?.cards) ? dashboard.cards : [];
+  const summary = dashboard?.summary || {};
+  const problems = buildAdminProblemItems(dashboard, health);
+  const activeProblems = problems.filter(item => item.tone !== "success");
+
   return (
     <div className="admin-page-stack">
+      <section className="admin-command-hero">
+        <div>
+          <span className="admin-command-kicker">SmartTaxi Control Center</span>
+          <h2>Панель владельца, которая ведёт сервис по проблемам</h2>
+          <p>
+            Здесь собраны зоны, водители, заказы, тарифы, финансы, дорожные события, отзывы и аудит.
+            Главная страница показывает, где нужен контроль прямо сейчас.
+          </p>
+        </div>
+        <div className="admin-command-score">
+          <span>{activeProblems.length ? "Требует внимания" : "Стабильно"}</span>
+          <strong>{activeProblems.length}</strong>
+          <small>{activeProblems.length ? "открытых операционных вопросов" : "критичных вопросов не найдено"}</small>
+        </div>
+      </section>
+
       <section className="admin-health-card">
         <div>
           <small>Состояние системы</small>
@@ -843,8 +1145,116 @@ function DashboardPage({ dashboard, health }) {
           text={dashboard?.setup?.text || "Показатели появятся после первых рабочих заказов."}
         />
       )}
+
+      <section className="admin-command-grid">
+        <DataCard title="Что требует внимания" text="Приоритетный список проблем, которые админ может закрыть из панели.">
+          <div className="admin-problem-list">
+            {problems.map(item => (
+              <button type="button" key={item.key} className={`admin-problem-item ${item.tone}`} onClick={() => onSelectPage(item.page)}>
+                <span className="admin-problem-icon">{item.index}</span>
+                <span>
+                  <strong>{item.title}</strong>
+                  <small>{item.text}</small>
+                </span>
+                <b>{item.action}</b>
+              </button>
+            ))}
+          </div>
+        </DataCard>
+
+        <DataCard title="Карта управления" text="Все ключевые рычаги бизнеса собраны по ролям: владелец, оператор, финансы.">
+          <div className="admin-solution-grid">
+            <button type="button" onClick={() => onSelectPage("orders")}>
+              <strong>{Number(summary.orders?.searching || 0)}</strong>
+              <span>Заказы без водителя</span>
+              <small>Назначение и контроль статуса</small>
+            </button>
+            <button type="button" onClick={() => onSelectPage("drivers")}>
+              <strong>{Number(summary.drivers?.online || 0)}</strong>
+              <span>Водители на линии</span>
+              <small>Блокировка, регионы, доступ</small>
+            </button>
+            <button type="button" onClick={() => onSelectPage("tariffs")}>
+              <strong>{Number(summary.regions?.active || 0)}</strong>
+              <span>Активные регионы</span>
+              <small>Тарифы и зоны запуска</small>
+            </button>
+            <button type="button" onClick={() => onSelectPage("finance")}>
+              <strong>FIN</strong>
+              <span>Финансы и долги</span>
+              <small>Комиссия, касса, CSV</small>
+            </button>
+            <button type="button" onClick={() => onSelectPage("roadAlerts")}>
+              <strong>ROAD</strong>
+              <span>Дорожные события</span>
+              <small>Модерация предупреждений</small>
+            </button>
+            <button type="button" onClick={() => onSelectPage("quality")}>
+              <strong>5</strong>
+              <span>Качество сервиса</span>
+              <small>Отзывы и рейтинг водителей</small>
+            </button>
+          </div>
+        </DataCard>
+      </section>
     </div>
   );
+}
+
+function buildAdminProblemItems(dashboard, health) {
+  const summary = dashboard?.summary || {};
+  const orders = summary.orders || {};
+  const drivers = summary.drivers || {};
+  const regions = summary.regions || {};
+  const applications = summary.applications || {};
+  const items = [
+    {
+      key: "health",
+      index: "01",
+      tone: health?.status === "ok" ? "success" : "danger",
+      page: "settings",
+      title: health?.status === "ok" ? "Backend отвечает" : "Проверить backend",
+      text: health?.status === "ok" ? "API, база и сервисы отвечают на ready-check." : "Панель не получила подтверждение готовности API.",
+      action: "Открыть"
+    },
+    {
+      key: "searching-orders",
+      index: "02",
+      tone: Number(orders.searching || 0) > 0 ? "warning" : "success",
+      page: "orders",
+      title: Number(orders.searching || 0) > 0 ? "Есть заказы в поиске" : "Заказы распределяются нормально",
+      text: `${Number(orders.searching || 0)} заказов ждут назначения водителя.`,
+      action: "К заказам"
+    },
+    {
+      key: "drivers-online",
+      index: "03",
+      tone: Number(drivers.online || 0) > 0 ? "success" : "warning",
+      page: "drivers",
+      title: Number(drivers.online || 0) > 0 ? "Водители на линии есть" : "Нет свободных водителей",
+      text: `${Number(drivers.online || 0)} свободных, ${Number(drivers.busy || 0)} заняты, ${Number(drivers.blocked || 0)} заблокированы.`,
+      action: "Водители"
+    },
+    {
+      key: "applications",
+      index: "04",
+      tone: Number(applications.pending || 0) > 0 ? "warning" : "success",
+      page: "applications",
+      title: Number(applications.pending || 0) > 0 ? "Новые заявки водителей" : "Заявок на проверке нет",
+      text: `${Number(applications.pending || 0)} заявок ожидают решения.`,
+      action: "Проверить"
+    },
+    {
+      key: "regions",
+      index: "05",
+      tone: Number(regions.active || 0) > 0 ? "success" : "danger",
+      page: "regions",
+      title: Number(regions.active || 0) > 0 ? "Регионы включены" : "Нет активных регионов",
+      text: `${Number(regions.active || 0)} из ${Number(regions.total || 0)} регионов принимают заказы.`,
+      action: "Регионы"
+    }
+  ];
+  return items;
 }
 
 function AdminPage(props) {
@@ -852,19 +1262,17 @@ function AdminPage(props) {
   if (active === "regions") return <RegionsPage regions={asArray(payload, "regions")} {...props} />;
   if (active === "drivers") return <DriversPage drivers={asArray(payload, "drivers")} {...props} />;
   if (active === "applications") return <ApplicationsPage applications={asArray(payload, "applications")} {...props} />;
-  if (active === "orders") return <OrdersPage orders={asArray(payload, "orders")} />;
+  if (active === "orders") return <OrdersPage orders={asArray(payload, "orders")} {...props} />;
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
+  if (active === "roadAlerts") return <RoadAlertsPage alerts={asArray(payload, "alerts")} regions={asArray(payload, "regions")} {...props} />;
+  if (active === "quality") return <QualityPage reviews={asArray(payload, "reviews")} leaderboard={asArray(payload, "leaderboard")} />;
   if (active === "audit") return <AuditPage logs={asArray(payload, "logs")} />;
-  if (active === "settings") return <SettingsPage settings={payload?.settings} />;
-  if (active === "support") {
-    return (
-      <StatePanel
-        title="Пока нет обращений"
-        text="Когда клиент отправит обращение, оно появится здесь для обработки оператором."
-      />
-    );
-  }
+  if (active === "settings") return <SettingsPage settings={payload?.settings} onSave={props.onSaveSettings} canEdit={props.canEditSettings} />;
+  if (active === "support") return <SupportPage messages={asArray(payload, "messages")} {...props} />;
+  if (active === "promoCodes") return <PromoCodesPage promoCodes={asArray(payload, "promoCodes")} {...props} />;
+  if (active === "recurringBookings") return <RecurringBookingsPage bookings={asArray(payload, "recurringBookings")} {...props} />;
+  if (active === "referrals") return <ReferralsPage referrals={asArray(payload, "referrals")} />;
   return <StatePanel title="Нет данных для отображения" text="Выберите раздел меню или обновите страницу." />;
 }
 
@@ -1334,7 +1742,9 @@ function FinancePage({
             <select className="admin-control-select" value={financeTariff} onChange={event => setFinanceTariff(event.target.value)}>
               <option value="all">Все тарифы</option>
               {tariffs.map(tariff => (
-                <option value={tariff.id} key={tariff.id}>{tariff.displayName || tariff.name}</option>
+                <option value={tariff.id} key={tariff.id}>
+                  {tariff.displayName || tariff.name}{tariff.regionName ? ` · ${tariff.regionName}` : ""}
+                </option>
               ))}
             </select>
           </label>
@@ -1487,29 +1897,636 @@ function FinancePage({
   );
 }
 
-function OrdersPage({ orders }) {
-  if (!orders.length) return <StatePanel title="Нет заказов" text="Нет данных для отображения." />;
+function OrdersPage({ orders, orderStatus, setOrderStatus }) {
   return (
-    <DataCard title="Заказы" text="Список загружен из регионально проверенных заказов.">
-      <div className="admin-table premium">
-        {orders.map(order => (
-          <div className="admin-table-row orders" key={order.id}>
-            <strong>{order.short_id || order.id}</strong>
-            <span>{order.pickup_text} → {order.dropoff_text}</span>
-            <Badge tone={badgeTone(order.status)}>{statusLabel(order.status)}</Badge>
-            <span>{formatMoney(order.price)}</span>
-            <span>{formatDate(order.created_at)}</span>
-          </div>
-        ))}
+    <div className="admin-page-stack">
+      <PageHeader title="Заказы" subtitle="Список загружен из регионально проверенных заказов">
+        <select className="admin-control-select" value={orderStatus} onChange={event => setOrderStatus(event.target.value)}>
+          {orderStatusOptions.map(([value, label]) => (
+            <option value={value} key={value}>{label}</option>
+          ))}
+        </select>
+      </PageHeader>
+      {!orders.length ? (
+        <StatePanel title="Нет заказов" text="Нет данных для отображения." />
+      ) : (
+        <div className="admin-table premium">
+          {orders.map(order => (
+            <div className="admin-table-row orders" key={order.id}>
+              <strong>{order.short_id || order.id}</strong>
+              <span>{order.pickup_text} → {order.dropoff_text}</span>
+              <Badge tone={badgeTone(order.status)}>{statusLabel(order.status)}</Badge>
+              <span>
+                {formatMoney(order.price)}
+                {order.offered_price_kzt ? <Badge tone="warning"> Своя цена</Badge> : null}
+              </span>
+              <span>{formatDate(order.created_at)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoadAlertsPage({
+  alerts,
+  regions,
+  roadAlertStatus,
+  setRoadAlertStatus,
+  roadAlertRegion,
+  setRoadAlertRegion,
+  onHideRoadAlert
+}) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Дорожные события" subtitle="Модерация предупреждений водителей и безопасного слоя навигатора">
+        <select className="admin-control-select" value={roadAlertRegion} onChange={event => setRoadAlertRegion(event.target.value)}>
+          <option value="all">Все регионы</option>
+          {regions.map(region => (
+            <option value={region.id} key={region.id}>{region.name}</option>
+          ))}
+        </select>
+        <SegmentedFilter
+          value={roadAlertStatus}
+          onChange={setRoadAlertStatus}
+          items={[
+            ["ACTIVE", "Активные"],
+            ["EXPIRED", "Скрытые"],
+            ["ALL", "Все"]
+          ]}
+        />
+      </PageHeader>
+
+      {!alerts.length ? (
+        <StatePanel
+          title="Дорожных событий нет"
+          text="Когда водитель отправит предупреждение с линии, оно появится здесь для проверки."
+        />
+      ) : (
+        <section className="admin-card-grid road-alerts">
+          {alerts.map(alert => {
+            const status = alert.status || "ACTIVE";
+            const confidence = Number(alert.confidenceScore ?? alert.confidence_score ?? 0);
+            return (
+              <article className="admin-road-alert-card" key={alert.id}>
+                <header>
+                  <div>
+                    <strong>{roadAlertLabel(alert.type)}</strong>
+                    <span>{alert.regionName || "Регион не указан"} · {formatDate(alert.createdAt || alert.created_at)}</span>
+                  </div>
+                  <Badge tone={status === "ACTIVE" ? "warning" : "muted"}>
+                    {status === "ACTIVE" ? "Активно" : "Скрыто"}
+                  </Badge>
+                </header>
+                {alert.comment && <p>{alert.comment}</p>}
+                <div className="admin-road-alert-meter" aria-label="Доверие к событию">
+                  <span style={{ width: `${Math.max(0, Math.min(100, confidence))}%` }} />
+                </div>
+                <div className="admin-card-facts">
+                  <InfoLine label="Доверие" value={`${confidence}%`} />
+                  <InfoLine label="Подтверждения" value={alert.confirmationsCount ?? alert.confirmations_count ?? 0} />
+                  <InfoLine label="Отклонения" value={alert.dismissalsCount ?? alert.dismissals_count ?? 0} />
+                  <InfoLine label="Лимит скорости" value={alert.speedLimit ? `${alert.speedLimit} км/ч` : "Не указан"} />
+                  <InfoLine label="Водитель" value={alert.driverName || alert.driverPhone || "Не указан"} />
+                  <InfoLine label="Координаты" value={`${Number(alert.lat).toFixed(5)}, ${Number(alert.lng).toFixed(5)}`} />
+                  <InfoLine label="Истекает" value={formatDate(alert.expiresAt || alert.expires_at)} />
+                </div>
+                <footer>
+                  <button
+                    type="button"
+                    className="admin-danger-button compact"
+                    disabled={status !== "ACTIVE"}
+                    onClick={() => onHideRoadAlert(alert)}
+                  >
+                    Скрыть событие
+                  </button>
+                </footer>
+              </article>
+            );
+          })}
+        </section>
+      )}
+    </div>
+  );
+}
+
+const supportRoleLabels = { CLIENT: "Пассажир", DRIVER: "Водитель" };
+
+function SupportPage({
+  messages,
+  supportStatus,
+  setSupportStatus,
+  onRespondSupport,
+  onReopenSupport
+}) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Поддержка" subtitle="Обращения пассажиров и водителей">
+        <SegmentedFilter
+          value={supportStatus}
+          onChange={setSupportStatus}
+          items={[
+            ["OPEN", "Открытые"],
+            ["RESOLVED", "Закрытые"],
+            ["ALL", "Все"]
+          ]}
+        />
+      </PageHeader>
+
+      {!messages.length ? (
+        <StatePanel
+          title="Обращений нет"
+          text="Когда клиент или водитель отправит обращение, оно появится здесь для обработки."
+        />
+      ) : (
+        <section className="admin-card-grid road-alerts">
+          {messages.map(message => (
+            <SupportTicketCard
+              key={message.id}
+              message={message}
+              onRespond={onRespondSupport}
+              onReopen={onReopenSupport}
+            />
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function SupportTicketCard({ message, onRespond, onReopen }) {
+  const [draft, setDraft] = useState(message.adminResponse || "");
+  const [busy, setBusy] = useState(false);
+  const isResolved = message.status === "RESOLVED";
+
+  async function submit(resolve) {
+    if (!draft.trim()) return;
+    setBusy(true);
+    try {
+      await onRespond(message, draft.trim(), resolve);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reopen() {
+    setBusy(true);
+    try {
+      await onReopen(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isLostItem = message.topic === "Забыл вещь";
+
+  return (
+    <article className="admin-road-alert-card">
+      <header>
+        <div>
+          <strong>{message.topic}</strong>
+          <span>{supportRoleLabels[message.role] || message.role} · {formatDate(message.createdAt)}</span>
+        </div>
+        <Badge tone={isResolved ? "muted" : isLostItem ? "danger" : "warning"}>
+          {isResolved ? "Закрыто" : isLostItem ? "Забытая вещь" : "Открыто"}
+        </Badge>
+      </header>
+      <p>{message.message}</p>
+      <div className="admin-card-facts">
+        <InfoLine label="Контакт" value={message.contactName || "Не указан"} />
+        <InfoLine label="Телефон" value={message.contactPhone || "Не указан"} />
+        <InfoLine label="Заказ" value={message.orderId || "Без привязки к заказу"} />
       </div>
-    </DataCard>
+      {message.adminResponse && (
+        <div className="admin-support-response">
+          <strong>Ответ:</strong>
+          <p>{message.adminResponse}</p>
+          {message.respondedAt && <span>{formatDate(message.respondedAt)}</span>}
+        </div>
+      )}
+      {isResolved ? (
+        <footer>
+          <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={reopen}>
+            Переоткрыть
+          </button>
+        </footer>
+      ) : (
+        <>
+          <label className="admin-textarea-field">
+            <span>Ответ клиенту</span>
+            <textarea
+              value={draft}
+              onChange={event => setDraft(event.target.value)}
+              placeholder="Напишите ответ..."
+              rows={3}
+            />
+          </label>
+          <footer>
+            <button
+              type="button"
+              className="admin-secondary-button compact"
+              disabled={busy || !draft.trim()}
+              onClick={() => submit(false)}
+            >
+              Ответить
+            </button>
+            <button
+              type="button"
+              className="admin-primary-button compact"
+              disabled={busy || !draft.trim()}
+              onClick={() => submit(true)}
+            >
+              Ответить и закрыть
+            </button>
+          </footer>
+        </>
+      )}
+    </article>
+  );
+}
+
+function formatPromoValue(promoCode) {
+  return promoCode.discountType === "PERCENT"
+    ? `${promoCode.discountValue}%${promoCode.maxDiscountKzt ? ` (макс. ${formatMoney(promoCode.maxDiscountKzt)})` : ""}`
+    : formatMoney(promoCode.discountValue);
+}
+
+function formatPromoLimit(promoCode) {
+  const total = promoCode.usageLimit != null ? promoCode.usageLimit : "Без ограничения";
+  const perClient = promoCode.perClientLimit != null ? promoCode.perClientLimit : 1;
+  return `${total} всего · ${perClient} на клиента`;
+}
+
+function formatPromoValidity(promoCode) {
+  if (!promoCode.validFrom && !promoCode.validUntil) return "Бессрочно";
+  const from = promoCode.validFrom ? formatDate(promoCode.validFrom) : "сейчас";
+  const until = promoCode.validUntil ? formatDate(promoCode.validUntil) : "бессрочно";
+  return `${from} — ${until}`;
+}
+
+function PromoCodesPage({ promoCodes, promoCodeStatus, setPromoCodeStatus, onAddPromoCode, onTogglePromoCode, onDeletePromoCode }) {
+  const visible = promoCodes.filter(promoCode => {
+    if (promoCodeStatus === "active") return promoCode.isActive;
+    if (promoCodeStatus === "inactive") return !promoCode.isActive;
+    return true;
+  });
+
+  return (
+    <div className="admin-page-stack">
+      <PageHeader
+        title="Промокоды"
+        subtitle="Скидочные коды для заказов клиентов"
+        action={<button type="button" className="admin-primary-button" onClick={onAddPromoCode}>Добавить промокод</button>}
+      >
+        <SegmentedFilter
+          value={promoCodeStatus}
+          onChange={setPromoCodeStatus}
+          items={[
+            ["all", "Все"],
+            ["active", "Активные"],
+            ["inactive", "Отключённые"]
+          ]}
+        />
+      </PageHeader>
+
+      {!visible.length ? (
+        <StatePanel
+          title="Промокодов пока нет"
+          text="Добавьте первый промокод, чтобы предложить клиентам скидку на поездку."
+          action="Добавить промокод"
+          onAction={onAddPromoCode}
+        />
+      ) : (
+        <section className="admin-card-grid promo-codes">
+          {visible.map(promoCode => (
+            <article className="admin-application-card" key={promoCode.id}>
+              <header>
+                <div>
+                  <strong>{promoCode.code}</strong>
+                  <span>{promoCode.regionId ? "Ограничен регионом" : "Все регионы"}</span>
+                </div>
+                <Badge tone={promoCode.isActive ? "success" : "muted"}>
+                  {promoCode.isActive ? "Активен" : "Отключён"}
+                </Badge>
+              </header>
+              <div className="admin-card-facts">
+                <InfoLine label="Скидка" value={formatPromoValue(promoCode)} />
+                <InfoLine label="Мин. сумма заказа" value={formatMoney(promoCode.minOrderPriceKzt)} />
+                <InfoLine label="Лимит использований" value={formatPromoLimit(promoCode)} />
+                <InfoLine label="Срок действия" value={formatPromoValidity(promoCode)} />
+              </div>
+              <footer>
+                <button type="button" className={promoCode.isActive ? "admin-danger-button" : "admin-secondary-button"} onClick={() => onTogglePromoCode(promoCode)}>
+                  {promoCode.isActive ? "Отключить" : "Активировать"}
+                </button>
+                <button type="button" className="admin-danger-button" onClick={() => onDeletePromoCode(promoCode)}>
+                  Удалить
+                </button>
+              </footer>
+            </article>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
+const recurringBookingStatusLabels = {
+  PENDING_DRIVER: "Ждёт водителя",
+  ACTIVE: "Активна",
+  PAUSED: "На паузе",
+  CANCELLED: "Отменена"
+};
+
+function recurringBookingBadgeTone(status) {
+  if (status === "ACTIVE") return "success";
+  if (status === "PENDING_DRIVER") return "warning";
+  if (status === "CANCELLED") return "danger";
+  return "muted";
+}
+
+function formatDaysOfWeek(days) {
+  const labels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+  if (!Array.isArray(days) || !days.length) return "Дни не указаны";
+  return days.map(day => labels[Number(day)] ?? day).join(", ");
+}
+
+function RecurringBookingsPage({ bookings, recurringBookingStatus, setRecurringBookingStatus }) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Регулярные поездки" subtitle="Постоянные привязки клиента к водителю по расписанию">
+        <SegmentedFilter
+          value={recurringBookingStatus}
+          onChange={setRecurringBookingStatus}
+          items={[
+            ["all", "Все"],
+            ["PENDING_DRIVER", "Ждут водителя"],
+            ["ACTIVE", "Активные"],
+            ["PAUSED", "На паузе"],
+            ["CANCELLED", "Отменены"]
+          ]}
+        />
+      </PageHeader>
+
+      {!bookings.length ? (
+        <StatePanel title="Регулярных поездок нет" text="Привязки клиента к водителю по расписанию появятся здесь после первого оформления в приложении." />
+      ) : (
+        <section className="admin-card-grid recurring-bookings">
+          {bookings.map(booking => (
+            <article className="admin-application-card" key={booking.id}>
+              <header>
+                <div>
+                  <strong>{booking.clientName || booking.clientId}</strong>
+                  <span>{booking.driverName || "Водитель не назначен"}</span>
+                </div>
+                <Badge tone={recurringBookingBadgeTone(booking.status)}>
+                  {recurringBookingStatusLabels[booking.status] || booking.status}
+                </Badge>
+              </header>
+              <div className="admin-card-facts">
+                <InfoLine label="Маршрут" value={[booking.pickupText, booking.dropoffText].filter(Boolean).join(" → ") || "Маршрут не указан"} />
+                <InfoLine label="Дни" value={formatDaysOfWeek(booking.daysOfWeek)} />
+                <InfoLine label="Время" value={booking.timeOfDay || "Не указано"} />
+                <InfoLine label="Цена" value={formatMoney(booking.priceKzt)} />
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ReferralsPage({ referrals }) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Реферальная программа" subtitle="Кто кого пригласил и сколько начислено" />
+
+      {!referrals.length ? (
+        <StatePanel title="Приглашений пока нет" text="Список появится после первого приглашения клиента через приложение." />
+      ) : (
+        <DataCard title="Приглашения" text="Список всех рефералов клиентов сервиса.">
+          <div className="admin-table premium">
+            {referrals.map(referral => (
+              <div className="admin-table-row drivers" key={referral.id}>
+                <strong>{referral.inviterName || referral.inviterPhone || "Клиент"}</strong>
+                <span>пригласил</span>
+                <span>{referral.inviteeName || referral.inviteePhone || "Новый клиент"}</span>
+                <Badge tone={referral.rewardCreditedAt ? "success" : "warning"}>
+                  {referral.rewardCreditedAt ? "Начислено" : "Ожидает"}
+                </Badge>
+                <span>{formatMoney(referral.rewardKzt)}</span>
+              </div>
+            ))}
+          </div>
+        </DataCard>
+      )}
+    </div>
+  );
+}
+
+function PromoCodeEditor({ regions, onClose, onSave, busy }) {
+  const [form, setForm] = useState({
+    code: "",
+    regionId: "",
+    discountType: "PERCENT",
+    discountValue: "10",
+    maxDiscountKzt: "",
+    minOrderPriceKzt: "0",
+    usageLimit: "",
+    perClientLimit: "1",
+    validFrom: "",
+    validUntil: ""
+  });
+  const [error, setError] = useState("");
+
+  function setField(field, value) {
+    setForm(current => ({ ...current, [field]: value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    if (!form.code.trim()) {
+      setError("Введите код промокода");
+      return;
+    }
+    if (!Number.isFinite(Number(form.discountValue)) || Number(form.discountValue) <= 0) {
+      setError("Введите корректный размер скидки");
+      return;
+    }
+    try {
+      await onSave(form);
+    } catch (submitError) {
+      setError(submitError.message || "Не удалось сохранить промокод");
+    }
+  }
+
+  return (
+    <ModalFrame title="Добавить промокод" onClose={onClose}>
+      <form className="admin-form-grid" onSubmit={submit}>
+        <Field label="Код" value={form.code} onChange={value => setField("code", value.toUpperCase())} />
+        <label className="admin-field">
+          <span>Регион</span>
+          <select className="admin-control-select" value={form.regionId} onChange={event => setField("regionId", event.target.value)}>
+            <option value="">Все регионы</option>
+            {regions.map(region => (
+              <option value={region.id} key={region.id}>{region.name}</option>
+            ))}
+          </select>
+        </label>
+        <div className="admin-form-row">
+          <label className="admin-field">
+            <span>Тип скидки</span>
+            <select className="admin-control-select" value={form.discountType} onChange={event => setField("discountType", event.target.value)}>
+              <option value="PERCENT">Процент</option>
+              <option value="FIXED">Фиксированная сумма</option>
+            </select>
+          </label>
+          <Field label={form.discountType === "PERCENT" ? "Скидка, %" : "Скидка, ₸"} type="number" value={form.discountValue} onChange={value => setField("discountValue", value)} />
+        </div>
+        {form.discountType === "PERCENT" && (
+          <Field label="Максимальная скидка, ₸ (необязательно)" type="number" value={form.maxDiscountKzt} onChange={value => setField("maxDiscountKzt", value)} />
+        )}
+        <Field label="Минимальная сумма заказа, ₸" type="number" value={form.minOrderPriceKzt} onChange={value => setField("minOrderPriceKzt", value)} />
+        <div className="admin-form-row">
+          <Field label="Лимит использований (необязательно)" type="number" value={form.usageLimit} onChange={value => setField("usageLimit", value)} />
+          <Field label="Лимит на клиента" type="number" value={form.perClientLimit} onChange={value => setField("perClientLimit", value)} />
+        </div>
+        <div className="admin-form-row">
+          <label className="admin-field">
+            <span>Действует с</span>
+            <input type="date" value={form.validFrom} onChange={event => setField("validFrom", event.target.value)} />
+          </label>
+          <label className="admin-field">
+            <span>Действует по</span>
+            <input type="date" value={form.validUntil} onChange={event => setField("validUntil", event.target.value)} />
+          </label>
+        </div>
+        {error && <InlineMessage danger text={error} />}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="submit" className="admin-primary-button" disabled={busy}>{busy ? "Сохраняем..." : "Создать промокод"}</button>
+        </div>
+      </form>
+    </ModalFrame>
+  );
+}
+
+function ConfirmPanel({ title, text, confirmLabel, danger, busy, onClose, onConfirm }) {
+  return (
+    <ModalFrame title={title} onClose={onClose}>
+      <div className="admin-detail-stack">
+        <p>{text}</p>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="button" className={danger ? "admin-danger-button" : "admin-primary-button"} disabled={busy} onClick={onConfirm}>
+            {busy ? "Выполняем..." : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
+  );
+}
+
+function QualityPage({ reviews, leaderboard }) {
+  const averageRating = reviews.length
+    ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
+    : 0;
+  const lowReviews = reviews.filter(review => Number(review.rating || 0) <= 3);
+
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Качество сервиса" subtitle="Отзывы клиентов, рейтинг водителей и слабые точки поездок" />
+
+      <section className="admin-analytics-grid quality">
+        <article className="admin-analytics-card quality">
+          <span>Средняя оценка</span>
+          <strong>{averageRating ? averageRating.toFixed(1) : "—"}</strong>
+          <small>{reviews.length} отзывов в базе</small>
+        </article>
+        <article className="admin-analytics-card quality">
+          <span>Низкие оценки</span>
+          <strong>{lowReviews.length}</strong>
+          <small>Требуют проверки причины</small>
+        </article>
+        <article className="admin-analytics-card quality">
+          <span>Водителей в рейтинге</span>
+          <strong>{leaderboard.length}</strong>
+          <small>Сортировка по оценке и поездкам</small>
+        </article>
+        <article className="admin-analytics-card quality">
+          <span>Лучший водитель</span>
+          <strong>{leaderboard[0]?.rating ? Number(leaderboard[0].rating).toFixed(1) : "—"}</strong>
+          <small>{leaderboard[0]?.name || "Появится после поездок"}</small>
+        </article>
+      </section>
+
+      <div className="admin-quality-layout">
+        <DataCard title="Рейтинг водителей" text="Помогает видеть сильных водителей и тех, кому нужна проверка качества.">
+          {!leaderboard.length ? (
+            <div className="admin-empty-note">
+              <strong>Рейтинга пока нет</strong>
+              <span>После первых оценённых поездок здесь появится таблица водителей.</span>
+            </div>
+          ) : (
+            <div className="admin-table premium">
+              {leaderboard.map((driver, index) => (
+                <div className="admin-table-row quality-driver" key={driver.id}>
+                  <strong>{index + 1}. {driver.name}</strong>
+                  <span>{driver.phone}</span>
+                  <span>{[driver.car_model, driver.plate].filter(Boolean).join(" · ") || "Авто не указано"}</span>
+                  <Badge tone={Number(driver.rating || 0) >= 4.5 ? "success" : Number(driver.rating || 0) >= 4 ? "warning" : "muted"}>
+                    {driver.rating ? `${Number(driver.rating).toFixed(1)} рейтинг` : "Нет оценок"}
+                  </Badge>
+                  <span>{driver.completed_orders || 0} поездок</span>
+                  <span>{formatMoney(driver.revenue_total)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DataCard>
+
+        <DataCard title="Последние отзывы" text="Низкие оценки нужно разбирать с заказом, водителем и оператором.">
+          {!reviews.length ? (
+            <div className="admin-empty-note">
+              <strong>Отзывов пока нет</strong>
+              <span>Отзывы появятся после завершения поездок и оценки клиента.</span>
+            </div>
+          ) : (
+            <div className="admin-review-list">
+              {reviews.slice(0, 12).map(review => (
+                <article className="admin-review-card" key={review.id}>
+                  <header>
+                    <div>
+                      <strong>{review.driver_name || "Водитель"}</strong>
+                      <span>{review.short_id || "Заказ не указан"} · {formatDate(review.created_at)}</span>
+                    </div>
+                    <Badge tone={Number(review.rating || 0) >= 4 ? "success" : "warning"}>
+                      {review.rating}/5
+                    </Badge>
+                  </header>
+                  {Array.isArray(review.tags) && review.tags.length ? (
+                    <div className="admin-review-tags">
+                      {review.tags.map(tag => <span key={tag}>{tag}</span>)}
+                    </div>
+                  ) : null}
+                  <p>{review.comment || "Комментарий не указан"}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </DataCard>
+      </div>
+    </div>
   );
 }
 
 function AuditPage({ logs }) {
-  if (!logs.length) return <StatePanel title="Журнал пока пуст" text="Audit события появятся после действий пользователей." />;
+  if (!logs.length) return <StatePanel title="Журнал пока пуст" text="Записи появятся после действий пользователей." />;
   return (
-    <DataCard title="Audit" text="Последние системные события сервиса.">
+    <DataCard title="Журнал действий" text="Последние системные события сервиса.">
       <div className="admin-table premium">
         {logs.map(log => (
           <div className="admin-table-row audit" key={log.id}>
@@ -1524,19 +2541,139 @@ function AuditPage({ logs }) {
   );
 }
 
-function SettingsPage({ settings }) {
-  if (!settings) return <StatePanel title="Настройки недоступны" text="Не удалось загрузить настройки сервиса." />;
+function SettingsPage({ settings, onSave, canEdit }) {
+  const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (settings) {
+      setForm({
+        serviceName: settings.serviceName || "",
+        city: settings.city || "",
+        currency: settings.currency || "KZT",
+        currencySymbol: settings.currencySymbol || "₸",
+        defaultCommissionPercent: settings.defaultCommissionPercent ?? 0,
+        supportPhone: settings.supportPhone || "",
+        sosPhone: settings.sosPhone || "",
+        autoApproveDrivers: !!settings.autoApproveDrivers,
+        autoAssignOrders: !!settings.autoAssignOrders
+      });
+    }
+  }, [settings]);
+
+  if (!settings || !form) return <StatePanel title="Настройки недоступны" text="Не удалось загрузить настройки сервиса." />;
+
+  function setField(field, value) {
+    setForm(current => ({ ...current, [field]: value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    if (!form.serviceName.trim() || !form.city.trim()) {
+      setError("Название и город обязательны");
+      return;
+    }
+    setBusy(true);
+    try {
+      await onSave({
+        serviceName: form.serviceName.trim(),
+        city: form.city.trim(),
+        currency: form.currency.trim(),
+        currencySymbol: form.currencySymbol.trim(),
+        defaultCommissionPercent: Number(form.defaultCommissionPercent),
+        supportPhone: form.supportPhone.trim(),
+        sosPhone: form.sosPhone.trim(),
+        autoApproveDrivers: form.autoApproveDrivers,
+        autoAssignOrders: form.autoAssignOrders
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <DataCard title="Настройки сервиса" text="Текущие параметры сервиса и значения, которые влияют на клиентское приложение.">
-      <div className="admin-settings-grid">
-        <InfoLine label="Название" value={settings.serviceName} />
-        <InfoLine label="Город" value={settings.city} />
-        <InfoLine label="Валюта" value={`${settings.currency || "KZT"} ${settings.currencySymbol || "₸"}`} />
-        <InfoLine label="Комиссия по умолчанию" value={`${settings.defaultCommissionPercent || 0}%`} />
-        <InfoLine label="Телефон поддержки" value={settings.supportPhone} />
-        <InfoLine label="Экстренный номер" value={settings.sosPhone} />
-      </div>
-    </DataCard>
+    <div className="admin-page-stack">
+      <PageHeader title="Настройки сервиса" subtitle="Параметры, которые влияют на клиентское и водительское приложение" />
+      <DataCard title="Основные параметры" text={canEdit ? "Изменения применяются сразу после сохранения." : "Изменять настройки может только владелец (OWNER)."}>
+        <form className="admin-form-grid" onSubmit={submit}>
+          <div className="admin-form-row">
+            <label className="admin-field">
+              <span>Название сервиса</span>
+              <input value={form.serviceName} onChange={event => setField("serviceName", event.target.value)} disabled={!canEdit} />
+            </label>
+            <label className="admin-field">
+              <span>Город</span>
+              <input value={form.city} onChange={event => setField("city", event.target.value)} disabled={!canEdit} />
+            </label>
+          </div>
+          <div className="admin-form-row">
+            <label className="admin-field">
+              <span>Код валюты</span>
+              <input value={form.currency} onChange={event => setField("currency", event.target.value)} disabled={!canEdit} />
+            </label>
+            <label className="admin-field">
+              <span>Символ валюты</span>
+              <input value={form.currencySymbol} onChange={event => setField("currencySymbol", event.target.value)} disabled={!canEdit} />
+            </label>
+          </div>
+          <div className="admin-form-row">
+            <label className="admin-field">
+              <span>Комиссия по умолчанию (%)</span>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                step="0.1"
+                value={form.defaultCommissionPercent}
+                onChange={event => setField("defaultCommissionPercent", event.target.value)}
+                disabled={!canEdit}
+              />
+            </label>
+            <label className="admin-field">
+              <span>Телефон поддержки</span>
+              <input value={form.supportPhone} onChange={event => setField("supportPhone", event.target.value)} disabled={!canEdit} />
+            </label>
+          </div>
+          <div className="admin-form-row">
+            <label className="admin-field">
+              <span>Экстренный номер</span>
+              <input value={form.sosPhone} onChange={event => setField("sosPhone", event.target.value)} disabled={!canEdit} />
+            </label>
+            <div />
+          </div>
+          <div className="admin-form-row">
+            <label className="admin-toggle-line">
+              <input
+                type="checkbox"
+                checked={form.autoApproveDrivers}
+                onChange={event => setField("autoApproveDrivers", event.target.checked)}
+                disabled={!canEdit}
+              />
+              <span>Автоматически одобрять заявки водителей</span>
+            </label>
+            <label className="admin-toggle-line">
+              <input
+                type="checkbox"
+                checked={form.autoAssignOrders}
+                onChange={event => setField("autoAssignOrders", event.target.checked)}
+                disabled={!canEdit}
+              />
+              <span>Автоматически назначать заказы водителям</span>
+            </label>
+          </div>
+          {error && <InlineMessage danger text={error} />}
+          {canEdit && (
+            <div className="admin-modal-actions">
+              <button type="submit" className="admin-primary-button" disabled={busy}>
+                {busy ? "Сохраняем..." : "Сохранить настройки"}
+              </button>
+            </div>
+          )}
+        </form>
+      </DataCard>
+    </div>
   );
 }
 
