@@ -6,7 +6,7 @@ import { ensureReferralCode } from "./referrals.service.js";
 
 const router = Router();
 
-router.get("/mine", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
+async function referralSummary(req, res, next) {
   try {
     const client = (await query("SELECT * FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
     if (!client) throw new AppError("Client profile not found", 404, "CLIENT_NOT_FOUND");
@@ -27,6 +27,11 @@ router.get("/mine", requireAuth, requireRole("CLIENT"), async (req, res, next) =
       totalBonusEarned: earned.total
     });
   } catch (e) { next(e); }
-});
+}
+
+// /mine is the spec'd path; /me is an alias for the web admin client, which
+// already shipped calling that name — both serve the exact same summary.
+router.get("/mine", requireAuth, requireRole("CLIENT"), referralSummary);
+router.get("/me", requireAuth, requireRole("CLIENT"), referralSummary);
 
 export default router;

@@ -890,6 +890,78 @@ router.delete("/promo-codes/:id", requireAuth, requireRole("OWNER", "FINANCE"), 
   } catch (error) { next(error); }
 });
 
+function publicAdminRecurringBooking(row) {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    clientName: row.client_name,
+    clientPhone: row.client_phone,
+    driverId: row.driver_id,
+    driverName: row.driver_name,
+    driverPhone: row.driver_phone,
+    pickupText: row.pickup_text,
+    dropoffText: row.dropoff_text,
+    daysOfWeek: row.days_of_week,
+    timeOfDay: row.time_of_day,
+    priceKzt: row.price_kzt,
+    status: row.status,
+    notes: row.notes || "",
+    lastTriggeredDate: row.last_triggered_date,
+    createdAt: row.created_at
+  };
+}
+
+router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      status: z.enum(["PENDING_DRIVER", "ACTIVE", "PAUSED", "CANCELLED"]).optional()
+    }).parse(req.query);
+    const rows = (await query(`
+      SELECT rb.*, c.name AS client_name, c.phone AS client_phone, d.name AS driver_name, d.phone AS driver_phone
+      FROM recurring_bookings rb
+      JOIN clients c ON c.id=rb.client_id
+      JOIN drivers d ON d.id=rb.driver_id
+      ${params.status ? "WHERE rb.status=$1" : ""}
+      ORDER BY rb.created_at DESC
+      LIMIT 200
+    `, params.status ? [params.status] : [])).rows;
+    res.json({ recurringBookings: rows.map(publicAdminRecurringBooking) });
+  } catch (error) { next(error); }
+});
+
+// One row per referred client (not per client who has referred others) —
+// mirrors how the invite actually happened: someone used someone else's
+// code once, at registration.
+router.get("/referrals", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+  try {
+    const rows = (await query(`
+      SELECT
+        c.id,
+        c.name AS invitee_name, c.phone AS invitee_phone,
+        r.name AS inviter_name, r.phone AS inviter_phone,
+        ct.created_at AS reward_credited_at,
+        ct.amount AS reward_kzt
+      FROM clients c
+      JOIN clients r ON r.id = c.referred_by_client_id
+      LEFT JOIN cashback_transactions ct ON ct.client_id = c.id AND ct.type = 'REFERRAL_BONUS'
+      WHERE c.referred_by_client_id IS NOT NULL
+      ORDER BY c.created_at DESC
+      LIMIT 200
+    `)).rows;
+    res.json({
+      referrals: rows.map(row => ({
+        id: row.id,
+        inviterName: row.inviter_name,
+        inviterPhone: row.inviter_phone,
+        inviteeName: row.invitee_name,
+        inviteePhone: row.invitee_phone,
+        rewardCreditedAt: row.reward_credited_at,
+        rewardKzt: row.reward_kzt == null ? null : Number(row.reward_kzt)
+      }))
+    });
+  } catch (error) { next(error); }
+});
+
 router.get("/finance/summary", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
   try {
     const params = FinanceQuery.omit({ driverId: true, tariffId: true, type: true, paymentMethod: true, status: true, limit: true, offset: true }).parse(req.query);
