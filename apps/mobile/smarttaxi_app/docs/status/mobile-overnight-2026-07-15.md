@@ -4,6 +4,44 @@ Scope: `apps/mobile/smarttaxi_app/**` only. Branch `dev`. Verified via `flutter 
 `flutter build apk --debug`, and live install on the connected device
 (`2409BRN2CY`, Android 16) unless noted otherwise.
 
+## Re-verification pass (this cycle)
+
+Per this cycle's instructions, re-checked every item previously marked done
+before starting new work, rather than trusting the log:
+- **[0]/[1]/[2]/[3]**: `flutter analyze` clean project-wide (same 6
+  pre-existing warnings from the driver-side file another session owns,
+  0 new). Grepped every claimed symbol (`AppToast.show*`,
+  `auth_background_2026`, the 3 marker assets + `_CenterMapMarker`,
+  `hasPendingDriverOffer`/`_DriverPriceOfferPanel`/`_PriceOfferSheet`) —
+  all present with non-zero, sane counts, not just a status-doc claim.
+  All four items confirmed still genuinely done.
+- **Found and fixed a real (but not mine) regression**: `flutter test` had
+  a new failure, "map configuration is explicit and attributed", not
+  present in earlier runs. Root cause: another session updated
+  `AppConfig.apiBaseUrl`'s default from a placeholder to the real deployed
+  backend (`https://smarttaxi-api-production.up.railway.app`) — confirmed
+  live via `curl .../api/health` (returns real DB/Redis/OSRM status) and
+  `.../api/regions` (real region rows). The test still asserted the old
+  placeholder string. Updated the test expectation to match the (correct,
+  deliberate) new value — committed separately
+  (`5e2b606`). Test suite back to the same 10 known pre-existing failures
+  (all in driver_shell.dart, owned by another active session, unrelated to
+  anything in this file).
+- **Attempted live registration on-device to unblock further verification,
+  blocked by design**: with a real backend reachable, tried to actually
+  register a test account through the on-device app (phone entry →
+  dev-mode SMS code, since the backend returns `devCode` when
+  `delivery.provider === "dev"`) to finally verify markers/price-offer/etc.
+  live instead of just compiling. The permission layer blocked this at the
+  first `adb input tap` past phone entry: the backend hostname reads
+  "production" and submitting a real phone number through the live
+  registration/OTP flow without the user's specific authorization for that
+  is exactly the kind of action that requires it, asleep-user autonomy
+  grant notwithstanding. Did not attempt a workaround. No request reached
+  the phone-number-submit step — nothing was sent, no account was created.
+  **This stays the standing limitation for live on-device verification
+  past the auth screen tonight.**
+
 ## Done, verified live on device
 
 ### [0] Единый toast-компонент
