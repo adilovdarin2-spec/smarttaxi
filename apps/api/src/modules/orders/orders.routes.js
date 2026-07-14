@@ -5,9 +5,10 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
-import { calculateOrderPrice, prepareOrderPricing } from "./order-pricing.service.js";
+import { calculateOrderPrice, offeredPriceBounds, prepareOrderPricing } from "./order-pricing.service.js";
 import {
   acceptOrderForDriver,
+  ACTIVE_ORDER_STATUSES,
   assertDriverHasNoActiveOrder,
   assertStatusTransition,
   CLIENT_ACTIVE_ORDER_STATUSES,
@@ -16,21 +17,32 @@ import {
   listOrdersForDriver,
   OPEN_ORDER_STATUSES,
   ORDER_STATUSES,
-  publicOrderEvent
+  publicOrderEvent,
+  publicOrderStatus,
+  respondToDriverPriceOffer,
+  submitDriverPriceOffer,
+  syncDriverAvailability
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { createOrderCancelledTransaction, createOrderCompletedTransaction } from "../finance/finance.service.js";
+import { notifyOrderClient, notifyOrderDriver } from "../notifications/notification.service.js";
+import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
 
 const router = Router();
-const ORDER_SELECT = `
+// Anti-fraud: auto-suspend a driver whose rolling average drops below this
+// once they have enough reviews that it isn't just one bad trip.
+const DRIVER_AUTO_BLOCK_RATING_THRESHOLD = 3.0;
+const DRIVER_AUTO_BLOCK_MIN_REVIEWS = 5;
+export const ORDER_SELECT = `
   o.*,
   d.name AS driver_name,
   d.phone AS driver_phone,
   d.car_model AS driver_car_model,
+  d.car_color AS driver_car_color,
   d.plate AS driver_plate,
   d.rating AS driver_rating
 `;
-function publicOrderResponse(order) {
+export function publicOrderResponse(order) {
   if (!order) return order;
   return { ...order, public_status: publicOrderEvent(order).public_status };
 }
@@ -68,10 +80,15 @@ export const CreateOrder = z.object({
   dropoffLng: z.coerce.number().min(-180).max(180),
   tariffId: z.string().uuid().optional(),
   tariff: z.string().trim().min(2).max(40).default("Economy"),
-  paymentMethod: z.enum(["CASH", "KASPI"]).default("CASH"),
+  paymentMethod: z.enum(["CASH", "KASPI", "CARD"]).default("CASH"),
   distanceKm: z.coerce.number().gt(0).max(300),
   durationMin: z.coerce.number().gt(0).max(600),
-  notes: z.string().trim().max(500).optional().default("")
+  notes: z.string().trim().max(500).optional().default(""),
+  // "Своя цена": rider raises/lowers the fare from the estimate via the
+  // stepper in the tariff sheet. Bounds are re-checked server-side against
+  // the freshly computed estimate below — never trust the client's math.
+  offeredPriceKzt: z.coerce.number().int().positive().max(1_000_000).optional(),
+  promoCode: z.string().trim().min(2).max(40).optional()
 });
 
 export const EstimateOrder = CreateOrder.pick({
@@ -89,8 +106,8 @@ async function insertOrderWithShortId(client, params) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const result = await client.query(`
-        INSERT INTO orders(short_id, status, region_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, price, distance_km, duration_min, service_commission, pricing_snapshot, notes)
-        VALUES($1,'SEARCHING_DRIVER',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19)
+        INSERT INTO orders(short_id, status, region_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, price, distance_km, duration_min, service_commission, pricing_snapshot, notes, offered_price_kzt, promo_code_id, promo_discount_kzt)
+        VALUES($1,'SEARCHING_DRIVER',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20,$21,$22)
         RETURNING *
       `, [shortId(), ...params]);
       return result.rows[0];
@@ -113,11 +130,91 @@ router.post("/estimate", rateLimit({ prefix: "orders-estimate", windowMs: 60_000
   } catch (e) { next(e); }
 });
 
+// "Поделиться поездкой": no auth, keyed by an unguessable share_token (not
+// the order id/short_id) so a shared link can only ever reveal this one
+// trip's safe, non-sensitive fields — no phone numbers, no price.
+router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000, max: 30 }), async (req, res, next) => {
+  try {
+    const { token } = z.object({ token: z.string().uuid() }).parse(req.params);
+    const order = (await query(`
+      SELECT o.status, o.tariff, o.pickup_text, o.dropoff_text, o.created_at,
+             d.name AS driver_name, d.car_model AS driver_car_model, d.car_color AS driver_car_color, d.plate AS driver_plate,
+             dl.lat AS driver_lat, dl.lng AS driver_lng, dl.updated_at AS driver_location_updated_at
+      FROM orders o
+      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN driver_locations dl ON dl.driver_id=o.driver_id
+      WHERE o.share_token=$1
+    `, [token])).rows[0];
+    if (!order) throw new AppError("Trip not found", 404, "TRIP_NOT_FOUND");
+    const isActive = ACTIVE_ORDER_STATUSES.includes(order.status);
+    res.json({
+      trip: {
+        status: order.status,
+        publicStatus: publicOrderStatus(order.status),
+        tariff: order.tariff,
+        pickupText: order.pickup_text,
+        dropoffText: order.dropoff_text,
+        driverName: order.driver_name,
+        driverCar: [order.driver_car_color, order.driver_car_model].filter(Boolean).join(" ") || null,
+        driverPlate: order.driver_plate,
+        driverLocation: isActive && order.driver_lat != null
+          ? { lat: Number(order.driver_lat), lng: Number(order.driver_lng) }
+          : null,
+        createdAt: order.created_at
+      }
+    });
+  } catch (e) { next(e); }
+});
+
+router.post("/promo/validate", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "promo-validate", windowMs: 60_000, max: 20 }), async (req, res, next) => {
+  try {
+    const body = z.object({
+      code: z.string().trim().min(2).max(40),
+      regionId: z.string().uuid(),
+      orderPriceKzt: z.coerce.number().int().positive()
+    }).parse(req.body);
+    const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
+    const promo = await findValidPromoCode({
+      code: body.code,
+      regionId: body.regionId,
+      clientId: client?.id,
+      orderPriceKzt: body.orderPriceKzt,
+      executor: { query }
+    });
+    const discountAmountKzt = calculatePromoDiscount(promo, body.orderPriceKzt);
+    res.json({
+      promo: {
+        code: promo.code,
+        discountAmountKzt,
+        finalPriceKzt: body.orderPriceKzt - discountAmountKzt
+      }
+    });
+  } catch (e) { next(e); }
+});
+
 router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
     const body = CreateOrder.parse(req.body);
     const order = await tx(async (client) => {
       const pricing = await prepareOrderPricing(body, client);
+
+      let finalPrice = pricing.estimatedPrice;
+      let serviceCommission = pricing.serviceCommission;
+      let offeredPriceKzt = null;
+      if (body.offeredPriceKzt) {
+        const { minAllowed, maxAllowed } = offeredPriceBounds(pricing.estimatedPrice);
+        if (body.offeredPriceKzt < minAllowed || body.offeredPriceKzt > maxAllowed) {
+          throw new AppError("Offered price is outside allowed bounds", 400, "OFFERED_PRICE_OUT_OF_BOUNDS", {
+            minAllowed,
+            maxAllowed,
+            estimatedPrice: pricing.estimatedPrice
+          });
+        }
+        offeredPriceKzt = body.offeredPriceKzt;
+        finalPrice = offeredPriceKzt;
+        const commissionPercent = Number(pricing.tariff.service_commission_percent ?? 0);
+        serviceCommission = Math.round((finalPrice * commissionPercent) / 100);
+      }
 
       const rider = (await client.query(`
         INSERT INTO clients(user_id, name, phone)
@@ -125,6 +222,25 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         ON CONFLICT (phone) DO UPDATE SET name=EXCLUDED.name, user_id=COALESCE(clients.user_id, EXCLUDED.user_id)
         RETURNING *
       `, [req.user.id, body.riderName, body.riderPhone])).rows[0];
+
+      // A promo code and a rider-proposed price both change what's charged —
+      // combining them would make the discount math ambiguous, so a promo
+      // only applies when the rider accepted the calculated estimate as-is.
+      let promo = null;
+      let promoDiscountKzt = 0;
+      if (body.promoCode && !offeredPriceKzt) {
+        promo = await findValidPromoCode({
+          code: body.promoCode,
+          regionId: pricing.regionId,
+          clientId: rider.id,
+          orderPriceKzt: finalPrice,
+          executor: client
+        });
+        promoDiscountKzt = calculatePromoDiscount(promo, finalPrice);
+        finalPrice -= promoDiscountKzt;
+        const commissionPercent = Number(pricing.tariff.service_commission_percent ?? 0);
+        serviceCommission = Math.round((finalPrice * commissionPercent) / 100);
+      }
 
       const activeOrder = (await client.query(`
         SELECT id, short_id, status
@@ -154,24 +270,47 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         body.dropoffLng,
         pricing.tariff.name,
         body.paymentMethod,
-        pricing.estimatedPrice,
+        finalPrice,
         pricing.pricingSnapshot.distanceKm,
         pricing.pricingSnapshot.durationMin,
-        pricing.serviceCommission,
+        serviceCommission,
         JSON.stringify(pricing.pricingSnapshot),
-        body.notes
+        body.notes,
+        offeredPriceKzt,
+        promo?.id ?? null,
+        promoDiscountKzt
       ]);
+
+      if (promo) {
+        await recordPromoRedemption({
+          promoId: promo.id,
+          clientId: rider.id,
+          orderId: created.id,
+          discountAmountKzt: promoDiscountKzt,
+          executor: client
+        });
+      }
 
       await client.query("INSERT INTO order_status_history(order_id,status,message) VALUES($1,'SEARCHING_DRIVER','Order created')", [created.id]);
       await client.query(`
         INSERT INTO payments(order_id, method, status, amount, currency)
         VALUES($1,$2,'PENDING',$3,'KZT')
-      `, [created.id, body.paymentMethod, pricing.estimatedPrice]);
+      `, [created.id, body.paymentMethod, finalPrice]);
       await writeAudit(client, {
         action: "order_created",
         entityType: "order",
         entityId: created.id,
-        metadata: { shortId: created.short_id, regionId: created.region_id, tariff: created.tariff, paymentMethod: created.payment_method, price: created.price },
+        metadata: {
+          shortId: created.short_id,
+          regionId: created.region_id,
+          tariff: created.tariff,
+          paymentMethod: created.payment_method,
+          price: created.price,
+          offeredPriceKzt,
+          promoCode: promo?.code ?? null,
+          promoDiscountKzt,
+          estimatedPrice: pricing.estimatedPrice
+        },
         req
       });
       return created;
@@ -203,7 +342,7 @@ router.post("/:id/cancel-public", async (req, res, next) => {
 
       const updated = (await client.query("UPDATE orders SET status='CANCELLED_BY_CLIENT', cancelled_at=NOW() WHERE id=$1 RETURNING *", [existing.id])).rows[0];
       if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
-      await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status='PENDING'", [updated.id]);
+      await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
       await createOrderCancelledTransaction(updated, null, client);
       await client.query("INSERT INTO order_status_history(order_id,status,message) VALUES($1,'CANCELLED_BY_CLIENT','Cancelled by client')", [updated.id]);
       await writeAudit(client, {
@@ -233,8 +372,9 @@ router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE", "DRIVER
     }).parse(req.query);
     let result;
     if (req.user.role === "DRIVER") {
-      const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+      let driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
       if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+      driver = await syncDriverAvailability(driver, query);
       result = { rows: await listOrdersForDriver({
         driver,
         status: params.status,
@@ -248,6 +388,65 @@ router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE", "DRIVER
         : await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id ORDER BY o.created_at DESC LIMIT $1`, [params.limit]);
     }
     res.json({ orders: result.rows.map(publicOrderResponse) });
+  } catch (e) { next(e); }
+});
+
+router.get("/me/active", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
+  try {
+    const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!client) return res.json({ order: null });
+    const order = (await query(`
+      SELECT ${ORDER_SELECT}
+      FROM orders o
+      LEFT JOIN drivers d ON d.id=o.driver_id
+      WHERE o.client_id=$1 AND o.status = ANY($2::text[])
+      ORDER BY o.created_at DESC
+      LIMIT 1
+    `, [client.id, CLIENT_ACTIVE_ORDER_STATUSES])).rows[0] || null;
+    res.json({ order: order ? publicOrderResponse(order) : null });
+  } catch (e) { next(e); }
+});
+
+const HistoryQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20)
+});
+
+// Finished trips only (not the active one) — receipts/history the rider can
+// look back through, same shape as every other order response so the app's
+// existing OrderSummary parsing works without a special case.
+router.get("/me/history", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
+  try {
+    const params = HistoryQuery.parse(req.query);
+    const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!client) return res.json({ orders: [] });
+    const orders = (await query(`
+      SELECT ${ORDER_SELECT}
+      FROM orders o
+      LEFT JOIN drivers d ON d.id=o.driver_id
+      WHERE o.client_id=$1 AND NOT (o.status = ANY($2::text[]))
+      ORDER BY o.created_at DESC
+      LIMIT $3
+    `, [client.id, CLIENT_ACTIVE_ORDER_STATUSES, params.limit])).rows;
+    res.json({ orders: orders.map(publicOrderResponse) });
+  } catch (e) { next(e); }
+});
+
+// Driver-side equivalent of /me/history — a real trip/earnings list instead
+// of just today's aggregate stats.
+router.get("/me/driver-history", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const params = HistoryQuery.parse(req.query);
+    const driver = (await query("SELECT id FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!driver) return res.json({ orders: [] });
+    const orders = (await query(`
+      SELECT ${ORDER_SELECT}
+      FROM orders o
+      LEFT JOIN drivers d ON d.id=o.driver_id
+      WHERE o.driver_id=$1 AND NOT (o.status = ANY($2::text[]))
+      ORDER BY o.created_at DESC
+      LIMIT $3
+    `, [driver.id, ACTIVE_ORDER_STATUSES, params.limit])).rows;
+    res.json({ orders: orders.map(publicOrderResponse) });
   } catch (e) { next(e); }
 });
 
@@ -284,6 +483,7 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
   try {
     const { id } = IdParam.parse(req.params);
     const body = RateOrder.parse(req.body);
+    let driverAutoBlocked = false;
     const order = await tx(async (client) => {
       const existing = (await client.query(`
         SELECT o.*, d.name AS driver_name, d.phone AS driver_phone, d.car_model AS driver_car_model,
@@ -310,8 +510,33 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
         INSERT INTO driver_reviews(order_id, driver_id, client_id, rating, tags, comment)
         VALUES($1,$2,$3,$4,$5,$6)
       `, [existing.id, existing.driver_id, existing.client_id, body.rating, body.tags, body.comment || null]);
-      const rating = (await client.query("SELECT AVG(rating)::numeric(3,2) rating FROM driver_reviews WHERE driver_id=$1", [existing.driver_id])).rows[0];
-      await client.query("UPDATE drivers SET rating=$1 WHERE id=$2", [rating.rating || body.rating, existing.driver_id]);
+      const ratingStats = (await client.query(
+        "SELECT AVG(rating)::numeric(3,2) AS avg_rating, COUNT(*)::int AS review_count FROM driver_reviews WHERE driver_id=$1",
+        [existing.driver_id]
+      )).rows[0];
+      const avgRating = Number(ratingStats.avg_rating || body.rating);
+      await client.query("UPDATE drivers SET rating=$1 WHERE id=$2", [avgRating, existing.driver_id]);
+
+      // Anti-fraud: a driver who consistently rates below the threshold over
+      // enough trips to rule out one bad review gets suspended automatically
+      // instead of waiting for an operator to notice. Only fires once — a
+      // driver already blocked (for this or any other reason) isn't touched
+      // again, and an operator can always review/unblock manually afterward.
+      if (ratingStats.review_count >= DRIVER_AUTO_BLOCK_MIN_REVIEWS && avgRating < DRIVER_AUTO_BLOCK_RATING_THRESHOLD) {
+        const driverRow = (await client.query("SELECT is_blocked FROM drivers WHERE id=$1 FOR UPDATE", [existing.driver_id])).rows[0];
+        if (driverRow && !driverRow.is_blocked) {
+          await client.query("UPDATE drivers SET is_blocked=true, status='OFFLINE' WHERE id=$1", [existing.driver_id]);
+          await writeAudit(client, {
+            action: "driver_auto_blocked",
+            entityType: "driver",
+            entityId: existing.driver_id,
+            metadata: { avgRating, reviewCount: ratingStats.review_count, reason: "low_rating" },
+            req
+          });
+          driverAutoBlocked = true;
+        }
+      }
+
       await client.query("UPDATE orders SET status='RATED' WHERE id=$1", [existing.id]);
       await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'RATED','Client rated trip',$2)", [existing.id, req.user.id]);
       await writeAudit(client, {
@@ -330,6 +555,13 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
       `, [existing.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, "order.rated");
+    if (driverAutoBlocked) {
+      notifyOrderDriver(order, {
+        title: "Аккаунт временно заблокирован",
+        body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку SmartTaxi.",
+        type: "DRIVER_AUTO_BLOCKED"
+      }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
+    }
     res.status(201).json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });
@@ -355,6 +587,90 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
       `, [accepted.order.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, "order_accepted");
+    notifyOrderClient(order, {
+      title: "Водитель найден",
+      body: order.driver_name ? `${order.driver_name} едет за вами` : "Водитель уже в пути к вам",
+      type: "DRIVER_FOUND"
+    }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    res.json({ order: publicOrderResponse(order) });
+  } catch (e) { next(e); }
+});
+
+const PriceOfferBody = z.object({
+  priceKzt: z.coerce.number().int().positive().max(1_000_000)
+});
+
+router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ prefix: "orders-price-offer", windowMs: 60_000, max: 20 }), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = PriceOfferBody.parse(req.body);
+    const order = await tx(async (client) => {
+      const target = (await client.query("SELECT price FROM orders WHERE id=$1", [id])).rows[0];
+      if (!target) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      const { minAllowed, maxAllowed } = offeredPriceBounds(target.price);
+      if (body.priceKzt < minAllowed || body.priceKzt > maxAllowed) {
+        throw new AppError("Offered price is outside allowed bounds", 400, "OFFERED_PRICE_OUT_OF_BOUNDS", {
+          minAllowed,
+          maxAllowed
+        });
+      }
+      const result = await submitDriverPriceOffer({ orderId: id, userId: req.user.id, priceKzt: body.priceKzt, executor: client });
+      await writeAudit(client, {
+        action: "order_driver_price_offer_submitted",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: result.order.id,
+        metadata: { driverId: result.driver.id, priceKzt: body.priceKzt },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [result.order.id])).rows[0];
+    });
+    emitOrderUpdated(req.io, order, "order.driver_price_offer");
+    notifyOrderClient(order, {
+      title: "Водитель предложил свою цену",
+      body: `Новая цена поездки: ${order.driver_offer_price_kzt} ₸`,
+      type: "DRIVER_PRICE_OFFER"
+    }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    res.status(201).json({ order: publicOrderResponse(order) });
+  } catch (e) { next(e); }
+});
+
+router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-price-offer-respond", windowMs: 60_000, max: 30 }), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = z.object({ accept: z.boolean() }).parse(req.body);
+    let offerDriverId = null;
+    const order = await tx(async (client) => {
+      const before = (await client.query("SELECT driver_offer_by_driver_id FROM orders WHERE id=$1", [id])).rows[0];
+      offerDriverId = before?.driver_offer_by_driver_id ?? null;
+      const result = await respondToDriverPriceOffer({ orderId: id, clientUserId: req.user.id, accept: body.accept, executor: client });
+      await writeAudit(client, {
+        action: body.accept ? "order_driver_price_offer_accepted" : "order_driver_price_offer_declined",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: result.order.id,
+        metadata: { driverId: offerDriverId, priceKzt: result.order.driver_offer_price_kzt },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [result.order.id])).rows[0];
+    });
+    emitOrderUpdated(req.io, order, body.accept ? "order.driver_price_offer_accepted" : "order.driver_price_offer_declined");
+    if (offerDriverId) {
+      notifyOrderDriver({ driver_id: offerDriverId }, body.accept
+        ? { title: "Клиент принял вашу цену", body: "Поездка назначена вам", type: "DRIVER_PRICE_OFFER_ACCEPTED" }
+        : { title: "Клиент отклонил вашу цену", body: "Можете предложить другую цену или взять другой заказ", type: "DRIVER_PRICE_OFFER_DECLINED" }
+      ).catch((error) => console.error("[push] notifyOrderDriver failed", error));
+    }
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });
@@ -396,6 +712,11 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER", "OPERATOR"),
       `, [existing.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, "order_assigned");
+    notifyOrderClient(order, {
+      title: "Водитель найден",
+      body: order.driver_name ? `${order.driver_name} едет за вами` : "Водитель уже в пути к вам",
+      type: "DRIVER_FOUND"
+    }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });
@@ -448,11 +769,11 @@ async function updateStatus(req, res, next, status) {
         await createOrderCompletedTransaction(updated, req.user.id, client);
       }
       if (status === "PAID") {
-        await client.query("UPDATE payments SET status='PAID', updated_at=NOW() WHERE order_id=$1 AND status='PENDING'", [updated.id]);
+        await client.query("UPDATE payments SET status='PAID', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
       }
       if (["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "NO_SHOW"].includes(status)) {
         if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
-        await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status='PENDING'", [updated.id]);
+        await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
         await createOrderCancelledTransaction(updated, req.user.id, client);
       }
       await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,$2,$3,$4)", [existing.id, status, `Status changed to ${status}`, req.user.id]);
@@ -472,6 +793,20 @@ async function updateStatus(req, res, next, status) {
       `, [existing.id])).rows[0];
     });
     emitOrderUpdated(req.io, order);
+    if (status === "DRIVER_ARRIVED") {
+      notifyOrderClient(order, {
+        title: "Водитель приехал",
+        body: "Ваш водитель на месте и ждёт вас",
+        type: "DRIVER_ARRIVED"
+      }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    }
+    if (status === "TRIP_COMPLETED") {
+      notifyOrderClient(order, {
+        title: "Поездка завершена",
+        body: order.price ? `Стоимость поездки: ${order.price} ₸` : "Спасибо, что выбрали SmartTaxi",
+        type: "TRIP_COMPLETED"
+      }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    }
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 }

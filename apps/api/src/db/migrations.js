@@ -247,15 +247,15 @@ const statements = [
   "UPDATE tariffs SET region_id=(SELECT id FROM regions WHERE code='ATAKENT') WHERE region_id IS NULL",
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_tariffs_region_name ON tariffs(region_id, name)",
   `INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
-   SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, true
+   SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, seed.is_active
    FROM regions r
    CROSS JOIN (
      VALUES
-      ('Economy','Эконом','Быстро и доступно для ежедневных поездок',350,110,18,500,15,2,1,3,50,0,10),
-      ('Comfort','Комфорт','Больше удобства для городских поездок',500,140,22,750,15,2,1,3,60,0,20),
-      ('Business','Бизнес','Премиальный автомобиль и спокойная поездка',800,210,35,1200,15,2,1,3,80,0,30),
-      ('Delivery','Доставка','Передать посылку по региону',300,80,12,450,15,0,1,3,50,0,40)
-   ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
+      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,15,0,1,3,50,0,10,true),
+      ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,15,0,1,3,60,0,20,true),
+      ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,15,0,1,3,80,0,25,true),
+      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,15,0,1,3,50,0,30,true)
+   ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
    WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
    ON CONFLICT (region_id, name) DO UPDATE
    SET region_id=EXCLUDED.region_id,
@@ -484,7 +484,188 @@ const statements = [
       AND sort_order >= 0
     );
   EXCEPTION WHEN duplicate_object THEN NULL;
-  END $$`
+  END $$`,
+
+  // --- Stage: payments module (Kaspi Pay groundwork) ---
+  // `payments` already existed (CASH/KASPI only, no PROCESSING state, no
+  // provider tracking). Widening it here instead of a new table so the
+  // existing order-creation/mark-paid code in orders.routes.js keeps working
+  // unchanged while payments.routes.js adds the initiate/status flow on top.
+  "ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 'MANUAL'",
+  "ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb",
+  "ALTER TABLE payments ADD COLUMN IF NOT EXISTS failure_reason TEXT",
+  "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_method_check",
+  "ALTER TABLE payments ADD CONSTRAINT payments_method_check CHECK (method IN ('CASH','KASPI','CARD'))",
+  "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check",
+  "ALTER TABLE payments ADD CONSTRAINT payments_status_check CHECK (status IN ('PENDING','PROCESSING','PAID','FAILED','CANCELLED'))",
+  `DO $$
+  BEGIN
+    ALTER TABLE payments ADD CONSTRAINT payments_provider_check CHECK (provider IN ('MANUAL','KASPI_PAY'));
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+  "CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)",
+
+  // --- Stage: push notifications (FCM) ---
+  `CREATE TABLE IF NOT EXISTS device_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL,
+    platform TEXT NOT NULL DEFAULT 'android' CHECK (platform IN ('android','ios','web')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_device_tokens_token ON device_tokens(token)",
+  "CREATE INDEX IF NOT EXISTS idx_device_tokens_user_id ON device_tokens(user_id)",
+  `CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'ORDER_STATUS',
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    read_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_notifications_user_id_created_at ON notifications(user_id, created_at DESC)",
+
+  // --- Stage: "своя цена" fare bidding ---
+  // NULL means the rider accepted the calculated estimate as-is; a value
+  // means they raised/lowered it via the stepper and orders.price was set
+  // to that instead (see offeredPriceBounds() in orders.routes.js).
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS offered_price_kzt INTEGER",
+  `DO $$
+  BEGIN
+    ALTER TABLE orders ADD CONSTRAINT orders_offered_price_positive_check CHECK (offered_price_kzt IS NULL OR offered_price_kzt > 0);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+
+  // --- Stage: promo codes ---
+  `CREATE TABLE IF NOT EXISTS promo_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code TEXT UNIQUE NOT NULL,
+    region_id UUID REFERENCES regions(id) ON DELETE CASCADE,
+    discount_type TEXT NOT NULL CHECK (discount_type IN ('PERCENT','FIXED')),
+    discount_value INTEGER NOT NULL CHECK (discount_value > 0),
+    max_discount_kzt INTEGER,
+    min_order_price_kzt INTEGER NOT NULL DEFAULT 0,
+    usage_limit INTEGER,
+    per_client_limit INTEGER NOT NULL DEFAULT 1,
+    valid_from TIMESTAMPTZ,
+    valid_until TIMESTAMPTZ,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_promo_codes_region_id ON promo_codes(region_id)",
+  `CREATE TABLE IF NOT EXISTS promo_code_redemptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    promo_code_id UUID NOT NULL REFERENCES promo_codes(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    discount_amount_kzt INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_promo_redemptions_promo_id ON promo_code_redemptions(promo_code_id)",
+  "CREATE INDEX IF NOT EXISTS idx_promo_redemptions_client_id ON promo_code_redemptions(client_id)",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code_id UUID REFERENCES promo_codes(id) ON DELETE SET NULL",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_discount_kzt INTEGER NOT NULL DEFAULT 0",
+
+  // --- Stage: "поделиться поездкой" public trip tracking ---
+  // A random, unguessable token separate from the order's real id/short_id,
+  // so a shared link can't be used to enumerate or look up other orders.
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS share_token UUID DEFAULT uuid_generate_v4()",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_share_token ON orders(share_token)",
+  "UPDATE orders SET share_token=uuid_generate_v4() WHERE share_token IS NULL",
+
+  // --- Stage: real support tickets ---
+  // The admin panel's "Поддержка" page previously had nothing to show —
+  // no table backed it at all, so passenger/driver support screens fell
+  // back to copy-to-clipboard-and-call. This gives support messages an
+  // actual home: submitted from either app, visible and answerable here.
+  `CREATE TABLE IF NOT EXISTS support_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('CLIENT','DRIVER')),
+    contact_name TEXT NOT NULL DEFAULT '',
+    contact_phone TEXT NOT NULL DEFAULT '',
+    topic TEXT NOT NULL,
+    message TEXT NOT NULL,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','RESOLVED')),
+    admin_response TEXT,
+    responded_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    responded_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_support_messages_status_created_at ON support_messages(status, created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_support_messages_user_id ON support_messages(user_id)",
+  "ALTER TABLE road_alerts ADD COLUMN IF NOT EXISTS heading NUMERIC(6,2)",
+
+  // --- Stage: driver wallet & document verification ---
+  // Wallet has no separate ledger table: earnings are read back from the
+  // existing financial_transactions rows (already written per completed
+  // order in orders.routes.js), payouts get their own request/review table.
+  // Documents support two owners (pre-account application vs. an existing
+  // driver) so the same upload/review flow works for onboarding and later
+  // re-verification.
+  `CREATE TABLE IF NOT EXISTS driver_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+    driver_application_id UUID REFERENCES driver_applications(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('DRIVER_LICENSE_FRONT','DRIVER_LICENSE_BACK','ID_CARD_FRONT','ID_CARD_BACK','VEHICLE_REGISTRATION','INSURANCE_POLICY','PROFILE_PHOTO','OTHER')),
+    file_path TEXT NOT NULL,
+    original_filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','APPROVED','REJECTED')),
+    rejection_reason TEXT,
+    reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `DO $$
+  BEGIN
+    ALTER TABLE driver_documents ADD CONSTRAINT driver_documents_owner_check CHECK (driver_id IS NOT NULL OR driver_application_id IS NOT NULL);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+  "CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id)",
+  "CREATE INDEX IF NOT EXISTS idx_driver_documents_application_id ON driver_documents(driver_application_id)",
+  "CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status)",
+
+  `CREATE TABLE IF NOT EXISTS driver_payout_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    amount_kzt INTEGER NOT NULL CHECK (amount_kzt > 0),
+    method TEXT NOT NULL DEFAULT 'KASPI_TRANSFER' CHECK (method IN ('KASPI_TRANSFER','CASH')),
+    payout_details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','APPROVED','PAID','REJECTED','CANCELLED')),
+    rejection_reason TEXT,
+    provider_reference TEXT,
+    reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    paid_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_driver_payout_requests_driver_id ON driver_payout_requests(driver_id)",
+  "CREATE INDEX IF NOT EXISTS idx_driver_payout_requests_status ON driver_payout_requests(status)",
+
+  // --- Stage: driver price counter-offer ("торг") ---
+  // A driver can propose a different price on a still-open order without
+  // taking it — the order stays visible to everyone else until the rider
+  // explicitly accepts this specific offer (which then assigns the order to
+  // this driver, same as a normal accept).
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_price_kzt INTEGER",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_status TEXT",
+  `DO $$
+  BEGIN
+    ALTER TABLE orders ADD CONSTRAINT orders_driver_offer_status_check CHECK (driver_offer_status IS NULL OR driver_offer_status IN ('PENDING','ACCEPTED','DECLINED'));
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_by_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_created_at TIMESTAMPTZ",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_responded_at TIMESTAMPTZ"
 ];
 
 export async function runMigrations() {

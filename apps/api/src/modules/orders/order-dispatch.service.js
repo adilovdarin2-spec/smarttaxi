@@ -34,6 +34,17 @@ export const ACTIVE_ORDER_STATUSES = [
   "DRIVER_ASSIGNED",
   "IN_PROGRESS"
 ];
+// Which physical leg the driver is on — used to pick the routing target
+// (pickup point vs dropoff point) for the live "driver active route".
+export const TO_PICKUP_ORDER_STATUSES = [
+  "DRIVER_FOUND",
+  "DRIVER_GOING_TO_CLIENT",
+  "DRIVER_ASSIGNED",
+  "DRIVER_ARRIVED",
+  "WAITING_CLIENT",
+  "NEW"
+];
+export const TO_DROPOFF_ORDER_STATUSES = ["TRIP_STARTED", "IN_PROGRESS"];
 export const CLIENT_ACTIVE_ORDER_STATUSES = [
   ...OPEN_ORDER_STATUSES,
   ...ACTIVE_ORDER_STATUSES,
@@ -62,9 +73,9 @@ export const TRANSITION_RULES = {
   PAYMENT_PENDING: ["TRIP_COMPLETED"],
   PAID: ["PAYMENT_PENDING", "TRIP_COMPLETED"],
   RATED: ["PAID"],
-  CANCELLED_BY_CLIENT: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "DRIVER_ASSIGNED", "IN_PROGRESS"],
-  CANCELLED_BY_DRIVER: ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "DRIVER_ASSIGNED", "IN_PROGRESS"],
-  CANCELLED_BY_OPERATOR: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "DRIVER_ASSIGNED", "IN_PROGRESS"],
+  CANCELLED_BY_CLIENT: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"],
+  CANCELLED_BY_DRIVER: ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"],
+  CANCELLED_BY_OPERATOR: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"],
   NO_SHOW: ["WAITING_CLIENT", "DRIVER_ARRIVED"],
   DRIVER_ASSIGNED: ["NEW", "SEARCHING_DRIVER"],
   IN_PROGRESS: ["DRIVER_ARRIVED", "WAITING_CLIENT"],
@@ -128,6 +139,10 @@ export function orderRoom(orderId) {
   return `order:${orderId}`;
 }
 
+function runQuery(executor, sql, params = []) {
+  return executor.query ? executor.query(sql, params) : executor(sql, params);
+}
+
 export function publicOrderStatus(status) {
   return PUBLIC_STATUSES[status] || status;
 }
@@ -140,12 +155,17 @@ export function publicOrderEvent(order) {
     status: order.status,
     public_status: publicOrderStatus(order.status),
     price: order.price,
+    offered_price_kzt: order.offered_price_kzt,
+    driver_offer_price_kzt: order.driver_offer_price_kzt,
+    driver_offer_status: order.driver_offer_status,
+    driver_offer_by_driver_id: order.driver_offer_by_driver_id,
     payment_method: order.payment_method,
     tariff: order.tariff,
     driver_id: order.driver_id,
     driver_name: order.driver_name,
     driver_phone: order.driver_phone,
     driver_car_model: order.driver_car_model,
+    driver_car_color: order.driver_car_color,
     driver_plate: order.driver_plate,
     driver_rating: order.driver_rating
   };
@@ -193,20 +213,45 @@ export function assertStatusTransition(existing, nextStatus) {
 }
 
 export async function assertDriverHasNoActiveOrder(driver, executor) {
-  const active = await executor.query(
+  const active = await runQuery(
+    executor,
     "SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1",
     [driver.id, ACTIVE_ORDER_STATUSES]
   );
-  if (active.rows[0] || driver.status === "BUSY") {
+  if (active.rows[0]) {
     throw new AppError("Driver already has an active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
   }
+  if (driver.status === "BUSY") {
+    const recovered = await runQuery(
+      executor,
+      "UPDATE drivers SET status='FREE', last_seen_at=NOW() WHERE id=$1 RETURNING *",
+      [driver.id]
+    );
+    Object.assign(driver, recovered.rows[0] || { status: "FREE" });
+  }
+}
+
+export async function syncDriverAvailability(driver, executor) {
+  if (!driver || driver.status !== "BUSY") return driver;
+  const active = await runQuery(
+    executor,
+    "SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1",
+    [driver.id, ACTIVE_ORDER_STATUSES]
+  );
+  if (active.rows[0]) return driver;
+  const recovered = await runQuery(
+    executor,
+    "UPDATE drivers SET status='FREE', last_seen_at=NOW() WHERE id=$1 RETURNING *",
+    [driver.id]
+  );
+  return recovered.rows[0] || { ...driver, status: "FREE" };
 }
 
 export async function listOrdersForDriver({ driver, status, limit, executor, orderSelect = "o.*" }) {
   await assertDriverDispatchReady(driver, executor);
 
   if (driver.status === "BUSY") {
-    return (await executor.query(`
+    return (await runQuery(executor, `
       SELECT ${orderSelect} FROM orders o
       LEFT JOIN drivers d ON d.id=o.driver_id
       WHERE o.driver_id=$1 AND o.region_id=$2 AND o.status = ANY($3::text[])
@@ -216,7 +261,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
   }
 
   if (status) {
-    return (await executor.query(`
+    return (await runQuery(executor, `
       SELECT ${orderSelect} FROM orders o
       LEFT JOIN drivers d ON d.id=o.driver_id
       WHERE o.region_id=$2
@@ -227,18 +272,22 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     `, [driver.id, driver.current_region_id, status, limit, OPEN_ORDER_STATUSES])).rows;
   }
 
-  return (await executor.query(`
+  // Orders where the rider raised their offered price surface first — same
+  // "приоритет показа заказов с наценкой" idea as inDrive's bidding list.
+  // Orders without a bid (or the driver's own already-assigned order, which
+  // won't have one either) just fall back to newest-first.
+  return (await runQuery(executor, `
     SELECT ${orderSelect} FROM orders o
     LEFT JOIN drivers d ON d.id=o.driver_id
     WHERE o.region_id=$2
       AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR (o.driver_id=$1 AND o.status = ANY($3::text[])))
-    ORDER BY o.created_at DESC
+    ORDER BY o.offered_price_kzt DESC NULLS LAST, o.created_at DESC
     LIMIT $4
   `, [driver.id, driver.current_region_id, RECENT_DRIVER_STATUSES, limit, OPEN_ORDER_STATUSES])).rows;
 }
 
 export async function acceptOrderForDriver({ orderId, userId, executor }) {
-  const driver = (await executor.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [userId])).rows[0];
+  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [userId])).rows[0];
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
   await assertDriverDispatchReady(driver, executor);
 
@@ -247,25 +296,129 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
   if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
 
-  const existing = (await executor.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
   if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) throw new AppError("Order already accepted", 409, "ORDER_ALREADY_ACCEPTED");
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
   }
 
-  const order = (await executor.query(
+  const order = (await runQuery(
+    executor,
     "UPDATE orders SET status='DRIVER_FOUND', driver_id=$1, accepted_at=NOW() WHERE id=$2 RETURNING *",
     [driver.id, existing.id]
   )).rows[0];
-  const updatedDriver = (await executor.query(
+  const updatedDriver = (await runQuery(
+    executor,
     "UPDATE drivers SET status='BUSY', last_seen_at=NOW() WHERE id=$1 RETURNING *",
     [driver.id]
   )).rows[0];
-  await executor.query(
+  await runQuery(
+    executor,
     "INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'DRIVER_FOUND','Driver accepted order',$2)",
     [existing.id, userId]
   );
 
   return { order, driver: updatedDriver };
+}
+
+// Driver counter-offer ("торг"): proposes a different price on an order
+// that's still open to everyone — doesn't take the order, just attaches a
+// pending offer the rider can accept or decline. Only one offer can be
+// pending at a time; a new one from a different driver overwrites it (first
+// to have their offer accepted wins the order, not first to submit).
+export async function submitDriverPriceOffer({ orderId, userId, priceKzt, executor }) {
+  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [userId])).rows[0];
+  if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+  await assertDriverDispatchReady(driver, executor);
+  if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+  if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
+    throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
+  }
+  if (existing.region_id !== driver.current_region_id) {
+    throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
+  }
+
+  const order = (await runQuery(
+    executor,
+    `UPDATE orders
+     SET driver_offer_price_kzt=$1,
+         driver_offer_status='PENDING',
+         driver_offer_by_driver_id=$2,
+         driver_offer_created_at=NOW(),
+         driver_offer_responded_at=NULL
+     WHERE id=$3
+     RETURNING *`,
+    [priceKzt, driver.id, existing.id]
+  )).rows[0];
+
+  return { order, driver };
+}
+
+// Rider's response to a pending driver price offer. Accepting assigns the
+// order to that specific driver at that specific price (same end state as a
+// normal accept, just price-and-driver predetermined instead of
+// first-to-claim); declining just clears the offer and leaves the order
+// open for anyone, including the same driver trying again at a new price.
+export async function respondToDriverPriceOffer({ orderId, clientUserId, accept, executor }) {
+  const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
+  if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
+
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+  if (existing.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+  if (existing.driver_offer_status !== "PENDING" || !existing.driver_offer_by_driver_id) {
+    throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+  }
+
+  if (!accept) {
+    const declined = (await runQuery(
+      executor,
+      `UPDATE orders
+       SET driver_offer_status='DECLINED', driver_offer_responded_at=NOW()
+       WHERE id=$1
+       RETURNING *`,
+      [existing.id]
+    )).rows[0];
+    return { order: declined, driver: null, accepted: false };
+  }
+
+  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [existing.driver_offer_by_driver_id])).rows[0];
+  if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+  await assertDriverDispatchReady(driver, executor);
+  await assertDriverHasNoActiveOrder(driver, executor);
+  if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
+  if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
+  if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
+    throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
+  }
+
+  const order = (await runQuery(
+    executor,
+    `UPDATE orders
+     SET status='DRIVER_FOUND',
+         driver_id=$1,
+         price=$2,
+         accepted_at=NOW(),
+         driver_offer_status='ACCEPTED',
+         driver_offer_responded_at=NOW()
+     WHERE id=$3
+     RETURNING *`,
+    [driver.id, existing.driver_offer_price_kzt, existing.id]
+  )).rows[0];
+  const updatedDriver = (await runQuery(
+    executor,
+    "UPDATE drivers SET status='BUSY', last_seen_at=NOW() WHERE id=$1 RETURNING *",
+    [driver.id]
+  )).rows[0];
+  await runQuery(
+    executor,
+    "INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'DRIVER_FOUND','Client accepted driver price offer',$2)",
+    [existing.id, clientUserId]
+  );
+
+  return { order, driver: updatedDriver, accepted: true };
 }
