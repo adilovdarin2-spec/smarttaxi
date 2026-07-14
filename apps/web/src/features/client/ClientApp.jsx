@@ -1374,8 +1374,9 @@ export default function ClientApp() {
     setFavoritesState(current => ({ ...current, error: "" }));
     try {
       await addFavoriteAddress({
-        label: address.title || "Новый адрес",
-        address: address.subtitle || address.title || "",
+        label: "OTHER",
+        title: address.title || "Новый адрес",
+        addressText: address.subtitle || address.title || "",
         lat: address.lat,
         lng: address.lng
       });
@@ -3885,13 +3886,22 @@ function ProfileSection({
   );
 }
 
+const supportTopics = [
+  { code: "Проблема с поездкой", label: "Проблема с поездкой" },
+  { code: "Водитель не приехал", label: "Водитель не приехал" },
+  { code: "LOST_ITEM", label: "Забыл вещь" },
+  { code: "Оплата", label: "Оплата" },
+  { code: "Безопасность", label: "Безопасность" },
+  { code: "Другое", label: "Другое" }
+];
+
 function SupportSection({ activeOrderId, authenticated }) {
-  const [topic, setTopic] = useState("Проблема с поездкой");
+  const [topicCode, setTopicCode] = useState(supportTopics[0].code);
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const topics = ["Проблема с поездкой", "Водитель не приехал", "Забыл вещь", "Оплата", "Безопасность", "Другое"];
+  const activeTopic = supportTopics.find(item => item.code === topicCode) || supportTopics[0];
 
   async function submit() {
     if (!text.trim() || sending) return;
@@ -3903,7 +3913,7 @@ function SupportSection({ activeOrderId, authenticated }) {
     setError("");
     try {
       await createSupportMessage({
-        topic,
+        topic: topicCode,
         message: text.trim(),
         orderId: activeOrderId || undefined
       });
@@ -3921,10 +3931,10 @@ function SupportSection({ activeOrderId, authenticated }) {
       <section className="screen-intro"><h1>Поддержка</h1><p>Выберите тему обращения. Если вопрос срочный, позвоните оператору напрямую.</p></section>
       <section className="app-card premium-support-card">
         <div className="support-topic-row">
-          {topics.map(item => <button type="button" key={item} className={topic === item ? "selected" : ""} onClick={() => { setTopic(item); setSent(false); }}>{item}</button>)}
+          {supportTopics.map(item => <button type="button" key={item.code} className={topicCode === item.code ? "selected" : ""} onClick={() => { setTopicCode(item.code); setSent(false); }}>{item.label}</button>)}
         </div>
         <label className="admin-textarea-field support-textarea">
-          <span>{topic}</span>
+          <span>{activeTopic.label}</span>
           <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); setError(""); }} placeholder="Напишите сообщение..." rows={5} />
         </label>
         <div className="support-action-row">
@@ -3987,7 +3997,7 @@ function FavoritesSection({ onHome, authenticated, favorites, favoritesState, on
         ) : (
           favorites.map(favorite => (
             <div className="favorite-row-premium" key={favorite.id}>
-              <SettingsRow icon={favoriteIcon[favorite.label?.toUpperCase()] || "star"} title={favorite.label || "Адрес"} text={favorite.address || ""} />
+              <SettingsRow icon={favoriteIcon[favorite.label?.toUpperCase()] || "star"} title={favorite.title || "Адрес"} text={favorite.addressText || favorite.address_text || ""} />
               <button type="button" className="admin-danger-button compact" onClick={() => onDelete(favorite.id)}>Удалить</button>
             </div>
           ))
@@ -4079,7 +4089,7 @@ function ReferralSection({ authenticated }) {
 
   const code = state.data?.code || "";
   const invitedCount = state.data?.invitedCount ?? 0;
-  const rewardTotalKzt = state.data?.rewardTotalKzt ?? 0;
+  const rewardTotalKzt = state.data?.totalBonusEarned ?? 0;
 
   async function share() {
     const text = `Приезжай в SmartTaxi по моему коду ${code} и получи скидку на первую поездку!`;

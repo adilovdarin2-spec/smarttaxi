@@ -203,6 +203,8 @@ function readError(error) {
     return "Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем, оператором или финансовым пользователем.";
   }
   if (error?.code === "NOT_FOUND") return "Данные не найдены";
+  if (error?.code === "PROMO_CODE_HAS_REDEMPTIONS") return "Промокод уже использовался в заказах — отключите его вместо удаления, чтобы сохранить историю цен.";
+  if (error?.code === "PROMO_CODE_EXISTS") return "Промокод с таким кодом уже существует";
   if (error?.details?.length) return error.details.map(item => item.message).join("; ");
   return "Не удалось загрузить данные. Проверьте соединение и попробуйте снова.";
 }
@@ -2079,13 +2081,13 @@ function SupportTicketCard({ message, onRespond, onReopen }) {
     }
   }
 
-  const isLostItem = message.topic === "Забыл вещь";
+  const isLostItem = message.topic === "LOST_ITEM";
 
   return (
     <article className="admin-road-alert-card">
       <header>
         <div>
-          <strong>{message.topic}</strong>
+          <strong>{isLostItem ? "Забыл вещь" : message.topic}</strong>
           <span>{supportRoleLabels[message.role] || message.role} · {formatDate(message.createdAt)}</span>
         </div>
         <Badge tone={isResolved ? "muted" : isLostItem ? "danger" : "warning"}>
