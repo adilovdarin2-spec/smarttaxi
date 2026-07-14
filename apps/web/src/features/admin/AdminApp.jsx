@@ -204,7 +204,7 @@ function readError(error) {
   }
   if (error?.code === "NOT_FOUND") return "Данные не найдены";
   if (error?.details?.length) return error.details.map(item => item.message).join("; ");
-  return error?.message || "Не удалось загрузить данные";
+  return "Не удалось загрузить данные. Проверьте соединение и попробуйте снова.";
 }
 
 function normalizeRegionForm(region) {

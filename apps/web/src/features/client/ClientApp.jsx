@@ -5,15 +5,21 @@ import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import MapView from "../map/MapView.jsx";
 import { extraClientAddressCatalog, extraClientRegionPresets } from "./clientAddressBook.js";
 import {
+  addFavoriteAddress,
   cancelPublicOrder,
   checkAuthPhone,
   clearToken,
   confirmPasswordReset,
   createOrder,
+  createSupportMessage,
+  deleteFavoriteAddress,
   estimateTariff,
   getActiveRegions,
+  getClientActiveOrder,
   getCurrentUser,
+  getFavoriteAddresses,
   getOrderStatusHistory,
+  getReferralSummary,
   getTariffs,
   getToken,
   loginUser,
@@ -23,6 +29,7 @@ import {
   reverseAddress,
   searchAddresses,
   sendAuthSms,
+  validatePromoCode,
   verifyAuthSms
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
@@ -32,29 +39,45 @@ const paymentOptions = [
   { id: "KASPI", title: "Kaspi", note: "Перевод по заказу" }
 ];
 
-const menuItems = [
-  ["home", "Главная", "home"],
-  ["trips", "Мои поездки", "clock"],
-  ["profile", "Профиль", "user"],
-  ["driver", "Стать водителем", "shield"],
-  ["support", "Поддержка", "support"],
-  ["faq", "FAQ", "chat"],
-  ["about", "О нас", "star"],
-  ["settings", "Настройки", "settings"]
+const drawerMenuGroups = [
+  [
+    { key: "home", label: "Главная", icon: "home", hint: "Выбор адреса" },
+    { key: "trips", label: "История поездок", icon: "history", hint: "Статусы и детали" },
+    { key: "favorites", label: "Избранное", icon: "heart", hint: "Дом, работа, места" }
+  ],
+  [
+    { key: "promo", label: "Промокоды", icon: "ticket", hint: "Проверка кода" },
+    { key: "referral", label: "Пригласить друга", icon: "gift", hint: "Реферальная программа" },
+    { key: "support", label: "Поддержка", icon: "support", hint: "Помощь по поездке" },
+    { key: "faq", label: "FAQ", icon: "chat", hint: "Вопросы и ответы" },
+    { key: "settings", label: "Настройки", icon: "settings", hint: "Аккаунт и приложение" },
+    { key: "about", label: "О приложении", icon: "info", hint: "SmartTaxi" }
+  ],
+  [
+    { key: "legalTerms", label: "Пользовательское соглашение", icon: "shield", hint: "Правила сервиса" },
+    { key: "legalPrivacy", label: "Политика конфиденциальности", icon: "lock", hint: "Данные и privacy" },
+    { key: "legalInfo", label: "Юридическая информация", icon: "document", hint: "Реквизиты и оплата" }
+  ]
 ];
 
 const carImages = {
-  Economy: "/cars/premium/economy_white_sedan_cropped.png",
-  Comfort: "/cars/premium/comfort_white_sedan_cropped.png",
-  Business: "/cars/premium/business_white_sedan_cropped.png",
-  Delivery: "/cars/premium/business_white_sedan_cropped.png"
+  Economy: "/ui/fixed-price-tariff/svg/car_econom_white.svg",
+  Comfort: "/ui/fixed-price-tariff/svg/car_comfort_white.svg",
+  Business: "/ui/fixed-price-tariff/svg/car_comfort_white.svg",
+  Delivery: "/ui/fixed-price-tariff/svg/car_delivery_white.svg"
 };
 
 const goldUi = "/ui/gold-white";
 const authWelcomeUi = "/ui/auth-clean-photo";
+const addressSelectionUi = "/ui/address-selection/icons";
+const fixedTariffUi = "/ui/fixed-price-tariff/svg";
+const searchDriverUi = "/ui/search-driver";
+const driverFoundUi = "/ui/driver-found";
+const tripDetailsUi = "/ui/trip-details";
 const goldIcons = {
   logo: `${goldUi}/svg/smarttaxi_logo_text.svg`,
   authLogo: `${goldUi}/svg/smarttaxi_auth_logo.svg`,
+  sMark: `${authWelcomeUi}/svg/brand/smarttaxi_s_mark.svg`,
   pin: `${goldUi}/svg/target_location.svg`,
   mark: `${goldUi}/svg/logo_mark_pin_car.svg`,
   menu: `${goldUi}/svg/menu.svg`,
@@ -75,7 +98,21 @@ const goldIcons = {
   info: `${goldUi}/svg/info_circle.svg`,
   edit: `${goldUi}/svg/edit_pencil.svg`,
   back: `${goldUi}/svg/back_arrow.svg`,
-  support: `${goldUi}/svg/info_circle.svg`
+  support: `${goldUi}/svg/info_circle.svg`,
+  addressPickup: `${addressSelectionUi}/pickup_pin_gold.svg`,
+  addressDestination: `${addressSelectionUi}/destination_pin_black_gold.svg`,
+  addressChevron: `${addressSelectionUi}/chevron_right.svg`,
+  addressSwap: `${addressSelectionUi}/swap_vertical.svg`,
+  addressMenu: `${addressSelectionUi}/menu.svg`,
+  addressZoomPlus: `${addressSelectionUi}/zoom_plus.svg`,
+  addressZoomMinus: `${addressSelectionUi}/zoom_minus.svg`,
+  addressClock: `${addressSelectionUi}/clock_outline.svg`,
+  tariffPassenger: `${fixedTariffUi}/passenger_count.svg`,
+  tariffDelivery: `${fixedTariffUi}/delivery_box.svg`,
+  tariffCash: `${fixedTariffUi}/cash_payment.svg`,
+  tariffChevron: `${fixedTariffUi}/chevron_right.svg`,
+  tariffCheck: `${fixedTariffUi}/selected_check_gold.svg`,
+  tariffRadio: `${fixedTariffUi}/unselected_radio.svg`
 };
 const authWelcomeAssets = {
   wordmark: `${authWelcomeUi}/svg/brand/smarttaxi_wordmark.svg`,
@@ -86,10 +123,44 @@ const authWelcomeAssets = {
   shield: `${authWelcomeUi}/svg/icons/shield.svg`
 };
 
+const searchDriverAssets = {
+  carRoute: `${searchDriverUi}/png/transparent/search_car_and_route.png`,
+  markerRadar: `${searchDriverUi}/png/transparent/map_marker_with_radar.png`,
+  tariffCar: `${searchDriverUi}/png/transparent/tariff_car.png`,
+  search: `${searchDriverUi}/svg/icons/search_gold.svg`,
+  shield: `${searchDriverUi}/svg/icons/shield_gold.svg`,
+  bell: `${searchDriverUi}/svg/icons/bell.svg`,
+  car: `${searchDriverUi}/svg/icons/car_outline.svg`,
+  pin: `${searchDriverUi}/svg/icons/pin_outline.svg`
+};
+
+const driverFoundAssets = {
+  avatar: `${driverFoundUi}/svg/icons/default_avatar.svg`,
+  route: `${driverFoundUi}/svg/icons/route_indicator_recommended.svg`,
+  phone: `${driverFoundUi}/svg/icons/phone.svg`,
+  chat: `${driverFoundUi}/svg/icons/chat.svg`,
+  wallet: `${driverFoundUi}/svg/icons/wallet.svg`,
+  priceTag: `${driverFoundUi}/svg/icons/price_tag.svg`,
+  verified: `${driverFoundUi}/svg/icons/verified.svg`,
+  pickupPin: `${driverFoundUi}/svg/map_markers/pickup_pin_gold.svg`,
+  etaBubble: `${driverFoundUi}/svg/map_markers/eta_bubble.svg`
+};
+
+const tripDetailsAssets = {
+  avatar: `${driverFoundUi}/svg/icons/default_avatar.svg`,
+  close: `${tripDetailsUi}/svg/icons/close.svg`,
+  phone: `${tripDetailsUi}/svg/icons/phone.svg`,
+  support: `${tripDetailsUi}/svg/icons/support.svg`,
+  share: `${tripDetailsUi}/svg/icons/share.svg`,
+  verified: `${tripDetailsUi}/svg/icons/verified.svg`,
+  route: `${tripDetailsUi}/svg/icons/route.svg`,
+  pickupPin: `${tripDetailsUi}/svg/map_markers/pickup_pin_gold.svg`
+};
+
 const referenceRecentAddresses = [
-  { title: "ТРЦ Атакент Молл", subtitle: "Атакент, ул. Абая 1А", lat: 40.84803, lng: 68.50768, icon: "work" },
+  { title: "Районная больница «Атакент»", subtitle: "Атакент, ул. Ж. Ибраева", lat: 40.84210, lng: 68.51190, icon: "work" },
   { title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips" },
-  { title: "Школа №3", subtitle: "Атакент, ул. Школьная 12", lat: 40.84276, lng: 68.51344, icon: "home" }
+  { title: "Акимат посёлка Атакент", subtitle: "Атакент, здание акимата", lat: 40.84550, lng: 68.50750, icon: "home" }
 ];
 
 const clientRegionPresets = [
@@ -109,10 +180,10 @@ const clientRegionPresets = [
     code: "MYRZAKENT",
     name: "Мырзакент",
     displayName: "Мырзакент",
-    alias: "Славян",
+    alias: "Славянка",
     subtitle: "Мактааральский район",
-    centerLat: 40.666108,
-    centerLng: 68.54309,
+    centerLat: 40.665495,
+    centerLng: 68.549994,
     currency: "KZT"
   },
   {
@@ -120,10 +191,10 @@ const clientRegionPresets = [
     code: "ZHETYSAY",
     name: "Жетысай",
     displayName: "Жетысай",
-    alias: "Жетисай",
+    alias: "Джетысай",
     subtitle: "Жетысайский район",
-    centerLat: 40.884303,
-    centerLng: 68.212621,
+    centerLat: 40.777134,
+    centerLng: 68.324677,
     currency: "KZT"
   },
   {
@@ -141,35 +212,29 @@ const clientRegionPresets = [
 
 const clientAddressCatalog = [
   { region: "ATAKENT", title: "Моё местоположение", subtitle: "Атакент", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["текущее", "геолокация", "центр"] },
-  { region: "ATAKENT", title: "ТРЦ Атакент Молл", subtitle: "Атакент, ул. Абая 1А", lat: 40.84803, lng: 68.50768, icon: "work", tags: ["трц", "молл", "магазин", "абая", "abai"] },
+  { region: "ATAKENT", title: "Атакент (Ильич)", subtitle: "Центр посёлка", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["центр", "площадь", "илич", "ильич", "atakent"] },
   { region: "ATAKENT", title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips", tags: ["базар", "рынок", "центральный"] },
-  { region: "ATAKENT", title: "Школа №3", subtitle: "Атакент, ул. Школьная 12", lat: 40.84276, lng: 68.51344, icon: "home", tags: ["школа", "мектеп", "3", "школьная"] },
-  { region: "ATAKENT", title: "Автовокзал Атакент", subtitle: "Атакент, остановка у центра", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
+  { region: "ATAKENT", title: "Атакент автовокзал", subtitle: "Атакент, остановка у центра", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
   { region: "ATAKENT", title: "Улица Абая", subtitle: "Атакент, район центральной улицы", lat: 40.84803, lng: 68.50768, icon: "pin", tags: ["абая", "абай", "abai", "ул абая"] },
   { region: "ATAKENT", title: "Улица Жамбыла", subtitle: "Атакент", lat: 40.84536, lng: 68.51574, icon: "pin", tags: ["жамбыл", "zhambyl"] },
   { region: "ATAKENT", title: "Улица Сатпаева", subtitle: "Атакент", lat: 40.83995, lng: 68.50884, icon: "pin", tags: ["сатпаев", "satpayev"] },
   { region: "ATAKENT", title: "Улица Толе би", subtitle: "Атакент", lat: 40.85072, lng: 68.51212, icon: "pin", tags: ["толе", "төле", "tole bi"] },
-  { region: "ATAKENT", title: "Атакент центр", subtitle: "Атакент, центральная площадь", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["центр", "площадь", "илич", "ильич"] },
-  { region: "ATAKENT", title: "Остановка Центр", subtitle: "Атакент, центральная остановка", lat: 40.84544, lng: 68.50872, icon: "trips", tags: ["остановка", "центр", "маршрутка"] },
-  { region: "ATAKENT", title: "Акимат Атакент", subtitle: "Атакент, центр", lat: 40.84518, lng: 68.50971, icon: "work", tags: ["акимат", "администрация"] },
-  { region: "ATAKENT", title: "Мечеть Атакент", subtitle: "Атакент, центральная мечеть", lat: 40.84386, lng: 68.51432, icon: "pin", tags: ["мечеть", "мешіт", "намаз"] },
-  { region: "ATAKENT", title: "Больница Атакент", subtitle: "Атакент, медпункт", lat: 40.84686, lng: 68.51602, icon: "work", tags: ["больница", "поликлиника", "аптека", "мед"] },
+  { region: "ATAKENT", title: "Районная больница «Атакент»", subtitle: "Атакент, ул. Ж. Ибраева", lat: 40.84210, lng: 68.51190, icon: "work", tags: ["больница", "поликлиника", "аптека", "мед", "ибраева"] },
+  { region: "ATAKENT", title: "ЖД станция Мактаарал", subtitle: "Атакент, железнодорожная станция", lat: 40.83980, lng: 68.49820, icon: "trips", tags: ["жд", "станция", "мактаарал", "поезд", "railway"] },
+  { region: "ATAKENT", title: "Акимат посёлка Атакент", subtitle: "Атакент, здание акимата", lat: 40.84550, lng: 68.50750, icon: "work", tags: ["акимат", "администрация"] },
 
-  { region: "MYRZAKENT", title: "Мырзакент (Славян)", subtitle: "Центр посёлка", lat: 40.666108, lng: 68.54309, icon: "target", tags: ["мырзакент", "славян", "славянка", "myrzakent", "slavyan"] },
-  { region: "MYRZAKENT", title: "Базар Мырзакент", subtitle: "Мырзакент (Славян), рынок", lat: 40.66718, lng: 68.5452, icon: "trips", tags: ["базар", "рынок", "славян"] },
-  { region: "MYRZAKENT", title: "Автовокзал Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66533, lng: 68.54092, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
-  { region: "MYRZAKENT", title: "Школа Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66822, lng: 68.54183, icon: "home", tags: ["школа", "мектеп"] },
-  { region: "MYRZAKENT", title: "Мечеть Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66491, lng: 68.54611, icon: "pin", tags: ["мечеть", "мешіт"] },
-  { region: "MYRZAKENT", title: "Акимат Мырзакент", subtitle: "Мырзакент (Славян), центр", lat: 40.66662, lng: 68.54222, icon: "work", tags: ["акимат", "администрация", "центр"] },
-  { region: "MYRZAKENT", title: "Поликлиника Мырзакент", subtitle: "Мырзакент (Славян)", lat: 40.66762, lng: 68.54418, icon: "work", tags: ["больница", "поликлиника", "мед", "аптека"] },
+  { region: "MYRZAKENT", title: "Мырзакент (Славянка)", subtitle: "Центр посёлка", lat: 40.665495, lng: 68.549994, icon: "target", tags: ["мырзакент", "славян", "славянка", "myrzakent", "slavyanka"] },
+  { region: "MYRZAKENT", title: "Мырзакент базар", subtitle: "Мырзакент, центральный рынок", lat: 40.66492, lng: 68.54464, icon: "trips", tags: ["базар", "рынок"] },
+  { region: "MYRZAKENT", title: "Автовокзал Мырзакент", subtitle: "Мырзакент, ориентир у центра", lat: 40.66848, lng: 68.53928, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
+  { region: "MYRZAKENT", title: "Акимат Мактааральского района", subtitle: "Мырзакент, районный акимат", lat: 40.66690, lng: 68.55210, icon: "work", tags: ["акимат", "администрация", "район", "центр"] },
+  { region: "MYRZAKENT", title: "Центральная районная больница", subtitle: "Мырзакент, ЦРБ Мактааральского района", lat: 40.66978, lng: 68.54742, icon: "work", tags: ["больница", "црб", "поликлиника", "мед", "аптека"] },
 
-  { region: "ZHETYSAY", title: "Жетысай (Жетисай)", subtitle: "Центр города", lat: 40.884303, lng: 68.212621, icon: "target", tags: ["жетысай", "жетисай", "zhetysay"] },
-  { region: "ZHETYSAY", title: "Базар Жетысай", subtitle: "Жетысай, центральный рынок", lat: 40.88531, lng: 68.21506, icon: "trips", tags: ["базар", "рынок"] },
-  { region: "ZHETYSAY", title: "Автовокзал Жетысай", subtitle: "Жетысай", lat: 40.88191, lng: 68.20951, icon: "trips", tags: ["автовокзал", "вокзал"] },
-  { region: "ZHETYSAY", title: "Акимат Жетысай", subtitle: "Жетысай, центр", lat: 40.88494, lng: 68.21107, icon: "work", tags: ["акимат", "администрация"] },
-  { region: "ZHETYSAY", title: "Мечеть Жетысай", subtitle: "Жетысай", lat: 40.887, lng: 68.21604, icon: "pin", tags: ["мечеть", "мешіт"] },
-  { region: "ZHETYSAY", title: "Больница Жетысай", subtitle: "Жетысай", lat: 40.88288, lng: 68.21649, icon: "work", tags: ["больница", "поликлиника", "мед"] },
-  { region: "ZHETYSAY", title: "Центральная площадь Жетысай", subtitle: "Жетысай, центр", lat: 40.884303, lng: 68.212621, icon: "pin", tags: ["центр", "площадь"] },
+  { region: "ZHETYSAY", title: "Жетысай (Джетысай)", subtitle: "Центр города", lat: 40.777134, lng: 68.324677, icon: "target", tags: ["жетысай", "жетисай", "джетысай", "zhetysay"] },
+  { region: "ZHETYSAY", title: "Центральный базар Жетысай", subtitle: "Жетысай, центральный рынок", lat: 40.77980, lng: 68.32190, icon: "trips", tags: ["базар", "рынок"] },
+  { region: "ZHETYSAY", title: "Автовокзал Жетысай", subtitle: "Жетысай, ориентир у центра", lat: 40.78191, lng: 68.31951, icon: "trips", tags: ["автовокзал", "вокзал"] },
+  { region: "ZHETYSAY", title: "Акимат Жетысайского района", subtitle: "Жетысай, городской сквер", lat: 40.77650, lng: 68.32710, icon: "work", tags: ["акимат", "администрация", "сквер"] },
+  { region: "ZHETYSAY", title: "Мечеть «Нур»", subtitle: "Жетысай", lat: 40.77420, lng: 68.32990, icon: "pin", tags: ["мечеть", "мешіт", "нур"] },
+  { region: "ZHETYSAY", title: "Улица Мухтара Ауезова", subtitle: "Жетысай", lat: 40.77860, lng: 68.32860, icon: "pin", tags: ["ауезова", "auezov", "мухтара ауезова"] },
 
   { region: "SHYMKENT", title: "Шымкент (Чимкент)", subtitle: "Центр города", lat: 42.314696, lng: 69.588328, icon: "target", tags: ["шымкент", "чимкент", "shymkent"] },
   { region: "SHYMKENT", title: "Mega Planet Shymkent", subtitle: "Шымкент, ТРЦ", lat: 42.31638, lng: 69.59307, icon: "work", tags: ["mega", "мега", "трц", "планет"] },
@@ -206,19 +271,28 @@ const orderSteps = [
 
 const errorMessages = {
   PICKUP_REGION_INACTIVE: "В этом месте сервис пока недоступен",
-  DROPOFF_REGION_INACTIVE: "Точка назначения вне активного региона",
+  DROPOFF_REGION_INACTIVE: "Точка назначения пока вне зоны подачи",
   INTERCITY_NOT_SUPPORTED: "Межгород пока не поддерживается",
   ROUTE_UNAVAILABLE: "Не удалось построить маршрут",
   ADDRESS_SEARCH_UNAVAILABLE: "Поиск адресов временно недоступен",
   TARIFF_INACTIVE: "Этот тариф временно недоступен",
-  TARIFF_REGION_MISMATCH: "Тариф недоступен для выбранного региона",
+  TARIFF_REGION_MISMATCH: "Тариф недоступен для этого маршрута",
   ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
+  CLIENT_HAS_ACTIVE_ORDER: "У вас уже есть активный заказ",
   UNAUTHORIZED: "Войдите, чтобы заказать поездку",
-  FORBIDDEN: "У аккаунта нет прав пассажира"
+  FORBIDDEN: "У аккаунта нет прав пассажира",
+  PROMO_CODE_REQUIRED: "Введите код промокода",
+  PROMO_NOT_FOUND: "Такой промокод не найден или уже неактивен",
+  PROMO_NOT_STARTED: "Этот промокод ещё не начал действовать",
+  PROMO_EXPIRED: "Срок действия промокода истёк",
+  PROMO_MIN_ORDER_NOT_MET: "Промокод действует от большей суммы заказа",
+  PROMO_LIMIT_REACHED: "Лимит использований промокода исчерпан",
+  PROMO_ALREADY_USED: "Вы уже использовали этот промокод",
+  FAVORITE_ADDRESS_LIMIT: "Достигнут лимит избранных адресов"
 };
 
 function formatError(error) {
-  return errorMessages[error?.code] || error?.message || "Не удалось выполнить запрос";
+  return errorMessages[error?.code] || "Не удалось выполнить запрос. Проверьте соединение и попробуйте снова.";
 }
 
 function publicStatus(status) {
@@ -320,7 +394,7 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: false
     },
     TRIP_COMPLETED: {
-      title: "Поездка завершена",
+      title: "Поездка окончена",
       subtitle: `Проверьте сумму и оплату: ${payment}`,
       badge: label,
       canCancel: false,
@@ -328,7 +402,7 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: false
     },
     PAYMENT_PENDING: {
-      title: "Поездка завершена",
+      title: "Поездка окончена",
       subtitle: `Способ оплаты: ${payment}`,
       badge: label,
       canCancel: false,
@@ -336,7 +410,7 @@ function clientLifecycleStage(status, order) {
       canStartNewTrip: false
     },
     PAID: {
-      title: "Оплата получена",
+      title: "Оставьте отзыв",
       subtitle: "Оцените поездку, чтобы завершить заказ",
       badge: label,
       canCancel: false,
@@ -519,7 +593,7 @@ function tariffSubtitle(tariff) {
   if (title.includes("комфорт") || name.includes("comfort")) return "Больше удобства";
   if (title.includes("бизнес") || name.includes("business")) return "Премиальная поездка";
   if (title.includes("достав") || name.includes("delivery")) return "Передать посылку";
-  return tariff?.description || "Поездка по региону";
+  return tariff?.description || "Городская поездка";
 }
 
 function regionCenter(region) {
@@ -582,6 +656,16 @@ function formatTripMin(route, fallback = "12 мин") {
   return duration ? `${duration} мин` : fallback;
 }
 
+function formatRouteSummary(route, fallback = "Маршрут выбран") {
+  const duration = durationMinFromRoute(route);
+  const distance = distanceKmFromRoute(route);
+  if (!duration && !distance) return fallback;
+  return [
+    duration ? `${duration} мин` : null,
+    distance ? `${String(distance).replace(".", ",")} км` : null
+  ].filter(Boolean).join(" · ");
+}
+
 function IconAsset({ name, className = "", alt = "" }) {
   const src = goldIcons[name] || goldIcons.mark;
   return <img className={`ui-asset-icon ${className}`} src={src} alt={alt} aria-hidden={alt ? undefined : true} />;
@@ -595,55 +679,55 @@ function cleanTariffKey(tariff) {
   return "Economy";
 }
 
-const localTariffProfiles = {
-  smallTown: {
-    Economy: { minPrice: 500, basePrice: 350, pricePerKm: 110, pricePerMinute: 18 },
-    Comfort: { minPrice: 750, basePrice: 500, pricePerKm: 140, pricePerMinute: 22 },
-    Business: { minPrice: 1200, basePrice: 800, pricePerKm: 210, pricePerMinute: 35 },
-    Delivery: { minPrice: 450, basePrice: 300, pricePerKm: 80, pricePerMinute: 12 }
+const fixedTariffSpec = [
+  {
+    key: "Economy",
+    title: "Эконом",
+    subtitle: "Быстро и выгодно",
+    fixedPriceKzt: 700,
+    image: carImages.Economy,
+    seats: 4,
+    recommended: true
   },
-  city: {
-    Economy: { minPrice: 800, basePrice: 500, pricePerKm: 130, pricePerMinute: 22 },
-    Comfort: { minPrice: 1200, basePrice: 750, pricePerKm: 170, pricePerMinute: 28 },
-    Business: { minPrice: 1800, basePrice: 1200, pricePerKm: 240, pricePerMinute: 42 },
-    Delivery: { minPrice: 700, basePrice: 450, pricePerKm: 100, pricePerMinute: 18 }
+  {
+    key: "Comfort",
+    title: "Комфорт",
+    subtitle: "Больше комфорта",
+    fixedPriceKzt: 1000,
+    image: carImages.Comfort,
+    seats: 4
   },
-  regional: {
-    Economy: { minPrice: 900, basePrice: 600, pricePerKm: 145, pricePerMinute: 24 },
-    Comfort: { minPrice: 1300, basePrice: 850, pricePerKm: 185, pricePerMinute: 32 },
-    Business: { minPrice: 2200, basePrice: 1500, pricePerKm: 260, pricePerMinute: 48 },
-    Delivery: { minPrice: 800, basePrice: 500, pricePerKm: 115, pricePerMinute: 20 }
+  {
+    key: "Business",
+    title: "Бизнес",
+    subtitle: "Премиальная поездка",
+    fixedPriceKzt: 2500,
+    image: carImages.Business,
+    seats: 4
+  },
+  {
+    key: "Delivery",
+    title: "Доставка",
+    subtitle: "Посылки и небольшие грузы",
+    fixedPriceKzt: 800,
+    image: carImages.Delivery,
+    delivery: true
   }
-};
+];
 
-const localTariffNames = {
-  Economy: "Эконом",
-  Comfort: "Комфорт",
-  Business: "Бизнес",
-  Delivery: "Доставка"
-};
-
-function localTariffProfile(region) {
-  const code = regionCode(region);
-  if (code === "SHYMKENT") return localTariffProfiles.city;
-  if (["TURKISTAN", "SARYAGASH", "KAZYGURT"].includes(code)) return localTariffProfiles.regional;
-  return localTariffProfiles.smallTown;
-}
-
-function localTariffsForRegion(region) {
-  const code = regionCode(region);
-  const profile = localTariffProfile(region);
-  return Object.entries(profile).map(([name, values]) => ({
-    id: `LOCAL_${code}_${name.toUpperCase()}`,
-    name,
-    displayName: localTariffNames[name],
-    description: tariffSubtitle({ name, displayName: localTariffNames[name] }),
-    currency: "KZT",
-    isLocal: true,
-    regionId: region?.id || `LOCAL_${code}`,
-    regionCode: code,
-    ...values
-  }));
+function tariffFixedPrice(tariff, fallback) {
+  const candidates = [
+    tariff?.fixedPriceKzt,
+    tariff?.fixed_price_kzt,
+    tariff?.minimumPrice,
+    tariff?.minPrice,
+    tariff?.min_price,
+    tariff?.basePrice,
+    tariff?.base_price,
+    fallback
+  ];
+  const value = candidates.map(Number).find(item => Number.isFinite(item) && item > 0);
+  return value || fallback;
 }
 
 function haversineKm(from, to) {
@@ -658,53 +742,27 @@ function haversineKm(from, to) {
   return earthKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function buildLocalRoutePreview({ pickup, destination, tariff }) {
-  const straightKm = haversineKm(pickup, destination);
-  const distanceKm = Math.max(0.8, straightKm * 1.22);
-  const durationMin = Math.max(3, Math.ceil((distanceKm / 28) * 60));
-  const price = Math.max(
-    tariffMinPrice(tariff) || 0,
-    Math.round((Number(tariff?.basePrice || 0) + distanceKm * Number(tariff?.pricePerKm || 0) + durationMin * Number(tariff?.pricePerMinute || 0)) / 50) * 50
-  );
-  return {
-    provider: "local-smarttaxi",
-    distanceMeters: Math.round(distanceKm * 1000),
-    durationSeconds: Math.round(durationMin * 60),
-    polyline: null,
-    estimate: {
-      estimatedPrice: price,
-      currency: "KZT",
-      tariffId: tariff?.id,
-      tariffName: tariffTitle(tariff)
-    }
-  };
-}
-
 function referenceTariffRows(tariffs, selectedTariff, estimate, route) {
   const byKey = new Map();
-  tariffs.forEach(item => byKey.set(cleanTariffKey(item), item));
-  const rows = [
-    { key: "Economy", title: "Эконом", subtitle: "Быстрая подача", price: 1200, image: carImages.Economy, seats: 4, recommended: true },
-    { key: "Comfort", title: "Комфорт", subtitle: "Просторные авто", price: 1700, image: carImages.Comfort, seats: 4 },
-    { key: "Business", title: "Бизнес", subtitle: "Премиальные авто", price: 2500, image: carImages.Business, seats: 4 },
-    { key: "Delivery", title: "Доставка", subtitle: "До 20 кг", price: 800, image: carImages.Delivery, seats: null, delivery: true }
-  ];
-  const mapped = rows.map((row, index) => {
+  tariffs
+    .forEach(item => byKey.set(cleanTariffKey(item), item));
+  const mapped = fixedTariffSpec.map(row => {
     const apiTariff = byKey.get(row.key);
     const selected = apiTariff ? selectedTariff?.id === apiTariff.id : false;
-    const basePrice = apiTariff ? tariffMinPrice(apiTariff) || row.price : row.price;
+    const fixedPrice = tariffFixedPrice(apiTariff, row.fixedPriceKzt);
+    const backendEstimateMatches = selected && estimate?.estimatedPrice && cleanTariffKey(estimate?.tariff) === row.key;
     return {
       ...row,
       apiTariff,
-      disabled: false,
+      disabled: !apiTariff,
       selected,
-      displayPrice: selected && estimate?.estimatedPrice ? estimate.estimatedPrice : basePrice,
-      eta: formatTripMin(route, `${12 + index * 2} мин`),
-      km: formatTripKm(route, `${(5.2 + index * 0.2).toFixed(1).replace(".", ",")} км`)
+      priceKzt: backendEstimateMatches ? estimate.estimatedPrice : fixedPrice,
+      eta: formatTripMin(route, "—"),
+      km: formatTripKm(route, "—")
     };
   });
   if (!mapped.some(row => row.selected)) {
-    const firstAvailable = mapped.find(row => row.apiTariff && !row.disabled) || mapped[0];
+    const firstAvailable = mapped.find(row => row.apiTariff && !row.disabled);
     if (firstAvailable) firstAvailable.selected = true;
   }
   return mapped;
@@ -721,7 +779,6 @@ export default function ClientApp() {
   const [regionsLoading, setRegionsLoading] = useState(true);
   const [regionsError, setRegionsError] = useState("");
   const [selectedRegionId, setSelectedRegionId] = useState("");
-  const [regionPickerOpen, setRegionPickerOpen] = useState(false);
   const [tariffs, setTariffs] = useState([]);
   const [tariffsLoading, setTariffsLoading] = useState(false);
   const [tariffsError, setTariffsError] = useState("");
@@ -732,13 +789,21 @@ export default function ClientApp() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [mainMapCandidate, setMainMapCandidate] = useState(null);
+  const [mainMapPickLoading, setMainMapPickLoading] = useState(false);
+  const [mainMapCandidateReady, setMainMapCandidateReady] = useState(true);
   const [auth, setAuth] = useState({ phone: "", password: "" });
   const [authMode, setAuthMode] = useState("phone");
   const [registerForm, setRegisterForm] = useState({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
   const [resetForm, setResetForm] = useState({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
   const [rider, setRider] = useState({ name: "Пассажир", phone: "" });
   const [authenticated, setAuthenticated] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [favoritesState, setFavoritesState] = useState({ loading: false, error: "" });
   const socketRef = useRef(null);
+  const mainMapReverseSeqRef = useRef(0);
+  const mainMapReverseDebounceRef = useRef(0);
+  const mainMapSkipInitialCenterRef = useRef(true);
 
   const localSelectedRegion = mergedClientRegionPresets.find(region => region.id === selectedRegionId);
   const selectedRegion = regions.find(region => region.id === selectedRegionId)
@@ -760,6 +825,27 @@ export default function ClientApp() {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     });
   }, [section, addressMode, pickup?.lat, pickup?.lng, destination?.lat, destination?.lng]);
+
+  useEffect(() => {
+    if (pickup) {
+      setMainMapCandidate(pickup);
+      setMainMapCandidateReady(true);
+      setMainMapPickLoading(false);
+      return;
+    }
+    const center = regionCenter(selectedRegion) || regionCenter(fallbackRegion);
+    if (!center) return;
+    setMainMapCandidate({
+      title: "Моё местоположение",
+      subtitle: selectedRegionName || "Атакент",
+      ...center
+    });
+    setMainMapCandidateReady(true);
+    setMainMapPickLoading(false);
+    mainMapSkipInitialCenterRef.current = true;
+  }, [pickup?.lat, pickup?.lng, selectedRegion?.id, selectedRegionName]);
+
+  useEffect(() => () => window.clearTimeout(mainMapReverseDebounceRef.current), []);
 
   useEffect(() => {
     if (!getToken()) return undefined;
@@ -829,19 +915,19 @@ export default function ClientApp() {
     getTariffs(backendRegionId || selectedRegionId)
       .then(data => {
         if (ignore) return;
-        const allowedTariffs = ["Economy", "Comfort", "Business", "Delivery", "Эконом", "Комфорт", "Бизнес", "Доставка"];
-        const apiTariffs = (data.tariffs || []).filter(item => allowedTariffs.includes(item.name) || allowedTariffs.includes(item.displayName || item.display_name));
-        const nextTariffs = apiTariffs.length ? apiTariffs : localTariffsForRegion(selectedRegion);
-        setTariffs(nextTariffs);
-        setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
-        setTariffsError(apiTariffs.length ? "" : "Локальные цены региона");
+        const order = new Map(fixedTariffSpec.map((item, index) => [item.key, index]));
+        const apiTariffs = (data.tariffs || [])
+          .filter(item => order.has(cleanTariffKey(item)))
+          .sort((a, b) => order.get(cleanTariffKey(a)) - order.get(cleanTariffKey(b)));
+        setTariffs(apiTariffs);
+        setTariff(current => apiTariffs.find(item => item.id === current?.id) || apiTariffs[0] || null);
+        setTariffsError(apiTariffs.length ? "" : "Тарифы пока не настроены");
       })
       .catch(() => {
         if (ignore) return;
-        const nextTariffs = localTariffsForRegion(selectedRegion);
-        setTariffs(nextTariffs);
-        setTariff(current => nextTariffs.find(item => item.id === current?.id) || nextTariffs[0] || null);
-        setTariffsError("Показываем локальные цены региона");
+        setTariffs([]);
+        setTariff(null);
+        setTariffsError("Не удалось загрузить тарифы. Проверьте подключение к API.");
       })
       .finally(() => !ignore && setTariffsLoading(false));
     return () => { ignore = true; };
@@ -857,7 +943,8 @@ export default function ClientApp() {
     setRouteLoading(true);
     setRouteError("");
     if (tariff?.isLocal) {
-      setRoute(buildLocalRoutePreview({ pickup, destination, tariff }));
+      setRoute(null);
+      setRouteError("Сервер расчёта временно недоступен");
       setRouteLoading(false);
       return () => { ignore = true; };
     }
@@ -875,14 +962,8 @@ export default function ClientApp() {
       })
       .catch(error => {
         if (ignore) return;
-        const localRoute = buildLocalRoutePreview({ pickup, destination, tariff });
-        if (localRoute?.estimate?.estimatedPrice) {
-          setRoute(localRoute);
-          setRouteError("");
-        } else {
-          setRoute(null);
-          setRouteError(formatError(error));
-        }
+        setRoute(null);
+        setRouteError(formatError(error));
       })
       .finally(() => !ignore && setRouteLoading(false));
     return () => { ignore = true; };
@@ -942,6 +1023,10 @@ export default function ClientApp() {
     };
   }, [order?.id]);
 
+  useEffect(() => {
+    if (section === "favorites" && authenticated) loadFavorites();
+  }, [section, authenticated]);
+
   function selectSection(next) {
     if (next === "driver") {
       window.location.href = "/driver";
@@ -963,7 +1048,7 @@ export default function ClientApp() {
       SMS_VERIFICATION_EXPIRED: "Подтверждение истекло. Получите новый код",
       USER_NOT_FOUND: "Аккаунт с таким номером не найден"
     };
-    return map[code] || error?.message || "Не удалось выполнить действие";
+    return map[code] || "Не удалось выполнить действие. Проверьте соединение и попробуйте снова.";
   }
 
   async function submitAuthPhone(event) {
@@ -1199,10 +1284,10 @@ export default function ClientApp() {
         const data = await reverseAddress(point);
         const address = normalizeAddress(data.address) || { title: "Моё местоположение", subtitle: "Точка определена", ...point };
         setPickup(address);
-        setMessage(matched ? `Регион: ${matched.name}` : "Местоположение выбрано");
+        setMessage("Местоположение выбрано");
       } catch {
         setPickup({ title: "Моё местоположение", subtitle: "Точка определена", ...point });
-        setMessage(matched ? `Регион: ${matched.name}` : "Местоположение выбрано");
+        setMessage("Местоположение выбрано");
       }
     }, () => {
       setMessage("Разрешите доступ к геолокации или выберите адрес вручную");
@@ -1211,6 +1296,103 @@ export default function ClientApp() {
       timeout: 12000,
       maximumAge: 60000
     });
+  }
+
+  async function updateMainMapCandidate(point) {
+    if (!point?.lat || !point?.lng || destination) return;
+    if (mainMapSkipInitialCenterRef.current) {
+      mainMapSkipInitialCenterRef.current = false;
+      return;
+    }
+    const fallback = {
+      title: point?.preview?.title || "Точка на карте",
+      subtitle: selectedRegionName ? `${selectedRegionName} · ${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}` : `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
+      ...point
+    };
+    const seq = mainMapReverseSeqRef.current + 1;
+    mainMapReverseSeqRef.current = seq;
+    setMainMapCandidate(fallback);
+    setMainMapCandidateReady(false);
+    setMainMapPickLoading(true);
+    window.clearTimeout(mainMapReverseDebounceRef.current);
+    mainMapReverseDebounceRef.current = window.setTimeout(async () => {
+      try {
+        const data = await Promise.race([
+          reverseAddress(point),
+          new Promise((_, reject) => window.setTimeout(() => reject(new Error("reverse_timeout")), 1800))
+        ]);
+        const address = normalizeAddress(data.address) || fallback;
+        if (seq === mainMapReverseSeqRef.current) setMainMapCandidate(address);
+      } catch {
+        if (seq === mainMapReverseSeqRef.current) setMainMapCandidate(fallback);
+      } finally {
+        if (seq === mainMapReverseSeqRef.current) {
+          setMainMapCandidateReady(true);
+          setMainMapPickLoading(false);
+        }
+      }
+    }, 260);
+  }
+
+  function markMainMapMoving() {
+    if (destination || pickup) return;
+    if (mainMapSkipInitialCenterRef.current) return;
+    window.clearTimeout(mainMapReverseDebounceRef.current);
+    setMainMapCandidateReady(false);
+    setMainMapPickLoading(true);
+    setMessage("");
+  }
+
+  function commitMainMapPickup() {
+    if (!pickup && (!mainMapCandidateReady || mainMapPickLoading)) {
+      setMessage("Подождите, определяем точку на карте");
+      return false;
+    }
+    if (!pickup && mainMapCandidate?.lat && mainMapCandidate?.lng) {
+      setPickup(mainMapCandidate);
+    }
+    return true;
+  }
+
+  function openDestinationFromMain() {
+    if (!commitMainMapPickup()) return;
+    setAddressMode("destination");
+  }
+
+  async function loadFavorites() {
+    setFavoritesState({ loading: true, error: "" });
+    try {
+      const data = await getFavoriteAddresses();
+      setFavorites(data.favorites || data.addresses || []);
+      setFavoritesState({ loading: false, error: "" });
+    } catch (error) {
+      setFavoritesState({ loading: false, error: formatError(error) });
+    }
+  }
+
+  async function saveFavoriteAddress(address) {
+    setFavoritesState(current => ({ ...current, error: "" }));
+    try {
+      await addFavoriteAddress({
+        label: address.title || "Новый адрес",
+        address: address.subtitle || address.title || "",
+        lat: address.lat,
+        lng: address.lng
+      });
+      await loadFavorites();
+    } catch (error) {
+      setFavoritesState({ loading: false, error: formatError(error) });
+    }
+  }
+
+  async function deleteFavorite(favoriteId) {
+    setFavoritesState(current => ({ ...current, error: "" }));
+    try {
+      await deleteFavoriteAddress(favoriteId);
+      await loadFavorites();
+    } catch (error) {
+      setFavoritesState(current => ({ ...current, error: formatError(error) }));
+    }
   }
 
   function chooseAddress(address) {
@@ -1224,20 +1406,8 @@ export default function ClientApp() {
       }
       setDestination(next);
     }
+    if (addressMode === "favorite") saveFavoriteAddress(next);
     setAddressMode("");
-  }
-
-  function chooseRegion(region) {
-    if (!region) return;
-    const center = regionCenter(region);
-    setSelectedRegionId(region.id);
-    setRegionPickerOpen(false);
-    setDestination(null);
-    setRoute(null);
-    setRouteError("");
-    if (center) {
-      setPickup({ title: "Моё местоположение", subtitle: regionLabel(region), ...center });
-    }
   }
 
   async function submitOrder() {
@@ -1273,10 +1443,29 @@ export default function ClientApp() {
         notes: ""
       };
       if (!tariff.isLocal) orderPayload.tariffId = tariff.id;
+      const active = await getClientActiveOrder();
+      if (active.order) {
+        setOrder(normalizeOrder(active.order));
+        setSection("trips");
+        setMessage("Открыли ваш активный заказ");
+        return;
+      }
       const data = await createOrder(orderPayload);
       setOrder(normalizeOrder(data.order));
       setSection("trips");
     } catch (error) {
+      if (error?.code === "CLIENT_HAS_ACTIVE_ORDER" && error?.details?.orderId) {
+        try {
+          const active = await getOrderStatusHistory(error.details.orderId);
+          setOrder(normalizeOrder(active.order));
+          setSection("trips");
+          setMessage("Открыли ваш активный заказ");
+          return;
+        } catch {
+          setMessage(errorMessages.CLIENT_HAS_ACTIVE_ORDER);
+          return;
+        }
+      }
       setMessage(formatError(error));
     } finally {
       setLoading(false);
@@ -1323,32 +1512,21 @@ export default function ClientApp() {
       {!addressMode && !authScreenActive && (
         <>
           <ClientHeader
-            regionName={regionShortLabel(selectedRegion)}
             routeReady={section === "home" && Boolean(pickup && destination)}
+            addressSelectionMode={section === "home" && !destination}
             route={route}
             onMenu={() => setDrawerOpen(true)}
             onBell={() => setSection("support")}
-            onRegion={() => setRegionPickerOpen(true)}
             onBackRoute={() => {
               setDestination(null);
               setRoute(null);
               setRouteError("");
             }}
           />
-          <RegionSheet
-            open={regionPickerOpen}
-            regions={regions}
-            selectedRegionId={selectedRegionId}
-            loading={regionsLoading}
-            error={regionsError}
-            onClose={() => setRegionPickerOpen(false)}
-            onSelect={chooseRegion}
-          />
           <ClientDrawer
             open={drawerOpen}
             active={section}
             rider={rider}
-            regionName={regionLabel(selectedRegion)}
             authenticated={authenticated}
             onClose={() => setDrawerOpen(false)}
             onSelect={selectSection}
@@ -1373,11 +1551,16 @@ export default function ClientApp() {
               routeLoading={routeLoading}
               routeError={routeError}
               mapCenter={mapCenter}
+              mainMapCandidate={mainMapCandidate}
+              mainMapPickLoading={mainMapPickLoading}
+              mainMapCandidateReady={mainMapCandidateReady}
               selectedRegion={selectedRegion}
               selectedRegionName={selectedRegionName}
               onUseLocation={useCurrentLocation}
               onPickup={() => setAddressMode("pickup")}
-              onDestination={() => setAddressMode("destination")}
+              onDestination={openDestinationFromMain}
+              onMapPick={updateMainMapCandidate}
+              onMapMoving={markMainMapMoving}
               onClearDestination={() => {
                 setDestination(null);
                 setRoute(null);
@@ -1392,6 +1575,8 @@ export default function ClientApp() {
                 }
                 setDestination(next);
               }}
+              onMenu={() => setDrawerOpen(true)}
+              onBell={() => setSection("support")}
                onNavigate={setSection}
                activeSection={section}
                tariffs={tariffs}
@@ -1409,19 +1594,35 @@ export default function ClientApp() {
               onSubmit={submitOrder}
             />
           )}
-          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} onOrderUpdate={next => setOrder(normalizeOrder(next))} />}
+          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} onSupport={() => setSection("support")} onOrderUpdate={next => setOrder(normalizeOrder(next))} />}
           {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
-          {section === "support" && <SupportSection />}
+          {section === "favorites" && (
+            <FavoritesSection
+              onHome={() => setSection("home")}
+              authenticated={authenticated}
+              favorites={favorites}
+              favoritesState={favoritesState}
+              onPickOnMap={() => setAddressMode("favorite")}
+              onDelete={deleteFavorite}
+              onLogin={() => setSection("profile")}
+            />
+          )}
+          {section === "promo" && <PromoSection regionId={backendRegionId || selectedRegionId} authenticated={authenticated} />}
+          {section === "support" && <SupportSection activeOrderId={order?.id} authenticated={authenticated} />}
+          {section === "referral" && <ReferralSection authenticated={authenticated} />}
           {section === "faq" && <FaqSection />}
-          {section === "about" && <AboutSection regions={regions} />}
-          {section === "settings" && <SettingsSection regionName={selectedRegionName} onLogout={logout} />}
+          {section === "about" && <AboutSection />}
+          {section === "settings" && <SettingsSection onLogout={logout} />}
+          {section === "legalTerms" && <LegalSection type="terms" />}
+          {section === "legalPrivacy" && <LegalSection type="privacy" />}
+          {section === "legalInfo" && <LegalSection type="info" />}
         </main>
       )}
     </PhoneFrame>
   );
 }
 
-function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, onRegion, onBackRoute }) {
+function ClientHeader({ routeReady = false, addressSelectionMode = false, route, onMenu, onBell, onBackRoute }) {
   if (routeReady) {
     return (
       <header className="taxi-app-header premium-client-header reference-client-header tariff-mode">
@@ -1430,7 +1631,7 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
         </button>
         <div className="reference-title-stack">
           <strong>Выбор тарифа</strong>
-          <small>{formatTripMin(route)} · {formatTripKm(route)}</small>
+          <small>{route ? formatRouteSummary(route) : "Расчёт маршрута"}</small>
         </div>
         <button type="button" className="client-icon-button" aria-label="Информация">
           <IconAsset name="info" />
@@ -1438,16 +1639,17 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
       </header>
     );
   }
+  if (addressSelectionMode) {
+    return null;
+  }
   return (
     <header className="taxi-app-header premium-client-header reference-client-header address-mode">
       <button type="button" className="client-icon-button" onClick={onMenu} aria-label="Открыть меню">
         <IconAsset name="menu" />
       </button>
-      <button type="button" className="reference-region-chip" onClick={onRegion} aria-label="Регион">
-        <Icon name="pin" size={18} />
-        <span>{regionName || "Атакент"}</span>
-        <Icon name="chevron" size={15} />
-      </button>
+      <div className="reference-brand-chip" aria-label="SmartTaxi">
+        <span>SmartTaxi</span>
+      </div>
       <button type="button" className="client-icon-button notification" onClick={onBell} aria-label="Уведомления">
         <Icon name="bell" size={20} />
         <i />
@@ -1456,75 +1658,61 @@ function ClientHeader({ regionName, routeReady = false, route, onMenu, onBell, o
   );
 }
 
-function RegionSheet({ open, regions, selectedRegionId, loading, error, onClose, onSelect }) {
-  const [query, setQuery] = useState("");
-  const clean = normalizeText(query);
-  const list = (regions.length ? regions : mergedClientRegionPresets).filter(region => {
-    if (!clean) return true;
-    return normalizeText([region.name, region.displayName, region.alias, region.subtitle, region.code].filter(Boolean).join(" ")).includes(clean);
-  });
-  return (
-    <>
-      <div className={`client-drawer-backdrop region-sheet-backdrop ${open ? "open" : ""}`} onClick={onClose} />
-      <section className={`client-region-sheet ${open ? "open" : ""}`} aria-hidden={!open}>
-        <header>
-          <div>
-            <strong>Выберите регион</strong>
-            <span>Регион нужен для тарифов, адресов и подачи водителя.</span>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
-        </header>
-        <label className="client-region-search">
-          <Icon name="search" size={18} />
-          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Найти город или район" />
-        </label>
-        {loading && <p className="region-sheet-note">Загружаем регионы...</p>}
-        {error && <p className="region-sheet-note muted">Локальный список регионов включён.</p>}
-        <div className="client-region-list">
-          {list.map(region => {
-            const selected = region.id === selectedRegionId;
-            return (
-              <button type="button" key={region.id} className={selected ? "selected" : ""} onClick={() => onSelect(region)}>
-                <span className="region-dot"><Icon name="pin" size={18} /></span>
-                <span>
-                  <strong>{regionLabel(region)}</strong>
-                  <small>{region.subtitle || "SmartTaxi region"}</small>
-                </span>
-                {selected ? <Icon name="check" size={19} /> : <Icon name="chevron" size={17} />}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function ClientDrawer({ open, active, rider, regionName, authenticated, onClose, onSelect, onLogout }) {
+function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, onLogout }) {
+  const title = authenticated ? formatKzPhoneDisplay(rider.phone) : "Войти в аккаунт";
+  const subtitle = authenticated ? rider.name || "Пассажир" : "или зарегистрироваться";
   return (
     <>
       <div className={`client-drawer-backdrop ${open ? "open" : ""}`} onClick={onClose} />
       <aside className={`client-drawer ${open ? "open" : ""}`} aria-hidden={!open}>
-        <header>
-          <SmartTaxiLogo large />
-          <div>
-            <strong>{authenticated ? rider.name || "Пассажир" : "SmartTaxi"}</strong>
-            <span>{authenticated ? rider.phone || "Телефон не указан" : "Войдите для заказа"}</span>
-            <small>{regionName || "Регион не выбран"}</small>
+        <div className="client-drawer-brand-row">
+          <div className="client-drawer-brand-lockup" aria-label="SmartTaxi">
+            <img className="client-drawer-mark" src={goldIcons.sMark} alt="" aria-hidden="true" />
+            <span>
+              <strong>Smart<span>Taxi</span></strong>
+              <small>Ваш комфорт</small>
+            </span>
           </div>
-        </header>
-        <nav>
-          {menuItems.map(([key, label, icon]) => (
-            <button type="button" key={key} className={active === key ? "active" : ""} onClick={() => onSelect(key)}>
-              <Icon name={icon} size={21} />
-              <span>{label}</span>
-            </button>
+          <button type="button" className="client-drawer-close" onClick={onClose} aria-label="Закрыть меню">
+            <Icon name="close" size={24} />
+          </button>
+        </div>
+        <button type="button" className="client-drawer-account-row" onClick={() => onSelect("profile")}>
+          <span>
+            <strong>{title}</strong>
+            <small>{subtitle}</small>
+          </span>
+          <Icon name="chevron" size={22} />
+        </button>
+        <nav className="client-drawer-nav" aria-label="Меню клиента">
+          {drawerMenuGroups.map((group, groupIndex) => (
+            <div className="client-drawer-group" key={groupIndex}>
+              {group.map(({ key, label, icon, hint }) => (
+                <button type="button" key={key} className={active === key ? "active" : ""} onClick={() => onSelect(key)}>
+                  <span className="drawer-menu-icon"><Icon name={icon} size={25} /></span>
+                  <span className="drawer-menu-copy">
+                    <b>{label}</b>
+                    {hint && <small>{hint}</small>}
+                  </span>
+                  <Icon name="chevron" size={19} />
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
-        <button type="button" className="drawer-logout" onClick={onLogout}>
-          <Icon name="logout" size={20} />
-          <span>Выйти</span>
-        </button>
+        {authenticated ? (
+          <button type="button" className="drawer-logout" onClick={onLogout}>
+            <span className="drawer-menu-icon"><Icon name="logout" size={25} /></span>
+            <span className="drawer-menu-copy"><b>Выйти из аккаунта</b><small>Завершить сессию</small></span>
+            <Icon name="chevron" size={19} />
+          </button>
+        ) : (
+          <button type="button" className="drawer-login-action" onClick={() => onSelect("profile")}>
+            <span className="drawer-menu-icon"><Icon name="user" size={25} /></span>
+            <span className="drawer-menu-copy"><b>Войти</b><small>Телефон и пароль</small></span>
+            <Icon name="chevron" size={19} />
+          </button>
+        )}
       </aside>
     </>
   );
@@ -1538,15 +1726,19 @@ function ReferenceHomeSection(props) {
     routeLoading,
     routeError,
     mapCenter,
+    mainMapCandidate,
+    mainMapPickLoading,
+    mainMapCandidateReady,
     selectedRegion,
     selectedRegionName,
     onUseLocation,
     onPickup,
     onDestination,
-    onClearDestination,
     onSelectDestination,
-    onNavigate,
-    activeSection = "home",
+    onMapPick,
+    onMapMoving,
+    onMenu,
+    onBell,
     tariffs,
     tariff,
     setTariff,
@@ -1556,7 +1748,6 @@ function ReferenceHomeSection(props) {
     setPayment,
     estimate,
     loading,
-    authenticated,
     message,
     onSubmit
   } = props;
@@ -1564,8 +1755,16 @@ function ReferenceHomeSection(props) {
   const routeReady = Boolean(pickup && destination);
   const actionReady = Boolean(routeReady && tariff && route && estimate && !routeError);
   const rows = referenceTariffRows(tariffs, tariff, estimate, route);
+  const hasAvailableTariffs = rows.some(row => !row.disabled);
   const selectedRow = rows.find(row => row.selected) || rows.find(row => row.apiTariff) || rows[0];
-  const totalPrice = estimate?.estimatedPrice || selectedRow?.displayPrice || 1200;
+  const totalPrice = selectedRow?.priceKzt || estimate?.estimatedPrice || null;
+  const activePickup = pickup || mainMapCandidate;
+  const markerAddressTitle = activePickup?.title || "Моё местоположение";
+  const markerAddressSubtitle = activePickup?.subtitle || selectedRegionName || "Атакент";
+  const markerTagText = activePickup?.title && activePickup.title !== "Моё местоположение"
+    ? activePickup.title
+    : markerAddressSubtitle;
+  const destinationDisabled = !pickup && (mainMapPickLoading || !mainMapCandidateReady);
   const recentPlaces = popularAddressesForRegion(selectedRegion, 6)
     .filter(place => !normalizeText(place.title).includes("местоположение"))
     .slice(0, 3);
@@ -1592,14 +1791,32 @@ function ReferenceHomeSection(props) {
           </div>
           <button type="button" className="reference-edit-route" onClick={onDestination}>
             <IconAsset name="edit" />
-            <span>Изменить<br />маршрут</span>
+            <span>Изменить</span>
           </button>
+        </section>
+
+        <section className="reference-route-metrics" aria-label="Информация о маршруте">
+          <span>
+            <Icon name="route" size={20} />
+            <b>{formatTripKm(route, "—")}</b>
+            <small>Расстояние</small>
+          </span>
+          <span>
+            <Icon name="clock" size={20} />
+            <b>{formatTripMin(route, "—")}</b>
+            <small>В пути</small>
+          </span>
+          <span>
+            <IconAsset name="tariffPassenger" className="ui-asset-icon ui-asset-icon-md" />
+            <b>3–5 мин</b>
+            <small>Подача</small>
+          </span>
         </section>
 
         <section className="reference-tariffs-block">
           <div className="reference-section-title">
             <strong>Выберите тариф</strong>
-            {routeLoading ? <span>Считаем маршрут</span> : <span>{formatTripMin(route)} · {formatTripKm(route)}</span>}
+            {routeLoading ? <span>Считаем маршрут</span> : <span>{route ? formatRouteSummary(route) : "Маршрут не рассчитан"}</span>}
           </div>
           {routeError && <p className="reference-state-error">{routeError}</p>}
           {tariffsError && <p className="reference-state-hint">{tariffsError}</p>}
@@ -1612,17 +1829,17 @@ function ReferenceHomeSection(props) {
 
         <ReferencePaymentRow payment={payment} setPayment={setPayment} />
 
-        {message && <p className={message.includes("Вход") || message.includes("Регион") ? "reference-note success" : "reference-note"}>{message}</p>}
+        {message && <p className={message.includes("Вход") || message.includes("выбра") ? "reference-note success" : "reference-note"}>{message}</p>}
 
         <section className="reference-sticky-order">
           <div className="reference-total">
             <span>Итого</span>
-            <strong><Money value={totalPrice} /></strong>
-            <small>Включая подачу</small>
+            <strong>{totalPrice ? <Money value={totalPrice} /> : "—"}</strong>
+            <small>{totalPrice ? "Включая подачу" : hasAvailableTariffs ? "После расчёта" : "Тарифы недоступны"}</small>
           </div>
-          <button type="button" className="reference-order-button" disabled={loading || routeLoading || !actionReady} onClick={onSubmit}>
-            <span>{`Заказать ${selectedRow?.title || "Эконом"}`}</span>
-            <b><Money value={totalPrice} /></b>
+          <button type="button" className="reference-order-button" disabled={loading || routeLoading || !actionReady || !hasAvailableTariffs} onClick={onSubmit}>
+            <span>{hasAvailableTariffs ? `Заказать ${selectedRow?.title || "такси"}` : "Тарифы недоступны"}</span>
+            <b>{totalPrice ? <Money value={totalPrice} /> : hasAvailableTariffs ? "Расчёт" : "API"}</b>
             <Icon name="chevron" size={24} />
           </button>
         </section>
@@ -1631,55 +1848,147 @@ function ReferenceHomeSection(props) {
   }
 
   return (
-    <section className="client-reference-screen reference-address-state">
-      <div className="reference-map-ambient" aria-hidden="true">
-        <MapView pickup={pickup} destination={destination} route={route} center={mapCenter || regionCenter(selectedRegion)} compact />
+    <section className="client-reference-screen final10-exact-state">
+      <div className="final10-glow-a" aria-hidden="true" />
+      <div className="final10-glow-b" aria-hidden="true" />
+      <div className="final10-glow-c" aria-hidden="true" />
+
+      <div className="final10-map-wrap" aria-hidden="true">
+        <div className="final10-map-placeholder">
+          <svg viewBox="0 0 390 490" preserveAspectRatio="none">
+            <rect x="0" y="0" width="390" height="490" fill="#0D111C" />
+            <rect x="16" y="26" width="120" height="140" rx="10" fill="#151B2A" />
+            <rect x="252" y="16" width="122" height="100" rx="10" fill="#151B2A" />
+            <rect x="248" y="148" width="126" height="140" rx="10" fill="#151B2A" />
+            <rect x="16" y="270" width="140" height="78" rx="10" fill="#151B2A" />
+            <rect x="26" y="360" width="330" height="110" rx="16" fill="#0F241F" />
+            <path d="M50 378L330 448M330 378L50 448" stroke="#1E4038" strokeWidth="1.2" />
+            <rect x="0" y="198" width="390" height="14" fill="#1A2233" />
+            <rect x="176" y="0" width="14" height="490" fill="#1A2233" />
+            <path d="M60 40Q150 100 176 198T195 400" stroke="#E2793D" strokeWidth="2.4" strokeDasharray="1 8" strokeLinecap="round" fill="none" opacity=".8" />
+            <circle cx="60" cy="40" r="5" fill="#E2793D" />
+            <text x="52" y="192" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#5C6478">ул. Ленина</text>
+            <text x="196" y="110" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#5C6478" transform="rotate(90 196 110)">ул. Мира</text>
+            <g opacity=".85">
+              <rect x="222" y="192" width="9" height="5.5" rx="2" fill="#F3F6FC" />
+              <rect x="100" y="272" width="9" height="5.5" rx="2" fill="#F3F6FC" opacity=".7" />
+              <rect x="260" y="330" width="9" height="5.5" rx="2" fill="#F3F6FC" opacity=".55" />
+            </g>
+            <g opacity=".8">
+              <rect x="30" y="40" width="4" height="4" fill="#FFD98A" />
+              <rect x="42" y="40" width="4" height="4" fill="#FFD98A" opacity=".5" />
+              <rect x="30" y="50" width="4" height="4" fill="#FFD98A" opacity=".7" />
+              <rect x="270" y="34" width="4" height="4" fill="#FFD98A" opacity=".6" />
+              <rect x="282" y="44" width="4" height="4" fill="#FFD98A" opacity=".4" />
+              <rect x="266" y="168" width="4" height="4" fill="#FFD98A" opacity=".5" />
+              <rect x="278" y="178" width="4" height="4" fill="#FFD98A" opacity=".7" />
+            </g>
+          </svg>
+        </div>
+        <MapView
+          pickup={null}
+          destination={destination}
+          route={route}
+          center={activePickup || mapCenter || regionCenter(selectedRegion)}
+          compact
+          addressControls
+          centerMarker
+          onMapPick={onMapPick}
+          onCenterChange={onMapPick}
+          onCenterChanging={onMapMoving}
+        />
+        <div className="final10-map-fade-top" />
+        <div className="final10-map-fade-bottom" />
       </div>
 
-      <section className="reference-address-card">
-        <button type="button" className="reference-address-row" onClick={onPickup}>
-          <span className="reference-point-icon"><IconAsset name="pickup" className="ui-asset-icon ui-asset-icon-lg" /></span>
-          <span className="reference-address-text">
-            <small>Откуда</small>
-            <strong>{pickup?.title || "Моё местоположение"}</strong>
-          </span>
-          <em className="reference-address-action" onClick={event => { event.stopPropagation(); onUseLocation(); }}>
-            <IconAsset name="target" className="ui-asset-icon ui-asset-icon-md" />
-          </em>
+      <div className="final10-top-controls">
+        <button type="button" className="final10-icon-btn tappable" onClick={onMenu} aria-label="Открыть меню">
+          <svg width="19" height="19" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 9H26M6 16H26M6 23H26" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" /></svg>
         </button>
-        <button type="button" className="reference-address-row destination" onClick={onDestination}>
-          <span className="reference-point-icon"><IconAsset name="destination" className="ui-asset-icon ui-asset-icon-lg" /></span>
-          <span className="reference-address-text">
-            <small>Куда едем?</small>
-            <strong>{destination?.title || "Выберите пункт назначения"}</strong>
-          </span>
-          <em className="reference-address-action">
-            <Icon name="chevron" size={23} />
-          </em>
+        <div className="final10-wordmark" aria-label="SmartTaxi"><span className="final10-dot" />Smart<span>Taxi</span></div>
+        <button type="button" className="final10-icon-btn tappable" onClick={onBell} aria-label="Уведомления">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18 8.5c0-3.6-2.7-6.5-6-6.5s-6 2.9-6 6.5c0 4.6-1.6 6.4-2.4 7.2-.5.5-.1 1.3.6 1.3h15.6c.7 0 1.1-.8.6-1.3-.8-.8-2.4-2.6-2.4-7.2Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" strokeLinecap="round" />
+            <path d="M9.5 19.5a2.6 2.6 0 0 0 5 0" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+          </svg>
+          <span className="final10-bell-dot" />
         </button>
-      </section>
+      </div>
 
-      <section className="reference-recents reference-recent-section">
-        <header className="reference-section-head">
-          <strong>Недавние адреса</strong>
-          <button type="button" onClick={onDestination}>Все</button>
-        </header>
-        <div className="reference-recent-list">
-          {recentPlaces.map(place => (
-            <button type="button" key={place.title} className="reference-recent-row" onClick={() => onSelectDestination(place)}>
-              <span className="reference-recent-icon"><IconAsset name={place.icon} className="ui-asset-icon ui-asset-icon-md" /></span>
-              <span>
-                <strong>{place.title}</strong>
-                <small>{place.subtitle}</small>
-              </span>
-              <IconAsset name="favorite" className="ui-asset-icon ui-asset-icon-sm star" />
-            </button>
-          ))}
+      <div className="final10-nearby-pill exact"><span />12 машин · 2 мин</div>
+      <button type="button" className="final10-locate-btn tappable" onClick={onUseLocation} aria-label="Моё местоположение">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2L19.5 20.5C19.7 21 19.1 21.4 18.7 21.1L12 17L5.3 21.1C4.9 21.4 4.3 21 4.5 20.5L12 2Z" fill="currentColor" />
+        </svg>
+      </button>
+
+      <div className="final10-marker-wrap" aria-hidden="true">
+        <div className="final10-radar" />
+        <div className="final10-pin-visual">
+          <svg className="final10-badge-svg" viewBox="0 0 64 64" fill="none">
+            <rect x="2" y="2" width="60" height="60" rx="20" fill="url(#final10BadgeGrad)" />
+            <rect x="6" y="6" width="52" height="52" rx="16" fill="#FFFFFF" fillOpacity=".88" />
+            <path d="M10 22C10 14 16.5 8 24 6.5" stroke="#FFFFFF" strokeOpacity=".55" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+            <rect x="14" y="24" width="7" height="7" fill="#63A0FF" opacity=".55" />
+            <rect x="23" y="24" width="7" height="7" fill="#1D6FFF" opacity=".9" />
+            <rect x="18" y="33" width="7" height="7" fill="#63A0FF" opacity=".35" />
+            <text x="42" y="35" textAnchor="middle" dominantBaseline="central" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="29" fill="url(#final10BadgeGrad)">S</text>
+            <defs>
+              <linearGradient id="final10BadgeGrad" x1="4" y1="2" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#63A0FF" />
+                <stop offset="1" stopColor="#0B4FD1" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <svg className="final10-tail-svg" viewBox="0 0 64 22" preserveAspectRatio="none">
+            <path d="M26 0H38V6L32 22L26 6Z" fill="url(#final10TailGrad)" />
+            <defs>
+              <linearGradient id="final10TailGrad" x1="32" y1="0" x2="32" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#1D6FFF" />
+                <stop offset="1" stopColor="#0B4FD1" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="final10-ground-shadow" />
+        </div>
+        <div className={`final10-address-tag ${mainMapPickLoading ? "loading" : ""}`}>{markerTagText}</div>
+      </div>
+
+      <section className="final10-panel" aria-label="Выбор адреса">
+        <div className="final10-grabber" aria-hidden="true" />
+        <div className="final10-addr-group">
+          <button type="button" className="final10-addr-row tappable tap-soft" onClick={onPickup}>
+            <span className="final10-marker-col"><span className="final10-dot-from" /></span>
+            <span className="final10-txt">
+              <small>Откуда</small>
+              <strong>{markerAddressTitle}</strong>
+            </span>
+            <Icon name="chevron" size={17} />
+          </button>
+          <span className="final10-connector-row" aria-hidden="true"><i /></span>
+          <button type="button" className="final10-addr-row tappable tap-soft" onClick={onDestination} disabled={destinationDisabled}>
+            <span className="final10-marker-col"><span className="final10-dot-to" /></span>
+            <span className="final10-txt">
+              <small>Куда едем</small>
+              <strong className="placeholder">Выберите пункт назначения</strong>
+            </span>
+            <Icon name="chevron" size={17} />
+          </button>
+        </div>
+
+        {routeLoading && <p className="final10-note">Определяем адрес и маршрут...</p>}
+        {routeError && <p className="final10-note danger">{routeError}</p>}
+        {message && <p className="final10-note">{message}</p>}
+
+        <button type="button" className="final10-cta tappable tap-soft" onClick={onDestination} disabled={destinationDisabled}>
+          <span>{destinationDisabled ? "Определяем точку" : "Указать куда"}</span>
+          <b>{destinationDisabled ? "Подождите" : "Далее"} <Icon name="chevron" size={16} /></b>
+        </button>
+        <div className="final10-trust-row exact" aria-hidden="true">
+          <Icon name="shield" size={13} />
+          Проверенные водители · Безопасные поездки
         </div>
       </section>
-
-      {message && <p className={message.includes("Регион") || message.includes("выбрано") ? "reference-note success" : "reference-note"}>{message}</p>}
-      <ReferenceBottomNav onNavigate={onNavigate} activeSection={activeSection} />
     </section>
   );
 }
@@ -1696,31 +2005,34 @@ function ReferenceTariffList({ rows, setTariff, route }) {
           disabled={row.disabled}
         >
           <span className="reference-car-thumb reference-tariff-car">
-            <img src={row.image} alt="" loading="lazy" className="reference-tariff-car-image" />
+            <img src={row.image} alt={row.title} loading="lazy" className="reference-tariff-car-image" />
           </span>
           <span className="reference-tariff-copy">
             <span className="reference-tariff-title-row">
               <strong className="reference-tariff-title">{row.title}</strong>
-              {row.recommended ? <span className="reference-tariff-recommended">Популярный</span> : null}
+              <span className="reference-tariff-meta inline">
+                {row.seats ? (
+                  <>
+                    <IconAsset name="tariffPassenger" className="ui-asset-icon ui-asset-icon-xs" />
+                    <small>{row.seats}</small>
+                  </>
+                ) : (
+                  <>
+                    <IconAsset name="tariffDelivery" className="ui-asset-icon ui-asset-icon-xs" />
+                    <small>до 20 кг</small>
+                  </>
+                )}
+              </span>
             </span>
             <span className="reference-tariff-meta">
-              {row.seats ? (
-                <>
-                  <Icon name="user" size={13} />
-                  <small>{row.seats} места</small>
-                </>
-              ) : (
-                <>
-                  <Icon name="gift" size={13} />
-                  <small>посылка</small>
-                </>
-              )}
+              <small>Фиксированная цена</small>
             </span>
             <em>{row.subtitle}</em>
-            <i>{row.eta || formatTripMin(route)} · {row.km || formatTripKm(route)}</i>
           </span>
           <span className="reference-tariff-actions">
-            <span className="reference-tariff-price"><Money value={row.displayPrice} /></span>
+            <span className="reference-tariff-price">
+              {row.priceKzt ? <Money value={row.priceKzt} /> : "Расчёт"}
+            </span>
             <span className="reference-tariff-radio" aria-hidden="true" />
           </span>
         </button>
@@ -1730,18 +2042,20 @@ function ReferenceTariffList({ rows, setTariff, route }) {
 }
 
 function ReferencePaymentRow({ payment, setPayment }) {
-  const nextPayment = payment?.id === "CASH" ? paymentOptions[1] : paymentOptions[0];
+  const current = paymentOptions.find(option => option.id === payment?.id) || paymentOptions[0];
+  const next = current.id === "CASH" ? paymentOptions[1] : paymentOptions[0];
+  const value = current.id === "KASPI" ? "Перевод Kaspi" : "После поездки";
   return (
-    <button type="button" className="reference-payment-row" onClick={() => setPayment(nextPayment)}>
+    <button type="button" className="reference-payment-row" onClick={() => setPayment(next)}>
       <span className="payment-icon">
-        <IconAsset name="card" className="ui-asset-icon ui-asset-icon-md" />
+        <IconAsset name="tariffCash" className="ui-asset-icon ui-asset-icon-md" />
       </span>
       <span className="reference-payment-copy">
         <small>Способ оплаты</small>
-        <strong>{payment?.title || "Наличные"}</strong>
+        <strong>{current.title}</strong>
       </span>
-      <span className="reference-payment-value">{payment?.note || "Оплата после поездки"}</span>
-      <Icon name="chevron" size={18} />
+      <span className="reference-payment-value">{value}</span>
+      <IconAsset name="tariffChevron" className="ui-asset-icon ui-asset-icon-sm" />
     </button>
   );
 }
@@ -1809,7 +2123,7 @@ function HomeSection(props) {
       : "Куда едем?";
   const sheetHelper = pickup && destination
     ? hasRouteError
-      ? "Измените адрес назначения или выберите точку ближе к выбранному региону"
+      ? "Измените адрес назначения или выберите ближайшую точку на карте"
       : "Проверьте класс поездки, цену и оплату"
     : !pickup
       ? "Укажите место, где водитель должен вас забрать."
@@ -1868,7 +2182,7 @@ function HomeSection(props) {
           {(showOrderOptions || hasRouteError) && (
             <SelectedRouteSummary pickup={pickup} destination={destination} onPickup={onPickup} onDestination={onDestination} />
           )}
-          {message && <p className={message.includes("Регион") || message.includes("выбра") || message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
+          {message && <p className={message.includes("выбра") || message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
           {hasRouteError && <RouteUnavailableCard message={routeError} />}
           <TariffSelector tariffs={tariffs} tariff={tariff} setTariff={setTariff} loading={tariffsLoading} error={tariffsError} enabled={showOrderOptions} estimate={estimate} />
           {showOrderOptions && <PaymentSelector payment={payment} setPayment={setPayment} />}
@@ -1909,7 +2223,7 @@ function RouteUnavailableCard({ message }) {
       <Icon name="route" size={21} />
       <div>
         <strong>{message || "Маршрут временно недоступен"}</strong>
-        <span>Проверьте адрес назначения или уточните улицу, дом и регион.</span>
+        <span>Проверьте адрес назначения или уточните улицу, дом и ориентир.</span>
       </div>
     </section>
   );
@@ -1975,7 +2289,7 @@ function TariffSelector({ tariffs, tariff, setTariff, loading, error, enabled, e
   }
   if (loading) return <section className="tariff-stage-card"><div className="skeleton-list"><span /><span /><span /></div></section>;
   if (error) return <p className="state-note danger">{error}</p>;
-  if (!tariffs.length) return <p className="state-note">В выбранном регионе нет активных тарифов</p>;
+  if (!tariffs.length) return <p className="state-note">Тарифы пока не настроены</p>;
   return (
     <section className="premium-tariff-list">
       {tariffs.map(item => {
@@ -2048,10 +2362,26 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mapPickLoading, setMapPickLoading] = useState(false);
+  const [mapCandidate, setMapCandidate] = useState(null);
+  const [mapCandidateReady, setMapCandidateReady] = useState(true);
   const [error, setError] = useState("");
-  const label = mode === "pickup" ? "Откуда?" : "Куда едем?";
-  const popular = useMemo(() => localAddressesForRegion(region).slice(0, 8), [region?.id, region?.code, region?.name]);
+  const reverseSeqRef = useRef(0);
+  const reverseDebounceRef = useRef(0);
+  const label = mode === "pickup" ? "Откуда?" : mode === "favorite" ? "Сохранить адрес" : "Куда едем?";
+  const helper = mode === "pickup" ? "Выберите точку подачи" : mode === "favorite" ? "Выберите адрес для избранного" : "Выберите точку назначения";
+  const popular = useMemo(() => localAddressesForRegion(region).slice(0, 4), [region?.id, region?.code, region?.name]);
   const pickerCenter = regionCenter(region) || regionCenter(fallbackRegion);
+
+  useEffect(() => () => window.clearTimeout(reverseDebounceRef.current), []);
+
+  useEffect(() => {
+    setMapCandidateReady(true);
+    setMapCandidate({
+      title: "Точка на карте",
+      subtitle: region?.name || "Передвиньте карту к нужному месту",
+      ...pickerCenter
+    });
+  }, [pickerCenter.lat, pickerCenter.lng, region?.name]);
 
   useEffect(() => {
     const clean = query.trim();
@@ -2088,74 +2418,132 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
     };
   }, [query, region, popular]);
 
-  async function pickPointOnMap(point) {
+  async function updateMapCandidate(point) {
+    if (!point?.lat || !point?.lng) return;
+    const fallback = {
+      title: point?.preview?.title || "Точка на карте",
+      subtitle: region?.name ? `${region.name} · ${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}` : `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
+      ...point
+    };
+    const seq = reverseSeqRef.current + 1;
+    reverseSeqRef.current = seq;
+    setMapCandidate(fallback);
+    setMapCandidateReady(false);
     setMapPickLoading(true);
     setError("");
+    window.clearTimeout(reverseDebounceRef.current);
+    reverseDebounceRef.current = window.setTimeout(async () => {
     try {
-      const data = await reverseAddress(point);
+      const data = await Promise.race([
+        reverseAddress(point),
+        new Promise((_, reject) => window.setTimeout(() => reject(new Error("reverse_timeout")), 1800))
+      ]);
       const address = normalizeAddress(data.address) || {
         title: "Точка на карте",
         subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
         ...point
       };
-      onSelect(address);
+      if (seq === reverseSeqRef.current) setMapCandidate(address);
     } catch {
-      onSelect({
-        title: "Точка на карте",
-        subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
-        ...point
-      });
+      if (seq === reverseSeqRef.current) setMapCandidate(fallback);
     } finally {
-      setMapPickLoading(false);
+      if (seq === reverseSeqRef.current) {
+        setMapCandidateReady(true);
+        setMapPickLoading(false);
+      }
     }
+    }, 260);
+  }
+
+  function markMapCandidateMoving() {
+    window.clearTimeout(reverseDebounceRef.current);
+    setMapCandidateReady(false);
+    setMapPickLoading(true);
+    setError("");
+  }
+
+  function confirmMapCandidate() {
+    if (!mapCandidate || !mapCandidateReady || mapPickLoading) return;
+    onSelect(mapCandidate);
   }
 
   return (
-    <main className="app-content address-screen premium-address-screen">
-      <div className="screen-intro with-back">
-        <button type="button" onClick={onBack} aria-label="Назад"><Icon name="back" /></button>
-        <div>
-          <h1>{label}</h1>
-          <p>{region?.name ? `Поиск по региону: ${region.name}` : "Сначала выберите регион"}</p>
-        </div>
-      </div>
-      <label className="single-input address-search-input">
-        Адрес
-        <input value={query} onChange={event => setQuery(event.target.value)} autoFocus placeholder="Улица, дом или место" />
-      </label>
-      <section className="address-map-picker-card">
-        <MapView pickup={pickerCenter} center={pickerCenter} compact status={mapPickLoading ? "Определяем адрес..." : "Нажмите на карту"} onMapPick={pickPointOnMap} />
+    <main className="app-content address-map-selection-screen">
+      <section className="address-picker-map-layer" aria-label="Карта выбора адреса">
+        <MapView
+          center={pickerCenter}
+          compact
+          addressControls
+          centerMarker
+          status={mapPickLoading ? "Определяем адрес" : ""}
+          onMapPick={updateMapCandidate}
+          onCenterChange={updateMapCandidate}
+          onCenterChanging={markMapCandidateMoving}
+        />
       </section>
-      {loading && !results.length && <div className="skeleton-list"><span /><span /><span /></div>}
-      {error && <p className="state-note danger">{error}</p>}
-      {!loading && query.trim().length < 2 && (
-        <section className="address-start-hint">
-          <IconAsset name="target" className="ui-asset-icon ui-asset-icon-md" />
+      <button type="button" className="address-picker-back-button" onClick={onBack} aria-label="Назад">
+        <Icon name="back" />
+      </button>
+      <section className="address-picker-sheet" aria-label="Выбор адреса">
+        <div className="address-picker-grip" aria-hidden="true" />
+        <header className="address-picker-title-row">
           <div>
-            <strong>Популярные места рядом</strong>
-            <span>Можно искать улицу, дом, школу, базар, мечеть или местное название.</span>
+            <h1>{label}</h1>
+            <p>{helper}</p>
+          </div>
+        </header>
+
+        <label className="address-picker-searchbar">
+          <Icon name="search" size={20} />
+          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Введите улицу, дом или место" />
+        </label>
+
+        <button type="button" className="address-map-point-card" onClick={confirmMapCandidate} disabled={!mapCandidate || !mapCandidateReady || mapPickLoading}>
+          <span className="address-map-point-icon">
+            <IconAsset name="addressDestination" className="ui-asset-icon ui-asset-icon-md" />
+          </span>
+          <span>
+            <strong>{mapPickLoading ? "Определяем точку..." : mapCandidate?.title || "Точка на карте"}</strong>
+            <small>{mapPickLoading ? "Проверяем адрес по карте" : mapCandidate?.subtitle || "Передвиньте карту к нужному месту"}</small>
+          </span>
+          <IconAsset name="addressChevron" className="ui-asset-icon ui-asset-icon-sm" />
+        </button>
+
+        {loading && !results.length && <div className="address-picker-skeleton"><span /><span /><span /></div>}
+        {error && <p className="address-picker-note danger">{error}</p>}
+        {!loading && query.trim().length >= 2 && !error && !results.length && <p className="address-picker-note">Не нашли точный адрес. Передвиньте карту и подтвердите точку.</p>}
+
+        <section className="address-picker-results" aria-label={query.trim().length >= 2 ? "Результаты поиска" : "Популярные адреса"}>
+          <header>
+            <strong>{query.trim().length >= 2 ? "Найденные адреса" : "Популярные рядом"}</strong>
+            <span>{results.length}</span>
+          </header>
+          <div>
+            {results.map(place => (
+              <button type="button" key={`${place.title}-${place.subtitle}-${place.lat}-${place.lng}`} onClick={() => onSelect(place)}>
+                <span className="address-result-icon">
+                  <IconAsset name={place.icon || "addressClock"} className="ui-asset-icon ui-asset-icon-md" />
+                </span>
+                <span>
+                  <b>{place.title}</b>
+                  <small>{place.subtitle}</small>
+                </span>
+                <IconAsset name="addressChevron" className="ui-asset-icon ui-asset-icon-sm" />
+              </button>
+            ))}
           </div>
         </section>
-      )}
-      {!loading && query.trim().length >= 2 && !error && !results.length && <p className="state-note">Не нашли точный адрес. Укажите точку на карте.</p>}
-      <section className="address-list-clean premium-address-list">
-        {results.map(place => (
-          <button type="button" key={`${place.title}-${place.subtitle}-${place.lat}-${place.lng}`} onClick={() => onSelect(place)}>
-            <span className="address-result-icon">
-              <IconAsset name={place.icon || "pin"} className="ui-asset-icon ui-asset-icon-md" />
-            </span>
-            <span>
-              <b>{place.title}</b>
-              <small>{place.subtitle}</small>
-            </span>
-          </button>
-        ))}
+
+        <button type="button" className="address-picker-confirm" onClick={confirmMapCandidate} disabled={!mapCandidate || !mapCandidateReady || mapPickLoading}>
+          <span>{mapPickLoading ? "Определяем адрес..." : mode === "pickup" ? "Подтвердить адрес" : "Выбрать адрес"}</span>
+          <IconAsset name="addressChevron" className="ui-asset-icon ui-asset-icon-md" />
+        </button>
       </section>
     </main>
   );
 }
 
-function TripsSection({ order, pickup, destination, route, estimate, loading, onCancel, onHome, onOrderUpdate }) {
+function TripsSection({ order, pickup, destination, route, estimate, loading, onCancel, onHome, onSupport, onOrderUpdate }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingTags, setRatingTags] = useState([]);
@@ -2199,6 +2587,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   const stage = clientLifecycleStage(status, order);
   const statusTone = tripStatusTone(status);
   const showRating = status === "PAID";
+  const driverFoundScreen = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT"].includes(status) && !terminal;
 
   async function submitRating(event) {
     event.preventDefault();
@@ -2228,19 +2617,21 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
       <section className="trip-stage-screen trip-searching-screen">
         <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status="" mode="searching" />
         <section className="trip-search-card search-driver-sheet" data-order-id={order.id || ""}>
+          <div className="search-driver-grip" aria-hidden="true" />
           <header className="search-driver-head">
-            <span className="trip-radar search-pulse" aria-hidden="true"><i /><i /><i /></span>
             <div>
-              <small>Заказ создан</small>
-              <h1>Ищем водителя</h1>
-              <p>Предлагаем заказ ближайшим водителям</p>
+              <h1>Ищем водителя для вас</h1>
+              <p>Это займёт всего 1–3 минуты</p>
+              <span className="search-driver-nearby-pill">3 водителя рядом</span>
             </div>
+            <img className="search-driver-car-route" src={searchDriverAssets.carRoute} alt="" loading="eager" decoding="async" />
           </header>
+          <SearchRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
+          <SearchingOrderMeta order={order} estimate={estimate} route={route} />
           <SearchProgress />
-          <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
-          <SearchingOrderMeta order={order} estimate={estimate} />
+          <SearchNotice />
           <button type="button" className="trip-cancel-button search-cancel-button" onClick={onCancel} disabled={loading}>
-            {loading ? "Отменяем..." : "Отменить поиск"}
+            {loading ? "Отменяем..." : "Отменить заказ"}
           </button>
         </section>
       </section>
@@ -2264,34 +2655,131 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
     );
   }
 
+  if (driverFoundScreen) {
+    return (
+      <section className="trip-stage-screen trip-driver-found-screen driver-found-reference-screen">
+        <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={route} status="" mode="driver-found" />
+        <section className="driver-found-reference-sheet" data-order-id={order.id || ""}>
+          <div className="driver-found-grip" aria-hidden="true" />
+          <header className="driver-found-reference-head">
+            <h1>Водитель найден</h1>
+            <p>{driverEtaText(order)}</p>
+          </header>
+
+          <section className="driver-found-driver-card" aria-label="Водитель">
+            <img className="driver-found-avatar" src={driverFoundAssets.avatar} alt="" />
+            <div className="driver-found-driver-copy">
+              <strong>{hasDriver ? driverName : "Арман С."}</strong>
+              <span className="driver-found-rating-line">
+                <Icon name="star" size={17} />
+                <b>{driverRatingLabel(order)}</b>
+                <i />
+                <em>{driverTripsLabel(order)}</em>
+              </span>
+              <span className="driver-found-verified">
+                <img src={driverFoundAssets.verified} alt="" />
+                Водитель проверен
+              </span>
+            </div>
+            {order.driver_phone ? (
+              <a className="driver-found-call-round" href={`tel:${order.driver_phone}`} aria-label="Позвонить водителю">
+                <img src={driverFoundAssets.phone} alt="" />
+              </a>
+            ) : (
+              <span className="driver-found-call-round inactive" aria-label="Телефон водителя появится после назначения">
+                <img src={driverFoundAssets.phone} alt="" />
+              </span>
+            )}
+          </section>
+
+          <DriverFoundRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
+
+          <section className="driver-found-info-list">
+            <DriverFoundInfoRow icon={driverFoundAssets.wallet} label="Оплата" value={paymentLabel(order.payment_method)} />
+            <DriverFoundInfoRow icon={driverFoundAssets.priceTag} label="Стоимость" value={<Money value={tripPrice(order, estimate)} />} />
+          </section>
+
+          <div className="driver-found-actions">
+            <button type="button" className="driver-found-details-button" onClick={() => setDetailsOpen(true)}>
+              Детали поездки
+            </button>
+            {order.driver_phone ? (
+              <a className="driver-found-contact-button" href={`tel:${order.driver_phone}`}>
+                <img src={driverFoundAssets.chat} alt="" />
+                Связаться
+              </a>
+            ) : (
+              <span className="driver-found-contact-button inactive">
+                <img src={driverFoundAssets.chat} alt="" />
+                Телефон после назначения
+              </span>
+            )}
+          </div>
+        </section>
+        <TripDetailsSheet
+          open={detailsOpen}
+          order={order}
+          pickup={tripPickup}
+          destination={tripDestination}
+          status={status}
+          driverName={driverName}
+          carLine={carLine}
+          estimate={estimate}
+          onClose={() => setDetailsOpen(false)}
+          onCancel={onCancel}
+          onSupport={onSupport}
+          canCancel={stage.canCancel}
+          cancelDisabled={loading || !stage.canCancel}
+        />
+      </section>
+    );
+  }
+
   return (
-    <section className={`trip-stage-screen trip-driver-found-screen trip-status-${status.toLowerCase().replace(/_/g, "-")}`}>
+    <section className={`trip-stage-screen trip-driver-found-screen driver-found-reference-screen lifecycle-reference-screen trip-status-${status.toLowerCase().replace(/_/g, "-")}`}>
       <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={route} status="" mode="driver-found" />
-      <section className="trip-driver-card driver-found-sheet">
-        <div className="trip-driver-topline driver-found-head">
-          <span className={`trip-driver-avatar neutral ${statusTone}`}><Icon name="user" size={24} /></span>
-          <div>
-            <small>{stage.subtitle}</small>
-            <h1>{stage.title}</h1>
-          </div>
-          <StatusBadge label={stage.badge} tone={terminal ? "muted" : "gold"} />
-        </div>
+      <section className="driver-found-reference-sheet lifecycle-reference-sheet">
+        <div className="driver-found-grip" aria-hidden="true" />
+        <header className="driver-found-reference-head lifecycle-reference-head">
+          <span className={`lifecycle-status-icon ${statusTone}`}>
+            <Icon name={statusTone === "success" ? "check" : statusTone === "waiting" ? "clock" : "car"} size={24} />
+          </span>
+          <h1>{stage.title}</h1>
+          <p>{stage.subtitle}</p>
+        </header>
         <RideStatusRail status={status} />
-        <div className="driver-found-profile">
-          <div>
-            <span>Водитель</span>
-            <strong>{hasDriver ? driverName : "Назначаем водителя"}</strong>
-          </div>
-          <div className="driver-rating-pill">
-            <Icon name="star" size={14} />
-            <b>{driverRatingLabel(order)}</b>
-          </div>
-        </div>
-        <div className="trip-car-plate-row driver-found-car">
+        {hasDriver && (
+          <section className="driver-found-driver-card lifecycle-driver-card" aria-label="Водитель">
+            <img className="driver-found-avatar" src={driverFoundAssets.avatar} alt="" />
+            <div className="driver-found-driver-copy">
+              <strong>{driverName}</strong>
+              <span className="driver-found-rating-line">
+                <Icon name="star" size={17} />
+                <b>{driverRatingLabel(order)}</b>
+                <i />
+                <em>{driverTripsLabel(order)}</em>
+              </span>
+              <span className="driver-found-verified">
+                <img src={driverFoundAssets.verified} alt="" />
+                Водитель проверен
+              </span>
+            </div>
+            {stage.canContact && order.driver_phone ? (
+              <a className="driver-found-call-round" href={`tel:${order.driver_phone}`} aria-label="Позвонить водителю">
+                <img src={driverFoundAssets.phone} alt="" />
+              </a>
+            ) : (
+              <span className="driver-found-call-round inactive" aria-label="Звонок недоступен">
+                <img src={driverFoundAssets.phone} alt="" />
+              </span>
+            )}
+          </section>
+        )}
+        <DriverFoundRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
+        <div className="trip-car-plate-row driver-found-car lifecycle-car-row">
           <span>{carLine}</span>
           <b>{orderTariffLabel(order, estimate)}</b>
         </div>
-        <CompactRoute pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
         <DriverFoundMeta order={order} estimate={estimate} />
         <RideStatusNote status={status} order={order} destination={tripDestination} />
         {showRating && (
@@ -2309,15 +2797,35 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
             onSubmit={submitRating}
           />
         )}
-        <div className="trip-action-row">
-          <button type="button" className="trip-details-button" onClick={() => setDetailsOpen(true)}>
-            <Icon name="info" size={18} /> Детали поездки
+        {status === "RATED" && (
+          <section className="trip-complete-card" aria-label="Поездка закрыта">
+            <span><Icon name="check" size={24} /></span>
+            <div>
+              <strong>Спасибо за поездку</strong>
+              <small>Отзыв сохранён. Можно заказать новую поездку.</small>
+            </div>
+          </section>
+        )}
+        <div className="driver-found-actions lifecycle-actions">
+          <button type="button" className="driver-found-details-button" onClick={() => setDetailsOpen(true)}>
+            Детали поездки
           </button>
-          {stage.canContact && order.driver_phone
-            ? <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Связаться с водителем</a>
-            : !terminal && <button type="button" className="trip-call-button disabled" disabled><Icon name="phone" size={18} /> Номер появится скоро</button>}
-          {stage.canCancel && <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={loading}>{loading ? "Отменяем..." : "Отменить"}</button>}
-          {stage.canStartNewTrip && <button type="button" className="trip-home-button" onClick={onHome}>Новая поездка</button>}
+          {stage.canContact && order.driver_phone && (
+            <a className="driver-found-contact-button" href={`tel:${order.driver_phone}`}>
+              <img src={driverFoundAssets.chat} alt="" />
+              Связаться
+            </a>
+          )}
+          {stage.canCancel && (
+            <button type="button" className="driver-found-details-button lifecycle-cancel-button" onClick={onCancel} disabled={loading}>
+              {loading ? "Отменяем..." : "Отменить"}
+            </button>
+          )}
+          {stage.canStartNewTrip && (
+            <button type="button" className="driver-found-contact-button lifecycle-new-trip-button" onClick={onHome}>
+              Новая поездка
+            </button>
+          )}
         </div>
       </section>
       <TripDetailsSheet
@@ -2331,6 +2839,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
         estimate={estimate}
         onClose={() => setDetailsOpen(false)}
         onCancel={onCancel}
+        onSupport={onSupport}
         canCancel={stage.canCancel}
         cancelDisabled={loading || !stage.canCancel}
       />
@@ -2341,17 +2850,100 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
 function SearchProgress() {
   return (
     <ol className="search-progress-steps" aria-label="Статус поиска">
-      <li className="done"><span />Создаём заказ</li>
-      <li className="active"><span />Ищем водителя</li>
-      <li><span />Ожидаем ответ</li>
+      <li className="active">
+        <span><img src={searchDriverAssets.search} alt="" /></span>
+        <b>Поиск водителя</b>
+      </li>
+      <li>
+        <span><IconAsset name="user" className="ui-asset-icon ui-asset-icon-sm" /></span>
+        <b>Водитель найден</b>
+      </li>
+      <li>
+        <span><img src={searchDriverAssets.car} alt="" /></span>
+        <b>Водитель едет к вам</b>
+      </li>
+      <li>
+        <span><img src={searchDriverAssets.pin} alt="" /></span>
+        <b>На месте</b>
+      </li>
     </ol>
+  );
+}
+
+function SearchRouteCard({ pickup, dropoff }) {
+  return (
+    <section className="search-route-card" aria-label="Маршрут заказа">
+      <div className="search-route-line" aria-hidden="true">
+        <span />
+        <i />
+        <b />
+      </div>
+      <div className="search-route-copy">
+        <small>Откуда</small>
+        <strong>{pickup || "Точка подачи"}</strong>
+        <small>Куда</small>
+        <strong>{dropoff || "Пункт назначения"}</strong>
+      </div>
+      <span className="search-route-change" aria-hidden="true">
+        Маршрут
+      </span>
+    </section>
+  );
+}
+
+function SearchNotice() {
+  return (
+    <section className="search-notice-card" aria-label="Уведомление о поиске">
+      <span className="search-notice-shield"><img src={searchDriverAssets.shield} alt="" /></span>
+      <span>
+        <strong>Мы уведомим вас,</strong>
+        <small>как только водитель откликнется на заказ</small>
+      </span>
+      <span className="search-notice-bell" aria-hidden="true">
+        <img src={searchDriverAssets.bell} alt="" />
+        <i>1</i>
+      </span>
+    </section>
+  );
+}
+
+function DriverFoundRouteCard({ pickup, dropoff }) {
+  return (
+    <section className="driver-found-route-card" aria-label="Маршрут поездки">
+      <img className="driver-found-route-indicator" src={driverFoundAssets.route} alt="" />
+      <div className="driver-found-route-copy">
+        <small>Откуда</small>
+        <strong>{pickup || "Точка подачи"}</strong>
+        <small>Куда</small>
+        <strong>{dropoff || "Пункт назначения"}</strong>
+      </div>
+    </section>
+  );
+}
+
+function DriverFoundInfoRow({ icon, label, value }) {
+  return (
+    <div className="driver-found-info-row">
+      <span className="driver-found-info-icon"><img src={icon} alt="" /></span>
+      <span>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </span>
+      <Icon name="chevron" size={21} />
+    </div>
   );
 }
 
 function orderTariffLabel(order, estimate) {
   const raw = order?.tariff || estimate?.tariff?.displayName || estimate?.tariff?.display_name || estimate?.tariff?.name || "Economy";
   const key = cleanTariffKey({ name: raw, displayName: raw });
-  return localTariffNames[key] || raw || "Эконом";
+  const labels = {
+    Economy: "Эконом",
+    Comfort: "Комфорт",
+    Business: "Бизнес",
+    Delivery: "Доставка"
+  };
+  return labels[key] || raw || "Эконом";
 }
 
 function paymentLabel(method) {
@@ -2368,7 +2960,16 @@ function driverEtaText(order) {
 function driverRatingLabel(order) {
   const rating = Number(order?.driver_rating);
   if (Number.isFinite(rating) && rating > 0) return rating.toFixed(1);
-  return "5.0";
+  return "Новый";
+}
+
+function driverTripsLabel(order) {
+  const trips = Number(order?.driver_trips ?? order?.driverTrips ?? order?.driver_completed_orders ?? order?.driverCompletedOrders);
+  if (!Number.isFinite(trips) || trips <= 0) return "новый";
+  const last = Math.abs(Math.floor(trips)) % 10;
+  const lastTwo = Math.abs(Math.floor(trips)) % 100;
+  const suffix = last === 1 && lastTwo !== 11 ? "поездка" : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? "поездки" : "поездок";
+  return `${Math.floor(trips).toLocaleString("ru-RU")} ${suffix}`;
 }
 
 function driverVehicleLine(order) {
@@ -2383,6 +2984,14 @@ function driverMapPoint(order) {
   const lng = Number(order?.driver_lng ?? order?.driverLng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   return { lat, lng };
+}
+
+function nearbySearchDrivers() {
+  return [
+    { id: "nearby-1", label: "2 мин", x: 23, y: 31, angle: -18, delay: 0 },
+    { id: "nearby-2", label: "3 мин", x: 72, y: 26, angle: 24, delay: 0.35 },
+    { id: "nearby-3", label: "4 мин", x: 67, y: 67, angle: -8, delay: 0.7 }
+  ];
 }
 
 function tripStatusTone(status) {
@@ -2573,22 +3182,47 @@ function TripRatingCard({
   );
 }
 
-function SearchingOrderMeta({ order, estimate }) {
+function SearchNearbyDrivers() {
   return (
-    <div className="search-order-meta">
-      <span>
-        <small>Тариф</small>
-        <b>{orderTariffLabel(order, estimate)}</b>
-      </span>
-      <span>
-        <small>Цена</small>
-        <b><Money value={order.price || estimate?.estimatedPrice} /></b>
-      </span>
-      <span>
-        <small>Оплата</small>
-        <b>{paymentLabel(order.payment_method)}</b>
-      </span>
+    <div className="search-nearby-drivers" aria-label="Водители поблизости">
+      {nearbySearchDrivers().map(driver => (
+        <span
+          key={driver.id}
+          className="search-nearby-driver"
+          style={{
+            "--driver-x": `${driver.x}%`,
+            "--driver-y": `${driver.y}%`,
+            "--driver-angle": `${driver.angle}deg`,
+            "--driver-delay": `${driver.delay}s`
+          }}
+        >
+          <i aria-hidden="true"><img src={searchDriverAssets.car} alt="" /></i>
+          <b>{driver.label}</b>
+        </span>
+      ))}
     </div>
+  );
+}
+
+function SearchingOrderMeta({ order, estimate, route }) {
+  const tariffName = orderTariffLabel(order, estimate);
+  const price = order.price || estimate?.estimatedPrice;
+  const image = carImages[tariffName] || carImages[estimate?.tariff?.name] || searchDriverAssets.tariffCar;
+  return (
+    <section className="search-order-meta" aria-label="Тариф и оплата">
+      <span className="search-tariff-car">
+        <img src={image} alt="" loading="lazy" />
+      </span>
+      <span className="search-tariff-copy">
+        <strong>{tariffName}</strong>
+        <small>{formatTripMin(route, "4 мин")} · {formatTripKm(route, "2,7 км")}</small>
+        <em>Оплата: <b>{paymentLabel(order.payment_method)}</b></em>
+      </span>
+      <span className="search-tariff-price">
+        <b><Money value={price} /></b>
+        <small>Детали</small>
+      </span>
+    </section>
   );
 }
 
@@ -2607,52 +3241,146 @@ function DriverFoundMeta({ order, estimate }) {
   );
 }
 
-function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, canCancel = false, cancelDisabled }) {
+function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, onSupport, canCancel = false, cancelDisabled }) {
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (open) setNotice("");
+  }, [open, order?.id]);
+
   if (!open) return null;
-  const detailRows = [
-    ["Статус", statusLabel(status)],
-    ["Тариф", orderTariffLabel(order, estimate)],
-    ["Оплата", paymentLabel(order.payment_method)],
-    ["Цена", <Money value={tripPrice(order, estimate)} />]
-  ];
+
+  const pickupText = pickup?.title || order.pickup_text || "Моё местоположение";
+  const pickupSubtext = pickup?.subtitle || "Атакент";
+  const dropoffText = destination?.title || order.dropoff_text || "Пункт назначения";
+  const dropoffSubtext = destination?.subtitle || "Атакент";
+  const tariffName = orderTariffLabel(order, estimate);
+  const carText = [order.driver_car_color || order.driverCarColor || "Белый", order.driver_car_model || order.driverCarModel || ""].filter(Boolean).join(" ") || carLine || "Белый KIA Rio";
+  const plate = order.driver_plate || order.vehicle_plate || order.car_plate || "123 ABC 02";
+  const eta = Number(order?.driver_eta_min ?? order?.driverEtaMin ?? order?.etaMin ?? 2);
+  const etaMin = Number.isFinite(eta) && eta > 0 ? Math.ceil(eta) : 2;
+  const approachKm = Number(order?.driver_distance_km ?? order?.driverDistanceKm ?? 0.4);
+  const approachText = `${etaMin} мин · ${String((Number.isFinite(approachKm) && approachKm > 0 ? approachKm : 0.4).toFixed(1)).replace(".", ",")} км от вас`;
+  const numericId = String(order.short_id || order.public_id || order.id || "").replace(/\D/g, "").slice(-4);
+  const orderId = `#${numericId || "4587"}`;
+  const driverDisplayName = order.driver_name ? driverName : "Водитель ещё не назначен";
+  const driverVerified = order.driver_name ? "Водитель проверен" : "Назначаем водителя";
+  const shareText = `SmartTaxi ${orderId}: ${pickupText} → ${dropoffText}. ${driverDisplayName}, ${carText}, ${plate}.`;
+
+  async function handleShare() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "SmartTaxi", text: shareText });
+        setNotice("Детали поездки отправлены");
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareText);
+        setNotice("Детали поездки скопированы");
+        return;
+      }
+      setNotice("Скопируйте ID заказа: " + orderId);
+    } catch {
+      setNotice("Поделиться не удалось. Попробуйте позже.");
+    }
+  }
+
+  function handleSupport() {
+    onClose();
+    onSupport?.();
+  }
+
   return (
     <>
-      <div className="trip-details-backdrop" onClick={onClose} />
-      <section className="trip-details-sheet" role="dialog" aria-modal="true" aria-label="Детали поездки">
-        <header>
-          <div>
-            <span>Заказ {order.short_id || order.id}</span>
-            <h2>Детали поездки</h2>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
+      <div className="trip-details-backdrop trip-details-reference-backdrop" onClick={onClose} />
+      <section className="trip-details-sheet trip-details-reference-sheet" role="dialog" aria-modal="true" aria-label="Детали поездки">
+        <div className="trip-details-grip" aria-hidden="true" />
+        <header className="trip-details-reference-header">
+          <h2>Детали поездки</h2>
+          <button type="button" className="trip-details-close-button" onClick={onClose} aria-label="Закрыть">
+            <img src={tripDetailsAssets.close} alt="" />
+          </button>
         </header>
-        <CompactRoute pickup={pickup?.title || order.pickup_text} dropoff={destination?.title || order.dropoff_text} />
-        <div className="trip-driver-mini">
-          <span className="trip-driver-avatar neutral"><Icon name="user" size={22} /></span>
-          <div>
-            <small>Водитель</small>
-            <b>{order.driver_name ? driverName : "Водитель ещё не назначен"}</b>
-            <em>{order.driver_name ? carLine || "Автомобиль SmartTaxi" : "Появится после принятия заказа"}</em>
+
+        <section className="trip-details-route-block" aria-label="Маршрут">
+          <span className="trip-details-route-rail" aria-hidden="true"><i /><b /></span>
+          <div className="trip-details-route-copy">
+            <small>Откуда</small>
+            <strong>{pickupText}</strong>
+            <em>{pickupSubtext}</em>
+            <small>Куда</small>
+            <strong>{dropoffText}</strong>
+            <em>{dropoffSubtext}</em>
           </div>
-        </div>
-        <div className="trip-details-list">
-          {detailRows.map(([label, value]) => (
-            <span key={label}>
-              <small>{label}</small>
-              <b>{value}</b>
+        </section>
+
+        <section className="trip-details-driver-row" aria-label="Водитель">
+          <img className="trip-details-avatar" src={tripDetailsAssets.avatar} alt="" />
+          <div className="trip-details-driver-copy">
+            <strong>{driverDisplayName}</strong>
+            <span>
+              <Icon name="star" size={17} />
+              <b>{driverRatingLabel(order)}</b>
+              <i />
+              <em>{driverTripsLabel(order)}</em>
             </span>
-          ))}
-        </div>
-        <div className="trip-details-actions">
-          {order.driver_phone && <a className="trip-call-button" href={`tel:${order.driver_phone}`}><Icon name="phone" size={18} /> Связаться с водителем</a>}
-          {canCancel && (
-            <button type="button" className="trip-cancel-button secondary" onClick={onCancel} disabled={cancelDisabled}>
-              Отменить поездку
-            </button>
+            <small><img src={tripDetailsAssets.verified} alt="" />{driverVerified}</small>
+          </div>
+          {order.driver_phone ? (
+            <a className="trip-details-phone-button" href={`tel:${order.driver_phone}`} aria-label="Позвонить водителю">
+              <img src={tripDetailsAssets.phone} alt="" />
+            </a>
+          ) : (
+            <span className="trip-details-phone-button inactive" aria-label="Телефон водителя появится после назначения">
+              <img src={tripDetailsAssets.phone} alt="" />
+            </span>
           )}
+        </section>
+
+        <section className="trip-details-car-row" aria-label="Автомобиль">
+          <div>
+            <strong>{carText}</strong>
+            <b>{plate}</b>
+          </div>
+          <span>{tariffName}</span>
+        </section>
+
+        <section className="trip-details-clean-list" aria-label="Информация о поездке">
+          <TripDetailsCleanRow label="Подача" value={<><b>{etaMin} мин</b><span> · {approachText.replace(`${etaMin} мин · `, "")}</span></>} />
+          <TripDetailsCleanRow label="Оплата" value={paymentLabel(order.payment_method)} />
+          <TripDetailsCleanRow label="Стоимость" value={<Money value={tripPrice(order, estimate)} />} />
+          <TripDetailsCleanRow label="ID заказа" value={orderId} />
+        </section>
+
+        <div className="trip-details-secondary-actions">
+          <button type="button" onClick={handleSupport}>
+            <img src={tripDetailsAssets.support} alt="" />
+            Поддержка
+          </button>
+          <button type="button" onClick={handleShare}>
+            <img src={tripDetailsAssets.share} alt="" />
+            Поделиться
+          </button>
         </div>
+
+        {notice && <p className={`trip-details-notice ${notice.includes("не удалось") ? "danger" : ""}`}>{notice}</p>}
+
+        {canCancel && (
+          <button type="button" className="trip-details-cancel-order" onClick={onCancel} disabled={cancelDisabled}>
+            Отменить заказ
+          </button>
+        )}
       </section>
     </>
+  );
+}
+
+function TripDetailsCleanRow({ label, value }) {
+  return (
+    <div className="trip-details-clean-row">
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -2660,6 +3388,32 @@ function TripMapCard({ pickup, destination, driver, route, status, mode = "" }) 
   return (
     <section className={`trip-map-card ${mode ? `trip-map-${mode}` : ""}`}>
       <MapView pickup={pickup} destination={destination} driver={driver} route={route} center={driver || pickup || destination} compact status={status} />
+      {mode === "searching" && (
+        <>
+          <SearchNearbyDrivers />
+          <span className="search-map-radar-marker" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <img src={searchDriverAssets.markerRadar} alt="" />
+          </span>
+        </>
+      )}
+      {mode === "driver-found" && (
+        <div className="driver-found-map-layer" aria-hidden="true">
+          <span className="driver-found-map-pickup"><img src={driverFoundAssets.pickupPin} alt="" /></span>
+          <svg className="driver-found-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M 25 76 L 48 72 Q 52 71 52 62 L 52 54 Q 52 49 58 49 L 73 49 Q 77 49 77 43 L 77 20" />
+          </svg>
+          <span className="driver-found-map-eta">
+            <img src={driverFoundAssets.etaBubble} alt="" />
+          </span>
+          <span className="driver-found-map-car">
+            <VehicleIcon />
+            <i />
+          </span>
+        </div>
+      )}
     </section>
   );
 }
@@ -2701,6 +3455,13 @@ function maskKzPhone(value = "") {
   const local = kzPhoneDigits(value);
   if (local.length < 4) return "+7";
   return `+7 ${local.slice(0, 3)} *** ** ${local.slice(-2)}`;
+}
+
+function formatKzPhoneDisplay(value = "") {
+  const local = kzPhoneDigits(value);
+  if (!local) return "Телефон не указан";
+  const parts = [local.slice(0, 3), local.slice(3, 6), local.slice(6, 8), local.slice(8, 10)].filter(Boolean);
+  return `+7 ${parts.join(" ")}`;
 }
 
 function formatAuthTimer(seconds) {
@@ -2925,9 +3686,9 @@ function PremiumAuthFlow({
           <span className="auth-legal-line" />
         </span>
         <span className="auth-legal-links">
-          <span className="auth-legal-link">Условиями использования</span>
+          <a className="auth-legal-link" href="/legal/terms.html" target="_blank" rel="noreferrer">Условиями использования</a>
           <span> и </span>
-          <span className="auth-legal-link">Политикой конфиденциальности</span>
+          <a className="auth-legal-link" href="/legal/privacy.html" target="_blank" rel="noreferrer">Политикой конфиденциальности</a>
         </span>
       </div>
     </section>
@@ -3124,39 +3885,70 @@ function ProfileSection({
   );
 }
 
-function SupportSection() {
+function SupportSection({ activeOrderId, authenticated }) {
   const [topic, setTopic] = useState("Проблема с поездкой");
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
-  const topics = ["Проблема с поездкой", "Водитель не приехал", "Забыл вещь", "Оплата", "Другое"];
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const topics = ["Проблема с поездкой", "Водитель не приехал", "Забыл вещь", "Оплата", "Безопасность", "Другое"];
+
+  async function submit() {
+    if (!text.trim() || sending) return;
+    if (!authenticated) {
+      setError(errorMessages.UNAUTHORIZED);
+      return;
+    }
+    setSending(true);
+    setError("");
+    try {
+      await createSupportMessage({
+        topic,
+        message: text.trim(),
+        orderId: activeOrderId || undefined
+      });
+      setSent(true);
+      setText("");
+    } catch (submitError) {
+      setError(formatError(submitError));
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
-    <section className="screen-grid">
-      <section className="screen-intro"><h1>Поддержка</h1><p>Опишите ситуацию, оператор увидит тему и текст обращения.</p></section>
+    <section className="screen-grid menu-screen">
+      <section className="screen-intro"><h1>Поддержка</h1><p>Выберите тему обращения. Если вопрос срочный, позвоните оператору напрямую.</p></section>
       <section className="app-card premium-support-card">
         <div className="support-topic-row">
-          {topics.map(item => <button type="button" key={item} className={topic === item ? "selected" : ""} onClick={() => setTopic(item)}>{item}</button>)}
+          {topics.map(item => <button type="button" key={item} className={topic === item ? "selected" : ""} onClick={() => { setTopic(item); setSent(false); }}>{item}</button>)}
         </div>
         <label className="admin-textarea-field support-textarea">
-          <span>Сообщение</span>
-          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); }} placeholder="Напишите сообщение..." rows={5} />
+          <span>{topic}</span>
+          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); setError(""); }} placeholder="Напишите сообщение..." rows={5} />
         </label>
-        {sent && <p className="state-note success">Сообщение подготовлено. Проверьте текст перед отправкой оператору.</p>}
-        <Button className="wide primary-gold" disabled={!text.trim()} onClick={() => setSent(true)}>Отправить</Button>
+        <div className="support-action-row">
+          <a className="menu-secondary-link" href="tel:+77011234567"><Icon name="phone" size={18} /> Позвонить</a>
+          <a className="menu-secondary-link" href="mailto:support@smarttaxi.kz"><Icon name="document" size={18} /> Email</a>
+        </div>
+        {error && <p className="state-note danger">{error}</p>}
+        {sent && <p className="state-note success">Обращение отправлено. Ответ появится здесь же после обработки оператором.</p>}
+        <Button className="wide primary-gold" disabled={!text.trim() || sending} onClick={submit}>{sending ? "Отправляем..." : "Отправить обращение"}</Button>
       </section>
     </section>
   );
 }
 
-function SettingsSection({ regionName, onLogout }) {
+function SettingsSection({ onLogout }) {
   return (
-    <section className="screen-grid">
+    <section className="screen-grid menu-screen">
       <section className="screen-intro"><h1>Настройки</h1><p>Параметры аккаунта и приложения.</p></section>
       <section className="app-card settings-list-premium">
         <SettingsRow icon="user" title="Аккаунт" text="Имя и телефон в профиле" />
-        <SettingsRow icon="pin" title="Город и регион" text={regionName || "Регион не выбран"} />
         <SettingsRow icon="support" title="Уведомления" text="Статусы поездки и ответы поддержки" />
         <SettingsRow icon="shield" title="Безопасность" text="Пароль аккаунта" />
-        <SettingsRow icon="settings" title="Тема" text="Светлая золотая" />
+        <SettingsRow icon="settings" title="Тема" text="Светлая синяя" />
+        <SettingsRow icon="document" title="Версия" text="Client MVP, web build" />
         <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
       </section>
     </section>
@@ -3167,16 +3959,240 @@ function SettingsRow({ icon, title, text, muted = false }) {
   return <div className={`settings-row-premium ${muted ? "muted" : ""}`}><Icon name={icon} /><span><b>{title}</b><small>{text}</small></span></div>;
 }
 
+function FavoritesSection({ onHome, authenticated, favorites, favoritesState, onPickOnMap, onDelete, onLogin }) {
+  const favoriteIcon = { HOME: "home", WORK: "work" };
+
+  if (!authenticated) {
+    return (
+      <section className="screen-grid drawer-linked-screen">
+        <section className="screen-intro"><h1>Избранное</h1><p>Сохранённые места для быстрых повторных поездок.</p></section>
+        <section className="app-card drawer-linked-card">
+          <p className="state-note">Войдите в аккаунт, чтобы сохранять избранные адреса.</p>
+          <Button className="wide primary-gold" onClick={onLogin}>Войти</Button>
+        </section>
+      </section>
+    );
+  }
+
+  return (
+    <section className="screen-grid drawer-linked-screen">
+      <section className="screen-intro"><h1>Избранное</h1><p>Сохранённые места для быстрых повторных поездок.</p></section>
+      <section className="app-card drawer-linked-card">
+        {favoritesState.loading ? (
+          <p className="state-note">Загружаем избранные адреса...</p>
+        ) : favoritesState.error ? (
+          <p className="state-note danger">{favoritesState.error}</p>
+        ) : !favorites.length ? (
+          <p className="state-note">Избранных адресов пока нет. Добавьте дом, работу или любимое место.</p>
+        ) : (
+          favorites.map(favorite => (
+            <div className="favorite-row-premium" key={favorite.id}>
+              <SettingsRow icon={favoriteIcon[favorite.label?.toUpperCase()] || "star"} title={favorite.label || "Адрес"} text={favorite.address || ""} />
+              <button type="button" className="admin-danger-button compact" onClick={() => onDelete(favorite.id)}>Удалить</button>
+            </div>
+          ))
+        )}
+        <Button className="wide primary-gold" onClick={onPickOnMap}>Выбрать адрес на карте</Button>
+        <Button className="wide" onClick={onHome}>На главную</Button>
+      </section>
+    </section>
+  );
+}
+
+function PromoSection({ regionId, authenticated }) {
+  const [code, setCode] = useState("");
+  const [priceKzt, setPriceKzt] = useState("1500");
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const normalized = code.trim().toUpperCase();
+
+  async function check() {
+    if (!normalized || checking) return;
+    if (!authenticated) {
+      setError(errorMessages.UNAUTHORIZED);
+      setResult(null);
+      return;
+    }
+    if (!regionId) {
+      setError("Выберите регион на главном экране, чтобы проверить промокод");
+      setResult(null);
+      return;
+    }
+    setChecking(true);
+    setError("");
+    setResult(null);
+    try {
+      const data = await validatePromoCode({
+        code: normalized,
+        regionId,
+        orderPriceKzt: Number(priceKzt) || 0
+      });
+      setResult(data.promo);
+    } catch (submitError) {
+      setError(formatError(submitError));
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  return (
+    <section className="screen-grid drawer-linked-screen">
+      <section className="screen-intro"><h1>Промокоды</h1><p>Проверка скидок для поездки.</p></section>
+      <section className="app-card drawer-linked-card promo-card">
+        <label className="admin-text-field">
+          <span>Код промокода</span>
+          <input value={code} onChange={event => { setCode(event.target.value); setResult(null); setError(""); }} placeholder="Например SMART" autoCapitalize="characters" />
+        </label>
+        <label className="admin-text-field">
+          <span>Ожидаемая стоимость поездки, ₸</span>
+          <input value={priceKzt} onChange={event => { setPriceKzt(event.target.value.replace(/[^\d]/g, "")); setResult(null); }} inputMode="numeric" />
+        </label>
+        {error && <p className="state-note danger">{error}</p>}
+        {result && (
+          <p className="state-note success">
+            Код {result.code} действует: скидка {result.discountAmountKzt} ₸, итоговая цена {result.finalPriceKzt} ₸.
+          </p>
+        )}
+        <Button className="wide primary-gold" disabled={!normalized || checking} onClick={check}>{checking ? "Проверяем..." : "Проверить код"}</Button>
+      </section>
+    </section>
+  );
+}
+
+function ReferralSection({ authenticated }) {
+  const [state, setState] = useState({ loading: true, error: "", data: null });
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!authenticated) {
+      setState({ loading: false, error: "", data: null });
+      return;
+    }
+    let ignore = false;
+    setState({ loading: true, error: "", data: null });
+    getReferralSummary()
+      .then(data => { if (!ignore) setState({ loading: false, error: "", data }); })
+      .catch(error => { if (!ignore) setState({ loading: false, error: formatError(error), data: null }); });
+    return () => { ignore = true; };
+  }, [authenticated]);
+
+  const code = state.data?.code || "";
+  const invitedCount = state.data?.invitedCount ?? 0;
+  const rewardTotalKzt = state.data?.rewardTotalKzt ?? 0;
+
+  async function share() {
+    const text = `Приезжай в SmartTaxi по моему коду ${code} и получи скидку на первую поездку!`;
+    if (navigator.share) {
+      try { await navigator.share({ text }); return; } catch { /* user cancelled share */ }
+    }
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (!authenticated) {
+    return (
+      <section className="screen-grid drawer-linked-screen">
+        <section className="screen-intro"><h1>Пригласить друга</h1><p>Делитесь SmartTaxi и получайте бонусы за друзей.</p></section>
+        <section className="app-card drawer-linked-card">
+          <p className="state-note">Войдите в аккаунт, чтобы получить свой реферальный код.</p>
+        </section>
+      </section>
+    );
+  }
+
+  return (
+    <section className="screen-grid drawer-linked-screen">
+      <section className="screen-intro"><h1>Пригласить друга</h1><p>Делитесь SmartTaxi и получайте бонусы за друзей.</p></section>
+      <section className="app-card drawer-linked-card">
+        {state.loading ? (
+          <p className="state-note">Загружаем ваш код...</p>
+        ) : state.error ? (
+          <p className="state-note danger">{state.error}</p>
+        ) : (
+          <>
+            <div className="referral-code-block">
+              <span>Ваш код</span>
+              <strong>{code || "—"}</strong>
+            </div>
+            <div className="admin-card-facts">
+              <InfoLineClient label="Приглашено друзей" value={String(invitedCount)} />
+              <InfoLineClient label="Начислено бонусов" value={`${rewardTotalKzt} ₸`} />
+            </div>
+            {copied && <p className="state-note success">Скопировано в буфер обмена</p>}
+            <Button className="wide primary-gold" disabled={!code} onClick={share}>Поделиться кодом</Button>
+          </>
+        )}
+      </section>
+    </section>
+  );
+}
+
+function InfoLineClient({ label, value }) {
+  return <div className="info-line-client"><span>{label}</span><b>{value}</b></div>;
+}
+
+function LegalSection({ type }) {
+  const meta = {
+    terms: {
+      title: "Пользовательское соглашение",
+      text: "Правила использования сервиса SmartTaxi, оформления заказов, отмены поездок и ответственности сторон.",
+      documentHref: "/legal/terms.html",
+      documentLabel: "Открыть соглашение",
+      points: [
+        ["Заказ", "Создаётся только после выбора маршрута, тарифа и способа оплаты."],
+        ["Цена", "Рассчитывается backend-сервисом по тарифу и маршруту."],
+        ["Обязанности пользователя", "Указывать корректные адреса, телефон и не создавать ложные заказы."],
+        ["Отмена", "Отмена доступна только в разрешённых статусах поездки."]
+      ]
+    },
+    privacy: {
+      title: "Политика конфиденциальности",
+      text: "Как SmartTaxi обрабатывает номер телефона, адреса поездок, статусы заказов и технические данные приложения.",
+      documentHref: "/legal/privacy.html",
+      documentLabel: "Открыть политику",
+      points: [
+        ["Данные", "Номер телефона, адреса, статусы заказов и технические события приложения."],
+        ["Цель обработки", "Вход, расчёт цены, поиск водителя, поддержка и безопасность сервиса."],
+        ["Доступ", "Доступ к данным должен ограничиваться ролями оператора, администратора и поддержки."],
+        ["Перед запуском", "Документ должен быть проверен юристом и дополнен реквизитами владельца."]
+      ]
+    },
+    info: {
+      title: "Юридическая информация",
+      text: "Основные сведения о сервисе, оплате Cash/Kaspi, безопасности и контактах оператора.",
+      documentHref: "",
+      documentLabel: "",
+      points: [
+        ["Статус", "SmartTaxi является цифровым сервисом для оформления поездок."],
+        ["Оплата", "В текущей версии доступны только Наличные и Kaspi. Банковские карты не подключены."],
+        ["Реквизиты", "До публичного запуска нужно заполнить ИП/ТОО, БИН/ИИН, адрес, email и телефон поддержки."],
+        ["Юридическая проверка", "Финальные документы должен проверить юрист по законодательству Казахстана."]
+      ]
+    }
+  }[type] || {};
+  return (
+    <section className="screen-grid drawer-linked-screen legal-screen">
+      <section className="screen-intro"><h1>{meta.title}</h1><p>{meta.text}</p></section>
+      <section className="app-card drawer-linked-card legal-card">
+        {meta.documentHref && <a className="menu-secondary-link legal-open-link" href={meta.documentHref} target="_blank" rel="noreferrer"><Icon name="document" size={18} /> {meta.documentLabel}</a>}
+        {meta.points.map(([title, text]) => <SettingsRow key={title} icon="shield" title={title} text={text} />)}
+        <p className="legal-disclaimer">Важно: этот раздел не является юридической консультацией. Перед публикацией сервиса документы и реквизиты должны быть утверждены владельцем и юристом.</p>
+      </section>
+    </section>
+  );
+}
+
 function FaqSection() {
   const items = [
     ["Как заказать поездку?", "Выберите точку подачи, адрес назначения, тариф и нажмите кнопку заказа."],
-    ["Почему нужно выбрать регион?", "SmartTaxi работает по активным регионам. Тарифы и доступ водителей зависят от выбранной зоны."],
-    ["Как считается цена?", "Система строит маршрут, учитывает длительность и применяет тариф выбранного региона."],
+    ["Как считается цена?", "Система строит маршрут, учитывает длительность и применяет активный тариф поездки."],
     ["Когда появится водитель?", "Информация о водителе появится только после принятия заказа."],
     ["Как отменить заказ?", "Откройте текущую поездку и нажмите кнопку отмены, если статус позволяет отмену."]
   ];
   return (
-    <section className="screen-grid">
+    <section className="screen-grid menu-screen">
       <section className="screen-intro"><h1>FAQ</h1><p>Короткие ответы по поездкам.</p></section>
       <section className="faq-list-premium">
         {items.map(([title, text]) => <details key={title} className="app-card"><summary>{title}</summary><p>{text}</p></details>)}
@@ -3185,15 +4201,16 @@ function FaqSection() {
   );
 }
 
-function AboutSection({ regions }) {
+function AboutSection() {
   return (
-    <section className="screen-grid">
-      <section className="screen-intro"><h1>О SmartTaxi</h1><p>Региональный сервис поездок для клиентов и водителей.</p></section>
+    <section className="screen-grid menu-screen">
+      <section className="screen-intro"><h1>О SmartTaxi</h1><p>Сервис поездок для клиентов и водителей.</p></section>
       <section className="app-card about-card-premium">
         <SmartTaxiLogo large />
         <h2>SmartTaxi</h2>
-        <p>Сервис работает в активных регионах, где настроены тарифы и доступ водителей. Межгород не входит в текущую модель заказов.</p>
-        <div className="region-chip-list">{regions.map(region => <span key={region.id}>{region.name}</span>)}</div>
+        <p>SmartTaxi помогает быстро выбрать адрес на карте, увидеть цену до заказа и безопасно пройти весь путь поездки.</p>
+        <SettingsRow icon="cash" title="Оплата" text="Наличные или Kaspi. Карты не подключены." />
+        <SettingsRow icon="shield" title="Безопасность" text="Статусы поездки, поддержка и юридические документы в меню" />
       </section>
     </section>
   );
