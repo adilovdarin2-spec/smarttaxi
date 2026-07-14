@@ -24,6 +24,7 @@ import {
   syncDriverAvailability
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { buildActiveLegRoute } from "../routing/routing.service.js";
 import { createOrderCancelledTransaction, createOrderCompletedTransaction } from "../finance/finance.service.js";
 import { notifyOrderClient, notifyOrderDriver } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
@@ -139,6 +140,7 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
     const { token } = z.object({ token: z.string().uuid() }).parse(req.params);
     const order = (await query(`
       SELECT o.status, o.tariff, o.pickup_text, o.dropoff_text, o.created_at,
+             o.pickup_lat, o.pickup_lng, o.dropoff_lat, o.dropoff_lng,
              d.name AS driver_name, d.car_model AS driver_car_model, d.car_color AS driver_car_color, d.plate AS driver_plate,
              dl.lat AS driver_lat, dl.lng AS driver_lng, dl.updated_at AS driver_location_updated_at
       FROM orders o
@@ -148,6 +150,24 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
     `, [token])).rows[0];
     if (!order) throw new AppError("Trip not found", 404, "TRIP_NOT_FOUND");
     const isActive = ACTIVE_ORDER_STATUSES.includes(order.status);
+    const driverLocation = isActive && order.driver_lat != null
+      ? { lat: Number(order.driver_lat), lng: Number(order.driver_lng) }
+      : null;
+    let route = null;
+    if (driverLocation) {
+      try {
+        const leg = await buildActiveLegRoute({ order, driverLat: driverLocation.lat, driverLng: driverLocation.lng });
+        route = {
+          phase: leg.phase,
+          distanceMeters: leg.distanceMeters,
+          durationSeconds: leg.durationSeconds,
+          geometry: leg.geometry,
+          fallback: leg.fallback
+        };
+      } catch {
+        route = null;
+      }
+    }
     res.json({
       trip: {
         status: order.status,
@@ -155,12 +175,15 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
         tariff: order.tariff,
         pickupText: order.pickup_text,
         dropoffText: order.dropoff_text,
+        pickupLat: order.pickup_lat != null ? Number(order.pickup_lat) : null,
+        pickupLng: order.pickup_lng != null ? Number(order.pickup_lng) : null,
+        dropoffLat: order.dropoff_lat != null ? Number(order.dropoff_lat) : null,
+        dropoffLng: order.dropoff_lng != null ? Number(order.dropoff_lng) : null,
         driverName: order.driver_name,
         driverCar: [order.driver_car_color, order.driver_car_model].filter(Boolean).join(" ") || null,
         driverPlate: order.driver_plate,
-        driverLocation: isActive && order.driver_lat != null
-          ? { lat: Number(order.driver_lat), lng: Number(order.driver_lng) }
-          : null,
+        driverLocation,
+        route,
         createdAt: order.created_at
       }
     });

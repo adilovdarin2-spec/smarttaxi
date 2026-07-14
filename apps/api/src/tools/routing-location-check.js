@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-process.env.DATABASE_URL ||= "postgresql://smarttaxi:smarttaxi@localhost:5432/smarttaxi";
+process.env.DATABASE_URL ||= "postgresql://smarttaxi:smarttaxi@localhost:5434/smarttaxi";
 process.env.JWT_SECRET ||= "dev_test_secret_for_routing_location_checks_123456";
 process.env.ROUTING_BASE_URL ||= "http://routing.local";
 
@@ -16,8 +16,10 @@ const routingRoutes = readFileSync(join(root, "modules", "routing", "routing.rou
 const routingServiceText = readFileSync(join(root, "modules", "routing", "routing.service.js"), "utf8");
 
 const {
+  buildActiveLegRoute,
   buildDriverToPickupRoute,
   buildRoutePreview,
+  resolveActiveLeg,
   reverseAddress,
   searchAddresses,
   updateDriverLocation
@@ -30,6 +32,9 @@ assert.match(routingRoutes, /router\.post\("\/preview"/, "route preview endpoint
 assert.match(routingRoutes, /router\.post\("\/driver-to-pickup"/, "driver-to-pickup endpoint must exist");
 assert.match(routingRoutes, /router\.get\("\/addresses\/search"/, "address search endpoint must exist");
 assert.match(routingRoutes, /router\.get\("\/addresses\/reverse"/, "reverse address endpoint must exist");
+assert.match(driversRoutes, /router\.get\("\/nearby"/, "anonymous nearby drivers endpoint must exist");
+assert.match(driversRoutes, /anonymous:\s*true/, "nearby drivers must be explicitly anonymous");
+assert.doesNotMatch(driversRoutes, /phone:\s*row\.phone|plate:\s*row\.plate|name:\s*row\.name/, "nearby drivers must not expose private driver data");
 assert.match(driversRoutes, /router\.patch\("\/me\/location"/, "driver location endpoint must exist");
 assert.match(server, /assertCanAccessOrderLocation/, "join_order must validate order room access");
 assert.match(server, /updateDriverLocation/, "socket driver location updates must use backend location service");
@@ -62,10 +67,19 @@ function mockAddressFetch() {
 
 const addressResults = await searchAddresses({ q: "Абая", limit: 3 }, mockAddressFetch());
 assert.equal(addressResults.length, 1, "address search returns real provider results");
-assert.equal(addressResults[0].label, "улица Абая Шымкент", "address search formats a human label");
-assert.equal(addressResults[0].lat, 42.316, "address search returns provider latitude");
+assert.equal(addressResults[0].label, "ул. Абая, Атакент", "address search prioritizes local launch catalog");
+assert.equal(addressResults[0].lat, 40.84803, "address search returns local launch latitude before provider fallback");
 const reversed = await reverseAddress({ lat: 42.316, lng: 69.596 }, mockAddressFetch());
 assert.equal(reversed.city, "Шымкент", "reverse address returns city");
+await assert.rejects(
+  () => reverseAddress({ lat: 400, lng: 69.596 }, mockAddressFetch()),
+  { code: "INVALID_COORDINATES" },
+  "reverse address rejects invalid coordinates"
+);
+const weakReverse = await reverseAddress({ lat: 40.7001, lng: 68.5201 }, async () => ({ ok: false, async json() { return {}; } }));
+assert.equal(weakReverse.title, "Точка на карте", "reverse address falls back to map point when provider fails");
+assert.equal(weakReverse.source, "fallback", "reverse fallback is explicitly marked");
+assert.equal(weakReverse.lat, 40.7001, "reverse fallback keeps exact selected latitude");
 
 const regionA = {
   id: "region-a",
@@ -129,7 +143,8 @@ function createExecutor(overrides = {}) {
     locations: overrides.locations || [],
     orders: overrides.orders || [
       { id: "order-new", client_id: "client-a", driver_id: null, pickup_lat: 42.12, pickup_lng: 69.12, status: "NEW" },
-      { id: "order-accepted", client_id: "client-a", driver_id: "driver-a", pickup_lat: 42.12, pickup_lng: 69.12, status: "DRIVER_ASSIGNED" }
+      { id: "order-accepted", client_id: "client-a", driver_id: "driver-a", pickup_lat: 42.12, pickup_lng: 69.12, status: "DRIVER_ASSIGNED" },
+      { id: "order-in-trip", client_id: "client-a", driver_id: "driver-a", pickup_lat: 42.12, pickup_lng: 69.12, dropoff_lat: 42.3, dropoff_lng: 69.3, status: "TRIP_STARTED" }
     ],
     clients: overrides.clients || [{ id: "client-a", user_id: "client-user" }]
   };
@@ -245,5 +260,63 @@ const driverRoute = await buildDriverToPickupRoute({
 });
 assert.equal(driverRoute.distanceMeters, 4200, "driver-to-pickup route returns provider distance");
 assert.equal(driverRoute.driverLat, 42.1, "driver-to-pickup route returns latest real driver latitude");
+assert.equal(driverRoute.phase, "to_pickup", "route before trip start targets the pickup leg");
+assert.equal(driverRoute.targetLat, 42.12, "to_pickup phase targets pickup coordinates");
+
+const tripRoute = await buildDriverToPickupRoute({
+  orderId: "order-in-trip",
+  user: { id: "client-user", role: "CLIENT" },
+  executor: locationExecutor,
+  fetchImpl: mockFetch()
+});
+assert.equal(tripRoute.phase, "to_dropoff", "route after trip start targets the dropoff leg, not pickup");
+assert.equal(tripRoute.targetLat, 42.3, "to_dropoff phase targets dropoff coordinates");
+assert.equal(tripRoute.targetLng, 69.3, "to_dropoff phase targets dropoff coordinates");
+
+await assert.rejects(
+  () => buildDriverToPickupRoute({
+    orderId: "order-new",
+    user: { id: "driver-user", role: "DRIVER" },
+    executor: createExecutor({
+      orders: [{ id: "order-new", client_id: "client-a", driver_id: "driver-a", pickup_lat: 42.12, pickup_lng: 69.12, status: "RATED" }]
+    }),
+    fetchImpl: mockFetch()
+  }),
+  { code: "ORDER_NOT_ACTIVE" },
+  "a finished order has no active driving leg to route"
+);
+
+// Live map/ETA routes (driver-to-pickup, and the public trip-tracking route
+// built the same way) must keep working — degraded but live — when the
+// routing provider is unreachable, unlike buildRoutePreview/pricing above
+// which must keep failing hard.
+const unreachableFetch = () => { throw new Error("OSRM unreachable"); };
+const fallbackRoute = await buildDriverToPickupRoute({
+  orderId: "order-accepted",
+  user: { id: "client-user", role: "CLIENT" },
+  executor: locationExecutor,
+  fetchImpl: unreachableFetch
+});
+assert.equal(fallbackRoute.phase, "to_pickup", "fallback route still resolves the correct leg");
+assert.equal(fallbackRoute.fallback, true, "fallback route is explicitly marked when the provider is unreachable");
+assert.equal(fallbackRoute.providerStatus, "Fallback", "fallback route reports a distinct provider status");
+assert.ok(fallbackRoute.distanceMeters > 0, "fallback route still estimates a positive distance");
+assert.ok(fallbackRoute.durationSeconds > 0, "fallback route still estimates a positive duration");
+
+const directLeg = await buildActiveLegRoute({
+  order: { status: "TRIP_STARTED", dropoff_lat: 42.3, dropoff_lng: 69.3 },
+  driverLat: 42.1,
+  driverLng: 69.1,
+  fetchImpl: mockFetch()
+});
+assert.equal(directLeg.phase, "to_dropoff", "buildActiveLegRoute (shared with the public tracking route) resolves the dropoff leg directly");
+assert.equal(directLeg.distanceMeters, 4200, "buildActiveLegRoute uses the provider route when available");
+assert.equal(directLeg.fallback, false, "buildActiveLegRoute only marks fallback when the provider actually failed");
+
+assert.throws(
+  () => resolveActiveLeg({ status: "RATED" }),
+  { code: "ORDER_NOT_ACTIVE" },
+  "resolveActiveLeg rejects orders with no active driving leg"
+);
 
 console.log("Routing and driver location checks ok");
