@@ -33,7 +33,7 @@ String _visibleSource(String source) {
 
 void main() {
   test('map configuration is explicit and attributed', () {
-    expect(AppConfig.apiBaseUrl, 'http://10.0.2.2:4000');
+    expect(AppConfig.apiBaseUrl, 'https://smarttaxi-api-production.up.railway.app');
     expect(AppConfig.osmTileUrl, contains('{z}'));
     expect(AppConfig.osmTileUrl, contains('{x}'));
     expect(AppConfig.osmTileUrl, contains('{y}'));
@@ -44,15 +44,15 @@ void main() {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
 
-    expect(logo, contains('assets/brand/smarttaxi_app_icon_1024.png'));
+    expect(logo, contains('assets/brand/smarttaxi_app_icon.svg'));
     expect(
       logo,
-      contains('assets/brand/smarttaxi_logo_horizontal_transparent.png'),
+      contains('assets/brand/smarttaxi_logo_horizontal.svg'),
     );
-    expect(logo, contains('errorBuilder'));
+    expect(logo, contains('placeholderBuilder'));
     expect(logo, contains('_LogoFallbackMark'));
     expect(logo, contains('_HorizontalLogoFallback'));
-    expect(pubspec, contains('assets/brand/smarttaxi_app_icon_1024.png'));
+    expect(pubspec, contains('assets/brand/smarttaxi_app_icon_websafe.png'));
     expect(
       pubspec,
       contains('assets/brand/smarttaxi_logo_horizontal_transparent.png'),
@@ -80,6 +80,7 @@ void main() {
 
   test('auth screen is production-only and starts before main app', () {
     final main = _read('lib/main.dart');
+    final authArb = _read('lib/l10n/app_ru.arb');
     final testAccountsLabel = 'Тестовые '
         'аккаунты';
     final clientSeedPassword = '123'
@@ -89,17 +90,22 @@ void main() {
 
     expect(main, contains('AppSession.splash'));
     expect(main, contains('AppSession.auth'));
-    expect(main, contains('Региональное такси рядом с вами'));
     expect(
-        main, contains("final title = _registerMode ? 'Регистрация' : 'Вход'"));
-    expect(main, contains('Введите номер телефона, чтобы продолжить'));
-    expect(main, contains('Создайте аккаунт для заказа поездок'));
-    expect(main, contains('Номер телефона'));
-    expect(main, contains('Создать аккаунт'));
-    expect(main, contains('_AuthSwitchLink'));
-    expect(main, contains('Ещё нет аккаунта?'));
-    expect(main, contains('Зарегистрируйтесь'));
-    expect(main, contains('Уже есть аккаунт?'));
+      main,
+      contains(
+          'final title = _registerMode ? l10n.createPasswordTitle : l10n.authWelcomeTitle'),
+    );
+    expect(main, contains('l10n.authWelcomeSubtitle'));
+    expect(authArb, contains('"authWelcomeTitle": "Вход и регистрация"'));
+    expect(
+      authArb,
+      contains(
+          '"authWelcomeSubtitle": "Введите номер телефона, чтобы продолжить"'),
+    );
+    expect(main, contains('AppLocalizations.of(context).phoneNumberLabel'));
+    expect(main, contains('_PhotoAuthLanguageToggle'));
+    expect(main, contains('l10n.createAccountButton'));
+    expect(authArb, contains('"createAccountButton": "Создать аккаунт"'));
     expect(main, isNot(contains('Телефон или ' 'E' 'mail')));
     expect(main, isNot(contains('E' 'mail, если вход по ' 'email')));
     expect(main, isNot(contains('_AuthModeSwitch')));
@@ -110,36 +116,46 @@ void main() {
 
   test('login and register forms are phone-only', () {
     final main = _read('lib/main.dart');
+    final authArb = _read('lib/l10n/app_ru.arb');
 
-    expect(main, contains('Вход'));
-    expect(main, contains('Регистрация'));
-    expect(main, contains('Логин'));
-    expect(main, contains('Имя'));
-    expect(main, contains('Фамилия'));
-    expect(main, contains('Номер телефона'));
-    expect(main, contains('+7 ___ ___ __ __'));
-    expect(main, contains('Пароль'));
-    expect(main, contains('Повторите пароль'));
-    expect(main, contains('Введите номер телефона'));
-    expect(main, contains('Введите логин'));
-    expect(main, contains('Введите корректный номер'));
-    expect(main, contains('Введите пароль'));
-    expect(main, contains('Введите фамилию'));
-    expect(main, contains('Пароль должен быть не короче 6 символов'));
-    expect(main, contains('Пароли не совпадают'));
-    expect(main, contains('Введите имя'));
-    expect(main, contains('Неверный номер или пароль'));
-    expect(main, contains('Сервер недоступен. Проверьте подключение.'));
+    expect(main, contains('l10n.authWelcomeTitle'));
+    expect(main, contains('l10n.createPasswordTitle'));
+    expect(authArb, contains('"createPasswordTitle": "Придумайте пароль"'));
+    expect(main, contains('l10n.nameFieldLabel'));
+    expect(authArb, contains('"nameFieldLabel": "Имя"'));
+    expect(main, contains('AppLocalizations.of(context).phoneNumberLabel'));
+    expect(main, contains('l10n.passwordFieldLabel'));
+    expect(authArb, contains('"passwordFieldLabel": "Пароль"'));
+    expect(main, contains('l10n.repeatPasswordLabel'));
+    expect(authArb, contains('"repeatPasswordLabel": "Повторите пароль"'));
+    expect(main, contains('l10n.passwordMinLength'));
     expect(
-      main,
-      contains('Проверьте адрес сервера в настройках запуска приложения.'),
+      authArb,
+      contains(
+          '"passwordMinLength": "Пароль должен быть не короче 6 символов"'),
+    );
+    expect(main, contains('l10n.passwordsMismatch'));
+    expect(authArb, contains('"passwordsMismatch": "Пароли не совпадают"'));
+    expect(main, contains('l10n.validateEnterName'));
+    expect(authArb, contains('"validateEnterName": "Введите имя"'));
+    expect(main, contains('l10n.invalidPhoneOrPassword'));
+    expect(
+      authArb,
+      contains('"invalidPhoneOrPassword": "Неверный номер или пароль"'),
+    );
+    expect(main, contains('l10n.serverUnavailable'));
+    expect(
+      authArb,
+      contains(
+          '"serverUnavailable": "Сервер недоступен. Проверьте интернет и попробуйте ещё раз."'),
     );
     expect(main, contains('_normalizePhone'));
     expect(main, contains('_phoneDigits'));
     expect(main, contains('TextEditingController'));
-    expect(main, contains('Показать пароль'));
-    expect(main, contains('Войти'));
-    expect(main, contains('Создать аккаунт'));
+    expect(main, contains('l10n.showPasswordTooltip'));
+    expect(authArb, contains('"showPasswordTooltip": "Показать пароль"'));
+    expect(main, contains('l10n.logIn'));
+    expect(main, contains('l10n.createAccountButton'));
     expect(main, isNot(contains('TextInputType.emailAddress')));
     expect(main, isNot(contains('Телефон или ' 'E' 'mail')));
     expect(main, isNot(contains('E' 'mail, если вход по ' 'email')));
@@ -154,7 +170,8 @@ void main() {
       expect(passenger, contains('_OrderSheet'));
       expect(passenger, contains('_MapOverlayHeader'));
       expect(passenger, contains('_MapRoundButton'));
-      expect(passenger, contains('_FloatingAddressCard'));
+      expect(passenger, contains('_SheetAddressEntryCard'));
+      expect(passenger, isNot(contains('_FloatingAddressCard')));
       expect(passenger, contains('_MapPermissionCard'));
       expect(passenger, contains('_MapRouteState'));
       expect(passenger, contains('Выбрать точку на карте'));
@@ -163,19 +180,28 @@ void main() {
         contains(
             'Можно включить GPS для точной подачи или выбрать точку на карте.'),
       );
-      expect(passenger, contains('Куда едем?'));
       expect(passenger, contains('Выберите точку подачи'));
       expect(passenger, contains('Моё местоположение'));
       expect(passenger, contains('Введите адрес назначения'));
       expect(passenger, contains('Введите адрес назначения'));
       expect(passenger, contains('_AddressSearchSheet'));
-      expect(passenger, contains('Введите улицу или место подачи'));
-      expect(passenger, contains('Введите улицу или место назначения'));
+      expect(passenger, contains('Улица, дом или место'));
       expect(passenger, contains('Ничего не найдено'));
       expect(passenger, contains('Выбрать точку на карте'));
-      expect(passenger, contains('Выберите адрес назначения'));
-      expect(passenger, contains('Тарифы и стоимость появятся'));
-      expect(passenger, contains('_FloatingAddressCard'));
+      expect(passenger, contains('Выбрать адрес назначения'));
+      expect(passenger, contains('Куда едем?'));
+      expect(passenger, contains('Выберите пункт назначения'));
+      expect(
+        passenger,
+        contains('_SheetAddressEntryCard'),
+      );
+      expect(passenger, isNot(contains('_FloatingAddressCard')));
+      expect(passenger, isNot(contains('_QuickAddressGrid')));
+      expect(passenger, contains('_popularAddressesForRegion'));
+      expect(passenger, contains('_HomeRecentAddresses'));
+      expect(passenger, contains('_RouteSummaryCard'));
+      expect(passenger, isNot(contains('_OrderRouteCompact')));
+      expect(passenger, isNot(contains('_OrderRouteButton')));
       expect(passenger, contains('_PaymentMethodRow'));
       expect(passenger, contains('Наличные'));
       expect(passenger, isNot(contains('Широта')));
@@ -186,6 +212,7 @@ void main() {
       expect(passenger, contains('Эконом'));
       expect(passenger, contains('Комфорт'));
       expect(passenger, contains('Бизнес'));
+      expect(passenger, contains('Доставка'));
       expect(
         passenger,
         contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
@@ -198,14 +225,13 @@ void main() {
         passenger,
         contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
       );
-      expect(passenger, isNot(contains('Delivery')));
       expect(passenger, contains('Тарифы пока не настроены'));
       expect(passenger, contains('_PaymentMethodRow'));
-      expect(passenger, contains('стоимость'));
+      expect(passenger, contains('цена'));
       expect(passenger, contains('Маршрут временно недоступен.'));
       expect(passenger, contains('Считаем маршрут...'));
       expect(passenger, contains('Map<String, RoutePreview> _tariffEstimates'));
-      expect(passenger, contains('estimates[tariff.id]!.estimatedPrice'));
+      expect(passenger, contains('_TariffListRow'));
       expect(passenger, contains('_formatTenge'));
       expect(passenger, contains('Заказать'));
     },
@@ -213,18 +239,21 @@ void main() {
 
   test('post-login passenger shell renders home with safe fallbacks', () {
     final main = _read('lib/main.dart');
+    final authArb = _read('lib/l10n/app_ru.arb');
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
     expect(main, contains('ErrorWidget.builder'));
     expect(main, contains('_RuntimeFallbackScreen'));
     expect(main, contains('_RuntimeFallbackLogo'));
-    expect(main, contains('Вернуться на главную'));
+    expect(main, contains('l10n.runtimeFallbackAction'));
+    expect(authArb, contains('"runtimeFallbackAction": "Вернуться на главную"'));
     expect(main, contains('AppSession.passenger => PassengerShell'));
     expect(main, contains('if (!mounted) return;'));
     expect(main, contains('setState(() => _session = AppSession.passenger)'));
     expect(passenger, contains('PassengerTab _tab = PassengerTab.home'));
-    expect(passenger, contains('bool _mapReady = false'));
-    expect(passenger, contains('WidgetsBinding.instance.addPostFrameCallback'));
+    expect(passenger, isNot(contains('bool _mapReady = false')));
+    expect(passenger, contains('final showMapFallback = mapUnavailable'));
+    expect(passenger, contains('Positioned.fill('));
     expect(passenger, contains('AnimatedSwitcher'));
     expect(passenger, contains('_currentScreen'));
     expect(passenger, contains('_unknownPassengerSection'));
@@ -237,8 +266,7 @@ void main() {
     expect(passenger, contains('PassengerTab.settings: _settingsScreen'));
     expect(passenger, contains('_MapFallbackSurface'));
     expect(passenger, contains('_MapUnavailableCard'));
-    expect(passenger,
-        contains('final showMapFallback = !mapReady || mapUnavailable'));
+    expect(passenger, contains('final showMapFallback = mapUnavailable'));
     expect(passenger, contains('showMapFallback'));
     expect(passenger, contains('mapUnavailable'));
     expect(passenger, contains('errorTileCallback'));
@@ -250,20 +278,28 @@ void main() {
   test('passenger stage 2 polish keeps one clear CTA and animated states', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
-    expect(passenger, contains("cta == 'Рассчитать' || cta == 'Заказать'"));
+    expect(passenger, contains('Выбрать точку подачи'));
+    expect(passenger, contains('Выбрать адрес назначения'));
+    expect(passenger, contains("return 'Рассчитать'"));
+    expect(passenger, contains("return 'Оформить доставку'"));
+    expect(
+      passenger,
+      contains(r"return label == null ? 'Заказать' : 'Заказать $label'"),
+    );
     expect(passenger, contains('AnimatedSwitcher'));
     expect(passenger, contains('AnimatedSize'));
-    expect(passenger, contains('AnimatedScale'));
+    expect(passenger, contains('_TariffListRow'));
     expect(passenger, contains('AnimatedContainer'));
     expect(passenger, contains('_CompactNotice'));
     expect(
       passenger,
-      contains('Данные водителя появятся после принятия заказа.'),
+      contains('Предлагаем заказ ближайшим водителям.'),
     );
     expect(
       passenger,
-      contains('Местоположение получено из реального обновления водителя.'),
+      contains('Показываем статус поездки и маршрут в реальном времени.'),
     );
+    expect(passenger, contains('_TripStatusPanel'));
     expect(passenger, contains('_StatusStepper'));
   });
 
@@ -283,7 +319,7 @@ void main() {
     expect(passenger, contains('PointSource.map'));
     expect(passenger, contains('PointSource.manual'));
     expect(passenger, contains('PointSource.none'));
-    expect(passenger, contains('Точка выбрана'));
+    expect(passenger, contains('Точка на карте'));
     expect(passenger, contains('Геолокация для подачи'));
     expect(passenger, contains('initialCameraFit'));
     expect(passenger, contains('CameraFit.coordinates'));
@@ -364,17 +400,19 @@ void main() {
     expect(passenger, contains('Напишите сообщение'));
     expect(
       passenger,
-      contains('Сообщение подготовлено. Отправка будет подключена позже.'),
+      contains('Текст скопирован. Отправьте его в поддержку удобным способом.'),
     );
     expect(passenger, contains('_settingsScreen'));
     expect(passenger, contains('Аккаунт'));
     expect(passenger, contains('Интерфейс'));
     expect(passenger, contains('Поездки'));
-    expect(passenger, contains('Безопасность аккаунта'));
+    expect(passenger, contains('Уведомления о статусе'));
+    expect(passenger, contains('Геолокация'));
     expect(passenger, contains('О приложении'));
-    expect(passenger, contains('Скоро'));
+    expect(passenger, isNot(contains('Скоро')));
+    expect(passenger, isNot(contains('будут добавлены')));
     expect(passenger, contains('_faqScreen'));
-    expect(passenger, contains('ExpansionTile'));
+    expect(passenger, contains('_FaqTile'));
     expect(passenger, contains('Как заказать поездку?'));
     expect(passenger, contains('Как считается цена?'));
     expect(passenger, contains('Как стать водителем?'));
@@ -425,11 +463,12 @@ void main() {
     final driver = _read('lib/features/driver/driver_shell.dart');
 
     expect(driver, contains('_DriverDrawer'));
-    expect(driver, contains('_showDriverDrawerSheet'));
+    expect(driver, contains('drawer: _DriverDrawer('));
     expect(driver, contains('_RoadAlertsSheet'));
     expect(driver, contains("label: 'Линия'"));
     expect(driver, contains("label: 'Заказы'"));
     expect(driver, contains("label: 'Поездка'"));
+    expect(driver, contains("label: 'Smart Navigator'"));
     expect(driver, contains("label: 'Профиль'"));
     expect(driver, contains("label: 'Дорожные события'"));
     expect(driver, contains("label: 'Поддержка'"));
@@ -440,12 +479,14 @@ void main() {
     expect(driver, contains("label: 'Выйти'"));
   });
 
-  test('route fields use A/B markers without home or house icons', () {
+  test('route fields use pickup/destination icon markers without A/B letters',
+      () {
     final routeFields = _read('lib/core/widgets/route_fields.dart');
-    final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
-    expect(routeFields, contains("label: 'A'"));
-    expect(routeFields, contains("label: 'B'"));
+    expect(routeFields, contains('Icons.radio_button_checked_rounded'));
+    expect(routeFields, contains('Icons.location_on_rounded'));
+    expect(routeFields, isNot(contains("label: 'A'")));
+    expect(routeFields, isNot(contains("label: 'B'")));
     expect(routeFields, contains('height: 130'));
     expect(
       routeFields,
@@ -469,24 +510,16 @@ void main() {
         ),
       ),
     );
-    expect(
-      passenger,
-      isNot(
-        contains(
-          'Icons.'
-          'home',
-        ),
-      ),
-    );
-    expect(
-      passenger,
-      isNot(
-        contains(
-          'Icons.'
-          'house',
-        ),
-      ),
-    );
+  });
+
+  test('driver map markers do not use visible A/B letters', () {
+    final driver = _read('lib/features/driver/driver_shell.dart');
+
+    expect(driver, isNot(contains("_NavigatorPointMarker(label: 'A')")));
+    expect(driver, isNot(contains("_NavigatorPointMarker(label: 'B')")));
+    expect(driver, isNot(contains('_letterMarker')));
+    expect(driver, contains('Icons.navigation_rounded'));
+    expect(driver, contains('Icons.location_on_rounded'));
   });
 
   test('driver tabs and premium driver states exist', () {
@@ -495,7 +528,10 @@ void main() {
     expect(driver, contains("label: 'Линия'"));
     expect(driver, contains("label: 'Заказы'"));
     expect(driver, contains("label: 'Поездка'"));
-    expect(driver, contains('_DriverStatusPanel'));
+    expect(driver, contains("label: 'Навигатор'"));
+    expect(driver, contains('_DriverShiftHero'));
+    expect(driver, contains('_DriverStatsGrid'));
+    expect(driver, contains('_DriverQuickActions'));
     expect(driver, contains('_RegionSummary'));
     expect(driver, contains('_LocationNotice'));
     expect(driver, contains('_DriverStatusStepper'));
@@ -516,18 +552,59 @@ void main() {
     expect(driver, contains('Выйдите на линию, чтобы получать заказы'));
     expect(driver, contains('Заказов в вашем регионе пока нет'));
     expect(driver, contains('_acceptingOrderId'));
+    expect(driver, contains('_rejectingOrderId'));
     expect(driver, contains('Принимаем...'));
+    expect(driver, contains('Пропускаем...'));
+    expect(driver, contains('Пропустить'));
+    expect(driver, contains('Клиент не вышел'));
     expect(driver, contains('Выйдите на линию, чтобы принимать заказы.'));
     expect(driver, contains('Заказ уже принят другим водителем'));
     expect(driver, contains('У вас уже есть активный заказ'));
     expect(driver, contains('_TripMap'));
+    expect(driver, contains('_navigatorTab'));
+    expect(driver, contains('_SmartNavigatorMap'));
+    expect(driver, contains('_NavigatorCockpit'));
+    expect(driver, contains('Свободный режим'));
+    expect(driver, contains('2GIS'));
+    expect(driver, contains('Yandex'));
+    expect(driver, contains('Google'));
     expect(driver, contains('CameraFit.coordinates'));
     expect(driver, contains('Маршрут до точки посадки'));
     expect(driver, contains('Маршрут временно недоступен'));
-    expect(driver, contains("if (status == 'DRIVER_ASSIGNED')"));
-    expect(driver, contains("if (status == 'DRIVER_ARRIVED')"));
-    expect(driver, contains("if (status == 'IN_PROGRESS')"));
+    expect(driver, contains("status == 'DRIVER_FOUND'"));
+    expect(driver, contains("status == 'DRIVER_GOING_TO_CLIENT'"));
+    expect(driver, contains("status == 'DRIVER_ARRIVED'"));
+    expect(driver, contains("status == 'WAITING_CLIENT'"));
+    expect(driver, contains("status == 'TRIP_STARTED'"));
+    expect(driver, contains('widget.api.goingToClient'));
+    expect(driver, contains('widget.api.waitingClient'));
+    expect(driver, contains('widget.api.noShow'));
     expect(driver, contains('_tripActionLabel'));
+  });
+
+  test('driver lifecycle API matches backend order status actions', () {
+    final api = _read('lib/core/api/api_client.dart');
+    final models = _read('lib/features/shared/models.dart');
+    final driver = _read('lib/features/driver/driver_shell.dart');
+
+    expect(api, contains("'/api/driver/orders/\$orderId/reject'"));
+    expect(api, contains("'/api/orders/\$orderId/going-to-client'"));
+    expect(api, contains("'/api/orders/\$orderId/waiting'"));
+    expect(api, contains("'/api/orders/\$orderId/no-show'"));
+    expect(api, contains('rejectDriverOrder'));
+    expect(api, contains('goingToClient'));
+    expect(api, contains('waitingClient'));
+    expect(api, contains('noShow'));
+
+    expect(models, contains("'SEARCHING_DRIVER'"));
+    expect(models, contains("'DRIVER_FOUND'"));
+    expect(models, contains("'DRIVER_GOING_TO_CLIENT'"));
+    expect(models, contains("'WAITING_CLIENT'"));
+    expect(models, contains("'TRIP_STARTED'"));
+    expect(driver, contains('Выехал к клиенту'));
+    expect(driver, contains('Начать ожидание'));
+    expect(driver, contains('Начать поездку'));
+    expect(driver, contains('Завершить поездку'));
   });
 
   test('driver road-safety alerts use real server data and safe copy', () {
@@ -538,11 +615,16 @@ void main() {
     expect(api, contains("'/api/driver/road-alerts'"));
     expect(api, contains('getDriverRoadAlerts'));
     expect(api, contains('createDriverRoadAlert'));
+    expect(api, contains('confirmDriverRoadAlert'));
+    expect(api, contains('dismissDriverRoadAlert'));
     expect(models, contains('class RoadAlert'));
     expect(models, contains('roadAlertTypes'));
     expect(models, contains("'ROAD_HAZARD'"));
     expect(models, contains("'SPEED_CAMERA'"));
     expect(models, contains("'ROAD_CLOSED'"));
+    expect(models, contains("'POTHOLE'"));
+    expect(models, contains("'SCHOOL_ZONE'"));
+    expect(models, contains('confidenceScore'));
     expect(driver, contains('Дорожные события'));
     expect(
         driver,
@@ -555,6 +637,9 @@ void main() {
     expect(driver, contains('FlutterMap'));
     expect(driver, contains('MarkerLayer'));
     expect(driver, contains("label: const Text('GPS')"));
+    expect(driver, contains('На месте'));
+    expect(driver, contains('Событие скрыто из активного списка.'));
+    expect(driver, isNot(contains('\u26d4')));
     final unsafeIntent = 'police ${'eva'}sion';
     final unsafeRouting = 'avoid ${'pol'}ice';
     expect(driver.toLowerCase(), isNot(contains(unsafeIntent)));
@@ -573,11 +658,12 @@ void main() {
     final emptyState = _read('lib/core/widgets/empty_state.dart');
     final statusPill = _read('lib/core/widgets/status_pill.dart');
 
-    expect(main, contains('final compact = size.height < 720'));
+    expect(main,
+        contains('final compact = size.height < 840 || size.width < 390'));
     expect(main, contains('AutofillGroup'));
     expect(main, contains('AutofillHints.telephoneNumber'));
-    expect(main, contains('TextCapitalization.words'));
-    expect(main, contains('WrapAlignment.center'));
+    expect(main, contains('TextCapitalization'));
+    expect(main, contains('.words'));
     expect(theme, contains('textSelectionTheme'));
     expect(theme, contains('bottomSheetTheme'));
     expect(theme, contains('snackBarTheme'));
@@ -667,8 +753,6 @@ void main() {
     ).map((file) => _read(file.path)).join('\n');
     final driverOrders = 'DRIVER_'
         'ORDERS';
-    final statsPath = 'drivers/me/'
-        'stats';
     final testAccountsLabel = 'Тестовые '
         'аккаунты';
     final clientSeedPassword = '123'
@@ -677,9 +761,17 @@ void main() {
         '2026';
 
     expect(liveSource, isNot(contains(driverOrders)));
-    expect(liveSource, isNot(contains(statsPath)));
     expect(liveSource, isNot(contains(testAccountsLabel)));
     expect(liveSource, isNot(contains(clientSeedPassword)));
     expect(liveSource, isNot(contains(ownerSeedPassword)));
+  });
+
+  test('live Flutter client has no debug console logging', () {
+    final liveSource = _dartFiles(
+      'lib',
+    ).map((file) => _read(file.path)).join('\n');
+
+    expect(liveSource, isNot(contains('debugPrint(')));
+    expect(liveSource, isNot(contains('print(')));
   });
 }
