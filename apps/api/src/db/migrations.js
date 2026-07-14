@@ -665,7 +665,34 @@ const statements = [
   END $$`,
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_by_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_created_at TIMESTAMPTZ",
-  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_responded_at TIMESTAMPTZ"
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_responded_at TIMESTAMPTZ",
+
+  // --- Stage: client favorite addresses ---
+  `CREATE TABLE IF NOT EXISTS client_favorite_addresses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT 'OTHER' CHECK (label IN ('HOME','WORK','OTHER')),
+    title TEXT NOT NULL,
+    address_text TEXT NOT NULL,
+    lat NUMERIC(10,6) NOT NULL,
+    lng NUMERIC(10,6) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_client_favorite_addresses_client_id ON client_favorite_addresses(client_id)",
+
+  // --- Stage: favorite / blocked drivers ---
+  // BLOCKED entries are checked by the dispatch feed (listOrdersForDriver)
+  // so a driver a rider blocked never sees that rider's future orders.
+  `CREATE TABLE IF NOT EXISTS client_driver_preferences (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('FAVORITE','BLOCKED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(client_id, driver_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_client_driver_preferences_client_id ON client_driver_preferences(client_id)",
+  "CREATE INDEX IF NOT EXISTS idx_client_driver_preferences_driver_id ON client_driver_preferences(driver_id)"
 ];
 
 export async function runMigrations() {

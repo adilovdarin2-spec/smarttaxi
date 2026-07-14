@@ -260,6 +260,16 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     `, [driver.id, driver.current_region_id, RECENT_DRIVER_STATUSES, limit])).rows;
   }
 
+  // A rider who blocked this driver never puts their orders in front of
+  // them — checked here, at the dispatch-visibility layer, rather than at
+  // accept time, so a blocked driver doesn't even see the order exists.
+  const notBlockedByClient = `
+    NOT EXISTS (
+      SELECT 1 FROM client_driver_preferences bp
+      WHERE bp.client_id=o.client_id AND bp.driver_id=$1 AND bp.type='BLOCKED'
+    )
+  `;
+
   if (status) {
     return (await runQuery(executor, `
       SELECT ${orderSelect} FROM orders o
@@ -267,6 +277,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
       WHERE o.region_id=$2
         AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR o.driver_id=$1)
         AND o.status=$3
+        AND (o.driver_id=$1 OR ${notBlockedByClient})
       ORDER BY o.created_at DESC
       LIMIT $4
     `, [driver.id, driver.current_region_id, status, limit, OPEN_ORDER_STATUSES])).rows;
@@ -281,9 +292,20 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     LEFT JOIN drivers d ON d.id=o.driver_id
     WHERE o.region_id=$2
       AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR (o.driver_id=$1 AND o.status = ANY($3::text[])))
+      AND (o.driver_id=$1 OR ${notBlockedByClient})
     ORDER BY o.offered_price_kzt DESC NULLS LAST, o.created_at DESC
     LIMIT $4
   `, [driver.id, driver.current_region_id, RECENT_DRIVER_STATUSES, limit, OPEN_ORDER_STATUSES])).rows;
+}
+
+async function assertDriverNotBlockedByClient(clientId, driverId, executor) {
+  if (!clientId) return;
+  const blocked = await runQuery(
+    executor,
+    "SELECT 1 FROM client_driver_preferences WHERE client_id=$1 AND driver_id=$2 AND type='BLOCKED'",
+    [clientId, driverId]
+  );
+  if (blocked.rows[0]) throw new AppError("Rider has blocked this driver", 403, "DRIVER_BLOCKED_BY_CLIENT");
 }
 
 export async function acceptOrderForDriver({ orderId, userId, executor }) {
@@ -302,6 +324,7 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
   }
+  await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
 
   const order = (await runQuery(
     executor,
@@ -341,6 +364,7 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
   }
+  await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
 
   const order = (await runQuery(
     executor,

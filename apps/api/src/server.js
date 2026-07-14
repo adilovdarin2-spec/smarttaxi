@@ -9,10 +9,12 @@ import { connectRedis } from "./db/redis.js";
 import { query, pool } from "./db/pool.js";
 import { runMigrations } from "./db/migrations.js";
 import { errorHandler, notFound } from "./common/errors.js";
+import { captureError, initSentry } from "./common/sentry.js";
 import { rateLimit } from "./common/rateLimit.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import ordersRoutes from "./modules/orders/orders.routes.js";
+import paymentsRoutes from "./modules/payments/payments.routes.js";
 import driversRoutes from "./modules/drivers/drivers.routes.js";
 import driverCoreRoutes from "./modules/drivers/driver-core.routes.js";
 import clientsRoutes from "./modules/clients/clients.routes.js";
@@ -23,6 +25,11 @@ import adminRoutes from "./modules/admin/admin.routes.js";
 import regionsRoutes from "./modules/regions/regions.routes.js";
 import routingRoutes from "./modules/routing/routing.routes.js";
 import roadAlertsRoutes from "./modules/road-alerts/road-alerts.routes.js";
+import notificationsRoutes from "./modules/notifications/notifications.routes.js";
+import supportRoutes, { adminSupportRouter } from "./modules/support/support.routes.js";
+import walletRoutes from "./modules/wallet/wallet.routes.js";
+import driverDocumentsRoutes, { driverApplicationDocumentsRouter } from "./modules/driver-documents/driver-documents.routes.js";
+import favoritesRoutes from "./modules/favorites/favorites.routes.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
 import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
 import {
@@ -30,6 +37,16 @@ import {
   driverRegionRoom,
   orderRoom
 } from "./modules/orders/order-dispatch.service.js";
+
+initSentry();
+process.on("unhandledRejection", (error) => {
+  console.error("[ERROR] unhandled rejection", error);
+  captureError(error, { source: "unhandledRejection" });
+});
+process.on("uncaughtException", (error) => {
+  console.error("[ERROR] uncaught exception", error);
+  captureError(error, { source: "uncaughtException" });
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -95,9 +112,11 @@ app.use("/api", rateLimit({ prefix: "api", windowMs: 60_000, max: 300 }));
 app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/orders", ordersRoutes);
+app.use("/api/orders", paymentsRoutes);
 app.use("/api/drivers", driversRoutes);
 app.use("/api/driver", driverCoreRoutes);
 app.use("/api/driver/orders", ordersRoutes);
+app.use("/api/driver/orders", paymentsRoutes);
 app.use("/api/clients", clientsRoutes);
 app.use("/api/tariffs", tariffsRoutes);
 app.use("/api/finance", financeRoutes);
@@ -106,6 +125,13 @@ app.use("/api/routes", routingRoutes);
 app.use("/api/driver/road-alerts", roadAlertsRoutes);
 app.use("/api/regions", regionsRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/support", adminSupportRouter);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/support", supportRoutes);
+app.use("/api/drivers/me/wallet", walletRoutes);
+app.use("/api/drivers/me/documents", driverDocumentsRoutes);
+app.use("/api/driver-applications", driverApplicationDocumentsRouter);
+app.use("/api/favorites", favoritesRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);
