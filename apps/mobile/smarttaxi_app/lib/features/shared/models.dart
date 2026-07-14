@@ -49,12 +49,14 @@ class RegionOption {
     required this.name,
     this.center,
     this.boundary = const [],
+    this.supportPhone,
   });
 
   final String id;
   final String name;
   final Coordinate? center;
   final List<Coordinate> boundary;
+  final String? supportPhone;
 
   factory RegionOption.fromJson(Map<String, dynamic> json) {
     return RegionOption(
@@ -63,6 +65,8 @@ class RegionOption {
       center: _coordinateFromFields(json, ['center_lat', 'centerLat', 'lat'],
           ['center_lng', 'centerLng', 'lng']),
       boundary: _boundaryFromJson(json['boundary']),
+      supportPhone:
+          (json['support_phone'] ?? json['supportPhone'])?.toString(),
     );
   }
 
@@ -91,12 +95,14 @@ class DriverRegion {
       {required this.id,
       required this.name,
       required this.status,
-      required this.isActive});
+      required this.isActive,
+      this.center});
 
   final String id;
   final String name;
   final String status;
   final bool isActive;
+  final Coordinate? center;
 
   factory DriverRegion.fromJson(Map<String, dynamic> json) {
     return DriverRegion(
@@ -104,6 +110,40 @@ class DriverRegion {
       name: '${json['name'] ?? json['regionName'] ?? 'Регион'}',
       status: '${json['status'] ?? 'APPROVED'}',
       isActive: json['is_active'] != false && json['isActive'] != false,
+      center: _coordinateFromFields(json, ['center_lat', 'centerLat', 'lat'],
+          ['center_lng', 'centerLng', 'lng']),
+    );
+  }
+}
+
+class DriverStats {
+  const DriverStats({
+    required this.ordersTotal,
+    required this.completedOrders,
+    required this.revenueTotal,
+    required this.debt,
+    required this.balance,
+  });
+
+  final int ordersTotal;
+  final int completedOrders;
+  final int revenueTotal;
+  final int debt;
+  final int balance;
+
+  factory DriverStats.fromJson(Map<String, dynamic> json) {
+    final today =
+        json['today'] is Map ? Map<String, dynamic>.from(json['today']) : json;
+    return DriverStats(
+      ordersTotal:
+          _toDouble(today['orders_total'] ?? today['ordersTotal']).round(),
+      completedOrders:
+          _toDouble(today['completed_orders'] ?? today['completedOrders'])
+              .round(),
+      revenueTotal:
+          _toDouble(today['revenue_total'] ?? today['revenueTotal']).round(),
+      debt: _toDouble(today['debt']).round(),
+      balance: _toDouble(today['balance']).round(),
     );
   }
 }
@@ -132,6 +172,11 @@ class RoutePreview {
     required this.geometry,
     this.estimatedPrice,
     this.tariffName,
+    this.phase,
+    this.targetLat,
+    this.targetLng,
+    this.driverLat,
+    this.driverLng,
   });
 
   final String regionId;
@@ -140,6 +185,21 @@ class RoutePreview {
   final List<LatLng> geometry;
   final double? estimatedPrice;
   final String? tariffName;
+  // Only set on the live "driver active route" response: 'to_pickup' while
+  // the driver is heading to the client, 'to_dropoff' once the trip has
+  // started — lets the UI label distance/ETA for whichever leg is actually
+  // happening right now instead of always assuming pickup.
+  final String? phase;
+  final double? targetLat;
+  final double? targetLng;
+  // Also only set on the driver-active-route response — lets the rider's
+  // map place the driver marker immediately from this one call instead of
+  // waiting for the next GPS-triggered socket event (which may be minutes
+  // away if the driver hasn't moved 20m yet, e.g. right after a cold start).
+  final double? driverLat;
+  final double? driverLng;
+
+  bool get isToDropoff => phase == 'to_dropoff';
 
   factory RoutePreview.fromJson(Map<String, dynamic> json) {
     final estimate = json['estimate'] is Map
@@ -153,6 +213,11 @@ class RoutePreview {
       estimatedPrice:
           _nullableDouble(estimate['estimatedPrice'] ?? json['estimatedPrice']),
       tariffName: estimate['tariffName']?.toString(),
+      phase: json['phase']?.toString(),
+      targetLat: _nullableDouble(json['targetLat']),
+      targetLng: _nullableDouble(json['targetLng']),
+      driverLat: _nullableDouble(json['driverLat']),
+      driverLng: _nullableDouble(json['driverLng']),
     );
   }
 }
@@ -168,8 +233,24 @@ class OrderSummary {
     this.durationMin,
     this.tariff,
     this.driverId,
+    this.paymentMethod,
+    this.riderPhone,
+    this.riderName,
+    this.regionId,
     this.pickupCoordinate,
     this.dropoffCoordinate,
+    this.driverName,
+    this.driverPhone,
+    this.driverCarModel,
+    this.driverCarColor,
+    this.driverPlate,
+    this.driverRating,
+    this.offeredPriceKzt,
+    this.shareToken,
+    this.createdAt,
+    this.driverOfferPriceKzt,
+    this.driverOfferStatus,
+    this.driverOfferByDriverId,
   });
 
   final String id;
@@ -181,15 +262,79 @@ class OrderSummary {
   final double? durationMin;
   final String? tariff;
   final String? driverId;
+  final String? paymentMethod;
+  final String? riderPhone;
+  final String? riderName;
+  final String? regionId;
   final Coordinate? pickupCoordinate;
   final Coordinate? dropoffCoordinate;
+  final String? driverName;
+  final String? driverPhone;
+  final String? driverCarModel;
+  final String? driverCarColor;
+  final String? driverPlate;
+  final double? driverRating;
+  // Set when the rider raised/lowered the fare via the "своя цена" stepper
+  // instead of accepting the calculated estimate as-is.
+  final int? offeredPriceKzt;
+  // Unguessable id for the public "поделиться поездкой" tracking link —
+  // distinct from `id` so a shared link can't be used to look up other
+  // orders.
+  final String? shareToken;
+  final DateTime? createdAt;
+  // Torg: a driver may counter-propose a price on an open order via
+  // POST /orders/:id/price-offer. driverOfferStatus is PENDING while the
+  // rider hasn't answered yet, then ACCEPTED/DECLINED; null when no offer
+  // has ever been made.
+  final int? driverOfferPriceKzt;
+  final String? driverOfferStatus;
+  final String? driverOfferByDriverId;
+
+  bool get hasPendingDriverOffer =>
+      driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
+
+  OrderSummary copyWith({String? status}) {
+    return OrderSummary(
+      id: id,
+      status: status ?? this.status,
+      pickup: pickup,
+      dropoff: dropoff,
+      price: price,
+      distanceKm: distanceKm,
+      durationMin: durationMin,
+      tariff: tariff,
+      driverId: driverId,
+      paymentMethod: paymentMethod,
+      riderPhone: riderPhone,
+      riderName: riderName,
+      regionId: regionId,
+      pickupCoordinate: pickupCoordinate,
+      dropoffCoordinate: dropoffCoordinate,
+      driverName: driverName,
+      driverPhone: driverPhone,
+      driverCarModel: driverCarModel,
+      driverCarColor: driverCarColor,
+      driverPlate: driverPlate,
+      driverRating: driverRating,
+      offeredPriceKzt: offeredPriceKzt,
+      shareToken: shareToken,
+      createdAt: createdAt,
+      driverOfferPriceKzt: driverOfferPriceKzt,
+      driverOfferStatus: driverOfferStatus,
+      driverOfferByDriverId: driverOfferByDriverId,
+    );
+  }
 
   bool get isActive => const [
+        'DRIVER_FOUND',
+        'DRIVER_GOING_TO_CLIENT',
         'DRIVER_ASSIGNED',
         'DRIVER_ARRIVED',
+        'WAITING_CLIENT',
+        'TRIP_STARTED',
         'IN_PROGRESS'
       ].contains(status);
-  bool get isOpen => status == 'NEW';
+  bool get isOpen => const ['NEW', 'SEARCHING_DRIVER'].contains(status);
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     final snapshot = json['pricing_snapshot'] is Map
@@ -204,7 +349,12 @@ class OrderSummary {
           '${json['pickup_text'] ?? json['pickupText'] ?? json['pickup'] ?? 'Точка посадки'}',
       dropoff:
           '${json['dropoff_text'] ?? json['dropoffText'] ?? json['dropoff'] ?? 'Точка назначения'}',
-      price: _nullableDouble(json['estimated_price'] ??
+      // orders.price (or a "своя цена" bid) is the actual/final amount —
+      // prefer it over the frozen pricing_snapshot.estimatedPrice, which
+      // stays fixed at whatever was calculated when the order was created
+      // and won't reflect a bid the rider placed instead.
+      price: _nullableDouble(json['price'] ??
+          json['estimated_price'] ??
           json['estimatedPrice'] ??
           snapshot['estimatedPrice']),
       distanceKm: _nullableDouble(
@@ -214,8 +364,126 @@ class OrderSummary {
           snapshot['durationMin']),
       tariff: (json['tariff'] ?? snapshot['tariffName'])?.toString(),
       driverId: json['driver_id']?.toString() ?? json['driverId']?.toString(),
+      paymentMethod:
+          (json['payment_method'] ?? json['paymentMethod'])?.toString(),
+      riderPhone: (json['rider_phone'] ??
+              json['riderPhone'] ??
+              json['clientPhone'] ??
+              json['client_phone'])
+          ?.toString(),
+      riderName: (json['rider_name'] ?? json['riderName'])?.toString(),
+      regionId: (json['region_id'] ?? json['regionId'])?.toString(),
       pickupCoordinate: _coordinateFromJson(json, 'pickup'),
       dropoffCoordinate: _coordinateFromJson(json, 'dropoff'),
+      driverName: (json['driver_name'] ?? json['driverName'])?.toString(),
+      driverPhone: (json['driver_phone'] ?? json['driverPhone'])?.toString(),
+      driverCarModel:
+          (json['driver_car_model'] ?? json['driverCarModel'])?.toString(),
+      driverCarColor:
+          (json['driver_car_color'] ?? json['driverCarColor'])?.toString(),
+      driverPlate: (json['driver_plate'] ?? json['driverPlate'])?.toString(),
+      driverRating:
+          _nullableDouble(json['driver_rating'] ?? json['driverRating']),
+      offeredPriceKzt: int.tryParse(
+        '${json['offered_price_kzt'] ?? json['offeredPriceKzt'] ?? ''}',
+      ),
+      shareToken: (json['share_token'] ?? json['shareToken'])?.toString(),
+      createdAt: DateTime.tryParse(
+        '${json['created_at'] ?? json['createdAt'] ?? ''}',
+      ),
+      driverOfferPriceKzt: int.tryParse(
+        '${json['driver_offer_price_kzt'] ?? json['driverOfferPriceKzt'] ?? ''}',
+      ),
+      driverOfferStatus:
+          (json['driver_offer_status'] ?? json['driverOfferStatus'])
+              ?.toString(),
+      driverOfferByDriverId: (json['driver_offer_by_driver_id'] ??
+              json['driverOfferByDriverId'])
+          ?.toString(),
+    );
+  }
+}
+
+class PaymentInfo {
+  const PaymentInfo({
+    required this.id,
+    required this.orderId,
+    required this.method,
+    required this.provider,
+    required this.status,
+    this.amount,
+    this.failureReason,
+    this.orderStatus,
+  });
+
+  final String id;
+  final String orderId;
+  final String method;
+  final String provider;
+  final String status;
+  final double? amount;
+  final String? failureReason;
+  // The order's status as of this response — a PAID payment moves the order
+  // to PAID server-side too, so the client can sync without a full refetch.
+  final String? orderStatus;
+
+  bool get isProcessing => status == 'PROCESSING';
+  bool get isPaid => status == 'PAID';
+  bool get isFailed => status == 'FAILED';
+
+  factory PaymentInfo.fromJson(Map<String, dynamic> json) {
+    return PaymentInfo(
+      id: '${json['id']}',
+      orderId: '${json['orderId'] ?? json['order_id']}',
+      method: '${json['method'] ?? 'CASH'}',
+      provider: '${json['provider'] ?? 'MANUAL'}',
+      status: '${json['status'] ?? 'PENDING'}',
+      amount: _nullableDouble(json['amount']),
+      failureReason:
+          (json['failureReason'] ?? json['failure_reason'])?.toString(),
+      orderStatus:
+          (json['orderStatus'] ?? json['order_status'])?.toString(),
+    );
+  }
+}
+
+class AppNotification {
+  const AppNotification({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.type,
+    this.orderId,
+    this.readAt,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String title;
+  final String body;
+  final String type;
+  final String? orderId;
+  final DateTime? readAt;
+  final DateTime createdAt;
+
+  bool get isUnread => readAt == null;
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) {
+    final readAtRaw = (json['readAt'] ?? json['read_at'])?.toString();
+    final createdAtRaw =
+        (json['createdAt'] ?? json['created_at'])?.toString();
+    return AppNotification(
+      id: '${json['id']}',
+      title: '${json['title'] ?? ''}',
+      body: '${json['body'] ?? ''}',
+      type: '${json['type'] ?? 'ORDER_STATUS'}',
+      orderId: (json['orderId'] ?? json['order_id'])?.toString(),
+      readAt: readAtRaw == null || readAtRaw.isEmpty
+          ? null
+          : DateTime.tryParse(readAtRaw),
+      createdAt: createdAtRaw == null
+          ? DateTime.now()
+          : DateTime.tryParse(createdAtRaw) ?? DateTime.now(),
     );
   }
 }
@@ -239,6 +507,37 @@ class DriverLocation {
   }
 }
 
+class NearbyDriver {
+  const NearbyDriver({
+    required this.id,
+    required this.lat,
+    required this.lng,
+    required this.etaMin,
+    this.bearing,
+  });
+
+  final String id;
+  final double lat;
+  final double lng;
+  final int etaMin;
+  final double? bearing;
+
+  LatLng toLatLng() => LatLng(lat, lng);
+
+  factory NearbyDriver.fromJson(Map<String, dynamic> json) {
+    return NearbyDriver(
+      id: '${json['id'] ?? ''}',
+      lat: _toDouble(json['lat']),
+      lng: _toDouble(json['lng']),
+      etaMin: _toDouble(json['etaMin'] ?? json['eta_min'] ?? 3)
+          .round()
+          .clamp(1, 60)
+          .toInt(),
+      bearing: _nullableDouble(json['bearing'] ?? json['heading']),
+    );
+  }
+}
+
 class RoadAlert {
   const RoadAlert({
     required this.id,
@@ -249,7 +548,11 @@ class RoadAlert {
     required this.lng,
     required this.status,
     required this.confirmationsCount,
+    this.dismissalsCount = 0,
+    this.confidenceScore = 50,
+    this.speedLimit,
     this.comment = '',
+    this.heading,
   });
 
   final String id;
@@ -260,7 +563,13 @@ class RoadAlert {
   final double lng;
   final String status;
   final int confirmationsCount;
+  final int dismissalsCount;
+  final int confidenceScore;
+  final int? speedLimit;
   final String comment;
+  /// Compass heading (0-360, clockwise from north) the alert/camera faces,
+  /// when known. Null means direction data isn't available — never guessed.
+  final double? heading;
 
   LatLng toLatLng() => LatLng(lat, lng);
 
@@ -277,9 +586,115 @@ class RoadAlert {
       confirmationsCount:
           _toDouble(json['confirmationsCount'] ?? json['confirmations_count'])
               .round(),
+      dismissalsCount:
+          _toDouble(json['dismissalsCount'] ?? json['dismissals_count'])
+              .round(),
+      confidenceScore:
+          _toDouble(json['confidenceScore'] ?? json['confidence_score'] ?? 50)
+              .round(),
+      speedLimit:
+          _nullableDouble(json['speedLimit'] ?? json['speed_limit'])?.round(),
       comment: (json['comment'] ?? '').toString(),
+      heading: _nullableDouble(json['heading']),
     );
   }
+}
+
+/// 16-point compass abbreviation (Russian) for a 0-360 heading — used to
+/// show which way a camera faces without relying on a rotated icon asset.
+String compassLabel(double headingDegrees) {
+  const labels = [
+    'С', 'ССВ', 'СВ', 'ВСВ',
+    'В', 'ВЮВ', 'ЮВ', 'ЮЮВ',
+    'Ю', 'ЮЮЗ', 'ЮЗ', 'ЗЮЗ',
+    'З', 'ЗСЗ', 'СЗ', 'ССЗ'
+  ];
+  final normalized = ((headingDegrees % 360) + 360) % 360;
+  final index = ((normalized / 22.5) + 0.5).floor() % 16;
+  return labels[index];
+}
+
+class SupportMessage {
+  const SupportMessage({
+    required this.id,
+    required this.topic,
+    required this.message,
+    required this.status,
+    this.adminResponse,
+    this.respondedAt,
+    this.createdAt,
+  });
+
+  final String id;
+  final String topic;
+  final String message;
+  final String status;
+  final String? adminResponse;
+  final DateTime? respondedAt;
+  final DateTime? createdAt;
+
+  bool get isResolved => status == 'RESOLVED';
+
+  factory SupportMessage.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic value) =>
+        value == null ? null : DateTime.tryParse(value.toString());
+    return SupportMessage(
+      id: '${json['id']}',
+      topic: '${json['topic'] ?? ''}',
+      message: '${json['message'] ?? ''}',
+      status: '${json['status'] ?? 'OPEN'}',
+      adminResponse: json['adminResponse']?.toString(),
+      respondedAt: parseDate(json['respondedAt']),
+      createdAt: parseDate(json['createdAt']),
+    );
+  }
+}
+
+/// A mapped roadside sign (OSM `traffic_sign` tag) — distinct from
+/// [RoadAlert] because it's a passive landmark the navigator calls out as
+/// the driver passes it, not an incident someone reported and can confirm
+/// or dismiss.
+class OsmSign {
+  const OsmSign({
+    required this.id,
+    required this.lat,
+    required this.lng,
+    required this.label,
+    this.speedLimit,
+    this.heading,
+  });
+
+  final String id;
+  final double lat;
+  final double lng;
+  final String label;
+  final int? speedLimit;
+  final double? heading;
+
+  LatLng toLatLng() => LatLng(lat, lng);
+
+  factory OsmSign.fromJson(Map<String, dynamic> json) {
+    return OsmSign(
+      id: '${json['id']}',
+      lat: _toDouble(json['lat']),
+      lng: _toDouble(json['lng']),
+      label: (json['label'] ?? 'Дорожный знак').toString(),
+      speedLimit: _nullableDouble(json['speedLimit'])?.round(),
+      heading: _nullableDouble(json['heading']),
+    );
+  }
+}
+
+class OsmNavigationInfo {
+  const OsmNavigationInfo({
+    required this.cameras,
+    this.speedLimit,
+    this.signs = const [],
+  });
+
+  final List<RoadAlert> cameras;
+  final int? speedLimit;
+  final List<OsmSign> signs;
 }
 
 const roadAlertTypes = <String>[
@@ -287,8 +702,18 @@ const roadAlertTypes = <String>[
   'ACCIDENT',
   'ROAD_WORK',
   'SPEED_CAMERA',
+  'POLICE',
   'TRAFFIC_JAM',
   'ROAD_CLOSED',
+  'BAD_ROAD',
+  'POTHOLE',
+  'SPEED_BUMP',
+  'ICY_ROAD',
+  'SCHOOL_ZONE',
+  'TEMPORARY_SPEED_LIMIT',
+  'DANGEROUS_TURN',
+  'RAILROAD_CROSSING',
+  'PEDESTRIAN_CROSSING',
   'OTHER',
 ];
 
@@ -298,8 +723,18 @@ String roadAlertLabel(String type) {
         'ACCIDENT': 'ДТП',
         'ROAD_WORK': 'Ремонт дороги',
         'SPEED_CAMERA': 'Камера скорости',
+        'POLICE': 'Контроль движения',
         'TRAFFIC_JAM': 'Пробка',
         'ROAD_CLOSED': 'Закрытая дорога',
+        'BAD_ROAD': 'Плохая дорога',
+        'POTHOLE': 'Яма',
+        'SPEED_BUMP': 'Лежачий полицейский',
+        'ICY_ROAD': 'Скользкая дорога',
+        'SCHOOL_ZONE': 'Школьная зона',
+        'TEMPORARY_SPEED_LIMIT': 'Временное ограничение',
+        'DANGEROUS_TURN': 'Опасный поворот',
+        'RAILROAD_CROSSING': 'Ж/д переезд',
+        'PEDESTRIAN_CROSSING': 'Пешеходный переход',
         'OTHER': 'Другое',
       }[type] ??
       'Другое';

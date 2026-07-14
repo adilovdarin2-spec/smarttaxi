@@ -115,6 +115,50 @@ left alone rather than risking a conflicting edit.
 
 ---
 
+## 10. Follow-up: price-offer negotiation + quick messages (QA-flagged gap)
+
+QA found these two features were backend-only — `apps/api` had shipped
+`POST /orders/:id/price-offer`, `/price-offer/respond` and
+`/quick-message` (see §1/§8 of `server-overnight-2026-07-15.md`), but
+`ClientApp.jsx` never called either one.
+
+- **Price-offer**: on the `SEARCHING_DRIVER` screen, when the order has
+  `driver_offer_status === "PENDING"` and a `driver_offer_price_kzt`,
+  a card now shows "Водитель предлагает X ₸ / Вместо Y ₸" with
+  Согласиться/Отказаться → `POST /orders/:id/price-offer/respond
+  { accept }`. No new socket wiring needed: `emitOrderUpdated` always
+  also emits `order_status_public` to the order's room regardless of
+  the named event, and the client's existing socket listener on that
+  event already flows the updated order back through `onOrderUpdate`.
+- **Quick messages**: a fixed-vocabulary button bar (matching the
+  server's exact `QUICK_MESSAGES` keys — `I_ARRIVED`,
+  `WAITING_AT_ENTRANCE`, `RUNNING_LATE_2MIN`, `PLEASE_COME_OUT`,
+  `ON_MY_WAY` — confirmed by reading `orders.routes.js` directly rather
+  than guessing) on every active-trip screen from driver-found through
+  trip-started, `POST /orders/:id/quick-message { messageKey }`.
+- **Incoming messages**: `notifyOrderClient`/`notifyOrderDriver` only
+  write a `notifications` row and send a mobile push — there is no
+  socket event for this, so a web toast can't just listen for one.
+  Added an 8s poll of `GET /api/notifications` while an order is
+  active, filtering `type === "QUICK_MESSAGE"` for the current
+  `order_id`, showing a dismissing toast banner and marking it read via
+  `POST /api/notifications/:id/read` so it isn't shown twice.
+
+**Verification**: `npm run check` clean; confirmed the app still boots
+with zero console errors with the new always-mounted (but
+order-gated) poll effect. Reaching `SEARCHING_DRIVER` with a pending
+offer, or an active trip with an incoming quick message, requires a
+real order end-to-end (pickup → destination → tariff → route → create)
+against a live backend to see rendered — not reproducible via the
+fetch-mock trick used for the admin pages without also faking the
+whole order-creation prerequisite chain. Not done tonight; the code
+was instead verified by exact field-name/endpoint cross-check against
+`apps/api/src/modules/orders/orders.routes.js` and
+`order-dispatch.service.js` (`driver_offer_price_kzt`,
+`driver_offer_status`, `driver_offer_by_driver_id`, `price`, and the
+`QUICK_MESSAGES` key list are all read verbatim from that source, not
+guessed).
+
 ## Known gaps / follow-ups
 
 - Referral code redemption at signup (see §8) — backend-ready, not
@@ -124,6 +168,10 @@ left alone rather than risking a conflicting edit.
   syntax-checked, pattern-matched against working sibling pages, and
   sample-data-rendered via a temporary fetch mock in the live preview,
   but not integration-tested.
+- Price-offer card and quick-message bar/toast (see §10) are likewise
+  not integration-tested against a live order — same missing local
+  backend, plus no easy way to fast-forward to those order states
+  without one.
 - `apps/web/src/features/client/ClientApp.jsx.tmp` — an empty, untracked
   stray file already present in the tree at session start. Left alone
   (not mine, might be another session's in-progress marker).
@@ -133,3 +181,4 @@ left alone rather than risking a conflicting edit.
 1. `Add admin promo codes CRUD, recurring bookings and referrals overview`
 2. `Wire client favorites/promo/support/referral to real backend contracts`
 3. `Align favorites/referral/support payloads with the real backend contract`
+4. `Wire driver price-offer negotiation and quick messages into ClientApp`
