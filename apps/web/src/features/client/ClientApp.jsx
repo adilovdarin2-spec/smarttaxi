@@ -13,6 +13,7 @@ import {
   createOrder,
   createSupportMessage,
   deleteFavoriteAddress,
+  driverToPickupRoute,
   estimateTariff,
   getActiveRegions,
   getClientActiveOrder,
@@ -37,6 +38,11 @@ import {
   verifyAuthSms
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
+
+// Statuses where a driver is assigned and actually moving toward the
+// passenger or the dropoff — mirrors the backend's TO_PICKUP/TO_DROPOFF
+// leg statuses (order-dispatch.service.js), minus the terminal ones.
+const LIVE_ROUTE_ORDER_STATUSES = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED"];
 
 const paymentOptions = [
   { id: "CASH", title: "Наличные", note: "Оплата после поездки" },
@@ -790,6 +796,9 @@ export default function ClientApp() {
   const [route, setRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState("");
+  const [liveRoute, setLiveRoute] = useState(null);
+  const lastLiveRouteFetchAtRef = useRef(0);
+  const liveRouteRequestIdRef = useRef(0);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -974,6 +983,30 @@ export default function ClientApp() {
       .finally(() => !ignore && setRouteLoading(false));
     return () => { ignore = true; };
   }, [pickup, destination, tariff]);
+
+  // While a driver is assigned and actually en route (to pickup, then to
+  // dropoff once the trip starts), re-fetch the real driver-to-target route
+  // instead of leaving the map stuck on the original pickup->dropoff price
+  // preview. Throttled the same ~8s as the driver app's own live route poll.
+  const orderDriverLat = order?.driver_lat ?? order?.driverLat;
+  useEffect(() => {
+    if (!order?.id || !getToken() || !LIVE_ROUTE_ORDER_STATUSES.includes(order.status)) {
+      setLiveRoute(null);
+      return undefined;
+    }
+    const now = Date.now();
+    if (now - lastLiveRouteFetchAtRef.current < 8000) return undefined;
+    lastLiveRouteFetchAtRef.current = now;
+    const requestId = ++liveRouteRequestIdRef.current;
+    let cancelled = false;
+    driverToPickupRoute(order.id)
+      .then(data => {
+        if (cancelled || requestId !== liveRouteRequestIdRef.current) return;
+        setLiveRoute(data?.route || null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [order?.id, order?.status, orderDriverLat]);
 
   useEffect(() => {
     if (!order?.id || !getToken()) return undefined;
@@ -1642,7 +1675,7 @@ export default function ClientApp() {
               onSubmit={submitOrder}
             />
           )}
-          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} onSupport={() => setSection("support")} onOrderUpdate={next => setOrder(normalizeOrder(next))} />}
+          {section === "trips" && <TripsSection order={order} pickup={pickup} destination={destination} route={route} liveRoute={liveRoute} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} onSupport={() => setSection("support")} onOrderUpdate={next => setOrder(normalizeOrder(next))} />}
           {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
           {section === "favorites" && (
             <FavoritesSection
@@ -2591,7 +2624,11 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   );
 }
 
-function TripsSection({ order, pickup, destination, route, estimate, loading, onCancel, onHome, onSupport, onOrderUpdate }) {
+function TripsSection({ order, pickup, destination, route, liveRoute, estimate, loading, onCancel, onHome, onSupport, onOrderUpdate }) {
+  // Once a driver is assigned, prefer the live driver->target leg route over
+  // the static pickup->dropoff price preview so the map/ETA track the
+  // driver's actual position instead of freezing at order-creation time.
+  const activeRoute = liveRoute || route;
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingTags, setRatingTags] = useState([]);
@@ -2709,7 +2746,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
   if (driverFoundScreen) {
     return (
       <section className="trip-stage-screen trip-driver-found-screen driver-found-reference-screen">
-        <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={route} status="" mode="driver-found" />
+        <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={activeRoute} status="" mode="driver-found" />
         <section className="driver-found-reference-sheet" data-order-id={order.id || ""}>
           <div className="driver-found-grip" aria-hidden="true" />
           <header className="driver-found-reference-head">
@@ -2790,7 +2827,7 @@ function TripsSection({ order, pickup, destination, route, estimate, loading, on
 
   return (
     <section className={`trip-stage-screen trip-driver-found-screen driver-found-reference-screen lifecycle-reference-screen trip-status-${status.toLowerCase().replace(/_/g, "-")}`}>
-      <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={route} status="" mode="driver-found" />
+      <TripMapCard pickup={tripPickup} destination={tripDestination} driver={driverPoint} route={activeRoute} status="" mode="driver-found" />
       <section className="driver-found-reference-sheet lifecycle-reference-sheet">
         <div className="driver-found-grip" aria-hidden="true" />
         <header className="driver-found-reference-head lifecycle-reference-head">

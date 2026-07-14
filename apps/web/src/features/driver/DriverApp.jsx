@@ -7,6 +7,7 @@ import {
   cancelDriverOrder,
   clearToken,
   completeTrip,
+  driverToPickupRoute,
   getDriverActiveOrder,
   getDriverDebt,
   getDriverEarningsToday,
@@ -22,7 +23,8 @@ import {
   rejectDriverOrder,
   selectDriverRegion,
   setDriverStatus,
-  startTrip
+  startTrip,
+  updateDriverLocation
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
 
@@ -188,6 +190,23 @@ function canNoShow(order) {
   return ["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(order?.status);
 }
 
+// Distance/ETA from the driver's actual live position to whichever leg is
+// active right now (pickup or dropoff), recalculated by the backend via
+// OSRM as the driver moves — as opposed to order.distanceKm/durationMin,
+// which is the static whole-trip estimate captured once at order creation
+// and never updates while the trip is in progress.
+function liveRouteMeta(route) {
+  if (!route) return null;
+  const distanceKm = Number(route.distanceMeters || 0) / 1000;
+  // Rounded up, not to nearest, to match the app-wide convention (see
+  // ClientApp's durationMinFromRoute) — never shows "0 мин" while there's
+  // still real time left on the leg.
+  const minutes = Math.ceil(Number(route.durationSeconds || 0) / 60);
+  if (!Number.isFinite(distanceKm) || !Number.isFinite(minutes)) return null;
+  const label = route.phase === "to_dropoff" ? "До точки назначения" : "До точки подачи";
+  return `${label}: ${distanceKm.toFixed(1)} км · ${minutes} мин`;
+}
+
 function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
   return (
     <PhoneFrame className="driver-core-phone driver-core-login">
@@ -311,8 +330,9 @@ function IncomingOrderCard({ order, onAccept, onReject, loading }) {
   );
 }
 
-function ActiveOrderPanel({ order, onAction, onCancel, onNoShow, loading }) {
+function ActiveOrderPanel({ order, driverPosition, driverRoute, onAction, onCancel, onNoShow, loading }) {
   const next = orderNextAction(order);
+  const meta = liveRouteMeta(driverRoute);
   return (
     <section className="driver-core-active">
       <div className="driver-core-active-head">
@@ -322,7 +342,9 @@ function ActiveOrderPanel({ order, onAction, onCancel, onNoShow, loading }) {
       <MapView
         pickup={order.pickupPoint}
         destination={order.destinationPoint}
-        center={order.pickupPoint || order.destinationPoint}
+        driver={driverPosition}
+        route={driverRoute}
+        center={driverPosition || order.pickupPoint || order.destinationPoint}
         compact
         status={statusLabel(order.status)}
       />
@@ -342,6 +364,11 @@ function ActiveOrderPanel({ order, onAction, onCancel, onNoShow, loading }) {
           </span>
         </div>
       </div>
+      {meta && (
+        <div className="driver-core-live-eta">
+          <span>{meta}</span>
+        </div>
+      )}
       <div className="driver-core-order-meta">
         <span>{order.tariff}</span>
         <span>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</span>
@@ -387,7 +414,13 @@ export default function DriverApp() {
   const [actionLoading, setActionLoading] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState("line");
+  const [driverPosition, setDriverPosition] = useState(null);
+  const [driverRoute, setDriverRoute] = useState(null);
   const socketRef = useRef(null);
+  const geoWatchIdRef = useRef(null);
+  const lastLocationSentAtRef = useRef(0);
+  const lastRouteFetchAtRef = useRef(0);
+  const driverRouteRequestIdRef = useRef(0);
 
   const currentRegion = useMemo(
     () => regions.find(region => regionKey(region) === selectedRegionId) || regions.find(region => regionKey(region) === driver?.currentRegionId),
@@ -395,7 +428,7 @@ export default function DriverApp() {
   );
 
   const isOnline = ["ONLINE", "FREE"].includes(driver?.publicStatus || driver?.status);
-  const center = activeOrder?.pickupPoint || activeOrder?.destinationPoint || regionCenter(currentRegion);
+  const center = driverPosition || activeOrder?.pickupPoint || activeOrder?.destinationPoint || regionCenter(currentRegion);
 
   const refreshDriver = useCallback(async () => {
     if (!getToken()) return;
@@ -490,6 +523,71 @@ export default function DriverApp() {
     };
   }, [logged, refreshDriver]);
 
+  // Reports the driver's live position while working, mirroring the mobile
+  // app's continuous location stream (see driver_shell.dart _startLocationFlow)
+  // — the web driver client previously never called this endpoint at all, so
+  // a driver working from a browser was invisible on the dispatch map and
+  // could never get a live route/ETA back.
+  useEffect(() => {
+    if (!logged || !isOnline || !navigator.geolocation) {
+      setDriverPosition(null);
+      return undefined;
+    }
+    const handlePosition = position => {
+      const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+      setDriverPosition(point);
+      const now = Date.now();
+      // Browser geolocation has no distance-filter option (unlike the
+      // mobile app's Geolocator stream), so a plain time throttle stands in
+      // for it — still frequent enough for dispatch, without spamming the
+      // endpoint on every tick.
+      if (now - lastLocationSentAtRef.current < 15000) return;
+      lastLocationSentAtRef.current = now;
+      updateDriverLocation({
+        lat: point.lat,
+        lng: point.lng,
+        heading: Number.isFinite(position.coords.heading) ? position.coords.heading : undefined,
+        speed: Number.isFinite(position.coords.speed) ? position.coords.speed : undefined,
+        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : undefined,
+        source: "web"
+      }).catch(() => {});
+    };
+    geoWatchIdRef.current = navigator.geolocation.watchPosition(handlePosition, () => {}, {
+      enableHighAccuracy: true,
+      maximumAge: 10000,
+      timeout: 20000
+    });
+    return () => {
+      if (geoWatchIdRef.current != null) {
+        navigator.geolocation.clearWatch(geoWatchIdRef.current);
+        geoWatchIdRef.current = null;
+      }
+    };
+  }, [logged, isOnline]);
+
+  // Live distance/ETA to whichever leg is active, recalculated by OSRM from
+  // the driver's actual position — see liveRouteMeta(). Re-checked on every
+  // position tick but throttled to one fetch per ~8s, same cadence as the
+  // mobile app's _loadDriverRoute throttle.
+  useEffect(() => {
+    if (!activeOrder?.id || !ACTIVE_STATUSES.includes(activeOrder.status)) {
+      setDriverRoute(null);
+      return undefined;
+    }
+    const now = Date.now();
+    if (now - lastRouteFetchAtRef.current < 8000) return undefined;
+    lastRouteFetchAtRef.current = now;
+    const requestId = ++driverRouteRequestIdRef.current;
+    let cancelled = false;
+    driverToPickupRoute(activeOrder.id)
+      .then(data => {
+        if (cancelled || requestId !== driverRouteRequestIdRef.current) return;
+        setDriverRoute(data?.route || null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeOrder?.id, activeOrder?.status, driverPosition]);
+
   async function handleLogin(event) {
     event.preventDefault();
     setLoginLoading(true);
@@ -581,6 +679,8 @@ export default function DriverApp() {
         <MapView
           pickup={activeOrder?.pickupPoint}
           destination={activeOrder?.destinationPoint}
+          driver={driverPosition}
+          route={driverRoute}
           center={center}
           compact
           status={activeOrder ? statusLabel(activeOrder.status) : (isOnline ? "Готов к заказам" : "Не на линии")}
@@ -613,7 +713,7 @@ export default function DriverApp() {
                     {actionLoading === "status" ? "Сохраняем..." : (isOnline ? "Уйти с линии" : "Выйти на линию")}
                   </Button>
                 </div>
-                {activeOrder && <ActiveOrderPanel order={activeOrder} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />}
+                {activeOrder && <ActiveOrderPanel order={activeOrder} driverPosition={driverPosition} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />}
                 {!activeOrder && isOnline && incomingOrders.slice(0, 1).map(order => (
                   <IncomingOrderCard
                     key={order.id}
@@ -650,7 +750,7 @@ export default function DriverApp() {
 
             {tab === "active" && (
               activeOrder ? (
-                <ActiveOrderPanel order={activeOrder} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />
+                <ActiveOrderPanel order={activeOrder} driverPosition={driverPosition} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />
               ) : (
                 <div className="driver-core-empty">Активной поездки нет.</div>
               )
