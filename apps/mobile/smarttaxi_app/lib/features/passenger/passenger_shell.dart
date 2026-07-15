@@ -206,6 +206,12 @@ class _PassengerShellState extends State<PassengerShell>
   int _paymentPollAttempts = 0;
   bool _paymentTimedOut = false;
   LatLng? _mapCenter;
+  // Backs the bell icon's badge dot — real state from the backend, not a
+  // permanently-on decoration. Refreshed at bootstrap and bumped locally
+  // when an order-status toast fires (the same event that made the backend
+  // insert a notification row), then zeroed once the rider actually opens
+  // the Уведомления screen and it marks everything read.
+  int _unreadNotificationCount = 0;
   String _driverFullName = '';
   String _driverPhone = '';
   String _driverCarModel = '';
@@ -307,6 +313,17 @@ class _PassengerShellState extends State<PassengerShell>
     unawaited(_loadMySupportMessages());
     unawaited(_restoreActiveOrder());
     unawaited(_loadTripHistory());
+    unawaited(_loadUnreadNotificationCount());
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final result = await widget.api.getNotifications(limit: 1);
+      if (!mounted) return;
+      setState(() => _unreadNotificationCount = result.unreadCount);
+    } catch (_) {
+      // Best-effort: the bell badge just stays at its last known value.
+    }
   }
 
   // While the socket is down (network blip, backgrounded app, server
@@ -894,6 +911,10 @@ class _PassengerShellState extends State<PassengerShell>
               ? 'Водитель найден!'
               : 'Водитель найден: ${order.driverName} едет к вам',
         );
+        // The backend just wrote the matching notification row for this same
+        // event — bump the bell badge locally instead of waiting for the
+        // rider to happen to reopen Уведомления to notice it exists.
+        setState(() => _unreadNotificationCount++);
       }
     }
     if (driverJustArrived) {
@@ -909,6 +930,7 @@ class _PassengerShellState extends State<PassengerShell>
           context,
           'Водитель отменил поездку — ищем для вас другого',
         );
+        setState(() => _unreadNotificationCount++);
       }
     }
     if (order.driverId != null) {
@@ -2014,6 +2036,7 @@ class _PassengerShellState extends State<PassengerShell>
             onRetryMap: _retryMap,
             onMenu: _openDrawer,
             onNotifications: _openNotifications,
+            unreadNotificationCount: _unreadNotificationCount,
             routeSummaryLabel: routeSummaryLabel,
             onRouteBack: _backToAddressSelection,
             controlsBottom: mapControlsBottom,
@@ -2316,6 +2339,7 @@ class _PassengerShellState extends State<PassengerShell>
             onRetryMap: _retryMap,
             onMenu: _openDrawer,
             onNotifications: _openNotifications,
+            unreadNotificationCount: _unreadNotificationCount,
             routeSummaryLabel: routeMeta,
             onRouteBack: () => setState(() => _tab = PassengerTab.home),
             controlsBottom: screen.height * sheetFraction + 12,
@@ -2970,7 +2994,13 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _notificationsScreen() {
-    return _NotificationsScreen(api: widget.api);
+    return _NotificationsScreen(
+      api: widget.api,
+      onUnreadCountChanged: (count) {
+        if (!mounted) return;
+        setState(() => _unreadNotificationCount = count);
+      },
+    );
   }
 
   Widget _driverApplicationScreen() {
@@ -4455,6 +4485,7 @@ class _MapCanvas extends StatefulWidget {
     required this.onRetryMap,
     required this.onMenu,
     required this.onNotifications,
+    required this.unreadNotificationCount,
     required this.routeSummaryLabel,
     required this.onRouteBack,
     required this.controlsBottom,
@@ -4480,6 +4511,7 @@ class _MapCanvas extends StatefulWidget {
   final VoidCallback onRetryMap;
   final VoidCallback onMenu;
   final VoidCallback onNotifications;
+  final int unreadNotificationCount;
   final String? routeSummaryLabel;
   final VoidCallback onRouteBack;
   final double controlsBottom;
@@ -4610,6 +4642,7 @@ class _MapCanvasState extends State<_MapCanvas> {
     final onRetryMap = widget.onRetryMap;
     final onMenu = widget.onMenu;
     final onNotifications = widget.onNotifications;
+    final unreadNotificationCount = widget.unreadNotificationCount;
     final routeSummaryLabel = widget.routeSummaryLabel;
     final onRouteBack = widget.onRouteBack;
     final showCenterMarker = widget.showCenterMarker;
@@ -4738,6 +4771,7 @@ class _MapCanvasState extends State<_MapCanvas> {
             child: _MapOverlayHeader(
               onMenu: onMenu,
               onNotifications: onNotifications,
+              unreadNotificationCount: unreadNotificationCount,
               routeSummaryLabel: routeSummaryLabel,
               onRouteBack: onRouteBack,
             ),
@@ -13480,12 +13514,14 @@ class _MapOverlayHeader extends StatelessWidget {
   const _MapOverlayHeader({
     required this.onMenu,
     required this.onNotifications,
+    required this.unreadNotificationCount,
     required this.routeSummaryLabel,
     required this.onRouteBack,
   });
 
   final VoidCallback onMenu;
   final VoidCallback onNotifications;
+  final int unreadNotificationCount;
   final String? routeSummaryLabel;
   final VoidCallback onRouteBack;
 
@@ -13526,7 +13562,10 @@ class _MapOverlayHeader extends StatelessWidget {
           const _MapBrandPill(),
           Align(
             alignment: Alignment.centerRight,
-            child: _NotificationButton(onTap: onNotifications),
+            child: _NotificationButton(
+              onTap: onNotifications,
+              unreadCount: unreadNotificationCount,
+            ),
           ),
         ],
       ),
@@ -13715,9 +13754,10 @@ class _MapChromeButton extends StatelessWidget {
 }
 
 class _NotificationButton extends StatelessWidget {
-  const _NotificationButton({required this.onTap});
+  const _NotificationButton({required this.onTap, required this.unreadCount});
 
   final VoidCallback onTap;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
@@ -13740,18 +13780,19 @@ class _NotificationButton extends StatelessWidget {
                     color: SmartTaxiColors.text,
                     size: 20,
                   ),
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: SmartTaxiColors.gold,
-                        shape: BoxShape.circle,
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: SmartTaxiColors.gold,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -13778,9 +13819,13 @@ class _HeaderProfileButton extends StatelessWidget {
 }
 
 class _NotificationsScreen extends StatefulWidget {
-  const _NotificationsScreen({required this.api});
+  const _NotificationsScreen({
+    required this.api,
+    required this.onUnreadCountChanged,
+  });
 
   final ApiClient api;
+  final ValueChanged<int> onUnreadCountChanged;
 
   @override
   State<_NotificationsScreen> createState() => _NotificationsScreenState();
@@ -13810,7 +13855,13 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
         _loading = false;
       });
       if (result.unreadCount > 0) {
-        unawaited(widget.api.markAllNotificationsRead());
+        unawaited(
+          widget.api
+              .markAllNotificationsRead()
+              .then((_) => widget.onUnreadCountChanged(0)),
+        );
+      } else {
+        widget.onUnreadCountChanged(0);
       }
     } catch (_) {
       if (!mounted) return;
