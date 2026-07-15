@@ -39,6 +39,8 @@ specificity, and the owning session closed it same-cycle, referencing
 this doc directly. Nothing further to track here unless the contract
 changes again.
 
+---
+
 **0a. Repo-integrity break — RESOLVED (commit `7cafd68`,
 "fix(drivers): block undocumented drivers from all dispatch paths",
 ~11:2x).** `apps/api/src/modules/driver-documents/` (`driver-documents.routes.js`,
@@ -124,6 +126,46 @@ the error payload could even drive a specific "upload these documents"
 message instead of a generic one) — and, given the mid-trip-progression
 warning above, make sure that handling covers the trip-action buttons
 too, not only the go-online toggle.
+
+---
+
+## 0c. (2026-07-15 ~15:25) Test client account 404s on referrals/favorites/recurring-bookings — live-DB data gap, not a code bug
+
+Found while monitoring `apps/mobile/smarttaxi_app/docs/status/mobile-overnight-2026-07-15.md`
+(commit `d1e406a`): mobile found and fixed a real client bug (drawer
+navigation for the 4 recently-added screens — Регулярные поездки,
+Избранные адреса, Водители, Пригласить друзей — never triggered their
+data load, so they rendered blank instead of loading/error states;
+fixed once at the drawer level in `335a2f3`). After that fix, all four
+now correctly *attempt* to load, but the load itself 404s with
+`CLIENT_NOT_FOUND` for the shared test account ("Test Client",
+`+77000000001`) against the live Railway backend.
+
+**Independently corroborated by reading the backend code** (not just
+trusting mobile's diagnosis): `GET /api/referrals/me`'s route mount
+matches exactly (`/api/referrals` + `/me`, no path bug), and both
+`seed.js`'s `seedClient()` (~line 239) and `auth.routes.js`'s two
+registration paths correctly `INSERT INTO clients(user_id, name, phone)
+... ON CONFLICT (phone) DO UPDATE SET user_id=...` — the code that's
+supposed to create/link this account's `clients` row is correct on both
+paths. Since this same account can already create real orders
+successfully (confirmed by mobile, moments earlier in the same session),
+the `users` row is fine — this points specifically at a missing or
+orphaned `clients` row in the **live Railway database's actual current
+state**, not a code defect in any of the four affected endpoints.
+
+Not something fixable by reading/editing code (this is live-database
+state on an environment this QA pass has no credentials for) — spawned
+a task chip (`task_2b343a7b`) with the exact diagnosis and a suggested
+fix (check `clients`/`users` rows for that phone number on Railway,
+either patch the row or re-run `seed.js` against Railway's
+`DATABASE_URL`, which is idempotent via `ON CONFLICT`). Worth noting:
+this is the shared test account multiple parallel sessions rely on for
+live device QA tonight — until fixed, it'll keep silently blocking live
+verification of referrals/favorites/recurring-bookings for whoever tests
+next, which is likely why it kept surfacing as "not verified live" across
+several sessions' status docs tonight without anyone tracing it to this
+specific root cause until now.
 
 ---
 
