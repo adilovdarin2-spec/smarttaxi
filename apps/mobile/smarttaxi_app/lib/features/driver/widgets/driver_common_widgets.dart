@@ -1,0 +1,469 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../core/api/api_client.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// Rounded, floating chrome wrapper used around the bottom tab bar.
+class FloatingNav extends StatelessWidget {
+  const FloatingNav({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 6, 14, 10 + bottom * 0.35),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            border: Border.all(color: context.palette.border),
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color(0x16785a14),
+                  blurRadius: 28,
+                  offset: Offset(0, 12))
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+EdgeInsets driverPagePadding(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  return EdgeInsets.all(width < 390 ? 16 : 20);
+}
+
+class SectionLabel extends StatelessWidget {
+  const SectionLabel({super.key, required this.title, required this.text});
+
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 3),
+      Text(text,
+          style: TextStyle(
+              color: context.palette.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700)),
+    ]);
+  }
+}
+
+class LineGlyph extends StatelessWidget {
+  const LineGlyph({super.key, required this.online, required this.busy});
+
+  final bool online;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = busy
+        ? context.palette.warning
+        : online
+            ? context.palette.success
+            : context.palette.textMuted;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Icon(
+          busy
+              ? Icons.local_taxi_rounded
+              : online
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.power_settings_new_rounded,
+          color: color),
+    );
+  }
+}
+
+class LoadingStrip extends StatelessWidget {
+  const LoadingStrip({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.palette.goldSurface,
+        border: Border.all(color: context.palette.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+                strokeWidth: 2.2, color: context.palette.goldDeep),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    color: context.palette.textSecondary,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ButtonSpinner extends StatelessWidget {
+  const ButtonSpinner({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+              strokeWidth: 2.2, color: context.palette.text),
+        ),
+        const SizedBox(width: 10),
+        Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ],
+    );
+  }
+}
+
+class SheetHandle extends StatelessWidget {
+  const SheetHandle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 5,
+      decoration: BoxDecoration(
+        color: context.palette.borderStrong,
+        borderRadius: BorderRadius.circular(99),
+      ),
+    );
+  }
+}
+
+class DrawerItem extends StatelessWidget {
+  const DrawerItem(
+      {super.key,
+      required this.label,
+      required this.active,
+      required this.onTap,
+      this.danger = false});
+
+  final String label;
+  final bool active;
+  final bool danger;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: ListTile(
+        minTileHeight: 52,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        selected: active,
+        selectedTileColor: context.palette.goldSurface,
+        textColor: danger ? context.palette.danger : context.palette.text,
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class PremiumCard extends StatelessWidget {
+  const PremiumCard({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: context.palette.border),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x18785a14), blurRadius: 42, offset: Offset(0, 18))
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class TitleBlock extends StatelessWidget {
+  const TitleBlock({super.key, required this.title, required this.text});
+
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title,
+          style: const TextStyle(
+              fontSize: 27, height: 1.12, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      Text(text,
+          style: TextStyle(
+              color: context.palette.textSecondary,
+              fontSize: 14,
+              height: 1.35)),
+    ]);
+  }
+}
+
+/// Floating SOS control shown on the Line tab and during an active trip.
+/// Mirrors the passenger side's `_SafetyButton`/`_SafetySheet` pattern —
+/// same sosPhone source (`/regions/service-settings`) and same
+/// call-first-then-best-effort-alert behavior.
+class DriverSosButton extends StatelessWidget {
+  const DriverSosButton(
+      {super.key, this.sosPhone, required this.api, this.orderId});
+
+  final String? sosPhone;
+  final ApiClient api;
+  final String? orderId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.palette.dangerSoft,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) =>
+              _DriverSosSheet(sosPhone: sosPhone, api: api, orderId: orderId),
+        ),
+        child: SizedBox(
+          width: 46,
+          height: 46,
+          child: Icon(Icons.sos_rounded, color: context.palette.danger),
+        ),
+      ),
+    );
+  }
+}
+
+class _DriverSosSheet extends StatelessWidget {
+  const _DriverSosSheet({this.sosPhone, required this.api, this.orderId});
+
+  final String? sosPhone;
+  final ApiClient api;
+  final String? orderId;
+
+  Future<void> _callEmergency() async {
+    await launchUrl(Uri(scheme: 'tel', path: sosPhone ?? '112'));
+  }
+
+  // Fires alongside the emergency call, never instead of it — the call is
+  // the safety-critical action. Location is best-effort (short GPS timeout)
+  // and folded into the message body since the support endpoint has no
+  // dedicated location field.
+  Future<void> _sendSosAlert() async {
+    var locationText = 'координаты недоступны';
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 6),
+        ),
+      );
+      locationText =
+          '${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}';
+    } catch (_) {
+      // Best-effort — the alert still goes out without coordinates.
+    }
+    try {
+      await api.submitSupportMessage(
+        topic: 'SOS',
+        message:
+            'Экстренный вызов водителя. Координаты: $locationText.',
+        orderId: orderId,
+      );
+    } catch (_) {
+      // Best-effort — the phone call already went out, which is what
+      // actually keeps the driver safe.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30141414),
+              blurRadius: 30,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(child: SheetHandle()),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.palette.dangerSoft,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Icon(Icons.sos_rounded, color: context.palette.danger),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Экстренная помощь',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _DriverSosRow(
+              title: 'Позвонить ${sosPhone ?? '112'}',
+              text: 'Экстренная линия SmartTaxi, если что-то пошло не так',
+              onTap: () {
+                Navigator.pop(context);
+                unawaited(_callEmergency());
+                unawaited(_sendSosAlert());
+              },
+            ),
+            const Divider(height: 18),
+            const _DriverSosRow(
+              title: 'Поддержка получит сигнал',
+              text:
+                  'Заявка с вашими координатами и номером поездки (если есть) уходит в поддержку одновременно со звонком',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DriverSosRow extends StatelessWidget {
+  const _DriverSosRow({required this.title, required this.text, this.onTap});
+
+  final String title;
+  final String text;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: onTap != null
+                              ? context.palette.danger
+                              : context.palette.text)),
+                  const SizedBox(height: 2),
+                  Text(text,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: context.palette.textSecondary,
+                          height: 1.3)),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(Icons.chevron_right_rounded,
+                  color: context.palette.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class InlineMessage extends StatelessWidget {
+  const InlineMessage({super.key, required this.text, this.danger = false});
+
+  final String text;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: danger ? const Color(0xfffff1f1) : context.palette.goldSurface,
+        border: Border.all(
+            color: danger ? const Color(0xfffecaca) : context.palette.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              color: danger
+                  ? context.palette.danger
+                  : context.palette.textSecondary,
+              fontWeight: FontWeight.w700)),
+    );
+  }
+}

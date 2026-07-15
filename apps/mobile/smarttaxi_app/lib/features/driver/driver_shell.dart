@@ -104,6 +104,10 @@ class _DriverShellState extends State<DriverShell> {
   bool _navigatorMapUnavailable = false;
   int _navigatorTileErrorCount = 0;
   String _accountPhone = '';
+  // Same source the passenger side reads (/regions/service-settings) — see
+  // _loadServiceContacts. Falls back to '112' inside DriverSosButton if this
+  // never loads, so a slow/failed fetch never blocks the SOS action itself.
+  String? _sosPhone;
   // null until the driver picks one; the support sheet falls back to
   // topics.first (the localized "order problem" topic) both for the
   // selected-chip highlight and the actual submitted topic — see
@@ -198,6 +202,19 @@ class _DriverShellState extends State<DriverShell> {
     await _loadDriverStats();
     await _loadRoadAlerts();
     unawaited(_loadTripHistory());
+    unawaited(_loadServiceContacts());
+  }
+
+  Future<void> _loadServiceContacts() async {
+    try {
+      final contacts = await widget.api.getServiceContacts();
+      if (!mounted) return;
+      if (contacts.sosPhone != null) {
+        setState(() => _sosPhone = contacts.sosPhone);
+      }
+    } catch (_) {
+      // Best-effort — the SOS sheet keeps its 112 fallback if this fails.
+    }
   }
 
   // While the socket is down (network blip, backgrounded app, server
@@ -1798,6 +1815,10 @@ class _DriverShellState extends State<DriverShell> {
             onToggle: _loading || (!_online && disabledReason != null)
                 ? null
                 : () => _setOnline(!_online),
+            sosButton: DriverSosButton(
+                sosPhone: _sosPhone,
+                api: widget.api,
+                orderId: _activeOrder?.id),
           ),
           // Selecting a region is a normal setup step (handled fine by
           // DriverShiftHero's plain caption above) — this card is only for
@@ -1964,8 +1985,22 @@ class _DriverShellState extends State<DriverShell> {
     return ListView(
       padding: driverPagePadding(context),
       children: [
-        TitleBlock(
-            title: l10n.driverTripTitle, text: l10n.driverTripSubtitle),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TitleBlock(
+                  title: l10n.driverTripTitle, text: l10n.driverTripSubtitle),
+            ),
+            if (_activeOrder != null) ...[
+              const SizedBox(width: 10),
+              DriverSosButton(
+                  sosPhone: _sosPhone,
+                  api: widget.api,
+                  orderId: _activeOrder!.id),
+            ],
+          ],
+        ),
         const SizedBox(height: 16),
         if (_activeOrder == null)
           EmptyState(
