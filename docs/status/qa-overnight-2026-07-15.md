@@ -39,6 +39,24 @@ specificity, and the owning session closed it same-cycle, referencing
 this doc directly. Nothing further to track here unless the contract
 changes again.
 
+**Later update (2026-07-16 ~00:16): the whole gate was deliberately
+removed.** Commit `fdbc214` ("Stop requiring driver documents to go
+online (per explicit request)") took `assertDriverDocumentsApproved`
+back out of `assertDriverRegionApproved`/`assertDriverDispatchReady` —
+document upload/approval was adding registration friction reviewers
+found off-putting. Mobile removed the now-dead `DRIVER_DOCUMENTS_NOT_APPROVED`
+handling in the same pass (`855b878`), and `a3cc0d3` added a pointer at
+the top of `server-overnight-2026-07-15.md` §8 so a future reader
+doesn't mistake that section for current behavior. Re-ran the full
+`npm test` suite (20 checks, including `price-offer-check.js`) after
+this — all still pass; nothing broke on this session's side. Not a QA
+finding — this is a clean, well-documented, deliberate product
+reversal, done consistently across server and mobile in the same
+session. Updated `SECURITY_CHECKLIST.md`'s entry for this scenario to
+stop saying "VERIFIED DONE" (that described enforcement that no longer
+exists) and record the current state instead: drivers can go online
+with region approval alone, documents are optional/voluntary again.
+
 ---
 
 **0a. Repo-integrity break — RESOLVED (commit `7cafd68`,

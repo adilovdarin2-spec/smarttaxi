@@ -152,18 +152,34 @@ changed.
   doesn't currently document a firewall step. Worth fixing before go-live:
   either bind `127.0.0.1:4000:4000` in `docker-compose.yml`, or add an
   explicit `ufw`/security-group step to the deployment doc.
-- **Driver document-approval gating — "can't go online without approval"
-  chain**: VERIFIED DONE (closed same-night, 2026-07-15). Full trail in
+- **Driver document-approval gating — built, verified consistent, then
+  deliberately reverted (all same night, 2026-07-15)**. Full trail in
   [qa-overnight-2026-07-15.md §0](status/qa-overnight-2026-07-15.md#0-driver-cant-go-online-without-approval-chain-tracked-across-serverwebmobile).
   Backend added a real `DRIVER_DOCUMENTS_NOT_APPROVED` gate (checked
   before region approval, and on every trip-progress action via the
-  shared `assertDriverDispatchReady`); the module implementing it was
-  briefly missing from git (`7cafd68` fixed that); mobile's UX handling
-  of the new code was briefly incomplete (`74d8fcc` fixed that, `bc0d4e0`
-  independently verified mid-trip actions are covered too). Backend,
-  admin/web (document review UI, `16eccda`), and mobile all now agree on
-  the same error-code contract — a working example of the cross-session
-  reconciliation this checklist exists to catch when it *doesn't* happen.
+  shared `assertDriverDispatchReady`); this QA pass tracked it across
+  three sessions and confirmed server/admin-web/mobile all agreed on the
+  same error-code contract — a working example of cross-session
+  reconciliation. **Then reverted by explicit product decision** (commit
+  `fdbc214`, "Stop requiring driver documents to go online (per explicit
+  request)" — cited reason: document upload/approval added registration
+  friction and was blocking drivers over something reviewers found
+  off-putting). `assertDriverRegionApproved`/`assertDriverDispatchReady`
+  no longer call `assertDriverDocumentsApproved` — the code path that
+  can throw `DRIVER_DOCUMENTS_NOT_APPROVED` no longer exists, and mobile
+  removed its now-dead handling for that code in the same pass (`855b878`).
+  **Current state, as of this checklist**: a driver can go online and
+  accept trips with region approval alone — their license, ID, and
+  vehicle registration are never required to be reviewed/approved,
+  though the upload screens/admin review endpoints still exist for
+  drivers who submit documents voluntarily. This is a deliberate,
+  cleanly-executed, well-documented product tradeoff (not a bug, not a
+  cross-session mismatch) — noting it here because "drivers can work
+  with unverified documents" is a real, checklist-relevant fact
+  regardless of how deliberately it was chosen, and a future session
+  reading `server-overnight-2026-07-15.md` §8 in isolation would
+  otherwise believe the gate is still active (that doc has a pointer
+  added at its top flagging the reversal, per `a3cc0d3`).
 
 ## Production readiness — finalize (2026-07-15)
 
