@@ -45,6 +45,8 @@ class DriverShell extends StatefulWidget {
     required this.accountLabel,
     required this.onLogout,
     required this.onOpenPassengerMode,
+    this.currentLocale,
+    this.onChangeLocale,
   });
 
   final ApiClient api;
@@ -53,6 +55,12 @@ class DriverShell extends StatefulWidget {
   final String accountLabel;
   final Future<void> Function() onLogout;
   final Future<void> Function() onOpenPassengerMode;
+  // Optional (not required) so this widget stays independently buildable
+  // without forcing every call site to be updated in lockstep — main.dart
+  // passes the real callback; absent it, the language row degrades to a
+  // silent no-op rather than a compile error.
+  final Locale? currentLocale;
+  final ValueChanged<Locale>? onChangeLocale;
 
   @override
   State<DriverShell> createState() => _DriverShellState();
@@ -746,6 +754,35 @@ class _DriverShellState extends State<DriverShell> {
     ));
   }
 
+  Future<void> _chooseLanguage() async {
+    final current = widget.currentLocale?.languageCode ?? 'ru';
+    final code = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext);
+        return SafeArea(
+          child: RadioGroup<String>(
+            groupValue: current,
+            onChanged: (value) => Navigator.pop(sheetContext, value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<String>(
+                    value: 'ru', title: Text(l10n.languageRussian)),
+                RadioListTile<String>(
+                    value: 'kk', title: Text(l10n.languageKazakh)),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (code == null || code == current) return;
+    widget.onChangeLocale?.call(Locale(code));
+  }
+
   void _toggleVoice() {
     final next = !_voiceEnabled;
     setState(() => _voiceEnabled = next);
@@ -1279,6 +1316,19 @@ class _DriverShellState extends State<DriverShell> {
                 Navigator.of(context).pop();
                 widget.onLogout();
               },
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        DriverSettingsGroup(
+          title: l10n.driverSettingsInterfaceGroup,
+          children: [
+            DriverSettingsRow(
+              title: l10n.driverSettingsLanguageLabel,
+              text: widget.currentLocale?.languageCode == 'kk'
+                  ? l10n.languageKazakh
+                  : l10n.languageRussian,
+              onTap: _chooseLanguage,
             ),
           ],
         ),
