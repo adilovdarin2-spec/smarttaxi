@@ -152,7 +152,112 @@ mocking.
   a mobile-specific message. Flagging for transparency, not because
   anything is broken.
 
-## Not started yet — items 4–16
+## [4] Регулярные поездки ("школьный маршрут") — done, backend already existed
+
+Backend module exists and is mounted (`/api/recurring-bookings`). Full
+contract read directly from
+`apps/api/src/modules/recurring-bookings/recurring-bookings.routes.js`,
+saved here so a future pass doesn't have to re-derive it:
+- `POST /api/recurring-bookings` (role CLIENT) — body `{driverId (uuid),
+  pickupText, pickupLat, pickupLng, dropoffText, dropoffLat, dropoffLng,
+  daysOfWeek: [1-5] (Mon-Fri, 1-5 items), timeOfDay: "HH:MM", priceKzt
+  (int, 1-1000000), notes?}` → `{booking}`. Creates in status
+  `PENDING_DRIVER`. 404s if `driverId` doesn't exist, 403 if the driver
+  is blocked or the client has this driver on their own blocked list
+  (client_driver_preferences type=BLOCKED — ties into §10).
+- `POST /api/recurring-bookings/:id/respond` (role DRIVER) — body
+  `{accept: bool}` → `{booking}`. 409 if not currently `PENDING_DRIVER`.
+- `GET /api/recurring-bookings/mine` (role CLIENT) → `{bookings: []}`.
+- `GET /api/recurring-bookings/driver` (role DRIVER) → `{bookings: []}`.
+- `PATCH /api/recurring-bookings/:id/status` (CLIENT or DRIVER, must own
+  it) — body `{status: ACTIVE|PAUSED|CANCELLED}` → `{booking}`. 409 if
+  still `PENDING_DRIVER` (must go through /respond first, except you can
+  always CANCELLED) or already `CANCELLED`.
+- Response shape (camelCase): `id, clientId, driverId, driverName?,
+  clientName?, pickupText, pickupLat, pickupLng, dropoffText,
+  dropoffLat, dropoffLng, daysOfWeek, timeOfDay, priceKzt, status,
+  notes, lastTriggeredDate, createdAt, updatedAt`.
+- `RecurringBooking` model + 5 `ApiClient` methods
+  (create/respond/mine/driver/updateStatus). Client: new "Регулярные
+  поездки" drawer entry → list screen (pause/resume/cancel via
+  `_updateRecurringBookingStatus`, cancel goes through a new confirm
+  sheet) + creation sheet. Driver is picked from
+  `_knownDriversFromHistory` (distinct driverId/driverName pairs from
+  the client's own completed `_tripHistory` — there's no driver-search
+  endpoint, so this was the only real option). Pickup/dropoff use a new
+  `_SimpleAddressSearchSheet` (plain text search on the existing
+  `searchAddresses` API, no map-tap picking) — a new widget, not a
+  change to `_AddressSearchSheet` or the actual address screen.
+  Days-of-week chips (Mon–Fri only, matching the server's 1–5
+  validation), a native time picker, price/notes fields. Driver side:
+  new drawer entry → `_DriverRecurringBookingsScreen`, its own
+  self-contained `StatefulWidget` (not reliant on `DriverShell`'s
+  state, since `_showDriverFullSheet` takes an already-built `Widget`,
+  not a builder — a shared-state approach wouldn't rebuild when the
+  sheet's own data changes). Shows `PENDING_DRIVER` requests separately
+  (Принять/Отклонить) from active/paused routes
+  (Пауза/Возобновить/Отменить).
+- **Verified**: `flutter analyze` 0 new issues, `flutter test` same
+  10 pre-existing driver-side failures (unrelated, see below),
+  `flutter build apk --debug` succeeds. **Not verified live** —
+  reaching either screen needs a logged-in session; live registration
+  against the real backend is blocked by policy (see the
+  re-verification section above) without the user's specific
+  authorization, so this stays compile-verified only tonight.
+- Committed as `0f4070d`.
+
+## [5] Навигатор водителя — голосовые предупреждения — done this pass
+
+Investigated before writing anything, per this cycle's instruction not to
+rebuild what's already there: `VoiceAlertService` (`lib/core/voice/
+voice_alert_service.dart`) already existed, fully generic (dedupe-by-key +
+per-key cooldown, serialized speak queue) — reused as-is, not touched.
+`driver_shell.dart`'s navigator tab already had camera proximity, sign
+proximity, and an over-limit voice warning wired to a live `Geolocator`
+position stream and to real backend data (`_maybeFetchOsmNavigation` →
+`ApiClient.getOsmNavigation` → `nearbyOsmCameras`/`nearestSpeedLimit`/
+`nearbyOsmTrafficSigns` from `osm-navigation.service.js`) — this was more
+complete going in than the brief assumed, likely from earlier tonight
+before this status doc was last read in full. Gaps against the brief that
+were actually fixed this pass:
+- **Camera cue was single-stage** (one announcement, anywhere ≤350m) —
+  brief asked for 500m, then 200m, then a pass cue. Rewrote
+  `_checkCameraProximity` to a 3-stage `Map<String, int> _cameraStage`
+  (0=none/1=500m/2=200m/3=passed) per camera id, each stage speakable at
+  most once per approach, reset once the camera clears 700m so a later
+  approach warns from stage 0 again. Pass cue fires at ≤60m ("Камера",
+  short haptic).
+- **No speed-limit-change callout** — the only limit-related voice alert was
+  "over the limit while speeding." Added `_announceSpeedLimitChange(prev,
+  next)`, called from `_maybeFetchOsmNavigation` right after `_osmSpeedLimit`
+  updates; skips the first reading (`prev == null`, just startup) and uses
+  one shared dedupe key (`speed-limit-change`, 15s cooldown) rather than a
+  per-value key, so GPS jitter right at a boundary between two posted
+  limits can't bounce back and forth into repeat announcements.
+- **Speed readout wasn't "crupno" (large)** — `_NavigatorMetric` gained
+  `emphasize`/`valueColor` params; the cockpit's speed tile now renders at
+  40px (was 23px, same as the limit tile) and turns
+  `SmartTaxiColors.danger` red while over the limit — the existing
+  `InlineMessage` over-limit banner underneath is unchanged, this adds a
+  second, always-visible visual cue instead of replacing it.
+- Deliberately **not touched**: sign-proximity logic (single-stage was
+  already correct for the brief — signs are points of interest, not
+  hazards needing a two-stage countdown) and the crowd-reported
+  `RoadAlert`-based `TEMPORARY_SPEED_LIMIT` fallback in `_activeSpeedLimit`.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings
+  project-wide (0 new, all in `passenger_shell.dart`/`main.dart`, none in
+  this file). `flutter test` — same 10 pre-existing failures, confirmed via
+  `git stash` that they're present with or without this change (stale
+  integration tests referencing `_mergeOrderDetails` and other symbols
+  that don't exist yet, unrelated to §5 — not something this pass broke).
+  `flutter build apk --debug` succeeds. **Not verified live on-device**:
+  exercising the navigator tab requires an active `online` driver session
+  behind a real login, which stays blocked by the standing no-live-login
+  policy (see re-verification section above); this is compile-verified
+  only tonight, flagged honestly rather than claimed as live-tested.
+- Committed as `d0ffe91`.
+
+## Not started yet — items 6–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
@@ -171,60 +276,8 @@ investigating §3:
 - **§6 "забыл вещь"**: the support topic must be sent as the literal string
   `LOST_ITEM`, not the Russian label, for the backend to notify the right
   order's driver — found and fixed on web tonight, applies identically here.
-- **§4 recurring bookings**: backend module exists and is mounted
-  (`/api/recurring-bookings`), not yet wired anywhere per either status doc.
-  Full contract read directly from
-  `apps/api/src/modules/recurring-bookings/recurring-bookings.routes.js`
-  tonight, saved here so the next pass doesn't have to re-derive it:
-  - `POST /api/recurring-bookings` (role CLIENT) — body `{driverId (uuid),
-    pickupText, pickupLat, pickupLng, dropoffText, dropoffLat, dropoffLng,
-    daysOfWeek: [1-5] (Mon-Fri, 1-5 items), timeOfDay: "HH:MM", priceKzt
-    (int, 1-1000000), notes?}` → `{booking}`. Creates in status
-    `PENDING_DRIVER`. 404s if `driverId` doesn't exist, 403 if the driver
-    is blocked or the client has this driver on their own blocked list
-    (client_driver_preferences type=BLOCKED — ties into §10).
-  - `POST /api/recurring-bookings/:id/respond` (role DRIVER) — body
-    `{accept: bool}` → `{booking}`. 409 if not currently `PENDING_DRIVER`.
-  - `GET /api/recurring-bookings/mine` (role CLIENT) → `{bookings: []}`.
-  - `GET /api/recurring-bookings/driver` (role DRIVER) → `{bookings: []}`.
-  - `PATCH /api/recurring-bookings/:id/status` (CLIENT or DRIVER, must own
-    it) — body `{status: ACTIVE|PAUSED|CANCELLED}` → `{booking}`. 409 if
-    still `PENDING_DRIVER` (must go through /respond first, except you can
-    always CANCELLED) or already `CANCELLED`.
-  - Response shape (camelCase): `id, clientId, driverId, driverName?,
-    clientName?, pickupText, pickupLat, pickupLng, dropoffText,
-    dropoffLat, dropoffLng, daysOfWeek, timeOfDay, priceKzt, status,
-    notes, lastTriggeredDate, createdAt, updatedAt`.
-  - **DONE this pass** (commit `0f4070d`): `RecurringBooking` model +
-    5 `ApiClient` methods (create/respond/mine/driver/updateStatus).
-    Client: new "Регулярные поездки" drawer entry → list screen
-    (pause/resume/cancel via `_updateRecurringBookingStatus`, cancel
-    goes through a new confirm sheet) + creation sheet. Driver is
-    picked from `_knownDriversFromHistory` (distinct driverId/driverName
-    pairs from the client's own completed `_tripHistory` — there's no
-    driver-search endpoint, so this was the only real option). Pickup/
-    dropoff use a new `_SimpleAddressSearchSheet` (plain text search on
-    the existing `searchAddresses` API, no map-tap picking) — a new
-    widget, not a change to `_AddressSearchSheet` or the actual address
-    screen. Days-of-week chips (Mon–Fri only, matching the server's
-    1–5 validation), a native time picker, price/notes fields.
-    Driver side: new drawer entry → `_DriverRecurringBookingsScreen`,
-    its own self-contained `StatefulWidget` (not reliant on
-    `DriverShell`'s state, since `_showDriverFullSheet` takes an
-    already-built `Widget`, not a builder — a shared-state approach
-    wouldn't rebuild when the sheet's own data changes). Shows
-    `PENDING_DRIVER` requests separately (Принять/Отклонить) from
-    active/paused routes (Пауза/Возобновить/Отменить).
-  - **Verified**: `flutter analyze` 0 new issues, `flutter test` same
-    10 pre-existing driver-side failures (unrelated, see above),
-    `flutter build apk --debug` succeeds. **Not verified live** —
-    reaching either screen needs a logged-in session; live registration
-    against the real backend is blocked by policy (see the
-    re-verification section above) without the user's specific
-    authorization, so this stays compile-verified only tonight.
-- **§5 navigator voice alerts**: `osm-navigation.service.js` exists per
-  brief, not yet cross-checked against a status doc.
-None of §4–16 were implemented on mobile yet — flagging honestly rather
+
+None of §6–16 are implemented on mobile yet — flagging honestly rather
 than claiming partial coverage that isn't there.
 
 ## Verification method note
