@@ -1831,3 +1831,71 @@ real driver being dispatched — same no-drivers-in-region constraint
 noted throughout this document. Verified by code trace instead: both
 reuse an animation pattern (`TweenAnimationBuilder` + `elasticOut`)
 already proven working elsewhere in this exact file.
+
+## Follow-up: final passenger-side polish pass — `8abf71d`
+
+Direct request to push the tariff screen, the address-selection
+header, and every post-tariff trip-status screen to a final,
+"perfect" state before moving to the driver side.
+
+- **Map header chrome** (`_MapGlassChrome`/`_MapBrandPill`/
+  `_MapChromeButton`/`_NotificationButton` — this is the top bar shown
+  during both address selection and idle home): added a soft shadow
+  so the frosted-glass pills read as floating above the map instead
+  of a flat cutout; swapped the plain "SmartTaxi" text-only brand pill
+  for the real `BrandLogo.iconAssetPath` icon (already used in the
+  drawer) next to the wordmark; tinted the menu/bell icons to the blue
+  accent instead of near-black so the chrome reads as branded, not
+  generic system UI. **Verified live** (screenshot: address-picker
+  header, before/after).
+- **Tariff screen**: found and fixed a real inconsistency — the
+  "Ваша цена" price-adjuster row used the faint default border while
+  "Способ оплаты" directly below it uses the bold accent border; now
+  both use the same `_cardShadow` + `borderStrong` treatment, so the
+  two supplementary rows read as one consistent set instead of one
+  looking unfinished next to the other. **Verified live** (screenshot,
+  side-by-side comparison of both rows).
+- **Post-tariff trip-status screens** — reviewed all of them live or
+  by code:
+  - "Ищем водителя" (searching) and "Водителей рядом нет" (no
+    drivers found): created a real test order (distinct pickup/
+    dropoff this time — same-point orders appear to get silently
+    rejected, worth a look if that recurs) to reach both states live.
+    Both already well-built: animated progress-step rows, real
+    searching pulse, single filled CTA + de-emphasized text-link
+    cancel action on the no-drivers panel. Cancelled the test order
+    immediately after (confirmed correctly logged as "Отменён" in
+    trip history afterward) — nothing left dangling.
+  - Driver-found/en-route panel and the in-progress trip panel:
+    **could not reach live** (both require a real driver acceptance;
+    this test region has had zero available drivers all session).
+    Read both in full instead: they already reuse every shared
+    widget touched earlier in this pass (`_DriverContactCard`,
+    `_OrderNoteRow`, `_TripInfoPill`, `_GoldCtaButton`, the
+    `_PanelEntrance` transition, the driver-avatar pop animation) —
+    so the cumulative effect of this session's changes already
+    applies here. Checked the single-accent-button rule specifically:
+    the terminal/cancel button pair is a real if/else (never both at
+    once), no violation. No further changes made — real edits weren't
+    justified without something concrete to point at.
+  - Spot-checked Profile and trip-history screens live as a final
+    sanity pass across screens not touched directly in this round —
+    both already consistent with the `_PremiumCard`/`_cardShadow`
+    treatment, nothing found.
+
+**Verified:** `flutter analyze` clean (same 4 pre-existing warnings).
+`flutter test`: 14/10 unchanged. **Verified live** for the header and
+tariff-screen fixes and the searching/no-drivers panels (screenshots).
+Driver-found/in-progress panels verified by code review only —
+genuinely unreachable in this environment, not a gap left unchecked.
+
+Note: `git status` at the end of this pass shows several files
+modified/untracked outside anything touched this session
+(`app_theme.dart`, `brand_logo.dart`, `auth_store.dart`,
+`app_config.dart`, `socket_service.dart`, `route_fields.dart`, a
+deleted splash screen, new `l10n`/`legal`/`push`/`voice` directories)
+— a concurrent session actively working on the mobile app, per this
+session's standing "parallel sessions" awareness. None of it was
+touched, staged, or committed here; every commit this pass named
+exact files (`passenger_shell.dart` only), confirmed via `git status`
+immediately before each `git add`.
