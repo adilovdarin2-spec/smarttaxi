@@ -7933,20 +7933,49 @@ class _TripReceiptPanel extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: SmartTaxiColors.successSoft,
-                    borderRadius: BorderRadius.circular(16),
+                // Hero moment: this panel mounts fresh (fresh ValueKey
+                // upstream) the instant the order actually lands on PAID —
+                // an elastic pop reads as a small celebration instead of
+                // the same flat scale-in every other status panel gets.
+                // Only for the genuine paid confirmation, not the
+                // payment-pending variant of this same widget.
+                if (paid)
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.3, end: 1),
+                    duration: const Duration(milliseconds: 620),
+                    curve: Curves.elasticOut,
+                    builder: (context, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: SmartTaxiColors.successSoft,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_rounded,
+                        color: SmartTaxiColors.success,
+                        size: 24,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: SmartTaxiColors.successSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_rounded,
+                      color: SmartTaxiColors.success,
+                      size: 24,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.receipt_long_rounded,
-                    color: SmartTaxiColors.success,
-                    size: 24,
-                  ),
-                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Column(
