@@ -86,6 +86,7 @@ class _DriverShellState extends State<DriverShell> {
   String? _regionId;
   List<TariffOption> _regionTariffs = const [];
   List<DriverDocument> _driverDocuments = const [];
+  bool _driverDocumentsLoaded = false;
   bool _demandHintLoading = false;
   List<OrderSummary> _orders = const [];
   List<RoadAlert> _roadAlerts = const [];
@@ -299,20 +300,32 @@ class _DriverShellState extends State<DriverShell> {
     try {
       final documents = await widget.api.getDriverDocuments();
       if (!mounted) return;
-      setState(() => _driverDocuments = documents);
+      setState(() {
+        _driverDocuments = documents;
+        _driverDocumentsLoaded = true;
+      });
     } catch (_) {
       // Best-effort — a failed load just means _missingRequiredDocuments
       // reads empty and the upfront check stays silent; the backend's own
       // DRIVER_DOCUMENTS_NOT_APPROVED rejection on the actual API call is
-      // still there as a fallback (see _setOnline's catch block).
+      // still there as a fallback (see _setOnline's catch block). Does NOT
+      // set _driverDocumentsLoaded — see the getter below for why that
+      // distinction matters.
     }
   }
 
   // Mirrors getMissingRequiredDocumentTypes (driver-documents.service.js)
   // exactly: for each required type, only its most recent submission
   // counts, and it must be APPROVED — a type with only a PENDING or
-  // REJECTED submission (or none at all) is "missing".
+  // REJECTED submission (or none at all) is "missing". Fails open (empty
+  // list) until the first successful load completes — _driverDocuments
+  // starts as an empty list, and without this guard every driver would
+  // briefly show as missing all 5 required documents on first render,
+  // before the async fetch resolves, even if they're fully approved. The
+  // upfront check is advisory only; the server's own
+  // DRIVER_DOCUMENTS_NOT_APPROVED rejection is the real backstop either way.
   List<String> get _missingRequiredDocuments {
+    if (!_driverDocumentsLoaded) return const [];
     final latestByType = <String, DriverDocument>{};
     for (final document in _driverDocuments) {
       final existing = latestByType[document.type];
