@@ -86,7 +86,6 @@ export const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "365d",
   CORS_ORIGINS: corsOrigins(),
   RATE_LIMIT_ENABLED: boolEnv("RATE_LIMIT_ENABLED", true),
-  GOOGLE_MAPS_SERVER_KEY: process.env.GOOGLE_MAPS_SERVER_KEY || "",
   MAPTILER_API_KEY: process.env.MAPTILER_API_KEY || "",
   MAPTILER_STYLE_URL: process.env.MAPTILER_STYLE_URL || "https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY}",
   MAPTILER_GEOCODING_URL: process.env.MAPTILER_GEOCODING_URL || "https://api.maptiler.com/geocoding",
