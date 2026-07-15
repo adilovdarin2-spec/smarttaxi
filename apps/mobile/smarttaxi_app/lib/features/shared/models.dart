@@ -149,6 +149,45 @@ class FavoriteAddress {
   }
 }
 
+class DriverPreference {
+  const DriverPreference({
+    required this.id,
+    required this.driverId,
+    required this.type,
+    this.driverName,
+    this.driverCarModel,
+    this.driverPlate,
+    this.createdAt,
+  });
+
+  final String id;
+  final String driverId;
+  // FAVORITE | BLOCKED
+  final String type;
+  final String? driverName;
+  final String? driverCarModel;
+  final String? driverPlate;
+  final DateTime? createdAt;
+
+  bool get isFavorite => type == 'FAVORITE';
+  bool get isBlocked => type == 'BLOCKED';
+
+  factory DriverPreference.fromJson(Map<String, dynamic> json) {
+    return DriverPreference(
+      id: '${json['id']}',
+      driverId: '${json['driver_id'] ?? json['driverId']}',
+      type: '${json['type'] ?? 'FAVORITE'}',
+      driverName: (json['driver_name'] ?? json['driverName'])?.toString(),
+      driverCarModel:
+          (json['driver_car_model'] ?? json['driverCarModel'])?.toString(),
+      driverPlate: (json['driver_plate'] ?? json['driverPlate'])?.toString(),
+      createdAt: DateTime.tryParse(
+        '${json['created_at'] ?? json['createdAt'] ?? ''}',
+      ),
+    );
+  }
+}
+
 class AddressSuggestion {
   const AddressSuggestion({
     required this.label,

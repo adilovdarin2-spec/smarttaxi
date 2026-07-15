@@ -670,6 +670,37 @@ class ApiClient {
     await _dio.delete<void>('/api/favorites/addresses/$id');
   }
 
+  Future<List<DriverPreference>> getDriverPreferences() async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/favorites/drivers');
+    final items = _extractList(response.data, 'preferences');
+    return items
+        .map((item) => DriverPreference.fromJson(item))
+        .toList(growable: false);
+  }
+
+  // POST upserts: setting the same driverId again with a different type
+  // (e.g. FAVORITE -> BLOCKED) just flips it server-side (ON CONFLICT DO
+  // UPDATE), no separate "change type" endpoint exists.
+  Future<DriverPreference> setDriverPreference({
+    required String driverId,
+    required String type,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/favorites/drivers',
+      data: {'driverId': driverId, 'type': type},
+    );
+    final data = response.data ?? {};
+    return DriverPreference.fromJson(
+        Map<String, dynamic>.from(data['preference'] ?? data));
+  }
+
+  Future<void> removeDriverPreference(String driverId) async {
+    await _attachToken();
+    await _dio.delete<void>('/api/favorites/drivers/$driverId');
+  }
+
   Future<RoutePreview> driverToPickupRoute(String orderId) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(

@@ -151,6 +151,11 @@ class _PassengerShellState extends State<PassengerShell>
   bool _favoriteAddressesError = false;
   bool _creatingFavoriteAddress = false;
   final Set<String> _favoriteAddressDeleting = {};
+  List<DriverPreference> _driverPreferences = const [];
+  bool _driverPreferencesLoading = false;
+  bool _driverPreferencesError = false;
+  bool _settingDriverPreference = false;
+  final Set<String> _driverPreferenceRemoving = {};
   Timer? _mapPickerReverseDebounce;
   Coordinate? _pickup;
   Coordinate? _dropoff;
@@ -497,6 +502,77 @@ class _PassengerShellState extends State<PassengerShell>
     } finally {
       if (mounted) {
         setState(() => _favoriteAddressDeleting.remove(address.id));
+      }
+    }
+  }
+
+  Future<void> _loadDriverPreferences() async {
+    if (!mounted) return;
+    setState(() {
+      _driverPreferencesLoading = true;
+      _driverPreferencesError = false;
+    });
+    try {
+      final preferences = await widget.api.getDriverPreferences();
+      if (!mounted) return;
+      setState(() => _driverPreferences = preferences);
+    } catch (_) {
+      if (mounted) setState(() => _driverPreferencesError = true);
+    } finally {
+      if (mounted) setState(() => _driverPreferencesLoading = false);
+    }
+  }
+
+  Future<void> _setDriverPreference({
+    required String driverId,
+    required String type,
+  }) async {
+    if (_settingDriverPreference) return;
+    setState(() => _settingDriverPreference = true);
+    try {
+      final preference = await widget.api.setDriverPreference(
+        driverId: driverId,
+        type: type,
+      );
+      if (!mounted) return;
+      setState(() {
+        _driverPreferences = [
+          preference,
+          ..._driverPreferences.where((item) => item.driverId != driverId),
+        ];
+      });
+      if (mounted) Navigator.of(context).pop();
+      AppToast.showSuccess(
+        context,
+        type == 'BLOCKED'
+            ? 'Водитель заблокирован'
+            : 'Водитель добавлен в избранное',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) setState(() => _settingDriverPreference = false);
+    }
+  }
+
+  Future<void> _removeDriverPreference(DriverPreference preference) async {
+    if (_driverPreferenceRemoving.contains(preference.driverId)) return;
+    setState(() => _driverPreferenceRemoving.add(preference.driverId));
+    try {
+      await widget.api.removeDriverPreference(preference.driverId);
+      if (!mounted) return;
+      setState(() => _driverPreferences = _driverPreferences
+          .where((item) => item.driverId != preference.driverId)
+          .toList());
+      AppToast.showSuccess(context, 'Запись удалена');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) {
+        setState(
+            () => _driverPreferenceRemoving.remove(preference.driverId));
       }
     }
   }
@@ -1818,6 +1894,7 @@ class _PassengerShellState extends State<PassengerShell>
       PassengerTab.settings: _settingsScreen,
       PassengerTab.recurringBookings: _recurringBookingsScreen,
       PassengerTab.favoriteAddresses: _favoriteAddressesScreen,
+      PassengerTab.driverPreferences: _driverPreferencesScreen,
     };
     return (builders[_tab] ?? _unknownPassengerSection).call();
   }
@@ -2577,6 +2654,16 @@ class _PassengerShellState extends State<PassengerShell>
                 onTap: () {
                   setState(() => _tab = PassengerTab.favoriteAddresses);
                   unawaited(_loadFavoriteAddresses());
+                },
+              ),
+              const Divider(height: 20),
+              _MenuLine(
+                icon: Icons.people_alt_outlined,
+                title: 'Водители',
+                subtitle: 'Избранные и заблокированные водители',
+                onTap: () {
+                  setState(() => _tab = PassengerTab.driverPreferences);
+                  unawaited(_loadDriverPreferences());
                 },
               ),
               const Divider(height: 20),
@@ -3484,6 +3571,119 @@ class _PassengerShellState extends State<PassengerShell>
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAddDriverPreferenceSheet() async {
+    if (_tripHistory.isEmpty && !_tripHistoryLoading) {
+      unawaited(_loadTripHistory());
+    }
+    final knownIds = _driverPreferences.map((p) => p.driverId).toSet();
+    final candidates = _knownDriversFromHistory
+        .where((driver) => !knownIds.contains(driver.$1))
+        .toList(growable: false);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AddDriverPreferenceSheet(
+        candidates: candidates,
+        submitting: _settingDriverPreference,
+        onSubmit: (driverId, type) =>
+            _setDriverPreference(driverId: driverId, type: type),
+      ),
+    );
+  }
+
+  Widget _driverPreferencesScreen() {
+    final favorites =
+        _driverPreferences.where((p) => p.isFavorite).toList(growable: false);
+    final blocked =
+        _driverPreferences.where((p) => p.isBlocked).toList(growable: false);
+    return RefreshIndicator(
+      color: SmartTaxiColors.goldDeep,
+      onRefresh: _loadDriverPreferences,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+          const _TitleBlock(
+            title: 'Водители',
+            text: 'Отмечайте любимых водителей и блокируйте нежелательных',
+          ),
+          const SizedBox(height: 16),
+          _GoldCtaButton(
+            enabled: !_settingDriverPreference,
+            loading: false,
+            text: 'Добавить из истории поездок',
+            onTap: _openAddDriverPreferenceSheet,
+          ),
+          const SizedBox(height: 16),
+          if (_driverPreferencesLoading && _driverPreferences.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            )
+          else if (_driverPreferencesError && _driverPreferences.isEmpty)
+            EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'Не удалось загрузить',
+              text: 'Потяните экран вниз, чтобы попробовать снова.',
+              action: 'Повторить',
+              onAction: () => unawaited(_loadDriverPreferences()),
+            )
+          else if (_driverPreferences.isEmpty)
+            const EmptyState(
+              icon: Icons.people_alt_outlined,
+              title: 'Пока нет отметок',
+              text:
+                  'Отметьте водителя из истории поездок как избранного или заблокируйте нежелательного.',
+            )
+          else ...[
+            if (favorites.isNotEmpty) ...[
+              const _SectionLabel(
+                title: 'Избранные',
+                text: 'Регулярные поездки предложат их в первую очередь',
+              ),
+              const SizedBox(height: 10),
+              ...favorites.map(
+                (preference) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _DriverPreferenceCard(
+                    preference: preference,
+                    removing: _driverPreferenceRemoving
+                        .contains(preference.driverId),
+                    onRemove: () => _removeDriverPreference(preference),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (blocked.isNotEmpty) ...[
+              const _SectionLabel(
+                title: 'Заблокированные',
+                text: 'Не будут предложены на регулярные поездки',
+              ),
+              const SizedBox(height: 10),
+              ...blocked.map(
+                (preference) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _DriverPreferenceCard(
+                    preference: preference,
+                    removing: _driverPreferenceRemoving
+                        .contains(preference.driverId),
+                    onRemove: () => _removeDriverPreference(preference),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -8227,6 +8427,204 @@ class _FavoriteAddressCard extends StatelessWidget {
                   ),
                 ),
         ],
+      ),
+    );
+  }
+}
+
+class _DriverPreferenceCard extends StatelessWidget {
+  const _DriverPreferenceCard({
+    required this.preference,
+    required this.removing,
+    required this.onRemove,
+  });
+
+  final DriverPreference preference;
+  final bool removing;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final blocked = preference.isBlocked;
+    final meta = [preference.driverCarModel, preference.driverPlate]
+        .where((value) => (value ?? '').trim().isNotEmpty)
+        .join(' · ');
+    return _PremiumCard(
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: blocked
+                  ? SmartTaxiColors.dangerSoft
+                  : SmartTaxiColors.goldSurface,
+              border: Border.all(color: SmartTaxiColors.border),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              blocked ? Icons.block_rounded : Icons.star_rounded,
+              color: blocked
+                  ? SmartTaxiColors.danger
+                  : SmartTaxiColors.goldDeep,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (preference.driverName ?? '').isEmpty
+                      ? 'Водитель'
+                      : preference.driverName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                if (meta.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          removing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                )
+              : IconButton(
+                  onPressed: onRemove,
+                  tooltip: 'Удалить',
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: SmartTaxiColors.textSecondary,
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddDriverPreferenceSheet extends StatefulWidget {
+  const _AddDriverPreferenceSheet({
+    required this.candidates,
+    required this.submitting,
+    required this.onSubmit,
+  });
+
+  final List<(String id, String name)> candidates;
+  final bool submitting;
+  final void Function(String driverId, String type) onSubmit;
+
+  @override
+  State<_AddDriverPreferenceSheet> createState() =>
+      _AddDriverPreferenceSheetState();
+}
+
+class _AddDriverPreferenceSheetState
+    extends State<_AddDriverPreferenceSheet> {
+  String? _driverId;
+  String _type = 'FAVORITE';
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30141414),
+              blurRadius: 30,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(child: _SheetHandle(dark: false)),
+            const SizedBox(height: 14),
+            const Text(
+              'Отметить водителя',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 14),
+            if (widget.candidates.isEmpty)
+              const _InlineMessage(
+                text:
+                    'Нет водителей из истории поездок, которых ещё можно отметить.',
+              )
+            else ...[
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: SmartTaxiColors.border),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: _driverId,
+                    hint: const Text('Выберите водителя'),
+                    items: widget.candidates
+                        .map((driver) => DropdownMenuItem(
+                              value: driver.$1,
+                              child: Text(driver.$2,
+                                  overflow: TextOverflow.ellipsis),
+                            ))
+                        .toList(),
+                    onChanged: (value) => setState(() => _driverId = value),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('В избранное'),
+                    selected: _type == 'FAVORITE',
+                    onSelected: (_) => setState(() => _type = 'FAVORITE'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Заблокировать'),
+                    selected: _type == 'BLOCKED',
+                    onSelected: (_) => setState(() => _type = 'BLOCKED'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _GoldCtaButton(
+                enabled: !widget.submitting && _driverId != null,
+                loading: widget.submitting,
+                text: 'Сохранить',
+                loadingText: 'Сохраняем...',
+                onTap: () => widget.onSubmit(_driverId!, _type),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -14711,6 +15109,7 @@ enum PassengerTab {
   settings,
   recurringBookings,
   favoriteAddresses,
+  driverPreferences,
 }
 
 enum PointTarget { pickup, dropoff }
