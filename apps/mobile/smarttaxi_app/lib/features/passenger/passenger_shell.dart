@@ -9857,6 +9857,7 @@ class _TripProgressCard extends StatelessWidget {
                     color: SmartTaxiColors.goldDeep,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
+                    fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -10947,6 +10948,9 @@ class _TripInfoPill extends StatelessWidget {
               fontSize: 13.5,
               height: 1,
               fontWeight: FontWeight.w900,
+              // Prices/distances live here — tabular figures keep digit
+              // width uniform so the pill doesn't reflow as a value updates.
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -12162,6 +12166,7 @@ class _TariffCard extends StatelessWidget {
                   fontSize: 13.6,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
               if (bestValue) ...[
@@ -12387,6 +12392,7 @@ class _PriceAdjuster extends StatelessWidget {
                 color: SmartTaxiColors.text,
                 fontSize: 14.5,
                 fontWeight: FontWeight.w900,
+                fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
           ),
@@ -14333,6 +14339,7 @@ class _GoldCtaButton extends StatelessWidget {
                                     color: Colors.white,
                                     fontSize: 15.2,
                                     fontWeight: FontWeight.w900,
+                                    fontFeatures: [FontFeature.tabularFigures()],
                                   ),
                                 ),
                               ),
