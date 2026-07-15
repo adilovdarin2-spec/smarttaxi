@@ -12,6 +12,7 @@ const migrations = read("../db/migrations.js");
 const orderRoutes = read("../modules/orders/orders.routes.js");
 const favoritesRoutes = read("../modules/favorites/favorites.routes.js");
 const dispatch = read("../modules/orders/order-dispatch.service.js");
+const clientsRoutes = read("../modules/clients/clients.routes.js");
 
 // --- 1. Driver rates client ---
 
@@ -31,6 +32,11 @@ assert(rateClientHandler.includes("SELECT id FROM client_reviews WHERE order_id=
 assert(rateClientHandler.includes('["PAID", "RATED", "COMPLETED"].includes(existing.status)'), "rate-client must require the trip be paid/completed before rating");
 assert(rateClientHandler.includes("INSERT INTO client_reviews(order_id, driver_id, client_id, rating, tags, comment)"), "rate-client must write a client_reviews row");
 assert(rateClientHandler.includes("UPDATE clients SET rating=$1 WHERE id=$2"), "rate-client must keep clients.rating in sync, mirroring drivers.rating");
+
+// The client themself must be able to see their own rating somewhere —
+// mirrors GET /drivers/me returning the full drivers row (rating included).
+assert(clientsRoutes.includes('router.get("/me", requireAuth, requireRole("CLIENT")'), "clients.routes.js must expose GET /clients/me for the client's own profile, mirroring GET /drivers/me");
+assert(clientsRoutes.includes("SELECT * FROM clients WHERE user_id=$1"), "GET /clients/me must return the full clients row (so rating is included without a bespoke field list)");
 
 // --- 2. Driver favorites/blocks a client ---
 

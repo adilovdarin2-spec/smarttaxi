@@ -47,11 +47,14 @@ table needed.
     endpoint...} }`.
 
 `clients.rating` is included in `SELECT * FROM clients` responses (e.g. the
-existing admin `GET /api/clients` list) automatically. It is **not** yet
-exposed to the client themself anywhere (`GET /api/auth/me` only returns
-the `users` row, not the `clients` profile) — flagging this as a gap if the
-client-side app wants to show "your rating" on its own profile screen; a
-follow-up endpoint would be needed for that, not included in this pass.
+existing admin `GET /api/clients` list) automatically. It's also now
+exposed to the client themself via `GET /api/clients/me` — role `CLIENT`,
+mirrors the existing `GET /api/drivers/me`. Returns
+`{ client: {...full clients row, raw snake_case columns: id, user_id,
+name, phone, cashback_balance, is_blocked, rating, created_at...} }` — same
+raw-row shape as `GET /api/drivers/me`'s `{ driver }`, no camelCase mapping
+(unlike `favorites.routes.js`'s hand-built response shapes). `404
+CLIENT_NOT_FOUND` if the authenticated user has no client profile.
 
 ---
 
