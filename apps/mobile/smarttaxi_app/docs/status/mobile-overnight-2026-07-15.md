@@ -1633,3 +1633,87 @@ token, toast, and radius/spacing findings were verified by direct
 source inspection (exact file/line citations above), not live
 screenshots, since they are either confirmed-compliant (nothing to
 screenshot-diff) or deliberately-not-changed (nothing to verify).
+
+## Follow-up: tariff card redesign, order note, real chat — `2825ecc`, `501ace7`, `c49f70e`
+
+New requests after the 9-item list closed: remove the tariff checkmark,
+add an order note button after address selection, build a real
+rider-driver chat + call button like Yandex, and the tariff cards
+"look bad."
+
+### Tariff cards
+Removed `_TariffSelectIndicator` (the checkmark badge) entirely —
+selection now reads purely from the border/glow, made deliberately
+stronger to compensate (border 1→2.2px when selected, shadow blur
+18→20 and alpha 0.20→0.28). Reworked the internal layout: price is
+now the largest, boldest element (13.6px→16.5px) with the tariff name
+demoted to a small muted label above it (13.6px→11.5px, secondary
+color) instead of two same-weight lines — a real hierarchy instead of
+a flat stack. Larger icon box (44→48px), more padding (10,9→12,12),
+wider card (118→122px).
+
+### "Описать место" order note
+Investigated the backend first: `orders.notes` (schema.sql:189) is a
+real, validated (`CreateOrder` zod schema, orders.routes.js:89),
+persisted, round-tripped column — just never sent or parsed by the
+mobile app (`createOrder()` had no `notes` param, `OrderSummary` had
+no `notes` field). Wired both: `ApiClient.createOrder(notes: ...)`,
+`OrderSummary.notes`. New `_OrderNoteRow` + `_OrderNoteSheet` in
+`_OrderSheet`, right after the confirmed pickup/dropoff card — ghost
+button "Описать место (дверь, подъезд, этаж)" when empty, shows the
+saved text once set. Shown read-only (no chevron, no tap handler) on
+both the rider's own active-trip cards and the **driver's** trip card
+(`driver_shell.dart` — the whole point of the feature is the driver
+actually seeing it) — no PATCH endpoint exists to edit a note after
+creation, so a tappable-but-dead affordance there would be exactly the
+kind of fake control this session has been removing all night, not
+adding.
+
+### Real chat (Yandex-style) + call
+Investigated before building: the backend's `/orders/:id/quick-message`
+(orders.routes.js:718) is genuinely two-way (client and driver can
+both call it) but fixed-vocabulary only — 5 canned phrases, no
+free-text, and the endpoint itself stores nothing (just fires a push).
+However `notifyOrderClient`/`notifyOrderDriver` underneath it *does*
+insert a real row into `notifications` (confirmed in the item-7 work
+above), so the **received** side of a conversation already survives
+reopening the app. Built `_ChatSheet`: a real scrollable bubble thread
+merging (a) sent messages tracked locally for the sheet's lifetime
+(the send endpoint doesn't echo/store anything to reload a "sent"
+history from) with (b) received messages read back from
+`getNotifications()` filtered to `type == 'QUICK_MESSAGE' && orderId
+== this order` (persisted, real). Polls every 6s while open so a
+reply shows up without closing/reopening. Quick-reply chips (not a
+free-text field) send via the real endpoint. `_DriverContactCard`'s
+"Написать" now opens this instead of launching native SMS (`sms:`
+scheme) as it did before; "Позвонить" is untouched (already real,
+`tel:` launch, confirmed still wired at both call sites). The old
+standalone "Быстрое сообщение водителю" button/sheet was removed —
+superseded by the chat, which does everything it did plus shows
+history.
+
+**Screenshot evidence:** rebuilt/reinstalled, ran the order flow live:
+tariff cards render with no checkmark, clear blue glow on "Эконом"
+when selected, larger price text. Tapped "Описать место" → sheet
+opened correctly (no keyboard overlap) → typed "Domofon45vtoroy­
+podyezd" → saved → button correctly switched to show the saved text
+with an edit icon and chevron. Backed out before submitting, no test
+order created.
+
+**Could not verify live:** the chat sheet's actual message
+send/receive round trip and the driver-side note display, both of
+which require a real assigned driver — this test region has had zero
+available drivers all session (documented repeatedly above). Verified
+instead by full code trace: the increment/read logic reuses the exact
+same `getNotifications()`/`sendQuickMessage()` calls already
+exercised successfully elsewhere this session (items 6, 7), and the
+driver-side note block is a direct, mechanically-checked copy of the
+same conditional-display pattern used on the rider side.
+
+**Verified:** `flutter analyze` clean (same 4 pre-existing warnings,
+no new ones across all 4 touched files). `flutter test`: 14 passed /
+10 failed, unchanged baseline. **Partially verified live** — tariff
+redesign and order-note flow confirmed on-device end to end; chat and
+driver-side note confirmed by code trace only, blocked by the same
+no-drivers-in-region constraint noted throughout this document, not by
+any gap in the implementation.
