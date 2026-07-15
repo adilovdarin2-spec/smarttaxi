@@ -11826,28 +11826,39 @@ class _TariffSection extends StatelessWidget {
             dark: dark,
           )
         else
-          Column(
-            children: [
-              for (final item in visibleTariffs) ...[
-                _TariffListRow(
+          // A horizontal carousel instead of a vertical list: every option
+          // fits in one compact-height row (no more scrolling several
+          // 92px-tall cards inside an already height-constrained sheet to
+          // even see them all), and a partially-visible next card is the
+          // standard "there's more here" cue — a rider isn't left assuming
+          // one card is the only option.
+          SizedBox(
+            height: 132,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: visibleTariffs.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final item = visibleTariffs[index];
+                return _TariffCard(
                   item: item,
                   selected: item.tariff.id == selectedId,
                   estimate: estimates[item.tariff.id],
                   onTap: () => onSelect(item.tariff.id),
                   dark: dark,
                   bestValue: item.tariff.id == bestValueTariffId,
-                ),
-                if (item != visibleTariffs.last) const SizedBox(height: 7),
-              ],
-            ],
+                );
+              },
+            ),
           ),
       ],
     );
   }
 }
 
-class _TariffListRow extends StatelessWidget {
-  const _TariffListRow({
+class _TariffCard extends StatelessWidget {
+  const _TariffCard({
     required this.item,
     required this.selected,
     required this.estimate,
@@ -11866,21 +11877,17 @@ class _TariffListRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = estimate?.estimatedPrice;
-    final subtitle = item.description;
-    final routeMeta = estimate == null
-        ? 'Расчёт маршрута'
-        : '${_formatMinutes(estimate!)} · ${_formatDistance(estimate!)}';
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(17),
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          constraints: const BoxConstraints(minHeight: 92),
-          padding: const EdgeInsets.fromLTRB(10, 9, 12, 9),
+          width: 118,
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
           decoration: BoxDecoration(
             color: dark
                 ? Colors.white.withValues(alpha: selected ? 0.10 : 0.06)
@@ -11905,207 +11912,123 @@ class _TariffListRow extends StatelessWidget {
                       : SmartTaxiColors.border),
               width: selected ? 1.6 : 1,
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               if (selected)
                 BoxShadow(
                   color: SmartTaxiColors.gold.withValues(alpha: 0.20),
-                  blurRadius: 22,
-                  offset: const Offset(0, 10),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
               if (!selected && !dark)
                 const BoxShadow(
                   color: Color(0x08141414),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
                 ),
             ],
           ),
-          child: Stack(
-            clipBehavior: Clip.none,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 82,
-                    height: 64,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: selected
-                            ? [SmartTaxiColors.goldSurface, Colors.white]
-                            : [const Color(0xfffbfbfb), const Color(0xfff5f6f8)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: selected
-                            ? SmartTaxiColors.borderStrong
-                            : SmartTaxiColors.border,
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (item.asset.isNotEmpty)
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            bottom: 7,
-                            child: Container(
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.all(3),
-                          child: item.asset.isEmpty
-                              ? Container(
-                                  width: 38,
-                                  height: 36,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: SmartTaxiColors.goldSurface,
-                                    border: Border.all(
-                                        color: SmartTaxiColors.border),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: _SvgIcon(
-                                    item.title == 'Доставка'
-                                        ? _iconDelivery
-                                        : _iconCar,
-                                    size: 24,
-                                    color: SmartTaxiColors.goldDeep,
-                                  ),
-                                )
-                              : Image.asset(
-                                  item.asset,
-                                  width: 76,
-                                  height: 56,
-                                  fit: BoxFit.contain,
-                                  filterQuality: FilterQuality.high,
-                                  errorBuilder: (_, __, ___) => _SvgIcon(
-                                    item.title == 'Доставка'
-                                        ? _iconDelivery
-                                        : _iconCar,
-                                    size: 26,
-                                    color: SmartTaxiColors.goldDeep,
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 9),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: dark ? Colors.white : SmartTaxiColors.text,
-                            fontSize: 15.2,
-                            height: 1.05,
-                            fontWeight: FontWeight.w900,
-                          ),
+                    child: Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: selected
+                              ? [SmartTaxiColors.goldSurface, Colors.white]
+                              : [
+                                  const Color(0xfffbfbfb),
+                                  const Color(0xfff5f6f8),
+                                ],
                         ),
-                        if (bestValue) ...[
-                          const SizedBox(height: 3),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: SmartTaxiColors.success.withValues(
-                                alpha: dark ? 0.22 : 0.12,
-                              ),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: const Text(
-                              'Выгодно',
-                              style: TextStyle(
-                                color: SmartTaxiColors.success,
-                                fontSize: 9.5,
-                                height: 1,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: dark
-                                ? Colors.white70
-                                : SmartTaxiColors.textSecondary,
-                            fontSize: 11.7,
-                            height: 1.05,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.schedule_rounded,
-                              size: 11,
-                              color: dark
-                                  ? Colors.white54
-                                  : SmartTaxiColors.textMuted,
-                            ),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                routeMeta,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: dark
-                                      ? Colors.white54
-                                      : SmartTaxiColors.textMuted,
-                                  fontSize: 10.8,
-                                  height: 1.05,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        price == null ? '...' : _formatTenge(price),
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: dark ? Colors.white : SmartTaxiColors.text,
-                          fontSize: 15,
-                          height: 1.05,
-                          fontWeight: FontWeight.w900,
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: selected
+                              ? SmartTaxiColors.borderStrong
+                              : SmartTaxiColors.border,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _TariffSelectIndicator(selected: selected),
-                    ],
+                      child: item.asset.isEmpty
+                          ? _SvgIcon(
+                              item.title == 'Доставка'
+                                  ? _iconDelivery
+                                  : _iconCar,
+                              size: 22,
+                              color: SmartTaxiColors.goldDeep,
+                            )
+                          : Image.asset(
+                              item.asset,
+                              width: 54,
+                              height: 38,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                              errorBuilder: (_, __, ___) => _SvgIcon(
+                                item.title == 'Доставка'
+                                    ? _iconDelivery
+                                    : _iconCar,
+                                size: 22,
+                                color: SmartTaxiColors.goldDeep,
+                              ),
+                            ),
+                    ),
                   ),
+                  _TariffSelectIndicator(selected: selected, size: 20),
                 ],
               ),
+              const SizedBox(height: 7),
+              Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: dark ? Colors.white : SmartTaxiColors.text,
+                  fontSize: 13.6,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                price == null ? '...' : _formatTenge(price),
+                maxLines: 1,
+                style: TextStyle(
+                  color: dark ? Colors.white : SmartTaxiColors.text,
+                  fontSize: 13.6,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              if (bestValue) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: SmartTaxiColors.success.withValues(
+                      alpha: dark ? 0.22 : 0.12,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'Выгодно',
+                    style: TextStyle(
+                      color: SmartTaxiColors.success,
+                      fontSize: 9.5,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -12115,17 +12038,18 @@ class _TariffListRow extends StatelessWidget {
 }
 
 class _TariffSelectIndicator extends StatelessWidget {
-  const _TariffSelectIndicator({required this.selected});
+  const _TariffSelectIndicator({required this.selected, this.size = 25});
 
   final bool selected;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
-      width: 25,
-      height: 25,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: selected ? SmartTaxiColors.gold : Colors.white,
@@ -12147,7 +12071,8 @@ class _TariffSelectIndicator extends StatelessWidget {
             : null,
       ),
       child: selected
-          ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+          ? Icon(Icons.check_rounded,
+              color: Colors.white, size: size * 0.64)
           : null,
     );
   }
@@ -12174,45 +12099,40 @@ class _TariffSkeleton extends StatelessWidget {
             ),
           ),
         ),
-        ...List.generate(
-          2,
-          (index) => Padding(
-            padding: EdgeInsets.only(bottom: index == 1 ? 0 : 7),
-            child: Container(
-              height: 64,
-              padding: const EdgeInsets.fromLTRB(8, 6, 9, 6),
-              decoration: BoxDecoration(
-                color:
-                    dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-                border: Border.all(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : SmartTaxiColors.border,
-                ),
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: const Row(
-                children: [
-                  _SkeletonLine(width: 76, height: 48, radius: 14),
-                  SizedBox(width: 11),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _SkeletonLine(width: 92, height: 12),
-                        SizedBox(height: 8),
-                        _SkeletonLine(width: 70, height: 10),
-                      ],
+        SizedBox(
+          height: 132,
+          child: Row(
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                Container(
+                  width: 118,
+                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+                  decoration: BoxDecoration(
+                    color: dark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.white,
+                    border: Border.all(
+                      color: dark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : SmartTaxiColors.border,
                     ),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  SizedBox(width: 10),
-                  _SkeletonLine(width: 48, height: 12),
-                  SizedBox(width: 9),
-                  _SkeletonLine(width: 20, height: 20, radius: 999),
-                ],
-              ),
-            ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SkeletonLine(
+                          width: double.infinity, height: 44, radius: 13),
+                      SizedBox(height: 9),
+                      _SkeletonLine(width: 70, height: 12),
+                      SizedBox(height: 6),
+                      _SkeletonLine(width: 56, height: 12),
+                    ],
+                  ),
+                ),
+                if (i != 2) const SizedBox(width: 8),
+              ],
+            ],
           ),
         ),
       ],

@@ -5,9 +5,12 @@ import {
   blockAdminDriver,
   clearToken,
   createAdminPromoCode,
+  createAdminRaffle,
   createAdminRegion,
   createAdminTariff,
   deleteAdminPromoCode,
+  deleteAdminRaffle,
+  deleteAdminReview,
   exportAdminFinanceTransactionsCsv,
   getAdminAudit,
   getAdminDashboard,
@@ -20,7 +23,9 @@ import {
   getAdminFinanceTransactions,
   getAdminLeaderboard,
   getAdminOrders,
+  getAdminPayoutRequests,
   getAdminPromoCodes,
+  getAdminRaffles,
   getAdminRecurringBookings,
   getAdminReferrals,
   getAdminRegions,
@@ -34,6 +39,7 @@ import {
   previewAdminTariffPrice,
   reopenAdminSupport,
   respondAdminSupport,
+  reviewAdminPayoutRequest,
   setAdminPromoCodeStatus,
   setAdminTariffStatus,
   toggleAdminRegion,
@@ -58,8 +64,10 @@ const navigation = [
   { key: "promoCodes", label: "Промокоды", eyebrow: "Скидки и акции" },
   { key: "recurringBookings", label: "Регулярные поездки", eyebrow: "Постоянные привязки" },
   { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
+  { key: "payouts", label: "Выплаты", eyebrow: "Заявки водителей на вывод" },
   { key: "roadAlerts", label: "Дорога", eyebrow: "События и безопасность" },
   { key: "quality", label: "Качество", eyebrow: "Отзывы и рейтинг" },
+  { key: "raffles", label: "Розыгрыши", eyebrow: "Конкурсы водителей" },
   { key: "referrals", label: "Рефералы", eyebrow: "Приглашения клиентов" },
   { key: "settings", label: "Настройки", eyebrow: "Параметры сервиса" },
   { key: "audit", label: "Журнал", eyebrow: "Действия системы" },
@@ -361,6 +369,9 @@ export default function AdminApp() {
   const [supportStatus, setSupportStatus] = useState("OPEN");
   const [promoCodeStatus, setPromoCodeStatus] = useState("all");
   const [recurringBookingStatus, setRecurringBookingStatus] = useState("all");
+  const [payoutStatus, setPayoutStatus] = useState("PENDING");
+  const [ratingScope, setRatingScope] = useState("all");
+  const [ratingRaffleId, setRatingRaffleId] = useState("");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
 
   const canAccess = user && adminRoles.has(user.role);
@@ -468,13 +479,19 @@ export default function AdminApp() {
         };
       },
       quality: async () => {
-        const [reviews, leaderboard] = await Promise.all([
+        const [reviews, raffles] = await Promise.all([
           getAdminReviews(),
-          getAdminLeaderboard()
+          getAdminRaffles().catch(() => ({ raffles: [] }))
         ]);
+        const raffleList = raffles.raffles || [];
+        const selectedRaffle = ratingScope === "raffle" ? raffleList.find(item => item.id === ratingRaffleId) : null;
+        const leaderboard = await getAdminLeaderboard(
+          selectedRaffle ? { dateFrom: selectedRaffle.startsAt, dateTo: selectedRaffle.endsAt } : {}
+        );
         return {
           reviews: reviews.reviews || [],
-          leaderboard: leaderboard.leaderboard || []
+          leaderboard: leaderboard.leaderboard || [],
+          raffles: raffleList
         };
       },
       support: async () => {
@@ -497,6 +514,15 @@ export default function AdminApp() {
         const data = await getAdminReferrals();
         return { referrals: data.referrals || [] };
       },
+      raffles: async () => {
+        const data = await getAdminRaffles();
+        return { raffles: data.raffles || [] };
+      },
+      payouts: async () => {
+        const status = payoutStatus !== "ALL" ? payoutStatus : undefined;
+        const data = await getAdminPayoutRequests({ status });
+        return { payoutRequests: data.payoutRequests || [] };
+      },
       audit: getAdminAudit,
       settings: getAdminSettings
     };
@@ -514,7 +540,7 @@ export default function AdminApp() {
     } catch (error) {
       setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
@@ -570,6 +596,8 @@ export default function AdminApp() {
     if (payload.promoCodes) return { ...payload, promoCodes: filter(payload.promoCodes), regions: payload.regions || [] };
     if (payload.recurringBookings) return { ...payload, recurringBookings: filter(payload.recurringBookings) };
     if (payload.referrals) return { ...payload, referrals: filter(payload.referrals) };
+    if (payload.payoutRequests) return { ...payload, payoutRequests: filter(payload.payoutRequests) };
+    if (payload.raffles && !payload.reviews) return { ...payload, raffles: filter(payload.raffles) };
     return payload;
   }, [pageState.payload, query]);
 
@@ -800,6 +828,46 @@ export default function AdminApp() {
     }, "Промокод удалён");
   }
 
+  async function saveRaffle(form) {
+    await runAction(async () => {
+      await createAdminRaffle({
+        title: form.title.trim(),
+        startsAt: new Date(form.startsAt).toISOString(),
+        endsAt: new Date(form.endsAt).toISOString()
+      });
+      setModal(null);
+      await loadPage("raffles");
+    }, "Розыгрыш создан");
+  }
+
+  async function deleteRaffle(raffle) {
+    await runAction(async () => {
+      await deleteAdminRaffle(raffle.id);
+      setModal(null);
+      await loadPage("raffles");
+    }, "Розыгрыш удалён");
+  }
+
+  async function deleteReview(review) {
+    await runAction(async () => {
+      await deleteAdminReview(review.id);
+      setModal(null);
+      await loadPage("quality");
+    }, "Отзыв удалён");
+  }
+
+  async function reviewPayout(payoutRequest, status, reason = "") {
+    await runAction(async () => {
+      await reviewAdminPayoutRequest(payoutRequest.id, { status, reason });
+      setModal(null);
+      await loadPage("payouts");
+    }, {
+      APPROVED: "Заявка на выплату одобрена",
+      PAID: "Выплата отмечена как отправленная",
+      REJECTED: "Заявка на выплату отклонена"
+    }[status]);
+  }
+
   async function respondSupport(message, response, resolve) {
     await runAction(async () => {
       await respondAdminSupport(message.id, { response, resolve });
@@ -1002,6 +1070,18 @@ export default function AdminApp() {
             onDeletePromoCode={promoCode => setModal({ type: "promoCodeDelete", promoCode })}
             recurringBookingStatus={recurringBookingStatus}
             setRecurringBookingStatus={setRecurringBookingStatus}
+            onAddRaffle={() => setModal({ type: "raffle" })}
+            onDeleteRaffle={raffle => setModal({ type: "raffleDelete", raffle })}
+            ratingScope={ratingScope}
+            setRatingScope={setRatingScope}
+            ratingRaffleId={ratingRaffleId}
+            setRatingRaffleId={setRatingRaffleId}
+            onDeleteReview={review => setModal({ type: "reviewDelete", review })}
+            payoutStatus={payoutStatus}
+            setPayoutStatus={setPayoutStatus}
+            onApprovePayout={payoutRequest => reviewPayout(payoutRequest, "APPROVED")}
+            onMarkPaidPayout={payoutRequest => reviewPayout(payoutRequest, "PAID")}
+            onRejectPayout={payoutRequest => setModal({ type: "payoutReject", payoutRequest })}
             onSaveSettings={saveSettings}
             canEditSettings={user?.role === "OWNER"}
             onAddRegion={() => setModal({ type: "region", region: null })}
@@ -1092,6 +1172,43 @@ export default function AdminApp() {
           danger
           onClose={() => setModal(null)}
           onConfirm={() => deletePromoCode(modal.promoCode)}
+        />
+      )}
+      {modal?.type === "raffle" && (
+        <RaffleEditor
+          onClose={() => setModal(null)}
+          onSave={saveRaffle}
+          busy={actionState.loading}
+        />
+      )}
+      {modal?.type === "raffleDelete" && (
+        <ConfirmPanel
+          title="Удалить розыгрыш"
+          text={`Розыгрыш «${modal.raffle.title}» будет удалён. Поездки водителей не пострадают, но период исчезнет из фильтра рейтинга.`}
+          confirmLabel="Удалить"
+          busy={actionState.loading}
+          danger
+          onClose={() => setModal(null)}
+          onConfirm={() => deleteRaffle(modal.raffle)}
+        />
+      )}
+      {modal?.type === "reviewDelete" && (
+        <ConfirmPanel
+          title="Удалить отзыв"
+          text="Отзыв будет удалён из истории рейтинга водителя без возможности восстановления. Используйте для явно накрученных или оскорбительных отзывов."
+          confirmLabel="Удалить отзыв"
+          busy={actionState.loading}
+          danger
+          onClose={() => setModal(null)}
+          onConfirm={() => deleteReview(modal.review)}
+        />
+      )}
+      {modal?.type === "payoutReject" && (
+        <PayoutRejectPanel
+          payoutRequest={modal.payoutRequest}
+          busy={actionState.loading}
+          onClose={() => setModal(null)}
+          onConfirm={reason => reviewPayout(modal.payoutRequest, "REJECTED", reason)}
         />
       )}
     </main>
@@ -1268,13 +1385,39 @@ function AdminPage(props) {
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
   if (active === "roadAlerts") return <RoadAlertsPage alerts={asArray(payload, "alerts")} regions={asArray(payload, "regions")} {...props} />;
-  if (active === "quality") return <QualityPage reviews={asArray(payload, "reviews")} leaderboard={asArray(payload, "leaderboard")} />;
+  if (active === "quality") {
+    return (
+      <QualityPage
+        reviews={asArray(payload, "reviews")}
+        leaderboard={asArray(payload, "leaderboard")}
+        raffles={asArray(payload, "raffles")}
+        ratingScope={props.ratingScope}
+        setRatingScope={props.setRatingScope}
+        ratingRaffleId={props.ratingRaffleId}
+        setRatingRaffleId={props.setRatingRaffleId}
+        onDeleteReview={props.onDeleteReview}
+      />
+    );
+  }
   if (active === "audit") return <AuditPage logs={asArray(payload, "logs")} />;
   if (active === "settings") return <SettingsPage settings={payload?.settings} onSave={props.onSaveSettings} canEdit={props.canEditSettings} />;
   if (active === "support") return <SupportPage messages={asArray(payload, "messages")} {...props} />;
   if (active === "promoCodes") return <PromoCodesPage promoCodes={asArray(payload, "promoCodes")} {...props} />;
   if (active === "recurringBookings") return <RecurringBookingsPage bookings={asArray(payload, "recurringBookings")} {...props} />;
   if (active === "referrals") return <ReferralsPage referrals={asArray(payload, "referrals")} />;
+  if (active === "raffles") return <RafflesPage raffles={asArray(payload, "raffles")} onAddRaffle={props.onAddRaffle} onDeleteRaffle={props.onDeleteRaffle} />;
+  if (active === "payouts") {
+    return (
+      <PayoutsPage
+        payoutRequests={asArray(payload, "payoutRequests")}
+        payoutStatus={props.payoutStatus}
+        setPayoutStatus={props.setPayoutStatus}
+        onApprove={props.onApprovePayout}
+        onMarkPaid={props.onMarkPaidPayout}
+        onReject={props.onRejectPayout}
+      />
+    );
+  }
   return <StatePanel title="Нет данных для отображения" text="Выберите раздел меню или обновите страницу." />;
 }
 
@@ -1639,7 +1782,7 @@ function TariffsPage({
                 <InfoLine label="За км" value={formatMoney(tariff.pricePerKm)} />
                 <InfoLine label="За минуту" value={formatMoney(tariff.pricePerMinute)} />
                 <InfoLine label="Минимум" value={formatMoney(tariff.minimumPrice)} />
-                <InfoLine label="Комиссия" value={formatPercent(tariff.serviceCommissionPercent)} />
+                <InfoLine label="Комиссия сервиса, %" value={formatPercent(tariff.serviceCommissionPercent)} />
                 <InfoLine label="Спрос" value={formatMultiplier(tariff.surgeMultiplier)} />
                 <InfoLine label="Ожидание" value={`${tariff.freeWaitingMinutes || 0} мин бесплатно · ${formatMoney(tariff.waitingPricePerMinute)}/мин`} />
                 <InfoLine label="Сортировка" value={tariff.sortOrder || 0} />
@@ -2432,15 +2575,238 @@ function ConfirmPanel({ title, text, confirmLabel, danger, busy, onClose, onConf
   );
 }
 
-function QualityPage({ reviews, leaderboard }) {
+function raffleStatus(raffle) {
+  const now = new Date();
+  const starts = raffle.startsAt ? new Date(raffle.startsAt) : null;
+  const ends = raffle.endsAt ? new Date(raffle.endsAt) : null;
+  if (starts && now < starts) return "upcoming";
+  if (ends && now > ends) return "ended";
+  return "active";
+}
+
+const raffleStatusLabels = { upcoming: "Скоро начнётся", active: "Идёт сейчас", ended: "Завершён" };
+const raffleStatusTones = { upcoming: "warning", active: "success", ended: "muted" };
+
+function RafflesPage({ raffles, onAddRaffle, onDeleteRaffle }) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader
+        title="Розыгрыши"
+        subtitle="Конкурсы среди водителей по рейтингу за период"
+        action={<button type="button" className="admin-primary-button" onClick={onAddRaffle}>Добавить розыгрыш</button>}
+      />
+      {!raffles.length ? (
+        <StatePanel
+          title="Розыгрышей пока нет"
+          text="Создайте период — поездки водителей, завершённые в это время, попадут в зачёт автоматически."
+          action="Добавить розыгрыш"
+          onAction={onAddRaffle}
+        />
+      ) : (
+        <section className="admin-card-grid raffles">
+          {raffles.map(raffle => {
+            const status = raffleStatus(raffle);
+            return (
+              <article className="admin-application-card" key={raffle.id}>
+                <header>
+                  <div>
+                    <strong>{raffle.title}</strong>
+                    <span>{formatDate(raffle.startsAt)} — {formatDate(raffle.endsAt)}</span>
+                  </div>
+                  <Badge tone={raffleStatusTones[status]}>{raffleStatusLabels[status]}</Badge>
+                </header>
+                <footer>
+                  <button type="button" className="admin-danger-button compact" onClick={() => onDeleteRaffle(raffle)}>Удалить</button>
+                </footer>
+              </article>
+            );
+          })}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function RaffleEditor({ onClose, onSave, busy }) {
+  const [form, setForm] = useState({ title: "", startsAt: dateInputValue(new Date()), endsAt: dateInputValue(new Date()) });
+  const [error, setError] = useState("");
+
+  function setField(field, value) {
+    setForm(current => ({ ...current, [field]: value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    if (!form.title.trim()) {
+      setError("Введите название розыгрыша");
+      return;
+    }
+    if (new Date(form.endsAt) <= new Date(form.startsAt)) {
+      setError("Дата окончания должна быть позже даты начала");
+      return;
+    }
+    try {
+      await onSave(form);
+    } catch (submitError) {
+      setError(submitError.message || "Не удалось создать розыгрыш");
+    }
+  }
+
+  return (
+    <ModalFrame title="Добавить розыгрыш" onClose={onClose}>
+      <form className="admin-form-grid" onSubmit={submit}>
+        <Field label="Название" value={form.title} onChange={value => setField("title", value)} />
+        <div className="admin-form-row">
+          <label className="admin-field">
+            <span>Дата начала</span>
+            <input type="date" value={form.startsAt} onChange={event => setField("startsAt", event.target.value)} />
+          </label>
+          <label className="admin-field">
+            <span>Дата окончания</span>
+            <input type="date" value={form.endsAt} onChange={event => setField("endsAt", event.target.value)} />
+          </label>
+        </div>
+        {error && <InlineMessage danger text={error} />}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="submit" className="admin-primary-button" disabled={busy}>{busy ? "Сохраняем..." : "Создать розыгрыш"}</button>
+        </div>
+      </form>
+    </ModalFrame>
+  );
+}
+
+const payoutStatusLabels = {
+  PENDING: "Ожидает",
+  APPROVED: "Одобрена",
+  PAID: "Выплачена",
+  REJECTED: "Отклонена",
+  CANCELLED: "Отменена водителем"
+};
+
+const payoutStatusTones = {
+  PENDING: "warning",
+  APPROVED: "warning",
+  PAID: "success",
+  REJECTED: "danger",
+  CANCELLED: "muted"
+};
+
+const payoutMethodLabels = { KASPI_TRANSFER: "Перевод Kaspi", CASH: "Наличные" };
+
+function PayoutsPage({ payoutRequests, payoutStatus, setPayoutStatus, onApprove, onMarkPaid, onReject }) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Выплаты" subtitle="Заявки водителей на вывод средств">
+        <SegmentedFilter
+          value={payoutStatus}
+          onChange={setPayoutStatus}
+          items={[
+            ["PENDING", "Ожидают"],
+            ["APPROVED", "Одобрены"],
+            ["PAID", "Выплачены"],
+            ["REJECTED", "Отклонены"],
+            ["ALL", "Все"]
+          ]}
+        />
+      </PageHeader>
+      {!payoutRequests.length ? (
+        <StatePanel title="Заявок нет" text="Заявки водителей на вывод средств появятся здесь." />
+      ) : (
+        <section className="admin-card-grid payouts">
+          {payoutRequests.map(item => (
+            <article className="admin-application-card" key={item.id}>
+              <header>
+                <div>
+                  <strong>{item.driverName || "Водитель"}</strong>
+                  <span>{item.driverPhone || "Телефон не указан"}</span>
+                </div>
+                <Badge tone={payoutStatusTones[item.status] || "muted"}>{payoutStatusLabels[item.status] || item.status}</Badge>
+              </header>
+              <div className="admin-card-facts">
+                <InfoLine label="Сумма" value={formatMoney(item.amountKzt)} />
+                <InfoLine label="Способ" value={payoutMethodLabels[item.method] || item.method} />
+                <InfoLine label="Создана" value={formatDate(item.createdAt)} />
+                <InfoLine label="Реквизиты" value={item.payoutDetails?.phone || item.payoutDetails?.account || "Не указаны"} />
+              </div>
+              {item.rejectionReason && <p className="admin-honest-note">Причина отклонения: {item.rejectionReason}</p>}
+              {item.status === "PENDING" && (
+                <footer>
+                  <button type="button" className="admin-danger-button compact" onClick={() => onReject(item)}>Отклонить</button>
+                  <button type="button" className="admin-primary-button compact" onClick={() => onApprove(item)}>Одобрить</button>
+                </footer>
+              )}
+              {item.status === "APPROVED" && (
+                <footer>
+                  <button type="button" className="admin-primary-button compact" onClick={() => onMarkPaid(item)}>Отметить как выплачено</button>
+                </footer>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PayoutRejectPanel({ payoutRequest, busy, onClose, onConfirm }) {
+  const [reason, setReason] = useState("");
+  return (
+    <ModalFrame title="Отклонить заявку на выплату" onClose={onClose}>
+      <div className="admin-detail-stack">
+        <p>Заявка водителя {payoutRequest.driverName || ""} на {formatMoney(payoutRequest.amountKzt)}.</p>
+        <label className="admin-textarea-field">
+          <span>Причина отклонения</span>
+          <textarea value={reason} onChange={event => setReason(event.target.value)} rows={4} placeholder="Например: неверные реквизиты" />
+        </label>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="button" className="admin-danger-button" disabled={busy || !reason.trim()} onClick={() => onConfirm(reason.trim())}>
+            {busy ? "Отправляем..." : "Отклонить заявку"}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
+  );
+}
+
+function QualityPage({ reviews, leaderboard, raffles, ratingScope, setRatingScope, ratingRaffleId, setRatingRaffleId, onDeleteReview }) {
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
     : 0;
   const lowReviews = reviews.filter(review => Number(review.rating || 0) <= 3);
+  const selectedRaffle = raffles.find(item => item.id === ratingRaffleId);
 
   return (
     <div className="admin-page-stack">
-      <PageHeader title="Качество сервиса" subtitle="Отзывы клиентов, рейтинг водителей и слабые точки поездок" />
+      <PageHeader title="Качество сервиса" subtitle="Отзывы клиентов, рейтинг водителей и слабые точки поездок">
+        <SegmentedFilter
+          value={ratingScope}
+          onChange={setRatingScope}
+          items={[
+            ["all", "Общий рейтинг"],
+            ["raffle", "За розыгрыш"]
+          ]}
+        />
+        {ratingScope === "raffle" && (
+          <select className="admin-control-select" value={ratingRaffleId} onChange={event => setRatingRaffleId(event.target.value)}>
+            <option value="">Выберите розыгрыш</option>
+            {raffles.map(raffle => (
+              <option value={raffle.id} key={raffle.id}>{raffle.title}</option>
+            ))}
+          </select>
+        )}
+      </PageHeader>
+      {ratingScope === "raffle" && !raffles.length && (
+        <InlineMessage text="Розыгрышей пока нет — создайте период в разделе «Розыгрыши», чтобы фильтровать рейтинг по нему." />
+      )}
+      {ratingScope === "raffle" && raffles.length > 0 && !ratingRaffleId && (
+        <InlineMessage text="Выберите розыгрыш, чтобы увидеть рейтинг только за этот период." />
+      )}
+      {ratingScope === "raffle" && selectedRaffle && (
+        <InlineMessage text={`Показан рейтинг за период «${selectedRaffle.title}»: ${formatDate(selectedRaffle.startsAt)} — ${formatDate(selectedRaffle.endsAt)}`} />
+      )}
 
       <section className="admin-analytics-grid quality">
         <article className="admin-analytics-card quality">
@@ -2515,6 +2881,11 @@ function QualityPage({ reviews, leaderboard }) {
                     </div>
                   ) : null}
                   <p>{review.comment || "Комментарий не указан"}</p>
+                  <footer>
+                    <button type="button" className="admin-danger-button compact" onClick={() => onDeleteReview(review)}>
+                      Удалить отзыв
+                    </button>
+                  </footer>
                 </article>
               ))}
             </div>
@@ -2746,7 +3117,7 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
           <Field label="Минимальная цена, ₸" type="number" value={form.minimumPrice} onChange={value => setField("minimumPrice", value)} />
         </div>
         <div className="admin-form-row">
-          <Field label="Комиссия сервиса %" type="number" value={form.serviceCommissionPercent} onChange={value => setField("serviceCommissionPercent", value)} />
+          <Field label="Комиссия сервиса, %" type="number" value={form.serviceCommissionPercent} onChange={value => setField("serviceCommissionPercent", value)} />
           <Field label="Коэффициент спроса" type="number" value={form.surgeMultiplier} onChange={value => setField("surgeMultiplier", value)} />
         </div>
         <div className="admin-form-row">

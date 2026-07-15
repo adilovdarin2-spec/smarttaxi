@@ -231,7 +231,7 @@ void main() {
       expect(passenger, contains('Маршрут временно недоступен.'));
       expect(passenger, contains('Считаем маршрут...'));
       expect(passenger, contains('Map<String, RoutePreview> _tariffEstimates'));
-      expect(passenger, contains('_TariffListRow'));
+      expect(passenger, contains('_TariffCard'));
       expect(passenger, contains('_formatTenge'));
       expect(passenger, contains('Заказать'));
     },
@@ -288,7 +288,7 @@ void main() {
     );
     expect(passenger, contains('AnimatedSwitcher'));
     expect(passenger, contains('AnimatedSize'));
-    expect(passenger, contains('_TariffListRow'));
+    expect(passenger, contains('_TariffCard'));
     expect(passenger, contains('AnimatedContainer'));
     expect(passenger, contains('_CompactNotice'));
     expect(

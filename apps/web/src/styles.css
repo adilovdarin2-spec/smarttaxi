@@ -5212,6 +5212,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-application-card footer,
 .admin-approval-card footer,
 .admin-tariff-card footer,
+.admin-review-card footer,
 .admin-modal-actions,
 .admin-detail-actions,
 .admin-row-actions {

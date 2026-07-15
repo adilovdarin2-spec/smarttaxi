@@ -516,8 +516,38 @@ export function getAdminReviews() {
   return api("/api/admin/reviews");
 }
 
-export function getAdminLeaderboard() {
-  return api("/api/admin/leaderboard");
+export function deleteAdminReview(reviewId) {
+  return api(`/api/admin/reviews/${reviewId}`, { method: "DELETE" });
+}
+
+export function getAdminLeaderboard(params = {}) {
+  return api(`/api/admin/leaderboard${queryString(params)}`);
+}
+
+export function getAdminRaffles() {
+  return api("/api/admin/raffles");
+}
+
+export function createAdminRaffle(payload) {
+  return api("/api/admin/raffles", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAdminRaffle(raffleId) {
+  return api(`/api/admin/raffles/${raffleId}`, { method: "DELETE" });
+}
+
+export function getAdminPayoutRequests(params = {}) {
+  return api(`/api/admin/payout-requests${queryString(params)}`);
+}
+
+export function reviewAdminPayoutRequest(payoutRequestId, payload) {
+  return api(`/api/admin/payout-requests/${payoutRequestId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
 }
 
 export function getAdminPromoCodes() {
