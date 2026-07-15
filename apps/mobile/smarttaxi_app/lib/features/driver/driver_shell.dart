@@ -371,10 +371,30 @@ class _DriverShellState extends State<DriverShell> {
       }
       setState(() => _online = nextOnline);
     } catch (error) {
-      setState(() {
-        _error = readableError(error);
-        if (nextOnline) _locationMessage = null;
-      });
+      // Belt-and-suspenders: _disabledReason() already checks region
+      // approval status up front and disables the toggle, but that status
+      // is only as fresh as the last _loadRegions() call — an admin
+      // approval/block landing in between would only surface here, as the
+      // actual API rejection. Route it through a toast + the documents
+      // screen instead of the bare inline _error banner other failures
+      // (network issues, DRIVER_HAS_ACTIVE_ORDER, etc.) still use.
+      const approvalCodes = {
+        'DRIVER_REGION_NOT_APPROVED',
+        'DRIVER_REGION_BLOCKED',
+        'DRIVER_BLOCKED',
+      };
+      final message = error.toString();
+      final isApprovalBlock =
+          nextOnline && approvalCodes.any(message.contains);
+      if (isApprovalBlock) {
+        if (mounted) {
+          AppToast.showError(context, readableError(error));
+          _showDriverFullSheet(DriverDocumentsScreen(api: widget.api));
+        }
+      } else {
+        setState(() => _error = readableError(error));
+      }
+      if (nextOnline) setState(() => _locationMessage = null);
     } finally {
       if (mounted) {
         setState(() {
@@ -1655,6 +1675,19 @@ class _DriverShellState extends State<DriverShell> {
                 ? null
                 : () => _setOnline(!_online),
           ),
+          // Selecting a region is a normal setup step (handled fine by
+          // DriverShiftHero's plain caption above) — this card is only for
+          // the two states that actually need explaining: an approval still
+          // pending review, or one an admin rejected with a reason.
+          if (_selectedRegion != null &&
+              _selectedRegion!.status != 'APPROVED') ...[
+            const SizedBox(height: 12),
+            _DriverApprovalStatusCard(
+              region: _selectedRegion!,
+              onCheckDocuments: () =>
+                  _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
+            ),
+          ],
           if (_regionId != null) ...[
             const SizedBox(height: 12),
             _DemandHintCard(level: _demandLevel, loading: _demandHintLoading),
@@ -2082,6 +2115,89 @@ class _DriverShellState extends State<DriverShell> {
 // active tariffs — a real server-computed pricing signal, not a spatial
 // heatmap (the backend has no such endpoint). Thresholds are a judgment
 // call, not a server-defined boundary.
+// Explains *why* the line toggle is disabled instead of leaving the driver
+// staring at a greyed-out button — driver_region_approvals.status drives
+// this (see assertDriverCanGoOnline in driver-region-approvals.service.js):
+// missing row / any non-terminal status reads as "under review" (there's no
+// distinct PENDING enum value — absence of an APPROVED/BLOCKED row means an
+// admin hasn't acted on it yet), 'BLOCKED' carries a real block_reason to
+// show verbatim rather than a generic message.
+class _DriverApprovalStatusCard extends StatelessWidget {
+  const _DriverApprovalStatusCard({
+    required this.region,
+    required this.onCheckDocuments,
+  });
+
+  final DriverRegion region;
+  final VoidCallback onCheckDocuments;
+
+  bool get _blocked => region.status == 'BLOCKED';
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final color = _blocked ? palette.danger : palette.gold;
+    final background = _blocked ? palette.dangerSoft : palette.goldSurface;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _blocked
+                    ? Icons.block_rounded
+                    : Icons.hourglass_top_rounded,
+                color: color,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _blocked ? 'Доступ заблокирован' : 'Заявка на рассмотрении',
+                  style: TextStyle(
+                    color: palette.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _blocked
+                ? (region.blockReason.trim().isEmpty
+                    ? 'Работа в регионе «${region.name}» заблокирована администратором.'
+                    : region.blockReason)
+                : 'Мы проверяем ваш доступ к региону «${region.name}». Обычно это занимает немного времени — убедитесь, что все документы загружены и не отклонены, это ускорит проверку.',
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onCheckDocuments,
+              child: const Text('Проверить документы'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DemandHintCard extends StatelessWidget {
   const _DemandHintCard({required this.level, required this.loading});
 

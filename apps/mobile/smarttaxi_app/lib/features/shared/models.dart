@@ -294,12 +294,16 @@ class DriverRegion {
       required this.name,
       required this.status,
       required this.isActive,
+      this.blockReason = '',
       this.center});
 
   final String id;
   final String name;
   final String status;
   final bool isActive;
+  // Only meaningful when status == 'BLOCKED' (driver_region_approvals.
+  // block_reason, set by the admin who blocked this driver for the region).
+  final String blockReason;
   final Coordinate? center;
 
   factory DriverRegion.fromJson(Map<String, dynamic> json) {
@@ -308,6 +312,7 @@ class DriverRegion {
       name: '${json['name'] ?? json['regionName'] ?? 'Регион'}',
       status: '${json['status'] ?? 'APPROVED'}',
       isActive: json['is_active'] != false && json['isActive'] != false,
+      blockReason: '${json['blockReason'] ?? json['block_reason'] ?? ''}',
       center: _coordinateFromFields(json, ['center_lat', 'centerLat', 'lat'],
           ['center_lng', 'centerLng', 'lng']),
     );
