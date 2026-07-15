@@ -17,8 +17,27 @@ externally extended (by another session) with a `driver_documents` mock
 query — a signal that `assertDriverDispatchReady`'s dependency chain had
 grown a new gate.
 
-**Update (2026-07-15 ~11:53): 0a is now RESOLVED, 0b is still open —
-see below each.**
+**Update (2026-07-15 ~12:22): BOTH RESOLVED — this scenario is closed.**
+0a fixed at ~11:2x (`7cafd68`). 0b fixed at ~12:04-12:13 by the mobile
+session itself, in direct response to this doc: commit `74d8fcc`
+("extend the approval-gate UX fix to cover the new document-completeness
+check") added `DRIVER_DOCUMENTS_NOT_APPROVED` to both `approvalCodes`
+and `readableError()`, made `_disabledReason()` check documents *before*
+region (matching backend precedence exactly), and added a third
+`_DriverApprovalStatusCard` state ("Нужны документы") shown proactively.
+Commit `bc0d4e0` ("cross-check and close QA session's
+DRIVER_DOCUMENTS_NOT_APPROVED finding") then explicitly verified the
+mid-trip-action concern raised below — confirmed `_tripAction` already
+routes through the same `readableError()`, so document lapses mid-trip
+are covered too, not just the go-online toggle. Re-verified independently
+here: `DRIVER_DOCUMENTS_NOT_APPROVED` now appears in both
+`driver_shell.dart` (2 occurrences) and `driver_shell_helpers.dart` (1).
+**This is the scenario working as intended**: server published an exact
+error-code contract in its own status doc, this QA pass verified the
+client side against it and flagged the gap with file/line-level
+specificity, and the owning session closed it same-cycle, referencing
+this doc directly. Nothing further to track here unless the contract
+changes again.
 
 **0a. Repo-integrity break — RESOLVED (commit `7cafd68`,
 "fix(drivers): block undocumented drivers from all dispatch paths",

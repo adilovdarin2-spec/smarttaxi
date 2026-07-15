@@ -155,19 +155,18 @@ changed.
   doesn't currently document a firewall step. Worth fixing before go-live:
   either bind `127.0.0.1:4000:4000` in `docker-compose.yml`, or add an
   explicit `ufw`/security-group step to the deployment doc.
-- **Driver document-approval gating — mobile still doesn't handle the new
-  error code**: see full writeup in
+- **Driver document-approval gating — "can't go online without approval"
+  chain**: VERIFIED DONE (closed same-night, 2026-07-15). Full trail in
   [qa-overnight-2026-07-15.md §0](status/qa-overnight-2026-07-15.md#0-driver-cant-go-online-without-approval-chain-tracked-across-serverwebmobile).
-  The repo-integrity half of this (missing `driver-documents/` module in
-  git) is **RESOLVED** (commit `7cafd68`). Still open: the backend's
-  `DRIVER_DOCUMENTS_NOT_APPROVED` gate (checked *before* region approval
-  when a driver tries to go online, **and** on every trip-progress action
-  via the shared `assertDriverDispatchReady` — per
-  `server-overnight-2026-07-15.md` §8, so a document lapsing mid-trip hits
-  this too) isn't in mobile's `driver_shell.dart` special-case set or
-  `readableError()` map, so it still falls back to a bare/generic error —
-  exactly the UX bug the same-night `d4ab35b` fix was meant to close,
-  just for the documents half of the chain instead of the region half.
+  Backend added a real `DRIVER_DOCUMENTS_NOT_APPROVED` gate (checked
+  before region approval, and on every trip-progress action via the
+  shared `assertDriverDispatchReady`); the module implementing it was
+  briefly missing from git (`7cafd68` fixed that); mobile's UX handling
+  of the new code was briefly incomplete (`74d8fcc` fixed that, `bc0d4e0`
+  independently verified mid-trip actions are covered too). Backend,
+  admin/web (document review UI, `16eccda`), and mobile all now agree on
+  the same error-code contract — a working example of the cross-session
+  reconciliation this checklist exists to catch when it *doesn't* happen.
 
 ## Production readiness — finalize (2026-07-15)
 
