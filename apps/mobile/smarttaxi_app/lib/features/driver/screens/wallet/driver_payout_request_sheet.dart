@@ -7,6 +7,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../models/driver_wallet_models.dart';
+import '../../widgets/driver_common_widgets.dart';
 
 class DriverPayoutRequestSheet extends StatefulWidget {
   const DriverPayoutRequestSheet({
@@ -132,21 +133,11 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
             Text(_error!, style: TextStyle(color: palette.danger)),
           ],
           const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(l10n.driverPayoutSubmitButton),
-            ),
+          DriverGradientButton(
+            text: l10n.driverPayoutSubmitButton,
+            loading: _submitting,
+            loadingText: 'Отправляем...',
+            onTap: _submit,
           ),
         ],
       ),

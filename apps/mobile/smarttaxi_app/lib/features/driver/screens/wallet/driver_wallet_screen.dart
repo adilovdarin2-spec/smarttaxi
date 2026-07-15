@@ -8,6 +8,7 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/status_pill.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../models/driver_wallet_models.dart';
+import '../../widgets/driver_common_widgets.dart';
 import 'driver_payout_request_sheet.dart';
 
 String _money(int value) {
@@ -245,12 +246,10 @@ class _WalletBalanceCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: canRequestPayout ? onRequestPayout : null,
-              child: Text(l10n.driverWalletRequestPayoutButton),
-            ),
+          DriverGradientButton(
+            text: l10n.driverWalletRequestPayoutButton,
+            enabled: canRequestPayout,
+            onTap: canRequestPayout ? onRequestPayout : null,
           ),
           if (!canRequestPayout) ...[
             const SizedBox(height: 8),
