@@ -85,56 +85,63 @@ itself — this doc only summarizes.
 
 ## 3. API contract sync check (server / web / mobile)
 
-No `docs/status/mobile-overnight-*.md` exists yet for 2026-07-15 — only
-`server-overnight-2026-07-15.md` and `web-overnight-2026-07-15.md`. Compared
-those two against each other and against the actual `apps/mobile` code
-directly (grep, not a status doc) for the five features named:
+Initial pass (before ~03:00): no `docs/status/mobile-overnight-*.md`
+existed yet. **Update (2026-07-15, ~06:00-06:30, via the QA loop's
+periodic recheck)**: it now exists, at a non-obvious path —
+`apps/mobile/smarttaxi_app/docs/status/mobile-overnight-2026-07-15.md`
+(nested under the mobile app, not at the repo-root `docs/status/` like
+the other three) — worth remembering for future sessions searching for
+it. That session shipped a 16-item brief covering, among other things,
+all five features tracked here. Re-verified every field name below
+directly against `apps/mobile/smarttaxi_app/lib/core/api/api_client.dart`
+(grep, not trusting the doc's own claims):
 
-- **favorites (addresses)**: backend `label?/title/addressText/lat/lng`
-  ↔ web `mvpApi.js` — **matches**. Web's own doc already flags that it
-  self-corrected a first-pass mismatch (`label/address` → `title/addressText`)
-  after reading the server doc — no outstanding issue.
-- **referrals**: backend exposes both `/api/referrals/mine` and
-  `/api/referrals/me` (alias, added mid-session specifically because the
-  web client was already calling `/me`) — web calls `/api/referrals/me` —
-  **matches**, no action needed.
-- **recurring-bookings**: backend `GET /api/admin/recurring-bookings` ↔
-  web admin overview page — **matches** (web's doc explicitly names this
-  endpoint). Client-side booking *creation*
-  (`POST /api/recurring-bookings`, the driver/client flow, not the admin
-  read-only page) is **not wired in web or mobile yet** — backend-only.
+- **favorites (addresses)**: backend `label?/title/addressText/lat/lng` ↔
+  web `mvpApi.js` **and** mobile `ApiClient.createFavoriteAddress` (body
+  keys `label`/`title`/`addressText`, confirmed by grep) — **matches on
+  both clients**, no outstanding issue.
+- **favorites (drivers)**: backend `{driverId, type: FAVORITE|BLOCKED}` ↔
+  mobile `ApiClient` calls to `/api/favorites/drivers` — **matches**.
+  Wired mobile-side this cycle (commit `bbe0de3`); web still doesn't wire
+  the driver favorite/block list (only addresses), which is a real gap
+  but not a mismatch.
+- **referrals**: backend `/api/referrals/mine` + `/me` alias ↔ web calls
+  `/me`, mobile `ApiClient.getReferralSummary()` also calls
+  `/api/referrals/me` (confirmed by grep) — **matches on both clients**.
+  Registration-time code redemption (`referralCode` field, backend-ready)
+  is still unwired on both clients — a real, explicitly-flagged gap on
+  both sides (mobile's doc calls this out too, §12), not a mismatch.
+- **recurring-bookings**: backend contract (`daysOfWeek`/`timeOfDay`/
+  `priceKzt`/etc.) ↔ mobile `ApiClient.createRecurringBooking` — **matches**
+  (confirmed by grep: `daysOfWeek`, `timeOfDay`, `priceKzt` all present as
+  exact keys). Full client+driver flow now wired on mobile (commit
+  `0f4070d`); web still only has the admin read-only overview, no
+  client-facing booking creation — a gap, not a mismatch.
 - **price-offer** (driver counter-offer, `driver_offer_price_kzt` /
-  `/api/orders/:id/price-offer[/respond]`): **update (2026-07-15 ~05:00,
-  commit `611d783`) — now wired on both clients, field names match**.
-  Mobile: driver submits via `_PriceOfferSheet` in
-  [driver_shell.dart](../../apps/mobile/smarttaxi_app/lib/features/driver/driver_shell.dart)
-  → `ApiClient.submitDriverPriceOffer` (`api_client.dart`); rider-side
-  display reads `driverOfferPriceKzt`/`driverOfferStatus` in
-  [models.dart](../../apps/mobile/smarttaxi_app/lib/features/shared/models.dart),
-  parsed from `driver_offer_price_kzt`/`driver_offer_status` — matches the
-  server field names exactly, no mismatch. Web: rider accept/decline card
-  added to `ClientApp.jsx` (see `web-overnight-2026-07-15.md` §10),
-  calling the existing `/price-offer/respond` endpoint with no
-  client-computed price. **This wiring is also what confirmed the known
+  `/api/orders/:id/price-offer[/respond]`): wired on both clients, field
+  names match (`driverOfferPriceKzt`/`driverOfferStatus` in mobile
+  `models.dart` parse `driver_offer_price_kzt`/`driver_offer_status`
+  correctly). **This wiring is also what confirmed the known
   commission-bypass risk is real and reachable, not just theoretical** —
-  see the new entry in `SECURITY_CHECKLIST.md` "New risk areas": the
-  mobile driver price input has no guardrail beyond mirroring the
-  server's flat 200–1,000,000 ₸ bounds.
-- **quick-message**: still **backend-only** — confirmed no
-  `messageKey`/quick-message-vocabulary references anywhere in
-  `apps/mobile/smarttaxi_app/lib` as of this check, despite the same
-  commit wiring price-offer. Web has it (§10 of the web doc). Next gap to
-  close on mobile if this ships to drivers/riders there.
-- **favorites/drivers** (favorite/blocked drivers,
-  `/api/favorites/drivers`): **backend-only** — only `/favorites/addresses`
-  is wired in web; neither client wires the driver favorite/block list.
+  see `SECURITY_CHECKLIST.md` "New risk areas": the mobile driver price
+  input (`_PriceOfferSheet` in `driver_shell.dart`) has no guardrail
+  beyond mirroring the server's flat 200–1,000,000 ₸ bounds.
+- **quick-message**: **update — now wired on mobile too** (commit
+  `5f90802`, both client and driver sides). `ApiClient.sendQuickMessage`
+  posts `{messageKey}` to `/api/orders/:id/quick-message` — matches. The
+  mobile doc notes its 5-option button copy is a *local, hand-mirrored*
+  copy of the server's `QUICK_MESSAGES` map, not fetched from it — flagged
+  by that session as a manual-sync risk if the backend vocabulary ever
+  changes; worth a shared-constants follow-up, not urgent tonight since
+  the 5 keys currently match exactly.
 
-**No field-name/path mismatches found** between what's actually wired on
-each side — the gaps are all "backend done, no client wired yet," not
-"client wired against the wrong contract." Recommended morning order:
-price-offer UI (both apps) and quick-message UI (both apps) are the two
-biggest gaps since they're user-facing safety/usability features already
-fully backed by working, audited API routes.
+**No field-name/path mismatches found anywhere** — every gap that exists
+is "one side hasn't wired it yet," never "wired against the wrong
+contract." As of this recheck, mobile has now caught up on all five
+features (plus SOS, share-trip, and more — see its own status doc for the
+full 16-item scope); the remaining cross-client gaps are: web missing
+favorite/blocked-driver UI and client-facing recurring-booking creation,
+and both clients missing referral-code entry at registration.
 
 ---
 

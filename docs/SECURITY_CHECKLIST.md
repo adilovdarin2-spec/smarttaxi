@@ -126,6 +126,17 @@ changed.
   exists for the client to *call* directly, but if the product intends an
   in-app SOS text/report path, that path currently has no priority
   handling at all.
+  **Confirmed reachable on the mobile client (2026-07-15 ~06:00, commit
+  `784fee8`)**: `_SafetySheet._sendSosAlert()` in
+  [passenger_shell.dart:9992](../apps/mobile/smarttaxi_app/lib/features/passenger/passenger_shell.dart)
+  now actually calls `POST /api/support` with `topic: 'SOS'` (line ~10008)
+  and the rider's live GPS coordinates in the message body, fired in
+  parallel with the emergency phone call. This is good — the button's
+  claim to alert support is no longer false — but it means real SOS
+  traffic now lands in exactly the unprioritized queue described above.
+  The backend gap (no priority column/sort, no distinct operator alert)
+  is unchanged and is now the more urgent half of this item to fix, since
+  it's no longer theoretical.
 - **VPS deployment — API port not restricted to localhost**: discrepancy
   between `docker-compose.yml` and the Nginx-fronted architecture the
   checklist assumes. The `api` service publishes `ports: - "4000:4000"`

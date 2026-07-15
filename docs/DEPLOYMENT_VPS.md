@@ -8,6 +8,17 @@ Target baseline:
 - OS: Ubuntu 24.04
 - Runtime: Docker Compose, Nginx, Let's Encrypt
 
+**QA note (2026-07-15)**: as of this check, neither `api.smarttaxi.kz`
+nor `smarttaxi.kz` currently resolves/responds (`curl` → connection
+failure on both, independently confirmed and also reported live by the
+mobile session in `apps/mobile/smarttaxi_app/docs/status/mobile-overnight-2026-07-15.md`
+§8). The actual live backend right now is
+`https://smarttaxi-api-production.up.railway.app` (confirmed `200` on
+`/api/health`), which is also the mobile app's compiled-in default when
+`API_BASE_URL` isn't overridden. This VPS baseline (this domain, this
+IP) hasn't been stood up yet — treat the steps below as the target
+plan, not the current state, until the domains actually resolve.
+
 Do not put SSH passwords, private keys, or real `.env` values in this repository.
 
 ## 1. DNS
