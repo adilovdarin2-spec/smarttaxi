@@ -1408,14 +1408,19 @@ class _PassengerShellState extends State<PassengerShell>
     PointSource source,
   ) async {
     final selectedRegion = _selectedRegion;
-    if (false &&
-        selectedRegion != null &&
-        !selectedRegion.contains(coordinate)) {
+    // Blocked here, before the point is ever applied to _pickup/_dropoff,
+    // rather than letting a bad point through to _refreshPreview() and
+    // surfacing the rejection as an _error on the tariff screen: that path
+    // left the map zoomed out to fit two far-apart points and stacked a
+    // confusing "tariffs not configured" + "outside region" pair of
+    // messages, and going back from it reset the whole destination pick
+    // instead of just letting the rider try a different address.
+    if (selectedRegion != null && !selectedRegion.contains(coordinate)) {
       if (!mounted) return;
-      setState(() {
-        _error =
-            'Адрес вне выбранного региона. Выберите адрес внутри зоны SmartTaxi или смените регион.';
-      });
+      AppToast.showError(
+        context,
+        'Этот адрес вне зоны обслуживания. Выберите другой.',
+      );
       return;
     }
     final inferredPickupCenter = _mapCenter ??
