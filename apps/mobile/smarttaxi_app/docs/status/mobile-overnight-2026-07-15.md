@@ -1109,3 +1109,51 @@ there was nothing to fix.
 
 **Verified:** `flutter analyze` clean (6 pre-existing warnings, no
 change). **Verified live** via the QA-mock screenshots described above.
+
+### 2. Crash / broken state selecting an address outside the service zone — `bd80cc1`
+
+Reproduced live rather than guessed at: opened the map picker, panned far
+outside Мырзакент's boundary (confirmed via real reverse-geocode results
+along the way — "Nayman", "KZ13-01 Бірлік ауылдық округі" — genuine
+places, not garbage coordinates), then confirmed.
+
+Root cause: `_applyPoint()`'s region-boundary check was already
+disabled with `if (false && selectedRegion != null && ...)` — flagged by
+`flutter analyze` as dead code all session (3 of the session's "6/7
+pre-existing warnings" were this exact block, previously assumed
+harmless). With it dead, no address-selection path (search, recent, or
+map-tap — all funnel through `_applyPoint`) validated against the
+region polygon client-side. A bad point sailed through to
+`_refreshPreview()`, which zoomed the map out to fit two far-apart
+points and stacked a "Тарифы пока не настроены" empty state on top of a
+"Точка назначения вне активного региона" error banner on the same
+screen — not a literal exception, but exactly what a rider would
+describe as the app "bugging out." From that screen, the Android back
+gesture called `_backToAddressSelection()`, which reset the whole
+destination pick and dropped back to the "Куда едем?" prompt — i.e. the
+"jumps to the address-selection screen instead of going back" part of
+the report.
+
+Fix: re-enabled the check using `RegionOption.contains()` (the real
+ray-casting point-in-polygon test — already correct, just unreachable),
+and changed the response from setting a persistent `_error` to a
+transient `AppToast.showError`, returning **before** the bad coordinate
+is ever written to `_pickup`/`_dropoff`. The invalid state is never
+entered, so there's nothing to back out of — the rider lands back on
+the exact screen they were on and can immediately try another address.
+
+**Screenshot evidence:** before — confirming the far-away point zoomed
+the map out to show both KZ and neighboring-country place names, with
+the stacked "tariffs not configured" + "outside region" messages
+visible together. After — confirming the same far-away point shows a
+single toast ("Этот адрес вне зоны обслуживания. Выберите другой.") and
+the app stays on the normal "Куда едем?" prompt, pickup untouched,
+dropoff still unset. Regression-checked a real in-region point
+("KZ13-01 Бірлік ауылдық округі") immediately after — proceeds normally
+to the tariff screen.
+
+**Verified:** `flutter analyze` — down to 3 warnings (the 3 dead-code
+warnings are gone now that the block is reachable; not a new baseline,
+just this bug's own warning disappearing). `flutter test`: 10 failures,
+unchanged from baseline. **Verified live** for both the blocked and
+allowed paths.
