@@ -6490,7 +6490,11 @@ class _TripStatusPanel extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _ShareTripButton(shareToken: order.shareToken),
+                    _ShareTripButton(
+                      shareToken: order.shareToken,
+                      pickup: order.pickup,
+                      dropoff: order.dropoff,
+                    ),
                     const SizedBox(width: 8),
                     _SafetyButton(
                         sosPhone: sosPhone, api: api, orderId: order.id),
@@ -6712,7 +6716,11 @@ class _TripStatusPanel extends StatelessWidget {
                   StatusPill(label: statusText, tone: statusTone),
                   if (order.driverId != null) ...[
                     const SizedBox(width: 8),
-                    _ShareTripButton(shareToken: order.shareToken),
+                    _ShareTripButton(
+                      shareToken: order.shareToken,
+                      pickup: order.pickup,
+                      dropoff: order.dropoff,
+                    ),
                     const SizedBox(width: 8),
                     _SafetyButton(
                         sosPhone: sosPhone, api: api, orderId: order.id),
@@ -8880,33 +8888,51 @@ class _LiveRouteProgressColumn extends StatelessWidget {
 }
 
 class _ShareTripButton extends StatelessWidget {
-  const _ShareTripButton({required this.shareToken});
+  const _ShareTripButton({
+    required this.shareToken,
+    this.pickup,
+    this.dropoff,
+  });
 
   final String? shareToken;
+  final String? pickup;
+  final String? dropoff;
 
   @override
   Widget build(BuildContext context) {
     final token = shareToken;
-    return Material(
-      color: SmartTaxiColors.goldSurface,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: token == null
-            ? null
-            : () {
-                final link = '${AppConfig.webBaseUrl}/track/$token';
-                unawaited(Share.share(
-                  'Слежу за поездкой SmartTaxi, можно посмотреть статус: $link',
-                ));
-              },
-        child: const SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            Icons.ios_share_rounded,
-            color: SmartTaxiColors.goldDeep,
-            size: 16,
+    final enabled = token != null;
+    return Tooltip(
+      message: enabled
+          ? 'Поделиться отслеживанием поездки'
+          : 'Ссылка появится, как только найдётся водитель',
+      child: Material(
+        color: SmartTaxiColors.goldSurface,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: !enabled
+              ? null
+              : () {
+                  final link = '${AppConfig.webBaseUrl}/track/$token';
+                  final route = [pickup, dropoff]
+                      .where((value) => (value ?? '').trim().isNotEmpty)
+                      .join(' → ');
+                  final routeSuffix = route.isEmpty ? '' : ': $route';
+                  unawaited(Share.share(
+                    'Слежу за поездкой SmartTaxi$routeSuffix. Статус: $link',
+                  ));
+                },
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(
+              Icons.ios_share_rounded,
+              color: enabled
+                  ? SmartTaxiColors.goldDeep
+                  : SmartTaxiColors.textMuted,
+              size: 16,
+            ),
           ),
         ),
       ),
