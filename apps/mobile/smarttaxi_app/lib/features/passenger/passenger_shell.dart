@@ -2932,52 +2932,28 @@ class _PassengerShellState extends State<PassengerShell>
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _promoCheckController,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: const InputDecoration(
-                        hintText: 'Например, SMART500',
-                        prefixIcon: Icon(Icons.local_offer_outlined),
-                      ),
-                      onSubmitted: (_) => unawaited(_checkPromoCode()),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Explicit width, not just height: ElevatedButtonTheme sets
-                  // minimumSize: Size.fromHeight(56), i.e. an infinite-width
-                  // minimum meant to be overridden by a full-width parent
-                  // (SizedBox(width: double.infinity, ...)) elsewhere in the
-                  // app. Here the button sits beside the address field in a
-                  // Row instead, so that infinite width has nothing to
-                  // resolve against — Flutter throws "BoxConstraints forces
-                  // an infinite width" during layout, which silently blanks
-                  // this whole screen (caught by no visible error boundary).
-                  SizedBox(
-                    width: 140,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      onPressed: _promoCheckLoading
-                          ? null
-                          : () => unawaited(_checkPromoCode()),
-                      child: _promoCheckLoading
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Проверить'),
-                    ),
-                  ),
-                ],
+              // Was a Row with the field sharing width against a fixed
+              // 140px button — left only ~120dp for text next to the
+              // prefix icon, so typing past 5-6 characters scrolled the
+              // start of the code out of view. Full-width field on its
+              // own line, standard full-width CTA below — same pattern
+              // as every other primary action in the app now.
+              TextField(
+                controller: _promoCheckController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  hintText: 'Например, SMART500',
+                  prefixIcon: Icon(Icons.local_offer_outlined),
+                ),
+                onSubmitted: (_) => unawaited(_checkPromoCode()),
+              ),
+              const SizedBox(height: 12),
+              _GoldCtaButton(
+                enabled: !_promoCheckLoading,
+                loading: _promoCheckLoading,
+                text: 'Проверить',
+                loadingText: 'Проверяем...',
+                onTap: () => unawaited(_checkPromoCode()),
               ),
               if (_promoCheckError != null) ...[
                 const SizedBox(height: 12),
@@ -5319,33 +5295,37 @@ class _CenterMapMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Address-picker crosshair, not the confirmed pickup/dropoff pins (see
-    // _assetMarker calls in _MapCanvas). Enlarged on 2026-07-15 direct
-    // request — the rider needs to clearly see which exact spot the pin's
-    // tip is over while dragging the map under it, so this one stays
-    // bigger even as the confirmed-route pins below get smaller.
-    const pinWidth = 36.0;
+    // _assetMarker calls in _MapCanvas). Enlarged twice on 2026-07-15 direct
+    // request (27->36->50) — the rider needs to clearly see which exact
+    // spot the pin's tip is over while dragging the map under it, so this
+    // one stays bigger even as the confirmed-route pins below get smaller.
+    // Note: the source PNG has real transparent padding (content bbox is
+    // ~77% of canvas width, ~91% of height — measured directly off the
+    // asset), so the visually solid part of the pin is noticeably smaller
+    // than pinWidth itself; sized up further to compensate.
+    const pinWidth = 50.0;
     const pinHeight = pinWidth * _assetAspect;
     const tipShift = pinHeight * (_tipFraction - 0.5);
     return SizedBox(
-      width: 90,
-      height: 90,
+      width: 126,
+      height: 126,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Transform.translate(
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 5),
             child: const _MarkerRadarPulse(
               color: _addressPickMarkerColor,
-              baseSize: 25,
+              baseSize: 35,
             ),
           ),
           // Ground-contact shadow directly under the pin's tip.
           Transform.translate(
-            offset: const Offset(0, 7),
+            offset: const Offset(0, 9),
             child: Container(
-              width: 16,
-              height: 5,
+              width: 22,
+              height: 7,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(4),
@@ -12355,6 +12335,125 @@ class _TariffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = estimate?.estimatedPrice;
+    final iconBox = Container(
+      height: stretch ? 52 : 48,
+      width: stretch ? 52 : double.infinity,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: selected
+              ? [SmartTaxiColors.goldSurface, Colors.white]
+              : [const Color(0xfffbfbfb), const Color(0xfff5f6f8)],
+        ),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color:
+              selected ? SmartTaxiColors.borderStrong : SmartTaxiColors.border,
+        ),
+      ),
+      child: item.asset.isEmpty
+          ? _SvgIcon(
+              item.title == 'Доставка' ? _iconDelivery : _iconCar,
+              size: 24,
+              color: SmartTaxiColors.goldDeep,
+            )
+          : Image.asset(
+              item.asset,
+              width: stretch ? 46 : 58,
+              height: stretch ? 34 : 42,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, __, ___) => _SvgIcon(
+                item.title == 'Доставка' ? _iconDelivery : _iconCar,
+                size: 24,
+                color: SmartTaxiColors.goldDeep,
+              ),
+            ),
+    );
+    final titleText = Text(
+      item.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: dark ? Colors.white.withValues(alpha: 0.78) : SmartTaxiColors.textSecondary,
+        fontSize: 11.5,
+        height: 1.1,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+    final priceText = Text(
+      price == null ? '...' : _formatTenge(price),
+      maxLines: 1,
+      style: TextStyle(
+        color: dark ? Colors.white : SmartTaxiColors.text,
+        fontSize: 16.5,
+        height: 1.05,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.2,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+    final bestValueBadge = bestValue
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: SmartTaxiColors.success.withValues(alpha: dark ? 0.22 : 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Text(
+              'Выгодно',
+              style: TextStyle(
+                color: SmartTaxiColors.success,
+                fontSize: 9.5,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          )
+        : null;
+    // Stretch (wide, one-or-two-tariff) cards use a horizontal layout —
+    // icon on the left, text to its right — instead of the same centered
+    // vertical stack the narrow scrollable cards use. A vertical stack
+    // stretched to ~150dp+ left the icon centered but the text left-aligned
+    // below it, an unbalanced mismatch that read as sloppy on wide cards.
+    final content = stretch
+        ? Row(
+            children: [
+              iconBox,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    titleText,
+                    const SizedBox(height: 3),
+                    priceText,
+                    if (bestValueBadge != null) ...[
+                      const SizedBox(height: 5),
+                      bestValueBadge,
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              iconBox,
+              const SizedBox(height: 9),
+              titleText,
+              const SizedBox(height: 2),
+              priceText,
+              if (bestValueBadge != null) ...[
+                const SizedBox(height: 6),
+                bestValueBadge,
+              ],
+            ],
+          );
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
@@ -12365,7 +12464,7 @@ class _TariffCard extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           width: stretch ? null : 122,
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+          padding: EdgeInsets.fromLTRB(12, stretch ? 11 : 12, 12, stretch ? 11 : 11),
           decoration: BoxDecoration(
             color: dark
                 ? Colors.white.withValues(alpha: selected ? 0.10 : 0.06)
@@ -12409,105 +12508,7 @@ class _TariffCard extends StatelessWidget {
                 ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 48,
-                width: double.infinity,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: selected
-                        ? [SmartTaxiColors.goldSurface, Colors.white]
-                        : [
-                            const Color(0xfffbfbfb),
-                            const Color(0xfff5f6f8),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(
-                    color: selected
-                        ? SmartTaxiColors.borderStrong
-                        : SmartTaxiColors.border,
-                  ),
-                ),
-                child: item.asset.isEmpty
-                    ? _SvgIcon(
-                        item.title == 'Доставка' ? _iconDelivery : _iconCar,
-                        size: 24,
-                        color: SmartTaxiColors.goldDeep,
-                      )
-                    : Image.asset(
-                        item.asset,
-                        width: 58,
-                        height: 42,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.high,
-                        errorBuilder: (_, __, ___) => _SvgIcon(
-                          item.title == 'Доставка'
-                              ? _iconDelivery
-                              : _iconCar,
-                          size: 24,
-                          color: SmartTaxiColors.goldDeep,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: 9),
-              Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.78)
-                      : SmartTaxiColors.textSecondary,
-                  fontSize: 11.5,
-                  height: 1.1,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                price == null ? '...' : _formatTenge(price),
-                maxLines: 1,
-                style: TextStyle(
-                  color: dark ? Colors.white : SmartTaxiColors.text,
-                  fontSize: 16.5,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.2,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              if (bestValue) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: SmartTaxiColors.success.withValues(
-                      alpha: dark ? 0.22 : 0.12,
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    'Выгодно',
-                    style: TextStyle(
-                      color: SmartTaxiColors.success,
-                      fontSize: 9.5,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+          child: content,
         ),
       ),
     );
