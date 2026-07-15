@@ -110,7 +110,10 @@ class _DriverShellState extends State<DriverShell> {
   int? _osmSpeedLimit;
   LatLng? _osmFetchCenter;
   bool _osmFetchInFlight = false;
-  final Set<String> _cameraAlertedIds = {};
+  // Per-camera stage: 0/absent = not yet warned, 1 = 500m cue given,
+  // 2 = 200m cue given, 3 = pass cue given. Removed once the camera clears
+  // resetAtMeters so a later approach re-warns from stage 0.
+  final Map<String, int> _cameraStage = {};
   final Set<String> _signAlertedIds = {};
   DateTime? _navigatorBannerUntil;
   String? _navigatorBannerText;
@@ -513,18 +516,34 @@ class _DriverShellState extends State<DriverShell> {
         location: Coordinate(lat: position.latitude, lng: position.longitude),
       );
       if (!mounted) return;
+      final previousLimit = _osmSpeedLimit;
       setState(() {
         _osmCameras = info.cameras;
         _osmSigns = info.signs;
         _osmSpeedLimit = info.speedLimit;
         _osmFetchCenter = LatLng(position.latitude, position.longitude);
       });
+      _announceSpeedLimitChange(previousLimit, info.speedLimit);
     } catch (_) {
       // Best-effort layer — a failed OSM lookup must not disrupt the rest
       // of the navigator (crowd-reported alerts keep working regardless).
     } finally {
       _osmFetchInFlight = false;
     }
+  }
+
+  // Calls out a change in the posted limit as the driver crosses into a new
+  // stretch of road. Skips the very first reading (previous == null, just the
+  // navigator warming up) and uses a shared dedupe key with a cooldown —
+  // not one keyed by value — so GPS jitter right at a boundary between two
+  // limits can't bounce back and forth into repeated announcements.
+  void _announceSpeedLimitChange(int? previous, int? next) {
+    if (next == null || previous == null || previous == next) return;
+    unawaited(_voice.announce(
+      'Ограничение скорости $next',
+      dedupeKey: 'speed-limit-change',
+      cooldown: const Duration(seconds: 15),
+    ));
   }
 
   // Minimum distance in meters from a point to any segment of a polyline —
@@ -602,21 +621,29 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
-  // Warns the driver as they approach a known camera, once per camera per
-  // approach — haptic buzz + a banner, not a hard interruption.
-  //
-  // Picks the nearest camera that is in range AND not yet alerted this
-  // approach — picking the nearest camera overall would let an
-  // already-alerted one that's slightly closer permanently mask a second
-  // camera sitting right behind it (common on multi-post stretches). The
-  // reset pass runs over every camera, not just whichever is nearest right
-  // now, so an id doesn't get stuck alerted forever if its camera stops
-  // being the closest one before it clears resetAtMeters.
+  // Shows the navigator banner for [duration], then forces a rebuild once it
+  // expires so it disappears without waiting on the next GPS tick.
+  void _showNavigatorBanner(String text, Duration duration) {
+    if (!mounted) return;
+    setState(() {
+      _navigatorBannerText = text;
+      _navigatorBannerUntil = DateTime.now().add(duration);
+    });
+    Timer(duration, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  // Warns the driver as they approach a known camera in three stages —
+  // 500m, 200m, then a short cue as they reach it — each spoken at most
+  // once per approach. A camera can only advance forward through its own
+  // stages (never re-announce a stage already given), and its stage resets
+  // once it clears resetAtMeters so a later approach warns again from 0.
   void _checkCameraProximity(Position position) {
-    const warnAtMeters = 350.0;
-    const resetAtMeters = 600.0;
-    RoadAlert? candidate;
-    double candidateDistance = double.infinity;
+    const warnAtMeters = 500.0;
+    const nearAtMeters = 200.0;
+    const passAtMeters = 60.0;
+    const resetAtMeters = 700.0;
     for (final alert in _allNavigatorAlerts) {
       if (alert.type != 'SPEED_CAMERA') continue;
       final distance = _metersBetween(
@@ -626,37 +653,33 @@ class _DriverShellState extends State<DriverShell> {
         alert.lng,
       );
       if (distance > resetAtMeters) {
-        _cameraAlertedIds.remove(alert.id);
+        _cameraStage.remove(alert.id);
         continue;
       }
-      if (distance <= warnAtMeters &&
-          !_cameraAlertedIds.contains(alert.id) &&
-          distance < candidateDistance) {
-        candidateDistance = distance;
-        candidate = alert;
+      final stage = _cameraStage[alert.id] ?? 0;
+      if (stage >= 3) continue;
+      final headingSuffix =
+          alert.heading != null ? ', ${compassLabel(alert.heading!)}' : '';
+      if (stage < 1 && distance <= warnAtMeters) {
+        _cameraStage[alert.id] = 1;
+        unawaited(HapticFeedback.mediumImpact());
+        unawaited(_voice.announce('Через 500 метров камера',
+            dedupeKey: 'cam-${alert.id}-500'));
+        _showNavigatorBanner(
+            'Камера через 500 м$headingSuffix', const Duration(seconds: 10));
+      } else if (stage < 2 && distance <= nearAtMeters) {
+        _cameraStage[alert.id] = 2;
+        unawaited(HapticFeedback.heavyImpact());
+        unawaited(_voice.announce('Через 200 метров камера',
+            dedupeKey: 'cam-${alert.id}-200'));
+        _showNavigatorBanner(
+            'Камера через 200 м$headingSuffix', const Duration(seconds: 10));
+      } else if (stage < 3 && distance <= passAtMeters) {
+        _cameraStage[alert.id] = 3;
+        unawaited(HapticFeedback.heavyImpact());
+        unawaited(_voice.announce('Камера', dedupeKey: 'cam-${alert.id}-pass'));
+        _showNavigatorBanner('Камера$headingSuffix', const Duration(seconds: 6));
       }
-    }
-    if (candidate == null) return;
-    _cameraAlertedIds.add(candidate.id);
-    unawaited(HapticFeedback.heavyImpact());
-    final headingSuffix = candidate.heading != null
-        ? ', ${compassLabel(candidate.heading!)}'
-        : '';
-    final roundedDistance =
-        math.max(50, (candidateDistance / 50).round() * 50);
-    unawaited(_voice.announce(
-      'Камера через $roundedDistance метров',
-      dedupeKey: 'cam-${candidate.id}',
-    ));
-    if (mounted) {
-      setState(() {
-        _navigatorBannerText =
-            'Камера через ${candidateDistance.round()} м$headingSuffix';
-        _navigatorBannerUntil = DateTime.now().add(const Duration(seconds: 12));
-      });
-      Timer(const Duration(seconds: 12), () {
-        if (mounted) setState(() {});
-      });
     }
   }
 
@@ -2516,6 +2539,8 @@ class _NavigatorCockpit extends StatelessWidget {
                   title: 'Скорость',
                   value: speedKmh == null ? '--' : '$speedKmh',
                   suffix: 'км/ч',
+                  emphasize: true,
+                  valueColor: speeding ? SmartTaxiColors.danger : null,
                 ),
               ),
               const SizedBox(width: 10),
@@ -2616,11 +2641,17 @@ class _NavigatorMetric extends StatelessWidget {
     required this.title,
     required this.value,
     required this.suffix,
+    this.emphasize = false,
+    this.valueColor,
   });
 
   final String title;
   final String value;
   final String suffix;
+  // Bumps the value's font size for the primary GPS speed readout — the one
+  // number a driver needs to read at a glance without looking away long.
+  final bool emphasize;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -2651,9 +2682,9 @@ class _NavigatorMetric extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.text,
-                    fontSize: 23,
+                  style: TextStyle(
+                    color: valueColor ?? SmartTaxiColors.text,
+                    fontSize: emphasize ? 40 : 23,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
