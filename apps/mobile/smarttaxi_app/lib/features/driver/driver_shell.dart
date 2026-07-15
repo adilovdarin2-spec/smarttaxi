@@ -1668,6 +1668,14 @@ class _DriverShellState extends State<DriverShell> {
           activeTab: _tab,
           onTab: (index) {
             Navigator.pop(context);
+            // Smart Navigator (index 3) is a pushed full-screen route, not a
+            // 4th IndexedStack pane — see the matching guard on
+            // NavigationBar.onDestinationSelected above. IndexedStack only
+            // has 3 children, so setState(() => _tab = 3) here would throw.
+            if (index == 3) {
+              unawaited(_openFullScreenNavigator());
+              return;
+            }
             setState(() => _tab = index);
           },
           onPassenger: () {
