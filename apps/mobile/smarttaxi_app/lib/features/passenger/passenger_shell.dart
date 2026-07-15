@@ -130,6 +130,10 @@ class _PassengerShellState extends State<PassengerShell>
   // "Своя цена": null means the rider hasn't touched the stepper yet, so the
   // server-calculated estimate is used as-is.
   int? _offeredPriceKzt;
+  // Free-text note attached to the order at creation — which entrance,
+  // floor, door, landmark. Round-trips through the backend's single
+  // orders.notes column (whole-order, not per pickup/dropoff).
+  String? _orderNote;
   // Standalone "check a code" tool on the Промокоды screen.
   final _promoCheckController = TextEditingController();
   bool _promoCheckLoading = false;
@@ -1614,6 +1618,7 @@ class _PassengerShellState extends State<PassengerShell>
         durationMin: _preview!.durationSeconds / 60,
         paymentMethod: _paymentMethod,
         offeredPriceKzt: _offeredPriceKzt,
+        notes: _orderNote,
       );
       widget.sockets.joinOrder(order.id);
       _paymentPollTimer?.cancel();
@@ -1627,6 +1632,7 @@ class _PassengerShellState extends State<PassengerShell>
         _payment = null;
         _paymentTimedOut = false;
         _offeredPriceKzt = null;
+        _orderNote = null;
       });
       _startNoDriversTimer();
     } catch (error) {
@@ -2080,6 +2086,8 @@ class _PassengerShellState extends State<PassengerShell>
                         _selectPoint(target: PointTarget.dropoff),
                     onUseLocation: _usePhoneLocation,
                     onPaymentTap: _choosePaymentMethod,
+                    orderNote: _orderNote,
+                    onNoteTap: _editOrderNote,
                     tariffs: _tariffs,
                     selectedTariffId: _tariffId,
                     preview: _preview,
@@ -2117,6 +2125,7 @@ class _PassengerShellState extends State<PassengerShell>
       _tariffId = null;
       _target = PointTarget.dropoff;
       _error = null;
+      _orderNote = null;
     });
   }
 
@@ -2132,6 +2141,17 @@ class _PassengerShellState extends State<PassengerShell>
     );
     if (!mounted || selected == null) return;
     setState(() => _paymentMethod = selected);
+  }
+
+  Future<void> _editOrderNote() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _OrderNoteSheet(initialNote: _orderNote),
+    );
+    if (!mounted || result == null) return;
+    setState(() => _orderNote = result.isEmpty ? null : result);
   }
 
   void _openNotifications() {
@@ -6176,6 +6196,85 @@ class _RouteSummaryLine extends StatelessWidget {
   }
 }
 
+// Prompts the rider to leave a free-text note for the driver (which door,
+// entrance, floor, landmark) — outline/ghost while empty since it's
+// optional, switches to showing the saved text once set so it's clear the
+// note is actually attached to the order.
+class _OrderNoteRow extends StatelessWidget {
+  const _OrderNoteRow({
+    required this.note,
+    this.onTap,
+  });
+
+  final String? note;
+  // Null once the order exists — the backend has no endpoint to edit an
+  // order's note after creation, so this becomes a plain read-only display
+  // (no chevron, no InkWell) rather than a tappable row that does nothing.
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNote = (note ?? '').isNotEmpty;
+    final editable = onTap != null;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: hasNote ? SmartTaxiColors.goldSurface : Colors.white,
+            border: Border.all(
+              color: hasNote
+                  ? SmartTaxiColors.borderStrong
+                  : SmartTaxiColors.border,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                hasNote
+                    ? Icons.edit_note_rounded
+                    : Icons.add_comment_outlined,
+                size: 18,
+                color: hasNote
+                    ? SmartTaxiColors.goldDeep
+                    : SmartTaxiColors.textSecondary,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  hasNote ? note! : 'Описать место (дверь, подъезд, этаж)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: hasNote
+                        ? SmartTaxiColors.text
+                        : SmartTaxiColors.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: hasNote ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (editable) ...[
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: SmartTaxiColors.textMuted,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OrderSheet extends StatelessWidget {
   const _OrderSheet({
     required this.pickupSource,
@@ -6192,6 +6291,8 @@ class _OrderSheet extends StatelessWidget {
     required this.onDropoffTap,
     required this.onUseLocation,
     required this.onPaymentTap,
+    required this.orderNote,
+    required this.onNoteTap,
     required this.tariffs,
     required this.selectedTariffId,
     required this.preview,
@@ -6220,6 +6321,8 @@ class _OrderSheet extends StatelessWidget {
   final VoidCallback onDropoffTap;
   final VoidCallback onUseLocation;
   final VoidCallback onPaymentTap;
+  final String? orderNote;
+  final VoidCallback onNoteTap;
   final List<TariffOption> tariffs;
   final String? selectedTariffId;
   final RoutePreview? preview;
@@ -6278,6 +6381,8 @@ class _OrderSheet extends StatelessWidget {
                             dropoffLabel: dropoffLabel,
                             onEdit: onDropoffTap,
                           ),
+                          const SizedBox(height: 8),
+                          _OrderNoteRow(note: orderNote, onTap: onNoteTap),
                           const SizedBox(height: 10),
                           _TariffSection(
                             tariffs: tariffs,
@@ -7217,9 +7322,13 @@ class _TripStatusPanel extends StatelessWidget {
                   carColor: order.driverCarColor,
                   plate: order.driverPlate,
                   phone: order.driverPhone,
+                  api: api,
+                  orderId: order.id,
                 ),
-                const SizedBox(height: 8),
-                _QuickMessageButton(api: api, orderId: order.id),
+                if ((order.notes ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _OrderNoteRow(note: order.notes),
+                ],
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -7436,6 +7545,10 @@ class _TripStatusPanel extends StatelessWidget {
                 onPickupTap: null,
                 onDropoffTap: null,
               ),
+              if ((order.notes ?? '').isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _OrderNoteRow(note: order.notes),
+              ],
               const SizedBox(height: 10),
               if (order.driverId != null) ...[
                 if (arrived) ...[
@@ -7452,9 +7565,9 @@ class _TripStatusPanel extends StatelessWidget {
                   carColor: order.driverCarColor,
                   plate: order.driverPlate,
                   phone: order.driverPhone,
+                  api: api,
+                  orderId: order.id,
                 ),
-                const SizedBox(height: 8),
-                _QuickMessageButton(api: api, orderId: order.id),
               ] else
                 _CompactNotice(
                   icon: Icons.person_search_rounded,
@@ -10217,76 +10330,113 @@ class _SafetySheet extends StatelessWidget {
   }
 }
 
-class _QuickMessageButton extends StatelessWidget {
-  const _QuickMessageButton({required this.api, required this.orderId});
+// Real chat-thread UI (like the Yandex-style driver chat) built entirely on
+// the existing two-way quick-message endpoint — the backend has no free-text
+// or persisted-conversation storage (see docs/status write-up for item 9's
+// era investigation), so this is honestly a canned-phrase thread, not open
+// text. Two message sources are merged into one timeline:
+//  - sent: tracked locally for this screen's lifetime only (the send
+//    endpoint doesn't echo back a stored row, so there's nothing server-side
+//    to reload a "my sent messages" history from after a restart);
+//  - received: read back from GET /api/notifications, filtered to this
+//    order's QUICK_MESSAGE-type rows — notifyOrderClient/notifyOrderDriver
+//    (notification.service.js) already persists every one of those with a
+//    real created_at, so this half of the thread *does* survive reopening
+//    the sheet (just not a fresh app cold-start, since sent-side still
+//    isn't stored).
+class _ChatEntry {
+  const _ChatEntry({required this.text, required this.fromMe, required this.at});
+  final String text;
+  final bool fromMe;
+  final DateTime at;
+}
+
+const _quickMessages = {
+  'I_ARRIVED': 'Я приехал',
+  'WAITING_AT_ENTRANCE': 'Жду у входа',
+  'RUNNING_LATE_2MIN': 'Опаздываю на 2 минуты',
+  'PLEASE_COME_OUT': 'Пожалуйста, выходите',
+  'ON_MY_WAY': 'Уже еду к вам',
+};
+
+class _ChatSheet extends StatefulWidget {
+  const _ChatSheet({
+    required this.api,
+    required this.orderId,
+    required this.peerName,
+  });
 
   final ApiClient api;
   final String orderId;
+  final String peerName;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _QuickMessageSheet(api: api, orderId: orderId),
-        ),
-        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-        label: const Text('Быстрое сообщение водителю'),
-      ),
-    );
+  State<_ChatSheet> createState() => _ChatSheetState();
+}
+
+class _ChatSheetState extends State<_ChatSheet> {
+  final List<_ChatEntry> _sent = [];
+  List<_ChatEntry> _received = const [];
+  String? _sendingKey;
+  bool _loading = true;
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+    _pollTimer = Timer.periodic(const Duration(seconds: 6), (_) => _load());
   }
-}
-
-// Fixed vocabulary mirrored from the backend's QUICK_MESSAGES map
-// (orders.routes.js) — the server owns the canonical text and rejects any
-// key outside this set, so these strings must stay in lockstep with it.
-class _QuickMessageSheet extends StatefulWidget {
-  const _QuickMessageSheet({required this.api, required this.orderId});
-
-  final ApiClient api;
-  final String orderId;
 
   @override
-  State<_QuickMessageSheet> createState() => _QuickMessageSheetState();
-}
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
 
-class _QuickMessageSheetState extends State<_QuickMessageSheet> {
-  static const _messages = {
-    'I_ARRIVED': 'Я приехал',
-    'WAITING_AT_ENTRANCE': 'Жду у входа',
-    'RUNNING_LATE_2MIN': 'Опаздываю на 2 минуты',
-    'PLEASE_COME_OUT': 'Пожалуйста, выходите',
-    'ON_MY_WAY': 'Уже еду к вам',
-  };
-
-  String? _sending;
+  Future<void> _load() async {
+    try {
+      final result = await widget.api.getNotifications(limit: 50);
+      if (!mounted) return;
+      setState(() {
+        _received = result.notifications
+            .where((n) => n.type == 'QUICK_MESSAGE' && n.orderId == widget.orderId)
+            .map((n) => _ChatEntry(text: n.body, fromMe: false, at: n.createdAt))
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   Future<void> _send(String key, String text) async {
-    setState(() => _sending = key);
+    setState(() => _sendingKey = key);
     try {
       await widget.api
           .sendQuickMessage(orderId: widget.orderId, messageKey: key);
       if (!mounted) return;
-      Navigator.of(context).pop();
-      AppToast.showSuccess(context, 'Отправлено: $text');
+      setState(() {
+        _sent.add(_ChatEntry(text: text, fromMe: true, at: DateTime.now()));
+        _sendingKey = null;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _sending = null);
+      setState(() => _sendingKey = null);
       AppToast.showError(context, 'Не удалось отправить сообщение');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final thread = [..._sent, ..._received]
+      ..sort((a, b) => a.at.compareTo(b.at));
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(12),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        height: MediaQuery.sizeOf(context).height * 0.72,
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
@@ -10299,34 +10449,127 @@ class _QuickMessageSheetState extends State<_QuickMessageSheet> {
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Center(child: _SheetHandle(dark: false)),
-            const SizedBox(height: 14),
-            const Text(
-              'Быстрое сообщение',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            const SizedBox(height: 10),
+            Text(
+              widget.peerName.trim().isEmpty ? 'Чат' : widget.peerName.trim(),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
             ),
-            const SizedBox(height: 14),
-            ..._messages.entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _sending != null
-                        ? null
-                        : () => _send(entry.key, entry.value),
-                    child: _sending == entry.key
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2.2),
-                          )
-                        : Text(entry.value),
+            const SizedBox(height: 2),
+            const Text(
+              'Быстрые фразы — свободный текст пока недоступен',
+              style: TextStyle(
+                color: SmartTaxiColors.textSecondary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : thread.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Сообщений пока нет',
+                            style: TextStyle(
+                              color: SmartTaxiColors.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          reverse: true,
+                          itemCount: thread.length,
+                          itemBuilder: (context, index) {
+                            final entry = thread[thread.length - 1 - index];
+                            return _ChatBubble(entry: entry);
+                          },
+                        ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickMessages.entries.map((entry) {
+                final sending = _sendingKey == entry.key;
+                return OutlinedButton(
+                  onPressed:
+                      _sendingKey != null ? null : () => _send(entry.key, entry.value),
+                  style: OutlinedButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                ),
+                  child: sending
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(entry.value, style: const TextStyle(fontSize: 12.5)),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.entry});
+
+  final _ChatEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final time =
+        '${entry.at.hour.toString().padLeft(2, '0')}:${entry.at.minute.toString().padLeft(2, '0')}';
+    return Align(
+      alignment: entry.fromMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.68,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+        decoration: BoxDecoration(
+          color: entry.fromMe ? SmartTaxiColors.gold : SmartTaxiColors.goldPale,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(entry.fromMe ? 16 : 4),
+            bottomRight: Radius.circular(entry.fromMe ? 4 : 16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              entry.text,
+              style: TextStyle(
+                color: entry.fromMe ? Colors.white : SmartTaxiColors.text,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              time,
+              style: TextStyle(
+                color: entry.fromMe
+                    ? Colors.white.withValues(alpha: 0.75)
+                    : SmartTaxiColors.textSecondary,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ],
@@ -10344,6 +10587,8 @@ class _DriverContactCard extends StatelessWidget {
     required this.carColor,
     required this.plate,
     required this.phone,
+    required this.api,
+    required this.orderId,
     this.compact = false,
   });
 
@@ -10353,6 +10598,8 @@ class _DriverContactCard extends StatelessWidget {
   final String? carColor;
   final String? plate;
   final String? phone;
+  final ApiClient api;
+  final String orderId;
   final bool compact;
 
   Future<void> _call() async {
@@ -10361,10 +10608,13 @@ class _DriverContactCard extends StatelessWidget {
     await launchUrl(Uri(scheme: 'tel', path: number));
   }
 
-  Future<void> _message() async {
-    final number = phone?.trim();
-    if (number == null || number.isEmpty) return;
-    await launchUrl(Uri(scheme: 'sms', path: number));
+  void _openChat(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ChatSheet(api: api, orderId: orderId, peerName: name),
+    );
   }
 
   @override
@@ -10437,8 +10687,8 @@ class _DriverContactCard extends StatelessWidget {
             if (hasPhone) ...[
               const SizedBox(width: 8),
               _RoundIconButton(
-                icon: Icons.message_rounded,
-                onTap: _message,
+                icon: Icons.chat_bubble_rounded,
+                onTap: () => _openChat(context),
               ),
               const SizedBox(width: 8),
               _RoundIconButton(
@@ -10563,8 +10813,8 @@ class _DriverContactCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _message,
-                    icon: const Icon(Icons.message_rounded, size: 18),
+                    onPressed: () => _openChat(context),
+                    icon: const Icon(Icons.chat_bubble_rounded, size: 18),
                     label: const Text('Написать'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
@@ -12049,8 +12299,8 @@ class _TariffCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          width: stretch ? null : 118,
-          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+          width: stretch ? null : 122,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
           decoration: BoxDecoration(
             color: dark
                 ? Colors.white.withValues(alpha: selected ? 0.10 : 0.06)
@@ -12062,119 +12312,117 @@ class _TariffCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      SmartTaxiColors.gold.withValues(alpha: 0.10),
+                      SmartTaxiColors.gold.withValues(alpha: 0.12),
                       SmartTaxiColors.gold.withValues(alpha: 0.03),
                     ],
                   )
                 : null,
+            // No checkmark badge anymore — the border + glow below is the
+            // only selection cue, so it needs to read clearly on its own:
+            // a visibly thicker ring, not just a color swap.
             border: Border.all(
               color: selected
                   ? SmartTaxiColors.gold
                   : (dark
                       ? Colors.white.withValues(alpha: 0.10)
                       : SmartTaxiColors.border),
-              width: selected ? 1.6 : 1,
+              width: selected ? 2.2 : 1,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               if (selected)
                 BoxShadow(
-                  color: SmartTaxiColors.gold.withValues(alpha: 0.20),
-                  blurRadius: 18,
+                  color: SmartTaxiColors.gold.withValues(alpha: 0.28),
+                  blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
               if (!selected && !dark)
                 const BoxShadow(
-                  color: Color(0x08141414),
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
+                  color: Color(0x0a141414),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: selected
-                              ? [SmartTaxiColors.goldSurface, Colors.white]
-                              : [
-                                  const Color(0xfffbfbfb),
-                                  const Color(0xfff5f6f8),
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(
-                          color: selected
-                              ? SmartTaxiColors.borderStrong
-                              : SmartTaxiColors.border,
+              Container(
+                height: 48,
+                width: double.infinity,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: selected
+                        ? [SmartTaxiColors.goldSurface, Colors.white]
+                        : [
+                            const Color(0xfffbfbfb),
+                            const Color(0xfff5f6f8),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: selected
+                        ? SmartTaxiColors.borderStrong
+                        : SmartTaxiColors.border,
+                  ),
+                ),
+                child: item.asset.isEmpty
+                    ? _SvgIcon(
+                        item.title == 'Доставка' ? _iconDelivery : _iconCar,
+                        size: 24,
+                        color: SmartTaxiColors.goldDeep,
+                      )
+                    : Image.asset(
+                        item.asset,
+                        width: 58,
+                        height: 42,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (_, __, ___) => _SvgIcon(
+                          item.title == 'Доставка'
+                              ? _iconDelivery
+                              : _iconCar,
+                          size: 24,
+                          color: SmartTaxiColors.goldDeep,
                         ),
                       ),
-                      child: item.asset.isEmpty
-                          ? _SvgIcon(
-                              item.title == 'Доставка'
-                                  ? _iconDelivery
-                                  : _iconCar,
-                              size: 22,
-                              color: SmartTaxiColors.goldDeep,
-                            )
-                          : Image.asset(
-                              item.asset,
-                              width: 54,
-                              height: 38,
-                              fit: BoxFit.contain,
-                              filterQuality: FilterQuality.high,
-                              errorBuilder: (_, __, ___) => _SvgIcon(
-                                item.title == 'Доставка'
-                                    ? _iconDelivery
-                                    : _iconCar,
-                                size: 22,
-                                color: SmartTaxiColors.goldDeep,
-                              ),
-                            ),
-                    ),
-                  ),
-                  _TariffSelectIndicator(selected: selected, size: 20),
-                ],
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 9),
               Text(
                 item.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: dark ? Colors.white : SmartTaxiColors.text,
-                  fontSize: 13.6,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.78)
+                      : SmartTaxiColors.textSecondary,
+                  fontSize: 11.5,
+                  height: 1.1,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 price == null ? '...' : _formatTenge(price),
                 maxLines: 1,
                 style: TextStyle(
                   color: dark ? Colors.white : SmartTaxiColors.text,
-                  fontSize: 13.6,
+                  fontSize: 16.5,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
               if (bestValue) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 7,
+                    vertical: 3,
                   ),
                   decoration: BoxDecoration(
                     color: SmartTaxiColors.success.withValues(
@@ -12197,47 +12445,6 @@ class _TariffCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TariffSelectIndicator extends StatelessWidget {
-  const _TariffSelectIndicator({required this.selected, this.size = 25});
-
-  final bool selected;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: selected ? SmartTaxiColors.gold : Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: selected
-              ? SmartTaxiColors.goldDeep
-              : SmartTaxiColors.border.withValues(alpha: 0.95),
-          width: selected ? 1.2 : 1.1,
-        ),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: SmartTaxiColors.gold.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : null,
-      ),
-      child: selected
-          ? Icon(Icons.check_rounded,
-              color: Colors.white, size: size * 0.64)
-          : null,
     );
   }
 }
@@ -12926,6 +13133,107 @@ class _PaymentMethodSheet extends StatelessWidget {
               );
             }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderNoteSheet extends StatefulWidget {
+  const _OrderNoteSheet({this.initialNote});
+
+  final String? initialNote;
+
+  @override
+  State<_OrderNoteSheet> createState() => _OrderNoteSheetState();
+}
+
+class _OrderNoteSheetState extends State<_OrderNoteSheet> {
+  late final _controller = TextEditingController(text: widget.initialNote);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasInitialNote = (widget.initialNote ?? '').isNotEmpty;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33141414),
+                blurRadius: 28,
+                offset: Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SheetHandle(),
+              const Text(
+                'Описать место',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Например: домофон 45, второй подъезд, встретить у шлагбаума',
+                style: TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                minLines: 3,
+                maxLines: 5,
+                maxLength: 500,
+                decoration: const InputDecoration(
+                  labelText: 'Комментарий для водителя',
+                  hintText: 'Где вас найти или куда ехать...',
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _GoldCtaButton(
+                enabled: true,
+                loading: false,
+                text: 'Сохранить',
+                onTap: () =>
+                    Navigator.pop(context, _controller.text.trim()),
+              ),
+              if (hasInitialNote) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, ''),
+                    style: TextButton.styleFrom(
+                      foregroundColor: SmartTaxiColors.danger,
+                    ),
+                    child: const Text(
+                      'Удалить комментарий',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
