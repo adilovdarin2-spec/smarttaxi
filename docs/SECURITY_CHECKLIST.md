@@ -149,3 +149,87 @@ changed.
   doesn't currently document a firewall step. Worth fixing before go-live:
   either bind `127.0.0.1:4000:4000` in `docker-compose.yml`, or add an
   explicit `ufw`/security-group step to the deployment doc.
+
+## Production readiness — finalize (2026-07-15)
+
+Final pass through every item above, marking what's actually verified
+ready vs. what's still open, and whether the remaining work is a code
+change or something only the business owner can do (tracked in
+[RELEASE_CHECKLIST_HUMAN_ACTIONS.md](RELEASE_CHECKLIST_HUMAN_ACTIONS.md)).
+Read-only review — nothing below was fixed as part of this pass unless
+noted.
+
+**Secrets — ready.**
+- `.env` git-ignored: confirmed (`git check-ignore`).
+- Android keystore/`key.properties`: confirmed git-ignored, confirmed
+  not in git history. **But**: the keystore already exists on this
+  machine with no known backup elsewhere — this is a human action, see
+  `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` §0 (do this first, it's the
+  highest-severity open item on this whole list — losing it blocks all
+  future app updates permanently).
+- `apps/api/secrets/firebase-service-account.json`,
+  `android/app/google-services.json`: both confirmed git-ignored.
+
+**API — mostly ready, one config gap.**
+- `JWT_SECRET` production guard: enforced in code (`env.js` throws if
+  the production secret still matches a placeholder pattern) — ready.
+- `RATE_LIMIT_ENABLED=true` default: ready.
+- Admin auth/role checks, own-order access, lat/lng validation: all
+  spot-checked against `admin.routes.js`/`orders.routes.js` this session
+  — ready.
+- `SMS_PROVIDER=infobip`: **not ready** — `.env.example` still ships
+  `SMS_PROVIDER=dev`. Blocked on a human action (Infobip account, see
+  `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` §6), not a code gap — the config
+  switch itself is a one-line change once credentials exist.
+- `CORS_ORIGINS`: currently lists dev localhost ports plus
+  `app.smarttaxi.kz`/`smarttaxi.kz` — **those domains don't resolve
+  yet** (see below), so this list is aspirational, not wrong; revisit
+  once the real domain is live to make sure it doesn't still include
+  dev origins in production.
+
+**Infrastructure — blocked on the live domain, one unresolved code gap.**
+- OSRM internal-only, Postgres/Redis bound to `127.0.0.1`: both
+  confirmed in `docker-compose.yml` — ready.
+- Nginx + Let's Encrypt: config exists (`infra/nginx/smarttaxi.conf`)
+  and is correct, but **hasn't been applied anywhere** — `api.smarttaxi.kz`
+  and `smarttaxi.kz` don't currently resolve (confirmed via `curl` this
+  session). This is the VPS/DNS setup itself, a human action (domain
+  registrar + hosting provider access) — see
+  `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` §5.
+- API port not bound to `127.0.0.1` in `docker-compose.yml`: **unresolved
+  code gap**, still open from the "New risk areas" entry above — this
+  one *is* a code/config fix, not a human action; worth doing before the
+  VPS actually goes live rather than after.
+
+**Mobile — ready, contingent on the domain above.**
+- Cleartext disabled, release signing required, real (non-placeholder)
+  launcher icon: all confirmed ready this session.
+- "Release builds use `https://api.smarttaxi.kz`" is only true when the
+  build command's `--dart-define` flags are used *and* that domain is
+  actually live — neither is guaranteed yet. Not a code defect (the
+  default is a deliberate, working fallback to Railway, not a mistake),
+  but pick one deployment target on purpose before building the release
+  artifact submitted to either store — see `APP_STORE_READINESS.md`.
+
+**Legal — ready.**
+- Terms of use, privacy policy, location-data disclosure, support
+  contact, and data-deletion process: all present across the 5
+  lawyer-approved documents in
+  `apps/mobile/smarttaxi_app/lib/core/legal/legal_content.dart` (dated
+  2026-07-06), and publicly reachable at `smarttaxi.kz/legal` (once that
+  domain is live — see above) via `apps/web/src/features/legal/LegalApp.jsx`.
+  Regenerated and committed the previously-untracked
+  `apps/web/src/legal/legal-content.json` this pass so the live site
+  can't silently drift from the source-of-truth Dart file.
+- **Caveat**: these documents name "ИП Жунисова" as the operating
+  entity. Confirm that registration is actually finalized (see
+  `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` §1) — a lawyer-approved document
+  naming a not-yet-registered entity is a real gap, not a formality.
+
+**Bottom line**: nothing found this pass is a code security defect
+requiring urgent engineering work, except the API port binding (small,
+mechanical fix) and the still-open price-offer/self-referral/SOS-queue
+items from "New risk areas" above (product decisions, not blockers to
+store submission by themselves). Everything else standing between here
+and a public release is either a human action
+(`RELEASE_CHECKLIST_HUMAN_ACTIONS.md`) or waiting on the live domain.
