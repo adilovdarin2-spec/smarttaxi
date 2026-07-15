@@ -4,9 +4,16 @@ import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
-import { notifyOrderDriver } from "../notifications/notification.service.js";
+import { notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 
 const router = Router();
+
+// The mobile SOS button (passenger_shell.dart's _SafetySheet) submits this
+// exact topic string — checked here rather than adding a schema/priority
+// column, since the existing free-form `topic` field already carries the
+// one signal that matters (see SECURITY_CHECKLIST.md "SOS — not
+// prioritized in the support queue").
+const SOS_TOPIC = "SOS";
 
 const CreateSupportMessage = z.object({
   topic: z.string().trim().min(2).max(80),
@@ -24,6 +31,7 @@ function publicMessage(row) {
     message: row.message,
     orderId: row.order_id,
     status: row.status,
+    isUrgent: row.topic === SOS_TOPIC,
     adminResponse: row.admin_response,
     respondedAt: row.responded_at,
     createdAt: row.created_at
@@ -61,6 +69,23 @@ router.post("/", requireAuth, requireRole("CLIENT", "DRIVER"), async (req, res, 
           data: { supportMessageId: created.id }
         }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
       }
+    }
+    // SOS gets a distinct alert to every operator/owner, not just a spot in
+    // the same FIFO queue as everything else (see SECURITY_CHECKLIST.md).
+    // Best-effort and non-blocking, same pattern as the LOST_ITEM push
+    // above — a notification failure must never fail the SOS submission
+    // itself.
+    if (created.topic === SOS_TOPIC) {
+      (async () => {
+        const operators = (await query("SELECT id FROM users WHERE role IN ('OWNER','OPERATOR') AND is_active=true")).rows;
+        await Promise.all(operators.map((op) => notifyUser(op.id, {
+          title: "🆘 SOS",
+          body: `${created.contact_name || "Пользователь"} (${created.contact_phone || "нет телефона"}) нажал(а) SOS`,
+          type: "SOS_ALERT",
+          orderId: created.order_id,
+          data: { supportMessageId: created.id }
+        })));
+      })().catch((error) => console.error("[push] SOS operator notify failed", error));
     }
     res.status(201).json({ message: publicMessage(created) });
   } catch (error) {
@@ -100,9 +125,11 @@ adminSupportRouter.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINAN
   try {
     const params = AdminListQuery.parse(req.query);
     const status = params.status || "OPEN";
+    // SOS reports jump to the top of the queue regardless of age — an
+    // operator scanning top-down must see them before anything else.
     const rows = status === "ALL"
-      ? (await query("SELECT * FROM support_messages ORDER BY created_at DESC LIMIT 200")).rows
-      : (await query("SELECT * FROM support_messages WHERE status=$1 ORDER BY created_at DESC LIMIT 200", [status])).rows;
+      ? (await query("SELECT * FROM support_messages ORDER BY (topic=$1) DESC, created_at DESC LIMIT 200", [SOS_TOPIC])).rows
+      : (await query("SELECT * FROM support_messages WHERE status=$1 ORDER BY (topic=$2) DESC, created_at DESC LIMIT 200", [status, SOS_TOPIC])).rows;
     res.json({ messages: rows.map(publicMessage) });
   } catch (error) {
     next(error);
