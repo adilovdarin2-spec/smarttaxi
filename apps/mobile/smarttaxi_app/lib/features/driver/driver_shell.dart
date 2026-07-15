@@ -285,10 +285,19 @@ class _DriverShellState extends State<DriverShell> {
         _driverRoute = null;
       }
     });
-    if (previousOfferStatus == 'PENDING' && order.driverOfferStatus == 'ACCEPTED') {
+    // Open orders are visible to every driver in the region, so
+    // driverOfferStatus/driverOfferPriceKzt on one might belong to a
+    // different driver's offer — only toast (and, in OrderCard, only show
+    // "Ожидаем ответа") when this is actually this driver's own offer.
+    final isMyOffer = _driverStats?.driverId != null &&
+        order.driverOfferByDriverId == _driverStats?.driverId;
+    if (isMyOffer &&
+        previousOfferStatus == 'PENDING' &&
+        order.driverOfferStatus == 'ACCEPTED') {
       AppToast.showSuccess(context,
           'Клиент принял вашу цену: ${formatDriverMoney(order.driverOfferPriceKzt ?? 0)}');
-    } else if (previousOfferStatus == 'PENDING' &&
+    } else if (isMyOffer &&
+        previousOfferStatus == 'PENDING' &&
         order.driverOfferStatus == 'DECLINED') {
       AppToast.showError(context, 'Клиент отклонил ваше предложение цены');
     }
@@ -1996,7 +2005,8 @@ class _DriverShellState extends State<DriverShell> {
                       onReject: () => _reject(order),
                       onOfferPrice: _offeringPriceOrderId == order.id
                           ? null
-                          : () => _offerPrice(order)),
+                          : () => _offerPrice(order),
+                      myDriverId: _driverStats?.driverId),
                 )),
           if (_error != null) InlineMessage(text: _error!, danger: true),
         ],

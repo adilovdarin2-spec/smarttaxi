@@ -367,6 +367,7 @@ class DriverStats {
     required this.revenueTotal,
     required this.debt,
     required this.balance,
+    this.driverId,
   });
 
   final int ordersTotal;
@@ -374,10 +375,17 @@ class DriverStats {
   final int revenueTotal;
   final int debt;
   final int balance;
+  // From the sibling top-level `driver` object on /drivers/me/stats — this
+  // driver's own drivers.id, needed to tell "I made this price offer" apart
+  // from "some other driver made this price offer on an order I can also
+  // see" (open orders are visible to every driver in the region).
+  final String? driverId;
 
   factory DriverStats.fromJson(Map<String, dynamic> json) {
     final today =
         json['today'] is Map ? Map<String, dynamic>.from(json['today']) : json;
+    final driver =
+        json['driver'] is Map ? Map<String, dynamic>.from(json['driver']) : null;
     return DriverStats(
       ordersTotal:
           _toDouble(today['orders_total'] ?? today['ordersTotal']).round(),
@@ -388,6 +396,7 @@ class DriverStats {
           _toDouble(today['revenue_total'] ?? today['revenueTotal']).round(),
       debt: _toDouble(today['debt']).round(),
       balance: _toDouble(today['balance']).round(),
+      driverId: driver?['id']?.toString(),
     );
   }
 }

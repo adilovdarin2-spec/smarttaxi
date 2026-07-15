@@ -86,6 +86,7 @@ class OrderCard extends StatelessWidget {
     required this.onAccept,
     required this.onReject,
     this.onOfferPrice,
+    this.myDriverId,
   });
 
   final OrderSummary order;
@@ -96,6 +97,11 @@ class OrderCard extends StatelessWidget {
   // Null hides the "своя цена" row entirely — used once the driver has
   // already accepted the order (torg only makes sense on an open one).
   final VoidCallback? onOfferPrice;
+  // This driver's own drivers.id — an open order is visible to every driver
+  // in the region, so order.driverOfferStatus/driverOfferPriceKzt might
+  // belong to a *different* driver's offer on the same order. Only treat
+  // it as "my pending offer" when driverOfferByDriverId matches.
+  final String? myDriverId;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +112,8 @@ class OrderCard extends StatelessWidget {
     final payment = driverPaymentLabel(order.paymentMethod);
     final phone = (order.riderPhone ?? '').trim();
     final riderName = (order.riderName ?? '').trim();
+    final isMyOffer =
+        myDriverId != null && order.driverOfferByDriverId == myDriverId;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.98, end: 1),
       duration: const Duration(milliseconds: 180),
@@ -247,7 +255,7 @@ class OrderCard extends StatelessWidget {
           ),
           if (onOfferPrice != null) ...[
             const SizedBox(height: 10),
-            if (order.driverOfferStatus == 'PENDING')
+            if (isMyOffer && order.driverOfferStatus == 'PENDING')
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
