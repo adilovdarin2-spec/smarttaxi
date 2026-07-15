@@ -1157,3 +1157,55 @@ warnings are gone now that the block is reachable; not a new baseline,
 just this bug's own warning disappearing). `flutter test`: 10 failures,
 unchanged from baseline. **Verified live** for both the blocked and
 allowed paths.
+
+### 3. Map markers — one wrong marker shrunk first, corrected, plus a real overlap bug found — `7f9e0cb`
+
+First pass measured the confirmed pickup/dropoff pins precisely with
+Pillow against a screenshot (device density confirmed via `adb shell wm
+density` = 320 → 2.0 devicePixelRatio, so 1dp = 2 screenshot px): the
+pickup pin (`size: 30`) measured **core ≈34px / halo ≈64-70px** on
+screen. Shrunk it and the dropoff pin to `size: 20`/`22`; remeasured
+**core ≈27px / halo ≈47-51px** — confirmed smaller with numbers, not
+just by eye.
+
+In that same pass I *also* shrunk `_CenterMapMarker` — the address-picker
+crosshair shown while dragging the map in "Указать на карте" — assuming
+it was the same "точка Б" the user meant. **Direct correction:** it
+wasn't; only the confirmed-route pins were meant to shrink, and the
+crosshair read as "too small" as a result. Reverted `_CenterMapMarker`
+to its original size (`pinWidth: 27`, pulse `baseSize: 26`, outer
+`SizedBox: 68×68`) — confirmed via screenshot after rebuild that it's
+back to the size it was before tonight.
+
+While chasing the "точка Б" wording a second, unrelated but real bug
+turned up: the "Считаем маршрут..." status pill (`_MapRouteState`,
+shown while `_previewLoading`/`routeLoading` is true) was positioned at
+a fixed `top: 286` with `left: 22, right: 92` — a ~606dp-wide span that,
+combined with an inner `Expanded` text, stretched the pill almost
+full-width. On screen it rendered as a wide rectangular blob sitting
+directly on top of the "Мырзакент" map label and close to the pickup
+marker beneath it — reported as "стоит [позади] квадратной фигни"
+(sits behind/as a square blob). Since the real network round-trip
+resolves in well under a screenshot's capture latency, this couldn't be
+caught with normal single-shot timing (and one attempt at re-triggering
+it by re-selecting an address raced into an accidental tap on "Заказать
+Эконом", creating a real test order — no drivers were available in the
+test region so nothing was actually dispatched, and the order was
+cancelled immediately via "Отменить заказ"). Confirmed and fixed
+instead via a temporary `routeLoading: true` debug seed (reverted
+before commit, `git diff` checked clean): rebuilt `_MapRouteState` as a
+compact self-sizing capsule (`ConstrainedBox(maxWidth: 240)`,
+`borderRadius: 999`, `Flexible` instead of `Expanded`) and moved it to
+`top: 140` — below the header/nearby-drivers-pill band, clear of both
+the map label and the marker.
+
+**Screenshot evidence:** pickup/dropoff pins — before/after pixel
+measurements above, both from real screenshots. Crosshair — before (my
+mistaken shrink) and after (reverted) screenshots, confirmed back to
+original visual size. Route pill — before (wide blob on top of the
+"Мырзакент" label, forced-loading debug screenshot) and after (compact
+capsule below the header, forced-loading debug screenshot).
+
+**Verified:** `flutter analyze` clean (3 pre-existing warnings, no
+change). `flutter test`: 10 failures, unchanged from baseline.
+**Verified live** for all three parts of this item.
