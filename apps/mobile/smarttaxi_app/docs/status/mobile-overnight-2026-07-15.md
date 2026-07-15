@@ -1458,3 +1458,66 @@ live** — badge-hidden state and no-regression on tap confirmed on
 device; badge-appears/badge-clears round trip verified by code trace
 only, blocked by the region-has-no-drivers environment constraint
 noted above, not by any gap in the implementation.
+
+### 8. Balance top-up + card binding — confirmed blocked on backend, same shape as §URG-5, nothing built
+
+Investigated before writing any UI, per this pass's policy — and
+before trusting §URG-5's older "client balance blocked" finding at
+face value, re-verified it's still true rather than citing it stale
+(other sessions have been touching `apps/api` in parallel this
+session). Re-grepped everything relevant:
+
+- **No client-facing balance to read.** `clients.cashback_balance`
+  (schema.sql:31) is real and actively written — order-completion
+  cashback (`orders.routes.js:876`), referral bonuses
+  (`referrals.service.js:72/81`), and cancellation refunds
+  (`finance.service.js:204`) all credit it, and it can even be
+  *debited* server-side for an internal fee mechanism
+  (`finance.service.js:242-253`). But grepped every route file: no
+  endpoint anywhere returns it to the client who owns it.
+  `clients.routes.js` only has `GET /` and it's
+  `requireRole("OWNER","OPERATOR","FINANCE")` — admin-only, same as
+  §URG-5 already found. The closest thing, `GET /api/referrals/me`,
+  only returns `totalBonusEarned` — a running sum of referral bonuses
+  specifically, not the live spendable `cashback_balance` (which also
+  nets cashback and refunds). Confirmed via `_profileScreen()` and a
+  full-file grep: the passenger app has no "Баланс" screen, field, or
+  state anywhere — §URG-5's finding still holds, unchanged.
+- **No top-up mechanism exists at all, in either layer.** The
+  `cashback_balance` column is only ever earned (cashback/referral/
+  refund) — there is no code path anywhere that lets a client add
+  funds to it via payment. "Reusing the order payment flow" for a
+  top-up would need a real amount-to-charge target, i.e. a new
+  endpoint like `POST /api/clients/me/topup` that creates a payment
+  through the existing provider abstraction and credits the balance
+  on confirmation — none of that exists.
+- **No card-binding concept exists at all.** Read
+  `payment-provider.js` in full: `PaymentProvider.initiate({ payment,
+  order })` is strictly per-order — it always requires an existing
+  `payment` row tied to a specific `order`, there is no "tokenize a
+  card for reuse independent of an order" operation, no saved-card
+  table in `schema.sql`, and no list/bind/unbind endpoints in
+  `payments.routes.js`. Building a "real" card-binding form pointed at
+  nothing would either have to fake success (fabricated data — against
+  this session's explicit no-guessing policy) or silently store card
+  details somewhere in the app's own backend to make it "work" — which
+  is exactly what the brief explicitly said never to do. Neither is
+  acceptable, so nothing was built.
+
+**Not implemented — this is a genuine backend gap, not a mobile-side
+oversight.** Both sub-features need new `apps/api` surface first: (a)
+a client balance read endpoint (and ideally reusing/exposing
+`cashback_balance` rather than inventing a second balance concept),
+plus a top-up-via-payment endpoint; (b) a card-tokenization endpoint
+through the payment provider (store only the provider's token +
+masked metadata — last4/brand — never raw card data) with list/bind/
+unbind routes. Flagging precisely with exact file/line evidence
+instead of building a screen against data that can't load, matching
+how §URG-5 handled the identical situation. This is `apps/api` work,
+outside this session's `apps/mobile/smarttaxi_app/**` scope — no
+backend files were touched or modified while investigating this.
+
+**Verified:** investigation only, via source reads (schema.sql,
+clients.routes.js, wallet.service.js, payment-provider.js,
+referrals.routes.js, passenger_shell.dart). No code changed, so no
+build/analyze/live verification applies to this item.
