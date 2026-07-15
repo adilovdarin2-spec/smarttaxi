@@ -12607,17 +12607,16 @@ class _PriceAdjuster extends StatelessWidget {
             : 'Обычная скорость подачи';
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: SmartTaxiColors.border),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08141414),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        // Matches _PaymentMethodRow right below it — both are supplementary
+        // order-config rows and previously disagreed (faint gray border
+        // here vs. the bold blue border there), which read as unfinished.
+        border: Border.fromBorderSide(
+          BorderSide(color: SmartTaxiColors.borderStrong),
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        boxShadow: _cardShadow,
       ),
       child: Row(
         children: [
@@ -14056,6 +14055,16 @@ class _MapGlassChrome extends StatelessWidget {
             color: Colors.white.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+            // Chrome sat flush against the map with nothing to lift it —
+            // a soft shadow reads as floating glass instead of a flat
+            // cutout, especially over busy map tiles.
+            boxShadow: [
+              BoxShadow(
+                color: SmartTaxiColors.text.withValues(alpha: 0.10),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: child,
         ),
@@ -14073,19 +14082,37 @@ class _MapBrandPill extends StatelessWidget {
       borderRadius: 24,
       child: Container(
         height: 44,
-        constraints: const BoxConstraints(minWidth: 118, maxWidth: 168),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        alignment: Alignment.center,
-        child: const Text(
-          'SmartTaxi',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: SmartTaxiColors.text,
-            fontSize: 14.5,
-            height: 1,
-            fontWeight: FontWeight.w900,
-          ),
+        constraints: const BoxConstraints(minWidth: 128, maxWidth: 176),
+        padding: const EdgeInsets.only(left: 6, right: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              child: SizedBox.square(
+                dimension: 30,
+                child: Image.asset(
+                  BrandLogo.iconAssetPath,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                'SmartTaxi',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: SmartTaxiColors.text,
+                  fontSize: 14.5,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -14117,8 +14144,8 @@ class _MapChromeButton extends StatelessWidget {
               width: 44,
               height: 44,
               child: Center(
-                child:
-                    _SvgIcon(iconAsset, color: SmartTaxiColors.text, size: 20),
+                child: _SvgIcon(iconAsset,
+                    color: SmartTaxiColors.goldDeep, size: 20),
               ),
             ),
           ),
@@ -14152,7 +14179,7 @@ class _NotificationButton extends StatelessWidget {
                 children: [
                   const _SvgIcon(
                     _iconBell,
-                    color: SmartTaxiColors.text,
+                    color: SmartTaxiColors.goldDeep,
                     size: 20,
                   ),
                   if (unreadCount > 0)
@@ -14160,11 +14187,12 @@ class _NotificationButton extends StatelessWidget {
                       right: 8,
                       top: 8,
                       child: Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
                           color: SmartTaxiColors.gold,
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                       ),
                     ),
