@@ -591,6 +591,68 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
   } catch (e) { next(e); }
 });
 
+// Driver's counterpart to POST /:id/rate (client rates driver) — same body
+// shape, same "one review per order" guard, but writes client_reviews and
+// keeps clients.rating in sync instead of drivers.rating. No anti-fraud
+// auto-block here: that's a driver-specific business rule tied to service
+// commission risk, not something that applies symmetrically to riders.
+router.post("/:id/rate-client", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = RateOrder.parse(req.body);
+    const order = await tx(async (client) => {
+      const existing = (await client.query(`
+        SELECT o.*
+        FROM orders o
+        WHERE o.id=$1
+        FOR UPDATE OF o
+      `, [id])).rows[0];
+      if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      const driverProfile = (await client.query("SELECT id FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+      if (!driverProfile || driverProfile.id !== existing.driver_id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      if (!existing.client_id) throw new AppError("Order has no client to rate", 409, "ORDER_CLIENT_MISSING");
+      const previous = (await client.query("SELECT id FROM client_reviews WHERE order_id=$1 LIMIT 1", [existing.id])).rows[0];
+      if (previous) throw new AppError("Order already rated", 409, "ORDER_ALREADY_RATED");
+      // Trip must be finished and paid — same "PAID" gate as the client-rates-driver
+      // endpoint, plus the RATED/COMPLETED states so whichever side rates second
+      // (client rating moves the order to RATED) isn't locked out.
+      if (!["PAID", "RATED", "COMPLETED"].includes(existing.status)) {
+        throw new AppError("Order must be completed before rating", 409, "ORDER_NOT_COMPLETED", {
+          currentStatus: existing.status,
+          requiredStatus: "PAID"
+        });
+      }
+
+      await client.query(`
+        INSERT INTO client_reviews(order_id, driver_id, client_id, rating, tags, comment)
+        VALUES($1,$2,$3,$4,$5,$6)
+      `, [existing.id, existing.driver_id, existing.client_id, body.rating, body.tags, body.comment || null]);
+      const ratingStats = (await client.query(
+        "SELECT AVG(rating)::numeric(3,2) AS avg_rating FROM client_reviews WHERE client_id=$1",
+        [existing.client_id]
+      )).rows[0];
+      const avgRating = Number(ratingStats.avg_rating || body.rating);
+      await client.query("UPDATE clients SET rating=$1 WHERE id=$2", [avgRating, existing.client_id]);
+
+      await writeAudit(client, {
+        action: "client_rated",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: existing.id,
+        metadata: { rating: body.rating, tags: body.tags },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [existing.id])).rows[0];
+    });
+    res.status(201).json({ order: publicOrderResponse(order) });
+  } catch (e) { next(e); }
+});
+
 router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);

@@ -740,7 +740,27 @@ const statements = [
   // (order-dispatch.service.js).
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancelled_by_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancelled_by_driver_at TIMESTAMPTZ",
-  "CREATE INDEX IF NOT EXISTS idx_orders_last_cancelled_by_driver_id ON orders(last_cancelled_by_driver_id)"
+  "CREATE INDEX IF NOT EXISTS idx_orders_last_cancelled_by_driver_id ON orders(last_cancelled_by_driver_id)",
+
+  // --- Stage: server symmetry (driver rates client, driver favorites/blocks client) ---
+  // Mirrors drivers.rating: kept in sync on every new client_reviews row by
+  // POST /orders/:id/rate-client (orders.routes.js), same pattern as
+  // drivers.rating being recomputed on POST /orders/:id/rate.
+  "ALTER TABLE clients ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) NOT NULL DEFAULT 5.00",
+  // Mirrors client_driver_preferences but in the opposite direction — a
+  // BLOCKED entry here is checked by the dispatch feed (listOrdersForDriver)
+  // and the accept/offer entry points, so a client a driver blocked never
+  // has their orders offered to that driver again.
+  `CREATE TABLE IF NOT EXISTS driver_client_preferences (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('FAVORITE','BLOCKED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(driver_id, client_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_driver_client_preferences_driver_id ON driver_client_preferences(driver_id)",
+  "CREATE INDEX IF NOT EXISTS idx_driver_client_preferences_client_id ON driver_client_preferences(client_id)"
 ];
 
 export async function runMigrations() {
