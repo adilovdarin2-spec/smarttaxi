@@ -11905,26 +11905,63 @@ class _TariffSection extends StatelessWidget {
           // 92px-tall cards inside an already height-constrained sheet to
           // even see them all), and a partially-visible next card is the
           // standard "there's more here" cue — a rider isn't left assuming
-          // one card is the only option.
-          SizedBox(
-            height: 132,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: visibleTariffs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final item = visibleTariffs[index];
-                return _TariffCard(
-                  item: item,
-                  selected: item.tariff.id == selectedId,
-                  estimate: estimates[item.tariff.id],
-                  onTap: () => onSelect(item.tariff.id),
-                  dark: dark,
-                  bestValue: item.tariff.id == bestValueTariffId,
-                );
-              },
-            ),
+          // one card is the only option. When the cards fit the sheet width
+          // without scrolling, stretch them to fill it instead of leaving
+          // dead space after the last card.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const cardWidth = 118.0;
+              const gap = 8.0;
+              final naturalWidth = visibleTariffs.length * cardWidth +
+                  (visibleTariffs.length - 1) * gap;
+              final stretch = naturalWidth <= constraints.maxWidth;
+              return SizedBox(
+                height: 132,
+                child: stretch
+                    ? Row(
+                        children: [
+                          for (var index = 0;
+                              index < visibleTariffs.length;
+                              index++) ...[
+                            if (index != 0) const SizedBox(width: gap),
+                            Expanded(
+                              child: _TariffCard(
+                                item: visibleTariffs[index],
+                                selected:
+                                    visibleTariffs[index].tariff.id ==
+                                        selectedId,
+                                estimate:
+                                    estimates[visibleTariffs[index].tariff.id],
+                                onTap: () =>
+                                    onSelect(visibleTariffs[index].tariff.id),
+                                dark: dark,
+                                bestValue: visibleTariffs[index].tariff.id ==
+                                    bestValueTariffId,
+                                stretch: true,
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                    : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: visibleTariffs.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: gap),
+                        itemBuilder: (context, index) {
+                          final item = visibleTariffs[index];
+                          return _TariffCard(
+                            item: item,
+                            selected: item.tariff.id == selectedId,
+                            estimate: estimates[item.tariff.id],
+                            onTap: () => onSelect(item.tariff.id),
+                            dark: dark,
+                            bestValue: item.tariff.id == bestValueTariffId,
+                          );
+                        },
+                      ),
+              );
+            },
           ),
       ],
     );
@@ -11939,6 +11976,7 @@ class _TariffCard extends StatelessWidget {
     required this.onTap,
     required this.dark,
     this.bestValue = false,
+    this.stretch = false,
   });
 
   final _PassengerTariffVisual item;
@@ -11947,6 +11985,7 @@ class _TariffCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool dark;
   final bool bestValue;
+  final bool stretch;
 
   @override
   Widget build(BuildContext context) {
@@ -11960,7 +11999,7 @@ class _TariffCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          width: 118,
+          width: stretch ? null : 118,
           padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
           decoration: BoxDecoration(
             color: dark
@@ -12175,38 +12214,37 @@ class _TariffSkeleton extends StatelessWidget {
         ),
         SizedBox(
           height: 132,
-          child: Row(
-            children: [
-              for (var i = 0; i < 3; i++) ...[
-                Container(
-                  width: 118,
-                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.white,
-                    border: Border.all(
-                      color: dark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : SmartTaxiColors.border,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonLine(
-                          width: double.infinity, height: 44, radius: 13),
-                      SizedBox(height: 9),
-                      _SkeletonLine(width: 70, height: 12),
-                      SizedBox(height: 6),
-                      _SkeletonLine(width: 56, height: 12),
-                    ],
-                  ),
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 3,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, i) => Container(
+              width: 118,
+              padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+              decoration: BoxDecoration(
+                color: dark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.white,
+                border: Border.all(
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : SmartTaxiColors.border,
                 ),
-                if (i != 2) const SizedBox(width: 8),
-              ],
-            ],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonLine(
+                      width: double.infinity, height: 44, radius: 13),
+                  SizedBox(height: 9),
+                  _SkeletonLine(width: 70, height: 12),
+                  SizedBox(height: 6),
+                  _SkeletonLine(width: 56, height: 12),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -13555,7 +13593,10 @@ class _MapOverlayHeader extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: _MapBackButton(onTap: onRouteBack),
             ),
-            _RouteSummaryPill(text: summary),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _RouteSummaryPill(text: summary),
+            ),
           ],
         ),
       );
@@ -13632,10 +13673,10 @@ class _RouteSummaryPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 230),
+      constraints: const BoxConstraints(maxWidth: 168),
       child: Container(
         height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.98),
