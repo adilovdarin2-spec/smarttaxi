@@ -47,6 +47,15 @@ const _userLocationMarkerAsset = 'assets/map/marker_my_location_2026.png';
 const _destinationMarkerAsset = 'assets/map/marker_destination_2026.png';
 const _addressPickMarkerAsset = 'assets/map/marker_address_pick_2026.png';
 const _addressPickMarkerColor = SmartTaxiColors.gold;
+// Blue/white design system tokens (docs/design/
+// BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md) — used only in the trip-search/
+// driver-found flow below, migrated opportunistically while redesigning
+// that specific screen per the doc's own "migrate as you touch a screen,
+// not a blanket repaint" guidance. Not a replacement for SmartTaxiColors.gold
+// used everywhere else in this file.
+const _blueAccent = Color(0xff2c5fe0);
+const _blueSurface = Color(0xffeef2fc);
+const _blueBorder = Color(0xffe1e7f5);
 const _iconMenu = 'assets/icons/menu.svg';
 const _iconBell = 'assets/icons/bell.svg';
 const _iconChevronDown = 'assets/icons/chevron_down.svg';
@@ -2340,7 +2349,26 @@ class _PassengerShellState extends State<PassengerShell>
           child: ConstrainedBox(
             constraints:
                 BoxConstraints(maxHeight: screen.height * sheetFraction),
-            child: _TripStatusPanel(
+            // _TripStatusPanel already picks its own sub-widget internally
+            // per order.status, each wrapped in a keyed _PanelEntrance — but
+            // without this switcher at the call site, the old sub-widget was
+            // just dropped instantly while the new one popped in; this
+            // crossfades the transition between major status changes
+            // (searching → driver found → in progress → ...) instead.
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SizeTransition(
+                  sizeFactor: animation,
+                  axisAlignment: -1,
+                  child: child,
+                ),
+              ),
+              child: _TripStatusPanel(
+              key: ValueKey('trip-status-${order.status}'),
               api: widget.api,
               order: order,
               statusText: _statusLabel(order.status),
@@ -2381,6 +2409,7 @@ class _PassengerShellState extends State<PassengerShell>
               onNewTrip: _startNewPassengerTrip,
               respondingToPriceOffer: _respondingToPriceOffer,
               onRespondToPriceOffer: _respondToDriverPriceOffer,
+              ),
             ),
           ),
         ),
@@ -6894,6 +6923,7 @@ class _TripDetailScreen extends StatelessWidget {
 
 class _TripStatusPanel extends StatelessWidget {
   const _TripStatusPanel({
+    super.key,
     required this.api,
     required this.order,
     required this.statusText,
@@ -10576,7 +10606,11 @@ class _SearchingPulseState extends State<_SearchingPulse>
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: SmartTaxiColors.gold.withValues(alpha: 0.18),
+                        // Blue/white design system accent (docs/design/
+                        // BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md) — migrated
+                        // opportunistically while redesigning this screen,
+                        // not a blanket app-wide repaint.
+                        color: _blueAccent.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -10586,11 +10620,11 @@ class _SearchingPulseState extends State<_SearchingPulse>
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.gold,
+                    color: _blueAccent,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: SmartTaxiColors.gold.withValues(alpha: 0.27),
+                        color: _blueAccent.withValues(alpha: 0.27),
                         blurRadius: 12,
                         spreadRadius: 2,
                       ),
@@ -10651,8 +10685,8 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.goldSoft),
+        color: _blueSurface,
+        border: Border.all(color: _blueBorder),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -10667,21 +10701,20 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: i == _activeIndex
-                        ? SmartTaxiColors.gold
+                        ? _blueAccent
                         : i < _activeIndex
-                            ? SmartTaxiColors.goldPale
+                            ? _blueAccent.withValues(alpha: 0.16)
                             : Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: i <= _activeIndex
-                          ? SmartTaxiColors.gold
+                          ? _blueAccent
                           : SmartTaxiColors.borderStrong,
                     ),
                     boxShadow: i == _activeIndex
                         ? [
                             BoxShadow(
-                              color:
-                                  SmartTaxiColors.gold.withValues(alpha: 0.2),
+                              color: _blueAccent.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -10691,9 +10724,7 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
                   child: Icon(
                     i < _activeIndex ? Icons.check_rounded : items[i].$2,
                     size: 15,
-                    color: i == _activeIndex
-                        ? SmartTaxiColors.text
-                        : SmartTaxiColors.goldDeep,
+                    color: i == _activeIndex ? Colors.white : _blueAccent,
                   ),
                 ),
                 const SizedBox(width: 10),
