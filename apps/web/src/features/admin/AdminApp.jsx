@@ -1545,13 +1545,6 @@ function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onB
                 <span>{driver.region_name || "Регион не выбран"}</span>
                 <div className="admin-row-actions">
                   <button type="button" className="admin-secondary-button compact" onClick={() => onOpenDriver(driver)}>Детали</button>
-                  <button
-                    type="button"
-                    className={driver.is_blocked ? "admin-secondary-button compact" : "admin-danger-button compact"}
-                    onClick={() => onBlockDriver(driver, !driver.is_blocked)}
-                  >
-                    {driver.is_blocked ? "Разблокировать" : "Заблокировать"}
-                  </button>
                 </div>
               </div>
             ))}
@@ -1583,28 +1576,20 @@ function ApplicationsPage({ applications, applicationStatus, setApplicationStatu
       {!visible.length ? (
         <StatePanel title="Нет заявок водителей" text="Новые заявки появятся здесь после отправки из мобильного приложения." />
       ) : (
-        <section className="admin-card-grid applications">
+        <div className="admin-table premium">
           {visible.map(item => (
-            <article className="admin-application-card" key={item.id}>
-              <header>
-                <div>
-                  <strong>{item.full_name}</strong>
-                  <span>{item.phone}</span>
-                </div>
-                <Badge tone={badgeTone(item.status)}>{statusLabel(item.status)}</Badge>
-              </header>
-              <div className="admin-card-facts">
-                <InfoLine label="Автомобиль" value={item.car_model} />
-                <InfoLine label="Цвет" value={item.car_color || "Не указан"} />
-                <InfoLine label="Госномер" value={item.plate_number} />
-                <InfoLine label="Создана" value={formatDate(item.created_at)} />
+            <div className="admin-table-row applications" key={item.id}>
+              <strong>{item.full_name}</strong>
+              <span>{item.phone}</span>
+              <span>{[item.car_model, item.car_color].filter(Boolean).join(" · ")}</span>
+              <span>{item.plate_number}</span>
+              <Badge tone={badgeTone(item.status)}>{statusLabel(item.status)}</Badge>
+              <div className="admin-row-actions">
+                <button type="button" className="admin-secondary-button compact" onClick={() => onOpenApplication(item)}>Открыть</button>
               </div>
-              <footer>
-                <button type="button" className="admin-secondary-button" onClick={() => onOpenApplication(item)}>Открыть</button>
-              </footer>
-            </article>
+            </div>
           ))}
-        </section>
+        </div>
       )}
     </div>
   );
@@ -2347,35 +2332,28 @@ function PromoCodesPage({ promoCodes, promoCodeStatus, setPromoCodeStatus, onAdd
           onAction={onAddPromoCode}
         />
       ) : (
-        <section className="admin-card-grid promo-codes">
+        <div className="admin-table premium">
           {visible.map(promoCode => (
-            <article className="admin-application-card" key={promoCode.id}>
-              <header>
-                <div>
-                  <strong>{promoCode.code}</strong>
-                  <span>{promoCode.regionId ? "Ограничен регионом" : "Все регионы"}</span>
-                </div>
-                <Badge tone={promoCode.isActive ? "success" : "muted"}>
-                  {promoCode.isActive ? "Активен" : "Отключён"}
-                </Badge>
-              </header>
-              <div className="admin-card-facts">
-                <InfoLine label="Скидка" value={formatPromoValue(promoCode)} />
-                <InfoLine label="Мин. сумма заказа" value={formatMoney(promoCode.minOrderPriceKzt)} />
-                <InfoLine label="Лимит использований" value={formatPromoLimit(promoCode)} />
-                <InfoLine label="Срок действия" value={formatPromoValidity(promoCode)} />
-              </div>
-              <footer>
-                <button type="button" className={promoCode.isActive ? "admin-danger-button" : "admin-secondary-button"} onClick={() => onTogglePromoCode(promoCode)}>
+            <div className="admin-table-row promo-codes" key={promoCode.id}>
+              <strong>{promoCode.code}</strong>
+              <span>{promoCode.regionId ? "Ограничен регионом" : "Все регионы"}</span>
+              <span>{formatPromoValue(promoCode)}</span>
+              <span>{formatPromoLimit(promoCode)}</span>
+              <span>{formatPromoValidity(promoCode)}</span>
+              <Badge tone={promoCode.isActive ? "success" : "muted"}>
+                {promoCode.isActive ? "Активен" : "Отключён"}
+              </Badge>
+              <div className="admin-row-actions">
+                <button type="button" className="admin-secondary-button compact" onClick={() => onTogglePromoCode(promoCode)}>
                   {promoCode.isActive ? "Отключить" : "Активировать"}
                 </button>
-                <button type="button" className="admin-danger-button" onClick={() => onDeletePromoCode(promoCode)}>
+                <button type="button" className="admin-danger-button compact" onClick={() => onDeletePromoCode(promoCode)}>
                   Удалить
                 </button>
-              </footer>
-            </article>
+              </div>
+            </div>
           ))}
-        </section>
+        </div>
       )}
     </div>
   );

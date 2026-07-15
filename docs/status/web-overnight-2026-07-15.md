@@ -397,6 +397,95 @@ auth/branding assets, per `project_parallel_sessions` memory):
    session this environment can't provide. Worth a quick visual check
    next time someone's in the driver app.
 
+## 14. Desktop density pass (running via `/loop`, iteration 1)
+
+New ask, separate from the visual audit above: enforce dense-admin
+conventions across `/client /driver /owner` — 4/8/12/16/24/32px
+spacing scale, bordered/divided table rows instead of per-row rounded
+cards for data-dense lists, semantic badge colors kept apart from
+accent blue, one filled CTA per screen, real empty states everywhere,
+and one consistent typography hierarchy between `/client` and
+`/owner`. Running this as a self-paced `/loop` per the user's
+instruction, with a hard rule: a screen isn't "done" until it's opened
+live in a real browser, screenshotted, and checked against
+`BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md` — a previously-committed fix
+that fails that check on re-inspection still counts as not done.
+
+**Tooling**: same as §13 — Browser pane's `computer{screenshot}`
+still hangs, so this iteration used the same throwaway Playwright
+script approach (network-mocked admin auth, real navigation) to get
+real screenshots. Script deleted after each run, not committed.
+
+**Iteration 1 — admin dense tables (Заявки, Промокоды, Водители)**:
+
+1. **Core fix**: `.admin-table`/`.admin-table-row` rendered every row
+   as its own separate rounded, bordered, drop-shadowed box with gaps
+   between rows — the exact "cards masquerading as a table" pattern
+   the user called out. Converted to one bordered/rounded *container*
+   with plain `border-bottom` dividers between rows (last row's border
+   removed, subtle hover tint added). This one change reached every
+   screen already using `.admin-table-row` — Водители, Заказы,
+   Журнал, Финансы reports/debts/transactions — not just the two
+   screens named explicitly.
+2. **Заявки (driver applications) and Промокоды (promo codes)**: were
+   still on the old `.admin-card-grid` + rounded-card-per-item
+   pattern (never actually reached by the table-row fix above). Both
+   restructured to the new dense row layout.
+3. **Badge color bug found by the fix above**: `.admin-badge.warning`
+   used `background: var(--admin-gold-soft)` / `border-color:
+   var(--admin-border-strong)` — both stale-named variables that
+   (per §13's finding) actually hold *blue* values now. So the
+   "warning" badge (PENDING/BUSY/searching statuses) rendered with
+   amber text on a pale **blue** chip — exactly the "reusing accent
+   for status" the user said not to do. Fixed to a proper light-amber
+   background/border, independent of the accent tokens.
+4. **Also promo-codes only**: the row's "Отключить" action was styled
+   `admin-danger-button` (red) — same as "Удалить". Deactivating is
+   reversible, deleting isn't; recolored "Отключить" to secondary so
+   only the actually-irreversible action reads as danger.
+5. **Two real layout bugs caught only by the screenshot self-check**
+   (not visible from reading the code or from `npm run check`):
+   - Nesting name+phone in a wrapping `<div>` per row (to get a
+     two-line first cell) broke the grid's column count assumption —
+     rendered as smooshed, overlapping text with no gaps. Fixed by
+     matching the flat `<strong>`/`<span>` sibling pattern the
+     already-working Drivers/Orders rows use, giving Заявки/Промокоды
+     their own dedicated column-count rules instead of sharing one
+     with Orders.
+   - **Pre-existing bug, not something this session introduced**: the
+     driver row's status badge and region-name column visually
+     overlapped (`admin-badge` also matched the generic `.admin-table-
+     row span` rule, which forced `min-width:0` and let the grid's
+     `auto` track collapse to ~26px against the badge's real ~83px
+     content). Added a targeted `.admin-table-row .admin-badge`
+     override restoring natural sizing. Also removed the redundant
+     per-row "Заблокировать" button on Водители — it duplicates the
+     block/unblock action already in the driver-detail modal opened by
+     "Детали", and freeing that column width is what let the row
+     actually fit at 1280px instead of clipping.
+   - Iterated column `minmax()` values down from "generous guesses"
+     to values that actually fit a 1280px viewport without overflow,
+     re-screenshotting after every change — several rounds before
+     Промокоды and Водители both rendered fully on-screen with no
+     clipped buttons.
+
+- Before (Заявки — rounded cards, one per applicant):
+  ![applications before](../design/audit-2026-07-15/admin-05-Заявки.png)
+- After (Заявки — divided rows, semantic amber badge):
+  ![applications after](../design/audit-2026-07-15/admin-05-заявки-after.png)
+- Before (Промокоды — rounded cards):
+  ![promo codes before](../design/audit-2026-07-15/admin-08-Промокоды.png)
+- After (Промокоды — divided rows, "Отключить" no longer styled as danger):
+  ![promo codes after](../design/audit-2026-07-15/admin-08-промокоды-after.png)
+- After (Водители — divided rows, badge/region overlap fixed, badges
+  now green/amber/red instead of blue-tinted):
+  ![drivers after](../design/audit-2026-07-15/admin-04-водители-after.png)
+
+**Not yet done this iteration** (loop continues): one-CTA-per-screen
+audit, empty-state audit across every list, client/owner typography
+comparison, spacing-scale check on `/client` and `/driver`, and a
+final confirmation pass once a full sweep finds nothing new.
+
 ## Known gaps / follow-ups
 
 - Referral code redemption at signup (see §8) — backend-ready, not
