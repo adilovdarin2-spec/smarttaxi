@@ -1323,3 +1323,53 @@ item 4, not investigated further for the same reason (outside
 change). `flutter test`: 10 failures, unchanged from baseline.
 **Verified live**, full input → API round-trip → error-render flow,
 not just that the screen isn't blank anymore.
+
+### 6. "Поддержка" flattened form → real step-by-step flow — third time on the list, root-caused this pass — `27d4ffa`
+
+Before this pass, `_supportScreen()` defaulted `_supportTopic` to
+`'Проблема с поездкой'` and showed every field — topic chips, the
+lost-item trip picker (permanently hidden unless "Забыл вещь" was
+already the pre-selected default, which it never was), the message
+box, and the submit button — all at once, unconditionally. That's a
+flat form, not a flow, and it's the third time this exact complaint
+has come up on the punch list.
+
+Root cause: `_supportTopic` was non-nullable with a hardcoded default,
+so there was no "nothing chosen yet" state to gate on. Fixed by making
+it `String?` (`null` until the rider taps a chip) and wrapping
+everything below the chip row in an `AnimatedSize` (220ms,
+`easeOutCubic`): with no topic picked, it shows only a one-line hint
+("Выберите тему выше, чтобы продолжить."); once a topic is picked, it
+reveals the lost-item trip picker (only for "Забыл вещь"), the message
+field, and the submit button, animating the height change instead of
+popping. Picking a topic also clears any previously-selected
+`_lostItemOrderId`, so switching away from "Забыл вещь" (or re-picking
+it fresh) never carries a stale trip selection into a new report.
+
+Self-caught bug during implementation, fixed before testing: my first
+pass reset `_supportTopic = null` inside the post-submit success
+`setState`, intending to "reset the flow" — but that would have
+immediately collapsed the `AnimatedSize` back to the hint-text branch,
+hiding the success message that lives inside the revealed branch. Removed
+that reset; `_supportTopic` now stays selected after a successful
+submit so the confirmation stays visible.
+
+**Screenshot evidence:** step 1 (no topic selected) — only the hint
+text shows, message field and submit button correctly hidden. Step 2
+with "Забыл вещь" — `_LostItemOrderPicker` reveals with its accurate
+"Нет доступных поездок…" empty state for this test account (0 trip
+history), message field below it. Step 2 with "Другое" instead — trip
+picker correctly absent, just message field + submit. Full submit
+tested live: typed "TestMessageLongEnough" (22 chars, past the
+8-char minimum) with topic "Другое" selected, tapped "Отправить" —
+message field cleared back to its hint placeholder, inline confirmation
+"Обращение отправлено. Мы ответим здесь и, если нужно, позвоним."
+appeared and **stayed visible** (topic chip "Другое" still shown
+selected), submit button still present for a follow-up message.
+
+**Verified:** `flutter analyze` — 4 pre-existing warnings (one new
+name surfaced vs. earlier count, `cancelLabel` unused-parameter in an
+unrelated confirm-sheet class at line 8359, not touched this session;
+still zero warnings from this change). **Verified live**, full
+topic-select → conditional-reveal → submit → success round-trip, not
+just that the screen compiles.
