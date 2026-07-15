@@ -290,7 +290,38 @@ would see but the driver never would.
   policy; compile-verified only tonight.
 - Committed as `de834f9`.
 
-## Not started yet — items 7–16
+## [7] SOS усиление — done this pass
+
+`_SafetyButton`/`_SafetySheet` (used from `_TripStatusPanel`, both active-trip
+header layouts) already existed as a "call emergency number" bottom sheet,
+but the row underneath it claimed "Поддержка видит статус поездки и может
+помочь в любой момент" — nothing backed that claim; no message was ever
+actually sent anywhere.
+- `_TripStatusPanel` gained an `api` field (threaded from `widget.api` at
+  its one call site); both `_SafetyButton` instantiations now also pass
+  `orderId: order.id`.
+- New `_SafetySheet._sendSosAlert()`: fires `POST /api/support` with
+  `topic: 'SOS'`, the order's id, and a message body carrying the rider's
+  current GPS coordinates (`Geolocator.getCurrentPosition`, 6s timeout,
+  falls back to "координаты недоступны" on failure/timeout/denied
+  permission) — the support endpoint has no dedicated location field, so
+  coordinates go in the message text.
+- Tapping "Позвонить" now fires the phone call **and** `_sendSosAlert()` in
+  parallel (`unawaited` both) — the call is never delayed or blocked by the
+  network request, and a failed alert is swallowed silently since the call
+  is the actual safety-critical action.
+- Replaced the previously-false static row with one that accurately
+  describes what now happens: "Поддержка получит сигнал" / "Заявка с
+  номером поездки и вашими координатами уходит в поддержку одновременно
+  со звонком".
+- **Verified:** `flutter analyze` — same 6/7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs an active
+  trip under a logged-in session, blocked by the same standing
+  no-live-login policy; compile-verified only tonight.
+- Committed as `784fee8`.
+
+## Not started yet — items 8–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
