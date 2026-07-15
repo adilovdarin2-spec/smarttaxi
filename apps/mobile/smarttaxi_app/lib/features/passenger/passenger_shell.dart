@@ -215,7 +215,11 @@ class _PassengerShellState extends State<PassengerShell>
   String _driverComment = '';
   bool _driverTermsAccepted = false;
   String? _driverApplicationMessage;
-  String _supportTopic = 'Проблема с поездкой';
+  // Null until the rider picks one — the rest of the support form (trip
+  // picker for "Забыл вещь", message, submit) only reveals once a topic is
+  // chosen, so the flow reads as topic -> (trip if lost item) -> message
+  // instead of one flat form with every field visible at once.
+  String? _supportTopic;
   String? _supportMessage;
   bool _supportMessageDanger = false;
   bool _supportSending = false;
@@ -3314,93 +3318,133 @@ class _PassengerShellState extends State<PassengerShell>
                       (topic) => _SupportTopicChip(
                         label: topic,
                         selected: _supportTopic == topic,
-                        onTap: () => setState(() => _supportTopic = topic),
+                        onTap: () => setState(() {
+                          _supportTopic = topic;
+                          // A previously-picked trip only makes sense for
+                          // "Забыл вещь" — switching to a different topic
+                          // (or re-picking the same one) shouldn't carry a
+                          // stale selection into a fresh report.
+                          _lostItemOrderId = null;
+                        }),
                       ),
                     )
                     .toList(),
               ),
-              if (_supportTopic == 'Забыл вещь') ...[
-                const SizedBox(height: 14),
-                _LostItemOrderPicker(
-                  activeOrder: _order,
-                  tripHistory: _tripHistory,
-                  selectedOrderId: _lostItemOrderId,
-                  onChanged: (id) => setState(() => _lostItemOrderId = id),
-                ),
-              ],
-              const SizedBox(height: 16),
-              TextField(
-                controller: _supportController,
-                minLines: 5,
-                maxLines: 7,
-                decoration: const InputDecoration(
-                  labelText: 'Сообщение',
-                  hintText: 'Напишите сообщение…',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              if (_supportMessage != null) ...[
-                const SizedBox(height: 12),
-                _InlineMessage(
-                  text: _supportMessage!,
-                  danger: _supportMessageDanger,
-                ),
-              ],
-              const SizedBox(height: 16),
-              _GoldCtaButton(
-                enabled: !_supportSending,
-                loading: _supportSending,
-                text: 'Отправить',
-                loadingText: 'Отправляем...',
-                onTap: () async {
-                  final text = _supportController.text.trim();
-                  if (text.length < 8) {
-                    setState(() {
-                      _supportMessageDanger = true;
-                      _supportMessage =
-                          'Опишите проблему подробнее: минимум 8 символов.';
-                    });
-                    return;
-                  }
-                  final isLostItem = _supportTopic == 'Забыл вещь';
-                  if (isLostItem && _lostItemOrderId == null) {
-                    setState(() {
-                      _supportMessageDanger = true;
-                      _supportMessage =
-                          'Укажите поездку, в которой оставили вещь — иначе водителя не получится уведомить.';
-                    });
-                    return;
-                  }
-                  setState(() => _supportSending = true);
-                  try {
-                    await widget.api.submitSupportMessage(
-                      // The backend matches this literal string (not the
-                      // Russian label) to trigger a push straight to the
-                      // trip's driver — see support.routes.js.
-                      topic: isLostItem ? 'LOST_ITEM' : _supportTopic,
-                      message: text,
-                      orderId: isLostItem ? _lostItemOrderId : _order?.id,
-                    );
-                    if (!mounted) return;
-                    _supportController.clear();
-                    setState(() {
-                      _supportMessageDanger = false;
-                      _lostItemOrderId = null;
-                      _supportMessage = isLostItem
-                          ? 'Обращение отправлено, водитель уведомлён.'
-                          : 'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.';
-                    });
-                    unawaited(_loadMySupportMessages());
-                  } catch (error) {
-                    if (!mounted) return;
-                    setState(() {
-                      _supportMessageDanger = true;
-                      _supportMessage = _readableError(error);
-                    });
-                  } finally {
-                    if (mounted) setState(() => _supportSending = false);
-                  }
-                },
+              // Step 2 only appears once a topic is chosen — reads as a
+              // flow (topic -> trip if lost item -> message) instead of
+              // one flat form with every field visible from the start.
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topLeft,
+                child: _supportTopic == null
+                    ? const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: Text(
+                          'Выберите тему выше, чтобы продолжить.',
+                          style: TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_supportTopic == 'Забыл вещь') ...[
+                            const SizedBox(height: 14),
+                            _LostItemOrderPicker(
+                              activeOrder: _order,
+                              tripHistory: _tripHistory,
+                              selectedOrderId: _lostItemOrderId,
+                              onChanged: (id) =>
+                                  setState(() => _lostItemOrderId = id),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _supportController,
+                            minLines: 5,
+                            maxLines: 7,
+                            decoration: const InputDecoration(
+                              labelText: 'Сообщение',
+                              hintText: 'Напишите сообщение…',
+                              alignLabelWithHint: true,
+                            ),
+                          ),
+                          if (_supportMessage != null) ...[
+                            const SizedBox(height: 12),
+                            _InlineMessage(
+                              text: _supportMessage!,
+                              danger: _supportMessageDanger,
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          _GoldCtaButton(
+                            enabled: !_supportSending,
+                            loading: _supportSending,
+                            text: 'Отправить',
+                            loadingText: 'Отправляем...',
+                            onTap: () async {
+                              final topic = _supportTopic;
+                              if (topic == null) return;
+                              final text = _supportController.text.trim();
+                              if (text.length < 8) {
+                                setState(() {
+                                  _supportMessageDanger = true;
+                                  _supportMessage =
+                                      'Опишите проблему подробнее: минимум 8 символов.';
+                                });
+                                return;
+                              }
+                              final isLostItem = topic == 'Забыл вещь';
+                              if (isLostItem && _lostItemOrderId == null) {
+                                setState(() {
+                                  _supportMessageDanger = true;
+                                  _supportMessage =
+                                      'Укажите поездку, в которой оставили вещь — иначе водителя не получится уведомить.';
+                                });
+                                return;
+                              }
+                              setState(() => _supportSending = true);
+                              try {
+                                await widget.api.submitSupportMessage(
+                                  // The backend matches this literal string
+                                  // (not the Russian label) to trigger a
+                                  // push straight to the trip's driver —
+                                  // see support.routes.js.
+                                  topic: isLostItem ? 'LOST_ITEM' : topic,
+                                  message: text,
+                                  orderId:
+                                      isLostItem ? _lostItemOrderId : _order?.id,
+                                );
+                                if (!mounted) return;
+                                _supportController.clear();
+                                setState(() {
+                                  _supportMessageDanger = false;
+                                  _lostItemOrderId = null;
+                                  _supportMessage = isLostItem
+                                      ? 'Обращение отправлено, водитель уведомлён.'
+                                      : 'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.';
+                                });
+                                unawaited(_loadMySupportMessages());
+                              } catch (error) {
+                                if (!mounted) return;
+                                setState(() {
+                                  _supportMessageDanger = true;
+                                  _supportMessage = _readableError(error);
+                                });
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _supportSending = false);
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      ),
               ),
             ],
           ),
