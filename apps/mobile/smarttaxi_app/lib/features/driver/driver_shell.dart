@@ -2190,8 +2190,18 @@ class _DriverShellState extends State<DriverShell> {
                 OutlinedButton.icon(
                     onPressed: _tripActionLabel != null
                         ? null
-                        : () => _tripAction(
-                            l10n.driverTripNoShowButton, widget.api.noShow),
+                        : () async {
+                            final confirmed = await _confirmDriverAction(
+                              title: 'Клиент не вышел?',
+                              message:
+                                  'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.',
+                              confirmLabel: 'Подтвердить неявку',
+                            );
+                            if (confirmed) {
+                              _tripAction(l10n.driverTripNoShowButton,
+                                  widget.api.noShow);
+                            }
+                          },
                     icon: const Icon(Icons.person_off_rounded),
                     label: Text(l10n.driverTripNoShowButton)),
               ],
@@ -2200,8 +2210,18 @@ class _DriverShellState extends State<DriverShell> {
                 OutlinedButton(
                     onPressed: _tripActionLabel != null
                         ? null
-                        : () => _tripAction(l10n.driverTripCancelButton,
-                            widget.api.cancelDriverOrder),
+                        : () async {
+                            final confirmed = await _confirmDriverAction(
+                              title: 'Отменить поездку?',
+                              message:
+                                  'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.',
+                              confirmLabel: 'Отменить поездку',
+                            );
+                            if (confirmed) {
+                              _tripAction(l10n.driverTripCancelButton,
+                                  widget.api.cancelDriverOrder);
+                            }
+                          },
                     child: Text(l10n.driverTripCancelButton)),
               ],
             ]),
@@ -2337,6 +2357,45 @@ class _DriverShellState extends State<DriverShell> {
     }
     if (region?.status != 'APPROVED') return 'Вы не одобрены для этого региона';
     return null;
+  }
+
+  // Cancel and no-show both affect the rider (and the driver's own stats),
+  // so — like the passenger side's own _confirmAndLogout/cancel dialogs —
+  // neither should fire straight off a single tap.
+  Future<bool> _confirmDriverAction({
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: context.palette.textSecondary,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Назад'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: context.palette.danger),
+            child:
+                Text(confirmLabel, style: const TextStyle(fontWeight: FontWeight.w900)),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
   (String, Future<OrderSummary> Function(String id))? _nextAction() {
