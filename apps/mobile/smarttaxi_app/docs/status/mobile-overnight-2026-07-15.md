@@ -359,7 +359,36 @@ from it. What was actually missing/broken:
   tonight since its destination domain doesn't resolve (see above).
 - Committed as `22241b4`.
 
-## Not started yet — items 9–16
+## [9] Избранные адреса — done this pass
+
+Backend module already existed and is mounted at `/api/favorites`
+(`favorites.routes.js`, read directly): `GET/POST /addresses`,
+`DELETE /addresses/:id`, role CLIENT only, `label` one of
+`HOME|WORK|OTHER` (defaults `OTHER`), body
+`{label, title, addressText, lat, lng}`. Already wired on web tonight per
+its status doc; not previously wired on mobile.
+- `FavoriteAddress` model (`models.dart`) + 3 `ApiClient` methods
+  (`getFavoriteAddresses`/`createFavoriteAddress`/`deleteFavoriteAddress`).
+- New "Избранные адреса" drawer entry → `_favoriteAddressesScreen()` list
+  (pull-to-refresh, loading/error/empty states matching the recurring-
+  bookings screen's pattern) with a "Добавить адрес" flow: pick a location
+  via the existing `_SimpleAddressSearchSheet` (reused as-is, not
+  modified), then a new `_CreateFavoriteAddressSheet` for the label
+  (Дом/Работа/Другое chips, auto-filling the title for Дом/Работа) and a
+  free-text title. Delete via a confirm sheet on each card
+  (`_FavoriteAddressCard`).
+- Deliberately **not touched**: the actual address-selection screen
+  (`_AddressSearchSheet`, `_MapPointPickerSheet`) — per the standing
+  exclusion, this reuses the same lightweight search sheet built for §4,
+  not that screen.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs a
+  logged-in CLIENT session, blocked by the standing no-live-login policy;
+  compile-verified only tonight.
+- Committed as `3fec0dc`.
+
+## Not started yet — items 10–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
@@ -367,16 +396,18 @@ Recommend picking these up in the same priority order, checking
 sessions have already shipped several of the underlying backend contracts
 (and in some cases a web reference implementation) confirmed while
 investigating §3:
-- **§9 favorite addresses**: `GET/POST/DELETE /api/favorites/addresses`
-  already wired on web tonight.
 - **§11 quick messages**: `POST /orders/:id/quick-message`, fixed
   `QUICK_MESSAGES` vocabulary (`I_ARRIVED`, `WAITING_AT_ENTRANCE`,
   `RUNNING_LATE_2MIN`, `PLEASE_COME_OUT`, `ON_MY_WAY`) — already wired on
   web tonight, confirmed exact keys.
 - **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
   original brief guessed) already wired on web tonight.
+- **§10 favorite/blocked drivers**: `GET/POST /api/favorites/drivers`,
+  `DELETE /api/favorites/drivers/:driverId`, body
+  `{driverId, type: FAVORITE|BLOCKED}` — same module as §9, read directly
+  from `favorites.routes.js` tonight while investigating §9.
 
-None of §9–16 are implemented on mobile yet — flagging honestly rather
+None of §10–16 are implemented on mobile yet — flagging honestly rather
 than claiming partial coverage that isn't there.
 
 ## Verification method note
