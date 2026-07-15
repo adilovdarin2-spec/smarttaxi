@@ -13071,11 +13071,30 @@ class _SmartDrawer extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 children: [
                   _DrawerItem(
+                    icon: Icons.home_rounded,
+                    label: 'Главная',
+                    active: active == PassengerTab.home,
+                    onTap: () => onSelect(PassengerTab.home),
+                  ),
+                  _DrawerItem(
                     icon: Icons.history_rounded,
                     label: 'Мои поездки',
                     active: active == PassengerTab.trips,
                     onTap: () => onSelect(PassengerTab.trips),
                   ),
+                  _DrawerItem(
+                    icon: Icons.notifications_outlined,
+                    label: 'Уведомления',
+                    active: active == PassengerTab.notifications,
+                    onTap: () => onSelect(PassengerTab.notifications),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.person_outline_rounded,
+                    label: 'Профиль',
+                    active: active == PassengerTab.profile,
+                    onTap: () => onSelect(PassengerTab.profile),
+                  ),
+                  const _DrawerSectionLabel('Аккаунт'),
                   _DrawerItem(
                     icon: Icons.local_offer_outlined,
                     label: 'Промокоды',
@@ -13083,10 +13102,28 @@ class _SmartDrawer extends StatelessWidget {
                     onTap: () => onSelect(PassengerTab.promoCodes),
                   ),
                   _DrawerItem(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Профиль',
-                    active: active == PassengerTab.profile,
-                    onTap: () => onSelect(PassengerTab.profile),
+                    icon: Icons.event_repeat_rounded,
+                    label: 'Регулярные поездки',
+                    active: active == PassengerTab.recurringBookings,
+                    onTap: () => onSelect(PassengerTab.recurringBookings),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.star_outline_rounded,
+                    label: 'Избранные адреса',
+                    active: active == PassengerTab.favoriteAddresses,
+                    onTap: () => onSelect(PassengerTab.favoriteAddresses),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.people_alt_outlined,
+                    label: 'Водители',
+                    active: active == PassengerTab.driverPreferences,
+                    onTap: () => onSelect(PassengerTab.driverPreferences),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.card_giftcard_rounded,
+                    label: 'Пригласить друзей',
+                    active: active == PassengerTab.referrals,
+                    onTap: () => onSelect(PassengerTab.referrals),
                   ),
                   _DrawerItem(
                     icon: Icons.directions_car_outlined,
