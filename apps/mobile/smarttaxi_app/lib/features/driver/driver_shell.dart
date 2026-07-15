@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_store.dart';
@@ -2030,6 +2031,33 @@ class _DriverShellState extends State<DriverShell> {
               const SizedBox(height: 16),
               DriverStatusStepper(status: _activeOrder!.status),
               const SizedBox(height: 16),
+              if ((_activeOrder!.riderPhone ?? '').trim().isNotEmpty) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        (_activeOrder!.riderName ?? '').trim().isNotEmpty
+                            ? _activeOrder!.riderName!.trim()
+                            : 'Пассажир',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.palette.text,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => launchUrl(
+                          Uri(scheme: 'tel', path: _activeOrder!.riderPhone)),
+                      icon: const Icon(Icons.call_rounded, size: 16),
+                      label: const Text('Позвонить'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
               RouteFields(
                   pickupLabel: _activeOrder!.pickup,
                   dropoffLabel: _activeOrder!.dropoff,
@@ -2331,11 +2359,13 @@ class _DriverShellState extends State<DriverShell> {
   String _driverStatusLabel() {
     final l10n = AppLocalizations.of(context);
     if (_activeOrder?.isActive == true) return l10n.driverStatusBusy;
+    if (!_online && _disabledReason() != null) return 'Недоступен по региону';
     return _online ? l10n.driverStatusOnline : l10n.driverStatusOffline;
   }
 
   StatusTone _driverStatusTone() {
     if (_activeOrder?.isActive == true) return StatusTone.warning;
+    if (!_online && _disabledReason() != null) return StatusTone.danger;
     return _online ? StatusTone.success : StatusTone.neutral;
   }
 }
