@@ -414,7 +414,35 @@ call, no separate "change type" endpoint.
   no-live-login policy; compile-verified only tonight.
 - Committed as `bbe0de3`.
 
-## Not started yet — items 11–16
+## [11] Быстрые сообщения в поездке — done this pass
+
+`POST /orders/:id/quick-message` (`orders.routes.js`, read directly): body
+`{messageKey}`, one of a fixed server-side vocabulary
+(`I_ARRIVED`/`WAITING_AT_ENTRANCE`/`RUNNING_LATE_2MIN`/`PLEASE_COME_OUT`/
+`ON_MY_WAY`), callable by either CLIENT or DRIVER on their own order — the
+server resolves the display text and pushes it to the other party.
+Already wired on web tonight per its status doc; not previously wired on
+mobile for either role.
+- `ApiClient.sendQuickMessage({orderId, messageKey})`.
+- Passenger: new "Быстрое сообщение водителю" button under the driver
+  contact card, in both places `_DriverContactCard` renders in
+  `_TripStatusPanel` (the compact in-progress layout and the
+  waiting-for-driver layout) — opens `_QuickMessageSheet`, a fixed list of
+  the 5 options.
+- Driver: matching "Быстрое сообщение клиенту" button in the trip tab's
+  active-order card → `_DriverQuickMessageSheet`, same 5 options.
+- The Russian button copy shown is a local mirror of the server's
+  `QUICK_MESSAGES` map, not fetched — flagged via comment on both sheet
+  classes so a future vocabulary change on the backend doesn't silently
+  drift out of sync with the client-side copy.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs an
+  active trip with both a client and driver session, blocked by the
+  standing no-live-login policy; compile-verified only tonight.
+- Committed as `5f90802`.
+
+## Not started yet — items 12–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
@@ -422,14 +450,10 @@ Recommend picking these up in the same priority order, checking
 sessions have already shipped several of the underlying backend contracts
 (and in some cases a web reference implementation) confirmed while
 investigating §3:
-- **§11 quick messages**: `POST /orders/:id/quick-message`, fixed
-  `QUICK_MESSAGES` vocabulary (`I_ARRIVED`, `WAITING_AT_ENTRANCE`,
-  `RUNNING_LATE_2MIN`, `PLEASE_COME_OUT`, `ON_MY_WAY`) — already wired on
-  web tonight, confirmed exact keys.
 - **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
   original brief guessed) already wired on web tonight.
 
-None of §11–16 are implemented on mobile yet — flagging honestly rather
+None of §12–16 are implemented on mobile yet — flagging honestly rather
 than claiming partial coverage that isn't there.
 
 ## Verification method note
