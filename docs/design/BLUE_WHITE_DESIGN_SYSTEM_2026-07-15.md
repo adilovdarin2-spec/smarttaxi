@@ -44,6 +44,12 @@ No custom webfont — use the system stack (renders Cyrillic correctly on every 
 - Map markers: "моё местоположение" = solid accent dot with soft pulsing ring (`accent` at low opacity, `scale` animation, respects `prefers-reduced-motion`); "выбранный адрес" / "выбор адреса" = single accent teardrop pin, IDENTICAL shape for pickup and dropoff (see [[feedback_map_marker_consistency]] equivalent — only the field label differs, never the marker art).
 - Toast/notification: top-center, slides down from above the screen, auto-dismiss (longer for errors), stacks up to ~3.
 
+## Screens covered in the reference artifact
+
+Splash/auth, order creation with price-negotiation slider, active trip with driver counter-offer + quick-message chips + SOS, settings, trip history, driver navigator (camera-distance banner, live speed, ETA), favorites + referral, driver earnings/payout, plus a toast demo and an admin promo-codes table (desktop density, same tokens). All built from the token table above — no extra colors introduced.
+
+Cross-checked against `docs/status/*-overnight-2026-07-15.md` this pass: no `mobile-overnight` status file exists yet (mobile session hasn't landed a fresh commit since the last check) — nothing to reconcile yet, will re-check next cycle. `routing-overnight` shows a straight-line fallback route mode (1.3x road-distance factor) with no UI badge for "приблизительно" — worth a small `warning`-token badge on the trip card if a route is ever in fallback mode, using the existing map-mock/card pattern above rather than a new component.
+
 ## Known deviation
 
 Three chats (mobile/web) started tonight's work referencing the old gold-based docs before this decision was made. Sections already built there may still be gold-themed — that's expected technical debt, not a bug to panic about. Fix opportunistically per the migration note above.
