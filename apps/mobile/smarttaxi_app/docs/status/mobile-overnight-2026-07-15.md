@@ -920,6 +920,26 @@ there's still no client-facing balance endpoint, see §URG-5 above):
 - **Verified:** `flutter analyze`/`test`/`build apk --debug` clean (same
   7/10 baseline). **Not verified live** — same standing policy.
 
+### Cross-check: QA session's `DRIVER_DOCUMENTS_NOT_APPROVED` gap — confirmed closed
+
+`docs/status/qa-overnight-2026-07-15.md` §0 (commit `826c286`, ~11:53) independently
+re-checked `driver_shell.dart`/`driver_shell_helpers.dart` and found the code
+still unhandled — accurate at the time, that check ran against the state
+*before* this session's `74d8fcc` (which landed the same fix, apparently
+concurrently). Their doc also surfaced a detail worth confirming explicitly
+here: `assertDriverDispatchReady` (shared by arrived/waiting/start/complete/
+cancel, not just the go-online toggle) means an already-online driver whose
+documents lapse mid-trip can hit this same code on a trip-progress action,
+not only at go-online time. Checked `_tripAction` (the handler behind all
+those trip-progress buttons): its catch block already routes through the
+same shared `readableError()` this session extended in `74d8fcc`, so the
+mid-trip case gets the friendly message too — not the full toast+
+documents-screen treatment `_setOnline` gets (deliberately: auto-popping a
+full-screen sheet mid-trip would be more disruptive than helpful for an
+edge case this rare), but no longer the bare/generic fallback either. No
+further code change needed — recording this cross-check so the next
+session reading either status doc doesn't re-flag it as still open.
+
 ## Verification method note
 
 No real backend/OTP credentials were available in this session to log in on
