@@ -23,7 +23,6 @@ import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/models.dart';
-import 'models/driver_document_models.dart';
 import 'models/driver_shell_helpers.dart';
 import 'screens/documents/driver_documents_screen.dart';
 import 'screens/notifications/driver_notifications_screen.dart';
@@ -85,8 +84,6 @@ class _DriverShellState extends State<DriverShell> {
   List<DriverRegion> _regions = const [];
   String? _regionId;
   List<TariffOption> _regionTariffs = const [];
-  List<DriverDocument> _driverDocuments = const [];
-  bool _driverDocumentsLoaded = false;
   bool _demandHintLoading = false;
   List<OrderSummary> _orders = const [];
   List<RoadAlert> _roadAlerts = const [];
@@ -338,54 +335,11 @@ class _DriverShellState extends State<DriverShell> {
         _regionId ??= regions.isNotEmpty ? regions.first.id : null;
       });
       unawaited(_loadDemandHint());
-      unawaited(_loadDriverDocuments());
     } catch (error) {
       setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _regionsLoading = false);
     }
-  }
-
-  Future<void> _loadDriverDocuments() async {
-    try {
-      final documents = await widget.api.getDriverDocuments();
-      if (!mounted) return;
-      setState(() {
-        _driverDocuments = documents;
-        _driverDocumentsLoaded = true;
-      });
-    } catch (_) {
-      // Best-effort — a failed load just means _missingRequiredDocuments
-      // reads empty and the upfront check stays silent; the backend's own
-      // DRIVER_DOCUMENTS_NOT_APPROVED rejection on the actual API call is
-      // still there as a fallback (see _setOnline's catch block). Does NOT
-      // set _driverDocumentsLoaded — see the getter below for why that
-      // distinction matters.
-    }
-  }
-
-  // Mirrors getMissingRequiredDocumentTypes (driver-documents.service.js)
-  // exactly: for each required type, only its most recent submission
-  // counts, and it must be APPROVED — a type with only a PENDING or
-  // REJECTED submission (or none at all) is "missing". Fails open (empty
-  // list) until the first successful load completes — _driverDocuments
-  // starts as an empty list, and without this guard every driver would
-  // briefly show as missing all 5 required documents on first render,
-  // before the async fetch resolves, even if they're fully approved. The
-  // upfront check is advisory only; the server's own
-  // DRIVER_DOCUMENTS_NOT_APPROVED rejection is the real backstop either way.
-  List<String> get _missingRequiredDocuments {
-    if (!_driverDocumentsLoaded) return const [];
-    final latestByType = <String, DriverDocument>{};
-    for (final document in _driverDocuments) {
-      final existing = latestByType[document.type];
-      if (existing == null || document.createdAt.isAfter(existing.createdAt)) {
-        latestByType[document.type] = document;
-      }
-    }
-    return DriverDocumentType.required
-        .where((type) => latestByType[type]?.isApproved != true)
-        .toList();
   }
 
   Future<void> _selectRegion(String? regionId) async {
@@ -471,13 +425,12 @@ class _DriverShellState extends State<DriverShell> {
       // approval status up front and disables the toggle, but that status
       // is only as fresh as the last _loadRegions() call — an admin
       // approval/block landing in between would only surface here, as the
-      // actual API rejection. Route it through a toast + the documents
-      // screen instead of the bare inline _error banner other failures
-      // (network issues, DRIVER_HAS_ACTIVE_ORDER, etc.) still use.
+      // actual API rejection. Route it through a toast + the support sheet
+      // instead of the bare inline _error banner other failures (network
+      // issues, DRIVER_HAS_ACTIVE_ORDER, etc.) still use.
       const approvalCodes = {
         'DRIVER_REGION_NOT_APPROVED',
         'DRIVER_REGION_BLOCKED',
-        'DRIVER_DOCUMENTS_NOT_APPROVED',
         'DRIVER_BLOCKED',
       };
       final message = error.toString();
@@ -486,7 +439,7 @@ class _DriverShellState extends State<DriverShell> {
       if (isApprovalBlock) {
         if (mounted) {
           AppToast.showError(context, readableError(error));
-          _showDriverFullSheet(DriverDocumentsScreen(api: widget.api));
+          _showDriverFullSheet(_driverSupportContent());
         }
       } else {
         setState(() => _error = readableError(error));
@@ -2259,12 +2212,6 @@ class _DriverShellState extends State<DriverShell> {
     final region = _selectedRegion;
     if (_regions.isEmpty) return 'Нет одобренных регионов';
     if (_regionId == null) return 'Выберите рабочий регион';
-    // Matches backend precedence (assertDriverRegionApproved checks
-    // documents before region status) — a driver with an approved region
-    // but an incomplete/rejected document set is blocked by the same gate.
-    if (_missingRequiredDocuments.isNotEmpty) {
-      return 'Загрузите документы для проверки';
-    }
     if (region?.isActive == false) return 'Регион временно отключён';
     if (region?.status == 'BLOCKED') {
       return 'Работа в этом регионе заблокирована';
@@ -2286,10 +2233,9 @@ class _DriverShellState extends State<DriverShell> {
         icon: Icons.map_outlined,
         title: 'Нет одобренных регионов',
         message:
-            'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Загрузите документы — заявка на регион рассматривается вместе с ними.',
-        actionLabel: 'Загрузить документы',
-        onAction: () =>
-            _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
+            'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку, чтобы вам открыли доступ к региону.',
+        actionLabel: 'Написать в поддержку',
+        onAction: () => _showDriverFullSheet(_driverSupportContent()),
       );
     }
     if (_regionId == null) {
@@ -2300,19 +2246,6 @@ class _DriverShellState extends State<DriverShell> {
             'У вас есть одобренные регионы — выберите один, чтобы начать принимать заказы.',
         actionLabel: 'Выбрать регион',
         onAction: () => unawaited(_showRegionPicker()),
-      );
-    }
-    if (_missingRequiredDocuments.isNotEmpty) {
-      final count = _missingRequiredDocuments.length;
-      return _DriverAvailabilityIssue(
-        icon: Icons.upload_file_rounded,
-        title: 'Нужны документы',
-        message: count == 1
-            ? 'Один из обязательных документов ещё не загружен или не прошёл проверку.'
-            : 'Ещё $count обязательных документа(ов) не загружено или не прошло проверку.',
-        actionLabel: 'Загрузить документы',
-        onAction: () =>
-            _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
       );
     }
     if (region?.isActive == false) {
@@ -2344,7 +2277,7 @@ class _DriverShellState extends State<DriverShell> {
         icon: Icons.hourglass_top_rounded,
         title: 'Заявка на рассмотрении',
         message:
-            'Мы проверяем ваш доступ к региону «${region?.name}». Обычно это занимает немного времени — убедитесь, что все документы загружены и не отклонены, это ускорит проверку.',
+            'Мы проверяем ваш доступ к региону «${region?.name}». Обычно это занимает немного времени.',
       );
     }
     return null;
