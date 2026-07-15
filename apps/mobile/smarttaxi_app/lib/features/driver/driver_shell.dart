@@ -2028,6 +2028,15 @@ class _DriverShellState extends State<DriverShell> {
                   dropoffLabel: _activeOrder!.dropoff,
                   onPickupTap: null,
                   onDropoffTap: null),
+              if (_activeOrder!.status == 'WAITING_CLIENT' &&
+                  _activeOrder!.waitingStartedAt != null) ...[
+                const SizedBox(height: 12),
+                DriverWaitingTimerCard(
+                  waitingStartedAt: _activeOrder!.waitingStartedAt!,
+                  freeWaitingUntil: _activeOrder!.freeWaitingUntil,
+                  waitingPricePerMinute: _activeOrder!.waitingPricePerMinute,
+                ),
+              ],
               if ((_activeOrder!.notes ?? '').isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Container(

@@ -469,6 +469,10 @@ class OrderSummary {
     this.driverOfferByDriverId,
     this.searchTimedOut = false,
     this.notes,
+    this.driverArrivedAt,
+    this.waitingStartedAt,
+    this.freeWaitingUntil,
+    this.waitingPricePerMinute = 0,
   });
 
   final String id;
@@ -518,6 +522,18 @@ class OrderSummary {
   // floor, door, landmark. Whole-order field on the backend (orders.notes),
   // not split per pickup/dropoff.
   final String? notes;
+  // Set once the driver taps "Я на месте" (orders.routes.js sets both
+  // arrived_at and driver_arrived_at on the DRIVER_ARRIVED transition).
+  final DateTime? driverArrivedAt;
+  // Server-authoritative waiting-timer fields, set on the WAITING_CLIENT
+  // transition (orders.routes.js): waitingStartedAt is when the free window
+  // began, freeWaitingUntil is its precomputed expiry (waitingStartedAt +
+  // tariff.freeWaitingMinutes) — comparing against freeWaitingUntil directly
+  // keeps the client's paid/free split byte-for-byte in sync with what
+  // TRIP_COMPLETED actually bills, instead of re-deriving it locally.
+  final DateTime? waitingStartedAt;
+  final DateTime? freeWaitingUntil;
+  final int waitingPricePerMinute;
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
@@ -553,6 +569,10 @@ class OrderSummary {
       driverOfferByDriverId: driverOfferByDriverId,
       searchTimedOut: searchTimedOut,
       notes: notes,
+      driverArrivedAt: driverArrivedAt,
+      waitingStartedAt: waitingStartedAt,
+      freeWaitingUntil: freeWaitingUntil,
+      waitingPricePerMinute: waitingPricePerMinute,
     );
   }
 
@@ -636,6 +656,14 @@ class OrderSummary {
       notes: (json['notes'] as String?)?.trim().isNotEmpty == true
           ? (json['notes'] as String).trim()
           : null,
+      driverArrivedAt: DateTime.tryParse('${json['driver_arrived_at'] ?? json['driverArrivedAt'] ?? json['arrived_at'] ?? json['arrivedAt'] ?? ''}'),
+      waitingStartedAt: DateTime.tryParse(
+          '${json['waiting_started_at'] ?? json['waitingStartedAt'] ?? ''}'),
+      freeWaitingUntil: DateTime.tryParse(
+          '${json['free_waiting_until'] ?? json['freeWaitingUntil'] ?? ''}'),
+      waitingPricePerMinute: int.tryParse(
+              '${json['waiting_price_per_minute'] ?? json['waitingPricePerMinute'] ?? snapshot['waitingPricePerMinute'] ?? ''}') ??
+          0,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -315,6 +317,123 @@ class DriverOrderChip extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Free-then-paid waiting timer shown while the driver is waiting at pickup
+/// (WAITING_CLIENT). `freeWaitingUntil` is the server-precomputed expiry of
+/// the free window (orders.routes.js sets waiting_started_at/
+/// free_waiting_until on that transition from waitingStartedAt + the
+/// tariff's freeWaitingMinutes) — comparing the local clock against it keeps
+/// the paid/free split in sync with what TRIP_COMPLETED actually bills, and
+/// it survives an app restart instead of resetting to zero. Ticks locally
+/// off those fixed timestamps — self-contained so callers don't need to
+/// wire up their own periodic rebuild.
+class DriverWaitingTimerCard extends StatefulWidget {
+  const DriverWaitingTimerCard({
+    super.key,
+    required this.waitingStartedAt,
+    required this.freeWaitingUntil,
+    required this.waitingPricePerMinute,
+  });
+
+  final DateTime waitingStartedAt;
+  final DateTime? freeWaitingUntil;
+  final int waitingPricePerMinute;
+
+  @override
+  State<DriverWaitingTimerCard> createState() =>
+      _DriverWaitingTimerCardState();
+}
+
+class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
+  Timer? _timer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+        const Duration(seconds: 1), (_) => setState(() => _now = DateTime.now()));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _fmt(Duration d) {
+    final clamped = d.isNegative ? Duration.zero : d;
+    final m = clamped.inMinutes.remainder(100).toString().padLeft(2, '0');
+    final s = clamped.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final freeUntil = widget.freeWaitingUntil ?? widget.waitingStartedAt;
+    final isPaid = _now.isAfter(freeUntil);
+    final billableMinutes =
+        isPaid ? (_now.difference(freeUntil).inSeconds / 60).ceil() : 0;
+    final owedKzt = billableMinutes * widget.waitingPricePerMinute;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isPaid ? context.palette.dangerSoft : context.palette.goldSurface,
+        border: Border.all(
+            color: isPaid ? context.palette.danger : context.palette.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isPaid ? Icons.timer_outlined : Icons.hourglass_top_rounded,
+            color: isPaid ? context.palette.danger : context.palette.goldDeep,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isPaid ? 'Платное ожидание' : 'Бесплатное ожидание',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: isPaid
+                        ? context.palette.danger
+                        : context.palette.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _fmt(isPaid
+                      ? _now.difference(freeUntil)
+                      : freeUntil.difference(_now)),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: context.palette.text,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isPaid && widget.waitingPricePerMinute > 0)
+            Text(
+              '+$owedKzt ₸',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: context.palette.danger,
+              ),
+            ),
         ],
       ),
     );
