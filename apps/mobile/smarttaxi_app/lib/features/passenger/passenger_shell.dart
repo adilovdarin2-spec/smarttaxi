@@ -4597,7 +4597,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                           point: pickup.toLatLng(),
                           asset: _userLocationMarkerAsset,
                           semanticLabel: 'Точка подачи',
-                          size: 30,
+                          size: 20,
                           fallbackIcon: Icons.radio_button_checked_rounded,
                         ),
                       if (dropoff != null)
@@ -4605,7 +4605,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                           point: dropoff.toLatLng(),
                           asset: _destinationMarkerAsset,
                           semanticLabel: 'Точка назначения',
-                          size: 32,
+                          size: 22,
                           fallbackIcon: Icons.location_on_rounded,
                         ),
                       if (driver == null)
@@ -4691,11 +4691,15 @@ class _MapCanvasState extends State<_MapCanvas> {
                 onUseLocation: onUseLocation,
               ),
             ),
+          // Below the header and the nearby-drivers pill's slot (top: 84)
+          // rather than mid-map (was top: 286, which sat on top of map
+          // labels and close to the pickup marker beneath it) — this is a
+          // status notice, not a map annotation, so it belongs in the
+          // chrome band at the top, not floating over the map content.
           if (routeError != null || routeLoading)
             Positioned(
               left: 22,
-              right: 92,
-              top: 286,
+              top: 140,
               child: _MapRouteState(
                 loading: routeLoading,
                 routeReady: route.isNotEmpty,
@@ -5144,7 +5148,11 @@ class _CenterMapMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Standard-density marker sizing (~30px tall pin) — was 76×85, which
-    // overlapped neighboring map labels/roads at normal zoom levels.
+    // overlapped neighboring map labels/roads at normal zoom levels. This
+    // is the address-picker crosshair, not the confirmed pickup/dropoff
+    // pins (see _assetMarker calls in _MapCanvas) — left at this size on
+    // 2026-07-15 direct correction: only the confirmed-route pins were
+    // meant to shrink, not this one.
     const pinWidth = 27.0;
     const pinHeight = pinWidth * _assetAspect;
     const tipShift = pinHeight * (_tipFraction - 0.5);
@@ -5159,7 +5167,7 @@ class _CenterMapMarker extends StatelessWidget {
             offset: const Offset(0, 3),
             child: const _MarkerRadarPulse(
               color: _addressPickMarkerColor,
-              baseSize: 26,
+              baseSize: 19,
             ),
           ),
           // Ground-contact shadow directly under the pin's tip.
@@ -5395,62 +5403,74 @@ class _MapRouteState extends StatelessWidget {
             ? Icons.route_rounded
             : Icons.error_outline_rounded;
     final danger = error != null;
+    // A compact capsule that hugs its content — was stretched almost
+    // full-width (left:22/right:92 on the caller's Positioned, with an
+    // Expanded text forcing it to fill that span), which read as a wide
+    // rectangular blob sitting on top of the map label/marker beneath it
+    // rather than a pill. ConstrainedBox keeps it capsule-shaped and short
+    // enough to stay out of the way.
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 180),
-      child: Container(
+      child: ConstrainedBox(
         key: ValueKey(text),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: danger
-              ? SmartTaxiColors.danger.withValues(alpha: 0.18)
-              : Colors.white.withValues(alpha: 0.94),
-          border: Border.all(
+        constraints: const BoxConstraints(maxWidth: 240),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
             color: danger
-                ? SmartTaxiColors.danger.withValues(alpha: 0.34)
-                : SmartTaxiColors.border,
+                ? SmartTaxiColors.danger.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.96),
+            border: Border.all(
+              color: danger
+                  ? SmartTaxiColors.danger.withValues(alpha: 0.34)
+                  : SmartTaxiColors.borderStrong,
+            ),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1f141414),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
           ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x18785a14),
-              blurRadius: 18,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (loading)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: SmartTaxiColors.goldDeep,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (loading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: SmartTaxiColors.gold,
+                  ),
+                )
+              else
+                Icon(
+                  icon,
+                  size: 17,
+                  color: danger
+                      ? SmartTaxiColors.danger
+                      : SmartTaxiColors.gold,
                 ),
-              )
-            else
-              Icon(
-                icon,
-                size: 17,
-                color:
-                    danger ? SmartTaxiColors.danger : SmartTaxiColors.goldDeep,
-              ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: danger ? SmartTaxiColors.danger : SmartTaxiColors.text,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: danger
+                        ? SmartTaxiColors.danger
+                        : SmartTaxiColors.text,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
