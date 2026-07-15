@@ -214,6 +214,49 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
     }
   }
 
+  // Cancellation/no-show fee: compensates the driver for a trip they were
+  // already committed to (accepted_at set) when the rider backed out, or
+  // for showing up and waiting when the rider never appeared. Driver
+  // cancelling (CANCELLED_BY_DRIVER) or an operator cancelling never charges
+  // the rider — this is only for the rider's own no-show/late cancel.
+  // Charged out of clients.cashback_balance, the same balance the refund
+  // above credits back into — capped at whatever's actually there, since
+  // there's no client debt/credit concept in this codebase to fall back on.
+  // The driver is only ever credited what was actually collected, never the
+  // full nominal fee if the client's balance couldn't cover it.
+  let feeKzt = 0;
+  let feeType = null;
+  if (order.status === "NO_SHOW") {
+    feeType = "NO_SHOW_FEE";
+  } else if (order.status === "CANCELLED_BY_CLIENT" && order.accepted_at) {
+    feeType = "CANCELLATION_FEE";
+  }
+  if (feeType && order.driver_id && order.client_id) {
+    const tariffFees = (await run(
+      executor,
+      "SELECT cancellation_fee, no_show_fee FROM tariffs WHERE region_id=$1 AND name=$2",
+      [order.region_id, order.tariff]
+    )).rows[0];
+    const nominalFee = roundMoney(feeType === "NO_SHOW_FEE" ? tariffFees?.no_show_fee : tariffFees?.cancellation_fee);
+    if (nominalFee > 0) {
+      const client = (await run(executor, "SELECT cashback_balance FROM clients WHERE id=$1 FOR UPDATE", [order.client_id])).rows[0];
+      const chargeable = Math.max(0, Math.min(nominalFee, number(client?.cashback_balance)));
+      if (chargeable > 0) {
+        const updatedClient = await run(
+          executor,
+          "UPDATE clients SET cashback_balance=cashback_balance-$1 WHERE id=$2 RETURNING cashback_balance",
+          [chargeable, order.client_id]
+        );
+        await run(executor, `
+          INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
+          VALUES($1,$2,$3,$4,$5)
+        `, [order.client_id, order.id, feeType, -chargeable, updatedClient.rows[0].cashback_balance]);
+        await run(executor, "UPDATE drivers SET balance=balance+$1 WHERE id=$2", [chargeable, order.driver_id]);
+        feeKzt = chargeable;
+      }
+    }
+  }
+
   const result = await run(executor, `
     INSERT INTO financial_transactions(
       order_id, driver_id, client_user_id, region_id, tariff_id, type, payment_method,
@@ -222,7 +265,7 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
     )
     VALUES(
       $1,$2,(SELECT user_id FROM clients WHERE id=$3),$4,$5,'ORDER_CANCELLED',$6,
-      0,0,0,0,'KZT','POSTED',$7::jsonb,$8
+      $7,0,$7,0,'KZT','POSTED',$8::jsonb,$9
     )
     RETURNING *
   `, [
@@ -232,12 +275,15 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
     order.region_id || null,
     amounts.tariffId,
     normalizePaymentMethod(order.payment_method),
+    feeKzt,
     JSON.stringify({
       orderStatus: order.status,
       tariffName: amounts.tariffName,
       pricingSource: amounts.pricingSource,
       refundedKzt,
-      refundedViaGateway
+      refundedViaGateway,
+      feeType,
+      feeKzt
     }),
     actorUserId
   ]);

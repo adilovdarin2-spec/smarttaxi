@@ -147,6 +147,21 @@ export function publicOrderStatus(status) {
   return PUBLIC_STATUSES[status] || status;
 }
 
+// How long an order sits in SEARCHING_DRIVER with nobody responding before
+// the client gets an explicit "nobody's responded yet" signal instead of a
+// silent spinner. The dispatch model here is region-wide (not radius-based
+// — see /nearby for the only distance query in the app), so there's no
+// "widen the radius and retry" step to trigger; this just surfaces the wait
+// so the client can choose to keep waiting or cancel (already free, since no
+// driver has accepted yet — see createOrderCancelledTransaction).
+const DRIVER_SEARCH_TIMEOUT_MS = 75_000;
+
+export function isOrderSearchTimedOut(order) {
+  if (!order || order.driver_id) return false;
+  if (!OPEN_ORDER_STATUSES.includes(order.status)) return false;
+  return Date.now() - new Date(order.created_at).getTime() > DRIVER_SEARCH_TIMEOUT_MS;
+}
+
 export function publicOrderEvent(order) {
   return {
     id: order.id,
@@ -154,6 +169,7 @@ export function publicOrderEvent(order) {
     region_id: order.region_id,
     status: order.status,
     public_status: publicOrderStatus(order.status),
+    search_timed_out: isOrderSearchTimedOut(order),
     price: order.price,
     offered_price_kzt: order.offered_price_kzt,
     driver_offer_price_kzt: order.driver_offer_price_kzt,
@@ -270,6 +286,14 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     )
   `;
 
+  // A driver who cancelled this specific order after accepting it never
+  // sees it again in a broadcast (order-dispatch reopen path below) — they
+  // can still see and act on any OTHER order, and any order they're
+  // currently assigned to (o.driver_id=$1), unaffected.
+  const notPreviouslyCancelledByThisDriver = `
+    (o.last_cancelled_by_driver_id IS NULL OR o.last_cancelled_by_driver_id <> $1)
+  `;
+
   if (status) {
     return (await runQuery(executor, `
       SELECT ${orderSelect} FROM orders o
@@ -277,7 +301,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
       WHERE o.region_id=$2
         AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR o.driver_id=$1)
         AND o.status=$3
-        AND (o.driver_id=$1 OR ${notBlockedByClient})
+        AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notPreviouslyCancelledByThisDriver}))
       ORDER BY o.created_at DESC
       LIMIT $4
     `, [driver.id, driver.current_region_id, status, limit, OPEN_ORDER_STATUSES])).rows;
@@ -292,7 +316,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     LEFT JOIN drivers d ON d.id=o.driver_id
     WHERE o.region_id=$2
       AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR (o.driver_id=$1 AND o.status = ANY($3::text[])))
-      AND (o.driver_id=$1 OR ${notBlockedByClient})
+      AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notPreviouslyCancelledByThisDriver}))
     ORDER BY o.offered_price_kzt DESC NULLS LAST, o.created_at DESC
     LIMIT $4
   `, [driver.id, driver.current_region_id, RECENT_DRIVER_STATUSES, limit, OPEN_ORDER_STATUSES])).rows;
@@ -323,6 +347,9 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) throw new AppError("Order already accepted", 409, "ORDER_ALREADY_ACCEPTED");
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
+  }
+  if (existing.last_cancelled_by_driver_id === driver.id) {
+    throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
   }
   await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
 
@@ -363,6 +390,9 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
   }
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
+  }
+  if (existing.last_cancelled_by_driver_id === driver.id) {
+    throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
   }
   await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
 

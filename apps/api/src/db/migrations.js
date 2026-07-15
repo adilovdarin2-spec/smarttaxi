@@ -731,7 +731,16 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_recurring_bookings_client_id ON recurring_bookings(client_id)",
   "CREATE INDEX IF NOT EXISTS idx_recurring_bookings_driver_id ON recurring_bookings(driver_id)",
   "CREATE INDEX IF NOT EXISTS idx_recurring_bookings_status ON recurring_bookings(status)",
-  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS recurring_booking_id UUID REFERENCES recurring_bookings(id) ON DELETE SET NULL"
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS recurring_booking_id UUID REFERENCES recurring_bookings(id) ON DELETE SET NULL",
+
+  // --- Overnight: driver cancels after accepting reopens the order for
+  // dispatch instead of dead-ending in CANCELLED_BY_DRIVER (orders.routes.js
+  // /:id/cancel). The cancelling driver is remembered per-order so the same
+  // driver never sees this specific order again in listOrdersForDriver
+  // (order-dispatch.service.js).
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancelled_by_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancelled_by_driver_at TIMESTAMPTZ",
+  "CREATE INDEX IF NOT EXISTS idx_orders_last_cancelled_by_driver_id ON orders(last_cancelled_by_driver_id)"
 ];
 
 export async function runMigrations() {

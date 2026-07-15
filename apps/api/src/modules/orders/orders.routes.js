@@ -46,7 +46,8 @@ export const ORDER_SELECT = `
 `;
 export function publicOrderResponse(order) {
   if (!order) return order;
-  return { ...order, public_status: publicOrderEvent(order).public_status };
+  const event = publicOrderEvent(order);
+  return { ...order, public_status: event.public_status, search_timed_out: event.search_timed_out };
 }
 
 function shortId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
@@ -807,22 +808,68 @@ async function updateStatus(req, res, next, status) {
       assertTransition(existing, status);
 
       let extra = "";
+      let extraParams = [];
       if (status === "DRIVER_ARRIVED") extra = ", arrived_at=NOW(), driver_arrived_at=NOW()";
       if (status === "WAITING_CLIENT") {
         extra = ", waiting_started_at=COALESCE(waiting_started_at,NOW()), free_waiting_until=COALESCE(free_waiting_until,NOW() + (COALESCE((pricing_snapshot->>'freeWaitingMinutes')::int, 0) || ' minutes')::interval), waiting_price_per_minute=COALESCE(waiting_price_per_minute, COALESCE((pricing_snapshot->>'waitingPricePerMinute')::int, 0))";
       }
-      if (status === "TRIP_STARTED") extra = ", started_at=NOW(), paid_waiting_started_at=CASE WHEN free_waiting_until IS NOT NULL AND NOW() > free_waiting_until THEN free_waiting_until ELSE paid_waiting_started_at END";
+      if (status === "TRIP_STARTED") {
+        // Paid waiting stops accruing the moment the trip starts. If the
+        // free window had already run out by now, freeze how much billable
+        // waiting time happened (started_at - paid_waiting_started_at) into
+        // waiting_total right here — this is the only point where both
+        // paid_waiting_started_at and the trip's actual start time are known
+        // together, and waiting_total otherwise never gets a value at all
+        // (see TRIP_COMPLETED below for where it gets billed).
+        const now = new Date();
+        let paidWaitingStartedAt = existing.paid_waiting_started_at || null;
+        if (existing.free_waiting_until && now > new Date(existing.free_waiting_until)) {
+          paidWaitingStartedAt = existing.free_waiting_until;
+        }
+        const waitingMinutes = paidWaitingStartedAt
+          ? Math.max(0, (now.getTime() - new Date(paidWaitingStartedAt).getTime()) / 60000)
+          : 0;
+        const waitingTotal = Math.round(waitingMinutes * Number(existing.waiting_price_per_minute || 0));
+        extra = ", started_at=NOW(), paid_waiting_started_at=$3, waiting_total=$4";
+        extraParams = [paidWaitingStartedAt, waitingTotal];
+      }
       if (status === "TRIP_COMPLETED") extra = ", completed_at=NOW(), payment_status='PENDING'";
       if (status === "PAYMENT_PENDING") extra = ", payment_status='PENDING'";
       if (status === "PAID") extra = ", payment_status='PAID'";
       if (["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "NO_SHOW"].includes(status)) extra = ", cancelled_at=NOW()";
 
-      const u = await client.query(`UPDATE orders SET status=$1 ${extra} WHERE id=$2 RETURNING *`, [status, existing.id]);
+      const u = await client.query(`UPDATE orders SET status=$1 ${extra} WHERE id=$2 RETURNING *`, [status, existing.id, ...extraParams]);
       let updated = u.rows[0];
 
       if (status === "TRIP_COMPLETED") {
         const tariff = (await client.query("SELECT * FROM tariffs WHERE region_id=$1 AND name=$2", [updated.region_id, updated.tariff])).rows[0];
         if (!tariff) throw new AppError("Tariff not found", 404, "TARIFF_NOT_FOUND");
+
+        // Paid waiting time (frozen into waiting_total at TRIP_STARTED above)
+        // isn't billed anywhere else — fold it into price/service_commission
+        // here, before cashback and driver payout are computed off of them.
+        // pricing_snapshot is updated too since finance.service.js's
+        // orderAmounts() prefers snapshot.finalPrice over the live price
+        // column for the ledger entry — without this the ledger would keep
+        // reporting the pre-waiting estimate forever.
+        if (Number(updated.waiting_total) > 0) {
+          const waitingCommission = Math.round(Number(updated.waiting_total) * Number(tariff.service_commission_percent) / 100);
+          const withWaiting = await client.query(`
+            UPDATE orders
+            SET price=price+$1,
+                service_commission=service_commission+$2,
+                pricing_snapshot = pricing_snapshot || jsonb_build_object(
+                  'finalPrice', price+$1,
+                  'serviceCommission', service_commission+$2,
+                  'driverEarning', (price+$1)-(service_commission+$2),
+                  'waitingTotal', $1
+                )
+            WHERE id=$3
+            RETURNING *
+          `, [updated.waiting_total, waitingCommission, updated.id]);
+          updated = withWaiting.rows[0];
+        }
+
         const cashback = Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
         if (updated.client_id) {
@@ -896,9 +943,78 @@ router.post("/:id/complete", requireAuth, requireRole("DRIVER", "OWNER", "OPERAT
 router.post("/:id/payment-pending", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAYMENT_PENDING"));
 router.post("/:id/mark-paid", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAID"));
 router.post("/:id/no-show", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"NO_SHOW"));
-router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>{
-  const status = req.user?.role === "DRIVER" ? "CANCELLED_BY_DRIVER" : "CANCELLED_BY_OPERATOR";
-  return updateStatus(req,res,next,status);
+// A driver cancelling an order they've already accepted is not the same as
+// an operator cancelling it outright: the rider still wants a ride, so this
+// reopens the order for dispatch (status back to SEARCHING_DRIVER, driver
+// unassigned) instead of the terminal CANCELLED_BY_DRIVER updateStatus()
+// would otherwise set. The cancelling driver is stamped onto the order
+// (last_cancelled_by_driver_id) so listOrdersForDriver/acceptOrderForDriver
+// (order-dispatch.service.js) never route it back to them. Operator
+// cancellation keeps the old terminal behavior via updateStatus.
+router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), async (req, res, next) => {
+  if (req.user.role !== "DRIVER") {
+    return updateStatus(req, res, next, "CANCELLED_BY_OPERATOR");
+  }
+  try {
+    const { id } = IdParam.parse(req.params);
+    const order = await tx(async (client) => {
+      const driver = (await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id])).rows[0];
+      if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+      const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
+      if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      if (existing.driver_id !== driver.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      if (!ACTIVE_ORDER_STATUSES.includes(existing.status)) {
+        throw new AppError("Invalid order status transition", 409, "INVALID_STATUS_TRANSITION", {
+          currentStatus: existing.status,
+          nextStatus: "SEARCHING_DRIVER"
+        });
+      }
+
+      const updated = (await client.query(`
+        UPDATE orders
+        SET status='SEARCHING_DRIVER',
+            driver_id=NULL,
+            accepted_at=NULL,
+            arrived_at=NULL,
+            driver_arrived_at=NULL,
+            waiting_started_at=NULL,
+            free_waiting_until=NULL,
+            paid_waiting_started_at=NULL,
+            waiting_price_per_minute=NULL,
+            last_cancelled_by_driver_id=$1,
+            last_cancelled_by_driver_at=NOW()
+        WHERE id=$2
+        RETURNING *
+      `, [driver.id, existing.id])).rows[0];
+      await client.query("UPDATE drivers SET status='FREE', last_seen_at=NOW() WHERE id=$1", [driver.id]);
+      await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
+      await client.query(
+        "INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'SEARCHING_DRIVER','Driver cancelled after accepting; reopened for dispatch',$2)",
+        [existing.id, req.user.id]
+      );
+      await writeAudit(client, {
+        action: "order_driver_cancelled_reopened",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: existing.id,
+        metadata: { from: existing.status, driverId: driver.id },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id
+        WHERE o.id=$1
+      `, [existing.id])).rows[0];
+    });
+    emitOrderUpdated(req.io, order, "order_driver_cancelled");
+    notifyOrderClient(order, {
+      title: "Водитель сменился",
+      body: "Водитель отменил поездку — ищем для вас другого",
+      type: "DRIVER_CANCELLED"
+    }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    res.json({ order: publicOrderResponse(order) });
+  } catch (e) { next(e); }
 });
 
 export default router;
