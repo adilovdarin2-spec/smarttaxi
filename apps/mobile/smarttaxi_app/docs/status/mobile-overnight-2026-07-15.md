@@ -195,16 +195,33 @@ investigating §3:
     clientName?, pickupText, pickupLat, pickupLng, dropoffText,
     dropoffLat, dropoffLng, daysOfWeek, timeOfDay, priceKzt, status,
     notes, lastTriggeredDate, createdAt, updatedAt`.
-  - **Open design question for next pass**: creating a booking needs a
-    known `driverId` up front — there's no "search drivers" endpoint.
-    Planned approach: let the client pick from distinct
-    driverId/driverName pairs seen in their own completed trip history
-    (`OrderSummary` list already loaded elsewhere), not from a driver
-    search screen that doesn't exist. Address entry (pickupLat/Lng
-    required, not just text) will reuse whatever the existing address
-    search sheet component exposes rather than rebuilding it, and rather
-    than touching the actual tariff/address *screens*, which stay
-    off-limits per earlier instructions in this conversation.
+  - **DONE this pass** (commit `0f4070d`): `RecurringBooking` model +
+    5 `ApiClient` methods (create/respond/mine/driver/updateStatus).
+    Client: new "Регулярные поездки" drawer entry → list screen
+    (pause/resume/cancel via `_updateRecurringBookingStatus`, cancel
+    goes through a new confirm sheet) + creation sheet. Driver is
+    picked from `_knownDriversFromHistory` (distinct driverId/driverName
+    pairs from the client's own completed `_tripHistory` — there's no
+    driver-search endpoint, so this was the only real option). Pickup/
+    dropoff use a new `_SimpleAddressSearchSheet` (plain text search on
+    the existing `searchAddresses` API, no map-tap picking) — a new
+    widget, not a change to `_AddressSearchSheet` or the actual address
+    screen. Days-of-week chips (Mon–Fri only, matching the server's
+    1–5 validation), a native time picker, price/notes fields.
+    Driver side: new drawer entry → `_DriverRecurringBookingsScreen`,
+    its own self-contained `StatefulWidget` (not reliant on
+    `DriverShell`'s state, since `_showDriverFullSheet` takes an
+    already-built `Widget`, not a builder — a shared-state approach
+    wouldn't rebuild when the sheet's own data changes). Shows
+    `PENDING_DRIVER` requests separately (Принять/Отклонить) from
+    active/paused routes (Пауза/Возобновить/Отменить).
+  - **Verified**: `flutter analyze` 0 new issues, `flutter test` same
+    10 pre-existing driver-side failures (unrelated, see above),
+    `flutter build apk --debug` succeeds. **Not verified live** —
+    reaching either screen needs a logged-in session; live registration
+    against the real backend is blocked by policy (see the
+    re-verification section above) without the user's specific
+    authorization, so this stays compile-verified only tonight.
 - **§5 navigator voice alerts**: `osm-navigation.service.js` exists per
   brief, not yet cross-checked against a status doc.
 None of §4–16 were implemented on mobile yet — flagging honestly rather
