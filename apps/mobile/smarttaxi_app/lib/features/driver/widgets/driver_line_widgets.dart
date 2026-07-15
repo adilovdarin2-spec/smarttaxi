@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../shared/models.dart';
-import '../models/driver_shell_helpers.dart';
 import 'driver_common_widgets.dart';
 
 class DriverShiftHero extends StatelessWidget {
@@ -14,9 +13,11 @@ class DriverShiftHero extends StatelessWidget {
     required this.online,
     required this.busy,
     required this.loading,
-    required this.disabledReason,
     required this.regionName,
     required this.onToggle,
+    required this.onRegionTap,
+    this.driverName,
+    this.todayEarnings,
     this.sosButton,
   });
 
@@ -25,24 +26,48 @@ class DriverShiftHero extends StatelessWidget {
   final bool online;
   final bool busy;
   final bool loading;
-  final String? disabledReason;
   final String? regionName;
   final VoidCallback? onToggle;
+  final VoidCallback onRegionTap;
+  // The driver's own name reads friendlier than a static brand label and is
+  // usually shorter too — falls back to "Водитель SmartTaxi" if unset.
+  final String? driverName;
+  // Formatted "N ₸" — null while stats are still loading, so the row
+  // collapses instead of showing a placeholder dash.
+  final String? todayEarnings;
   final Widget? sosButton;
+
+  Color _toneColor(BuildContext context) {
+    final palette = context.palette;
+    return switch (tone) {
+      StatusTone.success => palette.success,
+      StatusTone.warning => palette.warning,
+      StatusTone.danger => palette.danger,
+      StatusTone.neutral => palette.textSecondary,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final toneColor = _toneColor(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: context.palette.border),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: online
+              ? palette.success.withValues(alpha: 0.35)
+              : palette.border,
+          width: online ? 1.4 : 1,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x14785a14),
-            blurRadius: 26,
-            offset: Offset(0, 12),
+            color: (online ? palette.success : SmartTaxiColors.gold)
+                .withValues(alpha: online ? 0.14 : 0.1),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
@@ -50,386 +75,299 @@ class DriverShiftHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              LineGlyph(online: online, busy: busy),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Водитель SmartTaxi',
+                      (driverName ?? '').trim().isNotEmpty
+                          ? driverName!.trim()
+                          : 'Водитель SmartTaxi',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: context.palette.text,
-                        fontSize: 19,
+                        color: palette.text,
+                        fontSize: 17,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      regionName == null
-                          ? 'Выберите рабочий регион'
-                          : 'Регион: $regionName',
-                      style: TextStyle(
-                        color: context.palette.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(height: 3),
+                    InkWell(
+                      onTap: onRegionTap,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.place_rounded,
+                              size: 13, color: palette.textMuted),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              regionName ?? 'Выбрать регион',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: palette.textSecondary,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 16, color: palette.textMuted),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              LineGlyph(online: online, busy: busy),
+              if (sosButton != null) sosButton!,
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              StatusPill(label: status, tone: tone),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  busy
-                      ? 'Есть активная поездка'
-                      : online
-                          ? 'Готовы принимать заказы'
-                          : 'Вы не на линии',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.palette.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: palette.goldSurface,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration:
+                      BoxDecoration(color: toneColor, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: palette.text,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              if (sosButton != null) ...[
-                const SizedBox(width: 8),
-                sosButton!,
+                if (todayEarnings != null) ...[
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Сегодня',
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        todayEarnings!,
+                        style: TextStyle(
+                          color: palette.goldDeep,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
-          ),
-          if (disabledReason != null && !online) ...[
-            const SizedBox(height: 12),
-            Text(
-              disabledReason!,
-              style: TextStyle(
-                color: context.palette.gold,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onToggle,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(54),
-                backgroundColor:
-                    online ? SmartTaxiColors.cardDark : context.palette.gold,
-                foregroundColor:
-                    online ? const Color(0xfff5f5f5) : context.palette.text,
-              ),
-              child: loading
-                  ? const ButtonSpinner(text: 'Обновляем статус...')
-                  : Text(online ? 'Уйти с линии' : 'Выйти на линию'),
             ),
           ),
+          const SizedBox(height: 16),
+          if (online)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onToggle,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  foregroundColor: palette.text,
+                  side: BorderSide(color: palette.borderStrong),
+                ),
+                child: loading
+                    ? const ButtonSpinner(text: 'Обновляем статус...')
+                    : const Text('Уйти с линии'),
+              ),
+            )
+          else
+            DriverGradientButton(
+              text: 'Выйти на линию',
+              icon: Icons.power_settings_new_rounded,
+              onTap: onToggle,
+              loading: loading,
+              enabled: onToggle != null,
+              loadingText: 'Обновляем статус...',
+            ),
         ],
       ),
     );
   }
 }
 
-class DriverStatsGrid extends StatelessWidget {
-  const DriverStatsGrid({
+/// Compact "today at a glance" row — completed trips, nearby open orders and
+/// demand level side by side. Replaces the old 2x2 stat grid (which
+/// duplicated revenue, now shown directly in [DriverShiftHero], and buried
+/// debt/balance, which belongs on the wallet screen, not the home screen)
+/// and the separate demand-hint card that used to sit above it.
+class DriverTodayStrip extends StatelessWidget {
+  const DriverTodayStrip({
     super.key,
     required this.stats,
     required this.loading,
     required this.openOrders,
+    required this.demandLevel,
+    required this.demandLoading,
   });
 
   final DriverStats? stats;
   final bool loading;
   final int openOrders;
+  final double demandLevel;
+  final bool demandLoading;
+
+  // Short enough to fit a third-width mini-stat card at the emphasized
+  // value font size without wrapping or ellipsizing.
+  (String, Color) _demandMeta(BuildContext context) {
+    if (demandLevel >= 1.5) return ('Высокий', context.palette.danger);
+    if (demandLevel > 1.0) return ('Выше', context.palette.goldDeep);
+    return ('Норма', context.palette.textSecondary);
+  }
 
   @override
   Widget build(BuildContext context) {
     final current = stats;
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.45,
-      children: [
-        DriverStatCard(
-          title: 'Выручка сегодня',
-          value: loading && current == null
-              ? '...'
-              : current == null
-                  ? '—'
-                  : formatDriverMoney(current.revenueTotal),
-          icon: Icons.payments_rounded,
-          tone: context.palette.goldDeep,
-        ),
-        DriverStatCard(
-          title: 'Завершено',
-          value: loading && current == null
-              ? '...'
-              : current == null
-                  ? '—'
-                  : '${current.completedOrders}',
-          icon: Icons.done_all_rounded,
-          tone: context.palette.success,
-        ),
-        DriverStatCard(
-          title: 'Новые заказы',
-          value: '$openOrders',
-          icon: Icons.receipt_long_rounded,
-          tone: context.palette.warning,
-        ),
-        DriverStatCard(
-          title: 'Долг / баланс',
-          value: loading && current == null
-              ? '...'
-              : current == null
-                  ? '—'
-                  : '${formatDriverMoney(current.debt)} / ${formatDriverMoney(current.balance)}',
-          icon: Icons.account_balance_wallet_rounded,
-          tone: context.palette.textSecondary,
-          compact: true,
-        ),
-      ],
+    final tripsValue = loading && current == null
+        ? '···'
+        : current == null
+            ? '—'
+            : '${current.completedOrders}';
+    final (demandLabel, demandColor) = _demandMeta(context);
+    // IntrinsicHeight, not CrossAxisAlignment.stretch — this Row lives inside
+    // a vertically-scrolling ListView, which gives it unbounded height;
+    // stretch tries to hand that unbounded height straight to the children
+    // and crashes with "BoxConstraints forces an infinite height".
+    // IntrinsicHeight measures the tallest child first, then constrains
+    // every child to that height — same equal-height look, no crash.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _MiniStat(
+              icon: Icons.done_all_rounded,
+              label: 'Поездок сегодня',
+              value: tripsValue,
+              tone: context.palette.success,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _MiniStat(
+              icon: Icons.receipt_long_rounded,
+              label: 'Новых заказов',
+              value: '$openOrders',
+              tone: context.palette.warning,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _MiniStat(
+              icon: Icons.trending_up_rounded,
+              label: 'Спрос рядом',
+              value: demandLabel,
+              tone: demandColor,
+              loading: demandLoading,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class DriverStatCard extends StatelessWidget {
-  const DriverStatCard({
-    super.key,
-    required this.title,
-    required this.value,
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
     required this.icon,
+    required this.label,
+    required this.value,
     required this.tone,
-    this.compact = false,
+    this.loading = false,
   });
 
-  final String title;
-  final String value;
   final IconData icon;
+  final String label;
+  final String value;
   final Color tone;
-  final bool compact;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0f785a14),
-            blurRadius: 22,
-            offset: Offset(0, 10),
-          )
+              color: Color(0x0f785a14), blurRadius: 18, offset: Offset(0, 8)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Icon(icon, size: 19, color: tone),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.palette.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+              Icon(icon, size: 16, color: tone),
+              if (loading) ...[
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 10,
+                  height: 10,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 1.6, color: tone),
                 ),
-              ),
+              ],
             ],
           ),
+          const SizedBox(height: 9),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: context.palette.text,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
-            value,
-            maxLines: 1,
+            label,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: context.palette.text,
-              fontSize: compact ? 17 : 22,
-              fontWeight: FontWeight.w900,
+              color: context.palette.textMuted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              height: 1.2,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class DriverQuickActions extends StatelessWidget {
-  const DriverQuickActions({
-    super.key,
-    required this.activeOrder,
-    required this.openOrders,
-    required this.roadAlerts,
-    required this.onOrders,
-    required this.onTrip,
-    required this.onNavigator,
-    required this.onRoadAlerts,
-  });
-
-  final OrderSummary? activeOrder;
-  final int openOrders;
-  final int roadAlerts;
-  final VoidCallback onOrders;
-  final VoidCallback onTrip;
-  final VoidCallback onNavigator;
-  final VoidCallback onRoadAlerts;
-
-  @override
-  Widget build(BuildContext context) {
-    return PremiumCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionLabel(
-            title: 'Быстрые действия',
-            text: 'Самые важные рабочие экраны без лишнего меню',
-          ),
-          const SizedBox(height: 12),
-          DriverActionCard(
-            icon: Icons.explore_rounded,
-            title: 'Smart Navigator',
-            text: 'Карта, скорость, события и внешняя навигация',
-            onTap: onNavigator,
-            primary: true,
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: DriverActionCard(
-                  icon: Icons.receipt_long_rounded,
-                  title: 'Заказы',
-                  text: '$openOrders новых',
-                  onTap: onOrders,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DriverActionCard(
-                  icon: activeOrder == null
-                      ? Icons.route_outlined
-                      : Icons.route_rounded,
-                  title: 'Поездка',
-                  text: activeOrder == null ? 'Нет активной' : 'Открыть',
-                  onTap: onTrip,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          DriverActionCard(
-            icon: Icons.add_location_alt_rounded,
-            title: 'Дорожные события',
-            text: roadAlerts == 0
-                ? 'Сообщить о событии'
-                : '$roadAlerts активных рядом',
-            onTap: onRoadAlerts,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class DriverActionCard extends StatelessWidget {
-  const DriverActionCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.text,
-    required this.onTap,
-    this.primary = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final String text;
-  final VoidCallback onTap;
-  final bool primary;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 74),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color:
-              primary ? context.palette.goldPale : context.palette.goldSurface,
-          border: Border.all(
-            color:
-                primary ? context.palette.borderStrong : context.palette.border,
-          ),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.88),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: context.palette.goldDeep),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    text,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: context.palette.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded,
-                color: context.palette.textSecondary),
-          ],
-        ),
       ),
     );
   }

@@ -35,7 +35,6 @@ import 'widgets/driver_order_widgets.dart';
 import 'widgets/driver_profile_widgets.dart';
 import 'widgets/driver_shell_chrome.dart';
 
-const _navigationChannel = MethodChannel('smarttaxi/navigation');
 const _appVersion = '1.0.0';
 
 class DriverShell extends StatefulWidget {
@@ -1662,62 +1661,6 @@ class _DriverShellState extends State<DriverShell> {
     return 'Маршрут к точке подачи';
   }
 
-  Future<void> _openNavigator(String provider) async {
-    final target = _navigatorTarget;
-    if (target == null) {
-      setState(() => _navigatorMessage =
-          'Для открытия навигатора нужен активный заказ с координатами.');
-      return;
-    }
-    final urls = _navigatorUrls(provider, target);
-    for (final url in urls) {
-      final opened = await _openExternalUrl(url);
-      if (opened) {
-        return;
-      }
-    }
-    setState(() => _navigatorMessage =
-        'Не удалось открыть навигатор. Проверьте установленное приложение или интернет.');
-  }
-
-  Future<bool> _openExternalUrl(String url) async {
-    try {
-      return await _navigationChannel.invokeMethod<bool>(
-            'openUrl',
-            {'url': url},
-          ) ??
-          false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  List<String> _navigatorUrls(String provider, Coordinate target) {
-    final lat = target.lat.toStringAsFixed(6);
-    final lng = target.lng.toStringAsFixed(6);
-    switch (provider) {
-      case '2gis':
-        return [
-          'dgis://2gis.ru/routeSearch/rsType/car/to/$lng,$lat',
-          'https://2gis.kz/geo/$lng,$lat',
-        ];
-      case 'yandex':
-        return [
-          'yandexnavi://build_route_on_map?lat_to=$lat&lon_to=$lng',
-          'https://yandex.kz/maps/?rtext=~$lat,$lng&rtt=auto',
-        ];
-      case 'google':
-        return [
-          'google.navigation:q=$lat,$lng&mode=d',
-          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
-        ];
-      default:
-        return [
-          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
-        ];
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // The 4 bottom-nav tabs switch via local state, not a pushed route, so
@@ -1829,11 +1772,15 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   Widget _lineTab() {
-    final l10n = AppLocalizations.of(context);
     final disabledReason = _disabledReason();
+    final availabilityIssue = _availabilityIssue();
     final busy = _activeOrder?.isActive == true;
     final openOrders =
         _orders.where((order) => order.isOpen).toList(growable: false);
+    final stats = _driverStats;
+    final todayEarnings = stats == null
+        ? null
+        : formatDriverMoney(stats.revenueTotal);
     return RefreshIndicator(
       onRefresh: () async {
         await _loadRegions();
@@ -1850,74 +1797,112 @@ class _DriverShellState extends State<DriverShell> {
             online: _online,
             busy: busy,
             loading: _loading,
-            disabledReason: disabledReason,
             regionName: _selectedRegion?.name,
+            driverName: widget.accountLabel,
+            todayEarnings: todayEarnings,
             onToggle: _loading || (!_online && disabledReason != null)
                 ? null
                 : () => _setOnline(!_online),
+            onRegionTap: () => unawaited(_showRegionPicker()),
             sosButton: DriverSosButton(
                 sosPhone: _sosPhone,
                 api: widget.api,
                 orderId: _activeOrder?.id),
           ),
-          // Selecting a region is a normal setup step (handled fine by
-          // DriverShiftHero's plain caption above) — this card is only for
-          // the states that actually need explaining: missing/rejected
-          // required documents, an approval still pending review, or one
-          // an admin rejected with a reason.
-          if (_selectedRegion != null &&
-              (_missingRequiredDocuments.isNotEmpty ||
-                  _selectedRegion!.status != 'APPROVED')) ...[
+          // Every reason the toggle is disabled gets a real banner here —
+          // icon, plain-language explanation, and a working next step where
+          // there is one — instead of a single line of text competing for
+          // space inside the hero card above.
+          if (availabilityIssue != null) ...[
             const SizedBox(height: 12),
-            _DriverApprovalStatusCard(
-              region: _selectedRegion!,
-              missingDocumentCount: _missingRequiredDocuments.length,
-              onCheckDocuments: () =>
-                  _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
+            _DriverIssueBanner(
+              issue: availabilityIssue,
+              danger: _selectedRegion?.status == 'BLOCKED',
             ),
           ],
-          if (_regionId != null) ...[
-            const SizedBox(height: 12),
-            _DemandHintCard(level: _demandLevel, loading: _demandHintLoading),
-          ],
           const SizedBox(height: 12),
-          _SmartNavigatorMap(
-            current: _currentCoordinate,
-            heading: _currentHeading,
-            activeOrder: _activeOrder,
-            route: _driverRoute?.geometry ?? const [],
-            alerts: _roadAlerts,
-            mapUnavailable: _navigatorMapUnavailable,
-            onTileError: _handleNavigatorTileError,
-            fallbackCenter: _selectedRegion?.center,
-            height: 238,
-          ),
-          const SizedBox(height: 12),
-          DriverQuickActions(
-            activeOrder: _activeOrder,
-            openOrders: openOrders.length,
-            roadAlerts: _roadAlerts.length,
-            onOrders: () => setState(() => _tab = 1),
-            onTrip: () => setState(() => _tab = 2),
-            onNavigator: () => setState(() => _tab = 3),
-            onRoadAlerts: () => unawaited(_openRoadAlerts()),
-          ),
-          const SizedBox(height: 12),
-          DriverStatsGrid(
-            stats: _driverStats,
+          DriverTodayStrip(
+            stats: stats,
             loading: _driverStatsLoading,
             openOrders: openOrders.length,
+            demandLevel: _demandLevel,
+            demandLoading: _demandHintLoading,
           ),
-          const SizedBox(height: 14),
-          PremiumCard(
+          const SizedBox(height: 12),
+          Stack(
+            children: [
+              _SmartNavigatorMap(
+                current: _currentCoordinate,
+                heading: _currentHeading,
+                activeOrder: _activeOrder,
+                route: _driverRoute?.geometry ?? const [],
+                alerts: _roadAlerts,
+                mapUnavailable: _navigatorMapUnavailable,
+                onTileError: _handleNavigatorTileError,
+                fallbackCenter: _selectedRegion?.center,
+                height: 238,
+              ),
+              Positioned(
+                top: 14,
+                right: 14,
+                child: _MapChipButton(
+                  icon: Icons.add_location_alt_rounded,
+                  badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
+                  onTap: () => unawaited(_openRoadAlerts()),
+                ),
+              ),
+            ],
+          ),
+          // Only worth a banner when there's an actual permission/GPS
+          // problem to act on — a permanently-present "we use your
+          // location" caption is chrome, not information.
+          if (_locationMessage != null) ...[
+            const SizedBox(height: 12),
+            LocationNotice(
+              online: _online,
+              loading: _locationLoading,
+              message: _locationMessage,
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            InlineMessage(text: _error!, danger: true),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRegionPicker() async {
+    final l10n = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.82),
+        decoration: BoxDecoration(
+          color: context.palette.appBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Center(child: SheetHandle()),
+                const SizedBox(height: 16),
                 SectionLabel(
                   title: l10n.driverLineRegionSectionTitle,
-                  text: l10n.driverLineRegionSectionText,
+                  text: _online
+                      ? 'Чтобы сменить регион, сначала уйдите с линии'
+                      : l10n.driverLineRegionSectionText,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 if (_regionsLoading && _regions.isEmpty)
                   LoadingStrip(text: l10n.driverLineRegionsLoading)
                 else if (_regions.isEmpty)
@@ -1927,50 +1912,24 @@ class _DriverShellState extends State<DriverShell> {
                     icon: Icons.verified_user_outlined,
                   )
                 else
-                  DropdownButtonFormField<String>(
-                    initialValue: _regionId,
-                    items: _regions
-                        .map((region) => DropdownMenuItem(
-                              value: region.id,
-                              child: Text(region.name),
-                            ))
-                        .toList(),
-                    onChanged: _online ? null : _selectRegion,
-                  ),
-                if (_selectedRegion != null) ...[
-                  const SizedBox(height: 12),
-                  RegionSummary(region: _selectedRegion!),
-                ],
+                  for (final region in _regions) ...[
+                    _RegionPickerRow(
+                      region: region,
+                      selected: region.id == _regionId,
+                      enabled: !_online,
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        if (region.id != _regionId) {
+                          unawaited(_selectRegion(region.id));
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          PremiumCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SectionLabel(
-                  title: l10n.driverLineLocationSectionTitle,
-                  text: l10n.driverLineLocationSectionText,
-                ),
-                const SizedBox(height: 14),
-                LocationNotice(
-                  online: _online,
-                  loading: _locationLoading,
-                  message: _locationMessage,
-                ),
-                if (disabledReason != null) ...[
-                  const SizedBox(height: 12),
-                  InlineMessage(text: disabledReason),
-                ],
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  InlineMessage(text: _error!, danger: true),
-                ],
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -2298,9 +2257,6 @@ class _DriverShellState extends State<DriverShell> {
             onToggleVoice: _toggleVoice,
             onRefreshAlerts: _loadRoadAlerts,
             onReportAlert: () => unawaited(_openRoadAlerts()),
-            onOpen2Gis: () => _openNavigator('2gis'),
-            onOpenYandex: () => _openNavigator('yandex'),
-            onOpenGoogle: () => _openNavigator('google'),
           ),
           if (_navigatorMessage != null) ...[
             const SizedBox(height: 12),
@@ -2362,6 +2318,83 @@ class _DriverShellState extends State<DriverShell> {
       return 'Работа в этом регионе заблокирована';
     }
     if (region?.status != 'APPROVED') return 'Вы не одобрены для этого региона';
+    return null;
+  }
+
+  // Structured twin of _disabledReason() — same precedence, same 6 states,
+  // but carries an icon and an actual next step instead of a bare string.
+  // Kept separate rather than refactoring _disabledReason() itself: that
+  // getter's plain String? return is still relied on for the toggle-disable
+  // gate and the header status label, and touching those tonight isn't
+  // worth the risk for what's purely a rendering upgrade.
+  _DriverAvailabilityIssue? _availabilityIssue() {
+    final region = _selectedRegion;
+    if (_regions.isEmpty) {
+      return _DriverAvailabilityIssue(
+        icon: Icons.map_outlined,
+        title: 'Нет одобренных регионов',
+        message:
+            'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Загрузите документы — заявка на регион рассматривается вместе с ними.',
+        actionLabel: 'Загрузить документы',
+        onAction: () =>
+            _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
+      );
+    }
+    if (_regionId == null) {
+      return _DriverAvailabilityIssue(
+        icon: Icons.place_outlined,
+        title: 'Выберите рабочий регион',
+        message:
+            'У вас есть одобренные регионы — выберите один, чтобы начать принимать заказы.',
+        actionLabel: 'Выбрать регион',
+        onAction: () => unawaited(_showRegionPicker()),
+      );
+    }
+    if (_missingRequiredDocuments.isNotEmpty) {
+      final count = _missingRequiredDocuments.length;
+      return _DriverAvailabilityIssue(
+        icon: Icons.upload_file_rounded,
+        title: 'Нужны документы',
+        message: count == 1
+            ? 'Один из обязательных документов ещё не загружен или не прошёл проверку.'
+            : 'Ещё $count обязательных документа(ов) не загружено или не прошло проверку.',
+        actionLabel: 'Загрузить документы',
+        onAction: () =>
+            _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
+      );
+    }
+    if (region?.isActive == false) {
+      return _DriverAvailabilityIssue(
+        icon: Icons.pause_circle_outline_rounded,
+        title: 'Регион временно отключён',
+        message:
+            'Работа в регионе «${region!.name}» сейчас приостановлена. '
+            '${_regions.length > 1 ? 'Попробуйте позже или выберите другой регион.' : 'Попробуйте позже.'}',
+        actionLabel: _regions.length > 1 ? 'Сменить регион' : null,
+        onAction: _regions.length > 1
+            ? () => unawaited(_showRegionPicker())
+            : null,
+      );
+    }
+    if (region?.status == 'BLOCKED') {
+      return _DriverAvailabilityIssue(
+        icon: Icons.block_rounded,
+        title: 'Доступ заблокирован',
+        message: region!.blockReason.trim().isEmpty
+            ? 'Работа в регионе «${region.name}» заблокирована администратором.'
+            : region.blockReason,
+        actionLabel: 'Написать в поддержку',
+        onAction: () => _showDriverFullSheet(_driverSupportContent()),
+      );
+    }
+    if (region?.status != 'APPROVED') {
+      return _DriverAvailabilityIssue(
+        icon: Icons.hourglass_top_rounded,
+        title: 'Заявка на рассмотрении',
+        message:
+            'Мы проверяем ваш доступ к региону «${region?.name}». Обычно это занимает немного времени — убедитесь, что все документы загружены и не отклонены, это ускорит проверку.',
+      );
+    }
     return null;
   }
 
@@ -2482,43 +2515,41 @@ class _DriverShellState extends State<DriverShell> {
 // reads as "under review" (there's no distinct PENDING enum value —
 // absence of an APPROVED/BLOCKED row means an admin hasn't acted on it
 // yet), 'BLOCKED' carries a real block_reason to show verbatim.
-class _DriverApprovalStatusCard extends StatelessWidget {
-  const _DriverApprovalStatusCard({
-    required this.region,
-    required this.onCheckDocuments,
-    this.missingDocumentCount = 0,
+/// A single reason the "Выйти на линию" toggle is disabled, structured
+/// enough to render as a real banner (icon, title, message, an optional
+/// next step) instead of one line of plain text buried in the hero card.
+class _DriverAvailabilityIssue {
+  const _DriverAvailabilityIssue({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
   });
 
-  final DriverRegion region;
-  final VoidCallback onCheckDocuments;
-  // Checked first, same precedence as the backend (assertDriverRegionApproved
-  // checks documents before region status) — a driver can have an approved
-  // region and still be blocked by an incomplete/rejected document set.
-  final int missingDocumentCount;
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+}
 
-  bool get _documentsIncomplete => missingDocumentCount > 0;
-  bool get _blocked => !_documentsIncomplete && region.status == 'BLOCKED';
+class _DriverIssueBanner extends StatelessWidget {
+  const _DriverIssueBanner({required this.issue, this.danger = false});
+
+  final _DriverAvailabilityIssue issue;
+  // Only the "BLOCKED" state reads as an actual problem (red) — missing
+  // docs / pending review / pick-a-region are just the normal setup path
+  // every new driver walks through, not something gone wrong.
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final color = _blocked ? palette.danger : palette.gold;
-    final background = _blocked ? palette.dangerSoft : palette.goldSurface;
-    final title = _documentsIncomplete
-        ? 'Нужны документы'
-        : _blocked
-            ? 'Доступ заблокирован'
-            : 'Заявка на рассмотрении';
-    final text = _documentsIncomplete
-        ? (missingDocumentCount == 1
-            ? 'Один из обязательных документов ещё не загружен или не прошёл проверку. Загрузите его, чтобы выйти на линию.'
-            : 'Ещё $missingDocumentCount обязательных документа(ов) не загружено или не прошло проверку. Загрузите их, чтобы выйти на линию.')
-        : _blocked
-            ? (region.blockReason.trim().isEmpty
-                ? 'Работа в регионе «${region.name}» заблокирована администратором.'
-                : region.blockReason)
-            : 'Мы проверяем ваш доступ к региону «${region.name}». Обычно это занимает немного времени — убедитесь, что все документы загружены и не отклонены, это ускорит проверку.';
+    final color = danger ? palette.danger : palette.gold;
+    final background = danger ? palette.dangerSoft : palette.goldSurface;
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: background,
@@ -2529,20 +2560,13 @@ class _DriverApprovalStatusCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                _documentsIncomplete
-                    ? Icons.upload_file_rounded
-                    : _blocked
-                        ? Icons.block_rounded
-                        : Icons.hourglass_top_rounded,
-                color: color,
-                size: 20,
-              ),
+              Icon(issue.icon, color: color, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  title,
+                  issue.title,
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 15,
@@ -2554,7 +2578,7 @@ class _DriverApprovalStatusCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            text,
+            issue.message,
             style: TextStyle(
               color: palette.textSecondary,
               fontSize: 13,
@@ -2562,98 +2586,153 @@ class _DriverApprovalStatusCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onCheckDocuments,
-              child: const Text('Проверить документы'),
+          if (issue.actionLabel != null && issue.onAction != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: issue.onAction,
+                child: Text(issue.actionLabel!),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _DemandHintCard extends StatelessWidget {
-  const _DemandHintCard({required this.level, required this.loading});
+/// Small floating circular button overlaid on a map corner — the
+/// "report/view road events" shortcut, styled like a real navigation app's
+/// map controls instead of taking up a whole row of chrome below the map.
+class _MapChipButton extends StatelessWidget {
+  const _MapChipButton({required this.icon, required this.onTap, this.badge});
 
-  final double level;
-  final bool loading;
-
-  (String, String, Color, Color) get _meta {
-    if (level >= 1.5) {
-      return (
-        'Высокий спрос',
-        'Цены сейчас выше обычного — хорошее время быть на линии',
-        SmartTaxiColors.danger,
-        SmartTaxiColors.dangerSoft,
-      );
-    }
-    if (level > 1.0) {
-      return (
-        'Повышенный спрос',
-        'Цены немного выше обычного в вашем регионе',
-        SmartTaxiColors.goldDeep,
-        SmartTaxiColors.goldSurface,
-      );
-    }
-    return (
-      'Обычный спрос',
-      'Цены в вашем регионе сейчас стандартные',
-      SmartTaxiColors.textSecondary,
-      SmartTaxiColors.goldSurface,
-    );
-  }
+  final IconData icon;
+  final VoidCallback onTap;
+  final int? badge;
 
   @override
   Widget build(BuildContext context) {
-    final (title, text, color, background) = _meta;
-    return PremiumCard(
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.trending_up_rounded, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900)),
-                const SizedBox(height: 2),
-                Text(
-                  text,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                  child:
+                      Icon(icon, size: 20, color: context.palette.goldDeep)),
+              if (badge != null)
+                Positioned(
+                  top: -3,
+                  right: -3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: context.palette.danger,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.4),
+                    ),
+                    child: Text(
+                      '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          if (loading) ...[
-            const SizedBox(width: 8),
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _RegionPickerRow extends StatelessWidget {
+  const _RegionPickerRow({
+    required this.region,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final DriverRegion region;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? palette.goldPale : Colors.white,
+          border: Border.all(
+              color: selected ? palette.borderStrong : palette.border),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.place_rounded,
+                size: 18,
+                color: selected ? palette.goldDeep : palette.textMuted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                region.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14.5,
+                  color: enabled ? palette.text : palette.textMuted,
+                ),
+              ),
             ),
+            const SizedBox(width: 8),
+            // The backend only ever hands the driver *approved, active*
+            // regions here (GET /drivers/me/regions filters both), so this
+            // reads "Одобрен" unconditionally in practice — kept as a real
+            // status computation rather than a hardcoded label so it stays
+            // correct if that contract ever loosens.
+            StatusPill(
+              label: !region.isActive
+                  ? 'Отключён'
+                  : region.status == 'BLOCKED'
+                      ? 'Заблокирован'
+                      : region.status == 'APPROVED'
+                          ? 'Одобрен'
+                          : 'На рассмотрении',
+              tone: !region.isActive || region.status == 'BLOCKED'
+                  ? StatusTone.danger
+                  : region.status == 'APPROVED'
+                      ? StatusTone.success
+                      : StatusTone.warning,
+            ),
+            if (selected) ...[
+              const SizedBox(width: 8),
+              Icon(Icons.check_circle_rounded,
+                  color: palette.gold, size: 20),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -3188,9 +3267,6 @@ class _NavigatorCockpit extends StatelessWidget {
     required this.onToggleVoice,
     required this.onRefreshAlerts,
     required this.onReportAlert,
-    required this.onOpen2Gis,
-    required this.onOpenYandex,
-    required this.onOpenGoogle,
   });
 
   final bool online;
@@ -3204,9 +3280,6 @@ class _NavigatorCockpit extends StatelessWidget {
   final VoidCallback onToggleVoice;
   final VoidCallback onRefreshAlerts;
   final VoidCallback onReportAlert;
-  final VoidCallback onOpen2Gis;
-  final VoidCallback onOpenYandex;
-  final VoidCallback onOpenGoogle;
 
   @override
   Widget build(BuildContext context) {
@@ -3285,34 +3358,6 @@ class _NavigatorCockpit extends StatelessWidget {
             text: online
                 ? '$targetLabel. Дорожных событий: ${alertsLoading ? 'обновляем...' : nearbyAlerts}.'
                 : 'Выйдите на линию, чтобы навигатор показывал рабочий контекст.',
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _NavigatorButton(
-                  label: '2GIS',
-                  enabled: activeTarget,
-                  onTap: onOpen2Gis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _NavigatorButton(
-                  label: 'Yandex',
-                  enabled: activeTarget,
-                  onTap: onOpenYandex,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _NavigatorButton(
-                  label: 'Google',
-                  enabled: activeTarget,
-                  onTap: onOpenGoogle,
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -3396,34 +3441,6 @@ class _NavigatorMetric extends StatelessWidget {
     );
   }
 }
-
-class _NavigatorButton extends StatelessWidget {
-  const _NavigatorButton({
-    required this.label,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: enabled ? onTap : null,
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        side: BorderSide(
-          color:
-              enabled ? SmartTaxiColors.borderStrong : SmartTaxiColors.border,
-        ),
-      ),
-      child: Text(label),
-    );
-  }
-}
-
 
 class _TripMap extends StatefulWidget {
   const _TripMap({

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -33,6 +34,156 @@ class FloatingNav extends StatelessWidget {
             ],
           ),
           child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tiny press feedback (haptic + scale-down) for primary tappable surfaces —
+/// mirrors the passenger side's `_PressScale` so the driver's main CTAs feel
+/// like the same app, not a plainer sibling.
+class DriverPressScale extends StatefulWidget {
+  const DriverPressScale({super.key, required this.child, this.enabled = true});
+
+  final Widget child;
+  final bool enabled;
+
+  @override
+  State<DriverPressScale> createState() => _DriverPressScaleState();
+}
+
+class _DriverPressScaleState extends State<DriverPressScale> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (!widget.enabled || _pressed == value) return;
+    if (value) unawaited(HapticFeedback.lightImpact());
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Full-width primary CTA with a blue gradient, press-scale and a matching
+/// glow shadow — the driver-side equivalent of the passenger's
+/// `_GoldCtaButton`. Used for the one action per screen that should read as
+/// unmistakably "the main button" (going online, confirming a step), not for
+/// every button on the page.
+class DriverGradientButton extends StatelessWidget {
+  const DriverGradientButton({
+    super.key,
+    required this.text,
+    required this.onTap,
+    this.loading = false,
+    this.loadingText = 'Обновляем...',
+    this.enabled = true,
+    this.icon,
+    this.height = 56,
+  });
+
+  final String text;
+  final VoidCallback? onTap;
+  final bool loading;
+  final String loadingText;
+  final bool enabled;
+  final IconData? icon;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = enabled && onTap != null && !loading;
+    return DriverPressScale(
+      enabled: active,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xff5b9dff),
+                SmartTaxiColors.gold,
+                SmartTaxiColors.goldDeep,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: SmartTaxiColors.gold.withValues(alpha: 0.32),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: active ? onTap : null,
+              child: SizedBox(
+                height: height,
+                width: double.infinity,
+                child: Center(
+                  child: loading
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(loadingText,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900)),
+                          ],
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (icon != null) ...[
+                              Icon(icon, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                            ],
+                            Text(
+                              text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
