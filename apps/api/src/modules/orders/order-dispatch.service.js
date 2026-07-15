@@ -286,6 +286,15 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     )
   `;
 
+  // Symmetric case: a driver who blocked this rider never gets this rider's
+  // orders broadcast to them either — same visibility layer, opposite table.
+  const notBlockedClient = `
+    NOT EXISTS (
+      SELECT 1 FROM driver_client_preferences dcp
+      WHERE dcp.driver_id=$1 AND dcp.client_id=o.client_id AND dcp.type='BLOCKED'
+    )
+  `;
+
   // A driver who cancelled this specific order after accepting it never
   // sees it again in a broadcast (order-dispatch reopen path below) — they
   // can still see and act on any OTHER order, and any order they're
@@ -301,7 +310,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
       WHERE o.region_id=$2
         AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR o.driver_id=$1)
         AND o.status=$3
-        AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notPreviouslyCancelledByThisDriver}))
+        AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notPreviouslyCancelledByThisDriver}))
       ORDER BY o.created_at DESC
       LIMIT $4
     `, [driver.id, driver.current_region_id, status, limit, OPEN_ORDER_STATUSES])).rows;
@@ -316,7 +325,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     LEFT JOIN drivers d ON d.id=o.driver_id
     WHERE o.region_id=$2
       AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR (o.driver_id=$1 AND o.status = ANY($3::text[])))
-      AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notPreviouslyCancelledByThisDriver}))
+      AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notPreviouslyCancelledByThisDriver}))
     ORDER BY o.offered_price_kzt DESC NULLS LAST, o.created_at DESC
     LIMIT $4
   `, [driver.id, driver.current_region_id, RECENT_DRIVER_STATUSES, limit, OPEN_ORDER_STATUSES])).rows;
@@ -330,6 +339,20 @@ async function assertDriverNotBlockedByClient(clientId, driverId, executor) {
     [clientId, driverId]
   );
   if (blocked.rows[0]) throw new AppError("Rider has blocked this driver", 403, "DRIVER_BLOCKED_BY_CLIENT");
+}
+
+// Symmetric defense-in-depth for a driver-initiated block: the order never
+// shows up in listOrdersForDriver above, but a driver who already knows the
+// order id (e.g. a stale client) shouldn't be able to accept/offer on it
+// either.
+async function assertClientNotBlockedByDriver(clientId, driverId, executor) {
+  if (!clientId) return;
+  const blocked = await runQuery(
+    executor,
+    "SELECT 1 FROM driver_client_preferences WHERE driver_id=$1 AND client_id=$2 AND type='BLOCKED'",
+    [driverId, clientId]
+  );
+  if (blocked.rows[0]) throw new AppError("You have blocked this rider", 403, "CLIENT_BLOCKED_BY_DRIVER");
 }
 
 export async function acceptOrderForDriver({ orderId, userId, executor }) {
@@ -352,6 +375,7 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
     throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
   }
   await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
+  await assertClientNotBlockedByDriver(existing.client_id, driver.id, executor);
 
   const order = (await runQuery(
     executor,
@@ -395,6 +419,7 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
     throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
   }
   await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
+  await assertClientNotBlockedByDriver(existing.client_id, driver.id, executor);
 
   const order = (await runQuery(
     executor,

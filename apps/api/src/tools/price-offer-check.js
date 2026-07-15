@@ -49,6 +49,7 @@ function createExecutor() {
     ],
     clients: [{ id: "client-1", user_id: "client-user-1" }],
     preferences: [],
+    driverClientPreferences: [],
     orders: [{
       id: "order-1",
       status: "SEARCHING_DRIVER",
@@ -81,6 +82,9 @@ function createExecutor() {
       }
       if (/SELECT 1 FROM client_driver_preferences WHERE client_id=\$1 AND driver_id=\$2 AND type='BLOCKED'/i.test(sql)) {
         return { rows: state.preferences.filter(p => p.client_id === params[0] && p.driver_id === params[1] && p.type === "BLOCKED") };
+      }
+      if (/SELECT 1 FROM driver_client_preferences WHERE driver_id=\$1 AND client_id=\$2 AND type='BLOCKED'/i.test(sql)) {
+        return { rows: state.driverClientPreferences.filter(p => p.driver_id === params[0] && p.client_id === params[1] && p.type === "BLOCKED") };
       }
       if (/UPDATE orders\s+SET driver_offer_price_kzt=\$1/i.test(sql)) {
         const order = state.orders.find(o => o.id === params[2]);
@@ -150,6 +154,17 @@ function createExecutor() {
     () => submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor }),
     { code: "DRIVER_BLOCKED_BY_CLIENT" },
     "a driver blocked by the order's client must not be able to submit a price offer"
+  );
+}
+
+// A driver who blocked this rider cannot submit an offer either, even with a stale order id.
+{
+  const executor = createExecutor();
+  executor.state.driverClientPreferences.push({ driver_id: "driver-1", client_id: "client-1", type: "BLOCKED" });
+  await assert.rejects(
+    () => submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor }),
+    { code: "CLIENT_BLOCKED_BY_DRIVER" },
+    "a driver who blocked the order's client must not be able to submit a price offer"
   );
 }
 
