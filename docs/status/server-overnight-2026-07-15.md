@@ -224,3 +224,153 @@ something to do unilaterally overnight. Treat everything above as
 syntax-clean and logic-reviewed, not integration-tested. Before this
 ships: run migrations once against a real (ideally staging) Postgres and
 run `npm test`.
+
+---
+
+## 8. CRITICAL: unverified drivers could go online — fixed
+
+Confirmed: `ONLINE`/dispatch eligibility only ever checked
+`drivers.is_blocked`. There was no link at all between a driver being
+allowed to work and either `driver_applications.status` or their uploaded
+`driver_documents` review status.
+
+**Why the fix isn't "link `driver_applications` to `drivers`, unblock on
+approval" as literally proposed**: `driver_applications` (the pre-account
+intake form, name/phone/car info + documents keyed by
+`driver_application_id`) has no foreign key to a `drivers` row anywhere in
+the schema, and nothing in this codebase creates a `drivers` row at all —
+not `auth.routes.js` (`/register*` only ever creates `role='CLIENT'`
+users), not any admin endpoint. Every `drivers` row today is provisioned
+out-of-band (seed script or direct DB access). Building a "convert an
+approved application into a driver account" flow is a real gap but a
+separate, bigger feature than tonight's fix — **flagging it explicitly as
+recommended future work**, not silently skipping it.
+
+**What's actually enforceable today, and what got wired in instead**: every
+driver, however their account was created, already has `driver_documents`
+rows keyed by `driver_id` once they upload anything (existing feature).
+So the gate is a **live check, not a stored flag**:
+
+- `getMissingRequiredDocumentTypes(driverId)` (new,
+  `driver-documents.service.js`) — for each of
+  `DRIVER_LICENSE_FRONT/BACK`, `ID_CARD_FRONT/BACK`, `VEHICLE_REGISTRATION`,
+  looks at that type's *most recent* submission and requires it to be
+  `APPROVED`. No separate "verified" flag to keep in sync — a later
+  REJECTED renewal of an already-approved document type drops the driver
+  back out automatically, on the very next check, for free.
+- Wired into `assertDriverRegionApproved` and `assertDriverDispatchReady`
+  (`driver-region-approvals.service.js`), which already gate every online/
+  dispatch path (`PATCH /drivers/me/status`, `POST /driver/status/online`,
+  `GET /driver/orders/incoming`, order accept/reject/price-offer, the
+  `join_drivers` socket event). One choke point, not scattered checks.
+- New error: `403 DRIVER_DOCUMENTS_NOT_APPROVED` with `{ missing: [...] }`.
+
+**Operational heads-up before this deploys**: this also gates *progressing
+an already-active trip* (arrived/waiting/start/complete/cancel all go
+through the same `assertDriverDispatchReady` call), same as the
+pre-existing region-approval check already did. Any driver currently
+online or mid-trip in production whose required documents aren't all
+`APPROVED` will be unable to continue the moment this ships. Before
+deploying: bulk-approve documents for any pilot/seed/test drivers via
+`PATCH /admin/driver-documents/:id` (or directly in Postgres) so nobody
+gets stranded mid-trip.
+
+No migration needed for this — it's a live query against the existing
+`driver_documents` table, not a new column.
+
+## 9. Order lifecycle: search timeout, driver-cancel reopen, fees, paid waiting
+
+Four separate gaps, all in `apps/api/src/modules/orders/` and
+`finance.service.js`:
+
+- **No driver responds** (`order-dispatch.service.js`): the dispatch model
+  here is region-wide, not radius-based (the only distance query in the app
+  is the anonymous-icon `/drivers/nearby` endpoint) — so "widen the search
+  radius" doesn't map onto anything real to retry. Instead: `orders.*`
+  responses and the `order_status_public`/dispatch socket events now
+  include `search_timed_out: boolean` — `true` once an unassigned
+  `SEARCHING_DRIVER`/`NEW` order has been open for 75s with nobody
+  responding. Purely a derived read (`isOrderSearchTimedOut`, no new
+  column, no scheduler). Cancelling from this state is already free — see
+  the fee logic below, no driver ever accepted so no `cancellation_fee`
+  applies. Mobile/web should show "никто не откликнулся" with cancel/keep-
+  waiting once this flips true; that UI isn't part of this change.
+- **Driver cancels after accepting** (`orders.routes.js` `POST
+  /orders/:id/cancel`, driver role only — operator cancel is unchanged):
+  no longer a dead-end `CANCELLED_BY_DRIVER`. Reopens the order
+  (`status='SEARCHING_DRIVER'`, `driver_id=NULL`, waiting-related columns
+  cleared), stamps `last_cancelled_by_driver_id`/`_at` on the order, and
+  notifies the client (`DRIVER_CANCELLED` push). `listOrdersForDriver` and
+  `acceptOrderForDriver`/`submitDriverPriceOffer`
+  (`order-dispatch.service.js`) all exclude/reject that specific driver
+  from that specific order going forward — they can still see and take
+  every other order normally. New additive columns:
+  `orders.last_cancelled_by_driver_id` (FK → drivers, `ON DELETE SET NULL`),
+  `orders.last_cancelled_by_driver_at`.
+- **`cancellation_fee`/`no_show_fee` were dead columns** — never read
+  anywhere outside the tariff CRUD. Now live in
+  `createOrderCancelledTransaction` (`finance.service.js`): `NO_SHOW`
+  always charges `tariffs.no_show_fee`; `CANCELLED_BY_CLIENT` charges
+  `tariffs.cancellation_fee` only if a driver had already accepted
+  (`accepted_at` set) — a driver or operator cancelling never charges the
+  rider. Charged out of `clients.cashback_balance` (same balance the
+  existing PAID-order-cancellation refund credits into), **capped at
+  whatever's actually there** — there's no client debt/credit concept in
+  this codebase, so a client with insufficient balance is charged whatever
+  they have, not put in the negative. The driver is credited exactly what
+  was actually collected, recorded via the existing `ORDER_CANCELLED`
+  financial_transactions row (`metadata.feeType`/`metadata.feeKzt`), no new
+  transaction type, no CHECK constraint change.
+- **`waiting_total` was a dead column** — `WAITING_CLIENT` already tracked
+  `waiting_started_at`/`free_waiting_until`/`waiting_price_per_minute`, and
+  `TRIP_STARTED` already froze `paid_waiting_started_at`, but nothing ever
+  turned that into money. Now: `TRIP_STARTED` computes and stores
+  `waiting_total` (minutes of paid waiting × price/min). `TRIP_COMPLETED`
+  folds it into `orders.price`/`orders.service_commission` *and* refreshes
+  `pricing_snapshot` (`finalPrice`/`serviceCommission`/`driverEarning`/
+  `waitingTotal`) — the refresh matters because
+  `finance.service.js#orderAmounts()` prefers `pricing_snapshot.finalPrice`
+  over the live `price` column for the ledger entry, so skipping it would
+  make the financial_transactions report silently under-count every trip
+  with paid waiting, even though the driver was correctly paid.
+
+New test file: `src/tools/order-lifecycle-check.js` (wired into `npm test`)
+— structural assertions on the SQL/migration wiring above, a pure-function
+suite for `isOrderSearchTimedOut`, and a mock-executor suite for the
+cancellation/no-show fee logic (fee capped by balance, no fee before
+acceptance, no fee on driver/operator cancel, no-show always charges).
+`npm run syntax` and `npm test` both pass (17 checks total now).
+
+## 10. Domain / Railway
+
+Railway is now the only documented production target. Marked
+`api.smarttaxi.kz` references as **not used in prod** (kept, not deleted)
+in `.env.example`, `infra/nginx/smarttaxi.conf`, and
+`docs/DEPLOYMENT_VPS.md`'s header — so a future session doesn't get
+confused the way this one's predecessor did. App source code
+(`apps/web/src/lib/api.js`, `apps/mobile/src/services/api.ts` — the latter
+is a separate/legacy RN tree, not `apps/mobile/smarttaxi_app`) still has
+`api.smarttaxi.kz` as a hardcoded fallback; left untouched since that's
+runtime app code other sessions are actively working in, not config/docs —
+flagging here rather than silently leaving it out of scope.
+
+Wrote `docs/status/railway-domain-setup-2026-07-15.md`: step-by-step manual
+instructions (Railway panel → Custom Domain → CNAME at the domain
+registrar → wait for verification → update env vars) for attaching
+`api.smarttaxi.kz` directly to the Railway service. Not executed — needs
+Railway panel and DNS registrar access I don't have.
+
+## Commits (this pass)
+
+1. `fix(drivers): block undocumented drivers from all dispatch paths` — §8
+2. `feat(orders): reopen order on driver cancel, bill paid waiting, charge cancellation/no-show fees, surface search timeout` — §9
+3. `docs: mark VPS/nginx config unused, Railway is the only prod` — §10 (env/nginx/deployment doc)
+4. `docs: Railway custom-domain setup instructions`
+5. `docs: this section`
+
+Migration added this pass is additive-only (2 nullable columns + 1 index,
+no DROP/rename/NOT NULL backfill) — re-read specifically against "what
+happens if this hits the live Railway Postgres with real drivers/orders
+right now" before committing: existing rows just get `NULL` in the two new
+columns, nothing references them until a driver actually cancels after
+accepting.
