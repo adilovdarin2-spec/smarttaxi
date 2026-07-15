@@ -1839,6 +1839,25 @@ class _PassengerShellState extends State<PassengerShell>
           onSelect: (tab) {
             Navigator.pop(context);
             setState(() => _tab = tab);
+            // The drawer is the primary way to reach these tabs, but their
+            // data only loads on demand (not fetched during bootstrap like
+            // trip history) — without this they render their "nothing
+            // loaded yet" blank/empty state forever, since nothing else
+            // ever calls the loader. The Profile screen's own quick-links
+            // menu already triggers the same loads for the same tabs; the
+            // drawer needs the same wiring, not a duplicate of the screen.
+            switch (tab) {
+              case PassengerTab.recurringBookings:
+                unawaited(_loadRecurringBookings());
+              case PassengerTab.favoriteAddresses:
+                unawaited(_loadFavoriteAddresses());
+              case PassengerTab.driverPreferences:
+                unawaited(_loadDriverPreferences());
+              case PassengerTab.referrals:
+                unawaited(_loadReferralSummary());
+              default:
+                break;
+            }
           },
           onDriver: () {
             Navigator.pop(context);
