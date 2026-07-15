@@ -1263,3 +1263,63 @@ error+retry UI).
 change). `flutter test`: 10 failures, unchanged from baseline.
 **Verified live** that the load now fires on all four screens; the
 downstream 404 is a backend question, flagged not fixed.
+
+### 5. "Промокоды" screen was blank — different root cause, genuine layout crash — `25f86c8`
+
+Live-reproduced first: drawer → Промокоды rendered nothing at all —
+not even the "Промокоды" title, which every other screen renders
+unconditionally. That ruled out item 4's cause (missing load trigger)
+immediately, since `_promoCodesScreen()` has no loading state at all —
+its content is fully static/unconditional.
+
+Diagnosed by elimination since nothing showed in `adb logcat` under
+normal filtering:
+1. Wrapped the screen's return in a bright-red `Container` — it
+   painted full-screen red with **no content inside it**, proving the
+   widget subtree was being discarded, not just invisible.
+2. Wrapped in `try/catch` — caught nothing, because `StatelessWidget`s
+   passed as already-constructed `ListView` children don't run their
+   own `build()` until the framework's later layout pass, outside a
+   synchronous try/catch around the function call that returns them.
+3. Temporarily hooked `FlutterError.onError` and `ErrorWidget.builder`
+   globally (both removed before commit; `git diff` confirmed clean)
+   to print any framework-level error instead of just swallowing it.
+   That surfaced it immediately: **"BoxConstraints forces an infinite
+   width."**, cascading into a chain of "RenderBox was not laid out"
+   assertion failures.
+
+Root cause: the app's `ElevatedButtonTheme` sets
+`minimumSize: Size.fromHeight(56)`, which is `Size(double.infinity,
+56)` — every button in the app is built assuming its parent resolves
+that infinite width (normally `SizedBox(width: double.infinity, ...)`
+wrapping a full-width CTA, the pattern used everywhere else). The
+promo-check button sits next to the code field inside a `Row` instead,
+wrapped only in `SizedBox(height: 56)` — no width — so the theme's
+infinite minimum had nothing to resolve against. This is a genuine
+layout-phase crash, not a build-phase one: build-phase exceptions get
+the app's visible "не удалось открыть экран" fallback card
+(`ErrorWidget.builder`), but this class of layout exception has no
+equivalent visible boundary, so the screen just silently rendered
+nothing below the shared header. **Confirmed isolated** — grepped both
+`passenger_shell.dart` and `driver_shell.dart` for the same
+"`SizedBox(height: N, child: ElevatedButton`" pattern; no other hits.
+
+Fixed by giving the button an explicit `width: 140` (plus tightened
+internal padding so "Проверить" still fits on one line at that width)
+instead of only a height.
+
+**Screenshot evidence:** before — drawer → Промокоды, fully blank body
+(not even the title). After — full screen renders: title, description,
+code-check card with input + button, "Как применить скидку" info
+card. **Full functional flow tested live**: typed "SMART500" (Latin
+input — Cyrillic isn't supported by `adb shell input text` on this
+device, unrelated to the app), tapped Проверить, got a real (non-
+crashing) "Не удалось выполнить запрос" response rendered cleanly in
+the error slot — very likely the same backend account-data gap as
+item 4, not investigated further for the same reason (outside
+`apps/mobile` scope).
+
+**Verified:** `flutter analyze` clean (3 pre-existing warnings, no
+change). `flutter test`: 10 failures, unchanged from baseline.
+**Verified live**, full input → API round-trip → error-render flow,
+not just that the screen isn't blank anymore.
