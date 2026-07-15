@@ -2716,12 +2716,12 @@ function PayoutsPage({ payoutRequests, payoutStatus, setPayoutStatus, onApprove,
               {item.status === "PENDING" && (
                 <footer>
                   <button type="button" className="admin-danger-button compact" onClick={() => onReject(item)}>Отклонить</button>
-                  <button type="button" className="admin-primary-button compact" onClick={() => onApprove(item)}>Одобрить</button>
+                  <button type="button" className="admin-secondary-button compact" onClick={() => onApprove(item)}>Одобрить</button>
                 </footer>
               )}
               {item.status === "APPROVED" && (
                 <footer>
-                  <button type="button" className="admin-primary-button compact" onClick={() => onMarkPaid(item)}>Отметить как выплачено</button>
+                  <button type="button" className="admin-secondary-button compact" onClick={() => onMarkPaid(item)}>Отметить как выплачено</button>
                 </footer>
               )}
             </article>
@@ -3461,7 +3461,7 @@ function DriverDocumentCard({ document, mode, onReview, busy }) {
               {mode === "driver" ? "Запросить переоформление" : "Отклонить"}
             </button>
             {mode === "application" && (
-              <button type="button" className="admin-primary-button compact" disabled={busy} onClick={() => onReview(document, "APPROVED", "")}>
+              <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={() => onReview(document, "APPROVED", "")}>
                 Одобрить
               </button>
             )}

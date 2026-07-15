@@ -481,10 +481,60 @@ real screenshots. Script deleted after each run, not committed.
   now green/amber/red instead of blue-tinted):
   ![drivers after](../design/audit-2026-07-15/admin-04-водители-after.png)
 
-**Not yet done this iteration** (loop continues): one-CTA-per-screen
-audit, empty-state audit across every list, client/owner typography
-comparison, spacing-scale check on `/client` and `/driver`, and a
-final confirmation pass once a full sweep finds nothing new.
+**Iteration 2 — CTA hierarchy, empty states, typography check**:
+
+- **Empty states**: grepped every list-rendering branch in
+  `AdminApp.jsx` — 23 separate `!x.length ? <StatePanel ...>` guards,
+  one per list (regions, drivers, applications, orders, tariffs,
+  finance reports/debts/transactions, road alerts, support, promo
+  codes, recurring bookings, referrals, raffles, payouts, leaderboard,
+  reviews, audit, driver/application documents). None render a bare
+  empty table. Combined with §13's earlier finding (no empty/dead
+  screens found across the whole app), this requirement was already
+  satisfied — no code change needed, just verified.
+- **One CTA per screen**: found the real version of this problem
+  wasn't "two page-level `Добавить X` buttons competing" (there was
+  never more than one of those) — it was *row-level* actions styled as
+  the same solid accent blue as the page's one real CTA, so a list of
+  10 pending payouts had 10 blue "Одобрить" buttons all competing for
+  attention alongside the sidebar's blue active-page pill. Restyled
+  the repeating row actions (Выплаты's "Одобрить"/"Отметить как
+  выплачено", and the per-document "Одобрить" in the applications/
+  driver document review) from `admin-primary-button` to
+  `admin-secondary-button` — danger actions (Отклонить/Удалить) stay
+  red, the *page's* one real call-to-action (Добавить розыгрыш/тариф/
+  промокод/регион) stays the only solid blue element on screen.
+  ![payouts CTA decluttered](../design/audit-2026-07-15/admin-11-выплаты-after.png)
+  ![document review CTA decluttered](../design/audit-2026-07-15/admin-50-application-detail-after.png)
+- **Typography hierarchy, /client vs /owner**: compared
+  `.taxi-pwa .screen-intro h1` (28px/34px, weight 850, tightened to
+  `clamp(27px,7vw,33px)` on menu/drawer-linked screens) against
+  `.admin-section-header h2` (28px/34px, weight 950) — same size, same
+  line-height, weight within 100 units of each other (both read as
+  "bold display heading" at a glance). Subtitle text matches too (14px
+  both sides). Screenshotted side-by-side (Настройки vs Главная) to
+  confirm visually, not just from the CSS — genuinely already
+  consistent, nothing to fix here.
+  ![client heading](../design/audit-2026-07-15/client-typography-settings.png)
+  ![admin heading](../design/audit-2026-07-15/admin-typography-dashboard.png)
+- **Known technical debt, not fixed**: client CTA buttons are still
+  classed `primary-gold` (e.g. `Button className="wide primary-gold"`)
+  in 16+ places. Confirmed via computed styles this renders genuinely
+  **blue** already (`#1d6fff`/`#0b4fd1`, white text) — a later
+  `!important` block overrides the original gold gradient, same stale-
+  naming pattern as `--admin-gold`/`--taxi-gold` from §13. Purely a
+  class-name/maintainability issue with zero visual symptom (every
+  client screenshot tonight already shows blue buttons) — renaming it
+  across every call site would touch client and driver code for no
+  screenshot-visible benefit, so left as a documented note rather than
+  a risky mass rename mid-loop.
+
+**Not yet done — loop continues**: spacing-scale check specifically on
+`/client` and `/driver` screens (checked visually via screenshots so
+far, not grepped for stray non-scale px values), `/driver` app screens
+beyond the login page (still blocked — no live backend to get past
+driver auth), and the final confirmation sweep once a full pass turns
+up nothing new.
 
 ## Known gaps / follow-ups
 
