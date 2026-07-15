@@ -1717,3 +1717,14 @@ redesign and order-note flow confirmed on-device end to end; chat and
 driver-side note confirmed by code trace only, blocked by the same
 no-drivers-in-region constraint noted throughout this document, not by
 any gap in the implementation.
+
+## Follow-up: marker sizes, take 3 — `8c9c8b0`
+
+Direct request: enlarge the address-picker crosshair (`_CenterMapMarker`),
+shrink the confirmed pickup/dropoff pins further. `_CenterMapMarker`:
+27px pin / 68px footprint -> 36px pin / 90px footprint (pulse ring and
+ground-shadow scaled proportionally). `_assetMarker` pickup/dropoff:
+20/22 -> 14/16. **Verified live**: opened the map address-picker,
+crosshair visibly larger (screenshot); confirmed a destination,
+dropoff flag marker visibly smaller on the route/tariff screen
+(screenshot). `flutter analyze` clean, `flutter test` 14/10 unchanged.
