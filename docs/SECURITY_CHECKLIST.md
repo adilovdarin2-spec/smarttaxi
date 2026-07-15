@@ -119,30 +119,27 @@ changed.
   hardcoded `z.enum` of 5 keys (no free-text field exists in the schema),
   and is rate limited 10/min/IP — see
   [orders.routes.js:681-694](../apps/api/src/modules/orders/orders.routes.js).
-- **SOS — not prioritized in the support queue**: NOT MITIGATED, real gap
-  (not just "known risk" — this is a missing feature). `support_messages`
-  has no priority/urgency column, and both
-  `POST /api/support` and the admin
-  `GET /api/admin/support` list (see
-  [support.routes.js](../apps/api/src/modules/support/support.routes.js))
-  treat every topic identically, ordered only by `created_at DESC`. An
-  SOS/emergency message sits in the same FIFO queue as a lost-item report
-  or a general question — it is not flagged, not sorted first, and
-  triggers no distinct notification to operators. `service_settings.sosPhone`
-  exists for the client to *call* directly, but if the product intends an
-  in-app SOS text/report path, that path currently has no priority
-  handling at all.
-  **Confirmed reachable on the mobile client (2026-07-15 ~06:00, commit
-  `784fee8`)**: `_SafetySheet._sendSosAlert()` in
+- **SOS — not prioritized in the support queue**: FIXED (2026-07-15,
+  backend). `support.routes.js` (`POST /api/support`,
+  `GET /api/admin/support`) now treats `topic: 'SOS'` — the exact string
+  `_SafetySheet._sendSosAlert()` in
   [passenger_shell.dart:9992](../apps/mobile/smarttaxi_app/lib/features/passenger/passenger_shell.dart)
-  now actually calls `POST /api/support` with `topic: 'SOS'` (line ~10008)
-  and the rider's live GPS coordinates in the message body, fired in
-  parallel with the emergency phone call. This is good — the button's
-  claim to alert support is no longer false — but it means real SOS
-  traffic now lands in exactly the unprioritized queue described above.
-  The backend gap (no priority column/sort, no distinct operator alert)
-  is unchanged and is now the more urgent half of this item to fix, since
-  it's no longer theoretical.
+  already sends — as a distinct priority: the admin list sorts SOS reports
+  first regardless of age (`ORDER BY (topic=$1) DESC, created_at DESC`,
+  both the `ALL` and status-filtered queries), `publicMessage()` exposes
+  `isUrgent: true` so a future admin/web UI can highlight it without
+  re-deriving the topic check itself, and submitting an SOS message now
+  fires `notifyUser` (in-app `notifications` row + best-effort push) to
+  every active `OWNER`/`OPERATOR` user, not just whoever happens to be
+  looking at the queue. Deliberately no new schema column — `topic` was
+  already the one signal that mattered, a stored priority column would
+  have just duplicated it. Static checks in
+  `src/tools/sos-priority-check.js`. **Caveat**: `apps/web`'s admin panel
+  doesn't currently have a notifications-bell UI or an SOS highlight in
+  its support queue view — the backend contract (`isUrgent`, the
+  `SOS_ALERT` in-app notification) is ready for it, but the surfacing on
+  the admin/web side is a separate, not-yet-scoped follow-up. This
+  session's scope was `apps/api` only.
 - **VPS deployment — API port not restricted to localhost**: discrepancy
   between `docker-compose.yml` and the Nginx-fronted architecture the
   checklist assumes. The `api` service publishes `ports: - "4000:4000"`
