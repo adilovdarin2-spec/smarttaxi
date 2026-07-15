@@ -2855,9 +2855,22 @@ class _PassengerShellState extends State<PassengerShell>
                     ),
                   ),
                   const SizedBox(width: 10),
+                  // Explicit width, not just height: ElevatedButtonTheme sets
+                  // minimumSize: Size.fromHeight(56), i.e. an infinite-width
+                  // minimum meant to be overridden by a full-width parent
+                  // (SizedBox(width: double.infinity, ...)) elsewhere in the
+                  // app. Here the button sits beside the address field in a
+                  // Row instead, so that infinite width has nothing to
+                  // resolve against — Flutter throws "BoxConstraints forces
+                  // an infinite width" during layout, which silently blanks
+                  // this whole screen (caught by no visible error boundary).
                   SizedBox(
+                    width: 140,
                     height: 56,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
                       onPressed: _promoCheckLoading
                           ? null
                           : () => unawaited(_checkPromoCode()),
