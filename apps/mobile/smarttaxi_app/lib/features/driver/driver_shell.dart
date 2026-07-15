@@ -1643,24 +1643,6 @@ class _DriverShellState extends State<DriverShell> {
     );
   }
 
-  Coordinate? get _navigatorTarget {
-    final order = _activeOrder;
-    if (order == null) return null;
-    if (order.status == 'TRIP_STARTED' || order.status == 'IN_PROGRESS') {
-      return order.dropoffCoordinate;
-    }
-    return order.pickupCoordinate ?? order.dropoffCoordinate;
-  }
-
-  String get _navigatorTargetLabel {
-    final order = _activeOrder;
-    if (order == null) return 'Свободный режим';
-    if (order.status == 'TRIP_STARTED' || order.status == 'IN_PROGRESS') {
-      return 'Маршрут к точке назначения';
-    }
-    return 'Маршрут к точке подачи';
-  }
-
   @override
   Widget build(BuildContext context) {
     // The 4 bottom-nav tabs switch via local state, not a pushed route, so
@@ -1733,15 +1715,24 @@ class _DriverShellState extends State<DriverShell> {
                     _lineTab(),
                     _ordersTab(),
                     _tripTab(),
-                    _navigatorTab(),
                   ],
                 ),
               ),
               FloatingNav(
                 child: NavigationBar(
                   selectedIndex: _tab,
-                  onDestinationSelected: (index) =>
-                      setState(() => _tab = index),
+                  onDestinationSelected: (index) {
+                    // Smart Navigator isn't a 4th tab content pane — it's a
+                    // dedicated full-screen mode (own back control, no
+                    // bottom nav/app bar chrome) pushed as a real route, so
+                    // the driver reads it as "I'm in navigation now," not
+                    // "I switched to another tab of the same screen."
+                    if (index == 3) {
+                      unawaited(_openFullScreenNavigator());
+                      return;
+                    }
+                    setState(() => _tab = index);
+                  },
                   destinations: [
                     NavigationDestination(
                         icon: const Icon(Icons.power_settings_new),
@@ -2200,69 +2191,19 @@ class _DriverShellState extends State<DriverShell> {
     );
   }
 
-  Widget _navigatorTab() {
-    final current = _currentCoordinate;
-    final speedKmh = _speedKmh;
-    final activeTarget = _navigatorTarget;
-    final speedLimit = _activeSpeedLimit;
-    final maneuver = _nextManeuverHint();
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _loadOrders();
-        await _loadRoadAlerts();
-      },
-      child: ListView(
-        padding: driverPagePadding(context),
-        children: [
-          _NavigatorTopStrip(
-            activeOrder: _activeOrder != null,
-            targetLabel: _navigatorTargetLabel,
-            online: _online,
-          ),
-          const SizedBox(height: 10),
-          if (maneuver != null) ...[
-            _NextManeuverBanner(
-              label: maneuver.label,
-              icon: maneuver.icon,
-              distanceMeters: maneuver.distanceMeters,
-            ),
-            const SizedBox(height: 10),
-          ],
-          if (_navigatorBannerText != null &&
-              _navigatorBannerUntil != null &&
-              DateTime.now().isBefore(_navigatorBannerUntil!)) ...[
-            _NavigatorVoiceBanner(text: _navigatorBannerText!),
-            const SizedBox(height: 10),
-          ],
-          _SmartNavigatorMap(
-            current: current,
-            heading: _currentHeading,
-            activeOrder: _activeOrder,
-            route: _driverRoute?.geometry ?? const [],
-            alerts: _allNavigatorAlerts,
-            mapUnavailable: _navigatorMapUnavailable,
-            onTileError: _handleNavigatorTileError,
-            fallbackCenter: _selectedRegion?.center,
-          ),
-          const SizedBox(height: 14),
-          _NavigatorCockpit(
-            online: _online,
-            targetLabel: _navigatorTargetLabel,
-            speedKmh: speedKmh,
-            speedLimit: speedLimit,
-            nearbyAlerts: _allNavigatorAlerts.length,
-            alertsLoading: _roadAlertsLoading,
-            activeTarget: activeTarget != null,
-            voiceEnabled: _voiceEnabled,
-            onToggleVoice: _toggleVoice,
-            onRefreshAlerts: _loadRoadAlerts,
-            onReportAlert: () => unawaited(_openRoadAlerts()),
-          ),
-          if (_navigatorMessage != null) ...[
-            const SizedBox(height: 12),
-            InlineMessage(text: _navigatorMessage!),
-          ],
-        ],
+  // Smart Navigator is a real pushed route, not tab index 3 — the driver
+  // reads it as leaving the shell for a dedicated navigation mode (own
+  // back control, full-bleed map, no bottom nav/app bar), not switching
+  // panes on the same screen. All the underlying state it reads (GPS
+  // stream, road alerts, voice service, route fetch) already lives on
+  // this State and keeps running regardless of which route is on top, so
+  // the pushed screen is a thin, polling presentation layer over it — see
+  // _DriverFullScreenNavigatorState.
+  Future<void> _openFullScreenNavigator() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _DriverFullScreenNavigator(shell: this),
       ),
     );
   }
@@ -2738,82 +2679,6 @@ class _RegionPickerRow extends StatelessWidget {
   }
 }
 
-class _NavigatorTopStrip extends StatelessWidget {
-  const _NavigatorTopStrip({
-    required this.activeOrder,
-    required this.targetLabel,
-    required this.online,
-  });
-
-  final bool activeOrder;
-  final String targetLabel;
-  final bool online;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: SmartTaxiColors.cardDark,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: activeOrder
-                  ? SmartTaxiColors.gold.withValues(alpha: 0.18)
-                  : Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              activeOrder ? Icons.route_rounded : Icons.near_me_rounded,
-              color: activeOrder ? SmartTaxiColors.gold : Colors.white,
-              size: 21,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activeOrder ? 'Активный маршрут' : 'Свободный режим',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  online ? targetLabel : 'Выйдите на линию для подсказок',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          StatusPill(
-            label: online ? 'На линии' : 'Оффлайн',
-            tone: online ? StatusTone.success : StatusTone.neutral,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SmartNavigatorMap extends StatefulWidget {
   const _SmartNavigatorMap({
     required this.current,
@@ -3254,117 +3119,6 @@ class _NavigatorPointMarker extends StatelessWidget {
   }
 }
 
-class _NavigatorCockpit extends StatelessWidget {
-  const _NavigatorCockpit({
-    required this.online,
-    required this.targetLabel,
-    required this.speedKmh,
-    required this.speedLimit,
-    required this.nearbyAlerts,
-    required this.alertsLoading,
-    required this.activeTarget,
-    required this.voiceEnabled,
-    required this.onToggleVoice,
-    required this.onRefreshAlerts,
-    required this.onReportAlert,
-  });
-
-  final bool online;
-  final String targetLabel;
-  final int? speedKmh;
-  final int? speedLimit;
-  final int nearbyAlerts;
-  final bool alertsLoading;
-  final bool activeTarget;
-  final bool voiceEnabled;
-  final VoidCallback onToggleVoice;
-  final VoidCallback onRefreshAlerts;
-  final VoidCallback onReportAlert;
-
-  @override
-  Widget build(BuildContext context) {
-    final speeding =
-        speedKmh != null && speedLimit != null && speedKmh! > speedLimit!;
-    return PremiumCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _NavigatorMetric(
-                  title: 'Скорость',
-                  value: speedKmh == null ? '--' : '$speedKmh',
-                  suffix: 'км/ч',
-                  emphasize: true,
-                  valueColor: speeding ? SmartTaxiColors.danger : null,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _NavigatorMetric(
-                  title: 'Лимит',
-                  value: speedLimit == null ? '--' : '$speedLimit',
-                  suffix: speedLimit == null ? 'нет данных' : 'км/ч',
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: onToggleVoice,
-                tooltip: voiceEnabled
-                    ? 'Выключить голосовые подсказки'
-                    : 'Включить голосовые подсказки',
-                icon: Icon(
-                  voiceEnabled
-                      ? Icons.volume_up_rounded
-                      : Icons.volume_off_rounded,
-                  color: voiceEnabled
-                      ? SmartTaxiColors.text
-                      : SmartTaxiColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-          if (speeding) ...[
-            const SizedBox(height: 12),
-            InlineMessage(
-              text:
-                  'Снизьте скорость: текущая скорость выше сохранённого дорожного ограничения.',
-              danger: true,
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onRefreshAlerts,
-                  icon: const Icon(Icons.sync_rounded),
-                  label: const Text('События'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onReportAlert,
-                  icon: const Icon(Icons.add_location_alt_rounded),
-                  label: const Text('Сообщить'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          InlineMessage(
-            text: online
-                ? '$targetLabel. Дорожных событий: ${alertsLoading ? 'обновляем...' : nearbyAlerts}.'
-                : 'Выйдите на линию, чтобы навигатор показывал рабочий контекст.',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _NavigatorMetric extends StatelessWidget {
   const _NavigatorMetric({
     required this.title,
@@ -3435,6 +3189,497 @@ class _NavigatorMetric extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Smart Navigator's dedicated full-screen presentation — pushed as a real
+/// route (see _DriverShellState._openFullScreenNavigator), not tab index 3.
+/// Deliberately reads state straight off the [_DriverShellState] it was
+/// pushed from (`shell`) rather than duplicating the GPS stream / road-alert
+/// fetch / voice service the shell already owns and keeps running
+/// regardless of which route is on top — a lightweight poll (a plain
+/// `setState` tick, no heavy work) is what actually turns those live field
+/// updates into a rebuild here, since this route isn't a descendant of the
+/// shell's widget tree and its own `setState` calls don't reach us.
+class _DriverFullScreenNavigator extends StatefulWidget {
+  const _DriverFullScreenNavigator({required this.shell});
+
+  final _DriverShellState shell;
+
+  @override
+  State<_DriverFullScreenNavigator> createState() =>
+      _DriverFullScreenNavigatorState();
+}
+
+class _DriverFullScreenNavigatorState
+    extends State<_DriverFullScreenNavigator> {
+  final MapController _mapController = MapController();
+  Timer? _pollTimer;
+  bool _autoFollow = true;
+  bool _mapReady = false;
+  bool _mapUnavailable = false;
+  int _tileErrorCount = 0;
+  DateTime? _lastFixAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollTimer = Timer.periodic(
+        const Duration(milliseconds: 350), (_) => _tick());
+    if (widget.shell._currentCoordinate != null) {
+      _lastFixAt = DateTime.now();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _tick() {
+    if (!mounted) return;
+    final current = widget.shell._currentCoordinate;
+    if (current != null) _lastFixAt = DateTime.now();
+    if (_autoFollow && _mapReady && current != null) {
+      final heading = widget.shell._currentHeading;
+      final point = current.toLatLng();
+      try {
+        _mapController.moveAndRotate(
+          point,
+          math.max(_mapController.camera.zoom, 17),
+          heading == null ? 0 : -heading,
+        );
+      } catch (_) {
+        // Best-effort — a mid-gesture camera nudge failing shouldn't crash
+        // the whole screen; the next tick tries again.
+      }
+    }
+    setState(() {});
+  }
+
+  void _handleMapEvent(MapEvent event) {
+    if (!_mapReady) _mapReady = true;
+    // Anything not driven by our own moveAndRotate() calls above is the
+    // driver's own finger on the map — that's the signal to stop
+    // auto-centering until they explicitly ask to come back.
+    if (event.source != MapEventSource.mapController && _autoFollow) {
+      setState(() => _autoFollow = false);
+    }
+  }
+
+  void _recenter() {
+    setState(() => _autoFollow = true);
+    final current = widget.shell._currentCoordinate;
+    if (current != null) {
+      final heading = widget.shell._currentHeading;
+      _mapController.moveAndRotate(
+        current.toLatLng(),
+        math.max(_mapController.camera.zoom, 17),
+        heading == null ? 0 : -heading,
+      );
+    }
+  }
+
+  bool get _gpsLost {
+    final lastFix = _lastFixAt;
+    if (widget.shell._currentCoordinate == null) return true;
+    if (lastFix == null) return true;
+    return DateTime.now().difference(lastFix) > const Duration(seconds: 12);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shell = widget.shell;
+    final current = shell._currentCoordinate;
+    final heading = shell._currentHeading;
+    final speedKmh = shell._speedKmh;
+    final speedLimit = shell._activeSpeedLimit;
+    final maneuver = shell._nextManeuverHint();
+    final speeding =
+        speedKmh != null && speedLimit != null && speedKmh > speedLimit;
+    final route = shell._driverRoute?.geometry ?? const <LatLng>[];
+    final alerts = shell._allNavigatorAlerts;
+    final targetMeta = liveRouteMeta(shell._driverRoute);
+    final showVoiceBanner = shell._navigatorBannerText != null &&
+        shell._navigatorBannerUntil != null &&
+        DateTime.now().isBefore(shell._navigatorBannerUntil!);
+    final center = current?.toLatLng() ??
+        shell._activeOrder?.pickupCoordinate?.toLatLng() ??
+        shell._selectedRegion?.center?.toLatLng() ??
+        const LatLng(40.844435, 68.509021);
+    final topInset = MediaQuery.paddingOf(context).top;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    return Scaffold(
+      backgroundColor: const Color(0xff0b1b33),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _mapUnavailable
+                ? const _RoadAlertMapFallback()
+                : FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: center,
+                      initialZoom: 17,
+                      onMapEvent: _handleMapEvent,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate: AppConfig.osmTileUrl,
+                        subdomains: const ['a', 'b', 'c', 'd'],
+                        retinaMode: true,
+                        userAgentPackageName: 'com.smarttaxi.app',
+                        errorTileCallback: (_, __, ___) {
+                          if (_mapUnavailable) return;
+                          _tileErrorCount++;
+                          if (_tileErrorCount >= 12 && mounted) {
+                            setState(() => _mapUnavailable = true);
+                          }
+                        },
+                      ),
+                      if (route.isNotEmpty)
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: route,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              strokeWidth: 9,
+                            ),
+                            Polyline(
+                              points: route,
+                              color: SmartTaxiColors.goldDeep,
+                              strokeWidth: 5.5,
+                            ),
+                          ],
+                        ),
+                      MarkerLayer(
+                        markers: [
+                          if (shell._activeOrder?.pickupCoordinate != null)
+                            Marker(
+                              point: shell._activeOrder!.pickupCoordinate!
+                                  .toLatLng(),
+                              width: 34,
+                              height: 34,
+                              child: const _NavigatorPointMarker(
+                                icon: Icons.navigation_rounded,
+                                background: SmartTaxiColors.gold,
+                                foreground: Colors.white,
+                              ),
+                            ),
+                          if (shell._activeOrder?.dropoffCoordinate != null)
+                            Marker(
+                              point: shell._activeOrder!.dropoffCoordinate!
+                                  .toLatLng(),
+                              width: 34,
+                              height: 34,
+                              child: const _NavigatorPointMarker(
+                                icon: Icons.location_on_rounded,
+                                background: SmartTaxiColors.gold,
+                                foreground: SmartTaxiColors.text,
+                              ),
+                            ),
+                          for (final alert in alerts.take(12))
+                            Marker(
+                              point: alert.toLatLng(),
+                              width: 44,
+                              height: 44,
+                              child: _RoadAlertPin(
+                                label: _alertShortLabel(alert.type),
+                                color: _alertColor(alert.type),
+                                heading: alert.heading,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (current != null)
+                        _AnimatedSelfMarkerLayer(
+                          point: current.toLatLng(),
+                          rotationRadians:
+                              heading == null ? null : heading * math.pi / 180,
+                        ),
+                    ],
+                  ),
+          ),
+          // Top zone: back button + status chips on one row, own space from
+          // the maneuver banner below so neither ever fights the other for
+          // room regardless of text length.
+          Positioned(
+            top: topInset + 10,
+            left: 14,
+            right: 14,
+            child: Row(
+              children: [
+                _NavCircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+                const Spacer(),
+                _NavCircleButton(
+                  icon: shell._voiceEnabled
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_rounded,
+                  onTap: shell._toggleVoice,
+                ),
+                const SizedBox(width: 8),
+                _NavCircleButton(
+                  icon: Icons.add_location_alt_rounded,
+                  badge: alerts.isEmpty ? null : alerts.length,
+                  loading: shell._roadAlertsLoading,
+                  onTap: () => unawaited(shell._openRoadAlerts()),
+                ),
+              ],
+            ),
+          ),
+          // Maneuver banner — its own row, always directly under the top
+          // controls regardless of whether a voice-warning popup is also
+          // showing right now (that one lives further down, see below).
+          if (maneuver != null)
+            Positioned(
+              top: topInset + 66,
+              left: 14,
+              right: 14,
+              child: _NextManeuverBanner(
+                label: maneuver.label,
+                icon: maneuver.icon,
+                distanceMeters: maneuver.distanceMeters,
+              ),
+            ),
+          // Camera/sign proximity warning — a separate popup zone below the
+          // maneuver banner's row, so a warning firing mid-turn never
+          // covers the turn instruction it's warning about.
+          if (showVoiceBanner)
+            Positioned(
+              top: topInset + (maneuver != null ? 140 : 66),
+              left: 14,
+              right: 14,
+              child: _NavigatorVoiceBanner(text: shell._navigatorBannerText!),
+            ),
+          if (_gpsLost)
+            Positioned(
+              top: topInset + 66,
+              left: 14,
+              right: 14,
+              child: const _GpsSearchingBanner(),
+            )
+          else if (shell._navigatorMessage != null)
+            Positioned(
+              top: topInset + 66,
+              left: 14,
+              right: 14,
+              child: InlineMessage(text: shell._navigatorMessage!),
+            ),
+          if (!_autoFollow)
+            Positioned(
+              right: 14,
+              bottom: bottomInset + 190,
+              child: _NavCircleButton(
+                icon: Icons.my_location_rounded,
+                onTap: _recenter,
+                filled: true,
+              ),
+            ),
+          // Bottom zone: target distance/ETA strip, then the speed cockpit —
+          // stacked in their own column so they never overlap the map
+          // controls above no matter the screen height.
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: bottomInset + 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (targetMeta != null) ...[
+                  _NavTargetStrip(text: targetMeta),
+                  const SizedBox(height: 10),
+                ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _NavigatorMetric(
+                        title: 'Скорость',
+                        value: speedKmh == null ? '--' : '$speedKmh',
+                        suffix: 'км/ч',
+                        emphasize: true,
+                        valueColor:
+                            speeding ? SmartTaxiColors.danger : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: _NavigatorMetric(
+                        title: 'Лимит',
+                        value: speedLimit == null ? '--' : '$speedLimit',
+                        suffix: speedLimit == null ? '' : 'км/ч',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavCircleButton extends StatelessWidget {
+  const _NavCircleButton({
+    required this.icon,
+    required this.onTap,
+    this.badge,
+    this.filled = false,
+    this.loading = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final int? badge;
+  final bool filled;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? SmartTaxiColors.gold : Colors.white.withValues(alpha: 0.94),
+      shape: const CircleBorder(),
+      elevation: 4,
+      shadowColor: Colors.black38,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: loading
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: filled
+                              ? Colors.white
+                              : SmartTaxiColors.goldDeep,
+                        ),
+                      )
+                    : Icon(icon,
+                        size: 21,
+                        color: filled ? Colors.white : SmartTaxiColors.text),
+              ),
+              if (badge != null)
+                Positioned(
+                  top: -3,
+                  right: -3,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: SmartTaxiColors.danger,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.4),
+                    ),
+                    child: Text(
+                      '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavTargetStrip extends StatelessWidget {
+  const _NavTargetStrip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 14, offset: Offset(0, 6)),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.route_rounded,
+              size: 18, color: SmartTaxiColors.goldDeep),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                color: SmartTaxiColors.text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GpsSearchingBanner extends StatelessWidget {
+  const _GpsSearchingBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        color: const Color(0xff10192e),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Ищу сигнал GPS…',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ],
       ),
