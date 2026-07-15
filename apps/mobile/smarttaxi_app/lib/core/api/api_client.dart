@@ -701,6 +701,22 @@ class ApiClient {
     await _dio.delete<void>('/api/favorites/drivers/$driverId');
   }
 
+  // Fixed vocabulary on the backend (orders.routes.js QUICK_MESSAGES) — the
+  // server owns the display text, this just sends the key. Callable by
+  // either CLIENT or DRIVER on their own order; the other party is notified.
+  Future<String> sendQuickMessage({
+    required String orderId,
+    required String messageKey,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/orders/$orderId/quick-message',
+      data: {'messageKey': messageKey},
+    );
+    final data = response.data ?? {};
+    return '${data['text'] ?? ''}';
+  }
+
   Future<RoutePreview> driverToPickupRoute(String orderId) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(

@@ -6906,6 +6906,8 @@ class _TripStatusPanel extends StatelessWidget {
                   plate: order.driverPlate,
                   phone: order.driverPhone,
                 ),
+                const SizedBox(height: 8),
+                _QuickMessageButton(api: api, orderId: order.id),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -7139,6 +7141,8 @@ class _TripStatusPanel extends StatelessWidget {
                   plate: order.driverPlate,
                   phone: order.driverPhone,
                 ),
+                const SizedBox(height: 8),
+                _QuickMessageButton(api: api, orderId: order.id),
               ] else
                 _CompactNotice(
                   icon: Icons.person_search_rounded,
@@ -9892,6 +9896,125 @@ class _SafetySheet extends StatelessWidget {
               title: 'Поддержка получит сигнал',
               text:
                   'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickMessageButton extends StatelessWidget {
+  const _QuickMessageButton({required this.api, required this.orderId});
+
+  final ApiClient api;
+  final String orderId;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => _QuickMessageSheet(api: api, orderId: orderId),
+        ),
+        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+        label: const Text('Быстрое сообщение водителю'),
+      ),
+    );
+  }
+}
+
+// Fixed vocabulary mirrored from the backend's QUICK_MESSAGES map
+// (orders.routes.js) — the server owns the canonical text and rejects any
+// key outside this set, so these strings must stay in lockstep with it.
+class _QuickMessageSheet extends StatefulWidget {
+  const _QuickMessageSheet({required this.api, required this.orderId});
+
+  final ApiClient api;
+  final String orderId;
+
+  @override
+  State<_QuickMessageSheet> createState() => _QuickMessageSheetState();
+}
+
+class _QuickMessageSheetState extends State<_QuickMessageSheet> {
+  static const _messages = {
+    'I_ARRIVED': 'Я приехал',
+    'WAITING_AT_ENTRANCE': 'Жду у входа',
+    'RUNNING_LATE_2MIN': 'Опаздываю на 2 минуты',
+    'PLEASE_COME_OUT': 'Пожалуйста, выходите',
+    'ON_MY_WAY': 'Уже еду к вам',
+  };
+
+  String? _sending;
+
+  Future<void> _send(String key, String text) async {
+    setState(() => _sending = key);
+    try {
+      await widget.api
+          .sendQuickMessage(orderId: widget.orderId, messageKey: key);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      AppToast.showSuccess(context, 'Отправлено: $text');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _sending = null);
+      AppToast.showError(context, 'Не удалось отправить сообщение');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30141414),
+              blurRadius: 30,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(child: _SheetHandle(dark: false)),
+            const SizedBox(height: 14),
+            const Text(
+              'Быстрое сообщение',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 14),
+            ..._messages.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _sending != null
+                        ? null
+                        : () => _send(entry.key, entry.value),
+                    child: _sending == entry.key
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2.2),
+                          )
+                        : Text(entry.value),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

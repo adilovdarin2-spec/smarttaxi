@@ -1768,6 +1768,24 @@ class _DriverShellState extends State<DriverShell> {
                     style:
                         TextStyle(color: context.palette.textSecondary)),
               ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => _DriverQuickMessageSheet(
+                      api: widget.api,
+                      orderId: _activeOrder!.id,
+                    ),
+                  ),
+                  icon:
+                      const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                  label: const Text('Быстрое сообщение клиенту'),
+                ),
+              ),
               const SizedBox(height: 16),
               if (action != null)
                 ElevatedButton(
@@ -3019,6 +3037,100 @@ class _DriverMapBadge extends StatelessWidget {
 // of the order's own estimate — see offeredPriceBounds() in
 // order-pricing.service.js — so the same bounds are mirrored here just for
 // input validation, not because they're derived from `currentPrice`.
+// Fixed vocabulary mirrored from the backend's QUICK_MESSAGES map
+// (apps/api/src/modules/orders/orders.routes.js) — the server owns the
+// canonical text and rejects any key outside this set.
+class _DriverQuickMessageSheet extends StatefulWidget {
+  const _DriverQuickMessageSheet({required this.api, required this.orderId});
+
+  final ApiClient api;
+  final String orderId;
+
+  @override
+  State<_DriverQuickMessageSheet> createState() =>
+      _DriverQuickMessageSheetState();
+}
+
+class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
+  static const _messages = {
+    'I_ARRIVED': 'Я приехал',
+    'WAITING_AT_ENTRANCE': 'Жду у входа',
+    'RUNNING_LATE_2MIN': 'Опаздываю на 2 минуты',
+    'PLEASE_COME_OUT': 'Пожалуйста, выходите',
+    'ON_MY_WAY': 'Уже еду к вам',
+  };
+
+  String? _sending;
+
+  Future<void> _send(String key, String text) async {
+    setState(() => _sending = key);
+    try {
+      await widget.api
+          .sendQuickMessage(orderId: widget.orderId, messageKey: key);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      AppToast.showSuccess(context, 'Отправлено: $text');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _sending = null);
+      AppToast.showError(context, readableError(error));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30141414),
+              blurRadius: 30,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Быстрое сообщение',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 14),
+            ..._messages.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _sending != null
+                        ? null
+                        : () => _send(entry.key, entry.value),
+                    child: _sending == entry.key
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2.2),
+                          )
+                        : Text(entry.value),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PriceOfferSheet extends StatefulWidget {
   const _PriceOfferSheet({this.currentPrice});
 
