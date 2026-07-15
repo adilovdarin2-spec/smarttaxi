@@ -370,3 +370,25 @@ with device access should confirm live: the Line tab never shows "Нужны д�
 regardless of document state, the shift toggle is only gated by region
 approval/selection, and the "Нет одобренных регионов" banner's "Написать в поддержку"
 action opens the support sheet correctly.
+
+## Round 5 — control pass, no phone available
+
+`adb devices` returned an empty list this round (phone off USB, consistent with earlier
+in the night — see [[reference_device_install_blocked]]) — no live re-verification
+possible. Did what's checkable without the device:
+
+- **Prod deployment gap re-checked, still open**: curled the deployed Railway backend
+  directly (`https://smarttaxi-api-production.up.railway.app`). `/api/health` returns
+  `200` (base connectivity fine), but `/api/orders/:id/rate-client`,
+  `/api/favorites/clients`, `/api/recurring-bookings/mine`, and
+  `/api/orders/:id/quick-message` all still return `404` — same gap documented
+  previously (see [[project_prod_backend_deployment_gap]]), unchanged since the last
+  check. All four routes exist in the local repo (`orders.routes.js:599`,
+  `favorites.routes.js:193-231`) — this is a stale prod deploy, not a regression
+  introduced tonight. Nothing to fix on the mobile/driver side for this; noting it here
+  so a future session doesn't re-diagnose the same gap from scratch.
+- Re-read the driver-scope diff from rounds 1–4 once more for anything overlooked before
+  a device was available to screenshot it. No new inconsistencies found — this control
+  pass found nothing new.
+
+No code changes this round.
