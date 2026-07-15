@@ -155,6 +155,18 @@ changed.
   doesn't currently document a firewall step. Worth fixing before go-live:
   either bind `127.0.0.1:4000:4000` in `docker-compose.yml`, or add an
   explicit `ufw`/security-group step to the deployment doc.
+- **Driver document-approval gating — repo-integrity break + mobile gap**:
+  URGENT, see full writeup in
+  [qa-overnight-2026-07-15.md §0](status/qa-overnight-2026-07-15.md#0-urgent-2026-07-15-1121--driver-cant-go-online-without-approval-chain-repo-integrity-break--a-mobilebackend-contract-gap).
+  Two-part finding: (1) `apps/api/src/server.js` at `HEAD` imports
+  `./modules/driver-documents/driver-documents.routes.js`, but that
+  entire directory has **zero commits** — a fresh clone would fail to
+  boot the API. (2) the backend's new `DRIVER_DOCUMENTS_NOT_APPROVED`
+  gate (checked *before* region approval when a driver tries to go
+  online) isn't in mobile's `driver_shell.dart` special-case set or
+  `readableError()` map, so it falls back to a bare/generic error —
+  exactly the UX bug the same-night `d4ab35b` fix was meant to close,
+  just for the documents half of the chain instead of the region half.
 
 ## Production readiness — finalize (2026-07-15)
 
