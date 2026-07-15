@@ -1055,3 +1055,57 @@ result from the backend's OSM/Nominatim lookup, not a client-side bug.
 cleared on the fresh relaunch and needed no client-side cleanup — but the
 underlying backend geocoding anomaly is still open and worth a look in
 `apps/api`.
+
+## Second QA punch list — verification policy tightened
+
+The user caught a prior case where a map-marker-size fix had only been
+"read" (code review) and reported done without the marker actually
+changing on screen. Going forward, nothing in this list gets marked done
+without an on-device screenshot proving it — read-only "looks correct in
+the code" is explicitly not enough. Items below are done one at a time,
+each rebuilt/reinstalled/screenshotted before moving to the next; earlier
+list items (below) are not started until this whole list closes.
+
+### 1. Active-order banner unclickable / crooked on the main screen — `340c70f`
+
+Reproduced live rather than guessed at: since there was no existing real
+active order left on the device (in-memory `_order` resets on every
+relaunch — confirmed by reading the code, it is never re-fetched from the
+backend on cold start), temporarily seeded `_order` with a mock
+`OrderSummary` in `initState()` for QA only, screenshotted, then fully
+reverted the seed (`git diff` confirmed clean — only the real fix
+remains) before the final build.
+
+Root cause: `showTopHeader` (passenger_shell.dart) already special-cases
+"Trips tab + active order" to hide the shared `_AppHeader`, because
+`_tripsScreen()` renders its own full map + status panel with its own
+header in that state. The persistent `_ActiveOrderBanner`, however, had
+no matching exclusion — so on the Trips tab (exactly where
+`_createOrder()` sends the rider immediately after booking) it rendered
+alone at the very top, immediately followed by the trip screen's own map
+header: two stacked bars, which is what read as "crooked" / "not
+clickable" (the banner's own `onTap` did work in isolation — confirmed by
+tapping it on Profile/Notifications tabs, where it correctly switched to
+Home — the bug was specifically the Trips-tab collision). Fixed by adding
+`_tab != PassengerTab.trips` to the banner's render condition, matching
+`showTopHeader`'s own exclusion.
+
+**Screenshot evidence:** before — Trips tab showed banner ("Ищем
+водителя") stacked directly above a second full "SmartTaxi" header row.
+After — Trips tab shows a single header, banner correctly absent (full
+trip-tracking map + status panel takes over instead); Profile and
+Notifications tabs both show a single header followed by the banner, full
+width, confirmed tappable (navigates back to Home). Also incidentally
+re-confirmed the route-summary-pill fix from the previous phase holds up
+on the Trips-tab map header too.
+
+Also found and ruled out during this investigation: with an
+*incomplete* mock order (missing price/distance/coordinates — fields a
+real order always has from `_createOrder`), `_tripsScreen()` threw and
+fell back to the app's generic runtime-error card. Filling in the mock's
+missing fields made the crash disappear entirely, confirming this was an
+artifact of the incomplete test data, not a real bug — not fixed because
+there was nothing to fix.
+
+**Verified:** `flutter analyze` clean (6 pre-existing warnings, no
+change). **Verified live** via the QA-mock screenshots described above.
