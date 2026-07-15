@@ -550,6 +550,89 @@ class ApiClient {
         Map<String, dynamic>.from(data['order'] ?? data));
   }
 
+  // "School route" recurring bookings — see
+  // recurring-bookings.routes.js for the authoritative contract.
+  Future<RecurringBooking> createRecurringBooking({
+    required String driverId,
+    required String pickupText,
+    required Coordinate pickupCoordinate,
+    required String dropoffText,
+    required Coordinate dropoffCoordinate,
+    required List<int> daysOfWeek,
+    required String timeOfDay,
+    required int priceKzt,
+    String notes = '',
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/recurring-bookings',
+      data: {
+        'driverId': driverId,
+        'pickupText': pickupText,
+        'pickupLat': pickupCoordinate.lat,
+        'pickupLng': pickupCoordinate.lng,
+        'dropoffText': dropoffText,
+        'dropoffLat': dropoffCoordinate.lat,
+        'dropoffLng': dropoffCoordinate.lng,
+        'daysOfWeek': daysOfWeek,
+        'timeOfDay': timeOfDay,
+        'priceKzt': priceKzt,
+        'notes': notes,
+      },
+    );
+    final data = response.data ?? {};
+    return RecurringBooking.fromJson(
+        Map<String, dynamic>.from(data['booking'] ?? data));
+  }
+
+  Future<RecurringBooking> respondToRecurringBooking({
+    required String id,
+    required bool accept,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/recurring-bookings/$id/respond',
+      data: {'accept': accept},
+    );
+    final data = response.data ?? {};
+    return RecurringBooking.fromJson(
+        Map<String, dynamic>.from(data['booking'] ?? data));
+  }
+
+  Future<List<RecurringBooking>> getMyRecurringBookings() async {
+    await _attachToken();
+    final response =
+        await _dio.get<dynamic>('/api/recurring-bookings/mine');
+    final items = _extractList(response.data, 'bookings');
+    return items
+        .map((item) => RecurringBooking.fromJson(item))
+        .toList(growable: false);
+  }
+
+  Future<List<RecurringBooking>> getDriverRecurringBookings() async {
+    await _attachToken();
+    final response =
+        await _dio.get<dynamic>('/api/recurring-bookings/driver');
+    final items = _extractList(response.data, 'bookings');
+    return items
+        .map((item) => RecurringBooking.fromJson(item))
+        .toList(growable: false);
+  }
+
+  Future<RecurringBooking> updateRecurringBookingStatus({
+    required String id,
+    required String status,
+  }) async {
+    await _attachToken();
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/api/recurring-bookings/$id/status',
+      data: {'status': status},
+    );
+    final data = response.data ?? {};
+    return RecurringBooking.fromJson(
+        Map<String, dynamic>.from(data['booking'] ?? data));
+  }
+
   Future<RoutePreview> driverToPickupRoute(String orderId) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(

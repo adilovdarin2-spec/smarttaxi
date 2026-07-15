@@ -141,6 +141,11 @@ class _PassengerShellState extends State<PassengerShell>
   List<OrderSummary> _tripHistory = const [];
   bool _tripHistoryLoading = false;
   bool _tripHistoryError = false;
+  List<RecurringBooking> _recurringBookings = const [];
+  bool _recurringBookingsLoading = false;
+  bool _recurringBookingsError = false;
+  bool _creatingRecurringBooking = false;
+  final Set<String> _recurringBookingStatusUpdating = {};
   Timer? _mapPickerReverseDebounce;
   Coordinate? _pickup;
   Coordinate? _dropoff;
@@ -327,6 +332,98 @@ class _PassengerShellState extends State<PassengerShell>
       if (mounted) setState(() => _tripHistoryError = true);
     } finally {
       if (mounted) setState(() => _tripHistoryLoading = false);
+    }
+  }
+
+  Future<void> _loadRecurringBookings() async {
+    if (!mounted) return;
+    setState(() {
+      _recurringBookingsLoading = true;
+      _recurringBookingsError = false;
+    });
+    try {
+      final bookings = await widget.api.getMyRecurringBookings();
+      if (!mounted) return;
+      setState(() => _recurringBookings = bookings);
+    } catch (_) {
+      if (mounted) setState(() => _recurringBookingsError = true);
+    } finally {
+      if (mounted) setState(() => _recurringBookingsLoading = false);
+    }
+  }
+
+  Future<void> _createRecurringBooking({
+    required String driverId,
+    required String pickupText,
+    required Coordinate pickupCoordinate,
+    required String dropoffText,
+    required Coordinate dropoffCoordinate,
+    required List<int> daysOfWeek,
+    required String timeOfDay,
+    required int priceKzt,
+    String notes = '',
+  }) async {
+    if (_creatingRecurringBooking) return;
+    setState(() => _creatingRecurringBooking = true);
+    try {
+      final booking = await widget.api.createRecurringBooking(
+        driverId: driverId,
+        pickupText: pickupText,
+        pickupCoordinate: pickupCoordinate,
+        dropoffText: dropoffText,
+        dropoffCoordinate: dropoffCoordinate,
+        daysOfWeek: daysOfWeek,
+        timeOfDay: timeOfDay,
+        priceKzt: priceKzt,
+        notes: notes,
+      );
+      if (!mounted) return;
+      setState(() => _recurringBookings = [booking, ..._recurringBookings]);
+      if (mounted) Navigator.of(context).pop();
+      AppToast.showSuccess(
+        context,
+        'Заявка отправлена водителю, ждём подтверждения',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) setState(() => _creatingRecurringBooking = false);
+    }
+  }
+
+  Future<void> _updateRecurringBookingStatus(
+    RecurringBooking booking,
+    String status,
+  ) async {
+    if (_recurringBookingStatusUpdating.contains(booking.id)) return;
+    setState(() => _recurringBookingStatusUpdating.add(booking.id));
+    try {
+      final updated = await widget.api.updateRecurringBookingStatus(
+        id: booking.id,
+        status: status,
+      );
+      if (!mounted) return;
+      setState(() {
+        _recurringBookings = _recurringBookings
+            .map((item) => item.id == updated.id ? updated : item)
+            .toList();
+      });
+      AppToast.showSuccess(
+        context,
+        status == 'CANCELLED'
+            ? 'Регулярная поездка отменена'
+            : status == 'PAUSED'
+                ? 'Регулярная поездка приостановлена'
+                : 'Регулярная поездка возобновлена',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _recurringBookingStatusUpdating.remove(booking.id));
+      }
     }
   }
 
@@ -1645,6 +1742,7 @@ class _PassengerShellState extends State<PassengerShell>
           _legalDocumentScreen(legalDocuments[3]),
       PassengerTab.legalSafety: () => _legalDocumentScreen(legalDocuments[4]),
       PassengerTab.settings: _settingsScreen,
+      PassengerTab.recurringBookings: _recurringBookingsScreen,
     };
     return (builders[_tab] ?? _unknownPassengerSection).call();
   }
@@ -2387,6 +2485,16 @@ class _PassengerShellState extends State<PassengerShell>
               ),
               const Divider(height: 20),
               _MenuLine(
+                icon: Icons.event_repeat_rounded,
+                title: 'Регулярные поездки',
+                subtitle: 'Школьный маршрут и другие поездки по расписанию',
+                onTap: () {
+                  setState(() => _tab = PassengerTab.recurringBookings);
+                  unawaited(_loadRecurringBookings());
+                },
+              ),
+              const Divider(height: 20),
+              _MenuLine(
                 icon: Icons.tune_rounded,
                 title: 'Настройки',
                 subtitle: 'Язык, разрешения, аккаунт',
@@ -3053,6 +3161,118 @@ class _PassengerShellState extends State<PassengerShell>
       ],
       ),
     );
+  }
+
+  List<(String id, String name)> get _knownDriversFromHistory {
+    final seen = <String>{};
+    final result = <(String, String)>[];
+    for (final trip in _tripHistory) {
+      final id = trip.driverId;
+      final name = trip.driverName;
+      if (id == null || id.isEmpty || name == null || name.isEmpty) continue;
+      if (seen.add(id)) result.add((id, name));
+    }
+    return result;
+  }
+
+  Future<void> _openCreateRecurringBookingSheet() async {
+    if (_tripHistory.isEmpty && !_tripHistoryLoading) {
+      unawaited(_loadTripHistory());
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CreateRecurringBookingSheet(
+        api: widget.api,
+        knownDrivers: _knownDriversFromHistory,
+        submitting: _creatingRecurringBooking,
+        onSubmit: _createRecurringBooking,
+      ),
+    );
+  }
+
+  Widget _recurringBookingsScreen() {
+    return RefreshIndicator(
+      color: SmartTaxiColors.goldDeep,
+      onRefresh: _loadRecurringBookings,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+          const _TitleBlock(
+            title: 'Регулярные поездки',
+            text: 'Школьный маршрут и другие поездки по расписанию',
+          ),
+          const SizedBox(height: 16),
+          _GoldCtaButton(
+            enabled: !_creatingRecurringBooking,
+            loading: false,
+            text: 'Новый маршрут',
+            onTap: _openCreateRecurringBookingSheet,
+          ),
+          const SizedBox(height: 16),
+          if (_recurringBookingsLoading && _recurringBookings.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            )
+          else if (_recurringBookingsError && _recurringBookings.isEmpty)
+            EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'Не удалось загрузить',
+              text: 'Потяните экран вниз, чтобы попробовать снова.',
+              action: 'Повторить',
+              onAction: () => unawaited(_loadRecurringBookings()),
+            )
+          else if (_recurringBookings.isEmpty)
+            const EmptyState(
+              icon: Icons.event_repeat_rounded,
+              title: 'Пока нет регулярных поездок',
+              text:
+                  'Создайте маршрут — например, отвозить ребёнка в школу — и водитель будет приезжать по расписанию в выбранные дни.',
+            )
+          else
+            ..._recurringBookings.map(
+              (booking) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _RecurringBookingCard(
+                  booking: booking,
+                  updating:
+                      _recurringBookingStatusUpdating.contains(booking.id),
+                  onPause: () =>
+                      _updateRecurringBookingStatus(booking, 'PAUSED'),
+                  onResume: () =>
+                      _updateRecurringBookingStatus(booking, 'ACTIVE'),
+                  onCancel: () => _confirmCancelRecurringBooking(booking),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmCancelRecurringBooking(RecurringBooking booking) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ConfirmSheet(
+        title: 'Отменить регулярную поездку?',
+        text:
+            '${booking.pickupText} → ${booking.dropoffText}, ${booking.daysLabel} в ${booking.timeOfDay}. Это действие нельзя отменить.',
+        confirmLabel: 'Отменить поездку',
+        danger: true,
+      ),
+    );
+    if (confirmed == true) {
+      await _updateRecurringBookingStatus(booking, 'CANCELLED');
+    }
   }
 
   Widget _settingsScreen() {
@@ -7333,6 +7553,789 @@ class _CancelConfirmSheet extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Generic confirm/cancel sheet, same visual language as
+// _CancelConfirmSheet — that one stayed order-cancel-specific (its copy
+// branches on driverAssigned) rather than being generalized retroactively,
+// but new call sites (recurring bookings, and future ones) use this
+// instead of writing another bespoke sheet each time.
+class _ConfirmSheet extends StatelessWidget {
+  const _ConfirmSheet({
+    required this.title,
+    required this.text,
+    required this.confirmLabel,
+    this.cancelLabel = 'Отмена',
+    this.danger = false,
+  });
+
+  final String title;
+  final String text;
+  final String confirmLabel;
+  final String cancelLabel;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = danger ? SmartTaxiColors.danger : SmartTaxiColors.goldDeep;
+    final accentSoft =
+        danger ? SmartTaxiColors.dangerSoft : SmartTaxiColors.goldSurface;
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30141414),
+              blurRadius: 30,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Center(child: _SheetHandle(dark: false)),
+            const SizedBox(height: 12),
+            Container(
+              width: 52,
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: accentSoft,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.error_outline_rounded,
+                  color: accent, size: 26),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: SmartTaxiColors.text,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: SmartTaxiColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: accent,
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                child: Text(confirmLabel),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(cancelLabel),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecurringBookingCard extends StatelessWidget {
+  const _RecurringBookingCard({
+    required this.booking,
+    required this.updating,
+    required this.onPause,
+    required this.onResume,
+    required this.onCancel,
+  });
+
+  final RecurringBooking booking;
+  final bool updating;
+  final VoidCallback onPause;
+  final VoidCallback onResume;
+  final VoidCallback onCancel;
+
+  (StatusTone, String) get _statusMeta {
+    switch (booking.status) {
+      case 'ACTIVE':
+        return (StatusTone.success, 'Активна');
+      case 'PAUSED':
+        return (StatusTone.neutral, 'На паузе');
+      case 'CANCELLED':
+        return (StatusTone.neutral, 'Отменена');
+      default:
+        return (StatusTone.neutral, 'Ждём водителя');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (tone, label) = _statusMeta;
+    return Opacity(
+      opacity: booking.isCancelled ? 0.6 : 1,
+      child: _PremiumCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${booking.pickupText} → ${booking.dropoffText}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                StatusPill(label: label, tone: tone),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _RecurringBookingChip(
+                  icon: Icons.event_repeat_rounded,
+                  label: booking.daysLabel,
+                ),
+                _RecurringBookingChip(
+                  icon: Icons.schedule_rounded,
+                  label: booking.timeOfDay,
+                ),
+                _RecurringBookingChip(
+                  icon: Icons.payments_outlined,
+                  label: _formatTenge(booking.priceKzt.toDouble()),
+                ),
+                if ((booking.driverName ?? '').isNotEmpty)
+                  _RecurringBookingChip(
+                    icon: Icons.person_outline_rounded,
+                    label: booking.driverName!,
+                  ),
+              ],
+            ),
+            if (booking.notes.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                booking.notes,
+                style: const TextStyle(
+                  color: SmartTaxiColors.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            if (!booking.isCancelled) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (booking.isActive)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: updating ? null : onPause,
+                        child: const Text('Пауза'),
+                      ),
+                    )
+                  else if (booking.isPaused)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: updating ? null : onResume,
+                        child: const Text('Возобновить'),
+                      ),
+                    )
+                  else
+                    const Expanded(
+                      child: Text(
+                        'Ждём подтверждения от водителя',
+                        style: TextStyle(
+                          color: SmartTaxiColors.textSecondary,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 10),
+                  TextButton(
+                    onPressed: updating ? null : onCancel,
+                    style: TextButton.styleFrom(
+                      foregroundColor: SmartTaxiColors.danger,
+                    ),
+                    child: const Text('Отменить'),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecurringBookingChip extends StatelessWidget {
+  const _RecurringBookingChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: SmartTaxiColors.goldSurface,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: SmartTaxiColors.goldDeep),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Deliberately not _AddressSearchSheet: that one is coupled to the home
+// screen's own _target/_mapPointPickerActive state (map-tap picking,
+// recent/popular suggestions tied to the active order flow) — none of
+// which applies to picking a fixed recurring-route address. This is a
+// plain text-search-only sheet built from the same searchAddresses API,
+// not a modification of the actual address-selection screen.
+class _SimpleAddressSearchSheet extends StatefulWidget {
+  const _SimpleAddressSearchSheet({required this.api, required this.title});
+
+  final ApiClient api;
+  final String title;
+
+  @override
+  State<_SimpleAddressSearchSheet> createState() =>
+      _SimpleAddressSearchSheetState();
+}
+
+class _SimpleAddressSearchSheetState
+    extends State<_SimpleAddressSearchSheet> {
+  final _query = TextEditingController();
+  Timer? _debounce;
+  bool _loading = false;
+  String? _error;
+  List<AddressSuggestion> _results = const [];
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _query.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    setState(() {});
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 360), () => _search(value));
+  }
+
+  Future<void> _search(String value) async {
+    final query = value.trim();
+    if (query.length < 2) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = null;
+        _results = const [];
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final results = await widget.api.searchAddresses(query);
+      if (!mounted) return;
+      setState(() => _results = results);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Не удалось найти адрес');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          child: Column(
+            children: [
+              const Center(child: _SheetHandle(dark: false)),
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _query,
+                autofocus: true,
+                onChanged: _onChanged,
+                decoration: InputDecoration(
+                  hintText: 'Улица, дом или место',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _query.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          tooltip: 'Очистить',
+                          onPressed: () {
+                            _query.clear();
+                            _onChanged('');
+                          },
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: _loading
+                    ? const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
+                      )
+                    : _error != null
+                        ? EmptyState(
+                            icon: Icons.wifi_off_rounded,
+                            title: 'Ошибка поиска',
+                            text: _error!,
+                          )
+                        : _results.isEmpty
+                            ? EmptyState(
+                                icon: Icons.location_searching_rounded,
+                                title: _query.text.trim().length < 2
+                                    ? 'Введите адрес'
+                                    : 'Ничего не найдено',
+                                text: _query.text.trim().length < 2
+                                    ? 'Начните вводить название улицы или места'
+                                    : 'Попробуйте изменить запрос',
+                              )
+                            : ListView.builder(
+                                controller: scrollController,
+                                itemCount: _results.length,
+                                itemBuilder: (context, index) {
+                                  final item = _results[index];
+                                  return ListTile(
+                                    leading: const Icon(
+                                      Icons.place_rounded,
+                                      color: SmartTaxiColors.goldDeep,
+                                    ),
+                                    title: Text(
+                                      item.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    subtitle: item.subtitle == null
+                                        ? null
+                                        : Text(
+                                            item.subtitle!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                    onTap: () =>
+                                        Navigator.of(context).pop(item),
+                                  );
+                                },
+                              ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CreateRecurringBookingSheet extends StatefulWidget {
+  const _CreateRecurringBookingSheet({
+    required this.api,
+    required this.knownDrivers,
+    required this.submitting,
+    required this.onSubmit,
+  });
+
+  final ApiClient api;
+  final List<(String id, String name)> knownDrivers;
+  final bool submitting;
+  final Future<void> Function({
+    required String driverId,
+    required String pickupText,
+    required Coordinate pickupCoordinate,
+    required String dropoffText,
+    required Coordinate dropoffCoordinate,
+    required List<int> daysOfWeek,
+    required String timeOfDay,
+    required int priceKzt,
+    String notes,
+  }) onSubmit;
+
+  @override
+  State<_CreateRecurringBookingSheet> createState() =>
+      _CreateRecurringBookingSheetState();
+}
+
+class _CreateRecurringBookingSheetState
+    extends State<_CreateRecurringBookingSheet> {
+  static const _dayLabels = {1: 'Пн', 2: 'Вт', 3: 'Ср', 4: 'Чт', 5: 'Пт'};
+
+  String? _driverId;
+  AddressSuggestion? _pickup;
+  AddressSuggestion? _dropoff;
+  final Set<int> _days = {};
+  TimeOfDay? _time;
+  final _priceController = TextEditingController();
+  final _notesController = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickAddress({required bool pickup}) async {
+    final result = await showModalBottomSheet<AddressSuggestion>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SimpleAddressSearchSheet(
+        api: widget.api,
+        title: pickup ? 'Точка посадки' : 'Точка назначения',
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      if (pickup) {
+        _pickup = result;
+      } else {
+        _dropoff = result;
+      }
+    });
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time ?? const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (picked != null && mounted) setState(() => _time = picked);
+  }
+
+  void _submit() {
+    final driverId = _driverId;
+    final pickup = _pickup;
+    final dropoff = _dropoff;
+    final time = _time;
+    final price = int.tryParse(_priceController.text.trim());
+    if (driverId == null) {
+      setState(() => _error = 'Выберите водителя');
+      return;
+    }
+    if (pickup == null || dropoff == null) {
+      setState(() => _error = 'Укажите точки посадки и назначения');
+      return;
+    }
+    if (_days.isEmpty) {
+      setState(() => _error = 'Выберите хотя бы один день недели');
+      return;
+    }
+    if (time == null) {
+      setState(() => _error = 'Укажите время подачи');
+      return;
+    }
+    if (price == null || price < 200 || price > 1000000) {
+      setState(() => _error = 'Укажите цену от 200 до 1 000 000 ₸');
+      return;
+    }
+    setState(() => _error = null);
+    final timeOfDay =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    unawaited(widget.onSubmit(
+      driverId: driverId,
+      pickupText: pickup.label,
+      pickupCoordinate: pickup.coordinate,
+      dropoffText: dropoff.label,
+      dropoffCoordinate: dropoff.coordinate,
+      daysOfWeek: (_days.toList()..sort()),
+      timeOfDay: timeOfDay,
+      priceKzt: price,
+      notes: _notesController.text.trim(),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: ListView(
+              controller: scrollController,
+              children: [
+                const Center(child: _SheetHandle(dark: false)),
+                const Text(
+                  'Новый регулярный маршрут',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Например, отвозить ребёнка в школу по будням',
+                  style: TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('Водитель',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                const SizedBox(height: 8),
+                if (widget.knownDrivers.isEmpty)
+                  const _CompactNotice(
+                    icon: Icons.info_outline_rounded,
+                    title: 'Нет доступных водителей',
+                    text:
+                        'Водителя можно выбрать только из тех, с кем у вас уже была поездка. Совершите хотя бы одну поездку, чтобы предложить регулярный маршрут.',
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: _driverId,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      hintText: 'Выберите водителя',
+                    ),
+                    items: widget.knownDrivers
+                        .map((driver) => DropdownMenuItem(
+                              value: driver.$1,
+                              child: Text(driver.$2, overflow: TextOverflow.ellipsis),
+                            ))
+                        .toList(),
+                    onChanged: (value) => setState(() => _driverId = value),
+                  ),
+                const SizedBox(height: 14),
+                _RecurringAddressField(
+                  label: 'Откуда',
+                  value: _pickup?.label,
+                  onTap: () => _pickAddress(pickup: true),
+                ),
+                const SizedBox(height: 10),
+                _RecurringAddressField(
+                  label: 'Куда',
+                  value: _dropoff?.label,
+                  onTap: () => _pickAddress(pickup: false),
+                ),
+                const SizedBox(height: 14),
+                const Text('Дни недели',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: _dayLabels.entries.map((entry) {
+                    final selected = _days.contains(entry.key);
+                    return ChoiceChip(
+                      label: Text(entry.value),
+                      selected: selected,
+                      onSelected: (value) => setState(() {
+                        if (value) {
+                          _days.add(entry.key);
+                        } else {
+                          _days.remove(entry.key);
+                        }
+                      }),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 14),
+                const Text('Время подачи',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _pickTime,
+                  icon: const Icon(Icons.schedule_rounded),
+                  label: Text(
+                    _time == null
+                        ? 'Выбрать время'
+                        : '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Цена, ₸',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _notesController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Комментарий (необязательно)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 10),
+                  _InlineMessage(text: _error!, danger: true, dark: false),
+                ],
+                const SizedBox(height: 18),
+                _GoldCtaButton(
+                  enabled: !widget.submitting && widget.knownDrivers.isNotEmpty,
+                  loading: widget.submitting,
+                  text: 'Отправить водителю',
+                  loadingText: 'Отправляем...',
+                  onTap: _submit,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RecurringAddressField extends StatelessWidget {
+  const _RecurringAddressField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String? value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: SmartTaxiColors.border),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.place_outlined,
+                  size: 18, color: SmartTaxiColors.goldDeep),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: SmartTaxiColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      value ?? 'Выбрать адрес',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: value == null
+                            ? SmartTaxiColors.textMuted
+                            : SmartTaxiColors.text,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: SmartTaxiColors.textSecondary),
+            ],
+          ),
         ),
       ),
     );
@@ -13118,7 +14121,8 @@ enum PassengerTab {
   legalPayment,
   legalCancellation,
   legalSafety,
-  settings
+  settings,
+  recurringBookings,
 }
 
 enum PointTarget { pickup, dropoff }

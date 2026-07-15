@@ -1047,6 +1047,9 @@ class _DriverShellState extends State<DriverShell> {
     );
   }
 
+  Widget _driverRecurringBookingsContent() =>
+      _DriverRecurringBookingsScreen(api: widget.api);
+
   Widget _driverSupportContent() {
     return StatefulBuilder(
       builder: (context, setSheetState) {
@@ -1461,6 +1464,8 @@ class _DriverShellState extends State<DriverShell> {
           onAbout: () => _showDriverFullSheet(_driverAboutContent()),
           onSettings: () => _showDriverFullSheet(_driverSettingsContent()),
           onRoadAlerts: () => unawaited(_openRoadAlerts()),
+          onRecurringBookings: () =>
+              _showDriverFullSheet(_driverRecurringBookingsContent()),
           onLogout: () {
             Navigator.pop(context);
             widget.onLogout();
@@ -3082,6 +3087,332 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
                 child: const Text('Отправить предложение'),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Standalone, not coupled to DriverShell's own state — it's shown inside
+// _showDriverFullSheet's static `Widget content` (built once, not a
+// builder), so a screen that needs to load/refresh/mutate its own list
+// has to own that state itself rather than relying on the parent's
+// setState reaching a route it doesn't rebuild automatically.
+class _DriverRecurringBookingsScreen extends StatefulWidget {
+  const _DriverRecurringBookingsScreen({required this.api});
+
+  final ApiClient api;
+
+  @override
+  State<_DriverRecurringBookingsScreen> createState() =>
+      _DriverRecurringBookingsScreenState();
+}
+
+class _DriverRecurringBookingsScreenState
+    extends State<_DriverRecurringBookingsScreen> {
+  List<RecurringBooking> _bookings = const [];
+  bool _loading = true;
+  bool _error = false;
+  final Set<String> _updating = {};
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = false;
+    });
+    try {
+      final bookings = await widget.api.getDriverRecurringBookings();
+      if (!mounted) return;
+      setState(() => _bookings = bookings);
+    } catch (_) {
+      if (mounted) setState(() => _error = true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _respond(RecurringBooking booking, bool accept) async {
+    if (_updating.contains(booking.id)) return;
+    setState(() => _updating.add(booking.id));
+    try {
+      final updated = await widget.api.respondToRecurringBooking(
+        id: booking.id,
+        accept: accept,
+      );
+      if (!mounted) return;
+      setState(() {
+        _bookings =
+            _bookings.map((b) => b.id == updated.id ? updated : b).toList();
+      });
+      if (mounted) {
+        AppToast.showSuccess(
+          context,
+          accept ? 'Маршрут принят' : 'Маршрут отклонён',
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, readableError(error));
+    } finally {
+      if (mounted) setState(() => _updating.remove(booking.id));
+    }
+  }
+
+  Future<void> _updateStatus(RecurringBooking booking, String status) async {
+    if (_updating.contains(booking.id)) return;
+    setState(() => _updating.add(booking.id));
+    try {
+      final updated = await widget.api.updateRecurringBookingStatus(
+        id: booking.id,
+        status: status,
+      );
+      if (!mounted) return;
+      setState(() {
+        _bookings =
+            _bookings.map((b) => b.id == updated.id ? updated : b).toList();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, readableError(error));
+    } finally {
+      if (mounted) setState(() => _updating.remove(booking.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pending =
+        _bookings.where((b) => b.isPendingDriver).toList(growable: false);
+    final others =
+        _bookings.where((b) => !b.isPendingDriver).toList(growable: false);
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+          const TitleBlock(
+            title: 'Регулярные поездки',
+            text: 'Входящие заявки и ваши активные маршруты',
+          ),
+          const SizedBox(height: 16),
+          if (_loading && _bookings.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            )
+          else if (_error && _bookings.isEmpty)
+            EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'Не удалось загрузить',
+              text: 'Потяните экран вниз, чтобы попробовать снова.',
+              action: 'Повторить',
+              onAction: () => unawaited(_load()),
+            )
+          else if (_bookings.isEmpty)
+            const EmptyState(
+              icon: Icons.event_repeat_rounded,
+              title: 'Пока нет заявок',
+              text:
+                  'Клиенты смогут предложить вам регулярный маршрут после совместной поездки.',
+            )
+          else ...[
+            if (pending.isNotEmpty) ...[
+              const SectionLabel(
+                title: 'Новые заявки',
+                text: 'Примите, если готовы возить по расписанию',
+              ),
+              const SizedBox(height: 8),
+              ...pending.map(
+                (booking) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _DriverRecurringBookingCard(
+                    booking: booking,
+                    updating: _updating.contains(booking.id),
+                    onAccept: () => _respond(booking, true),
+                    onDecline: () => _respond(booking, false),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (others.isNotEmpty) ...[
+              const SectionLabel(title: 'Ваши маршруты', text: ''),
+              const SizedBox(height: 8),
+              ...others.map(
+                (booking) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _DriverRecurringBookingCard(
+                    booking: booking,
+                    updating: _updating.contains(booking.id),
+                    onPause: booking.isActive
+                        ? () => _updateStatus(booking, 'PAUSED')
+                        : null,
+                    onResume: booking.isPaused
+                        ? () => _updateStatus(booking, 'ACTIVE')
+                        : null,
+                    onCancel: booking.isCancelled
+                        ? null
+                        : () => _updateStatus(booking, 'CANCELLED'),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DriverRecurringBookingCard extends StatelessWidget {
+  const _DriverRecurringBookingCard({
+    required this.booking,
+    required this.updating,
+    this.onAccept,
+    this.onDecline,
+    this.onPause,
+    this.onResume,
+    this.onCancel,
+  });
+
+  final RecurringBooking booking;
+  final bool updating;
+  final VoidCallback? onAccept;
+  final VoidCallback? onDecline;
+  final VoidCallback? onPause;
+  final VoidCallback? onResume;
+  final VoidCallback? onCancel;
+
+  (StatusTone, String) get _statusMeta {
+    switch (booking.status) {
+      case 'ACTIVE':
+        return (StatusTone.success, 'Активна');
+      case 'PAUSED':
+        return (StatusTone.neutral, 'На паузе');
+      case 'CANCELLED':
+        return (StatusTone.neutral, 'Отменена');
+      default:
+        return (StatusTone.neutral, 'Новая заявка');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (tone, label) = _statusMeta;
+    return Opacity(
+      opacity: booking.isCancelled ? 0.6 : 1,
+      child: PremiumCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${booking.pickupText} → ${booking.dropoffText}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                StatusPill(label: label, tone: tone),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                DriverOrderChip(
+                  icon: Icons.event_repeat_rounded,
+                  label: booking.daysLabel,
+                ),
+                DriverOrderChip(
+                  icon: Icons.schedule_rounded,
+                  label: booking.timeOfDay,
+                ),
+                DriverOrderChip(
+                  icon: Icons.payments_outlined,
+                  label: formatDriverMoney(booking.priceKzt),
+                ),
+                if ((booking.clientName ?? '').isNotEmpty)
+                  DriverOrderChip(
+                    icon: Icons.person_outline_rounded,
+                    label: booking.clientName!,
+                  ),
+              ],
+            ),
+            if (onAccept != null || onDecline != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: updating ? null : onDecline,
+                      child: const Text('Отклонить'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: updating ? null : onAccept,
+                      child: updating
+                          ? const ButtonSpinner(text: 'Принимаем...')
+                          : const Text('Принять'),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (onPause != null || onResume != null || onCancel != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (onPause != null)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: updating ? null : onPause,
+                        child: const Text('Пауза'),
+                      ),
+                    )
+                  else if (onResume != null)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: updating ? null : onResume,
+                        child: const Text('Возобновить'),
+                      ),
+                    ),
+                  if (onCancel != null) ...[
+                    const SizedBox(width: 10),
+                    TextButton(
+                      onPressed: updating ? null : onCancel,
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.palette.danger,
+                      ),
+                      child: const Text('Отменить'),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ],
         ),
       ),

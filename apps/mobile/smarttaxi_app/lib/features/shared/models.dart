@@ -14,6 +14,104 @@ class Coordinate {
   LatLng toLatLng() => LatLng(lat, lng);
 }
 
+// "School route" recurring bookings — POST/GET /api/recurring-bookings.
+// Field names and the PENDING_DRIVER/ACTIVE/PAUSED/CANCELLED lifecycle are
+// read verbatim from recurring-bookings.routes.js's publicBooking(), not
+// guessed.
+class RecurringBooking {
+  const RecurringBooking({
+    required this.id,
+    required this.clientId,
+    required this.driverId,
+    required this.pickupText,
+    required this.pickupCoordinate,
+    required this.dropoffText,
+    required this.dropoffCoordinate,
+    required this.daysOfWeek,
+    required this.timeOfDay,
+    required this.priceKzt,
+    required this.status,
+    this.driverName,
+    this.clientName,
+    this.notes = '',
+    this.lastTriggeredDate,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String clientId;
+  final String driverId;
+  final String? driverName;
+  final String? clientName;
+  final String pickupText;
+  final Coordinate pickupCoordinate;
+  final String dropoffText;
+  final Coordinate dropoffCoordinate;
+  // ISO day-of-week, 1=Monday..5=Friday.
+  final List<int> daysOfWeek;
+  final String timeOfDay;
+  final int priceKzt;
+  final String status;
+  final String notes;
+  final String? lastTriggeredDate;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  bool get isPendingDriver => status == 'PENDING_DRIVER';
+  bool get isActive => status == 'ACTIVE';
+  bool get isPaused => status == 'PAUSED';
+  bool get isCancelled => status == 'CANCELLED';
+
+  static const _dayLabels = {1: 'Пн', 2: 'Вт', 3: 'Ср', 4: 'Чт', 5: 'Пт'};
+
+  String get daysLabel {
+    final sorted = [...daysOfWeek]..sort();
+    return sorted.map((d) => _dayLabels[d] ?? '?').join(', ');
+  }
+
+  factory RecurringBooking.fromJson(Map<String, dynamic> json) {
+    return RecurringBooking(
+      id: '${json['id']}',
+      clientId: '${json['client_id'] ?? json['clientId']}',
+      driverId: '${json['driver_id'] ?? json['driverId']}',
+      driverName: (json['driver_name'] ?? json['driverName'])?.toString(),
+      clientName: (json['client_name'] ?? json['clientName'])?.toString(),
+      pickupText:
+          '${json['pickup_text'] ?? json['pickupText'] ?? 'Точка посадки'}',
+      pickupCoordinate: Coordinate(
+        lat: _toDouble(json['pickup_lat'] ?? json['pickupLat']),
+        lng: _toDouble(json['pickup_lng'] ?? json['pickupLng']),
+      ),
+      dropoffText:
+          '${json['dropoff_text'] ?? json['dropoffText'] ?? 'Точка назначения'}',
+      dropoffCoordinate: Coordinate(
+        lat: _toDouble(json['dropoff_lat'] ?? json['dropoffLat']),
+        lng: _toDouble(json['dropoff_lng'] ?? json['dropoffLng']),
+      ),
+      daysOfWeek: ((json['days_of_week'] ?? json['daysOfWeek']) as List?)
+              ?.map((d) => int.tryParse('$d') ?? 0)
+              .where((d) => d > 0)
+              .toList() ??
+          const [],
+      timeOfDay: '${json['time_of_day'] ?? json['timeOfDay'] ?? '00:00'}',
+      priceKzt:
+          int.tryParse('${json['price_kzt'] ?? json['priceKzt'] ?? 0}') ?? 0,
+      status: '${json['status'] ?? 'PENDING_DRIVER'}',
+      notes: '${json['notes'] ?? ''}',
+      lastTriggeredDate:
+          (json['last_triggered_date'] ?? json['lastTriggeredDate'])
+              ?.toString(),
+      createdAt: DateTime.tryParse(
+        '${json['created_at'] ?? json['createdAt'] ?? ''}',
+      ),
+      updatedAt: DateTime.tryParse(
+        '${json['updated_at'] ?? json['updatedAt'] ?? ''}',
+      ),
+    );
+  }
+}
+
 class AddressSuggestion {
   const AddressSuggestion({
     required this.label,
