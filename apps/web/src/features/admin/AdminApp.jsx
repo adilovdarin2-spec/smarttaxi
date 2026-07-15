@@ -12,10 +12,13 @@ import {
   deleteAdminRaffle,
   deleteAdminReview,
   exportAdminFinanceTransactionsCsv,
+  fetchAdminDriverDocumentFile,
+  getAdminApplicationDocuments,
   getAdminAudit,
   getAdminDashboard,
   getAdminDriverApplications,
   getAdminDriverDetail,
+  getAdminDriverDocuments,
   getAdminDrivers,
   getAdminFinanceDriverDebts,
   getAdminFinanceReports,
@@ -39,6 +42,7 @@ import {
   previewAdminTariffPrice,
   reopenAdminSupport,
   respondAdminSupport,
+  reviewAdminDriverDocument,
   reviewAdminPayoutRequest,
   setAdminPromoCodeStatus,
   setAdminTariffStatus,
@@ -3285,6 +3289,31 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
   const driver = detail.payload?.driver || initialDriver;
   const regions = detail.payload?.regions || [];
   const activeOrder = detail.payload?.activeOrder;
+  const [docs, setDocs] = useState({ loading: true, error: "", items: [] });
+  const [busyDocumentId, setBusyDocumentId] = useState("");
+
+  function loadDocuments() {
+    setDocs({ loading: true, error: "", items: [] });
+    getAdminDriverDocuments(driver.id)
+      .then(data => setDocs({ loading: false, error: "", items: data.documents || [] }))
+      .catch(error => setDocs({ loading: false, error: readError(error), items: [] }));
+  }
+
+  useEffect(() => {
+    loadDocuments();
+  }, [driver.id]);
+
+  async function requestDocumentResubmission(document, status, docReason) {
+    setBusyDocumentId(document.id);
+    try {
+      await reviewAdminDriverDocument(document.id, { status, reason: docReason });
+      loadDocuments();
+    } catch (error) {
+      setDocs(current => ({ ...current, error: readError(error) }));
+    } finally {
+      setBusyDocumentId("");
+    }
+  }
 
   return (
     <ModalFrame title="Карточка водителя" onClose={onClose} wide>
@@ -3349,16 +3378,212 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
               </div>
             )}
           </DataCard>
+
+          <DataCard title="Документы водителя" text="Просмотр без возможности удаления — при жалобах или сомнениях запросите переоформление конкретного документа.">
+            <DriverDocumentsPanel
+              documents={docs.items}
+              loading={docs.loading}
+              error={docs.error}
+              onRetry={loadDocuments}
+              mode="driver"
+              onReview={requestDocumentResubmission}
+              busyDocumentId={busyDocumentId}
+            />
+          </DataCard>
         </div>
       )}
     </ModalFrame>
   );
 }
 
+const DOCUMENT_TYPE_LABELS = {
+  DRIVER_LICENSE_FRONT: "Водительское удостоверение (лицевая)",
+  DRIVER_LICENSE_BACK: "Водительское удостоверение (обратная)",
+  ID_CARD_FRONT: "Удостоверение личности (лицевая)",
+  ID_CARD_BACK: "Удостоверение личности (обратная)",
+  VEHICLE_REGISTRATION: "Техпаспорт",
+  INSURANCE_POLICY: "Страховой полис",
+  PROFILE_PHOTO: "Фото профиля",
+  OTHER: "Другое"
+};
+
+const REQUIRED_DOCUMENT_TYPES = [
+  "DRIVER_LICENSE_FRONT",
+  "DRIVER_LICENSE_BACK",
+  "ID_CARD_FRONT",
+  "ID_CARD_BACK",
+  "VEHICLE_REGISTRATION"
+];
+
+function documentBadgeTone(status) {
+  if (status === "APPROVED") return "success";
+  if (status === "REJECTED") return "danger";
+  return "warning";
+}
+
+const documentStatusLabels = { PENDING: "На проверке", APPROVED: "Одобрен", REJECTED: "Отклонён" };
+
+function DocumentThumbnail({ documentId }) {
+  const [state, setState] = useState({ loading: true, error: "", url: "", mimeType: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = "";
+    setState({ loading: true, error: "", url: "", mimeType: "" });
+    fetchAdminDriverDocumentFile(documentId)
+      .then(({ blob, mimeType }) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setState({ loading: false, error: "", url: objectUrl, mimeType });
+      })
+      .catch(error => {
+        if (!cancelled) setState({ loading: false, error: error.message || "Не удалось загрузить файл", url: "", mimeType: "" });
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [documentId]);
+
+  if (state.loading) return <div className="admin-document-thumb loading">Загружаем...</div>;
+  if (state.error) return <div className="admin-document-thumb error">{state.error}</div>;
+  const isImage = state.mimeType.startsWith("image/");
+  return (
+    <a className="admin-document-thumb" href={state.url} target="_blank" rel="noreferrer" title="Открыть в полном размере">
+      {isImage ? <img src={state.url} alt="Документ" /> : <span className="admin-document-thumb-file"><Icon name="document" size={28} /></span>}
+    </a>
+  );
+}
+
+function DriverDocumentCard({ document, mode, onReview, busy }) {
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+
+  function submitReject() {
+    onReview(document, "REJECTED", reason.trim());
+    setRejecting(false);
+    setReason("");
+  }
+
+  return (
+    <article className="admin-document-card">
+      <DocumentThumbnail documentId={document.id} />
+      <div className="admin-document-card-body">
+        <header>
+          <strong>{DOCUMENT_TYPE_LABELS[document.type] || document.type}</strong>
+          <Badge tone={documentBadgeTone(document.status)}>{documentStatusLabels[document.status] || document.status}</Badge>
+        </header>
+        <span>{document.originalFilename}</span>
+        {document.status === "REJECTED" && document.rejectionReason && (
+          <p className="admin-honest-note">Причина: {document.rejectionReason}</p>
+        )}
+        {!rejecting ? (
+          <div className="admin-document-card-actions">
+            <button type="button" className="admin-danger-button compact" disabled={busy} onClick={() => setRejecting(true)}>
+              {mode === "driver" ? "Запросить переоформление" : "Отклонить"}
+            </button>
+            {mode === "application" && (
+              <button type="button" className="admin-primary-button compact" disabled={busy} onClick={() => onReview(document, "APPROVED", "")}>
+                Одобрить
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="admin-document-card-reject">
+            <textarea
+              value={reason}
+              onChange={event => setReason(event.target.value)}
+              placeholder={mode === "driver" ? "Что не так с документом, что нужно переснять" : "Причина отклонения"}
+              rows={2}
+            />
+            <div className="admin-document-card-actions">
+              <button type="button" className="admin-secondary-button compact" onClick={() => setRejecting(false)}>Отмена</button>
+              <button type="button" className="admin-danger-button compact" disabled={busy || !reason.trim()} onClick={submitReject}>
+                {mode === "driver" ? "Отправить запрос" : "Подтвердить отказ"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function DriverDocumentsPanel({ documents, loading, error, onRetry, mode, onReview, busyDocumentId }) {
+  const byType = new Map();
+  documents.forEach(item => {
+    const existing = byType.get(item.type);
+    if (!existing || new Date(item.createdAt) > new Date(existing.createdAt)) byType.set(item.type, item);
+  });
+  const missingRequired = REQUIRED_DOCUMENT_TYPES.filter(type => !byType.has(type));
+  const extraDocuments = documents.filter(item => !REQUIRED_DOCUMENT_TYPES.includes(item.type));
+  const requiredDocuments = REQUIRED_DOCUMENT_TYPES.map(type => byType.get(type)).filter(Boolean);
+
+  if (loading) return <LoadingState />;
+  if (error) return <StatePanel title="Не удалось загрузить документы" text={error} action="Повторить" onAction={onRetry} />;
+
+  return (
+    <div className="admin-detail-stack">
+      {missingRequired.length > 0 && (
+        <InlineMessage danger text={`Не хватает обязательных документов: ${missingRequired.map(type => DOCUMENT_TYPE_LABELS[type]).join(", ")}`} />
+      )}
+      {!documents.length ? (
+        <StatePanel title="Документы не загружены" text="Кандидат ещё не загрузил ни одного документа." />
+      ) : (
+        <>
+          {requiredDocuments.length > 0 && (
+            <section className="admin-document-grid">
+              {requiredDocuments.map(item => (
+                <DriverDocumentCard key={item.id} document={item} mode={mode} onReview={onReview} busy={busyDocumentId === item.id} />
+              ))}
+            </section>
+          )}
+          {extraDocuments.length > 0 && (
+            <>
+              <small className="admin-honest-note">Дополнительные документы</small>
+              <section className="admin-document-grid">
+                {extraDocuments.map(item => (
+                  <DriverDocumentCard key={item.id} document={item} mode={mode} onReview={onReview} busy={busyDocumentId === item.id} />
+                ))}
+              </section>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ApplicationPanel({ application, regions, busy, onClose, onReview }) {
   const [reason, setReason] = useState("");
+  const [docs, setDocs] = useState({ loading: true, error: "", items: [] });
+  const [busyDocumentId, setBusyDocumentId] = useState("");
+
+  function loadDocuments() {
+    setDocs({ loading: true, error: "", items: [] });
+    getAdminApplicationDocuments(application.id)
+      .then(data => setDocs({ loading: false, error: "", items: data.documents || [] }))
+      .catch(error => setDocs({ loading: false, error: readError(error), items: [] }));
+  }
+
+  useEffect(() => {
+    loadDocuments();
+  }, [application.id]);
+
+  async function reviewDocument(document, status, docReason) {
+    setBusyDocumentId(document.id);
+    try {
+      await reviewAdminDriverDocument(document.id, { status, reason: docReason });
+      loadDocuments();
+    } catch (error) {
+      setDocs(current => ({ ...current, error: readError(error) }));
+    } finally {
+      setBusyDocumentId("");
+    }
+  }
+
   return (
-    <ModalFrame title="Заявка водителя" onClose={onClose}>
+    <ModalFrame title="Заявка водителя" onClose={onClose} wide>
       <div className="admin-detail-stack">
         <section className="admin-detail-hero">
           <div>
@@ -3375,6 +3600,19 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview }) {
           <InfoLine label="Создана" value={formatDate(application.created_at)} />
           <InfoLine label="Доступные регионы" value={regions.length ? `${regions.length}` : "Регионы не настроены"} />
         </div>
+
+        <DataCard title="Документы кандидата" text="Обязательный набор: права (обе стороны), удостоверение личности (обе стороны), техпаспорт.">
+          <DriverDocumentsPanel
+            documents={docs.items}
+            loading={docs.loading}
+            error={docs.error}
+            onRetry={loadDocuments}
+            mode="application"
+            onReview={reviewDocument}
+            busyDocumentId={busyDocumentId}
+          />
+        </DataCard>
+
         <label className="admin-textarea-field">
           <span>Комментарий или причина отказа</span>
           <textarea value={reason} onChange={event => setReason(event.target.value)} rows={4} />

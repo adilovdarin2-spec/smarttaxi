@@ -377,6 +377,35 @@ export function updateAdminDriverApplication(applicationId, payload) {
   });
 }
 
+export function getAdminApplicationDocuments(applicationId) {
+  return api(`/api/admin/driver-applications/${applicationId}/documents`);
+}
+
+export function getAdminDriverDocuments(driverId) {
+  return api(`/api/admin/drivers/${driverId}/documents`);
+}
+
+export function reviewAdminDriverDocument(documentId, payload) {
+  return api(`/api/admin/driver-documents/${documentId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function fetchAdminDriverDocumentFile(documentId) {
+  const token = getToken();
+  const response = await fetch(`${API_URL}/api/admin/driver-documents/${documentId}/file`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(message || "Не удалось загрузить документ");
+  }
+  const mimeType = response.headers.get("Content-Type") || "";
+  const blob = await response.blob();
+  return { blob, mimeType };
+}
+
 export function getAdminTariffs(regionId) {
   const query = regionId ? `?regionId=${encodeURIComponent(regionId)}` : "";
   return api(`/api/admin/tariffs${query}`);
