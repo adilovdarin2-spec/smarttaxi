@@ -56,6 +56,15 @@ const _addressPickMarkerColor = SmartTaxiColors.gold;
 const _blueAccent = Color(0xff2c5fe0);
 const _blueSurface = Color(0xffeef2fc);
 const _blueBorder = Color(0xffe1e7f5);
+// One consistent neutral card shadow, applied opportunistically as screens
+// get touched (design doc: "one consistent card shadow", same
+// migrate-don't-blanket-repaint policy as the color tokens above). Does not
+// replace the deliberately different colored glows on selected/accent
+// states (_TariffCard selected, _GoldCtaButton) — those are a different,
+// intentional visual language, not an inconsistency to fix.
+const _cardShadow = <BoxShadow>[
+  BoxShadow(color: Color(0x14785a14), blurRadius: 24, offset: Offset(0, 10)),
+];
 const _iconMenu = 'assets/icons/menu.svg';
 const _iconBell = 'assets/icons/bell.svg';
 const _iconChevronDown = 'assets/icons/chevron_down.svg';
@@ -2099,6 +2108,7 @@ class _PassengerShellState extends State<PassengerShell>
                     previewLoading: _previewLoading,
                     error: _error,
                     onTariff: (id) async {
+                      unawaited(HapticFeedback.selectionClick());
                       final cached = _tariffEstimates[id];
                       setState(() {
                         _tariffId = id;
@@ -2281,16 +2291,16 @@ class _PassengerShellState extends State<PassengerShell>
               text: 'Активный заказ, статус поездки и детали маршрута',
             ),
             const SizedBox(height: 16),
-            if (_tripHistory.isEmpty) ...[
+            if (_tripHistory.isEmpty && _tripHistoryLoading) ...[
+              const _SkeletonList(),
+            ] else if (_tripHistory.isEmpty) ...[
               EmptyState(
                 icon: _tripHistoryError
                     ? Icons.wifi_off_rounded
                     : Icons.route_rounded,
-                title: _tripHistoryLoading
-                    ? 'Загружаем историю...'
-                    : _tripHistoryError
-                        ? 'Не удалось загрузить историю'
-                        : 'Активной поездки нет',
+                title: _tripHistoryError
+                    ? 'Не удалось загрузить историю'
+                    : 'Активной поездки нет',
                 text: _tripHistoryError
                     ? 'Проверьте связь и потяните экран вниз, чтобы попробовать снова.'
                     : 'Создайте заказ, и SmartTaxi откроет статус поездки здесь.',
@@ -3338,9 +3348,12 @@ class _PassengerShellState extends State<PassengerShell>
                   ),
                 ),
                 const SizedBox(width: 10),
-                ElevatedButton(
+                // Outlined, not filled — "Отправить" further down is the
+                // one filled accent action on this screen; a direct-call
+                // shortcut is a secondary escape hatch, not the primary flow.
+                OutlinedButton(
                   onPressed: () => unawaited(_callSupportPhone(supportPhone)),
-                  style: ElevatedButton.styleFrom(
+                  style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 44),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
@@ -3582,12 +3595,7 @@ class _PassengerShellState extends State<PassengerShell>
           ),
           const SizedBox(height: 16),
           if (_recurringBookingsLoading && _recurringBookings.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(strokeWidth: 2.4),
-              ),
-            )
+            const _SkeletonList()
           else if (_recurringBookingsError && _recurringBookings.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
@@ -3710,12 +3718,7 @@ class _PassengerShellState extends State<PassengerShell>
           ),
           const SizedBox(height: 16),
           if (_favoriteAddressesLoading && _favoriteAddresses.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(strokeWidth: 2.4),
-              ),
-            )
+            const _SkeletonList()
           else if (_favoriteAddressesError && _favoriteAddresses.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
@@ -3795,12 +3798,7 @@ class _PassengerShellState extends State<PassengerShell>
           ),
           const SizedBox(height: 16),
           if (_driverPreferencesLoading && _driverPreferences.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(strokeWidth: 2.4),
-              ),
-            )
+            const _SkeletonList()
           else if (_driverPreferencesError && _driverPreferences.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
@@ -6101,17 +6099,13 @@ class _RouteSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 10, 9, 10),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: SmartTaxiColors.borderStrong),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10785a14),
-            blurRadius: 20,
-            offset: Offset(0, 9),
-          ),
-        ],
+        border: Border.fromBorderSide(
+          BorderSide(color: SmartTaxiColors.borderStrong),
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(22)),
+        boxShadow: _cardShadow,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -12663,17 +12657,13 @@ class _PaymentMethodRow extends StatelessWidget {
       child: Container(
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 13),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: SmartTaxiColors.borderStrong),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0f785a14),
-              blurRadius: 18,
-              offset: Offset(0, 8),
-            ),
-          ],
+          border: Border.fromBorderSide(
+            BorderSide(color: SmartTaxiColors.borderStrong),
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(18)),
+          boxShadow: _cardShadow,
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -14201,10 +14191,7 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
           ),
           const SizedBox(height: 16),
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const _SkeletonList()
           else if (_error != null)
             _PremiumCard(
               child: _CompactNotice(
@@ -14396,17 +14383,13 @@ class _PremiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: SmartTaxiColors.border),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x18785a14),
-            blurRadius: 42,
-            offset: Offset(0, 18),
-          ),
-        ],
+        border: Border.fromBorderSide(
+          BorderSide(color: SmartTaxiColors.border),
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(30)),
+        boxShadow: _cardShadow,
       ),
       child: child,
     );
@@ -14519,6 +14502,60 @@ class _SkeletonLineState extends State<_SkeletonLine>
   }
 }
 
+// Generic list-row skeleton (icon block + two text lines) built on the
+// existing _SkeletonLine shimmer primitive — reused across every list
+// screen's initial-load state instead of each one showing a bare centered
+// spinner (recurring bookings, favorites, driver preferences, notifications).
+class _SkeletonListTile extends StatelessWidget {
+  const _SkeletonListTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: SmartTaxiColors.border),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Row(
+          children: [
+            _SkeletonLine(width: 44, height: 44, radius: 14),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SkeletonLine(width: double.infinity, height: 13),
+                  SizedBox(height: 8),
+                  _SkeletonLine(width: 120, height: 11),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonList extends StatelessWidget {
+  const _SkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _SkeletonListTile(),
+        _SkeletonListTile(),
+        _SkeletonListTile(),
+      ],
+    );
+  }
+}
+
 class _ButtonSpinner extends StatelessWidget {
   const _ButtonSpinner({required this.text});
 
@@ -14554,6 +14591,45 @@ class _ButtonSpinner extends StatelessWidget {
   }
 }
 
+// Reusable press-down micro-interaction (scale ~0.97) for primary tap
+// targets — gives a physical, tactile feel instead of an instant flat
+// state change. Only listens for down/up/cancel to drive the scale; the
+// child keeps owning its own tap handling (InkWell, GestureDetector, etc).
+class _PressScale extends StatefulWidget {
+  const _PressScale({required this.child, this.enabled = true});
+
+  final Widget child;
+  final bool enabled;
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (!widget.enabled || _pressed == value) return;
+    if (value) unawaited(HapticFeedback.lightImpact());
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 class _GoldCtaButton extends StatelessWidget {
   const _GoldCtaButton({
     required this.enabled,
@@ -14573,7 +14649,9 @@ class _GoldCtaButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
+    return _PressScale(
+      enabled: enabled && !loading,
+      child: Opacity(
       opacity: enabled ? 1 : 0.52,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -14676,6 +14754,7 @@ class _GoldCtaButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
