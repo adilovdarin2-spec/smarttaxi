@@ -257,7 +257,40 @@ were actually fixed this pass:
   only tonight, flagged honestly rather than claimed as live-tested.
 - Committed as `d0ffe91`.
 
-## Not started yet — items 6–16
+## [6] Забыл вещь — done this pass
+
+Found a real gap, not a from-scratch build: `passenger_shell.dart`'s support
+screen already had a "Забыл вещь" topic chip, but it sent the Russian label
+as free text and only attached `orderId` when a trip happened to be
+actively in progress (`_order?.id`). Cross-checked
+`apps/api/src/modules/support/support.routes.js` directly — the driver-push
+branch requires `body.topic === "LOST_ITEM"` **exactly** and a non-null
+`orderId`:
+```js
+if (created.order_id && body.topic === "LOST_ITEM") {
+  // notifyOrderDriver(...) — pushes "Пассажир забыл вещь в машине" to the driver
+}
+```
+So outside a live ride (the realistic case — you notice the item after
+getting out), the old code silently sent a support ticket the admin queue
+would see but the driver never would.
+- Added `_LostItemOrderPicker`: shown only when the "Забыл вещь" chip is
+  selected, lists the active order (if any) plus recent trips from
+  `_tripHistory` in a relevant-status set (`RATED/PAID/COMPLETED/
+  IN_PROGRESS/DRIVER_ARRIVED/DRIVER_ASSIGNED`), each row showing date +
+  pickup → dropoff via the existing `_formatTripDate` helper.
+- Submit is blocked with an inline error until a trip is picked for this
+  topic ("Укажите поездку... иначе водителя не получится уведомить").
+- On submit for this topic: `topic: 'LOST_ITEM'` (literal, not the label)
+  and `orderId` from the picked trip, not `_order?.id`.
+- **Verified:** `flutter analyze` — same 6/7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs a logged-in
+  session with real trip history, blocked by the same standing no-live-login
+  policy; compile-verified only tonight.
+- Committed as `de834f9`.
+
+## Not started yet — items 7–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
@@ -273,11 +306,8 @@ investigating §3:
   web tonight, confirmed exact keys.
 - **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
   original brief guessed) already wired on web tonight.
-- **§6 "забыл вещь"**: the support topic must be sent as the literal string
-  `LOST_ITEM`, not the Russian label, for the backend to notify the right
-  order's driver — found and fixed on web tonight, applies identically here.
 
-None of §6–16 are implemented on mobile yet — flagging honestly rather
+None of §7–16 are implemented on mobile yet — flagging honestly rather
 than claiming partial coverage that isn't there.
 
 ## Verification method note
