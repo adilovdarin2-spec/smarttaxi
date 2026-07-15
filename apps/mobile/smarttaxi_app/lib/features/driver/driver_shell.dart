@@ -1765,9 +1765,15 @@ class _DriverShellState extends State<DriverShell> {
           onRoadAlerts: () => unawaited(_openRoadAlerts()),
           onRecurringBookings: () =>
               _showDriverFullSheet(_driverRecurringBookingsContent()),
-          onLogout: () {
+          onLogout: () async {
             Navigator.pop(context);
-            widget.onLogout();
+            final confirmed = await _confirmDriverAction(
+              title: 'Выйти из аккаунта?',
+              message:
+                  'Придётся снова войти по номеру телефона, чтобы продолжить работу в SmartTaxi.',
+              confirmLabel: 'Выйти',
+            );
+            if (confirmed) widget.onLogout();
           },
         ),
         body: SafeArea(
