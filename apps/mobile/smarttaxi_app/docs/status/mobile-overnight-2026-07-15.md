@@ -800,13 +800,69 @@ explanation, no path forward.
   verified live** — needs a driver account in a real pending/blocked
   region-approval state, blocked by the standing no-live-login policy.
 
-### Still to do: [URG-7] driver-search screen redesign, [URG-8] navigator polish
-Not started this pass — see task list. Both are large, open-ended visual/
-UX work (full redesign of the search/driver-found screens per the blue+
-white system; smooth marker interpolation + next-maneuver display in the
-driver navigator). Continuing directly per the user's explicit "работай
-автономно... дальше сам думая над всем должен исправить все ошибки"
-instruction.
+### [URG-7] Search-flow polish + blue accent — done, `7c6d122`
+
+Investigated before rebuilding, same as everywhere else tonight: the
+searching-for-driver panel already had a real custom pulse animation
+(`_SearchingPulse`) and a 3-step progress list (`_SearchProgressRows`),
+and `_DriverContactCard` already had avatar/name/car/plate/rating — none
+of that was actually missing or a bare spinner, contrary to how the
+request characterized it. Two real, concrete gaps fixed:
+- **No cross-widget transition between order-status phases.** Each
+  internal branch of `_TripStatusPanel` was already wrapped in a keyed
+  `_PanelEntrance` (its own scale-in pop), but switching between branches
+  (searching → driver found → in progress) just dropped the old subtree
+  instantly — there was nothing bridging that at the call site. Wrapped
+  the call site in `AnimatedSwitcher` (fade + size, 260ms, keyed on
+  `order.status`) so major status changes now crossfade. Added
+  `super.key` to `_TripStatusPanel`'s constructor since it had none.
+- **Colors**: migrated the search flow's two screen-specific accent
+  elements (`_SearchingPulse`'s dot/pulse, `_SearchProgressRows`'
+  background/border/step-icon colors) from `SmartTaxiColors.gold` to the
+  new blue/white design system's accent (`#2C5FE0`, see
+  `docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md`), per that doc's
+  own "migrate opportunistically while touching a screen" instruction.
+  Scoped to local `_blueAccent`/`_blueSurface`/`_blueBorder` constants
+  used only in this flow — **not** a global `SmartTaxiColors` change.
+  Deliberately left shared widgets used in *other*, not-yet-redesigned
+  screens alone (`_TripRouteMiniCard`, `StatusPill`, `_GoldCtaButton`) —
+  recoloring those would leak blue into unrelated screens and risk
+  exactly the "mixing accent-filled buttons with leftover brand colors"
+  anti-pattern the design doc itself warns against. **The rest of the app
+  is still gold-themed** — this was one screen's opportunistic migration,
+  not the start of a tracked app-wide rollout.
+- **Verified:** `flutter analyze`/`test`/`build apk --debug` all clean
+  (same 7/10 baseline, 0 new both times). **Not verified live.**
+
+### [URG-8] Navigator polish — done, `9ac21e5`
+
+Investigated first — two of the three asks were already fully built:
+- `_AnimatedSelfMarkerLayer` (the driver's own position marker on
+  `_SmartNavigatorMap`) already glides position + rotation over 700ms
+  with shortest-angle turning and a large-jump snap threshold. Exactly
+  the "don't jump between GPS fixes" ask, already done, not rebuilt.
+- `_maybeRefreshDriverRoute` already recomputes the route once the
+  driver drifts far enough off the drawn polyline, hitting the same live
+  routing endpoint. Already done, not rebuilt.
+- **Real gap: no next-maneuver display.** Confirmed
+  `routing.service.js` requests OSRM with `steps=false` deliberately —
+  there is no turn/maneuver data anywhere in the system, by design, and
+  adding it is `apps/api` scope. Built it client-side instead, from the
+  same polyline already drawn on the map: `_nextManeuverHint()` finds the
+  driver's nearest point on the route, walks forward computing bearing
+  between consecutive segments (haversine bearing formula), and reports
+  the first turn ≥28° found within an 800m lookahead as a distance +
+  left/right/U-turn label. Real geometry derived from real route data,
+  not fabricated. Shown as a dark, high-contrast `_NextManeuverBanner`
+  above the map, deliberately styled apart from the rest of the cockpit's
+  cards since it's the one thing to read at a glance while driving.
+- **Verified:** `flutter analyze`/`test`/`build apk --debug` all clean
+  (same 7/10 baseline). **Not verified live** — needs an active order with
+  a real drawn route and GPS movement along it, blocked by the standing
+  no-live-login policy; the bearing-delta math was checked by hand-tracing
+  a few coordinate pairs, not device-verified.
+
+## URGENT batch complete: all 8 items (URG-1 through URG-8) done, verified statically, committed individually, documented above.
 
 ## Verification method note
 
