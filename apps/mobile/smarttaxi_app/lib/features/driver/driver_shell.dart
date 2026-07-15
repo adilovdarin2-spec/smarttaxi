@@ -1993,6 +1993,38 @@ class _DriverShellState extends State<DriverShell> {
                   dropoffLabel: _activeOrder!.dropoff,
                   onPickupTap: null,
                   onDropoffTap: null),
+              if ((_activeOrder!.notes ?? '').isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.palette.goldSurface,
+                    border:
+                        Border.all(color: context.palette.borderStrong),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.sticky_note_2_outlined,
+                          size: 17, color: context.palette.goldDeep),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _activeOrder!.notes!,
+                          style: TextStyle(
+                            color: context.palette.text,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (_activeOrder!.price != null) ...[
                 const SizedBox(height: 14),
                 Text('${_activeOrder!.price!.round()} ₸',
