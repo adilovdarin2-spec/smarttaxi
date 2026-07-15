@@ -259,6 +259,23 @@ class _DriverShellState extends State<DriverShell> {
         payload.containsKey('dropoff');
     final previousPhase = _routePhaseForStatus(_activeOrder?.status);
     final nextPhase = _routePhaseForStatus(order.status);
+    // Find whatever this driver already knew about this order's price offer
+    // (it may be the active order, or still just sitting in the open list)
+    // so a PENDING -> ACCEPTED/DECLINED transition can surface as a toast —
+    // the backend already sends a push for this (notifyOrderDriver in
+    // orders.routes.js), this covers the foregrounded-app case that a
+    // background push wouldn't visibly interrupt.
+    String? previousOfferStatus;
+    if (_activeOrder?.id == order.id) {
+      previousOfferStatus = _activeOrder?.driverOfferStatus;
+    } else {
+      for (final existing in _orders) {
+        if (existing.id == order.id) {
+          previousOfferStatus = existing.driverOfferStatus;
+          break;
+        }
+      }
+    }
     setState(() {
       _orders = mergeOrder(_orders, order);
       if (_activeOrder?.id == order.id || order.isActive) {
@@ -268,6 +285,13 @@ class _DriverShellState extends State<DriverShell> {
         _driverRoute = null;
       }
     });
+    if (previousOfferStatus == 'PENDING' && order.driverOfferStatus == 'ACCEPTED') {
+      AppToast.showSuccess(context,
+          'Клиент принял вашу цену: ${formatDriverMoney(order.driverOfferPriceKzt ?? 0)}');
+    } else if (previousOfferStatus == 'PENDING' &&
+        order.driverOfferStatus == 'DECLINED') {
+      AppToast.showError(context, 'Клиент отклонил ваше предложение цены');
+    }
     if (!hasRouteDetails) unawaited(_loadOrders());
     if (!order.isActive) unawaited(_loadTripHistory());
     // Order flipped from "heading to pickup" to "heading to dropoff" (or
