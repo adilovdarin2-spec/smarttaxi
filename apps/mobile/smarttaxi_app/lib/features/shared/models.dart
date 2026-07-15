@@ -188,6 +188,47 @@ class DriverPreference {
   }
 }
 
+/// Driver-side mirror of [DriverPreference] (which is the rider favoriting/
+/// blocking a driver via /api/favorites/drivers) — same FAVORITE/BLOCKED
+/// upsert shape, this time the driver favoriting/blocking a rider via
+/// /api/favorites/clients. That backend module is being built in parallel
+/// (see project memory); this model matches the documented contract so the
+/// UI is ready as soon as it lands.
+class ClientPreference {
+  const ClientPreference({
+    required this.id,
+    required this.clientId,
+    required this.type,
+    this.clientName,
+    this.clientPhone,
+    this.createdAt,
+  });
+
+  final String id;
+  final String clientId;
+  // FAVORITE | BLOCKED
+  final String type;
+  final String? clientName;
+  final String? clientPhone;
+  final DateTime? createdAt;
+
+  bool get isFavorite => type == 'FAVORITE';
+  bool get isBlocked => type == 'BLOCKED';
+
+  factory ClientPreference.fromJson(Map<String, dynamic> json) {
+    return ClientPreference(
+      id: '${json['id']}',
+      clientId: '${json['client_id'] ?? json['clientId']}',
+      type: '${json['type'] ?? 'FAVORITE'}',
+      clientName: (json['client_name'] ?? json['clientName'])?.toString(),
+      clientPhone: (json['client_phone'] ?? json['clientPhone'])?.toString(),
+      createdAt: DateTime.tryParse(
+        '${json['created_at'] ?? json['createdAt'] ?? ''}',
+      ),
+    );
+  }
+}
+
 class ReferralSummary {
   const ReferralSummary({
     required this.code,
@@ -473,6 +514,8 @@ class OrderSummary {
     this.waitingStartedAt,
     this.freeWaitingUntil,
     this.waitingPricePerMinute = 0,
+    this.clientId,
+    this.serviceCommission,
   });
 
   final String id;
@@ -534,6 +577,12 @@ class OrderSummary {
   final DateTime? waitingStartedAt;
   final DateTime? freeWaitingUntil;
   final int waitingPricePerMinute;
+  // Rider's account id — needed for the post-trip "add to favorites"/"never
+  // accept again" actions (POST/DELETE /api/favorites/clients) and for
+  // POST /api/orders/:id/rate-client.
+  final String? clientId;
+  // service_commission on `orders` — driver payout is price - serviceCommission.
+  final double? serviceCommission;
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
@@ -573,6 +622,8 @@ class OrderSummary {
       waitingStartedAt: waitingStartedAt,
       freeWaitingUntil: freeWaitingUntil,
       waitingPricePerMinute: waitingPricePerMinute,
+      clientId: clientId,
+      serviceCommission: serviceCommission,
     );
   }
 
@@ -664,6 +715,9 @@ class OrderSummary {
       waitingPricePerMinute: int.tryParse(
               '${json['waiting_price_per_minute'] ?? json['waitingPricePerMinute'] ?? snapshot['waitingPricePerMinute'] ?? ''}') ??
           0,
+      clientId: (json['client_id'] ?? json['clientId'])?.toString(),
+      serviceCommission: _nullableDouble(
+          json['service_commission'] ?? json['serviceCommission']),
     );
   }
 }

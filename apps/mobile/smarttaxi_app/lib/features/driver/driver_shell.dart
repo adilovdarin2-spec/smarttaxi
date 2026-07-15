@@ -2014,6 +2014,13 @@ class _DriverShellState extends State<DriverShell> {
               current: _currentCoordinate,
               heading: _currentHeading),
           const SizedBox(height: 12),
+          if (_isTripFinished(_activeOrder!.status))
+            DriverTripCompletionCard(
+              order: _activeOrder!,
+              api: widget.api,
+              onDone: _dismissActiveOrder,
+            )
+          else
           PremiumCard(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2115,11 +2122,7 @@ class _DriverShellState extends State<DriverShell> {
                         : () => _tripAction(action.$1, action.$2),
                     child: _tripActionLabel == action.$1
                         ? ButtonSpinner(text: l10n.driverTripSavingButton)
-                        : Text(action.$1))
-              else if (!_activeOrder!.isActive)
-                ElevatedButton(
-                    onPressed: _dismissActiveOrder,
-                    child: Text(l10n.driverTripDoneButton)),
+                        : Text(action.$1)),
               if (_canNoShow(_activeOrder!.status)) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
@@ -2307,6 +2310,14 @@ class _DriverShellState extends State<DriverShell> {
       _driverRoute = null;
     });
   }
+
+  bool _isTripFinished(String status) => const [
+        'TRIP_COMPLETED',
+        'PAYMENT_PENDING',
+        'PAID',
+        'RATED',
+        'COMPLETED',
+      ].contains(status);
 
   bool _canNoShow(String status) =>
       status == 'DRIVER_ARRIVED' || status == 'WAITING_CLIENT';

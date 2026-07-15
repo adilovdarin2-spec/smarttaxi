@@ -703,6 +703,53 @@ class ApiClient {
     await _dio.delete<void>('/api/favorites/drivers/$driverId');
   }
 
+  // Driver's mirror of /favorites/drivers — see ClientPreference for why
+  // this endpoint may still 404 tonight (parallel backend module).
+  Future<List<ClientPreference>> getClientPreferences() async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/favorites/clients');
+    final items = _extractList(response.data, 'preferences');
+    return items
+        .map((item) => ClientPreference.fromJson(item))
+        .toList(growable: false);
+  }
+
+  Future<ClientPreference> setClientPreference({
+    required String clientId,
+    required String type,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/favorites/clients',
+      data: {'clientId': clientId, 'type': type},
+    );
+    final data = response.data ?? {};
+    return ClientPreference.fromJson(
+        Map<String, dynamic>.from(data['preference'] ?? data));
+  }
+
+  Future<void> removeClientPreference(String clientId) async {
+    await _attachToken();
+    await _dio.delete<void>('/api/favorites/clients/$clientId');
+  }
+
+  // Driver's mirror of rateOrder (passenger rating the driver) — rating the
+  // passenger instead. Endpoint is being built in parallel; see project
+  // memory on the prod deployment gap.
+  Future<void> rateClient(
+    String orderId, {
+    required int rating,
+    List<String> tags = const [],
+    String comment = '',
+  }) async {
+    await _attachToken();
+    await _dio.post('/api/orders/$orderId/rate-client', data: {
+      'rating': rating,
+      'tags': tags,
+      'comment': comment,
+    });
+  }
+
   // Fixed vocabulary on the backend (orders.routes.js QUICK_MESSAGES) — the
   // server owns the display text, this just sends the key. Callable by
   // either CLIENT or DRIVER on their own order; the other party is notified.

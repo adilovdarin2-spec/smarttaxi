@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/route_fields.dart';
 import '../../../core/widgets/status_pill.dart';
@@ -435,6 +436,359 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Shown once a trip settles into a terminal state (TRIP_COMPLETED and
+/// after) instead of the old bare "Готово" button: a real payout summary,
+/// then rate-the-passenger (stars + tags + comment) and favorite/block
+/// actions, and only then the dismiss button. Rating and favorite/block
+/// both call endpoints (`/orders/:id/rate-client`, `/favorites/clients`)
+/// that a parallel backend session is still building tonight — both calls
+/// are best-effort and let the driver move on even if they 404, per the
+/// "mock it, wire it up later" plan for this feature.
+class DriverTripCompletionCard extends StatefulWidget {
+  const DriverTripCompletionCard({
+    super.key,
+    required this.order,
+    required this.api,
+    required this.onDone,
+  });
+
+  final OrderSummary order;
+  final ApiClient api;
+  final VoidCallback onDone;
+
+  @override
+  State<DriverTripCompletionCard> createState() =>
+      _DriverTripCompletionCardState();
+}
+
+class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
+  int _stars = 0;
+  final Set<String> _tags = {};
+  final _commentController = TextEditingController();
+  bool _submitting = false;
+  bool _rated = false;
+
+  String? _preferenceType;
+  bool _preferenceSaving = false;
+
+  static const _positiveTags = [
+    'Вежливый пассажир',
+    'Ждал в точке посадки',
+    'Точный адрес',
+    'Вышел вовремя',
+  ];
+  static const _negativeTags = [
+    'Долго не выходил',
+    'Грубое общение',
+    'Неточный адрес',
+    'Испачкал салон',
+  ];
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitRating() async {
+    if (_stars == 0 || _submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await widget.api.rateClient(
+        widget.order.id,
+        rating: _stars,
+        tags: _tags.toList(),
+        comment: _commentController.text.trim(),
+      );
+    } catch (_) {
+      // Best-effort — see class doc.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _rated = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _setPreference(String type) async {
+    final clientId = widget.order.clientId;
+    if (clientId == null || _preferenceSaving) return;
+    setState(() => _preferenceSaving = true);
+    final next = _preferenceType == type ? null : type;
+    try {
+      if (next == null) {
+        await widget.api.removeClientPreference(clientId);
+      } else {
+        await widget.api.setClientPreference(clientId: clientId, type: next);
+      }
+    } catch (_) {
+      // Best-effort — see class doc.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _preferenceSaving = false;
+          _preferenceType = next;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final order = widget.order;
+    final price = order.price ?? 0;
+    final commission = order.serviceCommission ?? 0;
+    final payout = price - commission < 0 ? 0.0 : price - commission;
+    final tagOptions = _stars >= 4 ? _positiveTags : _negativeTags;
+
+    return PremiumCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Поездка завершена',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: context.palette.text)),
+          const SizedBox(height: 14),
+          _SummaryRow(label: 'Стоимость поездки', value: '${price.round()} ₸'),
+          if (commission > 0) ...[
+            const SizedBox(height: 8),
+            _SummaryRow(
+                label: 'Комиссия сервиса',
+                value: '-${commission.round()} ₸',
+                danger: true),
+          ],
+          const Divider(height: 24),
+          _SummaryRow(
+              label: 'Вы получите',
+              value: '${payout.round()} ₸',
+              emphasized: true),
+          const SizedBox(height: 20),
+          if (!_rated) ...[
+            Text('Оцените пассажира',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: context.palette.text)),
+            const SizedBox(height: 10),
+            _DriverStarSelector(
+                value: _stars, onChanged: (v) => setState(() => _stars = v)),
+            if (_stars > 0) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: tagOptions
+                    .map((tag) => _DriverTagChip(
+                          label: tag,
+                          selected: _tags.contains(tag),
+                          onTap: () => setState(() {
+                            if (!_tags.remove(tag)) _tags.add(tag);
+                          }),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _commentController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                    hintText: 'Комментарий (необязательно)'),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed:
+                        _stars == 0 || _submitting ? null : _submitRating,
+                    child: _submitting
+                        ? const ButtonSpinner(text: 'Отправляем...')
+                        : const Text('Отправить оценку'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                TextButton(
+                  onPressed: _submitting
+                      ? null
+                      : () => setState(() => _rated = true),
+                  child: const Text('Пропустить'),
+                ),
+              ],
+            ),
+          ] else
+            InlineMessage(
+                text: _stars > 0
+                    ? 'Спасибо, оценка отправлена'
+                    : 'Оценка пропущена'),
+          if (order.clientId != null) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _preferenceSaving
+                        ? null
+                        : () => _setPreference('FAVORITE'),
+                    icon: Icon(
+                        _preferenceType == 'FAVORITE'
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        size: 18),
+                    label: Text(
+                      _preferenceType == 'FAVORITE'
+                          ? 'В избранном'
+                          : 'В избранные',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _preferenceSaving
+                        ? null
+                        : () => _setPreference('BLOCKED'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.palette.danger,
+                      side: BorderSide(
+                          color: _preferenceType == 'BLOCKED'
+                              ? context.palette.danger
+                              : context.palette.border),
+                    ),
+                    icon: Icon(
+                        _preferenceType == 'BLOCKED'
+                            ? Icons.block_rounded
+                            : Icons.block_outlined,
+                        size: 18),
+                    label: Text(
+                      _preferenceType == 'BLOCKED'
+                          ? 'Заблокирован'
+                          : 'Не принимать',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+                onPressed: widget.onDone, child: const Text('Готово')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow(
+      {required this.label,
+      required this.value,
+      this.danger = false,
+      this.emphasized = false});
+
+  final String label;
+  final String value;
+  final bool danger;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: emphasized ? 15 : 13,
+                  fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+                  color: context.palette.textSecondary)),
+        ),
+        Text(value,
+            style: TextStyle(
+                fontSize: emphasized ? 22 : 15,
+                fontWeight: FontWeight.w900,
+                color: danger ? context.palette.danger : context.palette.text)),
+      ],
+    );
+  }
+}
+
+class _DriverStarSelector extends StatelessWidget {
+  const _DriverStarSelector({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(5, (index) {
+        final star = index + 1;
+        return InkWell(
+          onTap: () => onChanged(star),
+          borderRadius: BorderRadius.circular(999),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              star <= value ? Icons.star_rounded : Icons.star_border_rounded,
+              size: 34,
+              color: star <= value
+                  ? context.palette.goldDeep
+                  : context.palette.textMuted,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _DriverTagChip extends StatelessWidget {
+  const _DriverTagChip(
+      {required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? context.palette.goldSurface : Colors.white,
+          border: Border.all(
+              color: selected
+                  ? context.palette.goldDeep
+                  : context.palette.border),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? context.palette.goldDeep
+                    : context.palette.textSecondary)),
       ),
     );
   }
