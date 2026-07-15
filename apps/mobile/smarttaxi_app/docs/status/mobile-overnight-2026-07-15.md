@@ -659,6 +659,113 @@ blocked by policy as documented throughout, both known open items (§8
 domain, §12 registration field) and the main.dart/l10n hygiene finding
 surfaced explicitly rather than hidden.
 
+## URGENT batch — real bugs found from live app usage (higher priority than §3–16)
+
+The user opened the built app for real and reported 8 concrete issues,
+explicitly marked higher priority than the remaining §3–16 backlog above.
+Worked through in the order given.
+
+### [URG-1] Oversized map markers — done, `d83a78b`
+`_CenterMapMarker` (the address-pick marker, shown continuously while
+choosing pickup/dropoff on the home screen) was 76×85px pin in a 132×132
+pulse box — visibly overlapping neighboring map labels/roads. Shrunk to a
+~27×30px pin (standard marker density) with proportionally scaled pulse/
+shadow (`_MarkerRadarPulse` gained a `baseSize` param). Also trimmed the
+confirmed-order pickup/dropoff markers from 34/38 to 30/32px.
+
+### [URG-6] Map tap incorrectly repositioning the point — done, `d83a78b`
+A raw tap anywhere on the map called `_applyMapTap` and immediately moved
+pickup/dropoff there, bypassing the intended drag-the-center-marker-then-
+confirm flow. Map `onTap` is now a pure no-op; `_confirmMapPointSelection`
+(the actual confirm button) and `_useMapCenterAsPickup` (location-denied
+fallback) are untouched.
+
+### [URG-2] Tariff screen required scrolling — done, `4e2fc87`
+Replaced the vertical list of 92px-tall `_TariffListRow`s (which routinely
+pushed the CTA below the fold inside an already height-constrained sheet)
+with `_TariffCard`: compact 118×132 cards in a horizontal
+`ListView.separated`, all fitting in one row with a partially-visible next
+card as the "there's more" cue. Fixed a stale `widget_test.dart` assertion
+checking for the old class name.
+
+### [URG-3] No indication of an active order off the search screen — done, `87e4b5f`
+New `_ActiveOrderBanner` shown at the top of every non-Home tab whenever
+there's a non-terminal `_order`, driven by the same socket listener
+(`_handleOrderUpdate`) already keeping order state live in real time
+regardless of which tab is showing — tap jumps back to Home. Added an
+`AppToast.showSuccess` at the exact `driverJustAssigned` transition
+already detected in `_applyOrderSnapshot` for haptics, covering the
+open-app/wrong-tab case. Confirmed (not built — already true) that the
+backend already sends a real FCM push for this event (`DRIVER_FOUND`,
+auto-displayed by the OS when backgrounded/killed) and already writes an
+in-app `notifications` row for every push regardless of delivery, so the
+"Уведомления" tab already reflects this with zero extra code.
+**Not done:** deep-linking a *tapped* background push straight to the
+order screen — `PushService.onMessageReceived` is still a bare
+`VoidCallback` with no payload. Scoped out because wiring it touches
+`main.dart` (the long-uncommitted shared file, see below), and a cold app
+start already restores to Home via the existing `_restoreActiveOrder`,
+covering the killed-app case without it.
+
+### [URG-4] Menu: "Главная" + driver ratings + visual pass — partially done, `b263471`
+Added "Главная" as the first item in the hamburger drawer (`_SmartDrawer`),
+which previously had no way back to the order screen at all. Also
+consolidated Уведомления/Регулярные поездки/Избранные адреса/Водители/
+Пригласить друзей into the same drawer — these existed only inside the
+Profile tab's in-page menu, now one tap away from anywhere via the
+hamburger icon too.
+**Blocked, not built:** a passenger-facing "рейтинг водителей" screen.
+`driver_reviews` exists, but the only read path is
+`GET /api/drivers/me/rating-summary` — a driver's own, role-restricted
+view. No public "all drivers, all-time" endpoint exists anywhere
+(confirmed via grep across `apps/api`). The "розыгрыш" (admin-managed
+contest periods, admin-deletable rating history) is inherent backend+admin
+scope. Not building a client-side approximation of either — needs new
+`apps/api` work first (e.g. a public `GET /api/drivers/leaderboard`).
+
+### [URG-5] Client balance + driver wallet — driver done (found already built), client blocked
+**Driver wallet: already fully built by a concurrent session, found
+uncommitted, committed as `bc1aeb8`.** Discovered mid-implementation that
+`driver_shell.dart`'s wallet/rating/documents/notifications drawer wiring
+(already committed since `611d783`) referenced screen classes that didn't
+exist in any commit — `DriverWalletScreen`, `DriverRatingScreen`,
+`DriverDocumentsScreen`, `DriverNotificationsScreen`, and their model
+files, were sitting untracked. Read them in full: the wallet screen is
+complete and correct — balance card with debt/pending-payout warnings,
+"Вывести средства" gated on `balanceKzt >= minPayoutKzt`, a payout request
+sheet (amount + Kaspi phone, validated against min/balance), payout
+history with status pills, transaction list with earning/commission
+icons, all wired to the real `GET/POST /api/drivers/me/wallet/*` endpoints
+(`wallet.routes.js`, itself part of tonight's concurrent finance work —
+see `2d66575`/`6da32f6`). Verified via `flutter analyze`/`build apk
+--debug` before committing; committed as its own clean 12-file unit since
+it's genuinely self-contained, unlike `main.dart`.
+- **Real mistake avoided, not made:** started re-implementing the same
+  wallet API methods/models independently (not knowing they already
+  existed) directly in `api_client.dart`/`shared/models.dart` — caught it
+  via a duplicate-symbol compile error before committing, reverted my
+  duplicates cleanly (confirmed `git diff` empty on both files
+  afterward), and committed the real pre-existing implementation instead.
+- **Client balance: confirmed blocked, not built.** `cashback_balance` is
+  written (cashback earn, and now the refund-on-cancel logic just shipped
+  in `2d66575`) but never read anywhere — grepped both
+  `orders.routes.js` and `auth.routes.js`; no client-facing endpoint
+  returns it, `clients.routes.js` is admin-only
+  (`OWNER/OPERATOR/FINANCE`). Cannot build a working "Баланс" screen with
+  no way to fetch the number — needs a new `GET /api/clients/me` (or
+  similar) endpoint first. Flagging precisely rather than faking a screen
+  against data it can't actually load.
+- Admin-configurable commission (mentioned in the same request) is
+  `apps/web` admin-panel scope, not touched.
+
+### Still to do: [URG-7] driver-search screen redesign, [URG-8] navigator polish
+Not started this pass — see task list. Both are large, open-ended visual/
+UX work (full redesign of the search/driver-found screens per the blue+
+white system; smooth marker interpolation + next-maneuver display in the
+driver navigator). Continuing directly per the user's explicit "работай
+автономно... дальше сам думая над всем должен исправить все ошибки"
+instruction.
+
 ## Verification method note
 
 No real backend/OTP credentials were available in this session to log in on
