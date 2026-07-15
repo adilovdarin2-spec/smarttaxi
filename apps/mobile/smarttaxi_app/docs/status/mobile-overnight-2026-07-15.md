@@ -1373,3 +1373,88 @@ unrelated confirm-sheet class at line 8359, not touched this session;
 still zero warnings from this change). **Verified live**, full
 topic-select → conditional-reveal → submit → success round-trip, not
 just that the screen compiles.
+
+### 7. Notification history — investigated first, found the real history already existed; fixed the one genuine gap (fake badge) — `5fff26f`
+
+Read the actual persistence path before assuming anything was missing
+(no guessing, per this pass's policy). Traced it end to end:
+
+- `apps/api/src/modules/notifications/notification.service.js` —
+  `notifyUser()` unconditionally `INSERT`s a row into `notifications`
+  (title/body/type/order_id) for every call, then *separately*
+  best-effort sends a push. A push failing never blocks the row being
+  written — this already means every event has a persisted record,
+  not just an ephemeral push/toast.
+- `apps/api/src/modules/orders/orders.routes.js` calls
+  `notifyOrderClient`/`notifyOrderDriver` at 8 call sites covering the
+  full order lifecycle (DRIVER_FOUND, DRIVER_CANCELLED, payment
+  events, etc.) — so real history already accumulates server-side for
+  every status change a rider would care about.
+- `apps/api/src/modules/notifications/notifications.routes.js` —
+  `GET /api/notifications` already does `SELECT ... ORDER BY
+  created_at DESC LIMIT $2` (with real `created_at`), plus a genuine
+  `unreadCount` from a separate `read_at IS NULL` count. No bug found
+  here.
+- `_NotificationsScreen` (mobile, pre-existing) already calls this
+  endpoint and renders the full result through
+  `_groupNotificationsByDay`, showing "Сегодня" / "Вчера" / dated
+  groups — this is a real day-grouped history screen, not a
+  single-item view. Confirmed live: drawer → Уведомления shows the
+  correctly-empty "Новых уведомлений нет" state for this test
+  account, matching that no order has ever reached DRIVER_FOUND for
+  it in this session (both accidental test orders this session were
+  cancelled before any driver was available — see the earlier
+  "Live phone QA pass" section).
+
+So the backend-persisted, day-grouped history described by this punch
+list item was **already implemented**, not a stub. What live testing
+*did* surface as a real, confirmed bug: the bell icon's unread dot
+(`_NotificationButton`, home-screen map header) was **hardcoded
+always-on** — a bare `Container` circle with no condition on any
+unread count at all. Screenshot proof: opening the drawer showed the
+bell with its gold dot lit, but opening Уведомления immediately after
+showed "Новых уведомлений нет" — a real, visible mismatch between "the
+icon says something's new" and "there is nothing new," which plausibly
+reads as "notifications aren't really being tracked."
+
+Fixed by wiring a real `int _unreadNotificationCount` through the
+chain that was previously just a decoration: loaded from
+`getNotifications(limit: 1)`'s `unreadCount` field at bootstrap
+(`_loadUnreadNotificationCount`, alongside the other `unawaited(...)`
+bootstrap loads); threaded as a new required param through
+`_MapCanvas` → `_MapOverlayHeader` → `_NotificationButton`, which now
+only renders the dot `if (unreadCount > 0)`; bumped by 1 locally the
+moment either of the two existing order-status toasts fires
+(`driverJustAssigned`/`driverJustCancelled` in `_applyOrderSnapshot`)
+— the same instant the backend is writing the matching persisted row,
+so the badge and the history never disagree; and zeroed via a new
+`onUnreadCountChanged` callback on `_NotificationsScreen`, fired right
+after `markAllNotificationsRead()` resolves (or immediately if there
+was nothing to mark).
+
+**Screenshot evidence:** before — drawer open, bell badge lit gold
+regardless of state (old build, same test account, same zero-history
+state as after). After rebuild/install: home screen bell renders with
+**no dot** (matches the real `unreadCount: 0` for this account),
+tapping the bell still opens Уведомления correctly (no regression from
+threading the new param through 3 widget layers) and still shows the
+accurate empty state.
+
+**Could not verify live:** the badge actually *lighting up* and then
+*clearing* for a real event, because that requires a real driver
+being dispatched, and this test region has had zero drivers available
+all session (documented earlier — both accidental test orders were
+cancelled with no driver ever assigned). The wiring was verified by
+full code trace instead: the increment sites are the same two
+conditionals that already fire the existing, previously-verified
+order-status toasts, and the zero-out is a direct callback from the
+same `markAllNotificationsRead()` call the screen already made before
+this change — no new/unverified backend surface was introduced.
+
+**Verified:** `flutter analyze` clean (same 4 pre-existing warnings,
+no new ones from the 3-file-layer plumbing change). `flutter test`:
+14 passed / 10 failed, unchanged baseline. **Partially verified
+live** — badge-hidden state and no-regression on tap confirmed on
+device; badge-appears/badge-clears round trip verified by code trace
+only, blocked by the region-has-no-drivers environment constraint
+noted above, not by any gap in the implementation.
