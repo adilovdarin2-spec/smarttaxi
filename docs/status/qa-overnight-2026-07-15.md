@@ -104,16 +104,27 @@ directly (grep, not a status doc) for the five features named:
   (`POST /api/recurring-bookings`, the driver/client flow, not the admin
   read-only page) is **not wired in web or mobile yet** — backend-only.
 - **price-offer** (driver counter-offer, `driver_offer_price_kzt` /
-  `/api/orders/:id/price-offer[/respond]`): **backend-only**. Confirmed
-  via grep that mobile's existing `offeredPriceKzt` field is the older,
-  unrelated rider-side "своя цена" stepper — no `driver_offer` references
-  anywhere in `apps/mobile/lib`. Web's client scope tonight didn't touch
-  order-in-progress screens either. Not a mismatch (nobody's consuming it
-  wrong), just unimplemented on both clients — first thing to wire
-  tomorrow if the "торг" feature should ship.
-- **quick-message**: same situation — **backend-only**, no
-  `messageKey`/`quick-message` references in `apps/mobile/lib` or
-  `apps/web/src` client code (only the backend route exists).
+  `/api/orders/:id/price-offer[/respond]`): **update (2026-07-15 ~05:00,
+  commit `611d783`) — now wired on both clients, field names match**.
+  Mobile: driver submits via `_PriceOfferSheet` in
+  [driver_shell.dart](../../apps/mobile/smarttaxi_app/lib/features/driver/driver_shell.dart)
+  → `ApiClient.submitDriverPriceOffer` (`api_client.dart`); rider-side
+  display reads `driverOfferPriceKzt`/`driverOfferStatus` in
+  [models.dart](../../apps/mobile/smarttaxi_app/lib/features/shared/models.dart),
+  parsed from `driver_offer_price_kzt`/`driver_offer_status` — matches the
+  server field names exactly, no mismatch. Web: rider accept/decline card
+  added to `ClientApp.jsx` (see `web-overnight-2026-07-15.md` §10),
+  calling the existing `/price-offer/respond` endpoint with no
+  client-computed price. **This wiring is also what confirmed the known
+  commission-bypass risk is real and reachable, not just theoretical** —
+  see the new entry in `SECURITY_CHECKLIST.md` "New risk areas": the
+  mobile driver price input has no guardrail beyond mirroring the
+  server's flat 200–1,000,000 ₸ bounds.
+- **quick-message**: still **backend-only** — confirmed no
+  `messageKey`/quick-message-vocabulary references anywhere in
+  `apps/mobile/smarttaxi_app/lib` as of this check, despite the same
+  commit wiring price-offer. Web has it (§10 of the web doc). Next gap to
+  close on mobile if this ships to drivers/riders there.
 - **favorites/drivers** (favorite/blocked drivers,
   `/api/favorites/drivers`): **backend-only** — only `/favorites/addresses`
   is wired in web; neither client wires the driver favorite/block list.

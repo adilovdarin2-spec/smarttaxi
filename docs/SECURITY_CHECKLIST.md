@@ -63,6 +63,22 @@ changed.
   that only throttles spam, not the underlying bypass. Needs a product
   decision (e.g. minimum price as % of estimate, or flagging orders with
   large negotiated discounts for finance review) — not a QA-session fix.
+  **Confirmed materialized on the mobile client (2026-07-15, ~05:00,
+  commit `611d783`)**: the driver-side price input in
+  [driver_shell.dart](../apps/mobile/smarttaxi_app/lib/features/driver/driver_shell.dart)
+  — class `_PriceOfferSheet` (around line 2986), `_submit()` around line
+  3011 — is a free numeric `TextField` bounded only by
+  `value < 200 || value > 1000000`, the exact same flat, non-proportional
+  bounds as the server's `offeredPriceBounds()`. There is no client-side
+  guardrail (no warning, no minimum tied to `currentPrice`/the trip
+  estimate) before a driver can submit an arbitrarily low official price
+  for any trip — the UI does nothing to narrow the gap this checklist
+  entry already flags server-side. Same commit wired the rider-side
+  accept/decline card in `apps/web`'s `ClientApp.jsx` (see
+  `docs/status/web-overnight-2026-07-15.md` §10) — that side just calls
+  the existing `/price-offer/respond` endpoint with no client-computed
+  price, so it doesn't add its own bypass surface, only exercises the
+  server one described above.
 - **Recurring bookings ("школьный маршрут") — driver-only visibility**:
   VERIFIED DONE. `recurring-bookings.scheduler.js` inserts the
   auto-created order directly with `status='DRIVER_FOUND'` and
