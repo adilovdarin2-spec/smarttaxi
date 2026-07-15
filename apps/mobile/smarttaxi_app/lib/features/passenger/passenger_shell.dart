@@ -1979,7 +1979,10 @@ class _PassengerShellState extends State<PassengerShell>
             routeLoading: _previewLoading,
             routeError: mapRouteError,
             mapUnavailable: _mapTilesUnavailable,
-            onTap: pickingMapPoint ? (_) {} : _applyMapTap,
+            // A raw map tap must never move the pickup/dropoff point — the
+            // only way to change it is dragging the map under the center
+            // address-pick marker, then confirming via _confirmMapPointSelection.
+            onTap: (_) {},
             onCenterChanged: _handleMapCenterChanged,
             onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
@@ -4583,7 +4586,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                           point: pickup.toLatLng(),
                           asset: _userLocationMarkerAsset,
                           semanticLabel: 'Точка подачи',
-                          size: 34,
+                          size: 30,
                           fallbackIcon: Icons.radio_button_checked_rounded,
                         ),
                       if (dropoff != null)
@@ -4591,7 +4594,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                           point: dropoff.toLatLng(),
                           asset: _destinationMarkerAsset,
                           semanticLabel: 'Точка назначения',
-                          size: 38,
+                          size: 32,
                           fallbackIcon: Icons.location_on_rounded,
                         ),
                       if (driver == null)
@@ -5055,9 +5058,10 @@ class _SvgIcon extends StatelessWidget {
 
 
 class _MarkerRadarPulse extends StatefulWidget {
-  const _MarkerRadarPulse({required this.color});
+  const _MarkerRadarPulse({required this.color, this.baseSize = 54});
 
   final Color color;
+  final double baseSize;
 
   @override
   State<_MarkerRadarPulse> createState() => _MarkerRadarPulseState();
@@ -5087,8 +5091,8 @@ class _MarkerRadarPulseState extends State<_MarkerRadarPulse>
           child: Transform.scale(
             scale: 0.4 + t * 1.9,
             child: Container(
-              width: 54,
-              height: 54,
+              width: widget.baseSize,
+              height: widget.baseSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: widget.color.withValues(alpha: 0.28),
@@ -5128,29 +5132,34 @@ class _CenterMapMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const pinWidth = 76.0;
+    // Standard-density marker sizing (~30px tall pin) — was 76×85, which
+    // overlapped neighboring map labels/roads at normal zoom levels.
+    const pinWidth = 27.0;
     const pinHeight = pinWidth * _assetAspect;
     const tipShift = pinHeight * (_tipFraction - 0.5);
     return SizedBox(
-      width: 132,
-      height: 132,
+      width: 68,
+      height: 68,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Transform.translate(
-            offset: const Offset(0, 6),
-            child: const _MarkerRadarPulse(color: _addressPickMarkerColor),
+            offset: const Offset(0, 3),
+            child: const _MarkerRadarPulse(
+              color: _addressPickMarkerColor,
+              baseSize: 26,
+            ),
           ),
           // Ground-contact shadow directly under the pin's tip.
           Transform.translate(
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 5),
             child: Container(
-              width: 20,
-              height: 7,
+              width: 12,
+              height: 4,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           ),
