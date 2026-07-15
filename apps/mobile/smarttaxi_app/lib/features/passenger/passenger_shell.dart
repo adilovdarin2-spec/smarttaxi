@@ -130,14 +130,7 @@ class _PassengerShellState extends State<PassengerShell>
   // "Своя цена": null means the rider hasn't touched the stepper yet, so the
   // server-calculated estimate is used as-is.
   int? _offeredPriceKzt;
-  final _promoController = TextEditingController();
-  String? _appliedPromoCode;
-  int _promoDiscountKzt = 0;
-  bool _promoApplying = false;
-  String? _promoError;
-  // Standalone "check a code" tool on the Промокоды screen — separate from
-  // the order-flow promo state above, since this screen lets a rider check
-  // a code before they've picked a route/tariff at all.
+  // Standalone "check a code" tool on the Промокоды screen.
   final _promoCheckController = TextEditingController();
   bool _promoCheckLoading = false;
   String? _promoCheckError;
@@ -263,7 +256,6 @@ class _PassengerShellState extends State<PassengerShell>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _supportController.dispose();
-    _promoController.dispose();
     _promoCheckController.dispose();
     _nearbyDriversTimer?.cancel();
     _noDriversTimer?.cancel();
@@ -1553,47 +1545,6 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
-  Future<void> _applyPromoCode() async {
-    final code = _promoController.text.trim();
-    if (code.isEmpty || _selectedRegion == null) return;
-    final basePrice = (_offeredPriceKzt ?? _preview?.estimatedPrice?.round());
-    if (basePrice == null) return;
-    setState(() {
-      _promoApplying = true;
-      _promoError = null;
-    });
-    try {
-      final result = await widget.api.validatePromoCode(
-        code: code,
-        regionId: _selectedRegion!.id,
-        orderPriceKzt: basePrice,
-      );
-      if (!mounted) return;
-      setState(() {
-        _appliedPromoCode = result.code;
-        _promoDiscountKzt = result.discountAmountKzt;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _appliedPromoCode = null;
-        _promoDiscountKzt = 0;
-        _promoError = _readableError(error);
-      });
-    } finally {
-      if (mounted) setState(() => _promoApplying = false);
-    }
-  }
-
-  void _clearPromoCode() {
-    setState(() {
-      _appliedPromoCode = null;
-      _promoDiscountKzt = 0;
-      _promoError = null;
-      _promoController.clear();
-    });
-  }
-
   Future<void> _createOrder() async {
     if (widget.accountPhone.trim().isEmpty) {
       setState(() => _error = 'Для заказа войдите по номеру телефона.');
@@ -1632,7 +1583,6 @@ class _PassengerShellState extends State<PassengerShell>
         durationMin: _preview!.durationSeconds / 60,
         paymentMethod: _paymentMethod,
         offeredPriceKzt: _offeredPriceKzt,
-        promoCode: _offeredPriceKzt == null ? _appliedPromoCode : null,
       );
       widget.sockets.joinOrder(order.id);
       _paymentPollTimer?.cancel();
@@ -1646,11 +1596,7 @@ class _PassengerShellState extends State<PassengerShell>
         _payment = null;
         _paymentTimedOut = false;
         _offeredPriceKzt = null;
-        _appliedPromoCode = null;
-        _promoDiscountKzt = 0;
-        _promoError = null;
       });
-      _promoController.clear();
       _startNoDriversTimer();
     } catch (error) {
       setState(() => _error = _readableError(error));
@@ -2084,13 +2030,6 @@ class _PassengerShellState extends State<PassengerShell>
                     offeredPriceKzt: _offeredPriceKzt,
                     onOfferedPriceChanged: (value) =>
                         setState(() => _offeredPriceKzt = value),
-                    promoController: _promoController,
-                    promoApplying: _promoApplying,
-                    promoError: _promoError,
-                    appliedPromoCode: _appliedPromoCode,
-                    promoDiscountKzt: _promoDiscountKzt,
-                    onApplyPromo: _applyPromoCode,
-                    onClearPromo: _clearPromoCode,
                     loading: _loading,
                     previewLoading: _previewLoading,
                     error: _error,
@@ -2099,12 +2038,8 @@ class _PassengerShellState extends State<PassengerShell>
                       setState(() {
                         _tariffId = id;
                         _offeredPriceKzt = null;
-                        _appliedPromoCode = null;
-                        _promoDiscountKzt = 0;
-                        _promoError = null;
                         if (cached != null) _preview = cached;
                       });
-                      _promoController.clear();
                       if (cached == null) await _refreshPreview();
                     },
                     onCreate: _createOrder,
@@ -6122,13 +6057,6 @@ class _OrderSheet extends StatelessWidget {
     required this.tariffEstimates,
     required this.offeredPriceKzt,
     required this.onOfferedPriceChanged,
-    required this.promoController,
-    required this.promoApplying,
-    required this.promoError,
-    required this.appliedPromoCode,
-    required this.promoDiscountKzt,
-    required this.onApplyPromo,
-    required this.onClearPromo,
     required this.loading,
     required this.previewLoading,
     required this.error,
@@ -6157,13 +6085,6 @@ class _OrderSheet extends StatelessWidget {
   final Map<String, RoutePreview> tariffEstimates;
   final int? offeredPriceKzt;
   final ValueChanged<int?> onOfferedPriceChanged;
-  final TextEditingController promoController;
-  final bool promoApplying;
-  final String? promoError;
-  final String? appliedPromoCode;
-  final int promoDiscountKzt;
-  final VoidCallback onApplyPromo;
-  final VoidCallback onClearPromo;
   final bool loading;
   final bool previewLoading;
   final String? error;
@@ -6179,11 +6100,7 @@ class _OrderSheet extends StatelessWidget {
         pickupSource != PointSource.none && dropoffSource != PointSource.none;
     final canSubmit = !loading && !previewLoading;
     final estimatedPrice = preview?.estimatedPrice;
-    final canUsePromo = offeredPriceKzt == null;
-    final basePrice = offeredPriceKzt?.toDouble() ?? estimatedPrice;
-    final routePrice = basePrice == null
-        ? null
-        : basePrice - (canUsePromo ? promoDiscountKzt : 0);
+    final routePrice = offeredPriceKzt?.toDouble() ?? estimatedPrice;
     if (routeSelected && !routeError) {
       final screen = MediaQuery.sizeOf(context);
       final compact = screen.height < 740 || screen.width < 390;
@@ -6240,18 +6157,6 @@ class _OrderSheet extends StatelessWidget {
                               currentPrice:
                                   offeredPriceKzt ?? estimatedPrice.round(),
                               onChanged: onOfferedPriceChanged,
-                            ),
-                          ],
-                          if (!previewLoading && canUsePromo) ...[
-                            const SizedBox(height: 10),
-                            _PromoCodeField(
-                              controller: promoController,
-                              applying: promoApplying,
-                              error: promoError,
-                              appliedCode: appliedPromoCode,
-                              discountKzt: promoDiscountKzt,
-                              onApply: onApplyPromo,
-                              onClear: onClearPromo,
                             ),
                           ],
                           if (error != null) ...[
@@ -12379,109 +12284,6 @@ class _PriceStepButton extends StatelessWidget {
                 enabled ? SmartTaxiColors.goldDeep : SmartTaxiColors.textMuted,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PromoCodeField extends StatelessWidget {
-  const _PromoCodeField({
-    required this.controller,
-    required this.applying,
-    required this.error,
-    required this.appliedCode,
-    required this.discountKzt,
-    required this.onApply,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final bool applying;
-  final String? error;
-  final String? appliedCode;
-  final int discountKzt;
-  final VoidCallback onApply;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    if (appliedCode != null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: SmartTaxiColors.successSoft,
-          border: Border.all(
-              color: SmartTaxiColors.success.withValues(alpha: 0.35)),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.local_offer_rounded,
-                color: SmartTaxiColors.success, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Промокод $appliedCode: −${_formatTenge(discountKzt)}',
-                style: const TextStyle(
-                  color: SmartTaxiColors.success,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: onClear,
-              child: const Icon(Icons.close_rounded,
-                  color: SmartTaxiColors.success, size: 18),
-            ),
-          ],
-        ),
-      );
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: SmartTaxiColors.border),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
-                    hintText: 'Промокод',
-                  ),
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-              ),
-              TextButton(
-                onPressed: applying ? null : onApply,
-                child: Text(applying ? 'Проверяем...' : 'Применить'),
-              ),
-            ],
-          ),
-          if (error != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                error!,
-                style: const TextStyle(
-                  color: SmartTaxiColors.danger,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
