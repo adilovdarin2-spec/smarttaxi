@@ -402,7 +402,10 @@ router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
              active.short_id active_order_short_id,
              active.status active_order_status,
              active.pickup_text active_order_pickup,
-             active.dropoff_text active_order_dropoff
+             active.dropoff_text active_order_dropoff,
+             co.percent commission_override_percent,
+             co.active commission_override_active,
+             co.updated_at commission_override_updated_at
       FROM drivers d
       LEFT JOIN regions r ON r.id=d.current_region_id
       LEFT JOIN LATERAL (
@@ -412,6 +415,7 @@ router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
         ORDER BY created_at DESC
         LIMIT 1
       ) active ON true
+      LEFT JOIN commission_overrides co ON co.driver_id=d.id
       WHERE d.id=$1
     `, [params.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
@@ -424,6 +428,11 @@ router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
         status: driver.active_order_status,
         pickupText: driver.active_order_pickup,
         dropoffText: driver.active_order_dropoff
+      } : null,
+      commissionOverride: driver.commission_override_percent !== null ? {
+        percent: Number(driver.commission_override_percent),
+        active: driver.commission_override_active,
+        updatedAt: driver.commission_override_updated_at
       } : null,
       regions: approvals.map(publicDriverRegionApproval)
     });
@@ -460,6 +469,81 @@ router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER", "OPERATOR")
       return updated;
     });
     res.json({ driver });
+  } catch (error) { next(error); }
+});
+
+function publicCommissionOverride(row) {
+  return {
+    driverId: row.driver_id,
+    driverName: row.driver_name || null,
+    driverPhone: row.driver_phone || null,
+    driverPlate: row.driver_plate || null,
+    percent: Number(row.percent),
+    active: row.active,
+    updatedAt: row.updated_at
+  };
+}
+
+const CommissionOverrideBody = z.object({
+  percent: z.coerce.number().min(0).max(100),
+  active: z.boolean().optional().default(true)
+});
+
+// commission_overrides was defined in the schema from the start but never
+// read anywhere — wiring it up here (admin CRUD) and in
+// orders.routes.js#updateStatus (TRIP_COMPLETED), where an active override
+// replaces the tariff's flat service_commission_percent for that driver's
+// trip. Deliberately not retroactive: only ever read at the moment a trip
+// completes, never re-applied to orders that already finished.
+router.get("/commission-overrides", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+  try {
+    const rows = (await query(`
+      SELECT co.*, d.name AS driver_name, d.phone AS driver_phone, d.plate AS driver_plate
+      FROM commission_overrides co
+      JOIN drivers d ON d.id=co.driver_id
+      ORDER BY co.updated_at DESC
+    `)).rows;
+    res.json({ commissionOverrides: rows.map(publicCommissionOverride) });
+  } catch (error) { next(error); }
+});
+
+router.put("/commission-overrides/:driverId", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ driverId: z.string().uuid() }).parse(req.params);
+    const body = CommissionOverrideBody.parse(req.body);
+    const driver = (await query("SELECT id FROM drivers WHERE id=$1", [params.driverId])).rows[0];
+    if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+    const row = (await query(`
+      INSERT INTO commission_overrides(driver_id, percent, active, updated_at)
+      VALUES($1,$2,$3,NOW())
+      ON CONFLICT (driver_id) DO UPDATE SET percent=EXCLUDED.percent, active=EXCLUDED.active, updated_at=NOW()
+      RETURNING *
+    `, [params.driverId, body.percent, body.active])).rows[0];
+    await writeAudit(query, {
+      action: "commission_override_set",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: params.driverId,
+      metadata: { percent: body.percent, active: body.active },
+      req
+    });
+    res.status(201).json({ commissionOverride: publicCommissionOverride({ ...row, driver_name: null, driver_phone: null, driver_plate: null }) });
+  } catch (error) { next(error); }
+});
+
+router.delete("/commission-overrides/:driverId", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ driverId: z.string().uuid() }).parse(req.params);
+    const row = (await query("DELETE FROM commission_overrides WHERE driver_id=$1 RETURNING driver_id", [params.driverId])).rows[0];
+    if (!row) throw new AppError("Commission override not found", 404, "COMMISSION_OVERRIDE_NOT_FOUND");
+    await writeAudit(query, {
+      action: "commission_override_removed",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: params.driverId,
+      req
+    });
+    res.status(204).end();
   } catch (error) { next(error); }
 });
 

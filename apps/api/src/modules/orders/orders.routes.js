@@ -932,6 +932,36 @@ async function updateStatus(req, res, next, status) {
           updated = withWaiting.rows[0];
         }
 
+        // Per-driver commission override (commission_overrides, previously
+        // unused): only ever read here, at the trip's own completion — never
+        // retroactively re-applied to already-completed orders. Replaces
+        // the tariff-rate commission on the whole trip (base + waiting)
+        // rather than blending two different percentages on one order.
+        // Must also update pricing_snapshot.serviceCommission/driverEarning,
+        // not just the column — finance.service.js#orderAmounts() prefers
+        // the snapshot for the ledger entry created below.
+        if (updated.driver_id) {
+          const override = (await client.query(
+            "SELECT percent FROM commission_overrides WHERE driver_id=$1 AND active=true",
+            [updated.driver_id]
+          )).rows[0];
+          if (override) {
+            const overriddenCommission = Math.round(Number(updated.price) * Number(override.percent) / 100);
+            const withOverride = await client.query(`
+              UPDATE orders
+              SET service_commission=$1,
+                  pricing_snapshot = pricing_snapshot || jsonb_build_object(
+                    'serviceCommission', $1,
+                    'driverEarning', price-$1,
+                    'serviceCommissionPercent', $2
+                  )
+              WHERE id=$3
+              RETURNING *
+            `, [overriddenCommission, override.percent, updated.id]);
+            updated = withOverride.rows[0];
+          }
+        }
+
         const cashback = Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
         if (updated.client_id) {
