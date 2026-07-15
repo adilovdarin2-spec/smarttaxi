@@ -229,6 +229,16 @@ run `npm test`.
 
 ## 8. CRITICAL: unverified drivers could go online — fixed
 
+> **Update 2026-07-15 late night:** the document-approval gate this section describes
+> was **deliberately removed** a few hours after landing, by explicit user request (see
+> `docs/status/mobile-driver-overnight-2026-07-15.md` round 4, and project memory
+> `project_driver_documents_not_required`) — registration friction was judged worse than
+> the verification gap this section closes. `assertDriverDocumentsApproved` and both its
+> call sites are gone from `driver-region-approvals.service.js`; going online now only
+> depends on region approval + `is_blocked`, as before this section's fix. The rest of
+> this section is kept for historical context (why the check existed, what it looked
+> like) — don't use it as current behavior.
+
 Confirmed: `ONLINE`/dispatch eligibility only ever checked
 `drivers.is_blocked`. There was no link at all between a driver being
 allowed to work and either `driver_applications.status` or their uploaded
