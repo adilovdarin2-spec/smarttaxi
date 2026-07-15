@@ -388,7 +388,33 @@ its status doc; not previously wired on mobile.
   compile-verified only tonight.
 - Committed as `3fec0dc`.
 
-## Not started yet — items 10–16
+## [10] Избранные/заблокированные водители — done this pass
+
+Same module as §9 (`favorites.routes.js`, already read in full): `GET/POST
+/api/favorites/drivers`, `DELETE /api/favorites/drivers/:driverId`, body
+`{driverId, type: FAVORITE|BLOCKED}`. POST upserts (`ON CONFLICT DO
+UPDATE`), so flipping a driver from favorite to blocked reuses the same
+call, no separate "change type" endpoint.
+- `DriverPreference` model + 3 `ApiClient` methods
+  (`getDriverPreferences`/`setDriverPreference`/`removeDriverPreference`).
+- New "Водители" drawer entry → `_driverPreferencesScreen()`, split into
+  Избранные / Заблокированные sections. Add flow
+  (`_AddDriverPreferenceSheet`) picks from the same
+  `_knownDriversFromHistory` source built for §4 (still no driver-search
+  endpoint anywhere in the backend), with a FAVORITE/BLOCKED choice chip;
+  already-preferenced drivers are filtered out of the candidate list.
+- Ties into §4: a blocked driver already gets a 403 server-side if picked
+  for a recurring booking (confirmed reading the routes file for §4) — this
+  screen is what actually lets a rider populate that block list from the
+  client side.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs a
+  logged-in CLIENT session with real trip history, blocked by the standing
+  no-live-login policy; compile-verified only tonight.
+- Committed as `bbe0de3`.
+
+## Not started yet — items 11–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
@@ -402,12 +428,8 @@ investigating §3:
   web tonight, confirmed exact keys.
 - **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
   original brief guessed) already wired on web tonight.
-- **§10 favorite/blocked drivers**: `GET/POST /api/favorites/drivers`,
-  `DELETE /api/favorites/drivers/:driverId`, body
-  `{driverId, type: FAVORITE|BLOCKED}` — same module as §9, read directly
-  from `favorites.routes.js` tonight while investigating §9.
 
-None of §10–16 are implemented on mobile yet — flagging honestly rather
+None of §11–16 are implemented on mobile yet — flagging honestly rather
 than claiming partial coverage that isn't there.
 
 ## Verification method note
