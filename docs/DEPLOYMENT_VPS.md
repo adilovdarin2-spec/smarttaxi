@@ -1,5 +1,11 @@
 # VPS deployment
 
+**NOT USED IN PROD (2026-07-15)** — Railway is the only live production
+deployment now; this VPS/nginx/docker-compose path is kept in the repo for
+reference but is not currently running anything and is not the deploy
+target. See docs/status/railway-domain-setup-2026-07-15.md for the current
+plan to attach a custom domain directly to Railway instead.
+
 Target baseline:
 
 - VPS IP: `78.140.245.205`
