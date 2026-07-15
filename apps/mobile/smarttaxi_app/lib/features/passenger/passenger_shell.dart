@@ -1858,10 +1858,16 @@ class _PassengerShellState extends State<PassengerShell>
               // once in init (_handleOrderUpdate), so it stays accurate
               // however long the rider spends on some other tab without
               // cancelling — not a one-shot snapshot from whenever they
-              // last looked at Home.
+              // last looked at Home. Excluded on Trips too (matching
+              // showTopHeader above): _tripsScreen() already renders its
+              // own full map + status panel for the active order there, so
+              // this banner would just stack a second, redundant header
+              // directly above that screen's own map header instead of
+              // pointing anywhere new.
               if (_order != null &&
                   !_isPassengerOrderTerminal(_order!.status) &&
-                  _tab != PassengerTab.home)
+                  _tab != PassengerTab.home &&
+                  _tab != PassengerTab.trips)
                 _ActiveOrderBanner(
                   order: _order!,
                   onTap: () => setState(() => _tab = PassengerTab.home),
