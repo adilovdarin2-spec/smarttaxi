@@ -138,7 +138,6 @@ String readableError(Object error) {
     'DRIVER_REGION_INACTIVE': 'Регион временно отключён',
     'DRIVER_REGION_NOT_APPROVED': 'Вы не одобрены для этого региона',
     'DRIVER_REGION_BLOCKED': 'Работа в этом регионе заблокирована',
-    'DRIVER_DOCUMENTS_NOT_APPROVED': 'Загрузите документы для проверки',
     'DRIVER_BLOCKED': 'Водитель заблокирован',
     'DRIVER_HAS_ACTIVE_ORDER': 'У вас уже есть активный заказ',
     'ORDER_ALREADY_ACCEPTED': 'Заказ уже принят другим водителем',
