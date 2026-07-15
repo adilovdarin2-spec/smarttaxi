@@ -83,6 +83,8 @@ class _DriverShellState extends State<DriverShell> {
   String? _navigatorMessage;
   List<DriverRegion> _regions = const [];
   String? _regionId;
+  List<TariffOption> _regionTariffs = const [];
+  bool _demandHintLoading = false;
   List<OrderSummary> _orders = const [];
   List<RoadAlert> _roadAlerts = const [];
   OrderSummary? _activeOrder;
@@ -282,6 +284,7 @@ class _DriverShellState extends State<DriverShell> {
         _regions = regions;
         _regionId ??= regions.isNotEmpty ? regions.first.id : null;
       });
+      unawaited(_loadDemandHint());
     } catch (error) {
       setState(() => _error = readableError(error));
     } finally {
@@ -300,11 +303,39 @@ class _DriverShellState extends State<DriverShell> {
       await widget.api.selectDriverRegion(regionId);
       await _loadOrders();
       await _loadRoadAlerts();
+      unawaited(_loadDemandHint());
     } catch (error) {
       setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  // Uses the same public /api/tariffs the passenger price screen reads —
+  // there is no dedicated spatial "demand zone" endpoint anywhere in the
+  // backend, only per-tariff surgeMultiplier/demandCoefficient. Taking the
+  // max combined multiplier across the region's active tariffs is an
+  // honest, real signal ("prices are up right now"), not a fabricated one.
+  Future<void> _loadDemandHint() async {
+    final regionId = _regionId;
+    if (regionId == null) return;
+    setState(() => _demandHintLoading = true);
+    try {
+      final tariffs = await widget.api.getTariffs(regionId);
+      if (!mounted) return;
+      setState(() => _regionTariffs = tariffs);
+    } catch (_) {
+      // Best-effort — a failed demand lookup must not disrupt the line tab.
+    } finally {
+      if (mounted) setState(() => _demandHintLoading = false);
+    }
+  }
+
+  double get _demandLevel {
+    if (_regionTariffs.isEmpty) return 1;
+    return _regionTariffs
+        .map((t) => t.surgeMultiplier * t.demandCoefficient)
+        .reduce((a, b) => a > b ? a : b);
   }
 
   Future<void> _setOnline(bool nextOnline) async {
@@ -1624,6 +1655,10 @@ class _DriverShellState extends State<DriverShell> {
                 ? null
                 : () => _setOnline(!_online),
           ),
+          if (_regionId != null) ...[
+            const SizedBox(height: 12),
+            _DemandHintCard(level: _demandLevel, loading: _demandHintLoading),
+          ],
           const SizedBox(height: 12),
           _SmartNavigatorMap(
             current: _currentCoordinate,
@@ -2040,6 +2075,93 @@ class _DriverShellState extends State<DriverShell> {
   StatusTone _driverStatusTone() {
     if (_activeOrder?.isActive == true) return StatusTone.warning;
     return _online ? StatusTone.success : StatusTone.neutral;
+  }
+}
+
+// Level is max(surgeMultiplier * demandCoefficient) across the region's
+// active tariffs — a real server-computed pricing signal, not a spatial
+// heatmap (the backend has no such endpoint). Thresholds are a judgment
+// call, not a server-defined boundary.
+class _DemandHintCard extends StatelessWidget {
+  const _DemandHintCard({required this.level, required this.loading});
+
+  final double level;
+  final bool loading;
+
+  (String, String, Color, Color) get _meta {
+    if (level >= 1.5) {
+      return (
+        'Высокий спрос',
+        'Цены сейчас выше обычного — хорошее время быть на линии',
+        SmartTaxiColors.danger,
+        SmartTaxiColors.dangerSoft,
+      );
+    }
+    if (level > 1.0) {
+      return (
+        'Повышенный спрос',
+        'Цены немного выше обычного в вашем регионе',
+        SmartTaxiColors.goldDeep,
+        SmartTaxiColors.goldSurface,
+      );
+    }
+    return (
+      'Обычный спрос',
+      'Цены в вашем регионе сейчас стандартные',
+      SmartTaxiColors.textSecondary,
+      SmartTaxiColors.goldSurface,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (title, text, color, background) = _meta;
+    return PremiumCard(
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(Icons.trending_up_rounded, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text(
+                  text,
+                  style: const TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (loading) ...[
+            const SizedBox(width: 8),
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

@@ -347,17 +347,30 @@ class DriverStats {
 }
 
 class TariffOption {
-  const TariffOption({required this.id, required this.name, this.description});
+  const TariffOption({
+    required this.id,
+    required this.name,
+    this.description,
+    this.surgeMultiplier = 1,
+    this.demandCoefficient = 1,
+  });
 
   final String id;
   final String name;
   final String? description;
+  // Real, server-computed pricing multipliers (tariffs.routes.js
+  // publicTariff) — the only demand signal the backend actually exposes;
+  // there is no separate spatial "demand zone"/heatmap endpoint.
+  final double surgeMultiplier;
+  final double demandCoefficient;
 
   factory TariffOption.fromJson(Map<String, dynamic> json) {
     return TariffOption(
       id: '${json['id']}',
       name: '${json['displayName'] ?? json['name'] ?? 'Тариф'}',
       description: json['description']?.toString(),
+      surgeMultiplier: _toDouble(json['surgeMultiplier'] ?? 1),
+      demandCoefficient: _toDouble(json['demandCoefficient'] ?? 1),
     );
   }
 }
