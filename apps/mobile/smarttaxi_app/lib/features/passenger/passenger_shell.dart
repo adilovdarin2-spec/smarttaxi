@@ -2144,6 +2144,7 @@ class _PassengerShellState extends State<PassengerShell>
             constraints:
                 BoxConstraints(maxHeight: screen.height * sheetFraction),
             child: _TripStatusPanel(
+              api: widget.api,
               order: order,
               statusText: _statusLabel(order.status),
               statusTone: _statusTone(order.status),
@@ -6289,6 +6290,7 @@ class _TripDetailScreen extends StatelessWidget {
 
 class _TripStatusPanel extends StatelessWidget {
   const _TripStatusPanel({
+    required this.api,
     required this.order,
     required this.statusText,
     required this.statusTone,
@@ -6323,6 +6325,7 @@ class _TripStatusPanel extends StatelessWidget {
     required this.onRespondToPriceOffer,
   });
 
+  final ApiClient api;
   final OrderSummary order;
   final String statusText;
   final StatusTone statusTone;
@@ -6489,7 +6492,8 @@ class _TripStatusPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     _ShareTripButton(shareToken: order.shareToken),
                     const SizedBox(width: 8),
-                    _SafetyButton(sosPhone: sosPhone),
+                    _SafetyButton(
+                        sosPhone: sosPhone, api: api, orderId: order.id),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -6710,7 +6714,8 @@ class _TripStatusPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     _ShareTripButton(shareToken: order.shareToken),
                     const SizedBox(width: 8),
-                    _SafetyButton(sosPhone: sosPhone),
+                    _SafetyButton(
+                        sosPhone: sosPhone, api: api, orderId: order.id),
                   ],
                 ],
               ),
@@ -8910,9 +8915,11 @@ class _ShareTripButton extends StatelessWidget {
 }
 
 class _SafetyButton extends StatelessWidget {
-  const _SafetyButton({this.sosPhone});
+  const _SafetyButton({this.sosPhone, required this.api, required this.orderId});
 
   final String? sosPhone;
+  final ApiClient api;
+  final String orderId;
 
   @override
   Widget build(BuildContext context) {
@@ -8925,7 +8932,8 @@ class _SafetyButton extends StatelessWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (_) => _SafetySheet(sosPhone: sosPhone),
+          builder: (_) =>
+              _SafetySheet(sosPhone: sosPhone, api: api, orderId: orderId),
         ),
         child: const SizedBox(
           width: 34,
@@ -8942,12 +8950,46 @@ class _SafetyButton extends StatelessWidget {
 }
 
 class _SafetySheet extends StatelessWidget {
-  const _SafetySheet({this.sosPhone});
+  const _SafetySheet({this.sosPhone, required this.api, required this.orderId});
 
   final String? sosPhone;
+  final ApiClient api;
+  final String orderId;
 
   Future<void> _callEmergency() async {
     await launchUrl(Uri(scheme: 'tel', path: sosPhone ?? '112'));
+  }
+
+  // Fires alongside the emergency call, not instead of it — the call is the
+  // safety-critical action and must never be delayed or blocked by this.
+  // Puts the rider's current coordinates in the message body since the
+  // support endpoint has no dedicated location field (topic/message/orderId
+  // only); a short GPS timeout keeps a stuck fix from hanging the request.
+  Future<void> _sendSosAlert() async {
+    var locationText = 'координаты недоступны';
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 6),
+        ),
+      );
+      locationText =
+          '${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}';
+    } catch (_) {
+      // Best-effort — the alert still goes out without coordinates.
+    }
+    try {
+      await api.submitSupportMessage(
+        topic: 'SOS',
+        message:
+            'Экстренный вызов во время поездки. Координаты: $locationText.',
+        orderId: orderId,
+      );
+    } catch (_) {
+      // Best-effort — the phone call already went out, which is what
+      // actually keeps the rider safe.
+    }
   }
 
   @override
@@ -9006,13 +9048,14 @@ class _SafetySheet extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 unawaited(_callEmergency());
+                unawaited(_sendSosAlert());
               },
             ),
             const Divider(height: 18, color: SmartTaxiColors.border),
             const _SettingsRow(
-              title: 'Маршрут и водитель сохранены',
+              title: 'Поддержка получит сигнал',
               text:
-                  'Поддержка видит статус поездки и может помочь в любой момент',
+                  'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком',
             ),
           ],
         ),
