@@ -229,6 +229,61 @@ rating, payout status transitions) still needs the backend additions
 listed above plus a live database; not done tonight per the same local-
 backend limitation as everything else in this doc.
 
+## 12. Follow-up: driver document verification admin UI (real security gap, not just UX)
+
+Flagged by the QA/server sessions: `driver_documents` (types
+`DRIVER_LICENSE_FRONT/BACK`, `ID_CARD_FRONT/BACK`,
+`VEHICLE_REGISTRATION`, `INSURANCE_POLICY`, `PROFILE_PHOTO`, `OTHER`;
+statuses `PENDING/APPROVED/REJECTED`) and every admin endpoint for it
+(`listDocumentsForApplication`, `listDocumentsForDriver`,
+`getDriverDocumentById`, `reviewDriverDocument` in
+`admin.routes.js`) already existed server-side, but `AdminApp.jsx` had
+no screen for any of it — a driver's uploaded documents were reviewable
+only in theory. Unlike tonight's earlier raffles/reviews-delete work,
+**no backend contract was missing here** — this was purely a wiring
+gap, closed entirely client-side:
+
+- Extended the existing "Заявки" page's `ApplicationPanel` (opened via
+  "Открыть" on a pending application) to load and display every
+  document the candidate uploaded
+  (`GET /api/admin/driver-applications/:id/documents`), each with an
+  authenticated thumbnail — the file endpoint
+  (`GET /api/admin/driver-documents/:id/file`) requires a Bearer token,
+  so a plain `<img src>` won't carry it; built a small component that
+  fetches the file as a blob via an authenticated `fetch`, renders it
+  from an object URL, revokes it on unmount, and opens the same object
+  URL full-size in a new tab on click.
+  - Flags exactly which of the 5 required types (license front/back,
+    ID front/back, vehicle registration) are missing, separately from
+    optional extras (insurance, profile photo, other).
+  - Each document has its own Одобрить/Отклонить (rejection requires a
+    reason) via `PATCH /api/admin/driver-documents/:id` — independent
+    of the whole-application approve/reject/comment flow that already
+    existed on this same panel.
+- Extended `DriverDetailPanel` (opened from the existing "Водители"
+  page — this is the "already-approved drivers" side, so a separate
+  top-level tab wasn't needed) with the same document grid in
+  view-only mode: no delete button anywhere, only a "Запросить
+  переоформление" action per document that sets it back to `REJECTED`
+  with a reason, for handling passenger complaints or a spot re-check
+  without touching the driver's other approved documents.
+
+**Verification**: `npm run check` clean. Live-verified the entire flow
+in the browser (fetch mocked, real device tokens/Bearer flow exercised
+against the mock): applications list → opened a candidate missing 2 of
+5 required documents → confirmed the missing-docs banner named exactly
+those two → approved one document → rejected another with a reason,
+confirmed it displayed back — then switched to the drivers side,
+opened an already-approved driver with all 5 documents present,
+confirmed no "missing" banner and no delete affordance, and requested
+resubmission on one document, confirming it flipped to rejected with
+the reason shown. Zero console errors throughout. (Side note during
+this pass: the browser tool's `computer` click action intermittently
+failed to deliver a real click to submit buttons this session — worked
+around by dispatching `.click()` via `javascript_tool` after confirming
+values were set correctly, purely to drive already-built UI for
+verification, not to implement anything.)
+
 ## Known gaps / follow-ups
 
 - Referral code redemption at signup (see §8) — backend-ready, not
@@ -263,3 +318,4 @@ backend limitation as everything else in this doc.
    carousel") due to a git index race — see
    `feedback_git_staging_race` memory. Code is real and verified as
    described above; the commit message just doesn't mention it.
+6. `Add driver document verification to the admin applications/drivers panels`
