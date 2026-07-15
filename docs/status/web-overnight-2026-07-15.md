@@ -585,6 +585,13 @@ plus a real bug the screenshot caught**:
   pure numeric value changes with no structural change, and the same
   gap pattern was visually confirmed correct on the favorites/referral
   rows above — treated as low-risk, not re-screenshotted standalone.
+- `.admin-document-grid`/`.admin-document-card-body` (the other CSS
+  touched this iteration) re-screenshotted on the application-detail
+  documents panel with all 5 required document types populated: card
+  spacing, semantic status badges (На проверке/Одобрен/Отклонён),
+  inline rejection reason, and the already-decluttered per-document
+  Одобрить/Отклонить actions all render correctly.
+  ![admin document cards](../design/audit-2026-07-15/admin-spacing-application-documents-after.png)
 - Build (`npm run check`) green after every edit in this iteration.
 
 ## Known gaps / follow-ups
