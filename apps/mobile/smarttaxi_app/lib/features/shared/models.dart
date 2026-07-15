@@ -467,6 +467,7 @@ class OrderSummary {
     this.driverOfferPriceKzt,
     this.driverOfferStatus,
     this.driverOfferByDriverId,
+    this.searchTimedOut = false,
   });
 
   final String id;
@@ -505,6 +506,13 @@ class OrderSummary {
   final int? driverOfferPriceKzt;
   final String? driverOfferStatus;
   final String? driverOfferByDriverId;
+  // Server-authoritative — the order has sat open (SEARCHING_DRIVER/NEW,
+  // no driver_id) for >75s (DRIVER_SEARCH_TIMEOUT_MS,
+  // order-dispatch.service.js isOrderSearchTimedOut). Recomputed live on
+  // every read/socket event, not a stored flag — always reflects the real
+  // wait, including across app restarts/reconnects, unlike a purely
+  // client-side timer.
+  final bool searchTimedOut;
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
@@ -538,6 +546,7 @@ class OrderSummary {
       driverOfferPriceKzt: driverOfferPriceKzt,
       driverOfferStatus: driverOfferStatus,
       driverOfferByDriverId: driverOfferByDriverId,
+      searchTimedOut: searchTimedOut,
     );
   }
 
@@ -616,6 +625,8 @@ class OrderSummary {
       driverOfferByDriverId: (json['driver_offer_by_driver_id'] ??
               json['driverOfferByDriverId'])
           ?.toString(),
+      searchTimedOut:
+          json['search_timed_out'] == true || json['searchTimedOut'] == true,
     );
   }
 }

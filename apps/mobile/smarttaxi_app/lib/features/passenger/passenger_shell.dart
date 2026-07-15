@@ -843,6 +843,13 @@ class _PassengerShellState extends State<PassengerShell>
   void _applyOrderSnapshot(OrderSummary order) {
     final driverJustAssigned =
         _order?.driverId == null && order.driverId != null;
+    // POST /orders/:id/cancel (driver role) reopens the order for dispatch
+    // instead of a terminal cancel — status goes back to SEARCHING_DRIVER
+    // with driver_id cleared, distinct from a real terminal cancellation
+    // (which lands on a CANCELLED_BY_* status, not SEARCHING_DRIVER).
+    final driverJustCancelled = (_order?.driverId ?? '').isNotEmpty &&
+        order.driverId == null &&
+        order.status == 'SEARCHING_DRIVER';
     const arrivedStatuses = {'DRIVER_ARRIVED', 'WAITING_CLIENT'};
     final driverJustArrived = !arrivedStatuses.contains(_order?.status) &&
         arrivedStatuses.contains(order.status);
@@ -898,6 +905,18 @@ class _PassengerShellState extends State<PassengerShell>
     }
     if (driverJustArrived) {
       unawaited(HapticFeedback.heavyImpact());
+    }
+    if (driverJustCancelled) {
+      unawaited(HapticFeedback.mediumImpact());
+      // Backend already pushes "Водитель сменился" (DRIVER_CANCELLED,
+      // orders.routes.js) for the backgrounded case; this toast covers the
+      // open-app/other-tab case the same way the driver-found one does.
+      if (mounted) {
+        AppToast.showInfo(
+          context,
+          'Водитель отменил поездку — ищем для вас другого',
+        );
+      }
     }
     if (order.driverId != null) {
       // force: true even with no _driverLocation yet — the route response
@@ -7075,7 +7094,14 @@ class _TripStatusPanel extends StatelessWidget {
     final orderShortId =
         order.id.length > 8 ? order.id.substring(0, 8) : order.id;
     final searching = const {'SEARCHING_DRIVER', 'NEW'}.contains(order.status);
-    if (searching && noDriversFound) {
+    // noDriversFound is a client-side heuristic (25s elapsed + zero nearby
+    // drivers visible) that reacts fast for the common "genuinely nobody
+    // around" case; order.searchTimedOut is the server's authoritative
+    // signal (open >75s regardless of nearby-driver visibility) and also
+    // catches the different case where drivers are nearby but none have
+    // accepted — survives app restarts/reconnects, a purely local timer
+    // wouldn't.
+    if (searching && (noDriversFound || order.searchTimedOut)) {
       return _PanelEntrance(
         key: const ValueKey('trip-panel-no-drivers'),
         child: _NoDriversFoundPanel(
