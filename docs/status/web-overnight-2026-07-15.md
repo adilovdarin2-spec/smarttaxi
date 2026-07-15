@@ -159,6 +159,76 @@ was instead verified by exact field-name/endpoint cross-check against
 `QUICK_MESSAGES` key list are all read verbatim from that source, not
 guessed).
 
+## 11. Follow-up: driver raffles, ratings (overall + per-raffle), tariff
+    commission visibility, payout requests
+
+Four more asks, all `apps/web`-only:
+
+- **Raffles ("Розыгрыши")**: new admin section — create a period
+  (title/startsAt/endsAt), list, delete with confirm. **No backend
+  endpoint exists for this yet** — same pattern as recurring-bookings/
+  referrals earlier tonight: built against an assumed REST contract so
+  a backend session can pick it up:
+  - `GET /api/admin/raffles` → `{ raffles: [{ id, title, startsAt,
+    endsAt, createdAt }] }`
+  - `POST /api/admin/raffles` body `{ title, startsAt, endsAt }`
+    (ISO datetimes) → `{ raffle }`
+  - `DELETE /api/admin/raffles/:id` → `204`/`{}`
+  - The ask that "trips completed in this period automatically count"
+    is backend aggregation logic (join `orders`/`driver_reviews` by
+    date range) — nothing to build client-side for that beyond letting
+    the admin pick a period, which the leaderboard filter below does.
+- **Driver ratings — two views**: extended the existing "Качество"
+  page (didn't duplicate it) with a segmented "Общий рейтинг" / "За
+  розыгрыш" toggle. Per-raffle mode adds a raffle `<select>` and calls
+  `getAdminLeaderboard({ dateFrom, dateTo })` using the selected
+  raffle's bounds. **`GET /api/admin/leaderboard` currently ignores
+  query params entirely** (read the route directly — no `dateFrom`/
+  `dateTo` parsing) — this is the second half of the assumed contract:
+  the backend needs to add optional date-range filtering to that
+  existing endpoint (join `orders` on `completed_at` or `created_at`
+  between the bounds) for the per-raffle view to actually differ from
+  the overall one. Until then it silently returns the same all-time
+  leaderboard regardless of which raffle is selected — not broken, just
+  not filtered yet.
+- **Review deletion (moderation)**: delete button + confirm modal on
+  every review card ("Отзыв будет удалён... Используйте для явно
+  накрученных или оскорбительных отзывов"), wired to
+  `DELETE /api/admin/reviews/:id`. **Also not implemented on the
+  backend yet** — `admin.routes.js` only has `GET /reviews` and the
+  client-facing `POST /driver-reviews`, no delete. Needs to also
+  re-average the driver's `rating` column after removal (mirroring the
+  `AVG(rating)` update `POST /driver-reviews` already does on insert)
+  or the driver's displayed rating will drift from their visible
+  review list.
+- **Tariff commission visibility**: the field already existed
+  (`serviceCommissionPercent`) in both the tariff card and edit form —
+  the real problem was the *card* view had two different `InfoLine`s
+  both labeled plain "Комиссия": one the tariff's commission **rate**
+  (%), the other the period's commission **total** (₸). Renamed the
+  rate one to "Комиссия сервиса, %" (matching the exact wording asked
+  for) to disambiguate; also updated the edit form's label from
+  "Комиссия сервиса %" to the same wording for consistency. No backend
+  change needed — this was a labeling bug, not a missing feature.
+- **Payout requests**: new "Выплаты" admin section — this one needed
+  no assumed contract, `apps/api` already had it end to end
+  (`GET/PATCH /api/admin/payout-requests`, `wallet.service.js`).
+  Status filter (PENDING default), approve/mark-paid/reject actions;
+  reject requires a reason via a small modal, matching how the backend
+  stores `rejection_reason`.
+
+**Verification**: `npm run check` clean. Live-verified all four in the
+browser via a temporary `window.fetch` mock (raffles list + create
+banner, quality page's raffle toggle + raffle-scoped leaderboard
+message + review-delete confirm, payouts list with approve/reject/
+mark-paid actions and the reject-reason modal, and the tariff card's
+now-disambiguated commission label) — zero console errors in every
+case. Real end-to-end behavior (raffle CRUD persisting, leaderboard
+actually differing by period, review deletion re-averaging a driver's
+rating, payout status transitions) still needs the backend additions
+listed above plus a live database; not done tonight per the same local-
+backend limitation as everything else in this doc.
+
 ## Known gaps / follow-ups
 
 - Referral code redemption at signup (see §8) — backend-ready, not
@@ -172,6 +242,11 @@ guessed).
   not integration-tested against a live order — same missing local
   backend, plus no easy way to fast-forward to those order states
   without one.
+- Raffles, per-raffle leaderboard filtering, and review deletion (see
+  §11) need three backend additions before they do anything beyond
+  render: `GET/POST/DELETE /api/admin/raffles`, `dateFrom`/`dateTo`
+  support on `GET /api/admin/leaderboard`, and
+  `DELETE /api/admin/reviews/:id` (with a rating re-average).
 - `apps/web/src/features/client/ClientApp.jsx.tmp` — an empty, untracked
   stray file already present in the tree at session start. Left alone
   (not mine, might be another session's in-progress marker).
@@ -182,3 +257,9 @@ guessed).
 2. `Wire client favorites/promo/support/referral to real backend contracts`
 3. `Align favorites/referral/support payloads with the real backend contract`
 4. `Wire driver price-offer negotiation and quick messages into ClientApp`
+5. Raffles/ratings/commission-label/payouts (§11) landed in the working
+   tree but got swept into an unrelated parallel session's commit
+   (`4e2fc87`, "Mobile: redesign tariff selection as a horizontal
+   carousel") due to a git index race — see
+   `feedback_git_staging_race` memory. Code is real and verified as
+   described above; the commit message just doesn't mention it.
