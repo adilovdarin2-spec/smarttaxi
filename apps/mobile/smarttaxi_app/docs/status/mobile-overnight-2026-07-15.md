@@ -940,6 +940,36 @@ edge case this rare), but no longer the bare/generic fallback either. No
 further code change needed — recording this cross-check so the next
 session reading either status doc doesn't re-flag it as still open.
 
+## Self-review pass: found and fixed a real regression — `459782c`
+
+With the concurrent-backend follow-up done, self-reviewed tonight's more
+complex additions for correctness rather than moving on to speculative new
+scope. Found one genuine bug in `74d8fcc`'s document-approval check:
+`_driverDocuments` starts as an empty list and only populates via a
+fire-and-forget `unawaited(_loadDriverDocuments())` fired from
+`_loadRegions()`. In the window between the line tab's first render
+(region data already loaded synchronously) and that fetch actually
+resolving, `_missingRequiredDocuments` read all 5 required types as
+missing — briefly showing "Нужны документы" and disabling the online
+toggle for **every** driver, including fully-approved ones, on essentially
+every cold app start. Added `_driverDocumentsLoaded`, set only after a
+successful fetch; the getter now fails open (no missing documents) until
+then — safe specifically because this check is advisory-only, the
+server's own `DRIVER_DOCUMENTS_NOT_APPROVED` rejection on the actual
+go-online call remains the real enforcement regardless of what the
+client-side pre-check shows in the meantime.
+
+Also checked the same fire-and-forget-load pattern used elsewhere tonight
+(`_regionTariffs`/`_demandLevel` for §16's demand hint) — that one was
+already safe: its empty-state fallback is `1` ("normal demand," a
+harmless informational default), and it never disables anything, unlike
+the documents check which gates a real action.
+
+**Verified:** `flutter analyze`/`test`/`build apk --debug` clean (same
+7/10 baseline). **Not verified live** — same standing policy; this was
+caught by re-reading the code and reasoning about the async timing, not
+by observing it on a device.
+
 ## Verification method note
 
 No real backend/OTP credentials were available in this session to log in on
