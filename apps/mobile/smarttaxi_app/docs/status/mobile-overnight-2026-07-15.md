@@ -471,7 +471,43 @@ not previously wired on mobile.
   compile-verified only tonight.
 - Committed as `90e40a0`.
 
-## Not started yet — items 13–16
+## [13] RU/KZ переключатель — already done pre-brief, re-verified this pass
+
+Investigated before assuming this was unstarted. The switcher itself was
+already fully built (predates tonight's 16-item brief, from earlier work
+this same session): `main.dart` has `_loadLocale`/`setLocale`, persisted
+via `AuthStore.saveLocale`/`readLocale`, wired into `MaterialApp(locale:
+_locale)`; a toggle lives on the auth welcome screen and a picker
+(`ru`/`kk`) lives in the passenger settings screen
+(`_settingsScreen`/`_LanguagePicker` around
+[passenger_shell.dart:2102](../../lib/features/passenger/passenger_shell.dart)),
+both calling the same `onChangeLocale` callback threaded down from
+`main.dart`. `lib/l10n/app_ru.arb` and `app_kk.arb` both exist with
+generated `app_localizations_{ru,kk}.dart`.
+- **Re-verified this pass**: parsed both ARB files — **263/263 keys match
+  exactly, zero missing on either side** — so every string that *is*
+  routed through `AppLocalizations` has a real Kazakh translation, not a
+  silent English/Russian fallback.
+- **Honest gap, not fixed this pass**: coverage is partial. Only ~17
+  call sites across `passenger_shell.dart` (2) and `driver_shell.dart` (15)
+  actually go through `AppLocalizations.of(context)` — the large majority
+  of on-screen text in both ~12k-line files (including everything added
+  for §0–§12 tonight) is hardcoded Russian, matching the codebase's
+  existing convention rather than deviating from it. Switching the
+  *language* therefore only visibly changes a fraction of the UI right
+  now. Bringing the rest under `AppLocalizations` is a large, mechanical,
+  high-file-conflict-risk undertaking (every touched string is a diff
+  against whatever other sessions are also editing these same two files)
+  and was judged out of scope for a single pass — flagged here explicitly
+  rather than claiming full bilingual coverage that doesn't exist.
+- **Verified:** the ARB parity check above; `flutter analyze`/`test`/
+  `build apk --debug` all still clean from the §12 pass (no code changed
+  for §13 itself). **Not verified live** — actually toggling the switch on
+  a device and watching text change requires a logged-in session, blocked
+  by the standing no-live-login policy.
+- No commit — investigation and verification only, no code changed.
+
+## Not started yet — items 14–16
 
 Recommend picking these up in the same priority order:
 
