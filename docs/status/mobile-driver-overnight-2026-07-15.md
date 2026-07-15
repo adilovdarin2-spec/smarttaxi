@@ -137,3 +137,169 @@ driver files and found two real issues, both fixed and screenshot/analyze-verifi
 3. A separate background task was spawned for the phone-number-field digit-scrambling
    bug found in the shared login screen (not driver scope) — see the chip in the
    session UI, or search project memory for "device-install-blocked" for repro steps.
+
+## Round 2 — urgent P1/P2 rework (requested after seeing "На линии" live)
+
+The user looked at the running app and flagged the Line tab region display, the
+disabled-reason messaging, and the in-shell "Навигатор" tab as genuinely bad. Rebuilt
+all three, verified live on-device (`+77000000000` / `123456`), screenshots in
+`docs/status/screenshots/2026-07-15-overnight/`.
+
+### P1 — "На линии" region card + disabled-reason banners + full visual QA
+
+**Before:** plain text region row, a system `DropdownButton` to change it, and
+`_disabledReason()` rendered as a single generic line with no icon/action — easy to
+miss why the toggle was greyed out. `DriverStatsGrid`/quick-actions used
+`CrossAxisAlignment.stretch` inside a `ListView`-nested `Row`, which — although it
+happened not to crash on this exact data shape at the time — is the same layout pattern
+that did crash elsewhere this session (see [[reference_flutter_blank_screen_debugging]]).
+
+**After** (`p1-line-tab-after.png`, `p1-region-picker.png`):
+- `DriverShiftHero` redesigned: driver name, region chip with a chevron (tap → bottom
+  sheet), SOS button, then a colored-dot status row + today's earnings, then a single
+  full-width CTA (`DriverGradientButton` offline / `OutlinedButton` online).
+- Region chip opens `_showRegionPicker()` — a bottom sheet (`_RegionPickerRow` list)
+  with a colored `StatusPill` per region (Одобрен/Заблокирован/Отключён/На
+  рассмотрении) and a checkmark on the active one. Confirmed live: shows "Асыката"
+  selected with a green "Одобрен" pill, full scrollable list of other approved regions.
+  Per [[project_driver_region_list_always_approved]] the backend only ever returns
+  approved+active regions today, so the non-green badge branches are defensive/inert
+  until that filter loosens — left in since the picker already handles it correctly.
+- `_disabledReason()` (still used for the actual toggle-disable gate) now has a
+  structured twin, `_availabilityIssue()` → `_DriverIssueBanner`: icon + title + message
+  + an optional action button, one card per state (no approved regions, no region
+  selected, missing docs, region inactive, region blocked, pending approval). Confirmed
+  live: "Нужны документы" banner renders with the document icon, correct count copy
+  ("Ещё 5 обязательных документа(ов) не загружено..."), and a "Загрузить документы"
+  button.
+- `DriverStatsGrid` replaced with `DriverTodayStrip` (3 tiles, wrapped in
+  `IntrinsicHeight` instead of `stretch` — the crash-safe pattern). Confirmed live, no
+  text truncation ("Норма" for demand, was "Обычн..." before).
+- Title truncation fix: header now shows the driver's own name instead of a static
+  "Водитель SmartTaxi..." label that was clipping next to the logo + SOS icon.
+
+### P2 — Navigator as a dedicated full-screen route
+
+**Before:** "Навигатор" was `_tab = 3` in the same `IndexedStack` as Line/Orders/Trip —
+shared bottom nav bar, no dedicated back affordance, camera didn't auto-follow, no
+GPS-lost state, external-map-app buttons (2GIS/Yandex/Google) still present.
+
+**After** (`p2-navigator-fullscreen.png`): tapping "Навигатор" now calls
+`_openFullScreenNavigator()`, pushing `_DriverFullScreenNavigator` via
+`Navigator.push` — a real full-bleed route, no bottom nav bar, with:
+- Top-left circular back button (confirmed live: tap returns cleanly to the Line tab,
+  not just a system-gesture-only back).
+- Top-right voice-toggle + report-road-alert circular buttons.
+- Course-up camera auto-follow (`moveAndRotate` on a 350ms position poll) that
+  disengages the moment a real user pan is detected (fixed an allow-list bug this round
+  — see commit `274e8d1` — where the map's own initial layout event was
+  misclassified as a manual pan and showed the recenter FAB immediately on open;
+  confirmed live post-fix: FAB does **not** appear on open, only after an actual drag).
+- Maneuver banner and voice/GPS-status banner in separate vertical zones so they never
+  overlap.
+- `_GpsSearchingBanner` for lost/stale (>12s) fixes — confirmed live: "Ищу сигнал
+  GPS..." renders correctly with no self-location marker while indoors/no-fix.
+- Bottom strip: `_NavTargetStrip` (distance/ETA once a route exists) + speed/limit
+  cockpit (shows "--" placeholders correctly when speed/limit are unknown).
+- 2GIS/Yandex/Google "open in external app" buttons and their deep-link handlers
+  (`_openNavigator`, `_openExternalUrl`, `_navigatorUrls`, the navigation
+  `MethodChannel`) removed entirely per explicit request — the app now only offers its
+  own in-app turn-by-turn.
+
+**Not exercised**: real GPS movement (this test account/device had no outdoor fix
+during this pass, so the self-location marker's heading-rotation and camera-follow
+were verified via code + the existing pre-session screenshot evidence, not a live
+moving trace). Static verification (open → GPS-lost banner → back) is real and live.
+
+### Commits (round 2)
+
+- `Mobile: redesign region display + structured disabled-reason banners on Line tab`
+  (P1 — region bottom-sheet picker, `_DriverIssueBanner`, `DriverTodayStrip`,
+  `IntrinsicHeight` crash fix, title/demand-label truncation fixes)
+- `Mobile: navigator as a dedicated full-screen route`
+  (P2 — `_DriverFullScreenNavigator`, camera auto-follow/recenter, maneuver/GPS zone
+  separation, bottom target+speed cockpit)
+- `Mobile: remove 2GIS/Yandex/Google external navigator buttons`
+- `274e8d1` — fix recenter FAB appearing immediately on navigator open (allow-list
+  fix for `_handleMapEvent`), verified live post-rebuild in this pass.
+
+## Round 3 — final consistency pass
+
+Walked the entire driver experience end-to-end against the visual language established
+in round 2 (`DriverGradientButton`/`DriverPressScale`, `IntrinsicHeight`-safe rows,
+`_DriverIssueBanner`-style structured banners, `StatusPill` badges). Order
+card/price-negotiation/waiting/trip/completion/rating/favorites/wallet/SOS were all
+reviewed by reading the current code end to end (not just the diff from tonight); Line
+tab, drawer navigation, and Navigator were additionally re-verified live on-device.
+
+### Found and fixed
+
+- **Real crash, found live**: the drawer's "Smart Navigator" item still called
+  `setState(() => _tab = 3)` directly instead of routing through
+  `_openFullScreenNavigator()` — a leftover from before Navigator became a pushed route.
+  `IndexedStack` now only has 3 children (line/orders/trip), so this threw a
+  `RangeError` the moment the drawer item was tapped. The bottom `NavigationBar` had
+  already been fixed for this in round 2; the drawer callback was a second, separate
+  code path that got missed. Fixed by mirroring the same guard in
+  `DriverDrawer.onTab`. Verified live: tapping "Smart Navigator" in the drawer now opens
+  the full-screen navigator cleanly, no crash.
+- **CTA hierarchy inconsistency**: several standalone, single-action primary buttons
+  were still on the plain Material `ElevatedButton` left over from before
+  `DriverGradientButton` existed, while sibling screens (shift toggle) already used it —
+  visually these read as a lower-tier action even though they're each the single most
+  important button on their screen:
+  - Price-offer sheet's "Отправить предложение".
+  - Trip-completion card's closing "Готово".
+  - Wallet screen's "Запросить выплату" and the payout-request sheet's submit button.
+  - **Trip tab's main status-action button** ("Я на месте" / "Начать поездку" /
+    "Завершить поездку" etc.) — arguably the single most-pressed button in the whole
+    driver flow, and it wasn't even wrapped to full width, unlike every other primary
+    CTA on that screen. This was the most visible instance of the "на скорую руку" feel
+    the user flagged, just on a screen that needs an active order to see live.
+  All five switched to `DriverGradientButton`, preserving their exact enable/loading
+  logic. Two-button rows (Accept/Reject, rating submit+skip, favorite/block) were
+  deliberately left on Material buttons — that pairing is a distinct, already-consistent
+  pattern elsewhere (`OrderCard`, recurring-booking accept/decline), and forcing gradient
+  onto every button in the app would flatten the visual hierarchy rather than fix it.
+- Verified live post-fix: wallet's "Запросить выплату" now renders in the same
+  blue→gold gradient as the shift-toggle CTA (shown disabled/50%-opacity here since
+  balance is 0 ₸ under the 3 000 ₸ minimum — correct, not a bug); Line tab and
+  full-screen Navigator both still open and close cleanly after all of tonight's builds.
+
+### Reviewed, no changes needed
+
+`DriverWaitingTimerCard`, `DriverTripCompletionCard`'s summary rows, `OrderCard`,
+`DriverRatingScreen`, `DriverTripHistoryCard`, `DriverDocumentsScreen`, SOS sheet — all
+already use `PremiumCard`/`StatusPill`/`context.palette` tokens consistently and were
+built or last touched with the same design language; no `CrossAxisAlignment.stretch`
+inside unbounded-height containers found outside the two known-safe spots (both
+reviewed and confirmed not the crash pattern: one is `IntrinsicHeight`-wrapped, the
+other is a `Positioned`-bounded `Column` where stretch only affects width, not height).
+
+### Not exercised live (needs a real order, out of reach solo)
+
+Order card, price negotiation, waiting timer, trip-completion/rating, favorite/block —
+same limitation as round 1: these only render once an order is assigned, which needs a
+second passenger-side account placing a real order through dispatch. Code-reviewed and
+`flutter analyze`-clean; the CTA fixes above were verified structurally (button
+enable/loading logic re-derived and checked against the original conditions) rather than
+by tapping through a live order.
+
+### Commits (round 3)
+
+- `Mobile: fix drawer Smart Navigator crash (IndexedStack had only 3 panes)`
+- `Mobile: use DriverGradientButton for price-offer + trip-completion CTAs`
+- `Mobile: use DriverGradientButton for wallet payout CTAs`
+- `Mobile: make the Trip tab's main action button a full-width DriverGradientButton`
+
+### Control pass
+
+Re-read every file touched across rounds 2–3 once more after the last commit above
+(`driver_shell.dart`, `driver_line_widgets.dart`, `driver_order_widgets.dart`,
+`driver_common_widgets.dart`, `driver_wallet_screen.dart`,
+`driver_payout_request_sheet.dart`) and re-ran `flutter analyze` — clean, only the same
+4 pre-existing unrelated warnings in `passenger_shell.dart`/`main.dart` (outside driver
+scope, not touched tonight). No further discrepancies found. Everything reachable
+without a live order (Line tab, region picker, disabled-reason banners, drawer, Navigator,
+wallet, SOS) has been screenshotted on-device this round; everything that needs an active
+order remains the one open item for a future session with a second test account.
