@@ -303,3 +303,70 @@ scope, not touched tonight). No further discrepancies found. Everything reachabl
 without a live order (Line tab, region picker, disabled-reason banners, drawer, Navigator,
 wallet, SOS) has been screenshotted on-device this round; everything that needs an active
 order remains the one open item for a future session with a second test account.
+
+## Round 4 — removed the driver-document requirement entirely (explicit request)
+
+User instruction, verbatim: "не проси документы у водителей так как это затруднит
+регистрацию и людям это не понравится" (don't ask drivers for documents, it complicates
+registration and people won't like it), followed by "работай дальше без телефона"
+(continue without the phone) — so this round is code-reviewed and `flutter
+analyze`/smoke-test verified, **not** screenshotted on-device (no phone available this
+round).
+
+This reverses a same-night change from the parallel backend session (see
+`docs/status/server-overnight-2026-07-15.md` §8, commit `fix(drivers): block
+undocumented drivers from all dispatch paths`), which had wired
+`getMissingRequiredDocumentTypes` into `assertDriverRegionApproved`/
+`assertDriverDispatchReady` so a driver with an approved region but an unapproved
+license/ID/vehicle-registration document set still couldn't go online
+(`403 DRIVER_DOCUMENTS_NOT_APPROVED`). Flagging this explicitly since it's a real
+passenger-safety/verification tradeoff, not just a UI tweak — the product call to drop
+it was made directly by the user, not inferred.
+
+**Backend** (`apps/api/src/modules/driver-region-approvals/driver-region-approvals.service.js`):
+removed `assertDriverDocumentsApproved` and both call sites (`assertDriverRegionApproved`,
+`assertDriverDispatchReady`). Going online / receiving dispatch now only depends on
+region approval status and `is_blocked`, same as before documents were wired in as a
+gate. Updated `apps/api/src/tools/driver-approval-check.js` to match — removed the
+"CRITICAL: a driver without approved required documents cannot go online" test block and
+its now-unused `driverDocuments` mock state/SQL handler. Re-ran `node
+src/tools/driver-approval-check.js` and `node src/tools/driver-documents-check.js`
+directly — both pass; `driver-documents-check.js` still covers
+`getMissingRequiredDocumentTypes` itself (untouched, just no longer wired into the
+online-gate), confirming the document upload/admin-review feature is intact, only the
+enforcement is gone. `node src/tools/api-check.js` also ran clean through the
+"Driver region approval checks ok" line; it does fail later on an unrelated admin-panel
+copy assertion ("Admin shell missing honest state copy: Пока нет обращений") that traces
+to `apps/api/public` admin shell content, not touched by this change or anything in
+driver scope tonight — looks like a parallel session's admin-panel work mid-flight.
+
+**Mobile** (`driver_shell.dart`): removed `_driverDocuments`/`_driverDocumentsLoaded`
+state, `_loadDriverDocuments()`, and the `_missingRequiredDocuments` getter entirely —
+they only existed to mirror the now-removed backend gate as an advisory pre-check.
+Removed the "Нужны документы" blocking branch from both `_disabledReason()` (toggle-
+disable gate) and `_availabilityIssue()` (the P1 structured banner). Updated copy that
+pointed at document upload as the path to region approval — there never was a
+self-service "apply for region" flow in this codebase (region approval is admin-only,
+see [[project_driver_region_list_always_approved]]) — the "Нет одобренных регионов" and
+the online-toggle's approval-rejection catch block now point at "Написать в поддержку"
+instead of opening the documents screen. The "Заявка на рассмотрении" message no longer
+tells drivers to double-check their documents. The document upload screens themselves
+(`DriverDocumentsScreen`, the onboarding `driver_application_documents_screen.dart`,
+which already had a "Later"/skip option) are untouched and still reachable from the
+drawer for any driver who wants to submit documents voluntarily — only the mandatory
+gate and all messaging that implied it was mandatory are gone.
+
+`flutter analyze lib/features/driver` clean after the change (one `unused_import` for
+the now-dead `models/driver_document_models.dart` import, removed).
+
+### Commit (round 4)
+
+- `Stop requiring driver documents to go online (per explicit request)`
+
+### Not verified this round
+
+No on-device pass — per explicit instruction to work without the phone. Next session
+with device access should confirm live: the Line tab never shows "Нужны документы"
+regardless of document state, the shift toggle is only gated by region
+approval/selection, and the "Нет одобренных регионов" banner's "Написать в поддержку"
+action opens the support sheet correctly.
