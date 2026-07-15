@@ -758,6 +758,48 @@ it's genuinely self-contained, unlike `main.dart`.
 - Admin-configurable commission (mentioned in the same request) is
   `apps/web` admin-panel scope, not touched.
 
+## [URG-EXTRA] Explain the driver region-approval gate, don't show a bare error — done, `d4ab35b`
+
+User flagged, priority above §3–16 and interleaved before URG-7/8: the
+backend gates going online on `driver_region_approvals.status` via
+`assertDriverCanGoOnline` (confirmed this already existed, not new
+tonight — `driver-region-approvals.service.js`). A driver whose region
+approval isn't `APPROVED` yet, or was `BLOCKED`, previously just saw the
+"Выйти на линию" button greyed out with a one-line caption, no
+explanation, no path forward.
+- New `_DriverApprovalStatusCard` on the driver line tab, shown whenever
+  a selected region's status isn't `APPROVED`: "Заявка на рассмотрении"
+  for pending (there's no distinct `PENDING` enum value — the absence of
+  an approved/blocked row just means no admin action yet) with a nudge to
+  check documents, or "Доступ заблокирован" showing the real
+  `block_reason` text for the `BLOCKED` case.
+- Both link to `DriverDocumentsScreen` — deliberately **not**
+  `driver_application_documents_screen.dart` as the brief suggested
+  reusing: read both files first, and `DriverApplicationDocumentsScreen`
+  is the *unauthenticated*, pre-account application flow
+  (`uploadDriverApplicationDocument`, scoped by `applicationId`, no login
+  yet) — wrong auth context for an already-logged-in driver checking their
+  status. `DriverDocumentsScreen` is the authenticated equivalent and
+  already did everything the brief asked for per-document: status pill,
+  rejection reason shown inline, "Загрузить заново" opening
+  `DriverDocumentUploadSheet` scoped to that exact type. Nothing needed
+  building there — confirmed by reading it, not assumed.
+- `DriverRegion` gained `blockReason` (`driver_region_approvals.
+  block_reason`, already returned by `GET /api/drivers/me/regions`, just
+  never read client-side before).
+- `_setOnline`'s catch block now specifically detects
+  `DRIVER_REGION_NOT_APPROVED`/`DRIVER_REGION_BLOCKED`/`DRIVER_BLOCKED`
+  (the upfront `_disabledReason()` check is only as fresh as the last
+  region-list load — an admin action landing in between only surfaces
+  here, as the actual API rejection) and routes to `AppToast.showError` +
+  opening `DriverDocumentsScreen`, instead of the bare inline `_error`
+  banner other failures (network issues, `DRIVER_HAS_ACTIVE_ORDER`, etc.)
+  still correctly use.
+- **Verified:** `flutter analyze`/`test`/`build apk --debug` all clean
+  (same 7 warnings, same 10 test failures, 0 new both times). **Not
+  verified live** — needs a driver account in a real pending/blocked
+  region-approval state, blocked by the standing no-live-login policy.
+
 ### Still to do: [URG-7] driver-search screen redesign, [URG-8] navigator polish
 Not started this pass — see task list. Both are large, open-ended visual/
 UX work (full redesign of the search/driver-found screens per the blue+
