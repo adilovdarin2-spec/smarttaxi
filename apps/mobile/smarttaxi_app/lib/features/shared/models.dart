@@ -188,6 +188,30 @@ class DriverPreference {
   }
 }
 
+class ReferralSummary {
+  const ReferralSummary({
+    required this.code,
+    required this.invitedCount,
+    required this.totalBonusEarned,
+  });
+
+  final String code;
+  final int invitedCount;
+  final int totalBonusEarned;
+
+  factory ReferralSummary.fromJson(Map<String, dynamic> json) {
+    return ReferralSummary(
+      code: '${json['code'] ?? ''}',
+      invitedCount:
+          int.tryParse('${json['invitedCount'] ?? json['invited_count'] ?? 0}') ??
+              0,
+      totalBonusEarned: int.tryParse(
+              '${json['totalBonusEarned'] ?? json['total_bonus_earned'] ?? 0}') ??
+          0,
+    );
+  }
+}
+
 class AddressSuggestion {
   const AddressSuggestion({
     required this.label,

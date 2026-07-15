@@ -156,6 +156,9 @@ class _PassengerShellState extends State<PassengerShell>
   bool _driverPreferencesError = false;
   bool _settingDriverPreference = false;
   final Set<String> _driverPreferenceRemoving = {};
+  ReferralSummary? _referralSummary;
+  bool _referralSummaryLoading = false;
+  bool _referralSummaryError = false;
   Timer? _mapPickerReverseDebounce;
   Coordinate? _pickup;
   Coordinate? _dropoff;
@@ -574,6 +577,23 @@ class _PassengerShellState extends State<PassengerShell>
         setState(
             () => _driverPreferenceRemoving.remove(preference.driverId));
       }
+    }
+  }
+
+  Future<void> _loadReferralSummary() async {
+    if (!mounted) return;
+    setState(() {
+      _referralSummaryLoading = true;
+      _referralSummaryError = false;
+    });
+    try {
+      final summary = await widget.api.getReferralSummary();
+      if (!mounted) return;
+      setState(() => _referralSummary = summary);
+    } catch (_) {
+      if (mounted) setState(() => _referralSummaryError = true);
+    } finally {
+      if (mounted) setState(() => _referralSummaryLoading = false);
     }
   }
 
@@ -1895,6 +1915,7 @@ class _PassengerShellState extends State<PassengerShell>
       PassengerTab.recurringBookings: _recurringBookingsScreen,
       PassengerTab.favoriteAddresses: _favoriteAddressesScreen,
       PassengerTab.driverPreferences: _driverPreferencesScreen,
+      PassengerTab.referrals: _referralsScreen,
     };
     return (builders[_tab] ?? _unknownPassengerSection).call();
   }
@@ -2664,6 +2685,16 @@ class _PassengerShellState extends State<PassengerShell>
                 onTap: () {
                   setState(() => _tab = PassengerTab.driverPreferences);
                   unawaited(_loadDriverPreferences());
+                },
+              ),
+              const Divider(height: 20),
+              _MenuLine(
+                icon: Icons.card_giftcard_rounded,
+                title: 'Пригласить друзей',
+                subtitle: 'Ваш код и бонусы за приглашения',
+                onTap: () {
+                  setState(() => _tab = PassengerTab.referrals);
+                  unawaited(_loadReferralSummary());
                 },
               ),
               const Divider(height: 20),
@@ -3683,6 +3714,159 @@ class _PassengerShellState extends State<PassengerShell>
                 ),
               ),
             ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _referralsScreen() {
+    final summary = _referralSummary;
+    return RefreshIndicator(
+      color: SmartTaxiColors.goldDeep,
+      onRefresh: _loadReferralSummary,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+          const _TitleBlock(
+            title: 'Пригласить друзей',
+            text: 'Делитесь кодом и получайте бонусы за каждого друга',
+          ),
+          const SizedBox(height: 16),
+          if (_referralSummaryLoading && summary == null)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            )
+          else if (_referralSummaryError && summary == null)
+            EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'Не удалось загрузить',
+              text: 'Потяните экран вниз, чтобы попробовать снова.',
+              action: 'Повторить',
+              onAction: () => unawaited(_loadReferralSummary()),
+            )
+          else if (summary != null) ...[
+            _PremiumCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ваш код',
+                    style: TextStyle(
+                      color: SmartTaxiColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          summary.code,
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Скопировать',
+                        onPressed: () async {
+                          await Clipboard.setData(
+                              ClipboardData(text: summary.code));
+                          if (!mounted) return;
+                          AppToast.showSuccess(context, 'Код скопирован');
+                        },
+                        icon: const Icon(Icons.copy_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _GoldCtaButton(
+                      enabled: true,
+                      loading: false,
+                      text: 'Поделиться кодом',
+                      onTap: () => unawaited(Share.share(
+                        'Заказывай такси в SmartTaxi по моему коду ${summary.code} и получи бонус на первую поездку!',
+                      )),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _PremiumCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Приглашено',
+                          style: TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${summary.invitedCount}',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _PremiumCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Заработано',
+                          style: TextStyle(
+                            color: SmartTaxiColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _formatTenge(summary.totalBonusEarned),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const _CompactNotice(
+              icon: Icons.info_outline_rounded,
+              title: 'Как это работает',
+              text:
+                  'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.',
+            ),
           ],
         ],
       ),
@@ -15233,6 +15417,7 @@ enum PassengerTab {
   recurringBookings,
   favoriteAddresses,
   driverPreferences,
+  referrals,
 }
 
 enum PointTarget { pickup, dropoff }

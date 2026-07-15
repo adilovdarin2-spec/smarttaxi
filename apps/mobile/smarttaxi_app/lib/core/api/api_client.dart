@@ -704,6 +704,15 @@ class ApiClient {
   // Fixed vocabulary on the backend (orders.routes.js QUICK_MESSAGES) — the
   // server owns the display text, this just sends the key. Callable by
   // either CLIENT or DRIVER on their own order; the other party is notified.
+  // The backend serves the identical summary at both /mine (spec'd path)
+  // and /me (alias already used by the web client) — /me here to match web.
+  Future<ReferralSummary> getReferralSummary() async {
+    await _attachToken();
+    final response = await _dio.get<Map<String, dynamic>>('/api/referrals/me');
+    final data = response.data ?? {};
+    return ReferralSummary.fromJson(data);
+  }
+
   Future<String> sendQuickMessage({
     required String orderId,
     required String messageKey,
