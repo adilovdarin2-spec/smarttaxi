@@ -468,6 +468,7 @@ class OrderSummary {
     this.driverOfferStatus,
     this.driverOfferByDriverId,
     this.searchTimedOut = false,
+    this.notes,
   });
 
   final String id;
@@ -513,6 +514,10 @@ class OrderSummary {
   // wait, including across app restarts/reconnects, unlike a purely
   // client-side timer.
   final bool searchTimedOut;
+  // Free-text note the rider attaches at order creation — which entrance,
+  // floor, door, landmark. Whole-order field on the backend (orders.notes),
+  // not split per pickup/dropoff.
+  final String? notes;
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
@@ -547,6 +552,7 @@ class OrderSummary {
       driverOfferStatus: driverOfferStatus,
       driverOfferByDriverId: driverOfferByDriverId,
       searchTimedOut: searchTimedOut,
+      notes: notes,
     );
   }
 
@@ -627,6 +633,9 @@ class OrderSummary {
           ?.toString(),
       searchTimedOut:
           json['search_timed_out'] == true || json['searchTimedOut'] == true,
+      notes: (json['notes'] as String?)?.trim().isNotEmpty == true
+          ? (json['notes'] as String).trim()
+          : null,
     );
   }
 }

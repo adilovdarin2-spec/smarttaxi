@@ -235,6 +235,7 @@ class ApiClient {
     String paymentMethod = 'CASH',
     int? offeredPriceKzt,
     String? promoCode,
+    String? notes,
   }) async {
     await _attachToken();
     final tariffPayload = _tariffPayload(tariffId);
@@ -255,6 +256,7 @@ class ApiClient {
       'paymentMethod': paymentMethod,
       if (offeredPriceKzt != null) 'offeredPriceKzt': offeredPriceKzt,
       if (promoCode != null && promoCode.isNotEmpty) 'promoCode': promoCode,
+      if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
     };
     final response =
         await _dio.post<Map<String, dynamic>>('/api/orders', data: payload);
