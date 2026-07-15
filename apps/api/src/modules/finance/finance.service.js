@@ -1,3 +1,5 @@
+import { refundKaspiPayment } from "../payments/payment-provider.js";
+
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
   return db.query(sql, params);
@@ -171,23 +173,42 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
   // down on the next ride, instead of a zero-amount transaction that quietly
   // pretends nothing was ever charged.
   let refundedKzt = 0;
+  let refundedViaGateway = false;
   if (order.payment_status === "PAID" && order.client_id) {
     const paidPayment = await run(
       executor,
-      "SELECT amount FROM payments WHERE order_id=$1 AND status='PAID' ORDER BY updated_at DESC LIMIT 1",
+      "SELECT * FROM payments WHERE order_id=$1 AND status='PAID' ORDER BY updated_at DESC LIMIT 1",
       [order.id]
     );
-    refundedKzt = roundMoney(paidPayment.rows[0]?.amount ?? order.price ?? 0);
+    const payment = paidPayment.rows[0];
+    refundedKzt = roundMoney(payment?.amount ?? order.price ?? 0);
     if (refundedKzt > 0) {
-      const updatedClient = await run(
-        executor,
-        "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance",
-        [refundedKzt, order.client_id]
-      );
-      await run(executor, `
-        INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
-        VALUES($1,$2,'ORDER_CANCEL_REFUND',$3,$4)
-      `, [order.client_id, order.id, refundedKzt, updatedClient.rows[0].cashback_balance]);
+      // A real Kaspi Pay charge gets refunded at the source first — the
+      // client gets their actual money back on their card/Kaspi account,
+      // not just store credit. Only falls back to crediting cashback_balance
+      // if the payment wasn't a real gateway charge (mock/manual) or the
+      // live refund call itself fails, so the client is never left with
+      // neither a real refund nor store credit.
+      if (payment?.provider === "KASPI_PAY") {
+        try {
+          await refundKaspiPayment({ payment, amountKzt: refundedKzt });
+          await run(executor, "UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE id=$1", [payment.id]);
+          refundedViaGateway = true;
+        } catch (error) {
+          console.error("[finance] Kaspi Pay refund failed, falling back to cashback credit", error);
+        }
+      }
+      if (!refundedViaGateway) {
+        const updatedClient = await run(
+          executor,
+          "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance",
+          [refundedKzt, order.client_id]
+        );
+        await run(executor, `
+          INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
+          VALUES($1,$2,'ORDER_CANCEL_REFUND',$3,$4)
+        `, [order.client_id, order.id, refundedKzt, updatedClient.rows[0].cashback_balance]);
+      }
     } else {
       refundedKzt = 0;
     }
@@ -215,7 +236,8 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
       orderStatus: order.status,
       tariffName: amounts.tariffName,
       pricingSource: amounts.pricingSource,
-      refundedKzt
+      refundedKzt,
+      refundedViaGateway
     }),
     actorUserId
   ]);
