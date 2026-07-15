@@ -284,6 +284,119 @@ around by dispatching `.click()` via `javascript_tool` after confirming
 values were set correctly, purely to drive already-built UI for
 verification, not to implement anything.)
 
+## 13. Full visual audit: /client /driver /owner vs blue/white design system
+
+Asked to specifically hunt for what mobile's audit flagged: empty/non-
+functional screens, misplaced elements, and deviations from
+`docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md`. Required real
+before/after screenshots, not just text.
+
+**Tooling note**: the Browser pane's `computer{screenshot}` action was
+hung/timing out all session (every screen, every viewport, fresh
+tabs — confirmed not maplibre-specific) and Claude in Chrome wasn't
+connected. With the user's go-ahead to solve it independently: the repo
+already had Playwright + a cached Chromium build
+(`node_modules/playwright`, `~/AppData/Local/ms-playwright`) from
+earlier work, so screenshots were captured via a throwaway Playwright
+script instead (network-level `page.route()` mocking for the admin
+auth flow, real navigation/clicks otherwise) — deleted after use, not
+committed. All images below are real renders of the running app, saved
+to `docs/design/audit-2026-07-15/`.
+
+**Empty/non-functional screens**: none found. Every client and admin
+screen checked (client: home, drawer, trips, favorites, promo,
+referral, support, FAQ, settings, about, all three legal pages, auth
+login; admin: all 16 nav sections plus the application-detail and
+driver-detail modals) either had real content or a graceful, on-brand
+empty state with explanatory copy and a working CTA — e.g. "Розыгрышей
+пока нет — создайте период..." with an "Добавить розыгрыш" button, not
+a blank page. Mobile's specific complaint didn't reproduce on web.
+
+**Misplaced elements**: one real find — the driver-documents `DataCard`
+in `DriverDetailPanel` sits below the fold in a scrolling modal, which
+first looked like it was missing entirely. Confirmed via
+`element.scrollHeight` vs `clientHeight` that it's really there, just
+needs a scroll; not a bug, no fix needed.
+
+**Design-system deviations — found, fixed, verified**:
+
+1. **Stale gold "S/ST" app icon everywhere.** `SmartTaxiLogo.jsx` (used
+   in 7+ places across client/admin/driver/legal/track) rendered
+   `/brand/smarttaxi_app_icon_websafe.png` — a black-and-gold mark left
+   over from the pre-blue system, clashing hard against every
+   otherwise-blue screen. Found a matching blue icon already sitting
+   unused in `apps/mobile/smarttaxi_app/assets/brand/
+   smarttaxi_app_icon_2026.png` (white "Smart" + blue "Taxi" wordmark,
+   blue car mark) — copied it to `apps/web/public/brand/` and pointed
+   the component at it. One-line fix, fixes every screen using the
+   shared component at once.
+   - Before: ![admin login before](../design/audit-2026-07-15/admin-01-login.png)
+   - After: ![admin login after](../design/audit-2026-07-15/admin-01-login-after.png)
+
+2. **Active nav/tab/segmented-filter pills rendered gold, not blue.**
+   The admin sidebar's active page, every `SegmentedFilter` selection
+   ("Все", "30 дней", "Активные", etc.) across every admin page, and
+   the driver app's tab bar all shared one CSS rule
+   (`.admin-control-shell button.active`, `.driver-core-tabs
+   button.active`, plus client CTA selectors, duplicated near-
+   identically at two places in `styles.css`) with a hardcoded
+   `background: linear-gradient(...gold...) !important`. The rest of
+   the admin UI had already been migrated to blue custom properties
+   (`--admin-gold` etc. — stale names, correct blue values), but this
+   one older `!important` block was still winning the cascade. Changed
+   both duplicate rules' colors to the blue accent already used
+   elsewhere in the file (`#1d6fff`/`#0b4fd1`) with white text instead
+   of dark ink (needed for contrast on a saturated blue vs. the
+   original pale gold). One CSS fix, confirmed to correct every
+   instance across every admin page checked (dashboard, regions,
+   drivers, applications, orders, tariffs, finance, payouts, roads,
+   quality, raffles, referrals, settings, audit, support) — not just
+   the one page it was first spotted on.
+   - Before (dashboard): ![dashboard before](../design/audit-2026-07-15/admin-02-dashboard.png)
+   - After (dashboard): ![dashboard after](../design/audit-2026-07-15/admin-02-dashboard-after.png)
+   - Before (Тарифы — segmented filter + date range both gold): ![tariffs before](../design/audit-2026-07-15/admin-07-Тарифы.png)
+   - After (Тарифы): ![tariffs after](../design/audit-2026-07-15/admin-07-Тарифы-after.png)
+
+**Design-system deviations — found, documented, deliberately not
+fixed** (don't match the doc, but fixing them properly means either
+new design assets I don't have or a large, risk-of-regression repaint
+of an already-tuned screen — the doc explicitly says "don't do a
+blanket repaint pass unless explicitly asked"; these are flagged for
+opportunistic follow-up, ideally by whichever session owns
+auth/branding assets, per `project_parallel_sessions` memory):
+
+3. **Client & driver auth/splash screens** still use the pre-blue
+   cream gradient background, gold "S" mark, and gold shield icon — a
+   completely separate SVG/PNG asset set
+   (`authWelcomeUi`/`.../svg/brand/smarttaxi_s_mark.svg`, `.../
+   background/auth_hero_photo_soft.png`) from the one `SmartTaxiLogo`
+   fix above, so that fix didn't reach it. The design doc claims a blue
+   splash gradient is "already implemented on the auth screens
+   tonight" — that doesn't match what's actually live; either that
+   was mobile-only or hasn't landed on web yet. Needs real blue-themed
+   hero/wordmark assets, not a find-replace.
+   - ![client auth login](../design/audit-2026-07-15/client-90-auth-login.png)
+   - ![driver login (logo now fixed, background still cream)](../design/audit-2026-07-15/driver-01-login-after.png)
+4. **Trip flow screens** (`.trip-stage-screen`, `.trip-searching-
+   screen` — the "Мои поездки" empty state and the driver-search/
+   driver-found/active-trip screens) use a hardcoded warm ivory
+   gradient (`#fffaf0`/`#f7f3ea`) with matching warm-toned shadows and
+   borders throughout, entirely independent of the `--taxi-*`
+   variables the rest of the client app already uses. This is the
+   single biggest remaining visual deviation and covers the most
+   important screens in the app (the whole active-ride experience),
+   but properly fixing it means re-tuning many coordinated shadow/
+   border colors together, not swapping one background line — flagged
+   rather than rushed.
+   - ![trips empty state, cream background](../design/audit-2026-07-15/client-03-История_поездок.png)
+5. **Unverified, code-only finding**: the same stale-gold `!important`
+   pattern from fix #2 also covers `.driver-core-status.online` (the
+   driver's online/offline pill) and the selected-tariff radio dot in
+   `.reference-tariff-state` — grep-confirmed in `styles.css` but not
+   screenshotted, since reaching those screens needs a live driver
+   session this environment can't provide. Worth a quick visual check
+   next time someone's in the driver app.
+
 ## Known gaps / follow-ups
 
 - Referral code redemption at signup (see §8) — backend-ready, not
@@ -305,6 +418,14 @@ verification, not to implement anything.)
 - `apps/web/src/features/client/ClientApp.jsx.tmp` — an empty, untracked
   stray file already present in the tree at session start. Left alone
   (not mine, might be another session's in-progress marker).
+- Client/driver auth-splash cream/gold background and hero/wordmark
+  assets, and the trip-flow screens' warm ivory background (see §13,
+  items 3-4) — real deviations from the blue/white design system,
+  deliberately left for a dedicated pass rather than rushed tonight.
+- `.driver-core-status.online` and the selected-tariff radio dot (see
+  §13 item 5) likely share the same stale-gold `!important` rule fixed
+  for nav/tabs, but weren't visually confirmed — no way to reach an
+  authenticated driver screen without a live backend this session.
 
 ## Commits (chronological)
 
@@ -319,3 +440,6 @@ verification, not to implement anything.)
    `feedback_git_staging_race` memory. Code is real and verified as
    described above; the commit message just doesn't mention it.
 6. `Add driver document verification to the admin applications/drivers panels`
+7. Visual audit + design-system fixes (§13): blue app icon everywhere,
+   and the stale gold `!important` active-tab/pill rule corrected to
+   blue across the whole admin panel and driver tab bar.
