@@ -112,6 +112,43 @@ class RecurringBooking {
   }
 }
 
+class FavoriteAddress {
+  const FavoriteAddress({
+    required this.id,
+    required this.label,
+    required this.title,
+    required this.addressText,
+    required this.lat,
+    required this.lng,
+    this.createdAt,
+  });
+
+  final String id;
+  // HOME | WORK | OTHER
+  final String label;
+  final String title;
+  final String addressText;
+  final double lat;
+  final double lng;
+  final DateTime? createdAt;
+
+  Coordinate get coordinate => Coordinate(lat: lat, lng: lng);
+
+  factory FavoriteAddress.fromJson(Map<String, dynamic> json) {
+    return FavoriteAddress(
+      id: '${json['id']}',
+      label: '${json['label'] ?? 'OTHER'}',
+      title: '${json['title'] ?? ''}',
+      addressText: '${json['address_text'] ?? json['addressText'] ?? ''}',
+      lat: _toDouble(json['lat']),
+      lng: _toDouble(json['lng']),
+      createdAt: DateTime.tryParse(
+        '${json['created_at'] ?? json['createdAt'] ?? ''}',
+      ),
+    );
+  }
+}
+
 class AddressSuggestion {
   const AddressSuggestion({
     required this.label,

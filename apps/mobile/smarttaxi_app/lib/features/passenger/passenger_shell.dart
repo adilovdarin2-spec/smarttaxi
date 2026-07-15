@@ -146,6 +146,11 @@ class _PassengerShellState extends State<PassengerShell>
   bool _recurringBookingsError = false;
   bool _creatingRecurringBooking = false;
   final Set<String> _recurringBookingStatusUpdating = {};
+  List<FavoriteAddress> _favoriteAddresses = const [];
+  bool _favoriteAddressesLoading = false;
+  bool _favoriteAddressesError = false;
+  bool _creatingFavoriteAddress = false;
+  final Set<String> _favoriteAddressDeleting = {};
   Timer? _mapPickerReverseDebounce;
   Coordinate? _pickup;
   Coordinate? _dropoff;
@@ -427,6 +432,71 @@ class _PassengerShellState extends State<PassengerShell>
     } finally {
       if (mounted) {
         setState(() => _recurringBookingStatusUpdating.remove(booking.id));
+      }
+    }
+  }
+
+  Future<void> _loadFavoriteAddresses() async {
+    if (!mounted) return;
+    setState(() {
+      _favoriteAddressesLoading = true;
+      _favoriteAddressesError = false;
+    });
+    try {
+      final addresses = await widget.api.getFavoriteAddresses();
+      if (!mounted) return;
+      setState(() => _favoriteAddresses = addresses);
+    } catch (_) {
+      if (mounted) setState(() => _favoriteAddressesError = true);
+    } finally {
+      if (mounted) setState(() => _favoriteAddressesLoading = false);
+    }
+  }
+
+  Future<void> _createFavoriteAddress({
+    required String label,
+    required String title,
+    required String addressText,
+    required Coordinate coordinate,
+  }) async {
+    if (_creatingFavoriteAddress) return;
+    setState(() => _creatingFavoriteAddress = true);
+    try {
+      final address = await widget.api.createFavoriteAddress(
+        label: label,
+        title: title,
+        addressText: addressText,
+        lat: coordinate.lat,
+        lng: coordinate.lng,
+      );
+      if (!mounted) return;
+      setState(
+          () => _favoriteAddresses = [address, ..._favoriteAddresses]);
+      if (mounted) Navigator.of(context).pop();
+      AppToast.showSuccess(context, 'Адрес добавлен в избранное');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) setState(() => _creatingFavoriteAddress = false);
+    }
+  }
+
+  Future<void> _deleteFavoriteAddress(FavoriteAddress address) async {
+    if (_favoriteAddressDeleting.contains(address.id)) return;
+    setState(() => _favoriteAddressDeleting.add(address.id));
+    try {
+      await widget.api.deleteFavoriteAddress(address.id);
+      if (!mounted) return;
+      setState(() => _favoriteAddresses =
+          _favoriteAddresses.where((item) => item.id != address.id).toList());
+      AppToast.showSuccess(context, 'Адрес удалён из избранного');
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _favoriteAddressDeleting.remove(address.id));
       }
     }
   }
@@ -1747,6 +1817,7 @@ class _PassengerShellState extends State<PassengerShell>
       PassengerTab.legalSafety: () => _legalDocumentScreen(legalDocuments[4]),
       PassengerTab.settings: _settingsScreen,
       PassengerTab.recurringBookings: _recurringBookingsScreen,
+      PassengerTab.favoriteAddresses: _favoriteAddressesScreen,
     };
     return (builders[_tab] ?? _unknownPassengerSection).call();
   }
@@ -2496,6 +2567,16 @@ class _PassengerShellState extends State<PassengerShell>
                 onTap: () {
                   setState(() => _tab = PassengerTab.recurringBookings);
                   unawaited(_loadRecurringBookings());
+                },
+              ),
+              const Divider(height: 20),
+              _MenuLine(
+                icon: Icons.star_outline_rounded,
+                title: 'Избранные адреса',
+                subtitle: 'Дом, работа и другие частые точки',
+                onTap: () {
+                  setState(() => _tab = PassengerTab.favoriteAddresses);
+                  unawaited(_loadFavoriteAddresses());
                 },
               ),
               const Divider(height: 20),
@@ -3301,6 +3382,111 @@ class _PassengerShellState extends State<PassengerShell>
     if (confirmed == true) {
       await _updateRecurringBookingStatus(booking, 'CANCELLED');
     }
+  }
+
+  Future<void> _openAddFavoriteAddressSheet() async {
+    final picked = await showModalBottomSheet<AddressSuggestion>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SimpleAddressSearchSheet(
+        api: widget.api,
+        title: 'Какой адрес добавить?',
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CreateFavoriteAddressSheet(
+        suggestion: picked,
+        submitting: _creatingFavoriteAddress,
+        onSubmit: (label, title) => _createFavoriteAddress(
+          label: label,
+          title: title,
+          addressText: picked.label,
+          coordinate: picked.coordinate,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteFavoriteAddress(FavoriteAddress address) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ConfirmSheet(
+        title: 'Удалить адрес из избранного?',
+        text: '${address.title} — ${address.addressText}.',
+        confirmLabel: 'Удалить',
+        danger: true,
+      ),
+    );
+    if (confirmed == true) {
+      await _deleteFavoriteAddress(address);
+    }
+  }
+
+  Widget _favoriteAddressesScreen() {
+    return RefreshIndicator(
+      color: SmartTaxiColors.goldDeep,
+      onRefresh: _loadFavoriteAddresses,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        children: [
+          const _TitleBlock(
+            title: 'Избранные адреса',
+            text: 'Дом, работа и другие частые точки — быстрее вводить заказ',
+          ),
+          const SizedBox(height: 16),
+          _GoldCtaButton(
+            enabled: !_creatingFavoriteAddress,
+            loading: false,
+            text: 'Добавить адрес',
+            onTap: _openAddFavoriteAddressSheet,
+          ),
+          const SizedBox(height: 16),
+          if (_favoriteAddressesLoading && _favoriteAddresses.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            )
+          else if (_favoriteAddressesError && _favoriteAddresses.isEmpty)
+            EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'Не удалось загрузить',
+              text: 'Потяните экран вниз, чтобы попробовать снова.',
+              action: 'Повторить',
+              onAction: () => unawaited(_loadFavoriteAddresses()),
+            )
+          else if (_favoriteAddresses.isEmpty)
+            const EmptyState(
+              icon: Icons.star_outline_rounded,
+              title: 'Пока нет избранных адресов',
+              text:
+                  'Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.',
+            )
+          else
+            ..._favoriteAddresses.map(
+              (address) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _FavoriteAddressCard(
+                  address: address,
+                  deleting: _favoriteAddressDeleting.contains(address.id),
+                  onDelete: () => _confirmDeleteFavoriteAddress(address),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _settingsScreen() {
@@ -7949,6 +8135,232 @@ class _RecurringBookingChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FavoriteAddressCard extends StatelessWidget {
+  const _FavoriteAddressCard({
+    required this.address,
+    required this.deleting,
+    required this.onDelete,
+  });
+
+  final FavoriteAddress address;
+  final bool deleting;
+  final VoidCallback onDelete;
+
+  (IconData, String) get _labelMeta {
+    switch (address.label) {
+      case 'HOME':
+        return (Icons.home_rounded, 'Дом');
+      case 'WORK':
+        return (Icons.work_rounded, 'Работа');
+      default:
+        return (Icons.place_rounded, 'Другое');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, labelText) = _labelMeta;
+    return _PremiumCard(
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: SmartTaxiColors.goldSurface,
+              border: Border.all(color: SmartTaxiColors.border),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: SmartTaxiColors.goldDeep),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      address.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(width: 6),
+                    _RecurringBookingChip(icon: icon, label: labelText),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  address.addressText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: SmartTaxiColors.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          deleting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                )
+              : IconButton(
+                  onPressed: onDelete,
+                  tooltip: 'Удалить',
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: SmartTaxiColors.danger,
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CreateFavoriteAddressSheet extends StatefulWidget {
+  const _CreateFavoriteAddressSheet({
+    required this.suggestion,
+    required this.submitting,
+    required this.onSubmit,
+  });
+
+  final AddressSuggestion suggestion;
+  final bool submitting;
+  final void Function(String label, String title) onSubmit;
+
+  @override
+  State<_CreateFavoriteAddressSheet> createState() =>
+      _CreateFavoriteAddressSheetState();
+}
+
+class _CreateFavoriteAddressSheetState
+    extends State<_CreateFavoriteAddressSheet> {
+  String _label = 'HOME';
+  late final _titleController =
+      TextEditingController(text: _defaultTitleFor('HOME'));
+
+  String _defaultTitleFor(String label) {
+    switch (label) {
+      case 'HOME':
+        return 'Дом';
+      case 'WORK':
+        return 'Работа';
+      default:
+        return '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30141414),
+              blurRadius: 30,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(child: _SheetHandle(dark: false)),
+            const SizedBox(height: 14),
+            const Text(
+              'Добавить в избранное',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.suggestion.label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: SmartTaxiColors.textSecondary,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('Дом'),
+                  selected: _label == 'HOME',
+                  onSelected: (_) => setState(() {
+                    _label = 'HOME';
+                    _titleController.text = _defaultTitleFor('HOME');
+                  }),
+                ),
+                ChoiceChip(
+                  label: const Text('Работа'),
+                  selected: _label == 'WORK',
+                  onSelected: (_) => setState(() {
+                    _label = 'WORK';
+                    _titleController.text = _defaultTitleFor('WORK');
+                  }),
+                ),
+                ChoiceChip(
+                  label: const Text('Другое'),
+                  selected: _label == 'OTHER',
+                  onSelected: (_) => setState(() {
+                    _label = 'OTHER';
+                    _titleController.text = _defaultTitleFor('OTHER');
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _titleController,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Название',
+                hintText: 'Например, «Дача» или «Спортзал»',
+              ),
+            ),
+            const SizedBox(height: 16),
+            _GoldCtaButton(
+              enabled: !widget.submitting &&
+                  _titleController.text.trim().isNotEmpty,
+              loading: widget.submitting,
+              text: 'Сохранить',
+              loadingText: 'Сохраняем...',
+              onTap: () =>
+                  widget.onSubmit(_label, _titleController.text.trim()),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -14298,6 +14710,7 @@ enum PassengerTab {
   legalSafety,
   settings,
   recurringBookings,
+  favoriteAddresses,
 }
 
 enum PointTarget { pickup, dropoff }

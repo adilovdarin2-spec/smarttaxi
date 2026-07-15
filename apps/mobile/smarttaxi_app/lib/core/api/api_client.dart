@@ -633,6 +633,43 @@ class ApiClient {
         Map<String, dynamic>.from(data['booking'] ?? data));
   }
 
+  Future<List<FavoriteAddress>> getFavoriteAddresses() async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/favorites/addresses');
+    final items = _extractList(response.data, 'addresses');
+    return items
+        .map((item) => FavoriteAddress.fromJson(item))
+        .toList(growable: false);
+  }
+
+  Future<FavoriteAddress> createFavoriteAddress({
+    required String label,
+    required String title,
+    required String addressText,
+    required double lat,
+    required double lng,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/favorites/addresses',
+      data: {
+        'label': label,
+        'title': title,
+        'addressText': addressText,
+        'lat': lat,
+        'lng': lng,
+      },
+    );
+    final data = response.data ?? {};
+    return FavoriteAddress.fromJson(
+        Map<String, dynamic>.from(data['address'] ?? data));
+  }
+
+  Future<void> deleteFavoriteAddress(String id) async {
+    await _attachToken();
+    await _dio.delete<void>('/api/favorites/addresses/$id');
+  }
+
   Future<RoutePreview> driverToPickupRoute(String orderId) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(
