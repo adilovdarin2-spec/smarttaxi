@@ -1728,3 +1728,106 @@ ground-shadow scaled proportionally). `_assetMarker` pickup/dropoff:
 crosshair visibly larger (screenshot); confirmed a destination,
 dropoff flag marker visibly smaller on the route/tariff screen
 (screenshot). `flutter analyze` clean, `flutter test` 14/10 unchanged.
+
+## Item 10: full visual redesign pass — `552468e`, `5ae6cea`, `00ca28c`
+
+The previously-deferred 10-point redesign, started now per direct
+request ("делай идеальный дизайн везде"). Worked through each point as
+a tracked task, verifying live wherever the state is reachable without
+a real driver dispatch (still blocked all session — see above).
+
+- **Micro-interaction (button press scale ~0.97):** new `_PressScale`
+  wrapper (`Listener` + `AnimatedScale`, 110ms) applied to
+  `_GoldCtaButton` — the app's single primary-CTA widget, so this one
+  change covers order-confirm, support submit, promo check, order-note
+  save, and price-offer-accept in one place. Also fires a light haptic
+  on press-down.
+- **Haptics:** added `HapticFeedback.selectionClick()` on tariff-card
+  selection (previously only the pickup/dropoff swap had one); the new
+  `_PressScale` haptic covers every primary CTA tap.
+- **Consistent card shadow:** new `_cardShadow` constant applied to
+  `_PremiumCard`, `_RouteSummaryCard`, `_PaymentMethodRow` — the three
+  highest-traffic generic cards. Left the colored glow shadows on
+  selected/accent states untouched (different, intentional visual
+  language, not an inconsistency — same reasoning as item 9's audit).
+- **Empty states:** audited — already consistently
+  `EmptyState`-based (icon badge + title + text + optional CTA) across
+  every list screen that needs one (recurring bookings, favorites,
+  driver preferences, FAQ, trip history, etc.), confirmed via a full
+  grep of every `.isEmpty` branch in the file. Custom line-art
+  illustrations aren't achievable in this environment (no
+  image-generation tool) — the existing icon-badge treatment is the
+  honest ceiling here, not a shortfall.
+- **Skeleton loaders:** new `_SkeletonList`/`_SkeletonListTile` (built
+  on the pre-existing `_SkeletonLine` shimmer primitive from the
+  tariff skeleton) replaced bare centered `CircularProgressIndicator`
+  loading states on notifications, recurring bookings, favorite
+  addresses, driver preferences, and trip history. **Verified live**:
+  caught the notifications screen mid-load, three shimmering
+  placeholder rows rendering correctly (screenshot).
+- **One filled accent button per screen:** audited all 6
+  `ElevatedButton`/`ElevatedButton.icon` sites in the file. Found one
+  real violation — the support screen's "Позвонить" (urgent-call
+  shortcut) was a second filled button competing with "Отправить" (the
+  actual form submit) — demoted to `OutlinedButton`. The other 5 sites
+  already correctly pair one filled + outlined/text buttons (cancel
+  dialogs, driver-contact card, location-permission screen).
+  **Verified live**: screenshot confirms "Позвонить" now renders
+  outlined.
+- **Icon consistency:** audited — grepped every `Icons.*` reference in
+  the file (~170 call sites). No third-party icon packs mixed in
+  (no Cupertino/FontAwesome), and the overwhelming majority
+  consistently use Material's `_rounded`/`_outlined` suffixed variants
+  in a deliberate pairing (rounded = emphasized, outlined = default) —
+  already a coherent single system, nothing to fix.
+- **Dark theme:** found and fixed a real dead-end feature.
+  `main.dart` already has complete, working theme-mode infrastructure
+  (persisted `ThemeMode`, `buildSmartTaxiDarkTheme()`, restored on
+  launch) and passes `themeMode`/`onChangeThemeMode` into
+  `PassengerShell` — but nothing in the UI ever called
+  `onChangeThemeMode`, so it was completely unreachable. Added a
+  "Тема" row to Settings → Интерфейс (Светлая/Тёмная/Как в системе).
+  **Toggling it live surfaced a real bug**, exactly matching
+  `app_theme.dart`'s own documented caveat: `_SettingsGroup`'s title
+  `Text` had no explicit color, inherited the dark theme's near-white
+  default, and rendered invisible against `_PremiumCard`'s
+  hardcoded-light background — confirmed via screenshot (section
+  headers "Интерфейс"/"Разрешения"/"О приложении" essentially blank).
+  Fixed with an explicit color, matching the pattern `_SettingsRow`
+  already used correctly. Re-verified live: headers now readable in
+  dark mode (screenshot). Home/map screens confirmed unaffected by the
+  toggle either way — fully hardcoded-light throughout, still readable
+  in both modes. A full palette migration for the rest of
+  `passenger_shell.dart` remains explicitly out of scope (matches item
+  9's "opportunistic, not blanket" policy) — most content stays
+  light-styled even with dark selected, which is an honest, working
+  middle ground, not broken.
+- **Screen/panel transitions:** audited — `_PanelEntrance` (a
+  `TweenAnimationBuilder` scale-in, 0.96→1, 260ms) already wraps every
+  trip-status panel transition consistently
+  (searching → driver-found → arrived → in-progress → completed →
+  paid → rate → thanked). Already satisfies this point; nothing to add.
+- **Hero moment — driver found:** audited — `_DriverContactCard`'s
+  avatar already has an elastic pop-in
+  (`TweenAnimationBuilder`, 0.4→1, 520ms, `Curves.elasticOut`, keyed to
+  the driver's name so it only replays when the driver actually
+  changes). Already existed from earlier work this session; confirmed
+  via code re-read, nothing to add.
+- **Hero moment — payment success:** `_TripReceiptPanel`'s icon now
+  gets the same elastic pop-in treatment, but only for the genuine
+  `paid: true` state (not the payment-pending variant of the same
+  widget) — mounts fresh via the existing `ValueKey` the instant an
+  order actually lands on `PAID`, so the animation fires exactly once
+  per real transition, not on unrelated rebuilds.
+
+**Verified:** `flutter analyze` clean throughout (same 4 pre-existing
+warnings, no new ones from any of these changes). `flutter test`:
+14 passed / 10 failed, unchanged baseline at every checkpoint.
+**Verified live**: press-scale + card shadow + single-accent fix +
+skeleton loaders + dark-theme toggle and its bug fix all confirmed
+on-device with screenshots. **Could not verify live**: the
+payment-success and driver-found hero animations, both gated on a
+real driver being dispatched — same no-drivers-in-region constraint
+noted throughout this document. Verified by code trace instead: both
+reuse an animation pattern (`TweenAnimationBuilder` + `elasticOut`)
+already proven working elsewhere in this exact file.
