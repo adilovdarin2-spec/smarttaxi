@@ -14,7 +14,7 @@ import { rateLimit } from "./common/rateLimit.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import ordersRoutes from "./modules/orders/orders.routes.js";
-import paymentsRoutes from "./modules/payments/payments.routes.js";
+import paymentsRoutes, { kaspiWebhookRouter } from "./modules/payments/payments.routes.js";
 import driversRoutes from "./modules/drivers/drivers.routes.js";
 import driverCoreRoutes from "./modules/drivers/driver-core.routes.js";
 import clientsRoutes from "./modules/clients/clients.routes.js";
@@ -108,7 +108,15 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(express.json({ limit: "1mb" }));
+// verify stashes the exact raw bytes on req.rawBody before parsing — the
+// Kaspi Pay webhook handler (payments.routes.js) needs those, not
+// JSON.stringify(req.body), to check an HMAC signature: re-serializing a
+// parsed object can produce different bytes than what was actually signed
+// (key order, whitespace), which would make every signature check fail.
+app.use(express.json({
+  limit: "1mb",
+  verify: (req, _res, buf) => { req.rawBody = buf; }
+}));
 app.use((req, _res, next) => { req.io = io; next(); });
 app.use("/api", rateLimit({ prefix: "api", windowMs: 60_000, max: 300 }));
 
@@ -116,6 +124,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/orders", paymentsRoutes);
+// Fixed, unauthenticated (signature-verified instead) URL to register once
+// in Kaspi's merchant cabinet — see
+// docs/status/KASPI_PAY_READINESS_2026-07-15.md.
+app.use("/api/payments/kaspi", kaspiWebhookRouter);
 app.use("/api/drivers", driversRoutes);
 app.use("/api/driver", driverCoreRoutes);
 app.use("/api/driver/orders", ordersRoutes);
