@@ -1209,3 +1209,57 @@ capsule below the header, forced-loading debug screenshot).
 **Verified:** `flutter analyze` clean (3 pre-existing warnings, no
 change). `flutter test`: 10 failures, unchanged from baseline.
 **Verified live** for all three parts of this item.
+
+### 4. "Пригласить друга" screen was blank — found + fixed a client bug, plus a backend blocker — `335a2f3`
+
+Live-reproduced first: drawer → Пригласить друзей rendered nothing at
+all below the title/subtitle — not a spinner, not an error card,
+literally empty. Read `_referralsScreen()`: it has three render
+branches (`loading`, `error`, `summary != null`) but no `else` — so if
+`_referralSummary` is null, `_referralSummaryLoading` is false, and
+`_referralSummaryError` is false, it renders nothing. That's exactly
+the state the field starts in, and nothing was setting it away from
+that: the drawer's `onSelect` only did `setState(() => _tab = tab)` —
+it never called `_loadReferralSummary()`. A separate quick-links menu
+on the Profile screen *does* call it, so the feature "worked" only if
+reached through that specific link — never through the drawer, which
+is the obvious/primary way in.
+
+Grepped for the same pattern and found it affects **three other drawer
+items too**: Регулярные поездки, Избранные адреса, Водители — all four
+share the same "on-demand load, but only from the Profile menu" gap.
+Fixed once, at the drawer level, rather than four times: `onSelect` now
+triggers the matching load for whichever of these four tabs was picked
+(see `335a2f3`), reusing the exact same loader functions the Profile
+menu already calls — not a duplicate implementation.
+
+**What's still not working, and why it's not fixed here:** after the
+client fix, all four screens now correctly *attempt* their load and
+show a proper "Не удалось загрузить" / retry UI instead of a blank
+screen — but the load itself fails for the account this session is
+using ("Test Client", +77000000001). Traced with a temporary debug
+print (removed before commit): the referrals call gets back a real
+`404 CLIENT_NOT_FOUND` from `apps/api/src/modules/referrals/referrals.routes.js`
+— the backend's `clients` table lookup by `user_id` finds no row for
+this account. Confirmed this isn't a URL/routing mismatch (client
+requests `/api/referrals/me`, server mounts the router at
+`/api/referrals` with a `/me` route — matches exactly) and isn't
+route-specific — Избранные адреса, Регулярные поездки, and Водители
+fail the same way for the same account, while core flows (creating a
+real order minutes earlier in this session) work fine for it. This
+points at an account-data gap (this specific test account missing a
+`clients` row, or something scoped like it) rather than a bug in any
+one endpoint. **Not investigated further or fixed** — this is
+`apps/api`, outside this session's scope, and needs a decision from
+the user on whether to open it up.
+
+**Screenshot evidence:** before — drawer → Пригласить друзей, fully
+blank body. After — same path now shows "Не удалось загрузить" with a
+working "Повторить" retry button; same fix verified live on Регулярные
+поездки, Избранные адреса, and Водители (all three: blank → real
+error+retry UI).
+
+**Verified:** `flutter analyze` clean (3 pre-existing warnings, no
+change). `flutter test`: 10 failures, unchanged from baseline.
+**Verified live** that the load now fires on all four screens; the
+downstream 404 is a backend question, flagged not fixed.
