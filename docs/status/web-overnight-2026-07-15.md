@@ -593,6 +593,30 @@ plus a real bug the screenshot caught**:
   Одобрить/Отклонить actions all render correctly.
   ![admin document cards](../design/audit-2026-07-15/admin-spacing-application-documents-after.png)
 - Build (`npm run check`) green after every edit in this iteration.
+- Confirmed the "transactions" list named explicitly in requirement 2
+  (driver applications / promo codes / transactions) was already built
+  correctly — `.admin-table-row.finance-transaction` has its own
+  dedicated 13-column `grid-template-columns` (not shared with
+  orders/drivers/applications, so no risk of the earlier
+  overlap-under-shared-rule bug), status/payment-method use semantic
+  `Badge tone=` (success/warning/muted), bordered rows not per-row
+  cards. Nothing to fix; verified live rather than assumed from
+  reading the JSX.
+  ![finance transactions table](../design/audit-2026-07-15/admin-spacing-transactions-after.png)
+
+**Final confirmation pass**: re-screenshotted Заявки, Промокоды,
+Водители, and Выплаты fresh (none of their CSS was touched this
+iteration, but they share the general `.admin-table`/`.app-button`
+rules this iteration's edits sit next to) — bordered rows intact, no
+column overlap or clipping at 1280px, semantic badges correct, exactly
+one filled-blue element per screen (either the page's real CTA or the
+active filter-tab, never a competing row action). No new discrepancies
+found. Per the stated completion rule, this closes the density/style
+pass — stopping the `/loop`.
+![applications final](../design/audit-2026-07-15/admin-final-sweep-applications.png)
+![promo codes final](../design/audit-2026-07-15/admin-final-sweep-promo-codes.png)
+![drivers final](../design/audit-2026-07-15/admin-final-sweep-drivers.png)
+![payouts final](../design/audit-2026-07-15/admin-final-sweep-payouts.png)
 
 ## Known gaps / follow-ups
 
@@ -623,6 +647,15 @@ plus a real bug the screenshot caught**:
   §13 item 5) likely share the same stale-gold `!important` rule fixed
   for nav/tabs, but weren't visually confirmed — no way to reach an
   authenticated driver screen without a live backend this session.
+- **File-wide spacing-scale debt (§14 iteration 3)**: a repo-wide grep
+  for off-scale `gap`/`padding`/`margin` values (6/9/10/14/18/20/22/
+  26/28/30px) found **452 hits** across `styles.css`. This predates
+  tonight — only the values in CSS added during this overnight session
+  were brought onto the 4/8/12/16/24/32 scale. A full-file pass is a
+  separate, much larger task: it would need to be screenshot-verified
+  screen-by-screen (452 sites can't be blind-replaced safely) and
+  would produce a very large diff on a file other parallel sessions
+  are actively editing tonight.
 
 ## Commits (chronological)
 
