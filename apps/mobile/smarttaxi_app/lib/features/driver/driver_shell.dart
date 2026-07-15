@@ -3263,12 +3263,22 @@ class _DriverFullScreenNavigatorState
     setState(() {});
   }
 
+  // Only these sources are an actual finger/mouse on the map — anything
+  // else (mapController, the initial nonRotatedSizeChange on first layout,
+  // custom events) must not be treated as "the driver panned away," or the
+  // recenter FAB shows up immediately on open with nothing having moved.
+  static const _userGestureSources = {
+    MapEventSource.onDrag,
+    MapEventSource.onMultiFinger,
+    MapEventSource.flingAnimationController,
+    MapEventSource.doubleTapZoomAnimationController,
+    MapEventSource.scrollWheel,
+    MapEventSource.cursorKeyboardRotation,
+  };
+
   void _handleMapEvent(MapEvent event) {
     if (!_mapReady) _mapReady = true;
-    // Anything not driven by our own moveAndRotate() calls above is the
-    // driver's own finger on the map — that's the signal to stop
-    // auto-centering until they explicitly ask to come back.
-    if (event.source != MapEventSource.mapController && _autoFollow) {
+    if (_userGestureSources.contains(event.source) && _autoFollow) {
       setState(() => _autoFollow = false);
     }
   }
