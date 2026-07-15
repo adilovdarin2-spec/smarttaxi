@@ -571,9 +571,70 @@ but it's significant enough (the app's entry point and its entire
 localization layer) that it deserves a deliberate, reviewed commit by the
 user or in a dedicated session, not a drive-by bundle.
 
-## Not started yet — items 15–16
+## [15] Экран настроек — already substantially done pre-brief
 
-Recommend picking these up in the same priority order:
+Same investigate-before-rebuilding approach as §14. Both settings screens
+were already real, functional, non-stub screens:
+- **Passenger** (`_settingsScreen`): already redesigned in the earlier
+  pre-brief phase of this session — account (phone copy, logout), language
+  picker, real permission rows (push-notification status via
+  `FirebaseMessaging.getNotificationSettings()`, geolocation via
+  `Geolocator.openLocationSettings()` — both real actions, not dead rows),
+  app version, legal-hub link.
+- **Driver** (`_driverSettingsContent`): account (phone copy, logout),
+  about (version, terms, privacy sheets) — real, `AppLocalizations`-backed,
+  not a stub. The one genuine gap (no language row) was exactly what got
+  fixed as part of §14's work tonight (`8fd3c1c`), so nothing further was
+  needed here specifically.
+- No further changes made — rebuilding either screen "from scratch" would
+  have been pure churn against something already working.
+
+## [16] Подсказка о спросе для водителей — done this pass
+
+Lowest priority, tackled last as instructed. See the driver_shell.dart
+commit above (`904144e`) — full writeup:
+- Confirmed via `grep -rln demand apps/api/src/modules/` that **no
+  spatial demand-zone/heatmap endpoint exists anywhere in the backend** —
+  only a flat per-tariff `surgeMultiplier`/`demandCoefficient` on the
+  public `GET /api/tariffs?regionId=` endpoint (already used by the
+  passenger price screen). Building a fake zone map would have meant
+  inventing data the backend doesn't have — not done.
+- Instead: `TariffOption` gained `surgeMultiplier`/`demandCoefficient`
+  fields, and the driver line tab shows a `_DemandHintCard` ("Обычный
+  спрос" / "Повышенный спрос" / "Высокий спрос") based on
+  `max(surgeMultiplier * demandCoefficient)` across the driver's current
+  region's active tariffs. Refreshes whenever regions load or the driver
+  switches region — same lifecycle as the rest of the line tab's data.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live** — needs a logged-in DRIVER
+  session with active region tariffs, blocked by the standing
+  no-live-login policy; compile-verified only tonight.
+- Committed as `904144e`.
+
+## All 16 sections done — final full-app polish pass still pending
+
+Sections 0 through 16 of the brief are now implemented, statically
+verified (`flutter analyze`/`test`/`build apk --debug`), and committed
+individually. **None of it has been verified live on-device past the auth
+screen** — every item past §1/§2's on-device screenshot confirmation is
+compile-verified only, because live registration/login against the real
+production backend stayed correctly blocked all night per the standing
+safety policy (see the re-verification section at the top of this
+document). The brief's final requirement — "a full-app polish/consistency
+pass" — has not been done as a dedicated pass yet; the next cycle should:
+1. Re-run the full verification battery fresh (analyze/test/build) to
+   confirm nothing regressed across the many commits made tonight.
+2. Do a genuine cross-screen consistency read-through (spacing, color
+   tokens, empty/loading/error state patterns) now that 12 new
+   screens/sheets were added on top of the pre-existing app.
+3. Revisit the two flagged-but-deliberately-unfixed items: the broken
+   `smarttaxi.kz` share-link domain (§8, infra/deployment, not mobile
+   code) and no referral-code entry field at registration (§12, would
+   require touching the long-iterated auth screens).
+4. Decide, with the user, what to do about the uncommitted `main.dart`/
+   `lib/l10n/` finding from §14 — flagged via a spawned task chip, not
+   silently resolved.
 
 ## Verification method note
 
