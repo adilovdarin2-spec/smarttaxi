@@ -2197,6 +2197,40 @@ class _PassengerShellState extends State<PassengerShell>
     widget.onChangeLocale(Locale(code));
   }
 
+  Future<void> _chooseTheme() async {
+    final current = widget.themeMode;
+    final mode = await showModalBottomSheet<ThemeMode>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: RadioGroup<ThemeMode>(
+          groupValue: current,
+          onChanged: (value) => Navigator.pop(sheetContext, value),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.light,
+                title: Text('Светлая'),
+              ),
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.dark,
+                title: Text('Тёмная'),
+              ),
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.system,
+                title: Text('Как в системе'),
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mode == null || mode == current) return;
+    widget.onChangeThemeMode?.call(mode);
+  }
+
   Future<void> _confirmAndLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -4056,6 +4090,15 @@ class _PassengerShellState extends State<PassengerShell>
                   ? AppLocalizations.of(context).languageKazakh
                   : AppLocalizations.of(context).languageRussian,
               onTap: _chooseLanguage,
+            ),
+            _SettingsRow(
+              title: 'Тема',
+              text: switch (widget.themeMode) {
+                ThemeMode.dark => 'Тёмная',
+                ThemeMode.system => 'Как в системе',
+                ThemeMode.light => 'Светлая',
+              },
+              onTap: _chooseTheme,
             ),
           ],
         ),
@@ -15335,7 +15378,16 @@ class _SettingsGroup extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            // Explicit color, not inherited from Theme.of(context) — this
+            // card's background is the hardcoded-light SmartTaxiColors.card,
+            // not the theme-aware palette, so an inherited dark-mode text
+            // color (near-white) would render unreadable on it. Confirmed
+            // live: this was invisible white-on-white before this fix.
+            style: const TextStyle(
+              color: SmartTaxiColors.text,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(height: 10),
           ...children,
