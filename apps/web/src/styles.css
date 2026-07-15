@@ -2536,7 +2536,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-document-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .admin-document-card {
@@ -2581,7 +2581,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .admin-document-card-body {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -7157,7 +7157,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .referral-code-block {
@@ -7184,7 +7184,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .info-line-client {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 0;
   border-bottom: 1px solid var(--taxi-border);
   color: var(--taxi-text);
@@ -7200,13 +7200,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .quick-message-toast {
   position: absolute;
-  top: 14px;
+  top: 12px;
   left: 12px;
   right: 12px;
   z-index: 60;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 12px 16px;
   background: rgba(17, 23, 27, .92);
   color: #fff;
@@ -7227,7 +7227,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .quick-message-bar button {
-  padding: 9px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--taxi-border);
   background: var(--taxi-card-warm);
@@ -7255,7 +7255,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .price-offer-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
   margin-top: 8px;
 }
 
@@ -7280,7 +7280,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .price-offer-actions button:disabled { opacity: .6; }
 
-.faq-list-premium { display: grid; gap: 10px; }
+.faq-list-premium { display: grid; gap: 8px; }
 .faq-list-premium summary {
   cursor: pointer;
   color: var(--taxi-text);

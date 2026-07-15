@@ -4163,7 +4163,7 @@ function FavoritesSection({ onHome, authenticated, favorites, favoritesState, on
           ))
         )}
         <Button className="wide primary-gold" onClick={onPickOnMap}>Выбрать адрес на карте</Button>
-        <Button className="wide" onClick={onHome}>На главную</Button>
+        <Button variant="secondary" className="wide" onClick={onHome}>На главную</Button>
       </section>
     </section>
   );

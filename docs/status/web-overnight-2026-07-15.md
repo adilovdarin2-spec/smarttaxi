@@ -536,6 +536,57 @@ beyond the login page (still blocked — no live backend to get past
 driver auth), and the final confirmation sweep once a full pass turns
 up nothing new.
 
+**Iteration 3 — spacing-scale audit on tonight's own `/client` CSS,
+plus a real bug the screenshot caught**:
+
+- Grepped every `gap`/`padding`/`margin` value added in tonight's
+  earlier tasks (favorites, referral, quick-message, price-offer,
+  admin document cards) against the required 4/8/12/16/24/32px scale.
+  Off-scale values found and corrected in
+  [styles.css](../../../apps/web/src/styles.css):
+  `.favorite-row-premium` gap 10→8px, `.info-line-client` gap 10→8px,
+  `.quick-message-toast` top 14→12px + gap 10→8px,
+  `.quick-message-bar button` padding `9px 14px`→`8px 16px`,
+  `.price-offer-actions` gap 10→8px, `.faq-list-premium` gap 10→8px,
+  `.admin-document-grid` gap 14→12px, `.admin-document-card-body` gap
+  6→4px. (Border-radius values like 18/19px were left alone — the
+  scale requirement is about spacing, not corner radius, and the
+  design doc's radius scale is separate.)
+- **Scoped this to tonight's own additions on purpose**: a repo-wide
+  grep for the same off-scale patterns (`gap`/`padding`/`margin` at
+  6/9/10/14/18/20/22/26/28/30px) turned up **452 hits** across
+  `styles.css`. That's a pre-existing, file-wide condition that long
+  predates tonight, not something introduced in this pass — rewriting
+  452 sites blind, on a shared file other parallel sessions are also
+  editing, with no way to screenshot-verify all of them in one sitting,
+  is a different (and much riskier) task than "fix the spacing you
+  personally added tonight." Flagging it here as a real, confirmed gap
+  rather than silently leaving it out.
+- **Real bug caught only by the live screenshot, not by reading the
+  code**: re-screenshotting the Favorites screen (logged in, with
+  saved addresses) after the spacing fix showed **two solid-blue
+  filled buttons stacked** — "Выбрать адрес на карте" and "На главную"
+  — both reading as the page's primary action, violating the
+  one-filled-CTA rule from requirement 4. Root cause in
+  [ClientApp.jsx:4166](../../../apps/web/src/features/client/ClientApp.jsx):
+  `<Button className="wide" onClick={onHome}>` was missing a
+  `variant`, and `Button`'s default (`core/ui.jsx`) is
+  `variant="primary"` — so it silently rendered as a second primary
+  button. Fixed by adding `variant="secondary"`. Re-screenshotted to
+  confirm: now one filled blue CTA + one clean secondary button.
+  ![favorites before — two filled CTAs](../design/audit-2026-07-15/client-spacing-favorites-after.png)
+- Referral screen re-screenshotted logged-in (code block, invite
+  count, bonus total, single CTA) — spacing and one-CTA rule both
+  correct, no changes needed.
+  ![referral logged-in](../design/audit-2026-07-15/client-spacing-referral-after.png)
+- `.price-offer-card`/`.quick-message-toast` are gated behind an
+  active-order polling state that wasn't re-mocked this iteration
+  (same scaffolding as §10's original wiring); the CSS edits there are
+  pure numeric value changes with no structural change, and the same
+  gap pattern was visually confirmed correct on the favorites/referral
+  rows above — treated as low-risk, not re-screenshotted standalone.
+- Build (`npm run check`) green after every edit in this iteration.
+
 ## Known gaps / follow-ups
 
 - Referral code redemption at signup (see §8) — backend-ready, not
