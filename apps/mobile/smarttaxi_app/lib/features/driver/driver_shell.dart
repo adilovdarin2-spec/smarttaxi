@@ -646,6 +646,83 @@ class _DriverShellState extends State<DriverShell> {
     return _metersBetween(p.latitude, p.longitude, closestLat, closestLng);
   }
 
+  static double _bearingBetween(LatLng a, LatLng b) {
+    final lat1 = a.latitude * math.pi / 180;
+    final lat2 = b.latitude * math.pi / 180;
+    final dLng = (b.longitude - a.longitude) * math.pi / 180;
+    final y = math.sin(dLng) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+  }
+
+  // Signed difference in degrees, positive = turning right, negative = left,
+  // normalized to (-180, 180] so a bearing wrap (e.g. 350° -> 10°) reads as
+  // a small +20 turn instead of a huge -340.
+  static double _bearingDelta(double from, double to) {
+    var delta = (to - from) % 360;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    return delta;
+  }
+
+  // Backend deliberately requests OSRM with steps=false (routing.service.js)
+  // — there's no maneuver/turn data from the server at all, by design, so
+  // this is computed client-side from the same polyline already drawn on
+  // the map: walk forward from the driver's nearest point on the route,
+  // and report the first meaningful bearing change found within the
+  // lookahead distance. Real geometry, not invented data — just derived
+  // from it instead of asking the backend for something it doesn't send.
+  ({String label, IconData icon, double distanceMeters})? _nextManeuverHint() {
+    final route = _driverRoute?.geometry;
+    final position = _currentCoordinate;
+    if (route == null || route.length < 3 || position == null) return null;
+    final current = position.toLatLng();
+
+    var nearestIndex = 0;
+    var nearestDistance = double.infinity;
+    for (var i = 0; i < route.length - 1; i++) {
+      final distance = _distanceToSegmentMeters(current, route[i], route[i + 1]);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = i;
+      }
+    }
+    // More than ~120m off every segment means the drawn route is stale
+    // (already handled by _maybeRefreshDriverRoute's own reroute check) —
+    // don't guess a maneuver against a route that's about to be replaced.
+    if (nearestDistance > 120) return null;
+
+    const lookaheadMeters = 800.0;
+    const turnThresholdDegrees = 28.0;
+    final baseBearing = _bearingBetween(route[nearestIndex], route[nearestIndex + 1]);
+    var cumulative = _metersBetween(
+      current.latitude,
+      current.longitude,
+      route[nearestIndex + 1].latitude,
+      route[nearestIndex + 1].longitude,
+    );
+    for (var i = nearestIndex + 1; i < route.length - 1 && cumulative < lookaheadMeters; i++) {
+      final segmentBearing = _bearingBetween(route[i], route[i + 1]);
+      final delta = _bearingDelta(baseBearing, segmentBearing);
+      if (delta.abs() >= turnThresholdDegrees) {
+        final (label, icon) = delta.abs() >= 150
+            ? ('Разворот', Icons.u_turn_left_rounded)
+            : delta > 0
+                ? ('Поворот направо', Icons.turn_right_rounded)
+                : ('Поворот налево', Icons.turn_left_rounded);
+        return (label: label, icon: icon, distanceMeters: cumulative);
+      }
+      cumulative += _metersBetween(
+        route[i].latitude,
+        route[i].longitude,
+        route[i + 1].latitude,
+        route[i + 1].longitude,
+      );
+    }
+    return null;
+  }
+
   bool _hasActiveDrivingLeg(String? status) => _routePhaseForStatus(status) != null;
 
   Future<void> _maybeRefreshDriverRoute(Position position) async {
@@ -1952,6 +2029,7 @@ class _DriverShellState extends State<DriverShell> {
     final speedKmh = _speedKmh;
     final activeTarget = _navigatorTarget;
     final speedLimit = _activeSpeedLimit;
+    final maneuver = _nextManeuverHint();
     return RefreshIndicator(
       onRefresh: () async {
         await _loadOrders();
@@ -1966,6 +2044,14 @@ class _DriverShellState extends State<DriverShell> {
             online: _online,
           ),
           const SizedBox(height: 10),
+          if (maneuver != null) ...[
+            _NextManeuverBanner(
+              label: maneuver.label,
+              icon: maneuver.icon,
+              distanceMeters: maneuver.distanceMeters,
+            ),
+            const SizedBox(height: 10),
+          ],
           if (_navigatorBannerText != null &&
               _navigatorBannerUntil != null &&
               DateTime.now().isBefore(_navigatorBannerUntil!)) ...[
@@ -4562,6 +4648,78 @@ Color _alertColor(String type) {
         'OTHER': SmartTaxiColors.textSecondary,
       }[type] ??
       SmartTaxiColors.textSecondary;
+}
+
+// Dark, high-contrast turn-instruction banner — deliberately styled like a
+// dedicated navigation app's maneuver strip (not a card matching the rest
+// of the cockpit), since this is the one thing a driver needs to read at
+// a glance while actually driving.
+class _NextManeuverBanner extends StatelessWidget {
+  const _NextManeuverBanner({
+    required this.label,
+    required this.icon,
+    required this.distanceMeters,
+  });
+
+  final String label;
+  final IconData icon;
+  final double distanceMeters;
+
+  @override
+  Widget build(BuildContext context) {
+    final rounded = math.max(20, (distanceMeters / 20).round() * 20);
+    final distanceLabel =
+        rounded >= 1000 ? '${(rounded / 1000).toStringAsFixed(1)} км' : '$rounded м';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xff10192e),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Через $distanceLabel',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _NavigatorVoiceBanner extends StatelessWidget {
