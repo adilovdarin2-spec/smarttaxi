@@ -25,7 +25,7 @@ import {
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { buildActiveLegRoute } from "../routing/routing.service.js";
-import { createOrderCancelledTransaction, createOrderCompletedTransaction } from "../finance/finance.service.js";
+import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleDriverDebtFromBalance } from "../finance/finance.service.js";
 import { notifyOrderClient, notifyOrderDriver } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
@@ -836,6 +836,11 @@ async function updateStatus(req, res, next, status) {
             await client.query("INSERT INTO driver_debts(driver_id,order_id,amount) VALUES($1,$2,$3)", [updated.driver_id, updated.id, updated.service_commission]);
           } else {
             await client.query("UPDATE drivers SET balance=balance+($1-$2),status='FREE' WHERE id=$3", [updated.price, updated.service_commission, updated.driver_id]);
+            // This is also "the next non-cash order" from the driver's
+            // perspective — any outstanding CASH/KASPI commission debt gets
+            // netted against the balance this trip just credited, instead
+            // of sitting untouched next to it until someone notices.
+            await settleDriverDebtFromBalance(updated.driver_id, client);
           }
         }
         await createOrderCompletedTransaction(updated, req.user.id, client);

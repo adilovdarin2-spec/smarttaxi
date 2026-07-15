@@ -159,6 +159,40 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
   if (existing) return existing;
 
   const amounts = orderAmounts(order);
+
+  // A trip normally can't be cancelled once its payment is PAID —
+  // assertStatusTransition treats PAID as terminal, cancellation is only
+  // reachable from pre-trip statuses today. This stays defensive anyway:
+  // money handling code shouldn't rely on every caller upstream getting the
+  // state machine right forever. If a cancellation ever does land on an
+  // already-paid order (a future dispute/admin path, a bug elsewhere), the
+  // client doesn't just lose that money — it goes back onto their spendable
+  // cashback balance, the same balance orders.cashback_used already draws
+  // down on the next ride, instead of a zero-amount transaction that quietly
+  // pretends nothing was ever charged.
+  let refundedKzt = 0;
+  if (order.payment_status === "PAID" && order.client_id) {
+    const paidPayment = await run(
+      executor,
+      "SELECT amount FROM payments WHERE order_id=$1 AND status='PAID' ORDER BY updated_at DESC LIMIT 1",
+      [order.id]
+    );
+    refundedKzt = roundMoney(paidPayment.rows[0]?.amount ?? order.price ?? 0);
+    if (refundedKzt > 0) {
+      const updatedClient = await run(
+        executor,
+        "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance",
+        [refundedKzt, order.client_id]
+      );
+      await run(executor, `
+        INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
+        VALUES($1,$2,'ORDER_CANCEL_REFUND',$3,$4)
+      `, [order.client_id, order.id, refundedKzt, updatedClient.rows[0].cashback_balance]);
+    } else {
+      refundedKzt = 0;
+    }
+  }
+
   const result = await run(executor, `
     INSERT INTO financial_transactions(
       order_id, driver_id, client_user_id, region_id, tariff_id, type, payment_method,
@@ -180,7 +214,8 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
     JSON.stringify({
       orderStatus: order.status,
       tariffName: amounts.tariffName,
-      pricingSource: amounts.pricingSource
+      pricingSource: amounts.pricingSource,
+      refundedKzt
     }),
     actorUserId
   ]);
@@ -366,6 +401,32 @@ export async function adjustDriverDebt({
 
   await run(executor, "UPDATE drivers SET debt=GREATEST(0, debt+$1) WHERE id=$2", [numericAmount, driverId]);
   return transactionRow(result.rows[0]);
+}
+
+// Nets any outstanding CASH/KASPI commission debt against available
+// balance the moment there's balance to take it from — right after a
+// non-cash trip credits balance (orders.routes.js), and again defensively
+// right before a payout request is created (wallet.service.js), so debt
+// doesn't just sit on the books forever next to a growing balance waiting
+// for an operator to notice and run adjustDriverDebt by hand.
+export async function settleDriverDebtFromBalance(driverId, executor = defaultQuery) {
+  const driver = (await run(executor, "SELECT balance, debt FROM drivers WHERE id=$1 FOR UPDATE", [driverId])).rows[0];
+  if (!driver) return { settledKzt: 0 };
+  const balance = number(driver.balance);
+  const debt = number(driver.debt);
+  const settleAmount = roundMoney(Math.min(balance, debt));
+  if (settleAmount <= 0) return { settledKzt: 0 };
+
+  await run(executor, "UPDATE drivers SET balance=balance-$1, debt=debt-$1 WHERE id=$2", [settleAmount, driverId]);
+  await run(executor, `
+    INSERT INTO financial_transactions(
+      driver_id, type, payment_method, gross_amount, service_commission,
+      driver_earning, driver_debt_delta, currency, status, metadata
+    )
+    VALUES($1,'DRIVER_DEBT_ADJUSTED','UNKNOWN',0,0,0,$2,'KZT','POSTED',$3::jsonb)
+  `, [driverId, -settleAmount, JSON.stringify({ reason: "Debt settled from available balance", source: "AUTO_SETTLEMENT" })]);
+
+  return { settledKzt: settleAmount };
 }
 
 function reportGroupExpression(groupBy) {
