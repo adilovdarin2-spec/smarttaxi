@@ -6,17 +6,35 @@ by a parallel session and was not touched, per instructions.
 
 ## Verification status (read this first)
 
-**On-device screenshot verification was blocked all night.** `flutter install` /
-`adb install` to the connected phone (`2409BRN2CY`, serial `IBOVEMHQBQBQMJTS`) fails
-consistently with `INSTALL_FAILED_USER_RESTRICTED: Install canceled by user`. Confirmed
-this isn't the lock screen or a stale adb daemon (`dumpsys power`/`dumpsys window` show
-the screen awake and unlocked; restarting `adb` didn't help) — it needs a manual tap on
-the phone itself, most likely MIUI's separate "Install via USB" toggle under Developer
-Options → Security settings, which silently re-locks and can't be flipped remotely.
+On-device install was blocked for most of the night (`INSTALL_FAILED_USER_RESTRICTED`,
+then the phone dropping off USB entirely). It cleared intermittently around 19:50–20:45
+(most likely from the phone being physically handled), and a real on-device pass was
+completed against the driver test account (`+77000000000` / password `123456`, seed.js)
+via adb + uiautomator:
 
-Everything below is **code-complete and `flutter analyze`-clean, but not yet confirmed
-working on an actual device/screen**. Please unlock "Install via USB" on the phone and
-ask for a follow-up pass to screenshot-verify each item before treating this as done.
+- **Confirmed working, screenshotted:** Line tab layout with the new "Недоступен по
+  региону" status pill (both the header pill and the DriverShiftHero row) and the new
+  SOS button next to it; tapping SOS opens `_DriverSosSheet` with the real
+  `sosPhone` from `/regions/service-settings` and correct copy; Trip tab empty state
+  correctly hides the SOS button when there's no active order (only shown once
+  `_activeOrder != null`, as coded); the drawer opens/scrolls; the new logout
+  confirmation dialog ("Выйти из аккаунта?" / Назад / Выйти) appears and both its
+  Cancel and (by code-sharing) Confirm paths work.
+- **Not exercised live:** waiting timer, trip-completion/rating card, favorite/block
+  buttons, call-passenger button — all require an actual assigned/active order, which
+  needs a second (passenger) account placing a real order through dispatch; out of
+  reach for a solo overnight pass. These are unverified beyond `flutter analyze` +
+  code review, per [[feedback_screenshot_verify_before_done]] don't treat them as
+  fully "done" until someone drives an actual trip through them.
+- **Found and fixed during this pass, not a mobile bug:** the very first live test used
+  a stale APK (built before the toast/driver-id-scoping/cancel/no-show/logout-confirm
+  commits) — the logout confirmation appeared to silently not exist until the app was
+  rebuilt and reinstalled with the current commit. If a future session sees a "missing"
+  feature live, rebuild before assuming the code regressed.
+- **Found and NOT fixed (out of scope, flagged separately):** the shared login screen's
+  phone-number field scrambles already-typed digits on certain rebuild/refocus events —
+  spawned as a separate task (see memory) since it's outside `lib/features/driver/**`
+  and could be blocking real users from logging in reliably.
 
 Also relevant if live-testing against prod: the deployed Railway API is currently missing
 several newer routes present in the repo (`/favorites/addresses`, `/favorites/drivers`,
@@ -87,13 +105,35 @@ persisting the moment those routes land — no mobile-side change needed then.
 - `Mobile: free/paid waiting timer for the driver on WAITING_CLIENT`
 - `Mobile: driver trip-completion summary, passenger rating, favorite/block client`
 - `Mobile: call-passenger button during navigation + region-unavailable status pill`
+- `Mobile: toast the driver when a price offer gets accepted/declined`
+- `Mobile: fix price-offer UI leaking across drivers on shared open orders`
+- `Mobile: confirm dialog before driver cancel/no-show`
+- `Mobile: confirm dialog before driver logout`
+
+## Additional fixes found via code review (no phone needed)
+
+While waiting on device access, re-read the whole night's diff plus the surrounding
+driver files and found two real issues, both fixed and screenshot/analyze-verified:
+
+- **Cross-driver price-offer leak**: open orders are broadcast to every driver in a
+  region, but `OrderCard` and the new accept/decline toast both read
+  `order.driverOfferStatus` without checking `driverOfferByDriverId` — driver B's copy
+  of an order driver A had offered on showed "Ожидаем ответа" for an offer B never
+  made. Added `DriverStats.driverId` (was already in the `/drivers/me/stats` response,
+  just never parsed) and scoped both call sites to it.
+- **No confirmation before cancel/no-show/logout**: all three fired the API/logout
+  immediately on a single tap. Added the same confirm-dialog pattern the passenger side
+  already uses for its own cancel/logout actions.
 
 ## Next steps
 
-1. Unlock "Install via USB" on the phone, install the current build, and screenshot-walk
-   every item above (Line tab SOS + region pill, incoming order, price offer, navigation
-   call button, waiting timer free→paid transition, trip completion card, rating submit,
-   favorite/block toggle) before calling any of it done.
+1. Drive an actual trip (needs a second passenger-side account/order through real
+   dispatch) to screenshot-verify the waiting timer, trip-completion/rating card,
+   favorite/block buttons, and pickup call button — code-reviewed and analyze-clean,
+   but not yet exercised live.
 2. Once the backend session ships `/orders/:id/rate-client` and `/favorites/clients`,
    re-test the two flows end-to-end (they're wired correctly against the documented
    contract already, just untestable against a live 404).
+3. A separate background task was spawned for the phone-number-field digit-scrambling
+   bug found in the shared login screen (not driver scope) — see the chip in the
+   session UI, or search project memory for "device-install-blocked" for repro steps.
