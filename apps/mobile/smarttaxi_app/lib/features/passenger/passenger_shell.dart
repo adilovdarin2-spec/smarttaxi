@@ -873,6 +873,19 @@ class _PassengerShellState extends State<PassengerShell>
         : null;
     if (driverJustAssigned) {
       unawaited(HapticFeedback.mediumImpact());
+      // The backend also sends a real push for this (DRIVER_FOUND, see
+      // orders.routes.js) so it still lands as a system notification when
+      // the app is backgrounded — this toast covers the common case where
+      // the app is open but the rider has wandered to another tab, where a
+      // background-only push wouldn't be visible at all.
+      if (mounted) {
+        AppToast.showSuccess(
+          context,
+          (order.driverName ?? '').isEmpty
+              ? 'Водитель найден!'
+              : 'Водитель найден: ${order.driverName} едет к вам',
+        );
+      }
     }
     if (driverJustArrived) {
       unawaited(HapticFeedback.heavyImpact());
@@ -1874,6 +1887,18 @@ class _PassengerShellState extends State<PassengerShell>
                   trailing: _HeaderProfileButton(
                     onTap: () => setState(() => _tab = PassengerTab.profile),
                   ),
+                ),
+              // Kept live by the socket order-update listener registered
+              // once in init (_handleOrderUpdate), so it stays accurate
+              // however long the rider spends on some other tab without
+              // cancelling — not a one-shot snapshot from whenever they
+              // last looked at Home.
+              if (_order != null &&
+                  !_isPassengerOrderTerminal(_order!.status) &&
+                  _tab != PassengerTab.home)
+                _ActiveOrderBanner(
+                  order: _order!,
+                  onTap: () => setState(() => _tab = PassengerTab.home),
                 ),
               Expanded(
                 child: AnimatedSwitcher(
@@ -13317,6 +13342,102 @@ class _AppHeader extends StatelessWidget {
           const Spacer(),
           trailing,
         ],
+      ),
+    );
+  }
+}
+
+class _ActiveOrderBanner extends StatelessWidget {
+  const _ActiveOrderBanner({required this.order, required this.onTap});
+
+  final OrderSummary order;
+  final VoidCallback onTap;
+
+  bool get _searching => order.driverId == null;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  SmartTaxiColors.gold.withValues(alpha: 0.16),
+                  SmartTaxiColors.gold.withValues(alpha: 0.06),
+                ],
+              ),
+              border: Border.all(color: SmartTaxiColors.goldSoft),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: _searching
+                      ? const CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: SmartTaxiColors.goldDeep,
+                        )
+                      : const Icon(
+                          Icons.directions_car_filled_rounded,
+                          color: SmartTaxiColors.goldDeep,
+                          size: 20,
+                        ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _statusLabel(order.status),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SmartTaxiColors.text,
+                          fontSize: 13.5,
+                          height: 1.05,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        (order.driverName ?? '').isEmpty
+                            ? order.dropoff
+                            : '${order.driverName} · ${order.dropoff}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: SmartTaxiColors.textSecondary,
+                          fontSize: 11.5,
+                          height: 1.05,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: SmartTaxiColors.goldDeep,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
