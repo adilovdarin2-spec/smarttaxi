@@ -864,6 +864,62 @@ Investigated first — two of the three asks were already fully built:
 
 ## URGENT batch complete: all 8 items (URG-1 through URG-8) done, verified statically, committed individually, documented above.
 
+## Follow-up pass: catching up with concurrent backend changes
+
+After the urgent batch, kept working per the user's "продолжай работу и
+ничего у меня не спрашивай" instruction. Rather than inventing new scope,
+scanned `git log --oneline -20 -- apps/api/` for anything landed by other
+sessions tonight that mobile should react to. Found two real, concrete
+gaps this way — both fixed, not just noted.
+
+### Document-completeness gate — done, `74d8fcc`
+
+`7cafd68 fix(drivers): block undocumented drivers from all dispatch paths`
+landed after my earlier URG-EXTRA approval-gate fix and extended the exact
+same choke point (`assertDriverRegionApproved`) with a new check:
+`assertDriverDocumentsApproved` now runs first, throwing
+`DRIVER_DOCUMENTS_NOT_APPROVED` if any of the 5 required document types
+(license front/back, ID front/back, vehicle registration) doesn't have an
+`APPROVED` latest submission. My earlier fix didn't know this code existed
+— a driver with an approved region but incomplete/rejected documents would
+have sailed past `_disabledReason()`'s upfront check and hit a raw,
+unmapped error, exactly the bug the original request was about.
+- `_missingRequiredDocuments` getter added, replicating
+  `getMissingRequiredDocumentTypes` (driver-documents.service.js) exactly:
+  latest submission per required type must be APPROVED.
+- `_disabledReason()` checks documents first, matching backend precedence.
+- `_DriverApprovalStatusCard` gained a third state ("Нужны документы"),
+  checked ahead of the region-status states.
+- `readableError()` and `_setOnline`'s approval-code set both gained
+  `DRIVER_DOCUMENTS_NOT_APPROVED`.
+- **Verified:** `flutter analyze`/`test`/`build apk --debug` clean (same
+  7/10 baseline). **Not verified live** — same standing policy.
+
+### Order-lifecycle signals — done, `93d74a8`
+
+`d8d11c0 feat(orders): reopen order on driver cancel, bill paid waiting,
+charge cancellation/no-show fees, surface search timeout` — two of its
+four changes are mobile-relevant (the fee-charging and paid-waiting-billing
+parts are server-ledger-only, nothing for mobile to read/display since
+there's still no client-facing balance endpoint, see §URG-5 above):
+- `order.search_timed_out` (computed live: order open >75s, no driver)
+  is now parsed into `OrderSummary.searchTimedOut`. The passenger
+  "no drivers found" panel was previously gated purely on a client-only
+  25s-timer-plus-empty-nearby-list heuristic — a real, different scenario
+  (drivers nearby but none accepting) never triggered it and would spin
+  forever with no escape. Now shown on `noDriversFound || order.
+  searchTimedOut`, keeping the fast local heuristic for the common case
+  and adding the server's authoritative, reconnect-proof signal for the
+  rest.
+- A driver cancelling an already-accepted order now reopens it
+  (`SEARCHING_DRIVER`, driver cleared) instead of a terminal cancel.
+  Backend already pushes a real notification for the backgrounded case;
+  added the matching open-app toast via a new `driverJustCancelled`
+  transition check in `_applyOrderSnapshot`, same pattern as the existing
+  `driverJustAssigned` toast.
+- **Verified:** `flutter analyze`/`test`/`build apk --debug` clean (same
+  7/10 baseline). **Not verified live** — same standing policy.
+
 ## Verification method note
 
 No real backend/OTP credentials were available in this session to log in on
