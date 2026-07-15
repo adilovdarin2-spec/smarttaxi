@@ -7,7 +7,7 @@ memory). No app code changed, only docs.
 
 ---
 
-## 0. URGENT (2026-07-15 ~11:21) — "driver can't go online without approval" chain: repo-integrity break + a mobile/backend contract gap
+## 0. "Driver can't go online without approval" chain: tracked across server/web/mobile
 
 Per explicit user instruction to watch this cross-cutting scenario once
 commits from server/web/mobile all touch it. Found and verified by
@@ -17,38 +17,46 @@ externally extended (by another session) with a `driver_documents` mock
 query — a signal that `assertDriverDispatchReady`'s dependency chain had
 grown a new gate.
 
-**0a. Repo-integrity break — HEAD does not boot.** `apps/api/src/server.js`
-at `HEAD` (already committed, `git show HEAD:apps/api/src/server.js`
-confirms it) imports:
-```
-import driverDocumentsRoutes, { driverApplicationDocumentsRouter } from "./modules/driver-documents/driver-documents.routes.js";
-```
-But `apps/api/src/modules/driver-documents/` (the whole directory:
-`driver-documents.routes.js`, `driver-documents.service.js`,
-`upload.middleware.js`) **has zero commits in git history** —
-`git log --all -- apps/api/src/modules/driver-documents/` and
-`git ls-files` both return nothing; `git status` shows the whole
-directory as untracked (`??`). **A fresh `git clone` + `npm start` of
-this repo right now would crash on boot** with a missing-module error —
-this isn't hypothetical, it's the actual committed state. Everything
-still works in this one shared working directory only because the
-untracked files happen to still be sitting on disk; they'd survive a
-`git stash` (stash doesn't touch untracked files by default) but not a
-`git clean -fd`. The underlying `driver_documents` **database table**
-migration is fine and already committed (`migrations.js` at `HEAD`
-already creates it; `schema.sql` doesn't yet, but that's expected —
-migrations.js runs at every boot regardless, per the established pattern
-this session already noted for other recent features). **This needs
-someone to `git add` and commit the `driver-documents/` module directory
-as its own priority — not attempted here, it's not this QA pass's
-in-progress work to commit on another session's behalf.**
+**Update (2026-07-15 ~11:53): 0a is now RESOLVED, 0b is still open —
+see below each.**
 
-**0b. Mobile doesn't handle the new `DRIVER_DOCUMENTS_NOT_APPROVED` code.**
-The backend's `assertDriverCanGoOnline()` →
+**0a. Repo-integrity break — RESOLVED (commit `7cafd68`,
+"fix(drivers): block undocumented drivers from all dispatch paths",
+~11:2x).** `apps/api/src/modules/driver-documents/` (`driver-documents.routes.js`,
+`driver-documents.service.js`, `upload.middleware.js`) is now tracked —
+`git ls-files` lists all three, `git status` is clean for the directory.
+Re-verified `node --check`-equivalent by running `price-offer-check.js`
+(which exercises the same `assertDriverDispatchReady` chain through its
+mock) — still passes. `driver-region-approvals.service.js` is also
+clean/committed now. No repo-integrity issue remains here. Dismissed the
+task chip (`task_529ddc38`) that was tracking this. The backend session
+also independently confirmed the same gap and fix in
+`docs/status/server-overnight-2026-07-15.md` §8 ("CRITICAL: unverified
+drivers could go online — fixed") — same `DRIVER_DOCUMENTS_NOT_APPROVED`
+error shape, same choke-point design (`assertDriverRegionApproved`/
+`assertDriverDispatchReady`), independently corroborating what was found
+here by reading the code directly.
+
+**0b. Mobile still doesn't handle `DRIVER_DOCUMENTS_NOT_APPROVED` —
+STILL OPEN as of ~11:53.** Re-checked `driver_shell.dart` and
+`driver_shell_helpers.dart` directly: no occurrences of
+`DRIVER_DOCUMENTS_NOT_APPROVED` in either file. The backend's own
+`server-overnight` §8 now explicitly documents this as the new contract
+(`403 DRIVER_DOCUMENTS_NOT_APPROVED` with `{ missing: [...] }`,
+gating `PATCH /drivers/me/status`, `POST /driver/status/online`, and
+every dispatch/trip-progress action) — this is no longer just this QA
+session's inference from source, the backend session has now published
+the exact shape mobile needs to handle. The backend's document also adds
+an operational warning worth repeating here: this gate also blocks
+*progressing an already-active trip* (arrived/waiting/start/complete/
+cancel all share `assertDriverDispatchReady`), so any already-online
+driver whose documents lapse mid-trip would hit this same unhandled
+error mid-ride, not just at go-online time — raises the stakes on this
+gap slightly beyond the go-online case originally described.
+`assertDriverCanGoOnline()` →
 `assertDriverRegionApproved()` (in
 [driver-region-approvals.service.js](../../apps/api/src/modules/driver-region-approvals/driver-region-approvals.service.js),
-currently uncommitted — `git status` shows `M`) now checks
-**documents before region approval**:
+now committed, see 0a) checks **documents before region approval**:
 ```js
 async function assertDriverDocumentsApproved(driver, executor) {
   const missing = await getMissingRequiredDocumentTypes(driver.id, executor);
@@ -86,21 +94,17 @@ not a bare error") — but its scope only covers region approval:
   half of the chain and missed the documents half, even though both
   halves are enforced by the same function it's reacting to.
 
-**Not fixed here** — this is a QA finding for the mobile/backend sessions
-to reconcile, not something to patch unilaterally mid-review. The
-concrete ask for whichever session picks this up: add
-`DRIVER_DOCUMENTS_NOT_APPROVED` to both the `approvalCodes` set and the
-`readableError` map in `driver_shell.dart`/`driver_shell_helpers.dart`
-(the `missing` array in the error payload could even drive a specific
-"upload these documents" message instead of a generic one).
-
-`docs/status/server-overnight-2026-07-15.md` doesn't mention
-`DRIVER_DOCUMENTS_NOT_APPROVED` or `assertDriverDocumentsApproved` at
-all yet, despite a code comment in the (uncommitted)
-`driver-region-approvals.service.js` pointing to that doc "for why this
-replaces `is_blocked` as the enforcement point" — the doc update likely
-just hasn't landed yet since the backend side of this is still
-mid-flight/uncommitted (see 0a).
+**Not fixed here** — this is a QA finding for the mobile session to pick
+up, not something to patch unilaterally mid-review (this QA pass doesn't
+own `apps/mobile`). The concrete ask, now backed by the backend's own
+published contract (server-overnight §8, not just this session's
+reverse-engineering): add `DRIVER_DOCUMENTS_NOT_APPROVED` to both the
+`approvalCodes` set and the `readableError` map in
+`driver_shell.dart`/`driver_shell_helpers.dart` (the `missing` array in
+the error payload could even drive a specific "upload these documents"
+message instead of a generic one) — and, given the mid-trip-progression
+warning above, make sure that handling covers the trip-action buttons
+too, not only the go-online toggle.
 
 ---
 
