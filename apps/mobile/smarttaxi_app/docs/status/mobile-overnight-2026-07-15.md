@@ -442,19 +442,38 @@ mobile for either role.
   standing no-live-login policy; compile-verified only tonight.
 - Committed as `5f90802`.
 
-## Not started yet — items 12–16
+## [12] Реферальная программа — done this pass
 
-Recommend picking these up in the same priority order, checking
-`docs/status/server-overnight-2026-07-15.md` and
-`docs/status/web-overnight-2026-07-15.md` first each time — tonight's other
-sessions have already shipped several of the underlying backend contracts
-(and in some cases a web reference implementation) confirmed while
-investigating §3:
-- **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
-  original brief guessed) already wired on web tonight.
+`GET /api/referrals/me` (also aliased at `/mine` — both serve the same
+`referralSummary` handler, read directly from `referrals.routes.js`):
+`{code, invitedCount, totalBonusEarned}`, code auto-backfilled server-side
+on first request via `ensureReferralCode` (no separate migration needed
+for existing accounts). Already wired on web tonight per its status doc;
+not previously wired on mobile.
+- `ReferralSummary` model + `ApiClient.getReferralSummary()`.
+- New "Пригласить друзей" drawer entry → screen showing the code (large,
+  copy-to-clipboard), invited count and total bonus earned in two stat
+  cards (`_formatTenge` for the bonus), a "Поделиться кодом" button via
+  `Share.share`, and a short "как это работает" explainer.
+- **Found, not done this pass**: `auth.routes.js` already accepts an
+  optional `referralCode` field at registration
+  (`applyReferralCode(clientId, referralCode)`), but mobile's registration
+  form in `main.dart` sends no such field — a friend's code currently has
+  no way to actually get entered on mobile, only viewed/shared. Left alone
+  deliberately: wiring this means touching the auth screens, which had
+  extensive prior iteration this session on background/layout and weren't
+  in scope for this item. Flagging as a real, scoped follow-up rather than
+  silently expanding into `main.dart`.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs a
+  logged-in CLIENT session, blocked by the standing no-live-login policy;
+  compile-verified only tonight.
+- Committed as `90e40a0`.
 
-None of §12–16 are implemented on mobile yet — flagging honestly rather
-than claiming partial coverage that isn't there.
+## Not started yet — items 13–16
+
+Recommend picking these up in the same priority order:
 
 ## Verification method note
 
