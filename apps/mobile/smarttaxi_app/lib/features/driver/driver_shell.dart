@@ -4169,12 +4169,9 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Отправить предложение'),
-              ),
+            DriverGradientButton(
+              text: 'Отправить предложение',
+              onTap: _submit,
             ),
           ],
         ),

@@ -693,11 +693,7 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
             ),
           ],
           const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-                onPressed: widget.onDone, child: const Text('Готово')),
-          ),
+          DriverGradientButton(text: 'Готово', onTap: widget.onDone),
         ],
       ),
     );
