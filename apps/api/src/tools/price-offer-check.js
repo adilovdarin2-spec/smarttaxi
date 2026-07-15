@@ -122,6 +122,12 @@ function createExecutor() {
       if (/INSERT INTO order_status_history/i.test(sql)) {
         return { rows: [] };
       }
+      if (/SELECT DISTINCT ON \(type\) type, status\s+FROM driver_documents/i.test(sql)) {
+        // This file's fixtures aren't about document review — every driver
+        // here is treated as fully document-approved (see
+        // driver-approval-check.js for the dedicated document-gate tests).
+        return { rows: ["DRIVER_LICENSE_FRONT", "DRIVER_LICENSE_BACK", "ID_CARD_FRONT", "ID_CARD_BACK", "VEHICLE_REGISTRATION"].map(type => ({ type, status: "APPROVED" })) };
+      }
       throw new Error(`Unexpected SQL in price-offer check: ${sql}`);
     }
   };

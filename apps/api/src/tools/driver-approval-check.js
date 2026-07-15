@@ -7,6 +7,7 @@ import {
   selectDriverRegion,
   setDriverRegionApproval
 } from "../modules/driver-region-approvals/driver-region-approvals.service.js";
+import { REQUIRED_DOCUMENT_TYPES } from "../modules/driver-documents/driver-documents.service.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
@@ -41,7 +42,18 @@ function createExecutor() {
       { id: "region-other", code: "OTHER", name: "Other", is_active: true },
       { id: "region-inactive", code: "INACTIVE", name: "Inactive", is_active: false }
     ],
-    approvals: []
+    approvals: [],
+    // driver-1 has every required document APPROVED by default, so the
+    // pre-existing region-approval assertions below still exercise "an
+    // otherwise-eligible driver" — the new DRIVER_DOCUMENTS_NOT_APPROVED
+    // coverage further down starts from a driver with none.
+    driverDocuments: REQUIRED_DOCUMENT_TYPES.map((type, index) => ({
+      id: `doc-${index}`,
+      driver_id: "driver-1",
+      type,
+      status: "APPROVED",
+      created_at: "2026-01-01T00:00:00.000Z"
+    }))
   };
 
   return {
@@ -84,6 +96,15 @@ function createExecutor() {
         driver.current_region_id = null;
         driver.last_seen_at = "2026-01-01T00:04:00.000Z";
         return { rows: [driver] };
+      }
+      if (/SELECT DISTINCT ON \(type\) type, status\s+FROM driver_documents/i.test(sql)) {
+        const [driverId] = params;
+        const latestByType = new Map();
+        for (const doc of state.driverDocuments.filter(row => row.driver_id === driverId)) {
+          const current = latestByType.get(doc.type);
+          if (!current || doc.created_at > current.created_at) latestByType.set(doc.type, doc);
+        }
+        return { rows: [...latestByType.values()] };
       }
       throw new Error(`Unexpected SQL in driver approval check: ${sql}`);
     }
@@ -171,5 +192,44 @@ blocked = await setDriverRegionApproval({
   reason: "manual block"
 }, executor);
 assert.equal(executor.state.approvals.filter(row => row.driver_id === driver.id && row.region_id === "region-active").length, 1, "blocking same region twice does not duplicate rows");
+
+// --- CRITICAL: a driver without approved required documents cannot go
+// online even if fully region-approved (was previously not checked at all —
+// only is_blocked gated ONLINE status).
+{
+  const noDocsExecutor = createExecutor();
+  noDocsExecutor.state.driverDocuments = [];
+  await setDriverRegionApproval({
+    driverId: "driver-1",
+    regionId: "region-active",
+    status: "APPROVED",
+    adminUserId: "admin-1"
+  }, noDocsExecutor);
+  await assert.rejects(
+    () => assertDriverCanGoOnline({ ...driver, current_region_id: "region-active" }, noDocsExecutor),
+    { code: "DRIVER_DOCUMENTS_NOT_APPROVED" },
+    "region-approved driver without approved required documents still cannot go online"
+  );
+
+  const rejectedDocsExecutor = createExecutor();
+  rejectedDocsExecutor.state.driverDocuments = REQUIRED_DOCUMENT_TYPES.map((type, index) => ({
+    id: `rejected-doc-${index}`,
+    driver_id: "driver-1",
+    type,
+    status: type === "VEHICLE_REGISTRATION" ? "REJECTED" : "APPROVED",
+    created_at: "2026-01-01T00:00:00.000Z"
+  }));
+  await setDriverRegionApproval({
+    driverId: "driver-1",
+    regionId: "region-active",
+    status: "APPROVED",
+    adminUserId: "admin-1"
+  }, rejectedDocsExecutor);
+  await assert.rejects(
+    () => assertDriverCanGoOnline({ ...driver, current_region_id: "region-active" }, rejectedDocsExecutor),
+    { code: "DRIVER_DOCUMENTS_NOT_APPROVED" },
+    "one rejected required document is enough to block going online, even if the others are approved"
+  );
+}
 
 console.log("Driver region approval checks ok");

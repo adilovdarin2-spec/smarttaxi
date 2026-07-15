@@ -1,4 +1,5 @@
 import { AppError } from "../../common/errors.js";
+import { getMissingRequiredDocumentTypes } from "../driver-documents/driver-documents.service.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -17,6 +18,8 @@ export function publicDriverRegionApproval(row) {
     regionId: row.region_id,
     regionCode: row.region_code || row.code,
     regionName: row.region_name || row.name,
+    centerLat: Number(row.center_lat ?? row.region_center_lat ?? 40.844435),
+    centerLng: Number(row.center_lng ?? row.region_center_lng ?? 68.509021),
     regionIsActive: row.region_is_active ?? row.is_active,
     status: row.approval_status || row.status || "UNAPPROVED",
     blockReason: row.block_reason || "",
@@ -31,6 +34,8 @@ export async function listDriverRegionApprovals(driverId, executor = defaultQuer
     SELECT r.id region_id,
            r.code region_code,
            r.name region_name,
+           r.center_lat,
+           r.center_lng,
            r.is_active region_is_active,
            a.id approval_id,
            a.driver_id,
@@ -65,9 +70,24 @@ export async function getDriverRegionApproval(driverId, regionId, executor = def
   return result.rows[0] || null;
 }
 
+// A driver whose required documents (license, ID, vehicle registration)
+// aren't all APPROVED must not be able to go online or receive dispatch —
+// no separate "verified" flag on the driver row, this is checked live
+// against driver_documents every time so a later-rejected renewal document
+// locks the driver back out automatically. See
+// docs/status/server-overnight-2026-07-15.md for why this replaces
+// is_blocked as the enforcement point.
+async function assertDriverDocumentsApproved(driver, executor) {
+  const missing = await getMissingRequiredDocumentTypes(driver.id, executor);
+  if (missing.length > 0) {
+    throw new AppError("Driver documents are not approved", 403, "DRIVER_DOCUMENTS_NOT_APPROVED", { missing });
+  }
+}
+
 export async function assertDriverRegionApproved(driver, regionId, executor = defaultQuery) {
   if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
   if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+  await assertDriverDocumentsApproved(driver, executor);
   if (!regionId) throw new AppError("Driver region is required", 400, "DRIVER_REGION_REQUIRED");
 
   const region = await getRegion(regionId, executor);
@@ -100,6 +120,7 @@ export async function assertDriverCanGoOnline(driver, executor = defaultQuery) {
 export async function assertDriverDispatchReady(driver, executor = defaultQuery) {
   if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
   if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+  await assertDriverDocumentsApproved(driver, executor);
   if (!driver.current_region_id) throw new AppError("Driver region is not selected", 400, "DRIVER_REGION_NOT_SELECTED");
 
   const region = await getRegion(driver.current_region_id, executor);

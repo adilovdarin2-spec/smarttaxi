@@ -9,13 +9,15 @@ import {
   driverRegionRoom,
   listOrdersForDriver,
   orderRoom,
-  publicOrderStatus
+  publicOrderStatus,
+  TRANSITION_RULES
 } from "../modules/orders/order-dispatch.service.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
+const driverCoreRoutes = readFileSync(join(root, "modules", "drivers", "driver-core.routes.js"), "utf8");
 const dispatchService = readFileSync(join(root, "modules", "orders", "order-dispatch.service.js"), "utf8");
 const server = readFileSync(join(root, "server.js"), "utf8");
 
@@ -28,6 +30,7 @@ assert.match(dispatchService, /SELECT \* FROM drivers WHERE user_id=\$1 FOR UPDA
 assert.match(dispatchService, /SELECT \* FROM orders WHERE id=\$1 FOR UPDATE/i, "accept must lock order row");
 assert.match(ordersRoutes, /listOrdersForDriver/i, "driver order listing must use region-scoped dispatch service");
 assert.match(ordersRoutes, /acceptOrderForDriver/i, "accept endpoint must use transactional dispatch service");
+assert.match(driverCoreRoutes, /const activeOrder = await activeOrderForDriver\(driver\);[\s\S]*const nextStatus = activeOrder \? "BUSY" : "FREE"/, "driver online must keep BUSY when an active order exists");
 assert.match(ordersRoutes, /emitOrderCreated\(req\.io, order\)/, "order creation must emit after transaction returns");
 assert.match(ordersRoutes, /emitOrderUpdated\(req\.io, order, "order_accepted"\)/, "accept must emit after transaction returns");
 assert.doesNotMatch(ordersRoutes, /\.to\("drivers"\)/, "order offers must not use global drivers room");
@@ -67,7 +70,8 @@ function createExecutor() {
       { driver_id: "driver-2", region_id: "region-a", status: "APPROVED" },
       { driver_id: "driver-blocked-region", region_id: "region-a", status: "BLOCKED" },
       { driver_id: "driver-inactive-region", region_id: "region-inactive", status: "APPROVED" },
-      { driver_id: "driver-active-order", region_id: "region-a", status: "APPROVED" }
+      { driver_id: "driver-active-order", region_id: "region-a", status: "APPROVED" },
+      { driver_id: "driver-stale-busy", region_id: "region-a", status: "APPROVED" }
     ],
     drivers: [
       { id: "driver-1", user_id: "user-1", current_region_id: "region-a", is_blocked: false, status: "FREE", debt: 0 },
@@ -76,7 +80,8 @@ function createExecutor() {
       { id: "driver-blocked-region", user_id: "user-blocked-region", current_region_id: "region-a", is_blocked: false, status: "FREE", debt: 0 },
       { id: "driver-global-blocked", user_id: "user-global-blocked", current_region_id: "region-a", is_blocked: true, status: "FREE", debt: 0 },
       { id: "driver-inactive-region", user_id: "user-inactive-region", current_region_id: "region-inactive", is_blocked: false, status: "FREE", debt: 0 },
-      { id: "driver-active-order", user_id: "user-active-order", current_region_id: "region-a", is_blocked: false, status: "FREE", debt: 0 }
+      { id: "driver-active-order", user_id: "user-active-order", current_region_id: "region-a", is_blocked: false, status: "FREE", debt: 0 },
+      { id: "driver-stale-busy", user_id: "user-stale-busy", current_region_id: "region-a", is_blocked: false, status: "BUSY", debt: 0 }
     ],
     orders: [
       { id: "order-a", region_id: "region-a", status: "SEARCHING_DRIVER", driver_id: null, created_at: 10 },
@@ -117,6 +122,12 @@ function createExecutor() {
         driver.status = "BUSY";
         return { rows: [driver] };
       }
+      if (/UPDATE drivers SET status='FREE'/i.test(sql)) {
+        const driver = state.drivers.find(row => row.id === params[0]);
+        driver.status = "FREE";
+        state.recoveredBusy = true;
+        return { rows: [driver] };
+      }
       if (/INSERT INTO order_status_history/i.test(sql)) {
         state.history.push({ order_id: params[0], actor_user_id: params[1] });
         return { rows: [] };
@@ -137,6 +148,12 @@ function createExecutor() {
           );
         }
         return { rows: rows.sort((a, b) => b.created_at - a.created_at).slice(0, limit) };
+      }
+      if (/SELECT DISTINCT ON \(type\) type, status\s+FROM driver_documents/i.test(sql)) {
+        // This file's fixtures aren't about document review — every driver
+        // here is treated as fully document-approved (see
+        // driver-approval-check.js for the dedicated document-gate tests).
+        return { rows: ["DRIVER_LICENSE_FRONT", "DRIVER_LICENSE_BACK", "ID_CARD_FRONT", "ID_CARD_BACK", "VEHICLE_REGISTRATION"].map(type => ({ type, status: "APPROVED" })) };
       }
       throw new Error(`Unexpected SQL in dispatch realtime check: ${sql}`);
     }
@@ -185,6 +202,11 @@ await assert.rejects(
   "driver with active order cannot accept another"
 );
 
+const staleBusyExecutor = createExecutor();
+const staleBusyAccepted = await acceptOrderForDriver({ orderId: "order-a", userId: "user-stale-busy", executor: staleBusyExecutor });
+assert.equal(staleBusyExecutor.state.recoveredBusy, true, "stale BUSY driver without active order is recovered");
+assert.equal(staleBusyAccepted.driver.status, "BUSY", "recovered driver is marked busy after accepting new order");
+
 await assert.rejects(
   () => acceptOrderForDriver({ orderId: "order-assigned", userId: "user-1", executor: createExecutor() }),
   { code: "ORDER_ALREADY_ACCEPTED" },
@@ -216,6 +238,12 @@ assert.doesNotThrow(() => assertStatusTransition({ status }, "TRIP_STARTED"), "W
 status = "TRIP_STARTED";
 assert.doesNotThrow(() => assertStatusTransition({ status }, "TRIP_COMPLETED"), "TRIP_STARTED -> TRIP_COMPLETED succeeds");
 assert.throws(() => assertStatusTransition({ status: "SEARCHING_DRIVER" }, "TRIP_STARTED"), { code: "INVALID_STATUS_TRANSITION" }, "invalid transition fails");
+assert.throws(() => assertStatusTransition({ status: "TRIP_STARTED" }, "CANCELLED_BY_DRIVER"), { code: "INVALID_STATUS_TRANSITION" }, "driver cannot cancel after trip start");
+assert.throws(() => assertStatusTransition({ status: "TRIP_STARTED" }, "CANCELLED_BY_CLIENT"), { code: "INVALID_STATUS_TRANSITION" }, "client cannot cancel after trip start");
+for (const cancellationStatus of ["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR"]) {
+  assert.equal(TRANSITION_RULES[cancellationStatus].includes("TRIP_STARTED"), false, `${cancellationStatus} must not allow TRIP_STARTED`);
+  assert.equal(TRANSITION_RULES[cancellationStatus].includes("IN_PROGRESS"), false, `${cancellationStatus} must not allow legacy IN_PROGRESS`);
+}
 assert.throws(() => assertStatusTransition({ status: "PAID" }, "CANCELLED_BY_CLIENT"), { code: "INVALID_STATUS_TRANSITION" }, "paid order is terminal");
 assert.throws(() => assertStatusTransition({ status: "CANCELLED_BY_CLIENT" }, "DRIVER_FOUND"), { code: "INVALID_STATUS_TRANSITION" }, "cancelled order is terminal");
 assert.match(ordersRoutes, /existing\.driver_id !== driver\.id/, "driver cannot update order they do not own");

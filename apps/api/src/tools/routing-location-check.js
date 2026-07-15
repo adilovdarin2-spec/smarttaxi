@@ -182,6 +182,12 @@ function createExecutor(overrides = {}) {
       if (/SELECT id FROM clients WHERE user_id=\$1/i.test(sql)) return { rows: state.clients.filter(client => client.user_id === params[0]).map(client => ({ id: client.id })) };
       if (/SELECT id FROM drivers WHERE user_id=\$1/i.test(sql)) return { rows: state.drivers.filter(driver => driver.user_id === params[0]).map(driver => ({ id: driver.id })) };
       if (/SELECT \* FROM driver_locations WHERE driver_id=\$1/i.test(sql)) return { rows: state.locations.filter(location => location.driver_id === params[0]).slice(0, 1) };
+      if (/SELECT DISTINCT ON \(type\) type, status\s+FROM driver_documents/i.test(sql)) {
+        // This file's fixtures aren't about document review — every driver
+        // here is treated as fully document-approved (see
+        // driver-approval-check.js for the dedicated document-gate tests).
+        return { rows: ["DRIVER_LICENSE_FRONT", "DRIVER_LICENSE_BACK", "ID_CARD_FRONT", "ID_CARD_BACK", "VEHICLE_REGISTRATION"].map(type => ({ type, status: "APPROVED" })) };
+      }
       throw new Error(`Unexpected SQL in routing location check: ${sql}`);
     }
   };
