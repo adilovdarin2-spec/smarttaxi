@@ -205,6 +205,10 @@ class _PassengerShellState extends State<PassengerShell>
   String? _supportMessage;
   bool _supportMessageDanger = false;
   bool _supportSending = false;
+  // Which trip a "Забыл вещь" report is about — the backend only notifies
+  // the driver when an orderId is attached, so this needs its own explicit
+  // pick rather than silently falling back to whatever _order happens to be.
+  String? _lostItemOrderId;
   List<SupportMessage> _mySupportMessages = const [];
   bool _supportHistoryLoading = false;
   bool _supportHistoryError = false;
@@ -3069,6 +3073,15 @@ class _PassengerShellState extends State<PassengerShell>
                     )
                     .toList(),
               ),
+              if (_supportTopic == 'Забыл вещь') ...[
+                const SizedBox(height: 14),
+                _LostItemOrderPicker(
+                  activeOrder: _order,
+                  tripHistory: _tripHistory,
+                  selectedOrderId: _lostItemOrderId,
+                  onChanged: (id) => setState(() => _lostItemOrderId = id),
+                ),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: _supportController,
@@ -3103,19 +3116,33 @@ class _PassengerShellState extends State<PassengerShell>
                     });
                     return;
                   }
+                  final isLostItem = _supportTopic == 'Забыл вещь';
+                  if (isLostItem && _lostItemOrderId == null) {
+                    setState(() {
+                      _supportMessageDanger = true;
+                      _supportMessage =
+                          'Укажите поездку, в которой оставили вещь — иначе водителя не получится уведомить.';
+                    });
+                    return;
+                  }
                   setState(() => _supportSending = true);
                   try {
                     await widget.api.submitSupportMessage(
-                      topic: _supportTopic,
+                      // The backend matches this literal string (not the
+                      // Russian label) to trigger a push straight to the
+                      // trip's driver — see support.routes.js.
+                      topic: isLostItem ? 'LOST_ITEM' : _supportTopic,
                       message: text,
-                      orderId: _order?.id,
+                      orderId: isLostItem ? _lostItemOrderId : _order?.id,
                     );
                     if (!mounted) return;
                     _supportController.clear();
                     setState(() {
                       _supportMessageDanger = false;
-                      _supportMessage =
-                          'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.';
+                      _lostItemOrderId = null;
+                      _supportMessage = isLostItem
+                          ? 'Обращение отправлено, водитель уведомлён.'
+                          : 'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.';
                     });
                     unawaited(_loadMySupportMessages());
                   } catch (error) {
@@ -3611,6 +3638,85 @@ class _SupportHistoryCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _LostItemOrderPicker extends StatelessWidget {
+  const _LostItemOrderPicker({
+    required this.activeOrder,
+    required this.tripHistory,
+    required this.selectedOrderId,
+    required this.onChanged,
+  });
+
+  final OrderSummary? activeOrder;
+  final List<OrderSummary> tripHistory;
+  final String? selectedOrderId;
+  final ValueChanged<String?> onChanged;
+
+  static const _relevantStatuses = {
+    'RATED',
+    'PAID',
+    'COMPLETED',
+    'IN_PROGRESS',
+    'DRIVER_ARRIVED',
+    'DRIVER_ASSIGNED',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final options = <OrderSummary>[
+      if (activeOrder != null) activeOrder!,
+      ...tripHistory.where((trip) =>
+          trip.id != activeOrder?.id &&
+          _relevantStatuses.contains(trip.status)),
+    ].take(15).toList(growable: false);
+
+    if (options.isEmpty) {
+      return const _InlineMessage(
+        text:
+            'Нет доступных поездок, к которым можно привязать эту заявку. '
+            'Опишите поездку в сообщении ниже, мы найдём водителя вручную.',
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionLabel(
+          title: 'Какая поездка?',
+          text: 'Нужна для того, чтобы уведомить водителя',
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: SmartTaxiColors.border),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: selectedOrderId,
+              hint: const Text('Выберите поездку'),
+              items: options
+                  .map(
+                    (trip) => DropdownMenuItem(
+                      value: trip.id,
+                      child: Text(
+                        '${_formatTripDate(trip.createdAt)} · ${trip.pickup} → ${trip.dropoff}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
