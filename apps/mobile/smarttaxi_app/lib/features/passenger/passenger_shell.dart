@@ -213,7 +213,6 @@ class _PassengerShellState extends State<PassengerShell>
   int _paymentPollAttempts = 0;
   bool _paymentTimedOut = false;
   LatLng? _mapCenter;
-  String _activeRegionLabel = 'Атакент';
   String _driverFullName = '';
   String _driverPhone = '';
   String _driverCarModel = '';
@@ -669,7 +668,6 @@ class _PassengerShellState extends State<PassengerShell>
         _mapCenter = activeRegion == null
             ? _atakentFallbackCenter
             : (activeRegion.center?.toLatLng() ?? _atakentFallbackCenter);
-        _activeRegionLabel = activeRegion?.name ?? 'Атакент';
       });
       _maybeAskLocationOnStart();
     } catch (_) {
@@ -771,7 +769,6 @@ class _PassengerShellState extends State<PassengerShell>
   }) {
     setState(() {
       _selectedRegion = selected;
-      _activeRegionLabel = selected.name;
       _mapCenter = center ?? selected.center?.toLatLng() ?? _mapCenter;
       if (resetRoute) {
         _pickup = null;
@@ -1234,13 +1231,8 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _selectPoint({required PointTarget target}) async {
     setState(() => _target = target);
-    final sheetAddresses = _recentAddresses.isNotEmpty
-        ? _recentAddresses
-        : _popularAddressesForRegion(
-            _selectedRegion?.name ?? _activeRegionLabel,
-          ).take(5).toList();
-    final sheetAddressTitle =
-        _recentAddresses.isNotEmpty ? 'Недавние адреса' : 'Популярные места';
+    final sheetAddresses = _recentAddresses;
+    const sheetAddressTitle = 'Недавние адреса';
     final selected = await showModalBottomSheet<_PointResult>(
       context: context,
       isScrollControlled: true,
@@ -15589,227 +15581,6 @@ List<AddressSuggestion> _mergeRecentAddress(
   }
 
   return updated;
-}
-
-List<AddressSuggestion> _popularAddressesForRegion(String regionName) {
-  final normalized = regionName.toLowerCase();
-  const southKazakhstanRegion = 'Туркестанская область';
-  if (normalized.contains('мырзакент') ||
-      normalized.contains('myrzakent') ||
-      normalized.contains('славян')) {
-    return const [
-      AddressSuggestion(
-        label: 'Мырзакент (Славянка)',
-        subtitle: 'Центр посёлка',
-        city: 'Мырзакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.665495, lng: 68.549994),
-      ),
-      AddressSuggestion(
-        label: 'Акимат Мактааральского района',
-        subtitle: 'Районный акимат',
-        city: 'Мырзакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.66690, lng: 68.55210),
-      ),
-      AddressSuggestion(
-        label: 'Мырзакент базар',
-        subtitle: 'Центральный рынок',
-        city: 'Мырзакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.66492, lng: 68.54464),
-      ),
-      AddressSuggestion(
-        label: 'Автовокзал Мырзакент',
-        subtitle: 'Ориентир, центр',
-        city: 'Мырзакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.66848, lng: 68.53928),
-      ),
-      AddressSuggestion(
-        label: 'Центральная районная больница',
-        subtitle: 'ЦРБ Мактааральского района',
-        city: 'Мырзакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.66978, lng: 68.54742),
-      ),
-    ];
-  }
-  if (normalized.contains('атакент') || normalized.contains('atakent')) {
-    return const [
-      AddressSuggestion(
-        label: 'Атакент (Ильич)',
-        subtitle: 'Центр посёлка',
-        city: 'Атакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.844435, lng: 68.509021),
-      ),
-      AddressSuggestion(
-        label: 'Базар Атакент',
-        subtitle: 'Центральный рынок',
-        city: 'Атакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.84473, lng: 68.51162),
-      ),
-      AddressSuggestion(
-        label: 'Атакент автовокзал',
-        subtitle: 'Ориентир, центр',
-        city: 'Атакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.84621, lng: 68.50486),
-      ),
-      AddressSuggestion(
-        label: 'Районная больница «Атакент»',
-        subtitle: 'ул. Ж. Ибраева',
-        city: 'Атакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.84210, lng: 68.51190),
-      ),
-      AddressSuggestion(
-        label: 'Акимат посёлка Атакент',
-        subtitle: 'Здание акимата',
-        city: 'Атакент',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.84550, lng: 68.50750),
-      ),
-    ];
-  }
-  if (normalized.contains('жетысай') ||
-      normalized.contains('жетисай') ||
-      normalized.contains('джетысай') ||
-      normalized.contains('zhetysay')) {
-    return const [
-      AddressSuggestion(
-        label: 'Жетысай (Джетысай)',
-        subtitle: 'Центр города',
-        city: 'Жетысай',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.777134, lng: 68.324677),
-      ),
-      AddressSuggestion(
-        label: 'Центральный базар Жетысай',
-        subtitle: 'Центральный рынок',
-        city: 'Жетысай',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.77980, lng: 68.32190),
-      ),
-      AddressSuggestion(
-        label: 'Акимат Жетысайского района',
-        subtitle: 'Городской сквер',
-        city: 'Жетысай',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.77650, lng: 68.32710),
-      ),
-      AddressSuggestion(
-        label: 'Мечеть «Нур»',
-        subtitle: 'Жетысай',
-        city: 'Жетысай',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.77420, lng: 68.32990),
-      ),
-      AddressSuggestion(
-        label: 'Автовокзал Жетысай',
-        subtitle: 'Ориентир, центр',
-        city: 'Жетысай',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.78191, lng: 68.31951),
-      ),
-    ];
-  }
-  if (normalized.contains('асыката') ||
-      normalized.contains('асықата') ||
-      normalized.contains('asykata')) {
-    return const [
-      AddressSuggestion(
-        label: 'Асыката (Асықата)',
-        subtitle: 'Центр посёлка',
-        city: 'Асыката',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.89470, lng: 68.36350),
-      ),
-      AddressSuggestion(
-        label: 'Базар Асыката',
-        subtitle: 'Местный рынок',
-        city: 'Асыката',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.89524, lng: 68.36518),
-      ),
-      AddressSuggestion(
-        label: 'Автовокзал Асыката',
-        subtitle: 'Остановка у центра',
-        city: 'Асыката',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.89361, lng: 68.36184),
-      ),
-      AddressSuggestion(
-        label: 'Акимат Асыката',
-        subtitle: 'Центральный ориентир',
-        city: 'Асыката',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.89418, lng: 68.36304),
-      ),
-    ];
-  }
-  if (normalized.contains('киров') || normalized.contains('kirov')) {
-    return const [
-      AddressSuggestion(
-        label: 'Киров (Кирово)',
-        subtitle: 'Центр посёлка',
-        city: 'Киров',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.78690, lng: 68.53440),
-      ),
-      AddressSuggestion(
-        label: 'Базар Киров',
-        subtitle: 'Местный рынок',
-        city: 'Киров',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.78752, lng: 68.53548),
-      ),
-      AddressSuggestion(
-        label: 'Школа Киров',
-        subtitle: 'Ориентир в посёлке',
-        city: 'Киров',
-        region: southKazakhstanRegion,
-        coordinate: Coordinate(lat: 40.78588, lng: 68.53372),
-      ),
-    ];
-  }
-  if (normalized.contains('шымкент') || normalized.contains('shymkent')) {
-    return const [
-      AddressSuggestion(
-        label: 'Шымкент центр',
-        subtitle: 'Площадь Ордабасы',
-        city: 'Шымкент',
-        region: 'Шымкент',
-        coordinate: Coordinate(lat: 42.31538, lng: 69.58691),
-      ),
-      AddressSuggestion(
-        label: 'ЖД вокзал Шымкент',
-        subtitle: 'Вокзальная зона',
-        city: 'Шымкент',
-        region: 'Шымкент',
-        coordinate: Coordinate(lat: 42.31732, lng: 69.59952),
-      ),
-      AddressSuggestion(
-        label: 'Mega Planet',
-        subtitle: 'Шымкент, торговый центр',
-        city: 'Шымкент',
-        region: 'Шымкент',
-        coordinate: Coordinate(lat: 42.31828, lng: 69.59558),
-      ),
-    ];
-  }
-  final cleanRegionName = regionName.trim().isEmpty ? 'Регион' : regionName;
-  return [
-    AddressSuggestion(
-      label: '$cleanRegionName центр',
-      subtitle: 'Выберите точку или уточните адрес',
-      city: cleanRegionName == 'Регион' ? null : cleanRegionName,
-      region: southKazakhstanRegion,
-      coordinate: const Coordinate(lat: 40.844435, lng: 68.509021),
-    ),
-  ];
 }
 
 String _driverPickupMeta(RoutePreview route) {
