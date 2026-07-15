@@ -321,7 +321,45 @@ actually sent anywhere.
   no-live-login policy; compile-verified only tonight.
 - Committed as `784fee8`.
 
-## Not started yet — items 8–16
+## [8] Share-trip polish — done this pass, plus a real infra gap flagged
+
+The underlying mechanism (`GET /api/orders/track/:token`,
+`share_token` column, web `TrackApp` at `/track/:token` in
+`apps/web/src/features/track/TrackApp.jsx`) already exists and is wired on
+both ends — confirmed by reading both files directly, not assumed. Mobile
+side (`_ShareTripButton`) already called `Share.share` with a link built
+from it. What was actually missing/broken:
+- **No disabled-state affordance**: when `order.shareToken` is null (no
+  driver assigned yet), the button's `onTap` was silently `null` — looked
+  identical to the enabled state, tapped, did nothing, no explanation.
+  Wrapped in a `Tooltip` ("Ссылка появится, как только найдётся водитель")
+  and dimmed the icon to `textMuted` while disabled.
+- **Share text carried no route context**: just "можно посмотреть статус:
+  {link}" — now includes pickup → dropoff so whoever receives it knows
+  which trip before opening the link.
+- **Found, not fixed (out of mobile scope)**: `AppConfig.webBaseUrl`
+  defaults to `https://smarttaxi.kz`, which does **not resolve**
+  (`curl` → connection failure, confirmed live this session) — the share
+  link mobile generates points at a domain with nothing running there.
+  `docs/status/qa-overnight-2026-07-15.md` independently flagged the
+  sibling issue on `apiBaseUrl` (`api.smarttaxi.kz` also not live, real
+  backend is the Railway URL). No working public URL for `apps/web` was
+  found anywhere in the repo tonight. This is a deployment/config problem
+  in `apps/web`/infra, not something fixable by editing mobile code —
+  flagging honestly rather than pointing the link at a guessed URL. The
+  actual sharing mechanics (token generation, backend route, web page) are
+  correct and ready the moment `WEB_BASE_URL` is set to wherever
+  `apps/web` really lives.
+- **Verified:** `flutter analyze` — same 7 pre-existing warnings (0 new).
+  `flutter test` — same 10 pre-existing failures (0 new). `flutter build
+  apk --debug` succeeds. **Not verified live on-device** — needs an
+  assigned-driver trip under a logged-in session, blocked by the same
+  standing no-live-login policy; compile-verified only tonight. Even with
+  a live login, the share link itself couldn't be end-to-end verified
+  tonight since its destination domain doesn't resolve (see above).
+- Committed as `22241b4`.
+
+## Not started yet — items 9–16
 
 Recommend picking these up in the same priority order, checking
 `docs/status/server-overnight-2026-07-15.md` and
@@ -338,7 +376,7 @@ investigating §3:
 - **§12 referrals**: `GET /api/referrals/me` (not `/referrals/mine` as the
   original brief guessed) already wired on web tonight.
 
-None of §7–16 are implemented on mobile yet — flagging honestly rather
+None of §9–16 are implemented on mobile yet — flagging honestly rather
 than claiming partial coverage that isn't there.
 
 ## Verification method note
