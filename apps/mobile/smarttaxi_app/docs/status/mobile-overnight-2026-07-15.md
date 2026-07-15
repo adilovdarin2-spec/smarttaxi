@@ -977,3 +977,81 @@ the live device, so anything past the auth screen (map, markers in situ,
 order flow) could only be checked by `flutter analyze` + a clean debug build,
 not a live screenshot. Said so explicitly per file above rather than
 implying more was confirmed than actually was.
+
+## Live phone QA pass: 5 real bugs found and fixed — `387007f`, `a44af82`, `9857fa4`
+
+The device already had a real, logged-in session, so this batch could be
+tested hands-on end-to-end (screenshots via `adb exec-out screencap`, taps
+via `adb shell input tap`) instead of only `flutter analyze`/build. All 5
+items below were user-reported from actual usage, then reproduced,
+root-caused, fixed, and **re-verified live on-device** after a fresh
+`flutter build apk --debug` + reinstall.
+
+1. **Fabricated fallback addresses** (`387007f`) — `_popularAddressesForRegion`
+   was a ~220-line hardcoded generator of invented place names and hand-typed
+   coordinates ("Автовокзал Мырзакент", "Атакент автовокзал", "Mega Planet"
+   in Шымкент, etc.), shown as "Популярные места" in the address picker
+   whenever a rider had no recent-address history. Deleted the whole
+   function and its now-dead `_activeRegionLabel` field; the picker now
+   falls back to the existing honest "Начните вводить адрес" empty state
+   and only ever suggests real recent selections or live search results.
+   Confirmed live: picker no longer offers any invented address.
+
+2. **Flashing "error button" after picking an address** (`a44af82`) — root
+   cause found by reproducing on-device: `_TariffSkeleton` (the loading
+   placeholder for the tariff carousel) laid out 3 fixed-118px cards in a
+   raw `Row` with no scroll container, which overflowed the sheet width on
+   this device and triggered Flutter's debug "RIGHT OVERFLOWED BY N PIXELS"
+   banner (black/yellow stripes) — that's what read as a flashing error
+   button, and it disappeared once the skeleton was replaced by the loaded
+   tariff row. Switched the skeleton to a `ListView` like the real carousel.
+   Confirmed live: no overflow banner during loading.
+
+3. **Empty space on the right with only 2 tariffs** (`a44af82`, same
+   commit) — `_TariffSection`'s carousel now measures available width via
+   `LayoutBuilder`; when the cards fit without needing to scroll, it lays
+   them out with `Row` + `Expanded` (stretched, `_TariffCard.stretch`) to
+   fill the sheet edge-to-edge instead of leaving dead space, falling back
+   to the original scrollable fixed-width carousel once there are enough
+   tariffs to need scrolling. Confirmed live with a 2-tariff region
+   (Эконом/Доставка): both cards now span full width.
+
+4. **Back button overlapping the route time/distance pill** (`a44af82`,
+   same commit) — `_MapOverlayHeader`'s `_RouteSummaryPill` was centered
+   across the whole header stack with `maxWidth: 230`, which on this
+   device's width collided with the left-aligned back button. Aligned the
+   pill to `Alignment.centerRight` (matching the back button's
+   `centerLeft`) and narrowed it to 168px. Confirmed live: back button and
+   pill now sit with clear space between them.
+
+5. **Promo-code section on the tariff screen** (`9857fa4`) — removed by
+   direct request. Deleted the order-flow promo state (`_promoController`,
+   `_appliedPromoCode`, `_promoDiscountKzt`, `_promoApplying`, `_promoError`),
+   `_applyPromoCode`/`_clearPromoCode`, the `_PromoCodeField` widget, and all
+   wiring through `_OrderSheet`. Left the **standalone** "Промокоды" menu
+   screen and its own `validatePromoCode` checker untouched — separate
+   feature, separate state, not part of this request. Confirmed live: no
+   promo field anywhere on the tariff sheet.
+
+**Verified:** `flutter analyze` clean after every step (6 pre-existing
+warnings, same baseline set as before — actually one fewer than the
+previously-cited 7, since removing `_popularAddressesForRegion` also
+retired its only reader, `_activeRegionLabel`, which would otherwise have
+gone dead). `flutter test`: 10 failures, matching the established
+baseline count; spot-checked that 2 of the failing assertions (missing
+`_MapRoundButton`/`_DrawerDivider`) were already failing 2 commits before
+this session touched the file, i.e. pre-existing stale-test debt from
+earlier redesigns, not a regression from tonight's changes. **Verified
+live on the real device** for all 5 items via a fresh debug build +
+reinstall + relaunch, not just compiled.
+
+One unrelated thing noticed while live-testing bug #1, flagged but **not
+fixed** (out of this session's `apps/mobile` scope and not something to
+silently patch with more hardcoded data): the device's in-memory recent
+addresses briefly showed an entry labelled "Innlandet" (a county in
+Norway) for a local coordinate — almost certainly a bad reverse-geocode
+result from the backend's OSM/Nominatim lookup, not a client-side bug.
+`_recentAddresses` is in-memory only (never persisted to disk), so it
+cleared on the fresh relaunch and needed no client-side cleanup — but the
+underlying backend geocoding anomaly is still open and worth a look in
+`apps/api`.
