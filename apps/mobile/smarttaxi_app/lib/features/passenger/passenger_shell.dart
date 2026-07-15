@@ -4726,7 +4726,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                           point: pickup.toLatLng(),
                           asset: _userLocationMarkerAsset,
                           semanticLabel: 'Точка подачи',
-                          size: 20,
+                          size: 14,
                           fallbackIcon: Icons.radio_button_checked_rounded,
                         ),
                       if (dropoff != null)
@@ -4734,7 +4734,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                           point: dropoff.toLatLng(),
                           asset: _destinationMarkerAsset,
                           semanticLabel: 'Точка назначения',
-                          size: 22,
+                          size: 16,
                           fallbackIcon: Icons.location_on_rounded,
                         ),
                       if (driver == null)
@@ -5277,35 +5277,34 @@ class _CenterMapMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Standard-density marker sizing (~30px tall pin) — was 76×85, which
-    // overlapped neighboring map labels/roads at normal zoom levels. This
-    // is the address-picker crosshair, not the confirmed pickup/dropoff
-    // pins (see _assetMarker calls in _MapCanvas) — left at this size on
-    // 2026-07-15 direct correction: only the confirmed-route pins were
-    // meant to shrink, not this one.
-    const pinWidth = 27.0;
+    // Address-picker crosshair, not the confirmed pickup/dropoff pins (see
+    // _assetMarker calls in _MapCanvas). Enlarged on 2026-07-15 direct
+    // request — the rider needs to clearly see which exact spot the pin's
+    // tip is over while dragging the map under it, so this one stays
+    // bigger even as the confirmed-route pins below get smaller.
+    const pinWidth = 36.0;
     const pinHeight = pinWidth * _assetAspect;
     const tipShift = pinHeight * (_tipFraction - 0.5);
     return SizedBox(
-      width: 68,
-      height: 68,
+      width: 90,
+      height: 90,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Transform.translate(
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 4),
             child: const _MarkerRadarPulse(
               color: _addressPickMarkerColor,
-              baseSize: 19,
+              baseSize: 25,
             ),
           ),
           // Ground-contact shadow directly under the pin's tip.
           Transform.translate(
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 7),
             child: Container(
-              width: 12,
-              height: 4,
+              width: 16,
+              height: 5,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(4),
