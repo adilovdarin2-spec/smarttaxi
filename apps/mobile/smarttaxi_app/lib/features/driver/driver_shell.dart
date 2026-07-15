@@ -2142,13 +2142,16 @@ class _DriverShellState extends State<DriverShell> {
               ),
               const SizedBox(height: 16),
               if (action != null)
-                ElevatedButton(
-                    onPressed: _tripActionLabel != null
-                        ? null
-                        : () => _tripAction(action.$1, action.$2),
-                    child: _tripActionLabel == action.$1
-                        ? ButtonSpinner(text: l10n.driverTripSavingButton)
-                        : Text(action.$1)),
+                DriverGradientButton(
+                  text: action.$1,
+                  enabled: _tripActionLabel == null ||
+                      _tripActionLabel == action.$1,
+                  loading: _tripActionLabel == action.$1,
+                  loadingText: l10n.driverTripSavingButton,
+                  onTap: _tripActionLabel != null
+                      ? null
+                      : () => _tripAction(action.$1, action.$2),
+                ),
               if (_canNoShow(_activeOrder!.status)) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
