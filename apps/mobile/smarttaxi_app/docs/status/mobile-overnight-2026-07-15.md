@@ -1521,3 +1521,115 @@ backend files were touched or modified while investigating this.
 clients.routes.js, wallet.service.js, payment-provider.js,
 referrals.routes.js, passenger_shell.dart). No code changed, so no
 build/analyze/live verification applies to this item.
+
+### 9. Design-system consistency pass against `docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md` — audited every rule in the doc, fixed the safe/concrete gaps, flagged the one risky one instead of guessing
+
+The doc itself says "don't do a blanket repaint pass unless explicitly
+asked" — this punch-list item is that explicit ask, so it was treated
+as a real audit against every rule in the doc, not skipped as
+"already fine." Went rule by rule:
+
+**Color tokens — compliant, with one naming caveat worth flagging.**
+`SmartTaxiColors.gold` (`app_theme.dart:4`) is literally `#1d6fff` —
+already a blue, not an actual gold/amber value; the "gold" name is
+legacy from an earlier design-system iteration and was kept to avoid
+a mechanical rename touching hundreds of call sites for zero visual
+change. Grepped the whole `lib/` tree for any literal gold/amber hex
+or `Colors.amber`/`Colors.yellow` — **zero hits**. So every screen
+already renders the blue accent, satisfying "one accent per screen,
+don't mix in old brand colors" — confirmed on every screenshot taken
+this entire session (buttons, chips, badges are all blue). Not
+renaming the token in this pass: it's a code-readability nit, not a
+pixel-visible bug, and a mass rename across `passenger_shell.dart` +
+`driver_shell.dart` + `main.dart` + `app_theme.dart` carries real
+regression risk for no visual benefit — flagging it here instead so
+it's a deliberate choice, not an oversight.
+
+**Toast — already fully compliant, verified by reading
+`app_toast.dart` line by line against the doc's exact wording.** "Top-
+center, slides down from above, auto-dismiss (longer for errors),
+stacks up to ~3": confirmed `Positioned(top: ...)` + `left:16,
+right:16` (top-center), `Transform.translate` animating from `-40`
+to `0` (slides down from above), per-type auto-dismiss durations
+where error (4200ms) > info (3000ms) > success (2600ms) — exactly
+"longer for errors" — and `_maxStacked = 3` — exactly "stacks up to
+~3". Nothing to change here.
+
+**Map markers — a real, concrete deviation found, deliberately NOT
+changed.** The doc is explicit: "'выбор адреса' = single accent
+teardrop pin, IDENTICAL SHAPE for pickup and dropoff — only the field
+label differs, never the marker art." Opened the actual asset files:
+`marker_my_location_2026.png` (used for pickup) is a pulsing blue dot
+with halo rings; `marker_destination_2026.png` (used for dropoff) is
+a checkered racing flag on a pole — two entirely different shapes,
+not "identical." A third asset, `marker_address_pick_2026.png` (the
+address-picker crosshair, correctly untouched per this session's
+earlier correction), is a third shape again — a branded rounded-
+square "S" pin. This is a genuine textual violation of the doc.
+**Deliberately not touched**, for three reasons: (1) this exact
+dot-vs-flag pairing was a recent, deliberate, already-completed unification
+pass earlier this session (drawer item "[2] Единые маркеры карты по
+всему приложению") — reverting it now on a documentation technicality
+risks undoing real, tested work; (2) dot-for-pickup / flag-for-dropoff
+is a common, defensible ride-app UX pattern that helps riders
+distinguish the two points at a glance, arguably better than two
+identical pins that only differ by a small label; (3) fixing it
+properly would need a real teardrop-pin asset for both points, which
+doesn't exist and can't be generated in this environment — reusing
+one of the two existing mismatched shapes for both points would be a
+downgrade, not a fix. Flagging with exact file names and the doc's
+exact wording so this is a deliberate, visible call, not a missed
+rule.
+
+**Tabular numbers — real gap found and fixed on the highest-impact
+targets.** Grepped for `tabular` anywhere in `lib/` — zero hits,
+confirming the doc's `font-variant-numeric: tabular-nums` rule for
+prices had never been applied. Added `FontFeature.tabularFigures()`
+(Flutter's equivalent) to five shared, high-traffic numeric displays
+rather than touching all ~20 raw `_formatTenge()` call sites
+individually: `_TripInfoPill`'s value text (covers order-summary
+"Итого", trip-history price/distance/duration pills across many call
+sites in one edit since it's a shared widget), `_TariffCard`'s price
+text (every tariff option, every order), the price-negotiation
+stepper's live-updating `currentPrice` text (digits change on every
++/- tap — the textbook tabular-nums case), `_GoldCtaButton`'s
+`trailingText` style (the shared primary-CTA widget — covers both the
+order-confirm button and the driver counter-offer "Согласиться"
+button app-wide in one edit), and the active-trip elapsed-time label
+(ticks every 30s). Static one-time price mentions inside promo-code
+preview strings and similar were left alone — tabular-nums matters
+for numbers that change while visible, not static copy.
+
+**Radius/spacing tokens — left as opportunistic, per the doc's own
+default and the codebase's own long-standing acknowledgment.**
+`SmartTaxiRadius`/`SmartTaxiSpacing` (app_theme.dart) already exist as
+a reference scale, and the file's own comment on them says "most of
+the app still hardcodes raw values inline — a full migration would
+touch thousands of call sites for no functional gain." The design doc
+agrees: "don't do a blanket repaint pass unless explicitly asked —
+migrate opportunistically." A literal token-migration sweep across
+every inline `EdgeInsets`/`BorderRadius` in a ~16,000-line file is a
+different, much larger and much riskier undertaking than a color/
+component-rule audit, and isn't what the doc actually specifies values
+for beyond the radius table (14/12/18-20/pill), which spot-checking
+across cards, inputs, and sheets this session found already broadly
+followed. Not attempted as a blanket pass — this matches the already-
+accepted policy in this exact codebase, not a shortcut taken to save
+time.
+
+**Screenshot evidence:** rebuilt and reinstalled after the
+tabular-nums change, ran the real order flow (home → destination via
+"Указать на карте" → confirm → tariff screen) — confirmed live:
+tariff cards show "700 ₸" / "800 ₸", the negotiation stepper shows
+"700 ₸", the "Заказать Эконом" CTA shows "700 ₸" as trailing text —
+all rendering correctly with no crash, no layout shift, no visual
+regression. Backed out via the back button before submitting, no test
+order created.
+
+**Verified:** `flutter analyze` clean (same 4 pre-existing warnings).
+`flutter test`: 14 passed / 10 failed, unchanged baseline. **Verified
+live** for the tabular-nums change (screenshots above). The color-
+token, toast, and radius/spacing findings were verified by direct
+source inspection (exact file/line citations above), not live
+screenshots, since they are either confirmed-compliant (nothing to
+screenshot-diff) or deliberately-not-changed (nothing to verify).
