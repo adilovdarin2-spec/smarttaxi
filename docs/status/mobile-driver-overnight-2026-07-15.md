@@ -542,3 +542,9 @@ way `INSTALL_FAILED_USER_RESTRICTED` does (the install-confirmation dialog can't
 render/be accepted over a locked screen). Not attempting to bypass a lock screen —
 watching for it to clear (it does once the user next touches the phone, per
 [[reference_device_install_blocked]]) rather than polling in a tight loop.
+
+## Round 13 — monitor timed out, phone fully disconnected again
+
+The keyguard-clear monitor from round 12 timed out after 10 minutes without unlocking;
+`adb devices` now shows a full USB disconnect (not just locked) — same pattern as
+earlier in the night. No changes this round.
