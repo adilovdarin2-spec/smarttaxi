@@ -244,7 +244,10 @@ class _BreakdownBar extends StatelessWidget {
           width: 24,
           child: Text('$count',
               textAlign: TextAlign.right,
-              style: TextStyle(fontSize: 12, color: palette.textMuted)),
+              // textSecondary, not textMuted — this count is real information,
+              // and textMuted's contrast against the background fails WCAG AA
+              // (~2.5:1, needs 4.5:1) for text this size.
+              style: TextStyle(fontSize: 12, color: palette.textSecondary)),
         ),
       ],
     );
@@ -285,7 +288,8 @@ class _ReviewRow extends StatelessWidget {
               const Spacer(),
               if (review.orderShortId != null)
                 Text('№ ${review.orderShortId}',
-                    style: TextStyle(color: palette.textMuted, fontSize: 11.5)),
+                    style:
+                        TextStyle(color: palette.textSecondary, fontSize: 11.5)),
             ],
           ),
           if (review.tags.isNotEmpty) ...[

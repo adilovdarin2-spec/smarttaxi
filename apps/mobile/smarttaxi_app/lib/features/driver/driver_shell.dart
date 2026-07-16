@@ -5102,8 +5102,10 @@ class _RoadAlertRow extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Доверие: ${alert.confidenceScore}% · подтверждений: ${alert.confirmationsCount}',
+                  // textSecondary, not textMuted — textMuted's contrast
+                  // against the background fails WCAG AA (~2.5:1).
                   style: const TextStyle(
-                    color: SmartTaxiColors.textMuted,
+                    color: SmartTaxiColors.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),

@@ -240,8 +240,10 @@ class _DriverNotificationTile extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   _timeAgo(notification.createdAt),
+                  // textSecondary, not textMuted — textMuted's contrast
+                  // against the background fails WCAG AA (~2.5:1).
                   style: TextStyle(
-                    color: palette.textMuted,
+                    color: palette.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),

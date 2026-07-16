@@ -376,7 +376,8 @@ class _WalletTransactionRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '№ ${transaction.orderShortId}',
-                    style: TextStyle(color: palette.textMuted, fontSize: 11.5),
+                    style:
+                        TextStyle(color: palette.textSecondary, fontSize: 11.5),
                   ),
                 ],
               ],

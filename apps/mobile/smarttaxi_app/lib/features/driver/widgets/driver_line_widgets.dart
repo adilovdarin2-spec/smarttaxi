@@ -163,8 +163,10 @@ class DriverShiftHero extends StatelessWidget {
                     children: [
                       Text(
                         'Сегодня',
+                        // textSecondary, not textMuted — textMuted's contrast
+                        // against the background fails WCAG AA (~2.5:1).
                         style: TextStyle(
-                          color: palette.textMuted,
+                          color: palette.textSecondary,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -360,8 +362,10 @@ class _MiniStat extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+            // textSecondary, not textMuted — textMuted's contrast against the
+            // background fails WCAG AA (~2.5:1).
             style: TextStyle(
-              color: context.palette.textMuted,
+              color: context.palette.textSecondary,
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
               height: 1.2,
