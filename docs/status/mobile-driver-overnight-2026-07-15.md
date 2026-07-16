@@ -739,3 +739,30 @@ accessibility labels, in particular, can only be truly confirmed by pairing a re
 screen reader with the device, not by reading the Semantics tree in source. Per
 [[feedback_screenshot_verify_before_done]], flagging this distinction explicitly rather
 than calling the visual/interactive experience "confirmed."
+
+## Round 21 — phone reconnected but locked; rebuilt and waiting on unlock
+
+`adb devices` showed the phone back, but `isKeyguardShowing=true` (real PIN/biometric
+lock). Rebuilt the APK (round 15-20 changes: test fixes, dead-code removal, dart fix
+clean, 3 accessibility fixes) since code had changed since the last successful
+install. Attempted install anyway (failed, as expected while locked) and armed a
+Monitor watching for `isKeyguardShowing=false` instead of polling manually.
+
+While waiting, did two more bounded, evidence-based checks (not speculative):
+- Touch target sizes for circular icon buttons (42-46dp) are slightly under
+  Material's 48dp recommendation but meet Apple HIG's 44pt minimum — a systemic,
+  pre-existing sizing choice across many widgets, not something tonight introduced;
+  not touching it (risky layout-wide change for a marginal, non-broken deviation).
+- Verified `formatDriverMoney` (thousand-separator formatter) handles negative values,
+  zero, and large numbers correctly via an actual `dart run` script, not just regex
+  reasoning — clean, no bug.
+- Cross-checked backend `orders.routes.js`'s `AppError` codes against the mobile
+  `readableError` map: several are unmapped (`DRIVER_NOT_FOUND`, `ORDER_ALREADY_RATED`,
+  `ORDER_CLIENT_MISSING`, `ORDER_DRIVER_MISSING`, `ORDER_NUMBER_COLLISION`,
+  `TARIFF_NOT_FOUND`, `TRIP_NOT_FOUND`) but every one is either an internal
+  data-integrity edge case unlikely to be user-actionable regardless of copy, or (for
+  `ORDER_ALREADY_RATED` specifically) unreachable in practice because its one call
+  site (`DriverTripCompletionCard._submitRating`) already swallows all errors as
+  best-effort by design. Not adding speculative mappings without evidence one is
+  actually hit, unlike round 6's `DRIVER_DOCUMENTS_NOT_APPROVED` fix which had direct
+  live evidence behind it.
