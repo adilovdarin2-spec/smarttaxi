@@ -177,8 +177,8 @@ class _DriverShellState extends State<DriverShell> {
       await widget.sockets.connect();
       widget.sockets.joinDrivers();
       widget.sockets.onOrderUpdate(_handleOrderUpdate);
-      _socketConnectionSub =
-          widget.sockets.connectionChanges.listen(_handleSocketConnectionChange);
+      _socketConnectionSub = widget.sockets.connectionChanges
+          .listen(_handleSocketConnectionChange);
     } catch (_) {
       if (mounted) {
         setState(() => _navigatorMessage =
@@ -445,8 +445,7 @@ class _DriverShellState extends State<DriverShell> {
         'DRIVER_DOCUMENTS_NOT_APPROVED',
       };
       final message = error.toString();
-      final isApprovalBlock =
-          nextOnline && approvalCodes.any(message.contains);
+      final isApprovalBlock = nextOnline && approvalCodes.any(message.contains);
       if (isApprovalBlock) {
         if (mounted) {
           AppToast.showError(context, readableError(error));
@@ -546,8 +545,8 @@ class _DriverShellState extends State<DriverShell> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error =
-            AppLocalizations.of(context).driverLocationSendFailed);
+        setState(() =>
+            _error = AppLocalizations.of(context).driverLocationSendFailed);
       }
       return false;
     }
@@ -606,7 +605,8 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
-  static double _metersBetween(double lat1, double lng1, double lat2, double lng2) {
+  static double _metersBetween(
+      double lat1, double lng1, double lat2, double lng2) {
     const earthRadius = 6371000.0;
     final dLat = (lat2 - lat1) * math.pi / 180;
     final dLng = (lng2 - lng1) * math.pi / 180;
@@ -743,7 +743,8 @@ class _DriverShellState extends State<DriverShell> {
     var nearestIndex = 0;
     var nearestDistance = double.infinity;
     for (var i = 0; i < route.length - 1; i++) {
-      final distance = _distanceToSegmentMeters(current, route[i], route[i + 1]);
+      final distance =
+          _distanceToSegmentMeters(current, route[i], route[i + 1]);
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestIndex = i;
@@ -756,14 +757,17 @@ class _DriverShellState extends State<DriverShell> {
 
     const lookaheadMeters = 800.0;
     const turnThresholdDegrees = 28.0;
-    final baseBearing = _bearingBetween(route[nearestIndex], route[nearestIndex + 1]);
+    final baseBearing =
+        _bearingBetween(route[nearestIndex], route[nearestIndex + 1]);
     var cumulative = _metersBetween(
       current.latitude,
       current.longitude,
       route[nearestIndex + 1].latitude,
       route[nearestIndex + 1].longitude,
     );
-    for (var i = nearestIndex + 1; i < route.length - 1 && cumulative < lookaheadMeters; i++) {
+    for (var i = nearestIndex + 1;
+        i < route.length - 1 && cumulative < lookaheadMeters;
+        i++) {
       final segmentBearing = _bearingBetween(route[i], route[i + 1]);
       final delta = _bearingDelta(baseBearing, segmentBearing);
       if (delta.abs() >= turnThresholdDegrees) {
@@ -784,7 +788,8 @@ class _DriverShellState extends State<DriverShell> {
     return null;
   }
 
-  bool _hasActiveDrivingLeg(String? status) => _routePhaseForStatus(status) != null;
+  bool _hasActiveDrivingLeg(String? status) =>
+      _routePhaseForStatus(status) != null;
 
   Future<void> _maybeRefreshDriverRoute(Position position) async {
     final order = _activeOrder;
@@ -793,7 +798,8 @@ class _DriverShellState extends State<DriverShell> {
 
     final phase = _routePhaseForStatus(order.status);
     final now = DateTime.now();
-    final elapsed = _lastRouteFetchAt == null ? null : now.difference(_lastRouteFetchAt!);
+    final elapsed =
+        _lastRouteFetchAt == null ? null : now.difference(_lastRouteFetchAt!);
     final phaseChanged = phase != _lastRoutePhase;
     final dueForRefresh = elapsed == null || elapsed.inSeconds >= 12;
     final route = _driverRoute;
@@ -875,7 +881,8 @@ class _DriverShellState extends State<DriverShell> {
         _cameraStage[alert.id] = 3;
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_voice.announce('Камера', dedupeKey: 'cam-${alert.id}-pass'));
-        _showNavigatorBanner('Камера$headingSuffix', const Duration(seconds: 6));
+        _showNavigatorBanner(
+            'Камера$headingSuffix', const Duration(seconds: 6));
       }
     }
   }
@@ -994,8 +1001,8 @@ class _DriverShellState extends State<DriverShell> {
 
   Future<void> _accept(OrderSummary order) async {
     if (!_online) {
-      setState(() => _error =
-          AppLocalizations.of(context).driverGoOnlineRequiredError);
+      setState(() =>
+          _error = AppLocalizations.of(context).driverGoOnlineRequiredError);
       return;
     }
     setState(() {
@@ -1653,8 +1660,8 @@ class _DriverShellState extends State<DriverShell> {
               _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
           onRating: () =>
               _showDriverFullSheet(DriverRatingScreen(api: widget.api)),
-          onNotifications: () => _showDriverFullSheet(
-              DriverNotificationsScreen(api: widget.api)),
+          onNotifications: () =>
+              _showDriverFullSheet(DriverNotificationsScreen(api: widget.api)),
           onSupport: () => _showDriverFullSheet(_driverSupportContent()),
           onFaq: () => _showDriverFullSheet(_driverFaqContent()),
           onAbout: () => _showDriverFullSheet(_driverAboutContent()),
@@ -1722,8 +1729,7 @@ class _DriverShellState extends State<DriverShell> {
                     NavigationDestination(
                         icon: const Icon(Icons.explore_outlined),
                         selectedIcon: const Icon(Icons.explore_rounded),
-                        label:
-                            AppLocalizations.of(context).driverTabNavigator),
+                        label: AppLocalizations.of(context).driverTabNavigator),
                   ],
                 ),
               ),
@@ -1741,9 +1747,8 @@ class _DriverShellState extends State<DriverShell> {
     final openOrders =
         _orders.where((order) => order.isOpen).toList(growable: false);
     final stats = _driverStats;
-    final todayEarnings = stats == null
-        ? null
-        : formatDriverMoney(stats.revenueTotal);
+    final todayEarnings =
+        stats == null ? null : formatDriverMoney(stats.revenueTotal);
     return RefreshIndicator(
       onRefresh: () async {
         await _loadRegions();
@@ -1810,6 +1815,7 @@ class _DriverShellState extends State<DriverShell> {
                 right: 14,
                 child: _MapChipButton(
                   icon: Icons.add_location_alt_rounded,
+                  semanticLabel: 'Дорожные события',
                   badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
                   onTap: () => unawaited(_openRoadAlerts()),
                 ),
@@ -1907,8 +1913,7 @@ class _DriverShellState extends State<DriverShell> {
         padding: driverPagePadding(context),
         children: [
           TitleBlock(
-              title: l10n.driverOrdersTitle,
-              text: l10n.driverOrdersSubtitle),
+              title: l10n.driverOrdersTitle, text: l10n.driverOrdersSubtitle),
           const SizedBox(height: 16),
           if (_ordersLoading && _online)
             LoadingStrip(text: l10n.driverOrdersUpdating)
@@ -1984,179 +1989,184 @@ class _DriverShellState extends State<DriverShell> {
               onDone: _dismissActiveOrder,
             )
           else
-          PremiumCard(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              StatusPill(
-                  label: statusLabel(_activeOrder!.status),
-                  tone: StatusTone.warning),
-              const SizedBox(height: 16),
-              DriverStatusStepper(status: _activeOrder!.status),
-              const SizedBox(height: 16),
-              if ((_activeOrder!.riderPhone ?? '').trim().isNotEmpty) ...[
-                Row(
+            PremiumCard(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        (_activeOrder!.riderName ?? '').trim().isNotEmpty
-                            ? _activeOrder!.riderName!.trim()
-                            : 'Пассажир',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: context.palette.text,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => launchUrl(
-                          Uri(scheme: 'tel', path: _activeOrder!.riderPhone)),
-                      icon: const Icon(Icons.call_rounded, size: 16),
-                      label: const Text('Позвонить'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-              RouteFields(
-                  pickupLabel: _activeOrder!.pickup,
-                  dropoffLabel: _activeOrder!.dropoff,
-                  onPickupTap: null,
-                  onDropoffTap: null),
-              if (_activeOrder!.status == 'WAITING_CLIENT' &&
-                  _activeOrder!.waitingStartedAt != null) ...[
-                const SizedBox(height: 12),
-                DriverWaitingTimerCard(
-                  waitingStartedAt: _activeOrder!.waitingStartedAt!,
-                  freeWaitingUntil: _activeOrder!.freeWaitingUntil,
-                  waitingPricePerMinute: _activeOrder!.waitingPricePerMinute,
-                ),
-              ],
-              if ((_activeOrder!.notes ?? '').isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.palette.goldSurface,
-                    border:
-                        Border.all(color: context.palette.borderStrong),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.sticky_note_2_outlined,
-                          size: 17, color: context.palette.goldDeep),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _activeOrder!.notes!,
-                          style: TextStyle(
-                            color: context.palette.text,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
+                    StatusPill(
+                        label: statusLabel(_activeOrder!.status),
+                        tone: StatusTone.warning),
+                    const SizedBox(height: 16),
+                    DriverStatusStepper(status: _activeOrder!.status),
+                    const SizedBox(height: 16),
+                    if ((_activeOrder!.riderPhone ?? '').trim().isNotEmpty) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              (_activeOrder!.riderName ?? '').trim().isNotEmpty
+                                  ? _activeOrder!.riderName!.trim()
+                                  : 'Пассажир',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.palette.text,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
+                          OutlinedButton.icon(
+                            onPressed: () => launchUrl(Uri(
+                                scheme: 'tel', path: _activeOrder!.riderPhone)),
+                            icon: const Icon(Icons.call_rounded, size: 16),
+                            label: const Text('Позвонить'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    RouteFields(
+                        pickupLabel: _activeOrder!.pickup,
+                        dropoffLabel: _activeOrder!.dropoff,
+                        onPickupTap: null,
+                        onDropoffTap: null),
+                    if (_activeOrder!.status == 'WAITING_CLIENT' &&
+                        _activeOrder!.waitingStartedAt != null) ...[
+                      const SizedBox(height: 12),
+                      DriverWaitingTimerCard(
+                        waitingStartedAt: _activeOrder!.waitingStartedAt!,
+                        freeWaitingUntil: _activeOrder!.freeWaitingUntil,
+                        waitingPricePerMinute:
+                            _activeOrder!.waitingPricePerMinute,
+                      ),
+                    ],
+                    if ((_activeOrder!.notes ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: context.palette.goldSurface,
+                          border:
+                              Border.all(color: context.palette.borderStrong),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.sticky_note_2_outlined,
+                                size: 17, color: context.palette.goldDeep),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _activeOrder!.notes!,
+                                style: TextStyle(
+                                  color: context.palette.text,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ],
-              if (_activeOrder!.price != null) ...[
-                const SizedBox(height: 14),
-                Text('${_activeOrder!.price!.round()} ₸',
-                    style: const TextStyle(
-                        fontSize: 26, fontWeight: FontWeight.w900)),
-              ],
-              if (_activeOrder!.tariff != null &&
-                  _activeOrder!.tariff!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(l10n.driverTripTariffLabel(_activeOrder!.tariff!),
-                    style:
-                        TextStyle(color: context.palette.textSecondary)),
-              ],
-              if ((liveRouteMeta(_driverRoute) ?? routeMeta(_activeOrder!)) !=
-                  null) ...[
-                const SizedBox(height: 8),
-                Text(liveRouteMeta(_driverRoute) ?? routeMeta(_activeOrder!)!,
-                    style:
-                        TextStyle(color: context.palette.textSecondary)),
-              ],
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => _DriverQuickMessageSheet(
-                      api: widget.api,
-                      orderId: _activeOrder!.id,
+                    if (_activeOrder!.price != null) ...[
+                      const SizedBox(height: 14),
+                      Text('${_activeOrder!.price!.round()} ₸',
+                          style: const TextStyle(
+                              fontSize: 26, fontWeight: FontWeight.w900)),
+                    ],
+                    if (_activeOrder!.tariff != null &&
+                        _activeOrder!.tariff!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(l10n.driverTripTariffLabel(_activeOrder!.tariff!),
+                          style:
+                              TextStyle(color: context.palette.textSecondary)),
+                    ],
+                    if ((liveRouteMeta(_driverRoute) ??
+                            routeMeta(_activeOrder!)) !=
+                        null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                          liveRouteMeta(_driverRoute) ??
+                              routeMeta(_activeOrder!)!,
+                          style:
+                              TextStyle(color: context.palette.textSecondary)),
+                    ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => _DriverQuickMessageSheet(
+                            api: widget.api,
+                            orderId: _activeOrder!.id,
+                          ),
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline_rounded,
+                            size: 18),
+                        label: const Text('Быстрое сообщение клиенту'),
+                      ),
                     ),
-                  ),
-                  icon:
-                      const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                  label: const Text('Быстрое сообщение клиенту'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (action != null)
-                DriverGradientButton(
-                  text: action.$1,
-                  enabled: _tripActionLabel == null ||
-                      _tripActionLabel == action.$1,
-                  loading: _tripActionLabel == action.$1,
-                  loadingText: l10n.driverTripSavingButton,
-                  onTap: _tripActionLabel != null
-                      ? null
-                      : () => _tripAction(action.$1, action.$2),
-                ),
-              if (_canNoShow(_activeOrder!.status)) ...[
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                    onPressed: _tripActionLabel != null
-                        ? null
-                        : () async {
-                            final confirmed = await _confirmDriverAction(
-                              title: 'Клиент не вышел?',
-                              message:
-                                  'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.',
-                              confirmLabel: 'Подтвердить неявку',
-                            );
-                            if (confirmed) {
-                              _tripAction(l10n.driverTripNoShowButton,
-                                  widget.api.noShow);
-                            }
-                          },
-                    icon: const Icon(Icons.person_off_rounded),
-                    label: Text(l10n.driverTripNoShowButton)),
-              ],
-              if (_canCancel(_activeOrder!.status)) ...[
-                const SizedBox(height: 10),
-                OutlinedButton(
-                    onPressed: _tripActionLabel != null
-                        ? null
-                        : () async {
-                            final confirmed = await _confirmDriverAction(
-                              title: 'Отменить поездку?',
-                              message:
-                                  'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.',
-                              confirmLabel: 'Отменить поездку',
-                            );
-                            if (confirmed) {
-                              _tripAction(l10n.driverTripCancelButton,
-                                  widget.api.cancelDriverOrder);
-                            }
-                          },
-                    child: Text(l10n.driverTripCancelButton)),
-              ],
-            ]),
-          ),
+                    const SizedBox(height: 16),
+                    if (action != null)
+                      DriverGradientButton(
+                        text: action.$1,
+                        enabled: _tripActionLabel == null ||
+                            _tripActionLabel == action.$1,
+                        loading: _tripActionLabel == action.$1,
+                        loadingText: l10n.driverTripSavingButton,
+                        onTap: _tripActionLabel != null
+                            ? null
+                            : () => _tripAction(action.$1, action.$2),
+                      ),
+                    if (_canNoShow(_activeOrder!.status)) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                          onPressed: _tripActionLabel != null
+                              ? null
+                              : () async {
+                                  final confirmed = await _confirmDriverAction(
+                                    title: 'Клиент не вышел?',
+                                    message:
+                                        'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.',
+                                    confirmLabel: 'Подтвердить неявку',
+                                  );
+                                  if (confirmed) {
+                                    _tripAction(l10n.driverTripNoShowButton,
+                                        widget.api.noShow);
+                                  }
+                                },
+                          icon: const Icon(Icons.person_off_rounded),
+                          label: Text(l10n.driverTripNoShowButton)),
+                    ],
+                    if (_canCancel(_activeOrder!.status)) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton(
+                          onPressed: _tripActionLabel != null
+                              ? null
+                              : () async {
+                                  final confirmed = await _confirmDriverAction(
+                                    title: 'Отменить поездку?',
+                                    message:
+                                        'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.',
+                                    confirmLabel: 'Отменить поездку',
+                                  );
+                                  if (confirmed) {
+                                    _tripAction(l10n.driverTripCancelButton,
+                                        widget.api.cancelDriverOrder);
+                                  }
+                                },
+                          child: Text(l10n.driverTripCancelButton)),
+                    ],
+                  ]),
+            ),
         ],
         if (_error != null) ...[
           const SizedBox(height: 12),
@@ -2263,13 +2273,11 @@ class _DriverShellState extends State<DriverShell> {
       return _DriverAvailabilityIssue(
         icon: Icons.pause_circle_outline_rounded,
         title: 'Регион временно отключён',
-        message:
-            'Работа в регионе «${region!.name}» сейчас приостановлена. '
+        message: 'Работа в регионе «${region!.name}» сейчас приостановлена. '
             '${_regions.length > 1 ? 'Попробуйте позже или выберите другой регион.' : 'Попробуйте позже.'}',
         actionLabel: _regions.length > 1 ? 'Сменить регион' : null,
-        onAction: _regions.length > 1
-            ? () => unawaited(_showRegionPicker())
-            : null,
+        onAction:
+            _regions.length > 1 ? () => unawaited(_showRegionPicker()) : null,
       );
     }
     if (region?.status == 'BLOCKED') {
@@ -2323,9 +2331,10 @@ class _DriverShellState extends State<DriverShell> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(foregroundColor: context.palette.danger),
-            child:
-                Text(confirmLabel, style: const TextStyle(fontWeight: FontWeight.w900)),
+            style:
+                TextButton.styleFrom(foregroundColor: context.palette.danger),
+            child: Text(confirmLabel,
+                style: const TextStyle(fontWeight: FontWeight.w900)),
           ),
         ],
       ),
@@ -2502,54 +2511,64 @@ class _DriverIssueBanner extends StatelessWidget {
 /// "report/view road events" shortcut, styled like a real navigation app's
 /// map controls instead of taking up a whole row of chrome below the map.
 class _MapChipButton extends StatelessWidget {
-  const _MapChipButton({required this.icon, required this.onTap, this.badge});
+  const _MapChipButton({
+    required this.icon,
+    required this.onTap,
+    required this.semanticLabel,
+    this.badge,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String semanticLabel;
   final int? badge;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 3,
-      shadowColor: Colors.black26,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 42,
-          height: 42,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Center(
-                  child:
-                      Icon(icon, size: 20, color: context.palette.goldDeep)),
-              if (badge != null)
-                Positioned(
-                  top: -3,
-                  right: -3,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 5, vertical: 1.5),
-                    decoration: BoxDecoration(
-                      color: context.palette.danger,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white, width: 1.4),
-                    ),
-                    child: Text(
-                      '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: Colors.white,
+        shape: const CircleBorder(),
+        elevation: 3,
+        shadowColor: Colors.black26,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 42,
+            height: 42,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Center(
+                    child:
+                        Icon(icon, size: 20, color: context.palette.goldDeep)),
+                if (badge != null)
+                  Positioned(
+                    top: -3,
+                    right: -3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: context.palette.danger,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white, width: 1.4),
+                      ),
+                      child: Text(
+                        '$badge',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -2624,8 +2643,7 @@ class _RegionPickerRow extends StatelessWidget {
             ),
             if (selected) ...[
               const SizedBox(width: 8),
-              Icon(Icons.check_circle_rounded,
-                  color: palette.gold, size: 20),
+              Icon(Icons.check_circle_rounded, color: palette.gold, size: 20),
             ],
           ],
         ),
@@ -2707,8 +2725,8 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
 
   void _refitCamera() {
     final points = _refitPoints(widget);
-    final fallback = widget.current?.toLatLng() ??
-        widget.fallbackCenter?.toLatLng();
+    final fallback =
+        widget.current?.toLatLng() ?? widget.fallbackCenter?.toLatLng();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (points.length > 1) {
@@ -2771,10 +2789,10 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: widget.current == null &&
-                          widget.activeOrder == null
-                      ? 13
-                      : 14,
+                  initialZoom:
+                      widget.current == null && widget.activeOrder == null
+                          ? 13
+                          : 14,
                   initialCameraFit: fit,
                   backgroundColor: SmartTaxiColors.goldSurface,
                 ),
@@ -2817,8 +2835,8 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                         ),
                       if (widget.activeOrder?.dropoffCoordinate != null)
                         Marker(
-                          point: widget.activeOrder!.dropoffCoordinate!
-                              .toLatLng(),
+                          point:
+                              widget.activeOrder!.dropoffCoordinate!.toLatLng(),
                           width: 34,
                           height: 34,
                           child: const _NavigatorPointMarker(
@@ -2876,8 +2894,8 @@ class _NavigatorCurrentMarker extends StatelessWidget {
       decoration: BoxDecoration(
         color: SmartTaxiColors.gold.withValues(alpha: 0.2),
         shape: BoxShape.circle,
-        border:
-            Border.all(color: SmartTaxiColors.gold.withValues(alpha: 0.13), width: 1),
+        border: Border.all(
+            color: SmartTaxiColors.gold.withValues(alpha: 0.13), width: 1),
       ),
       child: Container(
         width: 24,
@@ -3183,8 +3201,8 @@ class _DriverFullScreenNavigatorState
   @override
   void initState() {
     super.initState();
-    _pollTimer = Timer.periodic(
-        const Duration(milliseconds: 350), (_) => _tick());
+    _pollTimer =
+        Timer.periodic(const Duration(milliseconds: 350), (_) => _tick());
     if (widget.shell._currentCoordinate != null) {
       _lastFixAt = DateTime.now();
     }
@@ -3383,6 +3401,7 @@ class _DriverFullScreenNavigatorState
               children: [
                 _NavCircleButton(
                   icon: Icons.arrow_back_rounded,
+                  semanticLabel: 'Назад',
                   onTap: () => Navigator.of(context).pop(),
                 ),
                 const Spacer(),
@@ -3390,11 +3409,15 @@ class _DriverFullScreenNavigatorState
                   icon: shell._voiceEnabled
                       ? Icons.volume_up_rounded
                       : Icons.volume_off_rounded,
+                  semanticLabel: shell._voiceEnabled
+                      ? 'Выключить голосовые подсказки'
+                      : 'Включить голосовые подсказки',
                   onTap: shell._toggleVoice,
                 ),
                 const SizedBox(width: 8),
                 _NavCircleButton(
                   icon: Icons.add_location_alt_rounded,
+                  semanticLabel: 'Сообщить о дорожном событии',
                   badge: alerts.isEmpty ? null : alerts.length,
                   loading: shell._roadAlertsLoading,
                   onTap: () => unawaited(shell._openRoadAlerts()),
@@ -3446,6 +3469,7 @@ class _DriverFullScreenNavigatorState
               bottom: bottomInset + 190,
               child: _NavCircleButton(
                 icon: Icons.my_location_rounded,
+                semanticLabel: 'Вернуться к текущей позиции',
                 onTap: _recenter,
                 filled: true,
               ),
@@ -3474,8 +3498,7 @@ class _DriverFullScreenNavigatorState
                         value: speedKmh == null ? '--' : '$speedKmh',
                         suffix: 'км/ч',
                         emphasize: true,
-                        valueColor:
-                            speeding ? SmartTaxiColors.danger : null,
+                        valueColor: speeding ? SmartTaxiColors.danger : null,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -3502,6 +3525,7 @@ class _NavCircleButton extends StatelessWidget {
   const _NavCircleButton({
     required this.icon,
     required this.onTap,
+    required this.semanticLabel,
     this.badge,
     this.filled = false,
     this.loading = false,
@@ -3509,65 +3533,76 @@ class _NavCircleButton extends StatelessWidget {
 
   final IconData icon;
   final VoidCallback onTap;
+  // Every instance is an icon-only circular button with no visible text —
+  // without this a screen reader (TalkBack/VoiceOver) announces nothing
+  // meaningful, which matters most for the back button: it's the only
+  // non-gesture way out of this full-screen route.
+  final String semanticLabel;
   final int? badge;
   final bool filled;
   final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: filled ? SmartTaxiColors.gold : Colors.white.withValues(alpha: 0.94),
-      shape: const CircleBorder(),
-      elevation: 4,
-      shadowColor: Colors.black38,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Center(
-                child: loading
-                    ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: filled
-                              ? Colors.white
-                              : SmartTaxiColors.goldDeep,
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: filled
+            ? SmartTaxiColors.gold
+            : Colors.white.withValues(alpha: 0.94),
+        shape: const CircleBorder(),
+        elevation: 4,
+        shadowColor: Colors.black38,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Center(
+                  child: loading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: filled
+                                ? Colors.white
+                                : SmartTaxiColors.goldDeep,
+                          ),
+                        )
+                      : Icon(icon,
+                          size: 21,
+                          color: filled ? Colors.white : SmartTaxiColors.text),
+                ),
+                if (badge != null)
+                  Positioned(
+                    top: -3,
+                    right: -3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: SmartTaxiColors.danger,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white, width: 1.4),
+                      ),
+                      child: Text(
+                        '$badge',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
                         ),
-                      )
-                    : Icon(icon,
-                        size: 21,
-                        color: filled ? Colors.white : SmartTaxiColors.text),
-              ),
-              if (badge != null)
-                Positioned(
-                  top: -3,
-                  right: -3,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                    decoration: BoxDecoration(
-                      color: SmartTaxiColors.danger,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white, width: 1.4),
-                    ),
-                    child: Text(
-                      '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -3589,7 +3624,8 @@ class _NavTargetStrip extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 14, offset: Offset(0, 6)),
+          BoxShadow(
+              color: Colors.black26, blurRadius: 14, offset: Offset(0, 6)),
         ],
       ),
       child: Row(
@@ -3633,7 +3669,8 @@ class _GpsSearchingBanner extends StatelessWidget {
           const SizedBox(
             width: 16,
             height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
           ),
           const SizedBox(width: 10),
           const Expanded(
@@ -3922,8 +3959,6 @@ class _DriverMapBadge extends StatelessWidget {
     );
   }
 }
-
-
 
 // Bottom sheet the driver uses to counter-propose a price on an open order
 // (torg). Server enforces a flat 200–1,000,000 KZT sanity range regardless
@@ -4415,7 +4450,9 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ] else if (onPause != null || onResume != null || onCancel != null) ...[
+            ] else if (onPause != null ||
+                onResume != null ||
+                onCancel != null) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -4957,6 +4994,7 @@ class _RoadAlertPin extends StatelessWidget {
 
   final String label;
   final Color color;
+
   /// Compass heading (0-360) the underlying alert/camera faces, if known —
   /// drawn as a small arrow so a driver can tell which direction it watches.
   final double? heading;
@@ -5001,9 +5039,11 @@ class _RoadAlertPin extends StatelessWidget {
               child: Transform.rotate(
                 angle: heading! * math.pi / 180,
                 child: Icon(Icons.navigation,
-                    size: 16, color: color, shadows: const [
-                  Shadow(color: Colors.white, blurRadius: 2),
-                ]),
+                    size: 16,
+                    color: color,
+                    shadows: const [
+                      Shadow(color: Colors.white, blurRadius: 2),
+                    ]),
               ),
             ),
         ],
@@ -5184,8 +5224,9 @@ class _NextManeuverBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rounded = math.max(20, (distanceMeters / 20).round() * 20);
-    final distanceLabel =
-        rounded >= 1000 ? '${(rounded / 1000).toStringAsFixed(1)} км' : '$rounded м';
+    final distanceLabel = rounded >= 1000
+        ? '${(rounded / 1000).toStringAsFixed(1)} км'
+        : '$rounded м';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
