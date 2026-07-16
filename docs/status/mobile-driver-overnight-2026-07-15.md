@@ -852,3 +852,27 @@ failures. Phone still unavailable.
 
 No code changes this round — three real, evidence-based checks, all clean. Phone
 still unavailable.
+
+## Round 29 — real cross-action race condition found and fixed (no phone)
+
+Audited every driver action method (accept/reject/offer-price/setOnline/tripAction/
+road-alert confirm-dismiss/rating-submit/preference-set/payout-submit) for the
+double-submission guard pattern (in-flight flag set via `setState` before the first
+`await`, wired to disable the triggering button). Every same-button guard was already
+correct — but found a genuine gap *between sibling buttons*: on `OrderCard`,
+Accept/Reject were disabled by `accepting || rejecting` only, not by an in-flight
+price offer on that same order. The "Предложить свою цену" button already disabled
+itself correctly, but nothing stopped a driver from also tapping Accept or Reject on
+the same order while `submitDriverPriceOffer` for it was still pending — two
+conflicting requests (accept the order outright vs. counter-offer a price on it) could
+fire concurrently against the same order.
+
+**Fixed**: added an `offeringPrice` bool param to `OrderCard`
+(`driver_order_widgets.dart`), wired from the caller's existing
+`_offeringPriceOrderId == order.id` check, folded into both Accept and Reject's
+disable condition. `flutter analyze`/`flutter test` clean, same 5 pre-existing
+non-driver failures.
+
+### Commit (round 29)
+
+- `Mobile: block Accept/Reject on an order while its own price offer is in flight`
