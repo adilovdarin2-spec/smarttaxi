@@ -392,3 +392,53 @@ possible. Did what's checkable without the device:
   pass found nothing new.
 
 No code changes this round.
+
+## Round 6 — phone reconnected: confirmed round 4 live, found and fixed a real silent-failure bug
+
+Phone (`IBOVEMHQBQBQMJTS`) came back on USB. Rebuilt and installed the round-4
+document-requirement-removal commit (`fdbc214`, never live-verified before this round)
+and confirmed on-device:
+
+- **"Нужны документы" banner is gone**, shift toggle status pill reads neutral "Не на
+  линии" instead of the red "Недоступен по региону", and the toggle is fully enabled
+  (blue gradient, not greyed) — matches the round-4 diff exactly.
+
+Then tapped "Выйти на линию" to actually exercise it end-to-end against the prod
+backend, and found a real bug: **the toggle silently reverts to offline with zero
+visible feedback** — no error banner, no toast, nothing — after a few seconds of
+"Обновляем статус...". Root cause, confirmed via read-only GETs against prod (did **not**
+attempt the mutating status PATCH directly — that's correctly gated behind explicit
+user confirmation per this session's safety rules, so this was diagnosed from
+`GET /api/drivers/me/documents` returning `{"documents":[]}` for this driver, combined
+with the already-documented prod deployment gap):
+
+- This driver has zero uploaded documents.
+- Prod Railway almost certainly hasn't picked up this repo's backend-side "stop
+  requiring driver documents" change yet (same deployment-gap pattern documented in
+  round 5 for other routes) — meaning `PATCH /api/drivers/me/status` on prod likely still
+  throws `403 DRIVER_DOCUMENTS_NOT_APPROVED`.
+- Round 4's mobile fix removed `DRIVER_DOCUMENTS_NOT_APPROVED` from the client's
+  `approvalCodes` set (reasoning: the backend in *this repo* can no longer emit it) — so
+  when prod throws it anyway, the mobile app no longer recognizes it as an actionable
+  approval block. It falls through to the generic inline-`_error` path instead of the
+  toast + support-sheet treatment — and, going by what actually rendered on screen, that
+  path is producing no visible output at all for this specific case.
+
+**Fix** (`driver_shell.dart`, `models/driver_shell_helpers.dart`): re-added
+`DRIVER_DOCUMENTS_NOT_APPROVED` to `_setOnline`'s `approvalCodes` set (with a comment
+explaining it's for a not-yet-updated backend, not a reintroduction of the client-side
+gate) and added a `readableError` mapping for it, so hitting this on a stale backend
+now shows a clear toast ("Сервер ещё требует проверку документов — обратитесь в
+поддержку") and opens the support sheet, same as the other approval-block codes,
+instead of silently doing nothing.
+
+**Not fully verified**: the phone disconnected from USB (`adb devices` went empty)
+right after rebuilding this fix, before it could be reinstalled and the toggle
+re-tapped to confirm the toast now appears. `flutter analyze lib/features/driver` is
+clean. Next session with device access: rebuild, install, tap "Выйти на линию" on this
+same test account, and confirm the toast + support sheet now appear instead of a silent
+revert.
+
+### Commit (round 6)
+
+- `Mobile: handle stale-backend DRIVER_DOCUMENTS_NOT_APPROVED gracefully`
