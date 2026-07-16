@@ -618,3 +618,14 @@ Removed `RegionSummary` (51 lines). `flutter analyze lib/features/driver` and
 ### Commit (round 16)
 
 - `Mobile: remove dead RegionSummary widget`
+
+## Round 17 — dart fix --dry-run: zero driver-scope suggestions
+
+Ran `dart fix --dry-run` (not `flutter pub run dart fix`, which mis-resolves "dart" as
+a package name under this Flutter SDK layout — use the bundled `dart` executable
+directly) across the whole app as one more static-analysis angle. Only 2 proposed
+fixes total, both `unused_element_parameter` in `passenger_shell.dart` and `main.dart`
+— the same pre-existing, out-of-scope warnings noted all session. Zero suggestions
+anywhere in `lib/features/driver/**`. Combined with round 15's `flutter test` fix and
+round 16's dead-widget sweep, this closes out the practical static-verification angles
+available without the device.
