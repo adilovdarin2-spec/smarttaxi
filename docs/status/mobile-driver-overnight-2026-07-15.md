@@ -790,3 +790,5 @@ foreground-only location tracking by design — the OS itself stops delivering l
 once backgrounded, so there's nothing for manual lifecycle handling to pause/resume.
 Not a bug; false alarm caught by checking the permission model before "fixing"
 something that wasn't broken. No code changes this round.
+
+## Round 24 — phone fully disconnected from USB now, no changes
