@@ -592,12 +592,29 @@ both trace to the parallel session's passenger/branding work, not this session's
 scope. `flutter test` now shows all driver-scope tests passing; `flutter analyze
 test/` clean.
 
-**Minor finding, not acted on**: `RegionSummary` (widget class in
-`driver_line_widgets.dart`) is defined but never instantiated anywhere in the driver
+**Minor finding, since removed (round 16 below)**: `RegionSummary` (widget class in
+`driver_line_widgets.dart`) was defined but never instantiated anywhere in the driver
 tree anymore — genuinely dead code left over from the P1 region-picker rework
-replacing it with the bottom-sheet picker. Not removed tonight (out of scope for a
-test-suite fix pass); flagging for a future cleanup pass.
+replacing it with the bottom-sheet picker.
 
 ### Commit (round 15)
 
 - `test: fix all driver-scope widget_test.dart assertions to match current code`
+
+## Round 16 — swept for other dead public widgets, removed the one found
+
+Followed up on round 15's `RegionSummary` finding: since it's a public class (no
+underscore), `flutter analyze`'s `unused_element` lint doesn't catch it (that lint only
+fires for private declarations). Wrote a quick grep sweep counting `ClassName(`
+occurrences for every public class across all driver widget files
+(`driver_line_widgets.dart`, `driver_order_widgets.dart`, `driver_common_widgets.dart`,
+`driver_profile_widgets.dart`, `driver_shell_chrome.dart`) — a count of 1 means only the
+constructor declaration matches, i.e. never actually instantiated. `RegionSummary` was
+the only one; every other public widget in these files has at least one real call site.
+Removed `RegionSummary` (51 lines). `flutter analyze lib/features/driver` and
+`flutter test` both clean afterward — same 5 pre-existing non-driver failures as round
+15, no new ones.
+
+### Commit (round 16)
+
+- `Mobile: remove dead RegionSummary widget`
