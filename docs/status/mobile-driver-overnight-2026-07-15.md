@@ -766,3 +766,15 @@ While waiting, did two more bounded, evidence-based checks (not speculative):
   best-effort by design. Not adding speculative mappings without evidence one is
   actually hit, unlike round 6's `DRIVER_DOCUMENTS_NOT_APPROVED` fix which had direct
   live evidence behind it.
+
+## Round 22 — still locked after 20+ min of monitoring, switching to longer-interval checks
+
+Two consecutive 10-minute unlock monitors both timed out — phone has stayed locked
+for over 20 minutes straight this time (longer than the earlier intermittent
+lock/unlock cycles tonight). Switching from active Monitor-based polling to a
+longer-interval scheduled check, matching the "don't tight-loop" guidance. Build is
+ready (`build/app/outputs/flutter-apk/app-debug.apk`, contains rounds 15-20); nothing
+else to do until the phone unlocks. No code changes this round — self-review from
+round 21 (checked for leftover commented-out code, confirmed all driver-scope files
+fully committed with no stray uncommitted changes) already covered the available
+ground.
