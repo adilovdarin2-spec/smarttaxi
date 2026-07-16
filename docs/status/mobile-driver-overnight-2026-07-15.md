@@ -792,3 +792,5 @@ Not a bug; false alarm caught by checking the permission model before "fixing"
 something that wasn't broken. No code changes this round.
 
 ## Round 24 — phone fully disconnected from USB now, no changes
+
+## Round 25 — phone unavailable, no changes
