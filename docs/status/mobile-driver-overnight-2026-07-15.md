@@ -565,3 +565,39 @@ via adb. Flagged this to the user directly and asked whether to keep auto-retryi
 periodically or wait for them to toggle it manually — no response yet this round.
 No code changes. The round 6 fix is unchanged and ready to verify the moment install
 succeeds.
+
+## Round 15 — found and fixed a genuinely broken test suite (no phone needed)
+
+Since "работай без телефона" ruled out install retries, ran `flutter test` for the
+first time this session as a different angle for finding real, non-cosmetic issues.
+`test/widget_test.dart` (the only test file in the app) does source-text assertions —
+`expect(fileContents, contains('SomeString'))` — as a lightweight regression guard.
+**5 of the ~10 failing tests were driver-scope**, and every one was a real, silent
+break: string/class-name checks for things that had moved to extracted widget files
+(`driver_line_widgets.dart`, `driver_order_widgets.dart`, `driver_common_widgets.dart`,
+`models/driver_shell_helpers.dart`) or migrated to `AppLocalizations`/`app_ru.arb`
+(mostly pre-existing drift, predating tonight), plus checks for things tonight's
+rounds legitimately removed (`_DriverStatsGrid`/`_DriverQuickActions` → merged into
+`DriverTodayStrip`; `_navigatorTab`/`_NavigatorCockpit` → replaced by the pushed-route
+`_DriverFullScreenNavigator`; the `2GIS`/`Yandex`/`Google` buttons). No CI runs this
+suite (no `.github/workflows`), so nobody would have noticed short of running
+`flutter test` by hand — which is presumably why it had drifted this far.
+
+Rewrote every driver-scope assertion to check the file it actually lives in now (or
+the `.arb` source of truth for l10n-migrated copy), and turned the 2GIS/Yandex/Google
+checks into `isNot(contains(...))` guards so the explicit removal can't silently
+regress. Left the 4 still-failing passenger-scope tests and the shared "official
+icon-only logo asset is wired" test (branding/pubspec assets) completely untouched —
+both trace to the parallel session's passenger/branding work, not this session's
+scope. `flutter test` now shows all driver-scope tests passing; `flutter analyze
+test/` clean.
+
+**Minor finding, not acted on**: `RegionSummary` (widget class in
+`driver_line_widgets.dart`) is defined but never instantiated anywhere in the driver
+tree anymore — genuinely dead code left over from the P1 region-picker rework
+replacing it with the bottom-sheet picker. Not removed tonight (out of scope for a
+test-suite fix pass); flagging for a future cleanup pass.
+
+### Commit (round 15)
+
+- `test: fix all driver-scope widget_test.dart assertions to match current code`
