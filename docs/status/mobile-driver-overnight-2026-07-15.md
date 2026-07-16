@@ -442,3 +442,32 @@ revert.
 ### Commit (round 6)
 
 - `Mobile: handle stale-backend DRIVER_DOCUMENTS_NOT_APPROVED gracefully`
+
+## Round 7 — no phone this round, static control pass
+
+Explicit instruction to continue without the phone (`adb devices` stayed empty the
+whole round — the USB disconnect from the end of round 6 didn't clear). Did what's
+safely checkable without it:
+
+- Re-read the round 6 diff (`97c6e9a`) end to end once more — the fix is minimal (one
+  set entry + one map entry, both purely additive) and correct on inspection: no other
+  approval-style code filtering exists in `driver_shell.dart` besides the one
+  `approvalCodes` set already fixed, so there's no sibling instance of the same
+  "code removed from client but a stale backend can still emit it" mistake elsewhere in
+  driver scope tonight.
+- Checked the profile screen's static `driverProfileDocumentsNote` copy ("Документы
+  автомобиля и допуск к регионам проверяет администратор SmartTaxi") against the
+  document-requirement removal — it's still accurate (documents are still
+  admin-reviewed if voluntarily submitted; only the online/dispatch *gate* was removed),
+  no change needed.
+- Re-ran the two backend self-contained checks touched by round 4 directly with `node`
+  (no live DB needed, they use an in-memory mock executor): `driver-approval-check.js`
+  → "Driver region approval checks ok"; `driver-documents-check.js` → "Driver documents
+  checks ok". Both still pass.
+- `flutter analyze lib/features/driver` → clean, no issues.
+
+No code changes this round — nothing new found, and the one open item (live-verify the
+round 6 toast) still needs the phone. Not attempting the mutating `setDriverStatus`
+PATCH directly against prod to work around the missing phone — that's correctly outside
+what a curl-based static-verification round should do; it stays a UI-only check for
+whenever the device reconnects.
