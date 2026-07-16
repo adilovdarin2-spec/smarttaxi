@@ -86,6 +86,7 @@ class OrderCard extends StatelessWidget {
     required this.onAccept,
     required this.onReject,
     this.onOfferPrice,
+    this.offeringPrice = false,
     this.myDriverId,
   });
 
@@ -97,6 +98,12 @@ class OrderCard extends StatelessWidget {
   // Null hides the "своя цена" row entirely — used once the driver has
   // already accepted the order (torg only makes sense on an open one).
   final VoidCallback? onOfferPrice;
+  // Whether a price-offer submission for THIS order is currently in flight —
+  // without this, Accept/Reject stayed tappable while submitDriverPriceOffer
+  // was still pending, letting a driver fire an accept/reject request
+  // concurrently with their own not-yet-resolved price offer on the same
+  // order.
+  final bool offeringPrice;
   // This driver's own drivers.id — an open order is visible to every driver
   // in the region, so order.driverOfferStatus/driverOfferPriceKzt might
   // belong to a *different* driver's offer on the same order. Only treat
@@ -235,7 +242,9 @@ class OrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: accepting || rejecting ? null : onReject,
+                  onPressed: accepting || rejecting || offeringPrice
+                      ? null
+                      : onReject,
                   child: rejecting
                       ? const ButtonSpinner(text: 'Пропускаем...')
                       : const Text('Пропустить'),
@@ -245,7 +254,9 @@ class OrderCard extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: accepting || rejecting ? null : onAccept,
+                  onPressed: accepting || rejecting || offeringPrice
+                      ? null
+                      : onAccept,
                   child: accepting
                       ? const ButtonSpinner(text: 'Принимаем...')
                       : const Text('Принять'),

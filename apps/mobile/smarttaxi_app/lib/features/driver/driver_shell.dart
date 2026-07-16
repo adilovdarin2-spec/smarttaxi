@@ -1934,6 +1934,7 @@ class _DriverShellState extends State<DriverShell> {
                       order: order,
                       accepting: _acceptingOrderId == order.id,
                       rejecting: _rejectingOrderId == order.id,
+                      offeringPrice: _offeringPriceOrderId == order.id,
                       onAccept: () => _accept(order),
                       onReject: () => _reject(order),
                       onOfferPrice: _offeringPriceOrderId == order.id
