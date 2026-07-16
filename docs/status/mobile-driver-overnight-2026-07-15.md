@@ -548,3 +548,20 @@ watching for it to clear (it does once the user next touches the phone, per
 The keyguard-clear monitor from round 12 timed out after 10 minutes without unlocking;
 `adb devices` now shows a full USB disconnect (not just locked) — same pattern as
 earlier in the night. No changes this round.
+
+## Round 14 — root-caused the persistent install block: MIUI "Install via USB" toggle
+
+Phone connected and unlocked this round, but `adb install` still fails with
+`INSTALL_FAILED_USER_RESTRICTED` on repeated attempts. Checked further this time:
+`kz.smarttaxi.app` is not installed on the device at all anymore (`adb shell pm list
+packages -3` doesn't list it — confirmed this is the user's real personal phone,
+WhatsApp/TikTok/games etc., not a dedicated test device, so someone/something
+uninstalled our test build at some point tonight). Generic Android install-restriction
+settings are already permissive (`verifier_verify_adb_installs=0`,
+`install_non_market_apps=1`) — this is specifically MIUI's separate "Install via USB"
+toggle (Settings → Additional settings → Developer options → Security → Install via
+USB), which lives outside the standard `settings` content provider and can't be flipped
+via adb. Flagged this to the user directly and asked whether to keep auto-retrying
+periodically or wait for them to toggle it manually — no response yet this round.
+No code changes. The round 6 fix is unchanged and ready to verify the moment install
+succeeds.
