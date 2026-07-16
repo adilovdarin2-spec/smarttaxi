@@ -471,3 +471,38 @@ round 6 toast) still needs the phone. Not attempting the mutating `setDriverStat
 PATCH directly against prod to work around the missing phone — that's correctly outside
 what a curl-based static-verification round should do; it stays a UI-only check for
 whenever the device reconnects.
+
+## Round 8 — still no phone, traced the "less registration friction" ask to its root
+
+Kept digging statically into whether document requirements create friction anywhere
+else in the driver registration path, beyond the already-fixed online/dispatch gate:
+
+- **`DriverApplicationDocumentsScreen`** (`screens/onboarding/
+  driver_application_documents_screen.dart`) — this is the document-upload step shown
+  right after a "become a driver" application, but it's pushed from
+  `passenger_shell.dart` (out of driver scope, not touched). Confirmed it was already
+  non-blocking before tonight: its bottom button always pops the screen
+  (`Navigator.of(context).pop()`) regardless of upload state — "Готово" if all required
+  types are uploaded, "Later"/skip otherwise either way. No fix needed here.
+- **`POST /admin/driver-applications`** (`apps/api/src/modules/admin/admin.routes.js:1253`,
+  the actual application-submission endpoint) — checked its Zod schema: only
+  `fullName`/`phone`/`carModel`/`plateNumber`/`year`/`comment`. No document field, no
+  document check, ever. This endpoint has never gated registration on documents; the
+  *only* document-related friction that ever existed was the now-removed online/dispatch
+  gate from round 4.
+- **Found and fixed a stale comment** (`apps/api/src/modules/driver-documents/
+  driver-documents.service.js:23-24`): `REQUIRED_DOCUMENT_TYPES`'s comment still said
+  "before they're allowed to actually work," describing the enforcement round 4 removed.
+  Updated it to say the list/check are still used for admin review/reporting only, not
+  wired into any gate — a future reader (this session or the parallel backend one)
+  shouldn't be misled into thinking the block still exists from reading this file alone.
+  Re-ran `node src/tools/driver-documents-check.js` after the comment-only edit — still
+  "Driver documents checks ok".
+- Grepped all of `driver_shell.dart`'s `catch (_)` blocks for other silent-failure
+  patterns like the one fixed in round 6 — every one either has an explanatory
+  "best-effort" comment or a `setState` that surfaces something to the user
+  (`_error`/`_locationMessage`/`_navigatorMessage`). No sibling bug found.
+
+### Commit (round 8)
+
+- `Backend: fix stale comment claiming documents still gate going online`
