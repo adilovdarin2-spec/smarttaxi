@@ -629,3 +629,28 @@ fixes total, both `unused_element_parameter` in `passenger_shell.dart` and `main
 anywhere in `lib/features/driver/**`. Combined with round 15's `flutter test` fix and
 round 16's dead-widget sweep, this closes out the practical static-verification angles
 available without the device.
+
+## Round 18 — ran every remaining backend check script, all clean; new install idea
+
+Ran every driver-related backend self-check script not yet run this session
+(`driver-rating-summary-check.js`, `driver-wallet-check.js`, `order-lifecycle-check.js`,
+`regions-check.js`, `road-alerts-check.js`, `tariffs-orders-check.js`,
+`admin-tariffs-check.js`, `order-create-contract-check.js`) — all pass. The one
+failure, `stage11-driver-core-smoke.js` ("fetch failed"), is expected and not a
+regression: unlike the `-check.js` scripts (self-contained mock executor, no server
+needed), every `-smoke.js` script explicitly requires a live `npm run dev` server
+against a seeded DB (confirmed by reading their header comments) — unavailable per
+[[reference_local_backend_env]]. This closes out the backend-side static verification
+available tonight; everything reachable without a live server or the phone is green.
+
+Also tried a different install mechanism this round: `adb push` the APK to
+`/sdcard/Download/` and trigger the device's own package-installer UI locally instead
+of `adb install`'s streaming path — this uses a different Android permission gate and
+might not be blocked by the same MIUI "Install via USB" toggle. Device disconnected
+mid-attempt before this could be tested; worth trying again next time the phone is
+back (`adb push <apk> /sdcard/Download/smarttaxi-driver.apk`, then either wait for the
+user to tap it in Files, or trigger the installer intent via `adb shell am start -a
+android.intent.action.VIEW -d file:///sdcard/Download/smarttaxi-driver.apk -t
+application/vnd.android.package-archive` — note this may itself need "install unknown
+apps" permission granted to the Files app specifically, a separate toggle from
+Install-via-USB).
