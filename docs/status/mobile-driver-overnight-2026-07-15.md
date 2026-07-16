@@ -832,3 +832,23 @@ failures. Phone still unavailable.
 ### Commit (round 27)
 
 - `Mobile: fix WCAG contrast failures on textMuted caption text`
+
+## Round 28 — three more evidence-based checks, all clean (no phone)
+
+- Cross-checked the mobile price-offer sheet's validation message ("200 до 1 000 000
+  ₸") against the backend's actual `offeredPriceBounds()` (order-pricing.service.js) —
+  initially looked like it might be a per-order dynamic range vs. the mobile's flat
+  range, but the function is a fixed `{200, 1_000_000}` regardless of input (confirmed
+  by its own test asserting the bounds don't vary with price) — perfectly aligned, not
+  a bug.
+- Checked for the old "документа(ов)" lazy-pluralization pattern I recalled from
+  earlier in the session — that whole message was already deleted in round 4 along
+  with the "Нужны документы" banner; grepped for the same lazy-parenthetical pattern
+  elsewhere in driver scope, none found.
+- Searched for count+Russian-noun string interpolation that would need Russian's
+  three-way plural agreement (1 / 2-4 / 5+) — none found; every count display in
+  driver scope uses a fixed neutral label ("Поездок сегодня: N") rather than a
+  sentence requiring grammatical agreement, sidestepping the problem by design.
+
+No code changes this round — three real, evidence-based checks, all clean. Phone
+still unavailable.
