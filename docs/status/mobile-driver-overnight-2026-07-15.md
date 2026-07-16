@@ -876,3 +876,17 @@ non-driver failures.
 ### Commit (round 29)
 
 - `Mobile: block Accept/Reject on an order while its own price offer is in flight`
+
+## Round 30 — control-checked round 29's fix + one more edge-case check, both clean
+
+- Verified `_offerPrice`'s `finally` block resets `_offeringPriceOrderId = null`
+  regardless of success/failure, so round 29's new `offeringPrice` guard correctly
+  re-enables Accept/Reject once the price-offer request resolves either way — no
+  follow-up bug introduced by that fix.
+- Checked the payout-request amount field for injection/parsing edge cases (negative
+  numbers, decimals, garbage text) — `driver_payout_request_sheet.dart` already
+  restricts the field to `FilteringTextInputFormatter.digitsOnly`, so none of those
+  inputs are reachable in the first place; `int.tryParse(...) ?? 0` is a safe fallback
+  for the only remaining case (empty submission).
+
+No code changes this round. Phone still unavailable.
