@@ -373,57 +373,6 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-class RegionSummary extends StatelessWidget {
-  const RegionSummary({super.key, required this.region});
-
-  final DriverRegion region;
-
-  @override
-  Widget build(BuildContext context) {
-    final blocked = region.status == 'BLOCKED';
-    final inactive = !region.isActive;
-    final label = blocked
-        ? 'Заблокирован'
-        : inactive
-            ? 'Отключён'
-            : 'Одобрен';
-    final tone = blocked || inactive ? StatusTone.danger : StatusTone.success;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.palette.goldSurface,
-        border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(region.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 4),
-              Text(
-                'Заказы показываются только из этого региона',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: context.palette.textSecondary,
-                    fontWeight: FontWeight.w700),
-              ),
-            ]),
-          ),
-          StatusPill(label: label, tone: tone),
-        ],
-      ),
-    );
-  }
-}
-
 class LocationNotice extends StatelessWidget {
   const LocationNotice({
     super.key,
