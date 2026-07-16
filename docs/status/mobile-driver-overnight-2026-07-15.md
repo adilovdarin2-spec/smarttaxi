@@ -661,3 +661,81 @@ Install-via-USB).
 install idea since there's no device to push to. No new static analysis attempted
 (rounds 15-18 already covered flutter test/dead-code/dart fix/backend checks). No
 changes this round.
+
+## Round 20 — self-directed "make it ideal" pass (no phone, no user check-ins)
+
+User explicitly handed over the quality bar: keep working, be the judge myself, don't
+stop until the driver part is ideal by my own standard, then report what was done.
+Went beyond bug-hunting into deeper quality dimensions not yet checked this session:
+
+- **Memory-leak / dispose() audit** (full sweep of every State class in
+  `lib/features/driver/**`, all `TextEditingController`/`Timer`/`StreamSubscription`/
+  `AnimationController`/`MapController` instances): clean. Every resource a State
+  class owns is released in `dispose()`, `super.dispose()` always called last. Two
+  un-cancellable one-shot `Timer`s in `_DriverShellState` (`_showNavigatorBanner`,
+  `_checkSignProximity`) are benign — short-lived, `mounted`-guarded, not stored in a
+  field so nothing to leak.
+- **Kazakh (`app_kk.arb`) localization completeness for driver strings**: 162/162 key
+  parity with `app_ru.arb`, zero missing. Spot-checked the 10 keys where the Kazakh
+  value is byte-identical to Russian — all genuine shared loanwords (Баланс, Файл,
+  Тариф, Навигатор, Аккаунт, Интерфейс, Рейтинг, Геолокация, Фото) rather than lazy
+  copy-paste; the other 152 keys have distinct Kazakh translations. Clean.
+- **Design-system deviation found, not fixed (shared-file blast radius)**:
+  `docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md` specifies `warning` as a
+  distinct amber/gold hue (`#C98A12` light / `#E0A93A` dark), explicitly separate from
+  `accent`, and says "never repurpose accent for status." `SmartTaxiColors.warning` /
+  `SmartTaxiPalette.warning` in `core/theme/app_theme.dart` is currently blue
+  (`0xff0b66d8`) — used by driver code for road-hazard map-icon colors and the
+  `StatusTone.warning` StatusPill tone (e.g. a pending payout request). Did **not**
+  fix: `SmartTaxiColors.warning` is also read directly by
+  `passenger_shell.dart:7072`, so changing the shared token would touch passenger
+  rendering — out of this session's scope and blast radius. Documented here instead of
+  silently editing a shared file the parallel session owns.
+- **Dead-code sweep, one more pass**: confirmed (via a grep counting `ClassName(`
+  occurrences for every public class across all driver widget files) that
+  `RegionSummary` (removed round 16) was the only genuinely-unused public widget;
+  every other public class has ≥1 real call site beyond its own constructor.
+- **Accessibility: found and fixed 3 real gaps**, all icon-only tap targets with no
+  text sibling — a screen reader (TalkBack/VoiceOver) would announce each as an
+  unlabeled "button" with zero context:
+  - `_NavCircleButton` (back/voice-toggle/report-alert/recenter in the full-screen
+    navigator) and `_MapChipButton` (road-alerts chip on the Line tab map) — added a
+    required `semanticLabel` wrapped in `Semantics(button: true, label: ...)` at every
+    call site. The back button is the *only* non-gesture way out of the full-screen
+    navigator route, so this one mattered most.
+  - `DriverSosButton` — a safety-critical control with zero label. Added
+    `Semantics(button: true, label: 'Экстренная помощь', ...)`.
+  - `_DriverStarSelector` (passenger-rating stars on `DriverTripCompletionCard`) — 5
+    identical unlabeled icon buttons in a row, no way to tell which star or the
+    current rating. Added a per-star `Semantics(label: 'Оценка: N звёзд/звезды',
+    selected: ...)`.
+  - Checked every other `InkWell`/`GestureDetector` in the driver widget files
+    (`DriverGradientButton`, `_DriverSosRow`, the region-name tap row in
+    `DriverShiftHero`, `_DriverTagChip`, `DriverSupportTopicChip`, `DriverFaqTile`,
+    `DriverSettingsRow`, `DrawerItem`) — all have a visible `Text`/`ListTile.title`
+    sibling a screen reader already reads, so no fix needed there.
+- `dart format` was run on `driver_shell.dart` while fixing the navigator buttons
+  (the file had drifted out of formatting-compliance across many rounds of hand-edits
+  tonight) — purely mechanical, `flutter analyze`/`flutter test` identical before and
+  after, but made that one commit's diff larger than the semantic change alone; noted
+  in the commit message so it doesn't read as a bigger behavioral change than it is.
+- `flutter analyze lib/features/driver` and `flutter test` re-run after every edit
+  this round: clean throughout, same 5 pre-existing non-driver test failures
+  (passenger scope + shared branding-asset test) as rounds 15–19, no new ones.
+
+### Commits (round 20)
+
+- `Mobile: add screen-reader labels to icon-only navigator buttons`
+- `Mobile: add screen-reader labels to SOS button and star rating`
+
+### Honest status: what "ideal" means without a working device
+
+Everything above was verified through code reading, `flutter analyze`, `flutter test`,
+and grep-based cross-checks — no on-device rendering was possible (`adb devices` empty
+all round). I'm confident in the correctness of every change (each is small, each was
+analyze/test-verified, none touches passenger scope or shared theme tokens). What I
+cannot personally claim is having *seen* any of tonight's driver screens rendered — the
+accessibility labels, in particular, can only be truly confirmed by pairing a real
+screen reader with the device, not by reading the Semantics tree in source. Per
+[[feedback_screenshot_verify_before_done]], flagging this distinction explicitly rather
+than calling the visual/interactive experience "confirmed."
