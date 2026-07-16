@@ -796,3 +796,39 @@ something that wasn't broken. No code changes this round.
 ## Round 25 — phone unavailable, no changes
 
 ## Round 26 — phone unavailable, no changes
+
+## Round 27 — WCAG contrast audit found and fixed a real gap (no phone needed)
+
+User asked to keep making it better. Computed actual WCAG contrast ratios (not just
+eyeballing) for the driver palette's text tokens against their backgrounds using the
+real relative-luminance formula. Result: `textMuted` is ~2.44-2.54:1 against
+`appBackground`/`card` — well below WCAG AA's 4.5:1 minimum for normal text, not a
+borderline case. `textSecondary` (5.33-5.54:1) passes comfortably.
+
+Audited every `textMuted` usage in driver scope and split them by whether the color is
+conveying real information (text) or is purely decorative (icon-only affordance,
+where WCAG's text-contrast rule doesn't apply):
+
+- **Fixed** (swapped to `textSecondary`): the "Сегодня" earnings-period label and
+  mini-stat captions on the Line tab (`driver_line_widgets.dart`), order-number
+  references on the rating screen and wallet transaction list
+  (`driver_rating_screen.dart`, `driver_wallet_screen.dart`), notification timestamps
+  (`driver_notifications_screen.dart`), and the road-alert confidence/confirmation-
+  count line (`driver_shell.dart`) — six real captions that were genuinely hard to
+  read at 2.5:1.
+- **Left alone**: chevron disclosure icons (`driver_common_widgets.dart`,
+  `driver_profile_widgets.dart`) and the unselected-star icon in the rating selector
+  (`driver_order_widgets.dart`) — decorative, the information isn't conveyed by icon
+  color alone (shape + the `Semantics.selected` flag added in round 20 already cover
+  that).
+- Did **not** touch the shared `textMuted` token itself in `app_theme.dart` — same
+  reasoning as the `warning`-token finding in round 20: `passenger_shell.dart` reads
+  `textMuted` 13 times, so fixing the token value would ripple into passenger
+  rendering, out of this session's scope/authority.
+
+`flutter analyze`/`flutter test` both clean after, same 5 pre-existing non-driver
+failures. Phone still unavailable.
+
+### Commit (round 27)
+
+- `Mobile: fix WCAG contrast failures on textMuted caption text`
