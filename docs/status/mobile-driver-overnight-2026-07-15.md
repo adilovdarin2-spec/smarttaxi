@@ -516,3 +516,18 @@ registration-friction request to its root, the stale-comment fix) — nothing fu
 add without repeating what's already written above. No code changes this round. The
 one open item is unchanged: live-tap "Выйти на линию" once the phone reconnects and
 confirm the round 6 toast/support-sheet appears instead of a silent revert.
+
+## Round 10 — still no phone, reviewed every remaining unread driver file
+
+3 more spaced `adb devices` retries, still empty. Rather than repeat rounds 7–9's
+analysis, read every driver-scope file that hadn't been opened yet this session:
+`widgets/driver_shell_chrome.dart` in full (`DriverHeader`/`DriverDrawer` — no issues;
+noted but not touching a pre-existing, broad mix of hardcoded-Russian and l10n-routed
+drawer labels, since that predates tonight and fixing it wholesale wasn't asked for),
+the `_RoadAlertsSheet` inline class in `driver_shell.dart` (road-alert submit/confirm/
+dismiss flows — every error path sets a visible `_message` via `InlineMessage`, no
+silent-failure pattern like round 6's), and the small model files
+(`driver_document_labels.dart`, `driver_document_models.dart`). No new issues found in
+any of them. No code changes this round — every driver-scope file has now been read at
+least once this session. Still waiting on the phone for the one open item (round 6's
+toast).
