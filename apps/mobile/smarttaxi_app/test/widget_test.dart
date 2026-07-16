@@ -461,22 +461,24 @@ void main() {
 
   test('driver drawer keeps driver tabs and adds account/support sections', () {
     final driver = _read('lib/features/driver/driver_shell.dart');
+    final chrome =
+        _read('lib/features/driver/widgets/driver_shell_chrome.dart');
 
-    expect(driver, contains('_DriverDrawer'));
-    expect(driver, contains('drawer: _DriverDrawer('));
+    expect(driver, contains('DriverDrawer'));
+    expect(driver, contains('drawer: DriverDrawer('));
     expect(driver, contains('_RoadAlertsSheet'));
-    expect(driver, contains("label: 'Линия'"));
-    expect(driver, contains("label: 'Заказы'"));
-    expect(driver, contains("label: 'Поездка'"));
-    expect(driver, contains("label: 'Smart Navigator'"));
-    expect(driver, contains("label: 'Профиль'"));
-    expect(driver, contains("label: 'Дорожные события'"));
-    expect(driver, contains("label: 'Поддержка'"));
-    expect(driver, contains("label: 'FAQ'"));
-    expect(driver, contains("label: 'О нас'"));
-    expect(driver, contains("label: 'Настройки'"));
-    expect(driver, contains("label: 'Режим пассажира'"));
-    expect(driver, contains("label: 'Выйти'"));
+    expect(chrome, contains("label: 'Линия'"));
+    expect(chrome, contains("label: 'Заказы'"));
+    expect(chrome, contains("label: 'Поездка'"));
+    expect(chrome, contains("label: 'Smart Navigator'"));
+    expect(chrome, contains("label: 'Профиль'"));
+    expect(chrome, contains("label: 'Дорожные события'"));
+    expect(chrome, contains("label: 'Поддержка'"));
+    expect(chrome, contains("label: 'FAQ'"));
+    expect(chrome, contains("label: 'О нас'"));
+    expect(chrome, contains("label: 'Настройки'"));
+    expect(chrome, contains("label: 'Режим пассажира'"));
+    expect(chrome, contains("label: 'Выйти'"));
   });
 
   test('route fields use pickup/destination icon markers without A/B letters',
@@ -524,53 +526,83 @@ void main() {
 
   test('driver tabs and premium driver states exist', () {
     final driver = _read('lib/features/driver/driver_shell.dart');
+    final arb = _read('lib/l10n/app_ru.arb');
+    final lineWidgets =
+        _read('lib/features/driver/widgets/driver_line_widgets.dart');
+    final orderWidgets =
+        _read('lib/features/driver/widgets/driver_order_widgets.dart');
+    final helpers =
+        _read('lib/features/driver/models/driver_shell_helpers.dart');
 
-    expect(driver, contains("label: 'Линия'"));
-    expect(driver, contains("label: 'Заказы'"));
-    expect(driver, contains("label: 'Поездка'"));
-    expect(driver, contains("label: 'Навигатор'"));
-    expect(driver, contains('_DriverShiftHero'));
-    expect(driver, contains('_DriverStatsGrid'));
-    expect(driver, contains('_DriverQuickActions'));
-    expect(driver, contains('_RegionSummary'));
-    expect(driver, contains('_LocationNotice'));
-    expect(driver, contains('_DriverStatusStepper'));
-    expect(driver, contains('_LineGlyph'));
-    expect(driver, contains('Рабочий регион'));
+    // Bottom nav destination labels went through AppLocalizations — check
+    // the Russian source of truth rather than the (now l10n-getter-only)
+    // driver_shell.dart.
+    expect(arb, contains('"driverTabLine": "Линия"'));
+    expect(arb, contains('"driverTabOrders": "Заказы"'));
+    expect(arb, contains('"driverTabTrip": "Поездка"'));
+    expect(arb, contains('"driverTabNavigator": "Навигатор"'));
+    expect(driver, contains('DriverShiftHero'));
+    // DriverStatsGrid/DriverQuickActions were merged into a single compact
+    // DriverTodayStrip during the P1 "На линии" rework.
+    expect(driver, contains('DriverTodayStrip'));
+    expect(driver, contains('LocationNotice'));
+    expect(driver, contains('DriverStatusStepper'));
+    expect(lineWidgets, contains('LineGlyph('));
+    expect(arb, contains('"driverLineRegionSectionTitle": "Рабочий регион"'));
     expect(driver, contains('Выйти на линию'));
-    expect(driver, contains('Уйти с линии'));
-    expect(driver, contains('Для работы на линии нужна геолокация'));
-    expect(driver, contains('Проверяем геолокацию...'));
-    expect(driver, contains('Геолокация активна'));
+    expect(lineWidgets, contains('Уйти с линии'));
+    expect(arb,
+        contains('"driverLocationRequiredError": "Для работы на линии нужна геолокация"'));
+    expect(arb, contains('"driverLocationChecking": "Проверяем геолокацию..."'));
+    expect(arb, contains('"driverLocationActive": "Геолокация активна"'));
     expect(
-        driver, contains('Не удалось отправить геолокацию. Попробуйте снова.'));
+      arb,
+      contains(
+          '"driverLocationSendFailed": "Не удалось отправить геолокацию. Попробуйте снова."'),
+    );
     expect(driver, contains('Нет одобренных регионов'));
+    // Copy rewritten by the "stop requiring driver documents" change (round
+    // 4, docs/status/mobile-driver-overnight-2026-07-15.md) to point at
+    // support instead of an admin-approval/documents message.
     expect(
       driver,
-      contains('Администратор должен одобрить вас для работы.'),
+      contains(
+          'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку'),
     );
-    expect(driver, contains('Выйдите на линию, чтобы получать заказы'));
-    expect(driver, contains('Заказов в вашем регионе пока нет'));
+    expect(arb,
+        contains('"driverOrdersGoOnlineText": "После выхода на линию заказы появятся здесь."'));
+    expect(
+      arb,
+      contains(
+          '"driverOrdersEmptyText": "Новые заказы появятся здесь, когда пассажиры создадут поездку."'),
+    );
     expect(driver, contains('_acceptingOrderId'));
     expect(driver, contains('_rejectingOrderId'));
     expect(driver, contains('Принимаем...'));
-    expect(driver, contains('Пропускаем...'));
-    expect(driver, contains('Пропустить'));
+    expect(orderWidgets, contains('Пропускаем...'));
+    expect(orderWidgets, contains('Пропустить'));
     expect(driver, contains('Клиент не вышел'));
-    expect(driver, contains('Выйдите на линию, чтобы принимать заказы.'));
-    expect(driver, contains('Заказ уже принят другим водителем'));
-    expect(driver, contains('У вас уже есть активный заказ'));
+    expect(helpers, contains('Выйдите на линию, чтобы принимать заказы.'));
+    expect(helpers, contains('Заказ уже принят другим водителем'));
+    expect(helpers, contains('У вас уже есть активный заказ'));
     expect(driver, contains('_TripMap'));
-    expect(driver, contains('_navigatorTab'));
+    // Navigator became a dedicated pushed full-screen route instead of a
+    // 4th IndexedStack tab (P2 rework) — _navigatorTab/_NavigatorCockpit no
+    // longer exist; _SmartNavigatorMap's layers and _NavigatorMetric are
+    // reused inside the new _DriverFullScreenNavigator.
+    expect(driver, contains('_openFullScreenNavigator'));
+    expect(driver, contains('_DriverFullScreenNavigator'));
     expect(driver, contains('_SmartNavigatorMap'));
-    expect(driver, contains('_NavigatorCockpit'));
+    expect(driver, contains('_NavigatorMetric'));
     expect(driver, contains('Свободный режим'));
-    expect(driver, contains('2GIS'));
-    expect(driver, contains('Yandex'));
-    expect(driver, contains('Google'));
+    // 2GIS/Yandex/Google external-navigator buttons were removed by explicit
+    // request — guard against them silently coming back.
+    expect(driver, isNot(contains('2GIS')));
+    expect(driver, isNot(contains('Yandex')));
+    expect(driver, isNot(contains('Google')));
     expect(driver, contains('CameraFit.coordinates'));
     expect(driver, contains('Маршрут до точки посадки'));
-    expect(driver, contains('Маршрут временно недоступен'));
+    expect(helpers, contains('Маршрут временно недоступен'));
     expect(driver, contains("status == 'DRIVER_FOUND'"));
     expect(driver, contains("status == 'DRIVER_GOING_TO_CLIENT'"));
     expect(driver, contains("status == 'DRIVER_ARRIVED'"));
@@ -585,7 +617,7 @@ void main() {
   test('driver lifecycle API matches backend order status actions', () {
     final api = _read('lib/core/api/api_client.dart');
     final models = _read('lib/features/shared/models.dart');
-    final driver = _read('lib/features/driver/driver_shell.dart');
+    final arb = _read('lib/l10n/app_ru.arb');
 
     expect(api, contains("'/api/driver/orders/\$orderId/reject'"));
     expect(api, contains("'/api/orders/\$orderId/going-to-client'"));
@@ -601,10 +633,11 @@ void main() {
     expect(models, contains("'DRIVER_GOING_TO_CLIENT'"));
     expect(models, contains("'WAITING_CLIENT'"));
     expect(models, contains("'TRIP_STARTED'"));
-    expect(driver, contains('Выехал к клиенту'));
-    expect(driver, contains('Начать ожидание'));
-    expect(driver, contains('Начать поездку'));
-    expect(driver, contains('Завершить поездку'));
+    // Trip-action button labels went through AppLocalizations.
+    expect(arb, contains('"driverActionGoingToClient": "Выехал к клиенту"'));
+    expect(arb, contains('"driverActionStartWaiting": "Начать ожидание"'));
+    expect(arb, contains('"driverActionStartTrip": "Начать поездку"'));
+    expect(arb, contains('"driverActionCompleteTrip": "Завершить поездку"'));
   });
 
   test('driver road-safety alerts use real server data and safe copy', () {
@@ -657,6 +690,10 @@ void main() {
     final driver = _read('lib/features/driver/driver_shell.dart');
     final emptyState = _read('lib/core/widgets/empty_state.dart');
     final statusPill = _read('lib/core/widgets/status_pill.dart');
+    final driverCommon =
+        _read('lib/features/driver/widgets/driver_common_widgets.dart');
+    final driverLineWidgets =
+        _read('lib/features/driver/widgets/driver_line_widgets.dart');
 
     expect(main,
         contains('final compact = size.height < 840 || size.width < 390'));
@@ -674,15 +711,21 @@ void main() {
     expect(emptyState, contains('fontWeight: FontWeight.w900'));
     expect(statusPill, contains('BoxConstraints(maxWidth: 164)'));
     expect(statusPill, contains('TextOverflow.ellipsis'));
-    expect(driver, contains('_driverPagePadding'));
-    expect(driver, contains('width < 390 ? 16 : 20'));
-    expect(driver, contains('BoxFit.scaleDown'));
+    // driverPagePadding and the compact-screen scaleDown treatment moved into
+    // the extracted driver widget files (driver_common_widgets.dart,
+    // driver_line_widgets.dart) rather than living directly in
+    // driver_shell.dart.
+    expect(driver, contains('driverPagePadding'));
+    expect(driverCommon, contains('width < 390 ? 16 : 20'));
+    expect(driverLineWidgets, contains('BoxFit.scaleDown'));
   });
 
   test('driver socket and order model keep live updates region scoped', () {
     final socket = _read('lib/core/sockets/socket_service.dart');
     final models = _read('lib/features/shared/models.dart');
     final driver = _read('lib/features/driver/driver_shell.dart');
+    final helpers =
+        _read('lib/features/driver/models/driver_shell_helpers.dart');
 
     expect(socket, contains("emit('join_drivers')"));
     expect(socket, contains("'order_updated'"));
@@ -691,7 +734,8 @@ void main() {
     expect(socket, isNot(contains('regionId')));
     expect(models, contains('final String? tariff;'));
     expect(models, contains("snapshot['tariffName']"));
-    expect(driver, contains('_mergeOrderDetails'));
+    // _mergeOrderDetails moved into models/driver_shell_helpers.dart.
+    expect(helpers, contains('_mergeOrderDetails'));
     expect(driver, contains('unawaited(_loadOrders())'));
   });
 
