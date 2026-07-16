@@ -506,3 +506,13 @@ else in the driver registration path, beyond the already-fixed online/dispatch g
 ### Commit (round 8)
 
 - `Backend: fix stale comment claiming documents still gate going online`
+
+## Round 9 — still no phone (3 spaced retries, none succeeded)
+
+Same standing instruction fired again; `adb devices` came back empty on 3 retries
+spaced ~5–10s apart, then stopped per the "don't tight-loop" rule. Rounds 7–8 already
+did the available static work for this exact ask (control pass, tracing the
+registration-friction request to its root, the stale-comment fix) — nothing further to
+add without repeating what's already written above. No code changes this round. The
+one open item is unchanged: live-tap "Выйти на линию" once the phone reconnects and
+confirm the round 6 toast/support-sheet appears instead of a silent revert.
