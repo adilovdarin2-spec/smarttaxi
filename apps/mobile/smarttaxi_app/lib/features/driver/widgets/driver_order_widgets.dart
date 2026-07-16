@@ -741,20 +741,36 @@ class _DriverStarSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Icon-only tap targets with no visible text sibling — without an
+    // explicit label a screen reader announces 5 identical unlabeled
+    // buttons, giving no way to tell which star (or the current rating)
+    // each one represents.
+    const starWordByCount = {
+      1: '1 звезда',
+      2: '2 звезды',
+      3: '3 звезды',
+      4: '4 звезды',
+      5: '5 звёзд',
+    };
     return Row(
       children: List.generate(5, (index) {
         final star = index + 1;
-        return InkWell(
-          onTap: () => onChanged(star),
-          borderRadius: BorderRadius.circular(999),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: Icon(
-              star <= value ? Icons.star_rounded : Icons.star_border_rounded,
-              size: 34,
-              color: star <= value
-                  ? context.palette.goldDeep
-                  : context.palette.textMuted,
+        return Semantics(
+          button: true,
+          label: 'Оценка: ${starWordByCount[star]}',
+          selected: star <= value,
+          child: InkWell(
+            onTap: () => onChanged(star),
+            borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                star <= value ? Icons.star_rounded : Icons.star_border_rounded,
+                size: 34,
+                color: star <= value
+                    ? context.palette.goldDeep
+                    : context.palette.textMuted,
+              ),
             ),
           ),
         );

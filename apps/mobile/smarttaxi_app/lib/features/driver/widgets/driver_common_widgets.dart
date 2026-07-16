@@ -414,22 +414,26 @@ class DriverSosButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: context.palette.dangerSoft,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) =>
-              _DriverSosSheet(sosPhone: sosPhone, api: api, orderId: orderId),
-        ),
-        child: SizedBox(
-          width: 46,
-          height: 46,
-          child: Icon(Icons.sos_rounded, color: context.palette.danger),
+    return Semantics(
+      button: true,
+      label: 'Экстренная помощь',
+      child: Material(
+        color: context.palette.dangerSoft,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => _DriverSosSheet(
+                sosPhone: sosPhone, api: api, orderId: orderId),
+          ),
+          child: SizedBox(
+            width: 46,
+            height: 46,
+            child: Icon(Icons.sos_rounded, color: context.palette.danger),
+          ),
         ),
       ),
     );
