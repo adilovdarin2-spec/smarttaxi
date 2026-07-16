@@ -428,10 +428,21 @@ class _DriverShellState extends State<DriverShell> {
       // actual API rejection. Route it through a toast + the support sheet
       // instead of the bare inline _error banner other failures (network
       // issues, DRIVER_HAS_ACTIVE_ORDER, etc.) still use.
+      //
+      // DRIVER_DOCUMENTS_NOT_APPROVED is kept here even though the
+      // client-side document gate was removed (see the "Stop requiring
+      // driver documents" commit) — that change also removed server-side
+      // enforcement in this repo, but a deployed backend that hasn't picked
+      // up that change yet can still throw this code (confirmed happening
+      // against the prod Railway instance — see docs/status/
+      // mobile-driver-overnight-2026-07-15.md's prod-deployment-gap notes).
+      // Without this, a driver hitting that stale backend gets a silent
+      // toggle revert with no explanation instead of a clear message.
       const approvalCodes = {
         'DRIVER_REGION_NOT_APPROVED',
         'DRIVER_REGION_BLOCKED',
         'DRIVER_BLOCKED',
+        'DRIVER_DOCUMENTS_NOT_APPROVED',
       };
       final message = error.toString();
       final isApprovalBlock =
