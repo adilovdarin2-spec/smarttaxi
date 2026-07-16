@@ -20,8 +20,11 @@ export const DOCUMENT_TYPES = [
   "OTHER"
 ];
 
-// The minimum set a driver must have on file, each APPROVED, before they're
-// allowed to actually work — see getMissingRequiredDocumentTypes below.
+// The document types a driver is expected to eventually have on file, each
+// APPROVED — see getMissingRequiredDocumentTypes below. Not currently
+// enforced as a gate on going online/dispatch (removed by explicit product
+// decision, see docs/status/mobile-driver-overnight-2026-07-15.md round 4);
+// this list and the check below are still used for admin review/reporting.
 // INSURANCE_POLICY/PROFILE_PHOTO/OTHER stay optional.
 export const REQUIRED_DOCUMENT_TYPES = [
   "DRIVER_LICENSE_FRONT",
