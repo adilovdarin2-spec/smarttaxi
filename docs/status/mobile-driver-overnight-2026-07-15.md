@@ -654,3 +654,10 @@ android.intent.action.VIEW -d file:///sdcard/Download/smarttaxi-driver.apk -t
 application/vnd.android.package-archive` — note this may itself need "install unknown
 apps" permission granted to the Files app specifically, a separate toggle from
 Install-via-USB).
+
+## Round 19 — device still down, install-workaround untested (no device to try it on)
+
+`adb devices` empty on 2 spaced checks — could not attempt the round 18 push-based
+install idea since there's no device to push to. No new static analysis attempted
+(rounds 15-18 already covered flutter test/dead-code/dart fix/backend checks). No
+changes this round.
