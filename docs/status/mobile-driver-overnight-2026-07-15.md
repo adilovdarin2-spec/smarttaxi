@@ -778,3 +778,15 @@ else to do until the phone unlocks. No code changes this round — self-review f
 round 21 (checked for leftover commented-out code, confirmed all driver-scope files
 fully committed with no stray uncommitted changes) already covered the available
 ground.
+
+## Round 23 — still locked; one evidence-based check (false alarm, no fix needed)
+
+Phone still locked. Considered whether missing `AppLifecycleState`/
+`WidgetsBindingObserver` handling in `_DriverShellState` (no pause/resume around the
+GPS `Geolocator.getPositionStream()` subscription) was a real gap — checked
+`AndroidManifest.xml` first before acting: no `ACCESS_BACKGROUND_LOCATION` permission
+and no foreground service declared, meaning this app is architected for
+foreground-only location tracking by design — the OS itself stops delivering location
+once backgrounded, so there's nothing for manual lifecycle handling to pause/resume.
+Not a bug; false alarm caught by checking the permission model before "fixing"
+something that wasn't broken. No code changes this round.
