@@ -533,3 +533,12 @@ least once this session. Still waiting on the phone for the one open item (round
 toast).
 
 ## Round 11 — no changes, phone unavailable (3 spaced retries)
+
+## Round 12 — phone connected but screen-locked (real keyguard, not touched)
+
+`adb devices` shows the phone connected, but `isKeyguardShowing=true` (a real PIN/
+biometric lock, confirmed via `dumpsys window`) — this blocks `adb install` the same
+way `INSTALL_FAILED_USER_RESTRICTED` does (the install-confirmation dialog can't
+render/be accepted over a locked screen). Not attempting to bypass a lock screen —
+watching for it to clear (it does once the user next touches the phone, per
+[[reference_device_install_blocked]]) rather than polling in a tight loop.
