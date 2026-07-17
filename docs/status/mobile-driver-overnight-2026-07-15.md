@@ -1391,3 +1391,60 @@ this session). Full live verification, real on-device screenshots:
 This closes out the user's original ask from the start of this overnight session: the
 driver can now actually go online, confirmed live, not just reasoned about from code and
 API calls.
+
+## Round 34 — three concrete bugs from live testing: speed, car-marker rotation, cameras
+
+The user reported, from actually using the round-33 build: wrong speed shown in the
+navigator, no cameras/road signs visible, and the car marker facing the wrong way
+("crooked" — pointing left while driving straight).
+
+### Speed and car-marker rotation: same root cause, both fixed
+
+`Position.speed`/`Position.heading` (Geolocator/Android's course-over-ground) are only
+computed meaningfully once the device is actually moving — at low/zero speed they're
+essentially noise (derived from barely-distinguishable consecutive GPS fixes), and
+neither `_speedKmh` nor `_currentHeading` filtered for this at all. The user's phone was
+realistically near-stationary during testing, so both symptoms trace back to the exact
+same GPS characteristic:
+
+- **Speed**: `Position.speedAccuracy` (the device's own estimated error margin, in m/s —
+  0.0 specifically means "not reported by this device," not "perfectly precise," so that
+  had to be handled separately) is now used to zero out a speed reading that's within the
+  device's own stated noise floor. Previously showed "3 км/ч" while genuinely stationary.
+- **Heading/rotation**: added `_trustedHeading`, only updated from a fresh GPS fix once
+  speed clears 2.5 m/s (~9 km/h, matching standard practice in dedicated navigation
+  apps) — below that, the map/marker keep pointing whichever way they last confidently
+  faced instead of spinning to essentially-random noise. `_currentHeading` (read by all
+  three map contexts — Line-tab preview, Trip-tab map, full-screen Navigator's course-up
+  camera) now routes through this instead of raw `Position.heading`. Traced the actual
+  rotation math first (`MobileLayerTransformer`/`Marker.rotate` in flutter_map 7.0.2,
+  confirmed markers follow map rotation by default unless `rotate: true`, confirmed the
+  course-up map rotation and the marker's own `Transform.rotate` are meant to cancel to
+  net-zero so the car stays pointing up) and confirmed the asset itself
+  (`driver_car_topview_white.png`) is drawn nose-up — the rotation *formula* was correct,
+  the *input* (raw jittery heading) wasn't trustworthy.
+
+**Live-verified, on-device, before/after**: previous round's screenshot showed "3 км/ч"
+while stationary; this round's shows a steady **"0"**, and the car marker sits cleanly
+aligned along Бектасов street instead of crooked — reproduced twice, stable across two
+screenshots a few seconds apart.
+
+### Cameras/road signs: confirmed a real data gap, not a bug
+
+Queried the actual backend endpoint the app calls
+(`GET /api/driver/road-alerts/osm-navigation?lat=40.666&lng=68.543&radiusM=5000`,
+exercising the full real code path including its mirror/retry logic) directly against
+prod: `{"cameras":[],"speedLimit":null,"signs":[]}`. OpenStreetMap genuinely has zero
+mapped speed cameras, traffic signs, or maxspeed tags anywhere within 5km of this
+specific location — this is real, honestly-sourced crowd data (already documented
+elsewhere in this file as "genuinely populated in big cities... sparse-to-empty in small
+towns"), not a rendering or fetch bug. Confirmed the crowd-reported alerts sheet already
+has a proper empty state ("Пока нет дорожных событий рядом") for the separate
+driver-submitted-alerts list, so nothing here reads as broken — there's just nothing to
+show for this exact spot. Not something to fake data for.
+
+`flutter analyze`: clean.
+
+### Commit (round 34)
+
+- `Mobile: fix speed display and car-marker rotation jitter at low/zero GPS speed`

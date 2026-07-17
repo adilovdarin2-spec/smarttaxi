@@ -98,6 +98,17 @@ class _DriverShellState extends State<DriverShell> {
   Timer? _socketFallbackPollTimer;
   RoutePreview? _driverRoute;
   Position? _lastPosition;
+  // GPS-reported course-over-ground (Position.heading) is only meaningful
+  // once the device is actually moving at real speed — it's computed from
+  // barely-distinguishable consecutive fixes at low speed and becomes
+  // essentially noise, which visibly spun the driver's own map marker (and
+  // the course-up camera) to an arbitrary direction while stationary or
+  // crawling. Only updated from a fresh position once _headingTrustSpeedMps
+  // is cleared; otherwise the map/marker keep pointing whichever way they
+  // were last confidently facing instead of jittering. Null until the first
+  // trustworthy fix arrives.
+  double? _trustedHeading;
+  static const _headingTrustSpeedMps = 2.5; // ~9 km/h
   DriverStats? _driverStats;
   List<OrderSummary> _tripHistory = const [];
   bool _tripHistoryLoading = false;
@@ -595,7 +606,14 @@ class _DriverShellState extends State<DriverShell> {
           accuracy: LocationAccuracy.high, distanceFilter: 20),
     ).listen((position) async {
       if (mounted) {
-        setState(() => _lastPosition = position);
+        setState(() {
+          _lastPosition = position;
+          if (position.speed.isFinite &&
+              position.speed >= _headingTrustSpeedMps &&
+              position.heading.isFinite) {
+            _trustedHeading = position.heading;
+          }
+        });
       }
       _checkCameraProximity(position);
       _checkSignProximity(position);
@@ -636,7 +654,14 @@ class _DriverShellState extends State<DriverShell> {
         ),
       );
       if (mounted) {
-        setState(() => _lastPosition = current);
+        setState(() {
+          _lastPosition = current;
+          if (current.speed.isFinite &&
+              current.speed >= _headingTrustSpeedMps &&
+              current.heading.isFinite) {
+            _trustedHeading = current.heading;
+          }
+        });
       }
       await widget.api.updateDriverLocation(
         location: Coordinate(lat: current.latitude, lng: current.longitude),
@@ -2434,14 +2459,22 @@ class _DriverShellState extends State<DriverShell> {
     return Coordinate(lat: position.latitude, lng: position.longitude);
   }
 
-  double? get _currentHeading {
-    final heading = _lastPosition?.heading;
-    return heading != null && heading.isFinite ? heading : null;
-  }
+  double? get _currentHeading => _trustedHeading;
 
   int? get _speedKmh {
-    final speed = _lastPosition?.speed;
-    if (speed == null || !speed.isFinite || speed < 0) return null;
+    final position = _lastPosition;
+    if (position == null) return null;
+    final speed = position.speed;
+    if (!speed.isFinite || speed < 0) return null;
+    // speedAccuracy of exactly 0.0 means "not reported by this device" (see
+    // geolocator's own doc comment on Position.speedAccuracy), not "zero
+    // uncertainty" — only treat a speed reading as GPS jitter when the
+    // device actually reports a real accuracy figure and the speed itself
+    // is within that margin of error (a stationary/near-stationary phone
+    // commonly reports a few km/h of "speed" that's well inside its own
+    // stated uncertainty — this was showing as a real, moving speed).
+    final accuracy = position.speedAccuracy;
+    if (accuracy.isFinite && accuracy > 0 && speed < accuracy) return 0;
     return (speed * 3.6).round();
   }
 
