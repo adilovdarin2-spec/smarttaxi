@@ -3519,6 +3519,14 @@ class _DriverFullScreenNavigatorState
     final speedKmh = shell._speedKmh;
     final speedLimit = shell._activeSpeedLimit;
     final maneuver = shell._nextManeuverHint();
+    // A stale-but-non-null position (GPS lost mid-trip, e.g. a tunnel or
+    // urban canyon) still lets _nextManeuverHint() return a value computed
+    // from that old fix — showing a turn instruction (and its live
+    // distance) off a position that's seconds to tens-of-seconds out of
+    // date is actively misleading, not just imprecise. Suppress the banner
+    // in that case; this also removes the layout conflict where it and the
+    // "GPS lost" banner would otherwise render at the same position.
+    final showManeuverBanner = maneuver != null && !_gpsLost;
     final speeding =
         speedKmh != null && speedLimit != null && speedKmh > speedLimit;
     final route = shell._driverRoute?.geometry ?? const <LatLng>[];
@@ -3663,7 +3671,7 @@ class _DriverFullScreenNavigatorState
           // Maneuver banner — its own row, always directly under the top
           // controls regardless of whether a voice-warning popup is also
           // showing right now (that one lives further down, see below).
-          if (maneuver != null)
+          if (showManeuverBanner)
             Positioned(
               top: topInset + 66,
               left: 14,
@@ -3677,10 +3685,18 @@ class _DriverFullScreenNavigatorState
             ),
           // Camera/sign proximity warning — a separate popup zone below the
           // maneuver banner's row, so a warning firing mid-turn never
-          // covers the turn instruction it's warning about.
+          // covers the turn instruction it's warning about. The maneuver
+          // banner grew an extra line for the street name (real OSRM step
+          // data) after this offset was first calibrated for a fixed
+          // two-line banner — account for that extra line here too, or a
+          // long/present street name pushes the banner tall enough to clip
+          // into this one.
           if (showVoiceBanner)
             Positioned(
-              top: topInset + (maneuver != null ? 140 : 66),
+              top: topInset +
+                  (!showManeuverBanner
+                      ? 66
+                      : (maneuver.streetName == null ? 140 : 160)),
               left: 14,
               right: 14,
               child: _NavigatorVoiceBanner(text: shell._navigatorBannerText!),

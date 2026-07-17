@@ -1259,3 +1259,34 @@ immediately after.
 ### Commit (round 33, continued)
 
 - `Mobile: handle OSRM's 'continue' maneuver type and roundabout exit numbers`
+
+### Round 33 continued again — found and fixed a real (pre-existing) layout overlap
+
+Kept reviewing the navigator's Stack layout by hand (no device to check visually) and
+found two real issues, one introduced this round and one that predates it:
+
+1. **This round's regression**: the voice-warning popup's `top` offset (`140` when a
+   maneuver banner is showing) was calibrated for the banner's original fixed two-line
+   height, before this round added the optional street-name line — a maneuver with a
+   street name now renders a taller banner than that offset assumed, so the voice popup
+   could clip into its bottom edge. Fixed: the offset is now `160` specifically when
+   `maneuver.streetName != null`.
+2. **Pre-existing, independent of this round's work**: `_gpsLost` (`_currentCoordinate ==
+   null` **or** the last fix is >12s old) and `_nextManeuverHint() != null` (only requires
+   `_currentCoordinate != null`) are not mutually exclusive — a *stale-but-non-null*
+   position (GPS lost mid-trip: tunnel, urban canyon, etc.) lets both be true at once,
+   and the maneuver banner and the "GPS lost" banner are both `Positioned` at the exact
+   same `top: topInset + 66` in the same `Stack`. They'd render directly on top of each
+   other. Beyond the visual collision, showing a turn instruction (and its live distance)
+   computed from a position that's seconds-to-tens-of-seconds stale is actively
+   misleading, not just imprecise — so the fix suppresses the maneuver banner entirely
+   while `_gpsLost` is true (`showManeuverBanner = maneuver != null && !_gpsLost`), rather
+   than just repositioning it. This also happens to remove the layout conflict as a
+   side effect.
+
+`flutter analyze`/`flutter test`: clean, no regressions (30 passed, same 5 pre-existing
+unrelated passenger-side failures).
+
+### Commit (round 33, continued again)
+
+- `Mobile: fix maneuver/GPS-lost banner overlap and voice-popup offset regression`
