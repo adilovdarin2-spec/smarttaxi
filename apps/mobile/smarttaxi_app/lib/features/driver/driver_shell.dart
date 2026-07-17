@@ -134,6 +134,13 @@ class _DriverShellState extends State<DriverShell> {
   // resetAtMeters so a later approach re-warns from stage 0.
   final Map<String, int> _cameraStage = {};
   final Set<String> _signAlertedIds = {};
+  // Keyed by a rounded lat/lng of the upcoming maneuver (steps/bearing
+  // changes have no stable id of their own, unlike road alerts) — same
+  // stage-tracking idea as _cameraStage: 1 = "prepare" cue given, 2 =
+  // "now" cue given. Cleared once _nextManeuverHint() moves on to a
+  // different upcoming maneuver.
+  String? _announcedManeuverKey;
+  int _announcedManeuverStage = 0;
   DateTime? _navigatorBannerUntil;
   String? _navigatorBannerText;
   // Quiet on-device TTS for camera/sign/speeding call-outs — see
@@ -593,6 +600,7 @@ class _DriverShellState extends State<DriverShell> {
       _checkCameraProximity(position);
       _checkSignProximity(position);
       _checkSpeedingVoiceWarning(position);
+      _checkManeuverVoiceAnnouncement();
       unawaited(_maybeFetchOsmNavigation(position));
       unawaited(_maybeRefreshDriverRoute(position));
       try {
@@ -840,7 +848,13 @@ class _DriverShellState extends State<DriverShell> {
   // Falls back to the old bearing-change heuristic only when steps is empty
   // (the straight-line degraded-mode fallback route, which has no real
   // steps to offer — see routing.service.js's straightLineRouteFallback).
-  ({String label, IconData icon, double distanceMeters, String? streetName})?
+  ({
+    String label,
+    IconData icon,
+    double distanceMeters,
+    String? streetName,
+    LatLng location,
+  })?
       _nextManeuverHint() {
     final geometry = _driverRoute?.geometry;
     final position = _currentCoordinate;
@@ -878,7 +892,13 @@ class _DriverShellState extends State<DriverShell> {
   // reuses the exact same route-progress signal (nearestIndex) as the
   // bearing fallback below — one consistent notion of "where on the route
   // the driver currently is" either way.
-  ({String label, IconData icon, double distanceMeters, String? streetName})?
+  ({
+    String label,
+    IconData icon,
+    double distanceMeters,
+    String? streetName,
+    LatLng location,
+  })?
       _nextManeuverFromSteps(List<RouteStep> steps, List<LatLng> geometry,
           int nearestIndex, LatLng current) {
     for (final step in steps) {
@@ -904,6 +924,7 @@ class _DriverShellState extends State<DriverShell> {
         distanceMeters: _metersBetween(current.latitude, current.longitude,
             stepPoint.latitude, stepPoint.longitude),
         streetName: step.streetName.isEmpty ? null : step.streetName,
+        location: stepPoint,
       );
     }
     return null;
@@ -913,7 +934,13 @@ class _DriverShellState extends State<DriverShell> {
   // routing.service.js's straightLineRouteFallback) — derive a maneuver
   // from bearing changes in the plain geometry instead. Degraded but still
   // genuinely derived from real geometry, not invented.
-  ({String label, IconData icon, double distanceMeters, String? streetName})?
+  ({
+    String label,
+    IconData icon,
+    double distanceMeters,
+    String? streetName,
+    LatLng location,
+  })?
       _nextManeuverFromBearing(
           List<LatLng> route, int nearestIndex, LatLng current) {
     const lookaheadMeters = 800.0;
@@ -942,6 +969,7 @@ class _DriverShellState extends State<DriverShell> {
           icon: icon,
           distanceMeters: cumulative,
           streetName: null,
+          location: route[i],
         );
       }
       cumulative += _metersBetween(
@@ -1114,6 +1142,45 @@ class _DriverShellState extends State<DriverShell> {
       dedupeKey: 'speeding',
       cooldown: const Duration(seconds: 25),
     ));
+  }
+
+  // Voice-announces the upcoming turn from the same real maneuver data the
+  // banner shows — a driver's eyes should stay on the road, not need to
+  // glance at the screen to know a turn is coming. Same two-stage,
+  // once-per-approach idea as _checkCameraProximity, just keyed by the
+  // maneuver's own location (rounded) since a step/bearing-derived turn has
+  // no stable id of its own the way a road alert does.
+  void _checkManeuverVoiceAnnouncement() {
+    final maneuver = _nextManeuverHint();
+    if (maneuver == null) {
+      _announcedManeuverKey = null;
+      _announcedManeuverStage = 0;
+      return;
+    }
+    const prepareAtMeters = 200.0;
+    const nowAtMeters = 40.0;
+    final key = '${(maneuver.location.latitude * 2000).round()}'
+        '_${(maneuver.location.longitude * 2000).round()}';
+    if (key != _announcedManeuverKey) {
+      _announcedManeuverKey = key;
+      _announcedManeuverStage = 0;
+    }
+    if (_announcedManeuverStage >= 2) return;
+    final streetSuffix =
+        maneuver.streetName == null ? '' : ' на ${maneuver.streetName}';
+    if (_announcedManeuverStage < 1 &&
+        maneuver.distanceMeters <= prepareAtMeters) {
+      _announcedManeuverStage = 1;
+      unawaited(_voice.announce(
+        'Через 200 метров ${maneuver.label.toLowerCase()}$streetSuffix',
+        dedupeKey: 'maneuver-$key-prepare',
+      ));
+    } else if (_announcedManeuverStage < 2 &&
+        maneuver.distanceMeters <= nowAtMeters) {
+      _announcedManeuverStage = 2;
+      unawaited(
+          _voice.announce(maneuver.label, dedupeKey: 'maneuver-$key-now'));
+    }
   }
 
   Future<void> _chooseLanguage() async {

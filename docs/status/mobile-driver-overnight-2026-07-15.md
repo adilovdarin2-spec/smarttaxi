@@ -1176,6 +1176,24 @@ realistic-shaped `RoutePreview.fromJson` steps parse) — `driver_shell_helpers_
 is now 10 cases, all passing. `flutter analyze`: clean across driver scope + shared
 models + tests.
 
+### Also this round: region picker sorted by proximity, and turns are voice-announced
+
+Refactored the GPS hint into `_loadRegionHintPosition()`/`_regionHintPosition` (a cached
+field instead of a one-shot local) so the same cheap `getLastKnownPosition()` read also
+sorts the manual region-picker sheet by distance (`_regionsSortedByDistance`) — a driver
+who does need to pick by hand sees the most plausible region first, not an arbitrary
+server order.
+
+The existing voice-alert system (`_checkCameraProximity`/`_checkSignProximity`/
+`_checkSpeedingVoiceWarning`, all already wired into the position-stream listener) had no
+equivalent for turns — a driver had to glance at the maneuver banner to know one was
+coming. Added `_checkManeuverVoiceAnnouncement()`, same two-stage/once-per-approach shape
+as the camera check: "Через 200 метров {maneuver}{на улицу X}" around 200m out, then just
+the maneuver label around 40m out. Keyed by the maneuver's own (rounded) location since
+steps/bearing-derived turns have no stable id the way a road alert does. Silently a no-op
+when there's no active route (`_nextManeuverHint()` returns null), so it can't fire outside
+an actual trip. `flutter analyze`/`flutter test`: clean, same as above.
+
 ### Important caveat: this needs a backend deploy to actually show real street names
 
 The mobile client change is backward-compatible and inert until the backend ships it —
@@ -1207,3 +1225,5 @@ verification rather than waiting on it.
 - `Mobile: real turn-by-turn maneuvers + GPS-nearest region default` (both land in
   `driver_shell.dart`, which this environment can't split by hunk — see the standing
   commit-scope note elsewhere in this doc)
+- `Mobile: sort the region picker by proximity too`
+- `Mobile: voice-announce upcoming turns using real maneuver data`
