@@ -331,21 +331,35 @@ class _DriverShellState extends State<DriverShell> {
     try {
       final result = await widget.api.getDriverRegions();
       final regions = result.regions;
+      final nearestId =
+          _regionId == null ? await _nearestApprovedRegionId(regions) : null;
+      if (!mounted) return;
       setState(() {
         _regions = regions;
-        // Prefer what the backend actually has as drivers.current_region_id
-        // (only meaningful if it's still in the approved list — an admin
-        // could have revoked it since) over blindly defaulting to whichever
-        // region the API happened to return first. Falling back to
-        // regions.first only when the driver truly has no region selected
-        // server-side yet.
         if (_regionId == null) {
-          final serverRegionId = result.currentRegionId;
-          final matchesApproved =
-              serverRegionId != null && regions.any((r) => r.id == serverRegionId);
-          _regionId = matchesApproved
-              ? serverRegionId
-              : (regions.isNotEmpty ? regions.first.id : null);
+          if (nearestId != null) {
+            // A real GPS fix beats the server's remembered region: nothing
+            // updates drivers.current_region_id until the driver actually
+            // goes online somewhere, so it silently goes stale the moment a
+            // driver physically moves to a different city/area between
+            // sessions — defaulting to it here would then point the whole
+            // go-online flow at a region the driver isn't even inside
+            // anymore (confirmed happening: a driver whose last session was
+            // in Атакент opened the app in Мырзакент and kept getting
+            // rejected until manually reselecting).
+            _regionId = nearestId;
+          } else {
+            // No GPS fix available yet (permission not granted, nothing
+            // cached) — fall back to what the backend has as
+            // current_region_id, same as before, only meaningful if it's
+            // still in the approved list.
+            final serverRegionId = result.currentRegionId;
+            final matchesApproved = serverRegionId != null &&
+                regions.any((r) => r.id == serverRegionId);
+            _regionId = matchesApproved
+                ? serverRegionId
+                : (regions.isNotEmpty ? regions.first.id : null);
+          }
         }
       });
       unawaited(_loadDemandHint());
@@ -353,6 +367,35 @@ class _DriverShellState extends State<DriverShell> {
       setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _regionsLoading = false);
+    }
+  }
+
+  // getLastKnownPosition() is a cache-only read — it never prompts for
+  // permission and never talks to the GPS radio, just returns whatever the
+  // OS already has cached (or null). Safe to call unconditionally here.
+  Future<String?> _nearestApprovedRegionId(List<DriverRegion> regions) async {
+    try {
+      final position = await Geolocator.getLastKnownPosition();
+      if (position == null) return null;
+      String? nearestId;
+      double? nearestMeters;
+      for (final region in regions) {
+        final center = region.center;
+        if (center == null) continue;
+        final meters = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          center.lat,
+          center.lng,
+        );
+        if (nearestMeters == null || meters < nearestMeters) {
+          nearestMeters = meters;
+          nearestId = region.id;
+        }
+      }
+      return nearestId;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -752,24 +795,26 @@ class _DriverShellState extends State<DriverShell> {
     return delta;
   }
 
-  // Backend deliberately requests OSRM with steps=false (routing.service.js)
-  // — there's no maneuver/turn data from the server at all, by design, so
-  // this is computed client-side from the same polyline already drawn on
-  // the map: walk forward from the driver's nearest point on the route,
-  // and report the first meaningful bearing change found within the
-  // lookahead distance. Real geometry, not invented data — just derived
-  // from it instead of asking the backend for something it doesn't send.
-  ({String label, IconData icon, double distanceMeters})? _nextManeuverHint() {
-    final route = _driverRoute?.geometry;
+  // routing.service.js now asks OSRM for steps=true, so real turn-by-turn
+  // data (actual street names, actual maneuver type — not a guess) is
+  // available whenever the current route came from a live OSRM answer.
+  // Falls back to the old bearing-change heuristic only when steps is empty
+  // (the straight-line degraded-mode fallback route, which has no real
+  // steps to offer — see routing.service.js's straightLineRouteFallback).
+  ({String label, IconData icon, double distanceMeters, String? streetName})?
+      _nextManeuverHint() {
+    final geometry = _driverRoute?.geometry;
     final position = _currentCoordinate;
-    if (route == null || route.length < 3 || position == null) return null;
+    if (geometry == null || geometry.length < 3 || position == null) {
+      return null;
+    }
     final current = position.toLatLng();
 
     var nearestIndex = 0;
     var nearestDistance = double.infinity;
-    for (var i = 0; i < route.length - 1; i++) {
+    for (var i = 0; i < geometry.length - 1; i++) {
       final distance =
-          _distanceToSegmentMeters(current, route[i], route[i + 1]);
+          _distanceToSegmentMeters(current, geometry[i], geometry[i + 1]);
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestIndex = i;
@@ -780,6 +825,58 @@ class _DriverShellState extends State<DriverShell> {
     // don't guess a maneuver against a route that's about to be replaced.
     if (nearestDistance > 120) return null;
 
+    final steps = _driverRoute?.steps ?? const [];
+    if (steps.isNotEmpty) {
+      final fromSteps =
+          _nextManeuverFromSteps(steps, geometry, nearestIndex, current);
+      if (fromSteps != null) return fromSteps;
+    }
+    return _nextManeuverFromBearing(geometry, nearestIndex, current);
+  }
+
+  // Each step's real maneuver.location is matched to its nearest point on
+  // the already-drawn geometry, so "is this step still ahead of the driver"
+  // reuses the exact same route-progress signal (nearestIndex) as the
+  // bearing fallback below — one consistent notion of "where on the route
+  // the driver currently is" either way.
+  ({String label, IconData icon, double distanceMeters, String? streetName})?
+      _nextManeuverFromSteps(List<RouteStep> steps, List<LatLng> geometry,
+          int nearestIndex, LatLng current) {
+    for (final step in steps) {
+      // The depart step just marks the trip's starting point, not something
+      // to alert the driver about.
+      if (step.type == 'depart') continue;
+      final stepPoint = step.location.toLatLng();
+      var stepIndex = 0;
+      var stepNearestDistance = double.infinity;
+      for (var i = 0; i < geometry.length; i++) {
+        final distance = _metersBetween(geometry[i].latitude,
+            geometry[i].longitude, stepPoint.latitude, stepPoint.longitude);
+        if (distance < stepNearestDistance) {
+          stepNearestDistance = distance;
+          stepIndex = i;
+        }
+      }
+      if (stepIndex < nearestIndex) continue; // already passed
+      final (label, icon) = maneuverLabelAndIcon(step.type, step.modifier);
+      return (
+        label: label,
+        icon: icon,
+        distanceMeters: _metersBetween(current.latitude, current.longitude,
+            stepPoint.latitude, stepPoint.longitude),
+        streetName: step.streetName.isEmpty ? null : step.streetName,
+      );
+    }
+    return null;
+  }
+
+  // Real turn data unavailable (straight-line fallback route, see
+  // routing.service.js's straightLineRouteFallback) — derive a maneuver
+  // from bearing changes in the plain geometry instead. Degraded but still
+  // genuinely derived from real geometry, not invented.
+  ({String label, IconData icon, double distanceMeters, String? streetName})?
+      _nextManeuverFromBearing(
+          List<LatLng> route, int nearestIndex, LatLng current) {
     const lookaheadMeters = 800.0;
     const turnThresholdDegrees = 28.0;
     final baseBearing =
@@ -801,7 +898,12 @@ class _DriverShellState extends State<DriverShell> {
             : delta > 0
                 ? ('Поворот направо', Icons.turn_right_rounded)
                 : ('Поворот налево', Icons.turn_left_rounded);
-        return (label: label, icon: icon, distanceMeters: cumulative);
+        return (
+          label: label,
+          icon: icon,
+          distanceMeters: cumulative,
+          streetName: null,
+        );
       }
       cumulative += _metersBetween(
         route[i].latitude,
@@ -3463,6 +3565,7 @@ class _DriverFullScreenNavigatorState
                 label: maneuver.label,
                 icon: maneuver.icon,
                 distanceMeters: maneuver.distanceMeters,
+                streetName: maneuver.streetName,
               ),
             ),
           // Camera/sign proximity warning — a separate popup zone below the
@@ -5243,11 +5346,16 @@ class _NextManeuverBanner extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.distanceMeters,
+    this.streetName,
   });
 
   final String label;
   final IconData icon;
   final double distanceMeters;
+  // Real OSRM step street name when available (routing.service.js's
+  // steps=true) — null for the bearing-heuristic fallback, which has no
+  // street data to offer, or when OSRM itself has no name for the way.
+  final String? streetName;
 
   @override
   Widget build(BuildContext context) {
@@ -5298,6 +5406,19 @@ class _NextManeuverBanner extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                if (streetName != null && streetName!.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    streetName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -1,6 +1,58 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 import '../../shared/models.dart';
+
+// OSRM's maneuver vocabulary (routing.service.js requests steps=true and
+// passes maneuver.type/modifier through as-is — see that file's parseSteps)
+// mapped to a Russian label + icon for the navigator's turn banner. Kept
+// separate from driver_shell.dart so it's unit-testable without a widget
+// harness, same reasoning as readableError/apiErrorCode above.
+(String, IconData) maneuverLabelAndIcon(String type, String? modifier) {
+  switch (type) {
+    case 'turn':
+    case 'new name':
+    case 'end of road':
+    case 'fork':
+      switch (modifier) {
+        case 'left':
+          return ('Поворот налево', Icons.turn_left_rounded);
+        case 'right':
+          return ('Поворот направо', Icons.turn_right_rounded);
+        case 'slight left':
+          return ('Держитесь левее', Icons.turn_slight_left_rounded);
+        case 'slight right':
+          return ('Держитесь правее', Icons.turn_slight_right_rounded);
+        case 'sharp left':
+          return ('Крутой поворот налево', Icons.turn_left_rounded);
+        case 'sharp right':
+          return ('Крутой поворот направо', Icons.turn_right_rounded);
+        case 'uturn':
+          return ('Разворот', Icons.u_turn_left_rounded);
+        default:
+          return ('Двигайтесь прямо', Icons.straight_rounded);
+      }
+    case 'merge':
+      return modifier == 'left'
+          ? ('Перестройтесь влево', Icons.merge_rounded)
+          : ('Перестройтесь вправо', Icons.merge_rounded);
+    case 'on ramp':
+      return ('Съезд на трассу', Icons.moving_rounded);
+    case 'off ramp':
+      return ('Съезд с трассы', Icons.moving_rounded);
+    case 'roundabout':
+    case 'rotary':
+    case 'roundabout turn':
+      return ('Круговое движение', Icons.roundabout_left_rounded);
+    case 'exit roundabout':
+    case 'exit rotary':
+      return ('Съезд с кругового движения', Icons.roundabout_right_rounded);
+    case 'arrive':
+      return ('Вы почти на месте', Icons.flag_rounded);
+    default:
+      return ('Двигайтесь по маршруту', Icons.straight_rounded);
+  }
+}
 
 String formatTripHistoryDate(DateTime? date) {
   if (date == null) return '';

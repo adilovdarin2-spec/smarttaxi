@@ -1106,3 +1106,104 @@ driver-scope files: 0 issues.
 
 - `Mobile: fix readableError never matching backend error codes (Dio toString gap)`
 - `Mobile: fix _setOnline's approval-block branch, same Dio toString gap`
+
+## Round 33 — the real story: driver was in Мырзакент, not Атакент; smarter region
+## default; real turn-by-turn navigation
+
+The user reported being physically in **Мырзакент**, not Атакент — this is the actual
+explanation for round 32's `DRIVER_LOCATION_OUTSIDE_REGION` rejection, and it isn't an
+environmental dead end: Мырзакент is a real, active, seeded region
+(`[[68.47,40.60],[68.60,40.60],[68.60,40.73],[68.47,40.73]]`) and the test driver is
+already `APPROVED` for it — confirmed via `GET /drivers/me/regions`. The phone's real GPS
+fix (40.663263, 68.553603) falls cleanly inside that polygon. Switching
+`current_region_id` to Мырзакент via `PATCH /drivers/me/region` and retrying
+`PATCH /drivers/me/location` with the *same* real coordinates now returns **200 with a
+saved location** — confirmed end-to-end via direct API calls. The backend, the region
+data, and both of round 32's fixes are all correct; the only remaining gap was that nothing
+had ever pointed this driver's `current_region_id` at the region they're actually in.
+
+### Fix: pick the nearest approved region by real GPS, not a possibly-stale server value
+
+`current_region_id` only ever updates when a driver explicitly reselects or successfully
+goes online somewhere new — it silently goes stale the moment a driver physically moves
+to a different city/area between sessions, and `_loadRegions()` was defaulting to it
+blindly. `_loadRegions()` now tries `Geolocator.getLastKnownPosition()` first (a
+cache-only read — never prompts for permission, never talks to the GPS radio, just
+returns whatever's already cached, or null) and, when available, picks the driver's
+**nearest approved region by distance** to it (`Geolocator.distanceBetween` against each
+region's `center` — already present in `DriverRegion`, no backend change needed). Falls
+back to the old current_region_id-or-first-in-list logic only when no cached position
+exists yet (e.g. permission not granted, fresh install). Only changes the *initial*
+default (still guarded by `_regionId == null`, same as before) — never overrides a
+region the driver has actively selected mid-session. `flutter analyze`: clean.
+
+### Real turn-by-turn navigation (addresses the user's explicit ask: real routes, real
+### street names, cameras, speed limits)
+
+The maneuver banner was already honestly documented as computed client-side from bearing
+changes in the route geometry, because `routing.service.js` requested OSRM with
+`steps=false` — no real maneuver or street-name data existed anywhere in the pipeline.
+Cameras/speed-limits were already real (live OSM Overpass queries, see
+`osm-navigation.service.js`) and addresses were already real (MapTiler → Photon →
+Nominatim fallback chain, see `routing.service.js`'s `searchAddresses`/`reverseAddress`)
+— turn-by-turn was the one piece still a derived approximation.
+
+**Backend** (`routing.service.js`): `requestRoute` now asks OSRM for `steps=true` and
+parses `route.legs[0].steps` into a compact `{type, modifier, streetName, distanceMeters,
+lat, lng}` array (`parseSteps`), propagated through both `buildActiveLegRoute` (driver's
+own active-order live route) and `buildDriverToPickupRoute` (passenger-facing tracking
+route — the shared `requestRouteWithFallback` path, so both benefit). The straight-line
+fallback route (used only when OSRM itself is unreachable) explicitly returns `steps: []`
+so the client falls back to its old bearing heuristic in that one degraded case — the
+same graceful-degradation shape this file already uses everywhere else. Verified the
+exact response shape against a live OSRM query (`router.project-osrm.org`, same OSRM
+software) near Мырзакент before writing the parser — got back real Kazakh street names
+("улица Кожанова", "улица Еркиндик"), not a hypothetical schema. Confirmed no regression
+via the existing mocked `routing-location-check.js` (all assertions pass) and a full
+`node --check` syntax sweep of every API file.
+
+**Mobile**: new `RouteStep` model (`shared/models.dart`) parsed onto `RoutePreview.steps`.
+`driver_shell.dart`'s `_nextManeuverHint()` now prefers real steps — matches each step's
+real maneuver location to the nearest point on the already-drawn route geometry (reusing
+the same "how far along the route is the driver" signal the bearing fallback already
+computed), picks the first one still ahead of the driver, and shows its *real* street name
+plus a proper maneuver label (`maneuverLabelAndIcon`, moved to `driver_shell_helpers.dart`
+for unit testing — covers OSRM's full vocabulary: turn/slight/sharp left-right, u-turn,
+merge, on/off-ramp, roundabout family, fork, end-of-road, arrive). Falls back to the old
+bearing heuristic only when `steps` is empty. `_NextManeuverBanner` gained an optional
+second line for the street name. 6 new tests added (OSRM vocabulary mapping + a
+realistic-shaped `RoutePreview.fromJson` steps parse) — `driver_shell_helpers_test.dart`
+is now 10 cases, all passing. `flutter analyze`: clean across driver scope + shared
+models + tests.
+
+### Important caveat: this needs a backend deploy to actually show real street names
+
+The mobile client change is backward-compatible and inert until the backend ships it —
+`if (steps.isNotEmpty)` gracefully falls back to exactly today's behavior against
+whatever backend is currently live. Per the standing prod-deployment-gap note elsewhere
+in this doc (recurring-bookings/favorites/referrals/quick-message also sit merged-but-
+undeployed), this `steps=true` change needs an actual Railway deploy before drivers see
+real street names in the maneuver banner — until then it silently keeps using the bearing
+heuristic, exactly as before, with zero behavior change and zero risk.
+
+### Verification status and the still-active hard blocker
+
+All of the above is verified through direct API reproduction (curl against the real prod
+backend, confirmed the region-switch + location-update success end-to-end), a live query
+against real OSRM infrastructure to validate the parser's assumptions before writing it,
+the existing mocked routing test suite, full API syntax check, and the full Flutter
+analyze/test suite (34 tests total this round across both test files; the only 5 failures
+are the same pre-existing passenger-side cases from every prior round, unrelated to any
+of tonight's changes). **Not yet confirmed with an actual on-device screenshot** — the
+ADB input-injection block from round 32 (`SecurityException: ... INJECT_EVENTS`) is still
+in effect; `adb shell input tap/swipe/keyevent` all still fail while `screencap`/
+`uiautomator dump` keep working, so it's specifically input injection, not a lost
+connection. Per this round's own instruction, continuing to work from code/API
+verification rather than waiting on it.
+
+### Commit (round 33)
+
+- `Backend: real OSRM turn-by-turn (steps=true) — street names + real maneuver types`
+- `Mobile: real turn-by-turn maneuvers + GPS-nearest region default` (both land in
+  `driver_shell.dart`, which this environment can't split by hunk — see the standing
+  commit-scope note elsewhere in this doc)

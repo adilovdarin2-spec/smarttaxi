@@ -440,12 +440,53 @@ class TariffOption {
   }
 }
 
+// One real OSRM turn-by-turn step (routing.service.js's requestRoute now
+// asks OSRM for steps=true instead of false) — real street name and real
+// maneuver type/modifier from the routing engine, not a guess derived from
+// bearing changes in the plain route geometry.
+class RouteStep {
+  const RouteStep({
+    required this.type,
+    required this.modifier,
+    required this.streetName,
+    required this.distanceMeters,
+    required this.location,
+  });
+
+  // OSRM maneuver.type: 'turn', 'depart', 'arrive', 'merge', 'roundabout',
+  // 'fork', 'end of road', 'on ramp', 'off ramp', 'new name', etc.
+  final String type;
+  // OSRM maneuver.modifier: 'left', 'right', 'slight left', 'slight right',
+  // 'sharp left', 'sharp right', 'straight', 'uturn' — null for types that
+  // don't carry one (e.g. most 'depart'/'arrive' steps).
+  final String? modifier;
+  // "" when OSRM has no name for the way (unnamed alley, parking-lot link,
+  // etc.) — a real gap in the source data, not a parse failure.
+  final String streetName;
+  final double distanceMeters;
+  final Coordinate location;
+
+  factory RouteStep.fromJson(Map<String, dynamic> json) {
+    return RouteStep(
+      type: '${json['type'] ?? 'turn'}',
+      modifier: json['modifier']?.toString(),
+      streetName: '${json['streetName'] ?? ''}',
+      distanceMeters: _toDouble(json['distanceMeters']),
+      location: Coordinate(
+        lat: _toDouble(json['lat']),
+        lng: _toDouble(json['lng']),
+      ),
+    );
+  }
+}
+
 class RoutePreview {
   const RoutePreview({
     required this.regionId,
     required this.distanceMeters,
     required this.durationSeconds,
     required this.geometry,
+    this.steps = const [],
     this.estimatedPrice,
     this.tariffName,
     this.phase,
@@ -459,6 +500,10 @@ class RoutePreview {
   final double distanceMeters;
   final double durationSeconds;
   final List<LatLng> geometry;
+  // Empty when the route came from the straight-line fallback (no real OSRM
+  // answer to draw steps from) — callers fall back to a geometry-derived
+  // heuristic in that case, same as before this field existed.
+  final List<RouteStep> steps;
   final double? estimatedPrice;
   final String? tariffName;
   // Only set on the live "driver active route" response: 'to_pickup' while
@@ -486,6 +531,12 @@ class RoutePreview {
       distanceMeters: _routeDistanceMeters(json),
       durationSeconds: _routeDurationSeconds(json),
       geometry: parseGeoJsonLine(json['geometry']),
+      steps: json['steps'] is List
+          ? (json['steps'] as List)
+              .whereType<Map>()
+              .map((step) => RouteStep.fromJson(Map<String, dynamic>.from(step)))
+              .toList(growable: false)
+          : const [],
       estimatedPrice:
           _nullableDouble(estimate['estimatedPrice'] ?? json['estimatedPrice']),
       tariffName: estimate['tariffName']?.toString(),

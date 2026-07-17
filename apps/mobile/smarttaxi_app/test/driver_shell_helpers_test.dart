@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttaxi_app/features/driver/models/driver_shell_helpers.dart';
+import 'package:smarttaxi_app/features/shared/models.dart';
 
 DioException _badResponse(String code, {int status = 400}) {
   final options = RequestOptions(path: '/api/drivers/me/location');
@@ -74,6 +75,87 @@ void main() {
 
     test('returns null for a non-Dio error', () {
       expect(apiErrorCode(Exception('boom')), isNull);
+    });
+  });
+
+  group('maneuverLabelAndIcon', () {
+    test('maps real OSRM turn types/modifiers to Russian labels', () {
+      // Real values OSRM actually sends (routing.service.js's steps=true,
+      // confirmed live against router.project-osrm.org near Мырзакент) —
+      // not a hypothetical vocabulary.
+      expect(maneuverLabelAndIcon('turn', 'left').$1, 'Поворот налево');
+      expect(maneuverLabelAndIcon('turn', 'right').$1, 'Поворот направо');
+      expect(
+          maneuverLabelAndIcon('turn', 'slight left').$1, 'Держитесь левее');
+      expect(maneuverLabelAndIcon('roundabout', 'right').$1,
+          'Круговое движение');
+      expect(maneuverLabelAndIcon('arrive', null).$1, 'Вы почти на месте');
+    });
+
+    test('falls back to a generic label for an unrecognized type', () {
+      expect(maneuverLabelAndIcon('notification', null).$1,
+          'Двигайтесь по маршруту');
+    });
+  });
+
+  group('RoutePreview.fromJson steps', () {
+    test('parses real OSRM steps=true shape (routing.service.js parseSteps)',
+        () {
+      // Matches parseSteps' actual output shape, itself confirmed against a
+      // live OSRM steps=true response near Мырзакент (see status doc).
+      final route = RoutePreview.fromJson({
+        'regionId': 'region-1',
+        'distanceMeters': 940.5,
+        'durationSeconds': 73.1,
+        'geometry': {
+          'type': 'LineString',
+          'coordinates': [
+            [68.543, 40.666],
+            [68.549, 40.667],
+          ],
+        },
+        'steps': [
+          {
+            'type': 'depart',
+            'modifier': 'left',
+            'streetName': '',
+            'distanceMeters': 47,
+            'lat': 40.666104,
+            'lng': 68.543383,
+          },
+          {
+            'type': 'turn',
+            'modifier': 'right',
+            'streetName': 'улица Кожанова',
+            'distanceMeters': 526,
+            'lat': 40.666525,
+            'lng': 68.54342,
+          },
+        ],
+      });
+      expect(route.steps, hasLength(2));
+      expect(route.steps[0].type, 'depart');
+      expect(route.steps[1].streetName, 'улица Кожанова');
+      expect(route.steps[1].modifier, 'right');
+      expect(route.steps[1].location.lat, 40.666525);
+    });
+
+    test('defaults to an empty step list for the straight-line fallback',
+        () {
+      final route = RoutePreview.fromJson({
+        'regionId': 'region-1',
+        'distanceMeters': 100.0,
+        'durationSeconds': 20.0,
+        'geometry': {
+          'type': 'LineString',
+          'coordinates': [
+            [68.543, 40.666],
+            [68.549, 40.667],
+          ],
+        },
+        'steps': <Map<String, dynamic>>[],
+      });
+      expect(route.steps, isEmpty);
     });
   });
 }
