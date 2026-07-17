@@ -1360,3 +1360,34 @@ sort, maneuver banner, voice announcements) — none introduce new interactive/i
 elements without labels; the maneuver banner is display-only text (screen-reader-visible
 by default) and the voice toggle button it sits near already had a `semanticLabel` before
 this round touched anything nearby.
+
+## LIVE CONFIRMATION — ADB input injection recovered, full success path verified
+
+Input injection came back (user resolved it device-side, exact mechanism not visible to
+this session). Full live verification, real on-device screenshots:
+
+1. **Region auto-picked correctly on fresh app launch, no manual selection**: the Line
+   tab loaded straight into region **"Мырзакент"** — the GPS-nearest-region default
+   (`_loadRegionHintPosition`/`_nearestApprovedRegionId`, this round) picked it
+   automatically from a cached position, exactly as designed.
+2. **"Выйти на линию" now genuinely works end-to-end**: tapped it, watched "Обновляем
+   статус..." resolve to a real **"На линии"** state — green status pill, green power
+   icon, "Уйти с линии" button, and the driver's own car marker rendering live on the
+   map at their actual position. This is the user's original, explicit, most-pressed
+   request from this whole overnight session, now confirmed working with a real
+   screenshot, not just code reasoning.
+3. **Navigator tab**: real map tiles, real street names (Ижанова, Бектасов — genuine
+   OSM data for this exact location), live speed reading (3 км/ч, matching real GPS),
+   self-car marker with heading — confirms the base navigator rendering pipeline is
+   solid. (No active order was in progress, so the turn-by-turn maneuver banner/voice
+   announcements didn't have a route to exercise live this round — that part's
+   correctness rests on the unit tests + the live OSRM verification queries done earlier,
+   not an on-device screenshot of an actual turn.)
+4. **Region picker sort confirmed**: opened the picker — **Мырзакент is first**
+   (selected, checkmarked), followed by Фирдоуси, Мақтаарал, Жана Жол, Ынтымак, Киров,
+   Атамекен, Достык — increasing distance order, exactly matching
+   `_regionsSortedByDistance`.
+
+This closes out the user's original ask from the start of this overnight session: the
+driver can now actually go online, confirmed live, not just reasoned about from code and
+API calls.
