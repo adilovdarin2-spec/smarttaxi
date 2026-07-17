@@ -890,3 +890,64 @@ non-driver failures.
   for the only remaining case (empty submission).
 
 No code changes this round. Phone still unavailable.
+
+## Round 31 — found and fixed the ACTUAL root cause of "can't go online"
+
+Chasing round 6's "silent revert" one more time with the phone finally live found the
+real, underlying bug — not a stale prod deployment, a genuine client-side data bug:
+
+**`DriverRegion.id` was populated from the wrong field.** `GET /drivers/me/regions`
+returns each row from `driver_region_approvals` — `id` is that *approval row's own*
+id, `regionId` is the real `regions.id` the driver actually needs. `DriverRegion.
+fromJson` did `json['id'] ?? json['regionId']`, always preferring the approval-row id
+since `id` is always present. Every region the driver shell ever showed as "selected"
+was therefore identified by an approval-row id, not a real region id.
+
+**Compounding it, `_loadRegions()` defaulted to "whichever region the API returned
+first"** instead of consulting the driver's actual `drivers.current_region_id` — which
+the mobile client wasn't even reading (silently dropped from the API response). Live
+evidence: this driver's `current_region_id` was `ATAKENT` (seed.js's hardcoded default
+— never actually selected via the app), but the Line tab displayed `ASYKATA` (the
+approvals list's first entry) as selected the whole night.
+
+**Why this blocked going online**: `updateDriverLocation`'s backend check validates the
+driver's GPS point against `regions.boundary` for `drivers.current_region_id` — the
+*server's* region, not whatever the UI happened to show. A driver physically near the
+region the UI displays (but not the server's stale one) gets rejected with
+`DRIVER_LOCATION_OUTSIDE_REGION` on every single attempt — previously showing only a
+generic "Попробуйте снова" (round 6's hardcoded-message bug, also fixed this round) that
+gave no hint the retry could never succeed.
+
+### Fixes (all `flutter analyze`/`flutter test` clean)
+
+- `DriverRegion.fromJson`: prefer `json['regionId']` over `json['id']`.
+- `ApiClient.getDriverRegions()`: now returns `({regions, currentRegionId})` instead of
+  discarding the driver's actual current region.
+- `_loadRegions()`: defaults `_regionId` to the server's `current_region_id` (validated
+  against the approved list) instead of "first in list."
+- `_startLocationFlow()`'s two catch blocks: `readableError(error)` instead of a
+  hardcoded generic message, so a genuine non-retryable rejection reads as one.
+- `main.dart`'s `_canOpenDriver()`: minimal, mechanical update for the new
+  `getDriverRegions()` return shape — required for compilation, not a behavior change.
+
+### Also this round: a git mistake, disclosed and left unresolved pending user input
+
+Committing the `main.dart` one-line fix swept in ~4300 lines of a parallel session's
+already-uncommitted work in that file (Sentry crash reporting, l10n, push
+notifications, legal content — all legitimate, nothing corrupted) — `git add` stages a
+whole file's diff and this session has no interactive per-hunk staging tool. Nothing is
+lost (everything is safely in git history), but it's now misattributed under this
+commit instead of the other session's own commit. Did not attempt a `git reset`/
+`restore` to fix it, since that risks discarding the other session's uncommitted work
+if handled wrong — flagged to the user directly instead.
+
+### Verification status
+
+Code changes are `flutter analyze`/`flutter test` clean. **Not yet confirmed live**:
+install is blocked (`INSTALL_FAILED_USER_RESTRICTED`) on this first-install-after-an-
+accidental-uninstall — likely needs an on-device tap to confirm, same class of block as
+earlier tonight. Will install and screenshot the moment it clears.
+
+### Commit (round 31)
+
+- `Mobile: fix driver region id mismatch preventing going online`
