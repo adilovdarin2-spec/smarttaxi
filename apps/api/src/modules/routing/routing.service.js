@@ -1229,10 +1229,37 @@ export async function resolveTripRegion(input, executor = defaultQuery) {
   return { region: pickupRegion, pickup, dropoff };
 }
 
+// OSRM's own maneuver vocabulary (turn/roundabout/merge/fork/depart/arrive,
+// each with an optional left-right modifier) — kept as OSRM's raw strings
+// rather than translated here, so the client can pick icon + Russian label
+// per platform-appropriate wording instead of this shared backend baking in
+// one fixed phrasing for every consumer.
+function parseSteps(route) {
+  const steps = route?.legs?.[0]?.steps;
+  if (!Array.isArray(steps)) return [];
+  return steps
+    .map(step => {
+      const location = step?.maneuver?.location;
+      if (!Array.isArray(location) || location.length < 2) return null;
+      return {
+        type: step.maneuver?.type || "turn",
+        modifier: step.maneuver?.modifier || null,
+        // OSRM leaves `name` as "" for unnamed ways (alleys, parking-lot
+        // links, etc.) — honest gap, not a parsing bug; the client shows a
+        // generic label instead of an empty street name in that case.
+        streetName: typeof step.name === "string" ? step.name : "",
+        distanceMeters: Math.round(Number(step.distance) || 0),
+        lat: Number(location[1]),
+        lng: Number(location[0])
+      };
+    })
+    .filter(Boolean);
+}
+
 export async function requestRoute({ from, to, fetchImpl = fetch }) {
   if (!env.ROUTING_BASE_URL) throw routeUnavailable("ROUTING_BASE_URL is not configured");
   const base = env.ROUTING_BASE_URL.replace(/\/$/, "");
-  const cacheKey = `route:osrm:${roundedPointKey(from, 5)}:${roundedPointKey(to, 5)}`;
+  const cacheKey = `route:osrm:steps:${roundedPointKey(from, 5)}:${roundedPointKey(to, 5)}`;
   const cached = await cacheGetJson(cacheKey);
   if (cached) return cached;
   // A hung/misbehaving OSRM would otherwise be re-hit on every single poll
@@ -1240,7 +1267,10 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   // repeat callers failing fast instead of each waiting out the 10s timeout.
   const failureKey = `${cacheKey}:failure`;
   if (await cacheGetJson(failureKey)) throw routeUnavailable();
-  const url = `${base}/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=false`;
+  // steps=true so the client can show a real next-turn instruction (street
+  // name + actual maneuver type) instead of guessing one from bearing
+  // changes in the plain geometry — see parseSteps above.
+  const url = `${base}/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
   let response;
   try {
     response = await getJson(url, { fetchImpl, timeoutMs: 10_000 });
@@ -1262,6 +1292,7 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
     distanceMeters: Math.round(Number(route.distance)),
     durationSeconds: Math.round(Number(route.duration)),
     geometry: route.geometry,
+    steps: parseSteps(route),
     providerStatus: data.code || "Ok"
   };
   await cacheSetJson(cacheKey, routePayload, 120);
@@ -1287,6 +1318,10 @@ function straightLineRouteFallback(from, to) {
       type: "LineString",
       coordinates: [[Number(from.lng), Number(from.lat)], [Number(to.lng), Number(to.lat)]]
     },
+    // No real OSRM steps exist for a straight-line guess — the client falls
+    // back to its own bearing-based heuristic when steps is empty, same as
+    // it always did before this field existed.
+    steps: [],
     providerStatus: "Fallback",
     fallback: true
   };
@@ -1332,6 +1367,7 @@ export async function buildActiveLegRoute({ order, driverLat, driverLng, fetchIm
     distanceMeters: route.distanceMeters,
     durationSeconds: route.durationSeconds,
     geometry: route.geometry,
+    steps: route.steps || [],
     providerStatus: route.providerStatus,
     fallback: Boolean(route.fallback),
     driverLat,
@@ -1472,6 +1508,7 @@ export async function buildDriverToPickupRoute({ orderId, user, executor = defau
     distanceMeters: route.distanceMeters,
     durationSeconds: route.durationSeconds,
     geometry: route.geometry,
+    steps: route.steps || [],
     providerStatus: route.providerStatus,
     fallback: Boolean(route.fallback),
     driverLat: Number(location.lat),
