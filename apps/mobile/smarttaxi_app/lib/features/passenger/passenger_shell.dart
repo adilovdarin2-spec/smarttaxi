@@ -778,8 +778,23 @@ class _PassengerShellState extends State<PassengerShell>
       AppToast.showError(context, 'Активные регионы пока не загружены');
       return null;
     }
-    final selected =
-        _selectedRegion ?? (_regions.isNotEmpty ? _regions.first : null);
+    RegionOption? selected;
+    if (_regions.length == 1) {
+      // Only one active region — nothing to actually pick, skip the sheet.
+      selected = _regions.first;
+    } else if (mounted) {
+      selected = await showModalBottomSheet<RegionOption>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _RegionSelectSheet(
+          regions: _regions,
+          selectedId: _selectedRegion?.id,
+          title: title,
+          subtitle: subtitle,
+        ),
+      );
+    }
     if (selected == null || !mounted) return null;
     _applyRegion(selected, resetRoute: resetRoute);
     if (askLocationAfter) {
@@ -810,8 +825,20 @@ class _PassengerShellState extends State<PassengerShell>
     unawaited(_refreshNearbyDrivers(silent: true));
   }
 
-  Future<_RegionConfirmAction?> _confirmDetectedRegion(RegionOption region) {
-    return Future.value(_RegionConfirmAction.accept);
+  Future<_RegionConfirmAction?> _confirmDetectedRegion(
+    RegionOption region,
+  ) async {
+    if (!mounted) return _RegionConfirmAction.accept;
+    // Dismissing without an explicit choice (tap outside) falls through to
+    // null at the call site, which is treated the same as "accept" there —
+    // safe default, matches the previous always-auto-accept behaviour while
+    // still giving the passenger a real way to say "no, that's wrong".
+    return showModalBottomSheet<_RegionConfirmAction>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RegionConfirmSheet(region: region),
+    );
   }
 
   RegionOption? _regionForPoint(Coordinate point) {
