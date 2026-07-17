@@ -9,6 +9,7 @@ import { writeAudit, publicUser } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
 import { env } from "../../config/env.js";
 import { sendSmsCode, smsDeliveryMode } from "./sms.provider.js";
+import { sendWhatsAppCode } from "./whatsapp.provider.js";
 import { applyReferralCode, ensureReferralCode } from "../referrals/referrals.service.js";
 
 const router = Router();
@@ -189,11 +190,18 @@ router.post("/sms/send", rateLimit({ prefix: "auth-sms-send", windowMs: 60_000, 
       await query("DELETE FROM auth_sms_codes WHERE id=$1 AND verified_at IS NULL", [inserted.rows[0].id]).catch(() => {});
       throw error;
     }
+    // WhatsApp is a best-effort second channel, never the reason the whole
+    // request fails — sendWhatsAppCode never throws, it resolves with
+    // delivered:false on any error (including "not configured").
+    const whatsapp = await sendWhatsAppCode({ phone, code });
     await writeAudit(query, {
       action: "sms_code_requested",
       entityType: "auth_sms_code",
       entityId: inserted.rows[0].id,
-      metadata: { phone, purpose: body.purpose, provider: delivery.provider, messageId: delivery.messageId || null, status: delivery.status || null },
+      metadata: {
+        phone, purpose: body.purpose, provider: delivery.provider, messageId: delivery.messageId || null, status: delivery.status || null,
+        whatsappDelivered: whatsapp.delivered, whatsappError: whatsapp.error || null
+      },
       req
     });
     res.json({
@@ -298,12 +306,16 @@ router.post("/password/reset/request", rateLimit({ prefix: "auth-password-reset-
         await query("DELETE FROM auth_sms_codes WHERE id=$1 AND verified_at IS NULL", [inserted.rows[0].id]).catch(() => {});
         throw error;
       }
+      const whatsapp = await sendWhatsAppCode({ phone, code });
       await writeAudit(query, {
         action: "password_reset_sms_requested",
         actorUserId: user.id,
         entityType: "auth_sms_code",
         entityId: inserted.rows[0].id,
-        metadata: { phone, provider: delivery.provider, messageId: delivery.messageId || null, status: delivery.status || null },
+        metadata: {
+          phone, provider: delivery.provider, messageId: delivery.messageId || null, status: delivery.status || null,
+          whatsappDelivered: whatsapp.delivered, whatsappError: whatsapp.error || null
+        },
         req
       });
       return res.json({
