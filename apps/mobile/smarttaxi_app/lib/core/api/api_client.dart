@@ -431,13 +431,25 @@ class ApiClient {
     }
   }
 
-  Future<List<DriverRegion>> getDriverRegions() async {
+  Future<({List<DriverRegion> regions, String? currentRegionId})>
+      getDriverRegions() async {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/drivers/me/regions');
     final items = _extractList(response.data, 'regions');
-    return items
+    final regions = items
         .map((item) => DriverRegion.fromJson(item))
         .toList(growable: false);
+    // The response also carries the driver's own row (with the server's
+    // actual current_region_id) alongside the approvals list — surfacing it
+    // here is what lets the driver shell default the region picker to what
+    // the backend already has selected, instead of guessing.
+    final driverJson = response.data is Map
+        ? (response.data as Map)['driver']
+        : null;
+    final currentRegionId = driverJson is Map
+        ? driverJson['current_region_id']?.toString()
+        : null;
+    return (regions: regions, currentRegionId: currentRegionId);
   }
 
   Future<void> selectDriverRegion(String regionId) async {

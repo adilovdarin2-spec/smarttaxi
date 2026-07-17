@@ -329,10 +329,24 @@ class _DriverShellState extends State<DriverShell> {
       _error = null;
     });
     try {
-      final regions = await widget.api.getDriverRegions();
+      final result = await widget.api.getDriverRegions();
+      final regions = result.regions;
       setState(() {
         _regions = regions;
-        _regionId ??= regions.isNotEmpty ? regions.first.id : null;
+        // Prefer what the backend actually has as drivers.current_region_id
+        // (only meaningful if it's still in the approved list — an admin
+        // could have revoked it since) over blindly defaulting to whichever
+        // region the API happened to return first. Falling back to
+        // regions.first only when the driver truly has no region selected
+        // server-side yet.
+        if (_regionId == null) {
+          final serverRegionId = result.currentRegionId;
+          final matchesApproved =
+              serverRegionId != null && regions.any((r) => r.id == serverRegionId);
+          _regionId = matchesApproved
+              ? serverRegionId
+              : (regions.isNotEmpty ? regions.first.id : null);
+        }
       });
       unawaited(_loadDemandHint());
     } catch (error) {
@@ -502,10 +516,16 @@ class _DriverShellState extends State<DriverShell> {
           speed: position.speed.isFinite ? position.speed : null,
           accuracy: position.accuracy.isFinite ? position.accuracy : null,
         );
-      } catch (_) {
+      } catch (error) {
+        // readableError, not a hardcoded generic string — the backend
+        // rejects this for real, specific, non-retryable reasons too
+        // (DRIVER_LOCATION_OUTSIDE_REGION, DRIVER_REGION_INACTIVE,
+        // DRIVER_OFFLINE on a status race), and "Попробуйте снова" is
+        // actively misleading for those: retrying an out-of-region ping
+        // will never succeed until the driver is actually back in the
+        // region.
         if (mounted) {
-          setState(() => _locationMessage =
-              AppLocalizations.of(context).driverLocationSendFailed);
+          setState(() => _locationMessage = readableError(error));
         }
       }
     }, onError: (_) {
@@ -543,10 +563,11 @@ class _DriverShellState extends State<DriverShell> {
         setState(() => _locationMessage =
             AppLocalizations.of(context).driverLocationActive);
       }
-    } catch (_) {
+    } catch (error) {
+      // readableError, not a hardcoded generic string — same reasoning as
+      // the position-stream catch above.
       if (mounted) {
-        setState(() =>
-            _error = AppLocalizations.of(context).driverLocationSendFailed);
+        setState(() => _error = readableError(error));
       }
       return false;
     }

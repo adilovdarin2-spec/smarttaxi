@@ -349,7 +349,17 @@ class DriverRegion {
 
   factory DriverRegion.fromJson(Map<String, dynamic> json) {
     return DriverRegion(
-      id: '${json['id'] ?? json['regionId']}',
+      // GET /drivers/me/regions returns each row from
+      // driver_region_approvals, where `id` is the *approval* row's own id
+      // and `regionId` is the real regions.id this driver actually needs —
+      // the one PATCH /drivers/me/region expects and the one that ends up
+      // in drivers.current_region_id. Preferring `id` here (as this used
+      // to) sent the approval-row id as "the region" everywhere in the
+      // driver shell, which the backend's region lookup rejects as
+      // REGION_NOT_FOUND. `regionId` first, `id` as a fallback only for a
+      // hypothetical caller whose JSON shape has no separate approval
+      // wrapper.
+      id: '${json['regionId'] ?? json['id']}',
       name: '${json['name'] ?? json['regionName'] ?? 'Регион'}',
       status: '${json['status'] ?? 'APPROVED'}',
       isActive: json['is_active'] != false && json['isActive'] != false,
