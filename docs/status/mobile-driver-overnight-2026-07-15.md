@@ -1329,3 +1329,34 @@ case of a data-modifying action lying about its own outcome.
 The user is now testing the app on-device themselves (not via adb) — holding off on any
 further `adb install`/device interaction while that's happening, per their own
 instruction, rather than risk interfering with or misreading their live session.
+
+### Full error-handling audit across driver scope (no device needed)
+
+With `adb input` still blocked (confirmed a fresh `adb kill-server`/`start-server` cycle
+doesn't fix it — ruling out a stale-daemon explanation, it's genuinely the device-side
+MIUI permission), spent this stretch doing an exhaustive audit for the same class of bug
+`DriverTripCompletionCard` had (optimistic UI update regardless of real API outcome):
+
+- All 12 `catch` blocks in `driver_shell.dart` individually reviewed — the 2 already
+  fixed this round (`readableError`/`apiErrorCode`), 1 unrelated-and-correct (socket
+  bootstrap failure sets an honest "updates unavailable" note), 9 genuinely best-effort
+  by design with no false-success claim (SOS location enrichment, trip history, demand
+  hints, OSM overlays, gesture handling, recurring-booking respond/status-update — the
+  latter two both correctly gate their optimistic state update on the `await` actually
+  succeeding, and both already route through `readableError` on failure — a good
+  reference example of the correct pattern).
+- `driver_payout_request_sheet.dart`: `Navigator.pop(context, true)` only reachable after
+  a successful `createPayoutRequest` — correct.
+- `driver_wallet_screen.dart`, `driver_documents_screen.dart`,
+  `driver_document_upload_sheet.dart`, `driver_notifications_screen.dart`,
+  `driver_rating_screen.dart`, `driver_application_documents_screen.dart`: every load/
+  submit catch block sets an honest `_error`/load-failure state, no optimistic success.
+- `driver_profile_widgets.dart`, `driver_shell_chrome.dart`, `driver_line_widgets.dart`:
+  no API calls at all (pure presentational), no error-handling surface to audit.
+
+No further instances found — `DriverTripCompletionCard` really was the one case, now
+fixed. Also checked for accessibility gaps in this round's own additions (region-picker
+sort, maneuver banner, voice announcements) — none introduce new interactive/icon-only
+elements without labels; the maneuver banner is display-only text (screen-reader-visible
+by default) and the voice toggle button it sits near already had a `semanticLabel` before
+this round touched anything nearby.
