@@ -1051,15 +1051,44 @@ time. Caught it once with a background install + rapid screenshot, tapped "За�
 выбор" (remember choice) + Установить within the window — installs went through cleanly
 for the rest of the round without the popup reappearing.
 
+### Same root cause, second call site: `_setOnline`'s approval-block branch was dead code
+
+Re-grepping driver-scope code for the same `error.toString()`-matching pattern (once the
+Dio-toString gap above was understood) turned up a second instance, in
+`driver_shell.dart`'s `_setOnline` itself — the very method this whole round centered on:
+
+```dart
+final message = error.toString();
+final isApprovalBlock = nextOnline && approvalCodes.any(message.contains);
+```
+
+`approvalCodes` (`DRIVER_REGION_NOT_APPROVED`, `DRIVER_REGION_BLOCKED`, `DRIVER_BLOCKED`,
+`DRIVER_DOCUMENTS_NOT_APPROVED`) is exactly the set of codes meant to route a go-online
+rejection to a toast + the support bottom sheet instead of the bare inline banner — see
+that block's own comment about admin approval/block races. Same gap, same effect:
+`message` never contains these codes, so `isApprovalBlock` was always `false` and that
+whole branch was unreachable for every real rejection — a driver actually blocked or
+unapproved for their region got the generic inline banner instead of the toast + support
+sheet the code was written to show them.
+
+**Fix**: extracted the shared extraction logic into a new `apiErrorCode(Object error)` in
+`driver_shell_helpers.dart` (reads `error.response.data['error']` for a `DioException`),
+used by both `readableError()` internally and by this `approvalCodes.contains(...)`
+check directly. Two more regression tests added (`apiErrorCode` group, 2 cases) —
+`driver_shell_helpers_test.dart` is now 6 cases, all passing. `flutter analyze` on
+driver-scope files: 0 issues.
+
 ### State left for the next session
 
-- `driver_shell_helpers.dart`'s `readableError` fix and its test are the only
-  uncommitted driver-scope changes this round (`driver_shell.dart` has a net-zero diff —
-  a temporary 3-point diagnostic-toast instrumentation was added to trace this bug live,
-  then fully reverted once the dio-toString root cause was confirmed by reading source
-  instead, so nothing debug-only shipped).
-- A clean release build (region-id fix + `readableError` fix, no debug scaffolding) is
-  built and installed on-device, sitting at the login screen.
+- `driver_shell_helpers.dart` (`apiErrorCode` + `readableError` fixes) and
+  `driver_shell.dart` (one line: `isApprovalBlock` now checks `apiErrorCode(error)`
+  instead of `error.toString()`) plus their tests are the uncommitted driver-scope
+  changes this round. (A temporary 3-point diagnostic-toast instrumentation was also
+  added to `driver_shell.dart` mid-round to trace the original bug live, then fully
+  reverted once the dio-toString root cause was confirmed by reading source instead —
+  nothing debug-only shipped.)
+- A clean release build (region-id fix + both `readableError`/`apiErrorCode` fixes, no
+  debug scaffolding) is built and installed on-device, sitting at the login screen.
 - The seed test driver's server-side status was left as `FREE` (from this round's direct
   `curl` reproduction of the bug) while the freshly-reinstalled app locally shows
   offline — harmless and self-correcting (any real status toggle resyncs it), flagged
@@ -1076,3 +1105,4 @@ for the rest of the round without the popup reappearing.
 ### Commit (round 32)
 
 - `Mobile: fix readableError never matching backend error codes (Dio toString gap)`
+- `Mobile: fix _setOnline's approval-block branch, same Dio toString gap`

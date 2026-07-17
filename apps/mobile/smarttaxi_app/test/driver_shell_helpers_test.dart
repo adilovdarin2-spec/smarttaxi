@@ -57,4 +57,23 @@ void main() {
       expect(readableError(Exception('boom')), 'Не удалось выполнить запрос');
     });
   });
+
+  group('apiErrorCode', () {
+    test('extracts the code driver_shell.dart branches on for approval'
+        ' blocks (DRIVER_REGION_BLOCKED etc.)', () {
+      // driver_shell.dart's _setOnline() used to test
+      // approvalCodes.any(error.toString().contains) to decide whether a
+      // go-online rejection should open the support sheet instead of just
+      // showing the inline banner — same Dio toString gap, so that branch
+      // was unreachable dead code for every real rejection.
+      expect(
+        apiErrorCode(_badResponse('DRIVER_REGION_BLOCKED', status: 403)),
+        'DRIVER_REGION_BLOCKED',
+      );
+    });
+
+    test('returns null for a non-Dio error', () {
+      expect(apiErrorCode(Exception('boom')), isNull);
+    });
+  });
 }

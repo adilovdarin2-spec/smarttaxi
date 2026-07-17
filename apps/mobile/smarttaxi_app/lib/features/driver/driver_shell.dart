@@ -458,8 +458,12 @@ class _DriverShellState extends State<DriverShell> {
         'DRIVER_BLOCKED',
         'DRIVER_DOCUMENTS_NOT_APPROVED',
       };
-      final message = error.toString();
-      final isApprovalBlock = nextOnline && approvalCodes.any(message.contains);
+      // apiErrorCode reads response.data['error'] directly — DioException's
+      // own toString() never includes the response body, so matching
+      // approvalCodes against error.toString() (as this used to) never
+      // actually matched a real rejection and this branch was dead code.
+      final isApprovalBlock =
+          nextOnline && approvalCodes.contains(apiErrorCode(error));
       if (isApprovalBlock) {
         if (mounted) {
           AppToast.showError(context, readableError(error));
