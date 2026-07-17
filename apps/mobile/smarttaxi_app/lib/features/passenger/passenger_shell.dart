@@ -4076,6 +4076,11 @@ class _PassengerShellState extends State<PassengerShell>
                     },
             ),
             _SettingsRow(
+              title: 'Регион',
+              text: _selectedRegion?.name ?? 'Не выбран',
+              onTap: () => unawaited(_chooseRegion()),
+            ),
+            _SettingsRow(
               title: 'Выход из аккаунта',
               text: 'Завершить текущую сессию',
               danger: true,
