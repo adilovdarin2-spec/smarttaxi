@@ -1448,3 +1448,58 @@ show for this exact spot. Not something to fake data for.
 ### Commit (round 34)
 
 - `Mobile: fix speed display and car-marker rotation jitter at low/zero GPS speed`
+
+## Round 34 continued — design pass + a real bug found along the way
+
+Asked the user which specific areas felt "неудобно" (inconvenient) before guessing — they
+picked all three offered (Navigator screen, Line tab, general style/colors). Read
+`app_theme.dart` first: the design system itself (spacing/radius/typography scales,
+light+dark palette, WCAG-contrast comments already in the code) is genuinely
+well-structured, not the amateur/inconsistent kind of "bad" — so avoided a speculative
+wholesale reskin in favor of concrete, defensible fixes.
+
+### Real bug found: Navigator was non-functional until the driver went online
+
+Opened "Навигатор" directly from a fresh app launch, *without* tapping "Выйти на линию"
+first — got a **permanently-stuck "Ищу сигнал GPS..."**, no speed, no map data, forever.
+Root cause: the position stream that feeds the whole navigator only starts inside
+`_startLocationFlow()`, itself only called from `_setOnline(true)` — a driver who opens
+the navigator just to preview the map/area before deciding to go online had no live
+position source at all, even though the phone's GPS was perfectly capable of a fix.
+This is architecturally by design (the class doc on `_DriverFullScreenNavigatorState`
+already explicitly says it deliberately reuses the shell's stream instead of duplicating
+it) — just never accounted for the case where that stream doesn't exist yet.
+
+**Fix**: `_DriverFullScreenNavigatorState` now starts its own scoped position stream, but
+*only* when the shell doesn't already have one running (`widget.shell._positionSub ==
+null`) — never two competing listeners. Feeds the same shell fields
+(`_applyPositionFix`, extracted from the existing stream/seed-position handlers so the
+heading-trust rule lives in exactly one place) every rendering path already reads, so no
+other code needed to change. Deliberately skips `updateDriverLocation` (dispatch-only,
+backend rejects it while `OFFLINE` anyway) and the camera/sign proximity voice alerts
+(trip-safety features, not needed for a standalone preview) — just position, heading, and
+the OSM camera/sign/speed-limit overlay.
+
+**Live-verified**: fresh launch → tapped Навигатор directly (still offline) → real map,
+real streets, car marker cleanly aligned, "Скорость 0", no stuck GPS banner. Previously
+this exact sequence never resolved.
+
+### Two concrete, low-risk polish fixes
+
+- **"Лимит --" always-visible card** removed the exact confirmed-empty-most-of-the-time
+  problem from earlier this round (OSM has no maxspeed data for this whole region) from
+  competing for space with the one number a driver actually needs (Скорость) — now only
+  takes its slot when there's a real number to show.
+- **"Свободный режим"/"Активный заказ" map badge** was stretched edge-to-edge with
+  left-aligned text in a white rounded pill — visually indistinguishable from a
+  search/input bar, but does nothing when tapped. Now shrink-wrapped to its content
+  (matching how the identical widget already renders on the trip map), removing the
+  false affordance and the risk of it visually running under the "report an event" chip
+  button sharing that corner.
+
+`flutter analyze`: clean across all changes this round.
+
+### Commit (round 34, continued)
+
+- `Mobile: make the navigator work standalone before going online + declutter its bottom
+  metrics and map badge`

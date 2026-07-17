@@ -109,6 +109,19 @@ class _DriverShellState extends State<DriverShell> {
   // trustworthy fix arrives.
   double? _trustedHeading;
   static const _headingTrustSpeedMps = 2.5; // ~9 km/h
+
+  // Shared by the real (online, dispatch) position stream and the
+  // navigator-preview standalone stream below — one place for the
+  // heading-trust rule so the two can never quietly drift apart.
+  void _applyPositionFix(Position position) {
+    _lastPosition = position;
+    if (position.speed.isFinite &&
+        position.speed >= _headingTrustSpeedMps &&
+        position.heading.isFinite) {
+      _trustedHeading = position.heading;
+    }
+  }
+
   DriverStats? _driverStats;
   List<OrderSummary> _tripHistory = const [];
   bool _tripHistoryLoading = false;
@@ -606,14 +619,7 @@ class _DriverShellState extends State<DriverShell> {
           accuracy: LocationAccuracy.high, distanceFilter: 20),
     ).listen((position) async {
       if (mounted) {
-        setState(() {
-          _lastPosition = position;
-          if (position.speed.isFinite &&
-              position.speed >= _headingTrustSpeedMps &&
-              position.heading.isFinite) {
-            _trustedHeading = position.heading;
-          }
-        });
+        setState(() => _applyPositionFix(position));
       }
       _checkCameraProximity(position);
       _checkSignProximity(position);
@@ -654,14 +660,7 @@ class _DriverShellState extends State<DriverShell> {
         ),
       );
       if (mounted) {
-        setState(() {
-          _lastPosition = current;
-          if (current.speed.isFinite &&
-              current.speed >= _headingTrustSpeedMps &&
-              current.heading.isFinite) {
-            _trustedHeading = current.heading;
-          }
-        });
+        setState(() => _applyPositionFix(current));
       }
       await widget.api.updateDriverLocation(
         location: Coordinate(lat: current.latitude, lng: current.longitude),
@@ -3138,7 +3137,13 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
             Positioned(
               left: 14,
               top: 14,
-              right: 14,
+              // No right: — a badge stretched edge-to-edge with left-aligned
+              // text inside a white rounded pill reads as a search/input
+              // bar (it visually is one), which it isn't and does nothing
+              // when tapped. Shrink-wrapped instead, matching how the same
+              // widget already renders on the trip map — also stops it
+              // extending under the "report an event" chip button that
+              // overlays this same top-right corner.
               child: _DriverMapBadge(
                 text: widget.activeOrder == null
                     ? 'Свободный режим'
@@ -3465,6 +3470,20 @@ class _DriverFullScreenNavigatorState
   bool _mapUnavailable = false;
   int _tileErrorCount = 0;
   DateTime? _lastFixAt;
+  // The shell's own GPS stream (the class doc above relies on) only starts
+  // once the driver actually goes online (_setOnline -> _startLocationFlow)
+  // — a driver who opens the navigator first, just to preview the map/area
+  // before deciding to go online, previously saw a permanently-stuck "Ищу
+  // сигнал GPS..." even though the device's GPS is perfectly able to
+  // produce a fix; nothing had ever asked it to. Starts a scoped stream of
+  // its own, but only when the shell doesn't already have one running, so
+  // there are never two competing listeners — feeds the exact same shell
+  // fields (_applyPositionFix) every rendering path here already reads, so
+  // no other code needs to know which stream actually produced a fix.
+  // Deliberately skips updateDriverLocation (dispatch-only, and the backend
+  // rejects it while OFFLINE anyway) and the camera/sign proximity voice
+  // alerts (trip-safety features, not needed for a standalone preview).
+  StreamSubscription<Position>? _standalonePositionSub;
 
   @override
   void initState() {
@@ -3474,11 +3493,46 @@ class _DriverFullScreenNavigatorState
     if (widget.shell._currentCoordinate != null) {
       _lastFixAt = DateTime.now();
     }
+    if (widget.shell._positionSub == null) {
+      unawaited(_startStandalonePositionTracking());
+    }
+  }
+
+  Future<void> _startStandalonePositionTracking() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+      // Re-check after the awaits above: the driver may have gone online
+      // (starting the real stream) or left this screen while permission was
+      // being requested.
+      if (!mounted || widget.shell._positionSub != null) return;
+      _standalonePositionSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high, distanceFilter: 20),
+      ).listen((position) {
+        if (!mounted) return;
+        widget.shell.setState(() => widget.shell._applyPositionFix(position));
+        unawaited(widget.shell._maybeFetchOsmNavigation(position));
+      });
+    } catch (_) {
+      // Best-effort — the screen still works, just without a live position
+      // until the driver goes online (which starts the shell's real
+      // stream).
+    }
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _standalonePositionSub?.cancel();
     _mapController.dispose();
     super.dispose();
   }
@@ -3786,15 +3840,23 @@ class _DriverFullScreenNavigatorState
                         valueColor: speeding ? SmartTaxiColors.danger : null,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: _NavigatorMetric(
-                        title: 'Лимит',
-                        value: speedLimit == null ? '--' : '$speedLimit',
-                        suffix: speedLimit == null ? '' : 'км/ч',
+                    // A posted limit is real, sourced data (OSM maxspeed
+                    // tags) — genuinely absent for most of these small-town
+                    // regions today (confirmed: zero results for the test
+                    // area), so a permanent "Лимит --" card was dead weight
+                    // on screen almost all the time. Only takes its slot
+                    // when there's an actual number to show.
+                    if (speedLimit != null) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: _NavigatorMetric(
+                          title: 'Лимит',
+                          value: '$speedLimit',
+                          suffix: 'км/ч',
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
