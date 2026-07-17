@@ -13037,6 +13037,12 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
               ),
             ),
             const SizedBox(height: 14),
+            if (regions.isEmpty)
+              const _AddressEmptyHint(
+                title: 'Ничего не найдено',
+                text: 'Уточните название региона или посёлка.',
+              ),
+            if (regions.isNotEmpty)
             Flexible(
               child: ListView.separated(
                 shrinkWrap: true,
