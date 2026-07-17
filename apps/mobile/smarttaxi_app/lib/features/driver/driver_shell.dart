@@ -83,6 +83,11 @@ class _DriverShellState extends State<DriverShell> {
   String? _navigatorMessage;
   List<DriverRegion> _regions = const [];
   String? _regionId;
+  // A cheap, cache-only GPS hint (see _loadRegionHintPosition) used only to
+  // default/sort the region list by proximity — never the live navigation
+  // fix (_lastPosition below), which requires an active permission prompt
+  // and is only populated once a driver actually goes online.
+  Coordinate? _regionHintPosition;
   List<TariffOption> _regionTariffs = const [];
   bool _demandHintLoading = false;
   List<OrderSummary> _orders = const [];
@@ -331,8 +336,12 @@ class _DriverShellState extends State<DriverShell> {
     try {
       final result = await widget.api.getDriverRegions();
       final regions = result.regions;
-      final nearestId =
-          _regionId == null ? await _nearestApprovedRegionId(regions) : null;
+      if (_regionHintPosition == null) {
+        await _loadRegionHintPosition();
+      }
+      final nearestId = _regionId == null
+          ? _nearestApprovedRegionId(regions, _regionHintPosition)
+          : null;
       if (!mounted) return;
       setState(() {
         _regions = regions;
@@ -372,31 +381,61 @@ class _DriverShellState extends State<DriverShell> {
 
   // getLastKnownPosition() is a cache-only read — it never prompts for
   // permission and never talks to the GPS radio, just returns whatever the
-  // OS already has cached (or null). Safe to call unconditionally here.
-  Future<String?> _nearestApprovedRegionId(List<DriverRegion> regions) async {
+  // OS already has cached (or null). Safe to call unconditionally here;
+  // failures (no permission yet, nothing cached) just leave the hint null
+  // and every caller below already treats that as "fall back to default
+  // behavior," not an error.
+  Future<void> _loadRegionHintPosition() async {
     try {
       final position = await Geolocator.getLastKnownPosition();
-      if (position == null) return null;
-      String? nearestId;
-      double? nearestMeters;
-      for (final region in regions) {
-        final center = region.center;
-        if (center == null) continue;
-        final meters = Geolocator.distanceBetween(
-          position.latitude,
-          position.longitude,
-          center.lat,
-          center.lng,
-        );
-        if (nearestMeters == null || meters < nearestMeters) {
-          nearestMeters = meters;
-          nearestId = region.id;
-        }
+      if (position != null) {
+        _regionHintPosition =
+            Coordinate(lat: position.latitude, lng: position.longitude);
       }
-      return nearestId;
     } catch (_) {
-      return null;
+      // Best-effort only.
     }
+  }
+
+  String? _nearestApprovedRegionId(
+      List<DriverRegion> regions, Coordinate? position) {
+    if (position == null) return null;
+    String? nearestId;
+    double? nearestMeters;
+    for (final region in regions) {
+      final center = region.center;
+      if (center == null) continue;
+      final meters = Geolocator.distanceBetween(
+          position.lat, position.lng, center.lat, center.lng);
+      if (nearestMeters == null || meters < nearestMeters) {
+        nearestMeters = meters;
+        nearestId = region.id;
+      }
+    }
+    return nearestId;
+  }
+
+  // Same proximity signal as the default-selection logic above, applied to
+  // the manual picker's list order — a driver who does need to pick by hand
+  // (no cached position yet, or their real region isn't the auto-picked
+  // one) sees the most plausible options first instead of an arbitrary
+  // server order.
+  List<DriverRegion> _regionsSortedByDistance(List<DriverRegion> regions) {
+    final position = _regionHintPosition;
+    if (position == null) return regions;
+    final sorted = [...regions];
+    sorted.sort((a, b) {
+      final distanceA = a.center == null
+          ? double.infinity
+          : Geolocator.distanceBetween(
+              position.lat, position.lng, a.center!.lat, a.center!.lng);
+      final distanceB = b.center == null
+          ? double.infinity
+          : Geolocator.distanceBetween(
+              position.lat, position.lng, b.center!.lat, b.center!.lng);
+      return distanceA.compareTo(distanceB);
+    });
+    return sorted;
   }
 
   Future<void> _selectRegion(String? regionId) async {
@@ -2008,7 +2047,7 @@ class _DriverShellState extends State<DriverShell> {
                     icon: Icons.verified_user_outlined,
                   )
                 else
-                  for (final region in _regions) ...[
+                  for (final region in _regionsSortedByDistance(_regions)) ...[
                     _RegionPickerRow(
                       region: region,
                       selected: region.id == _regionId,
