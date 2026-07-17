@@ -67,7 +67,6 @@ const _cardShadow = <BoxShadow>[
 ];
 const _iconMenu = 'assets/icons/menu.svg';
 const _iconBell = 'assets/icons/bell.svg';
-const _iconChevronDown = 'assets/icons/chevron_down.svg';
 const _iconChevronRight = 'assets/icons/chevron_right.svg';
 const _iconBanknote = 'assets/icons/banknote.svg';
 const _iconCreditCard = 'assets/icons/credit_card.svg';
