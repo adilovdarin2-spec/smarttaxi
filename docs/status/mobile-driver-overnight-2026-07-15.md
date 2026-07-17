@@ -951,3 +951,128 @@ earlier tonight. Will install and screenshot the moment it clears.
 ### Commit (round 31)
 
 - `Mobile: fix driver region id mismatch preventing going online`
+
+## Round 32 — confirmed the region-id fix live, root-caused the remaining "can't go
+## online", found a second real bug, and hit a hard environment blocker
+
+### Region-id fix: confirmed live
+
+Fresh install + fresh login after round 31's fix: the Line tab's region chip now reads
+**"Атакент"** (correct — matches `drivers.current_region_id` on the server), not the
+previously-wrong "Асыката". Screenshot evidence captured on-device. Round 31's fix is
+real and working.
+
+### "Can't go online" — root cause is a real GPS/region mismatch, not a bug
+
+Tapping "Выйти на линию" still reverted to offline with no visible error. Chased this
+with `adb logcat` (release build emits no Dart-level log lines — inconclusive),
+`uiautomator dump` (clean tree, confirmed no error banner rendered anywhere), and
+finally a direct `curl` reproduction against the exact same prod endpoints the app
+calls, using the seeded test driver's own credentials:
+
+```
+PATCH /api/drivers/me/status {"status":"FREE"}       -> 200 OK
+PATCH /api/drivers/me/location {"lat":40.663263,"lng":68.553603,...}
+  -> 400 {"error":"DRIVER_LOCATION_OUTSIDE_REGION", ...}
+```
+
+The phone's actual GPS fix (from `adb shell dumpsys location`) is `40.663263,
+68.553603` — genuinely **~17 km south** of the Атакент region polygon (`seed.js`:
+`[[68.475,40.82],[68.535,40.82],[68.535,40.875],[68.475,40.875],[68.475,40.82]]`, i.e.
+lat 40.82–40.875). `routing.service.js`'s `pointInPolygon` check is correctly rejecting
+a driver who is really, physically outside the region's service area. **This is correct
+backend behavior — an anti-fraud/service-area safeguard working as intended — not a
+client or server bug.** It's a testing-environment limitation: this device is not
+physically inside Атакент's boundary. Going online will succeed the moment the driver's
+real location is inside the polygon (or a region matching the device's real location is
+selected instead, once the driver has an approved region there).
+
+### Second, real, independent bug found and fixed: `readableError` never actually matched
+
+While chasing why *no* error banner (not even the generic fallback) rendered for the
+`DRIVER_LOCATION_OUTSIDE_REGION` rejection above, read dio 5.9.2's own source
+(`dio_exception.dart`): `DioException.toString()` for a `badResponse` **never includes
+the response body** — it's a generic "status code 400 means client error, read more at
+MDN..." blurb. `readableError()`'s whole matching strategy was
+`error.toString().contains('DRIVER_LOCATION_OUTSIDE_REGION')` — which was **never true
+for any backend-thrown code, for any driver-side call, ever**. Every one of the ~15
+mapped codes in that function (region blocked, debt limit, active order, etc.) has been
+silently fizzling to the generic "Не удалось выполнить запрос" fallback in production
+this whole time (or, when raised through `_startLocationFlow`'s `_error` field,
+apparently not even rendering that — the exact rendering gap wasn't nailed down live
+before the input-injection blocker below hit; the wrong-matching-strategy bug itself is
+proven independent of that gap).
+
+**Fix**: `readableError()` now reads the code from `error.response.data['error']`
+directly for a `DioException` (matching every `AppError` the backend throws — see
+`apps/api/src/common/errors.js`'s `res.status(status).json({ error: err.code, ... })`),
+falling back to the old `toString()` substring match only for non-Dio errors. This is
+the same pattern `passenger_shell.dart`'s own private `_readableError`/`_apiErrorCode`
+already uses — confirmed while reading that file that the passenger side got this right
+and the driver side's copy didn't.
+
+Added `test/driver_shell_helpers_test.dart` (4 cases) as a regression guard — this class
+of bug (matching logic that silently never matches) has no visible symptom other than
+"the error message is a bit generic," so it's exactly the kind of thing that needs a
+test rather than relying on someone noticing in the field. All 4 pass.
+
+`flutter analyze`: 0 issues in driver-scope files (4 pre-existing warnings remain, all
+in `passenger_shell.dart`/`main.dart`, out of scope). `flutter test`: all 10 pre-existing
+driver-related cases in `widget_test.dart` pass, plus the 4 new ones. The only 5 failures
+in the full run are pre-existing passenger-side cases (logo asset, passenger home,
+route preview, navigation drawer, menu screens) — unrelated to this round's changes,
+parallel session's scope.
+
+### Hard blocker: ADB input injection stopped working mid-session
+
+Partway through re-verifying live, every `adb shell input tap/swipe/keyevent` command
+started failing:
+
+```
+java.lang.SecurityException: Injecting input events requires the caller (or the source
+of the instrumentation, if any) to have the INJECT_EVENTS permission.
+```
+
+`adb shell screencap`/`uiautomator dump` (read-only) kept working throughout, and
+`adb shell dumpsys window` confirmed the app stayed the focused foreground activity the
+whole time — this is not a crash, it's MIUI revoking ADB's synthetic-input permission
+independent of the app. Restoring it needs a physical, on-device action (the
+"USB debugging (Security settings)" toggle in Developer Options had already read
+`checked=true` via `uiautomator dump`, so it isn't simply an off toggle to flip back on
+via settings — and flipping it would itself need a tap, which is the exact capability
+that's broken). No further UI automation was possible after this point.
+
+Separately (and now understood, in case it recurs): several `INSTALL_FAILED_USER_
+RESTRICTED` failures earlier this session were **not** the "Install via USB" toggle
+being off (confirmed on via `uiautomator dump`) — they were a **per-install
+confirmation popup** ("Установка через USB", `Установить` / `Запретить (5)` with a
+5-second auto-deny countdown) that a non-interactive `adb install` can never answer in
+time. Caught it once with a background install + rapid screenshot, tapped "Запомнить
+выбор" (remember choice) + Установить within the window — installs went through cleanly
+for the rest of the round without the popup reappearing.
+
+### State left for the next session
+
+- `driver_shell_helpers.dart`'s `readableError` fix and its test are the only
+  uncommitted driver-scope changes this round (`driver_shell.dart` has a net-zero diff —
+  a temporary 3-point diagnostic-toast instrumentation was added to trace this bug live,
+  then fully reverted once the dio-toString root cause was confirmed by reading source
+  instead, so nothing debug-only shipped).
+- A clean release build (region-id fix + `readableError` fix, no debug scaffolding) is
+  built and installed on-device, sitting at the login screen.
+- The seed test driver's server-side status was left as `FREE` (from this round's direct
+  `curl` reproduction of the bug) while the freshly-reinstalled app locally shows
+  offline — harmless and self-correcting (any real status toggle resyncs it), flagged
+  here rather than force-reverted since a follow-up `curl` to set it back to `OFFLINE`
+  was blocked by the session's action-safety classifier.
+- Next step once input injection recovers (needs the user's physical touch on the
+  device) or the user tests manually: log in, go online with the phone physically
+  inside an approved, active region's polygon, and confirm the full success path
+  end-to-end. If a rejection happens for any other reason, it should now render as a
+  specific, correct message instead of silence.
+- Round 31's git-commit-attribution issue (parallel session's `main.dart` work swept
+  into this round's commit) remains open, unchanged, awaiting the user's direction.
+
+### Commit (round 32)
+
+- `Mobile: fix readableError never matching backend error codes (Dio toString gap)`

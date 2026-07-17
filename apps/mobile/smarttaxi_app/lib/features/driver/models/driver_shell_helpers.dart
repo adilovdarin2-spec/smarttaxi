@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../shared/models.dart';
 
 String formatTripHistoryDate(DateTime? date) {
@@ -152,6 +154,21 @@ String readableError(Object error) {
     'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен',
     'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
   };
+  // DioException.toString() never includes the response body — for a
+  // badResponse it's just a generic "status code X means ..." blurb (see
+  // dio's defaultDioExceptionReadableStringBuilder) — so matching the
+  // backend's AppError code (sent as response.data['error'] on every
+  // 4xx/5xx, see apps/api/src/common/errors.js) against error.toString()
+  // below never actually matches for any real backend rejection. Every
+  // driver-side error silently fell through to the generic fallback
+  // instead of the specific message the map below was written for. Read
+  // the code from the response body directly; toString() matching stays
+  // only as a fallback for non-Dio errors (e.g. the SocketException check
+  // above).
+  final responseData = error is DioException ? error.response?.data : null;
+  final code =
+      responseData is Map ? responseData['error']?.toString() : null;
+  if (code != null && map.containsKey(code)) return map[code]!;
   for (final entry in map.entries) {
     if (message.contains(entry.key)) return entry.value;
   }
