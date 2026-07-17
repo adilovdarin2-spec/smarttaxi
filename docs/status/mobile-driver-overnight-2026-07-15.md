@@ -1290,3 +1290,42 @@ unrelated passenger-side failures).
 ### Commit (round 33, continued again)
 
 - `Mobile: fix maneuver/GPS-lost banner overlap and voice-popup offset regression`
+
+### Round 33 — found a stale-assumption bug: rating/favorite silently claimed success
+
+`DriverTripCompletionCard`'s class doc said rating and favorite/block "call endpoints
+that a parallel backend session is still building tonight... best-effort, let the driver
+move on even if they 404" — true when that comment was written, no longer true now.
+`POST /orders/:id/rate-client` and `/favorites/clients` are fully real, validated,
+transactional endpoints (confirmed by reading `orders.routes.js`). But
+`_submitRating()`/`_setPreference()` still did `catch (_) { // best-effort }` and then
+**unconditionally** set `_rated = true` / `_preferenceType = next` in the `finally` block
+regardless of whether the call actually succeeded — so a driver whose rating submission
+failed (network blip, a real validation rejection, anything) saw "Спасибо, оценка
+отправлена" (thank you, rating sent) and the favorite star fill in, for a request that
+silently never reached the server. Not a hypothetical: this is exactly the kind of thing
+that erodes trust once a driver notices a rating they gave never actually shows up.
+
+**Fix**: both methods now only flip their optimistic UI state (`_rated`/`_preferenceType`)
+on genuine success, and show `AppToast.showError(context, readableError(error))` on
+failure instead of silently swallowing it. The driver is never blocked either way — the
+"Готово" button stays available regardless of rating state, same as before — but a
+failure now reads as a failure (form stays up, they can retry) instead of a false
+"done." Checked every other `// Best-effort` comment in driver scope (10 total) for the
+same stale-assumption pattern — all the others are genuinely cosmetic/supplementary
+(SOS location enrichment with an explicit 112 fallback, trip history, demand hints, OSM
+camera/speed-limit overlays, map gesture nudges) where silent degradation is the correct
+behavior, not a leftover "endpoint doesn't exist yet" assumption. This one was the only
+case of a data-modifying action lying about its own outcome.
+
+`flutter analyze`: clean.
+
+### Commit (round 33, rating/favorite fix)
+
+- `Mobile: stop rating/favorite from claiming success when the API call actually failed`
+
+### Note: live device testing resumed by the user directly
+
+The user is now testing the app on-device themselves (not via adb) — holding off on any
+further `adb install`/device interaction while that's happening, per their own
+instruction, rather than risk interfering with or misreading their live session.

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/route_fields.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../shared/models.dart';
@@ -463,11 +464,13 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
 /// Shown once a trip settles into a terminal state (TRIP_COMPLETED and
 /// after) instead of the old bare "Готово" button: a real payout summary,
 /// then rate-the-passenger (stars + tags + comment) and favorite/block
-/// actions, and only then the dismiss button. Rating and favorite/block
-/// both call endpoints (`/orders/:id/rate-client`, `/favorites/clients`)
-/// that a parallel backend session is still building tonight — both calls
-/// are best-effort and let the driver move on even if they 404, per the
-/// "mock it, wire it up later" plan for this feature.
+/// actions, and only then the dismiss button. Rating and favorite/block call
+/// real, fully-built endpoints (`/orders/:id/rate-client`, `/favorites/
+/// clients`) — a driver is never blocked from finishing via "Готово" if
+/// either call fails, but a failure is surfaced (toast + the UI staying in
+/// its pre-submit state) rather than silently claiming success, since a
+/// real endpoint can reject a request for real reasons (not just "doesn't
+/// exist yet").
 class DriverTripCompletionCard extends StatefulWidget {
   const DriverTripCompletionCard({
     super.key,
@@ -524,15 +527,15 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
         tags: _tags.toList(),
         comment: _commentController.text.trim(),
       );
-    } catch (_) {
-      // Best-effort — see class doc.
+      if (mounted) setState(() => _rated = true);
+    } catch (error) {
+      // Leave the rating form up (don't claim "Спасибо, оценка отправлена"
+      // for a request that didn't actually go through) — the driver can
+      // retry immediately, or move on via the always-present "Готово"
+      // button regardless.
+      if (mounted) AppToast.showError(context, readableError(error));
     } finally {
-      if (mounted) {
-        setState(() {
-          _submitting = false;
-          _rated = true;
-        });
-      }
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -547,15 +550,13 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
       } else {
         await widget.api.setClientPreference(clientId: clientId, type: next);
       }
-    } catch (_) {
-      // Best-effort — see class doc.
+      if (mounted) setState(() => _preferenceType = next);
+    } catch (error) {
+      // Don't optimistically flip the star/block icon for a request that
+      // didn't actually save — same reasoning as _submitRating above.
+      if (mounted) AppToast.showError(context, readableError(error));
     } finally {
-      if (mounted) {
-        setState(() {
-          _preferenceSaving = false;
-          _preferenceType = next;
-        });
-      }
+      if (mounted) setState(() => _preferenceSaving = false);
     }
   }
 
