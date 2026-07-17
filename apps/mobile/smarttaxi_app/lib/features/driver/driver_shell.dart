@@ -917,7 +917,8 @@ class _DriverShellState extends State<DriverShell> {
         }
       }
       if (stepIndex < nearestIndex) continue; // already passed
-      final (label, icon) = maneuverLabelAndIcon(step.type, step.modifier);
+      final (label, icon) =
+          maneuverLabelAndIcon(step.type, step.modifier, exit: step.exit);
       return (
         label: label,
         icon: icon,

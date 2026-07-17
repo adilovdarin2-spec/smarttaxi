@@ -8,12 +8,20 @@ import '../../shared/models.dart';
 // mapped to a Russian label + icon for the navigator's turn banner. Kept
 // separate from driver_shell.dart so it's unit-testable without a widget
 // harness, same reasoning as readableError/apiErrorCode above.
-(String, IconData) maneuverLabelAndIcon(String type, String? modifier) {
+(String, IconData) maneuverLabelAndIcon(String type, String? modifier,
+    {int? exit}) {
   switch (type) {
     case 'turn':
     case 'new name':
     case 'end of road':
     case 'fork':
+    // OSRM's 'continue' means the road bears in a direction without a real
+    // intersection choice (e.g. a curving street keeping the same name) —
+    // same modifier vocabulary as 'turn', confirmed live (a Shymkent route
+    // returned "continue"/"right" for a bend in улица Абдыразакова).
+    // Previously fell through to the generic default below, silently
+    // dropping the direction it actually carries.
+    case 'continue':
       switch (modifier) {
         case 'left':
           return ('Поворот налево', Icons.turn_left_rounded);
@@ -43,7 +51,14 @@ import '../../shared/models.dart';
     case 'roundabout':
     case 'rotary':
     case 'roundabout turn':
-      return ('Круговое движение', Icons.roundabout_left_rounded);
+      // OSRM's `exit` on a roundabout maneuver counts exits from 1 — telling
+      // a driver just "circular motion" without which exit to take isn't
+      // enough to actually navigate a multi-exit roundabout correctly.
+      // Russian ordinal abbreviations (N-й) don't need per-number suffix
+      // logic the way English 1st/2nd/3rd does.
+      return exit != null
+          ? ('Круговое движение, $exit-й съезд', Icons.roundabout_left_rounded)
+          : ('Круговое движение', Icons.roundabout_left_rounded);
     case 'exit roundabout':
     case 'exit rotary':
       return ('Съезд с кругового движения', Icons.roundabout_right_rounded);

@@ -451,10 +451,12 @@ class RouteStep {
     required this.streetName,
     required this.distanceMeters,
     required this.location,
+    this.exit,
   });
 
   // OSRM maneuver.type: 'turn', 'depart', 'arrive', 'merge', 'roundabout',
-  // 'fork', 'end of road', 'on ramp', 'off ramp', 'new name', etc.
+  // 'fork', 'end of road', 'on ramp', 'off ramp', 'new name', 'continue',
+  // etc.
   final String type;
   // OSRM maneuver.modifier: 'left', 'right', 'slight left', 'slight right',
   // 'sharp left', 'sharp right', 'straight', 'uturn' — null for types that
@@ -465,6 +467,9 @@ class RouteStep {
   final String streetName;
   final double distanceMeters;
   final Coordinate location;
+  // Only set for a 'roundabout'/'rotary'/'roundabout turn' maneuver — which
+  // exit to take, counting from 1. Null for every other maneuver type.
+  final int? exit;
 
   factory RouteStep.fromJson(Map<String, dynamic> json) {
     return RouteStep(
@@ -476,6 +481,7 @@ class RouteStep {
         lat: _toDouble(json['lat']),
         lng: _toDouble(json['lng']),
       ),
+      exit: json['exit'] is num ? (json['exit'] as num).toInt() : null,
     );
   }
 }

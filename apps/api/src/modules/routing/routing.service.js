@@ -1250,7 +1250,12 @@ function parseSteps(route) {
         streetName: typeof step.name === "string" ? step.name : "",
         distanceMeters: Math.round(Number(step.distance) || 0),
         lat: Number(location[1]),
-        lng: Number(location[0])
+        lng: Number(location[0]),
+        // Only present on a roundabout/rotary maneuver (which exit to take,
+        // counting from 1) — undefined for every other type, and the client
+        // treats a missing/non-numeric value as "no exit info" rather than
+        // guessing one.
+        exit: Number.isFinite(Number(step.maneuver?.exit)) ? Number(step.maneuver.exit) : null
       };
     })
     .filter(Boolean);

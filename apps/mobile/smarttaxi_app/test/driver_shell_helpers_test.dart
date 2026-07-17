@@ -90,6 +90,17 @@ void main() {
       expect(maneuverLabelAndIcon('roundabout', 'right').$1,
           'Круговое движение');
       expect(maneuverLabelAndIcon('arrive', null).$1, 'Вы почти на месте');
+      // OSRM's 'continue' type (confirmed live: a Shymkent route returned
+      // "continue"/"right" for a bend that keeps the same street name) used
+      // to silently fall through to the generic default, dropping the
+      // direction it actually carries.
+      expect(maneuverLabelAndIcon('continue', 'right').$1, 'Поворот направо');
+    });
+
+    test('includes the roundabout exit number when OSRM provides one', () {
+      expect(maneuverLabelAndIcon('roundabout', null, exit: 2).$1,
+          'Круговое движение, 2-й съезд');
+      expect(maneuverLabelAndIcon('roundabout', null).$1, 'Круговое движение');
     });
 
     test('falls back to a generic label for an unrecognized type', () {
@@ -131,13 +142,24 @@ void main() {
             'lat': 40.666525,
             'lng': 68.54342,
           },
+          {
+            'type': 'roundabout',
+            'modifier': 'right',
+            'streetName': '',
+            'distanceMeters': 80,
+            'lat': 40.6668,
+            'lng': 68.5441,
+            'exit': 2,
+          },
         ],
       });
-      expect(route.steps, hasLength(2));
+      expect(route.steps, hasLength(3));
       expect(route.steps[0].type, 'depart');
       expect(route.steps[1].streetName, 'улица Кожанова');
       expect(route.steps[1].modifier, 'right');
       expect(route.steps[1].location.lat, 40.666525);
+      expect(route.steps[1].exit, isNull);
+      expect(route.steps[2].exit, 2);
     });
 
     test('defaults to an empty step list for the straight-line fallback',

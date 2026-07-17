@@ -1227,3 +1227,35 @@ verification rather than waiting on it.
   commit-scope note elsewhere in this doc)
 - `Mobile: sort the region picker by proximity too`
 - `Mobile: voice-announce upcoming turns using real maneuver data`
+
+### Round 33 continued (still blocked on device, static review found two more real gaps)
+
+Kept self-reviewing the turn-by-turn work against real OSRM output instead of idling
+while `adb input` stayed blocked. Queried a Shymkent-area route (`router.project-osrm.org`)
+specifically to exercise more of OSRM's maneuver vocabulary than the first Мырзакент-area
+query happened to hit:
+
+- **`continue` type was silently falling through to the generic default.** OSRM returned
+  `"continue"`/`"right"` for a bend in улица Абдыразакова that keeps the same street name
+  — same modifier vocabulary as `turn`/`new name`/`fork`, but `maneuverLabelAndIcon` didn't
+  have a case for it, so it lost the direction entirely and just said "Двигайтесь по
+  маршруту" instead of "Поворот направо". Added `continue` to the same switch group.
+- **Roundabout exit numbers weren't parsed or shown at all.** OSRM's roundabout maneuver
+  carries an `exit` field (which exit to take, counting from 1) — without it, "Круговое
+  движение" alone doesn't tell a driver which exit is theirs on a multi-exit roundabout,
+  a real, common intersection type in these cities. Backend `parseSteps` now includes
+  `exit`; mobile `RouteStep` parses it; `maneuverLabelAndIcon` appends ", $exit-й съезд"
+  when present (Russian ordinal abbreviations don't need English's 1st/2nd/3rd-style
+  per-number suffix logic, so this is a plain string interpolation, not a lookup table).
+
+4 more tests added (`continue` mapping, exit-number inclusion/omission, `RouteStep.exit`
+parsing) — `driver_shell_helpers_test.dart` is now 12 cases, all passing. `flutter
+analyze`: clean. `node --check` + `routing-location-check.js`: clean. Full `flutter test`:
+30 passed, same 5 pre-existing unrelated passenger-side failures as every prior round.
+Rebuilt, reinstalled (no confirmation popup this time — "Запомнить выбор" from earlier
+this round held). Input injection (`adb shell input keyevent`) still blocked when checked
+immediately after.
+
+### Commit (round 33, continued)
+
+- `Mobile: handle OSRM's 'continue' maneuver type and roundabout exit numbers`
