@@ -1754,3 +1754,45 @@ push notifications — user said "already enabled via Firebase" and shared
 - `Mobile: commit Android platform setup + Firebase push notifications`
 - `fix(api): accept Firebase service-account JSON directly via env var`
 - `fix(api): catch duplicate_table for the referral-code UNIQUE constraint`
+
+## Round 39 — design/critic pass ("ты критик")
+
+User handed over full authority to judge when the design is done. Went back
+through Линия, the order card, active-trip card, trip completion/rating,
+Кошелёк, Документы, Настройки with a critical eye rather than a functional one.
+
+**Verdict on most of it: already genuinely well-designed**, not just
+functional. `DriverShiftHero`/`DriverTodayStrip`/`RouteFields` already have
+WCAG-contrast fixes with comments explaining why, IntrinsicHeight/FittedBox
+used correctly and explained, dark-mode variants built in, thoughtful
+animations. Chased down three things that looked like bugs on first glance and
+turned out not to be, worth recording so a future pass doesn't re-chase them:
+a "stray line" above the bottom nav was an OSM road tile, not a rendering
+glitch; "Куда" truncating while "Откуда" didn't was just two Cyrillic strings
+of very slightly different pixel width hitting an identical, correctly-shared
+truncation rule, not an inconsistency; a map that looked cropped to a tiny
+sliver in one screenshot was a mid-scroll capture of a fixed-246px map, not a
+sizing bug.
+
+**One real bug found and fixed**: `_error` is a single field shared by every
+action across Линия/Заказы/Поездка (go online, region pick, accept/reject/
+cancel/no-show, price offers, etc.), and `_tripTab()` renders it unconditionally
+whenever set — but nothing ever cleared it on navigation. A failure from any
+one of those ~15 call sites kept showing "Не удалось выполнить запрос" at the
+bottom of the Поездка tab indefinitely, including after the driver switched to
+an unrelated tab or the original problem had already resolved. Reproduced live
+(compared two "Активной поездки нет" screenshots from different points this
+session — one clean, one with the stale banner). Fixed with a `_switchTab()`
+helper that clears `_error` alongside changing `_tab`, wired into all three
+places `_tab` actually changes (bottom nav, drawer, back-button-to-Line-tab
+guard). Verified live: fresh install, switched to Поездка — clean, no banner.
+
+Documents screen (repetitive full-card-per-document layout) and the
+balance/debt pairing on Кошелёк were considered and deliberately left alone —
+both are functional and clear, just not maximally compact; redesigning either
+felt like busywork rather than a real fix, especially since documents aren't
+even required to go online.
+
+### Commits (round 39)
+
+- `Mobile: clear stale error banner when switching driver tabs`
