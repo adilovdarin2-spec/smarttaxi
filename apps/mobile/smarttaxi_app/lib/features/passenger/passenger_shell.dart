@@ -3616,7 +3616,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _recurringBookingsScreen() {
     return RefreshIndicator(
-      color: SmartTaxiColors.goldDeep,
+      color: context.palette.goldDeep,
       onRefresh: _loadRecurringBookings,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -3739,7 +3739,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _favoriteAddressesScreen() {
     return RefreshIndicator(
-      color: SmartTaxiColors.goldDeep,
+      color: context.palette.goldDeep,
       onRefresh: _loadFavoriteAddresses,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -3819,7 +3819,7 @@ class _PassengerShellState extends State<PassengerShell>
     final blocked =
         _driverPreferences.where((p) => p.isBlocked).toList(growable: false);
     return RefreshIndicator(
-      color: SmartTaxiColors.goldDeep,
+      color: context.palette.goldDeep,
       onRefresh: _loadDriverPreferences,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -3903,9 +3903,10 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _referralsScreen() {
+    final palette = context.palette;
     final summary = _referralSummary;
     return RefreshIndicator(
-      color: SmartTaxiColors.goldDeep,
+      color: context.palette.goldDeep,
       onRefresh: _loadReferralSummary,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -3938,10 +3939,10 @@ class _PassengerShellState extends State<PassengerShell>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Ваш код',
                     style: TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                      color: palette.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -3994,10 +3995,10 @@ class _PassengerShellState extends State<PassengerShell>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Приглашено',
                           style: TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                            color: palette.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
@@ -4020,10 +4021,10 @@ class _PassengerShellState extends State<PassengerShell>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Заработано',
                           style: TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                            color: palette.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
@@ -4175,6 +4176,7 @@ class _PassengerShellState extends State<PassengerShell>
   Widget _faqScreen() => const _FaqScreen();
 
   Widget _aboutScreen() {
+    final palette = context.palette;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -4189,10 +4191,10 @@ class _PassengerShellState extends State<PassengerShell>
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.',
                 style: TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                  color: palette.textSecondary,
                   height: 1.45,
                   fontWeight: FontWeight.w600,
                 ),
@@ -4234,11 +4236,11 @@ class _PassengerShellState extends State<PassengerShell>
           ),
         ),
         const SizedBox(height: 16),
-        const Center(
+        Center(
           child: Text(
             'SmartTaxi · версия $_appVersion',
             style: TextStyle(
-              color: SmartTaxiColors.textMuted,
+              color: palette.textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -4293,20 +4295,20 @@ class _PassengerShellState extends State<PassengerShell>
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: () => setState(() => _tab = PassengerTab.legalHub),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 children: [
                   Icon(
                     Icons.arrow_back_rounded,
                     size: 18,
-                    color: SmartTaxiColors.goldDeep,
+                    color: context.palette.goldDeep,
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
                     'Все документы',
                     style: TextStyle(
-                      color: SmartTaxiColors.goldDeep,
+                      color: context.palette.goldDeep,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
