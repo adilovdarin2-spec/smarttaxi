@@ -10532,6 +10532,7 @@ class _ChatSheetState extends State<_ChatSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final thread = [..._sent, ..._received]
       ..sort((a, b) => a.at.compareTo(b.at));
     return SafeArea(
@@ -10541,7 +10542,7 @@ class _ChatSheetState extends State<_ChatSheet> {
         height: MediaQuery.sizeOf(context).height * 0.72,
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -10561,10 +10562,10 @@ class _ChatSheetState extends State<_ChatSheet> {
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 2),
-            const Text(
+            Text(
               'Быстрые фразы — свободный текст пока недоступен',
               style: TextStyle(
-                color: SmartTaxiColors.textSecondary,
+                color: palette.textSecondary,
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -10578,7 +10579,7 @@ class _ChatSheetState extends State<_ChatSheet> {
                           child: Text(
                             'Сообщений пока нет',
                             style: TextStyle(
-                              color: SmartTaxiColors.textSecondary,
+                              color: palette.textSecondary,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
@@ -10632,6 +10633,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final time =
         '${entry.at.hour.toString().padLeft(2, '0')}:${entry.at.minute.toString().padLeft(2, '0')}';
     return Align(
@@ -10643,7 +10645,7 @@ class _ChatBubble extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
         decoration: BoxDecoration(
-          color: entry.fromMe ? SmartTaxiColors.gold : SmartTaxiColors.goldPale,
+          color: entry.fromMe ? palette.gold : palette.goldPale,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -10658,7 +10660,7 @@ class _ChatBubble extends StatelessWidget {
             Text(
               entry.text,
               style: TextStyle(
-                color: entry.fromMe ? Colors.white : SmartTaxiColors.text,
+                color: entry.fromMe ? Colors.white : palette.text,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
               ),
@@ -10669,7 +10671,7 @@ class _ChatBubble extends StatelessWidget {
               style: TextStyle(
                 color: entry.fromMe
                     ? Colors.white.withValues(alpha: 0.75)
-                    : SmartTaxiColors.textSecondary,
+                    : palette.textSecondary,
                 fontSize: 9.5,
                 fontWeight: FontWeight.w700,
                 fontFeatures: const [FontFeature.tabularFigures()],
