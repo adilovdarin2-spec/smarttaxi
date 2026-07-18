@@ -7371,6 +7371,7 @@ class _TripStatusPanel extends StatelessWidget {
                   phone: order.driverPhone,
                   api: api,
                   orderId: order.id,
+                  avatarUrl: order.driverAvatarUrl,
                 ),
                 if ((order.notes ?? '').isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -7614,6 +7615,7 @@ class _TripStatusPanel extends StatelessWidget {
                   phone: order.driverPhone,
                   api: api,
                   orderId: order.id,
+                  avatarUrl: order.driverAvatarUrl,
                 ),
               ] else
                 _CompactNotice(
@@ -9781,11 +9783,17 @@ class _InitialsAvatar extends StatelessWidget {
     required this.name,
     this.size = 52,
     this.showStatusDot = true,
+    this.avatarUrl,
   });
 
   final String name;
   final double size;
   final bool showStatusDot;
+  // Driver's own camera-only photo (see driver_shell.dart's matching avatar
+  // upload) — shown in place of the initials once a driver is assigned to
+  // the order. Falls back to the initials on load failure or before any
+  // photo was ever uploaded, same as the driver-side profile circle.
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -9798,6 +9806,7 @@ class _InitialsAvatar extends StatelessWidget {
           width: size,
           height: size,
           alignment: Alignment.center,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [SmartTaxiColors.goldSoft, SmartTaxiColors.goldDeep],
@@ -9813,14 +9822,29 @@ class _InitialsAvatar extends StatelessWidget {
               ),
             ],
           ),
-          child: Text(
-            initial,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: size * 0.365,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          child: avatarUrl == null
+              ? Text(
+                  initial,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: size * 0.365,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+              : Image.network(
+                  '${AppConfig.apiBaseUrl}$avatarUrl',
+                  fit: BoxFit.cover,
+                  width: size,
+                  height: size,
+                  errorBuilder: (context, error, stackTrace) => Text(
+                    initial,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: size * 0.365,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
         ),
         if (showStatusDot)
           Positioned(
@@ -10666,6 +10690,7 @@ class _DriverContactCard extends StatelessWidget {
     required this.api,
     required this.orderId,
     this.compact = false,
+    this.avatarUrl,
   });
 
   final String name;
@@ -10677,6 +10702,7 @@ class _DriverContactCard extends StatelessWidget {
   final ApiClient api;
   final String orderId;
   final bool compact;
+  final String? avatarUrl;
 
   Future<void> _call() async {
     final number = phone?.trim();
@@ -10707,7 +10733,11 @@ class _DriverContactCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _InitialsAvatar(name: displayName, size: 38, showStatusDot: false),
+            _InitialsAvatar(
+                name: displayName,
+                size: 38,
+                showStatusDot: false,
+                avatarUrl: avatarUrl),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -10802,7 +10832,7 @@ class _DriverContactCard extends StatelessWidget {
                 curve: Curves.elasticOut,
                 builder: (context, scale, child) =>
                     Transform.scale(scale: scale, child: child),
-                child: _InitialsAvatar(name: displayName),
+                child: _InitialsAvatar(name: displayName, avatarUrl: avatarUrl),
               ),
               const SizedBox(width: 13),
               Expanded(

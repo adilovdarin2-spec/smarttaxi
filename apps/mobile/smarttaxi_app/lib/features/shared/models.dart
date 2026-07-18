@@ -577,6 +577,7 @@ class OrderSummary {
     this.driverCarModel,
     this.driverCarColor,
     this.driverPlate,
+    this.driverAvatarUrl,
     this.driverRating,
     this.offeredPriceKzt,
     this.shareToken,
@@ -614,6 +615,7 @@ class OrderSummary {
   final String? driverCarModel;
   final String? driverCarColor;
   final String? driverPlate;
+  final String? driverAvatarUrl;
   final double? driverRating;
   // Set when the rider raised/lowered the fare via the "своя цена" stepper
   // instead of accepting the calculated estimate as-is.
@@ -685,6 +687,7 @@ class OrderSummary {
       driverCarModel: driverCarModel,
       driverCarColor: driverCarColor,
       driverPlate: driverPlate,
+      driverAvatarUrl: driverAvatarUrl,
       driverRating: driverRating,
       offeredPriceKzt: offeredPriceKzt,
       shareToken: shareToken,
@@ -760,6 +763,8 @@ class OrderSummary {
       driverCarColor:
           (json['driver_car_color'] ?? json['driverCarColor'])?.toString(),
       driverPlate: (json['driver_plate'] ?? json['driverPlate'])?.toString(),
+      driverAvatarUrl:
+          (json['driver_avatar_url'] ?? json['driverAvatarUrl'])?.toString(),
       driverRating:
           _nullableDouble(json['driver_rating'] ?? json['driverRating']),
       offeredPriceKzt: int.tryParse(
