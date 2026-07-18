@@ -8591,16 +8591,16 @@ class _ConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = danger ? SmartTaxiColors.danger : SmartTaxiColors.goldDeep;
-    final accentSoft =
-        danger ? SmartTaxiColors.dangerSoft : SmartTaxiColors.goldSurface;
+    final palette = context.palette;
+    final accent = danger ? palette.danger : palette.goldDeep;
+    final accentSoft = danger ? palette.dangerSoft : palette.goldSurface;
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -8630,8 +8630,8 @@ class _ConfirmSheet extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: SmartTaxiColors.text,
+              style: TextStyle(
+                color: palette.text,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
@@ -8640,8 +8640,8 @@ class _ConfirmSheet extends StatelessWidget {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: SmartTaxiColors.textSecondary,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 13,
                 height: 1.4,
                 fontWeight: FontWeight.w600,
