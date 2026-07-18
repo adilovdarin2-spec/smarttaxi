@@ -766,7 +766,22 @@ const statements = [
     UNIQUE(driver_id, client_id)
   )`,
   "CREATE INDEX IF NOT EXISTS idx_driver_client_preferences_driver_id ON driver_client_preferences(driver_id)",
-  "CREATE INDEX IF NOT EXISTS idx_driver_client_preferences_client_id ON driver_client_preferences(client_id)"
+  "CREATE INDEX IF NOT EXISTS idx_driver_client_preferences_client_id ON driver_client_preferences(client_id)",
+
+  // --- Stage: camera-only driver avatar, shown to passengers on the order ---
+  // A separate table, not a column on drivers — `drivers` is read all over
+  // this codebase with SELECT *, and a BYTEA column there would put raw
+  // image bytes in every one of those payloads. Stored directly in Postgres
+  // rather than on disk: Railway's container filesystem doesn't survive a
+  // redeploy (see the driver-documents upload dir, which has the same
+  // exposure), and a single compressed face photo is small enough that a
+  // BYTEA row is simpler than standing up external object storage for it.
+  `CREATE TABLE IF NOT EXISTS driver_avatars (
+    driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
+    data BYTEA NOT NULL,
+    mime TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`
 ];
 
 export async function runMigrations() {

@@ -42,7 +42,8 @@ export const ORDER_SELECT = `
   d.car_model AS driver_car_model,
   d.car_color AS driver_car_color,
   d.plate AS driver_plate,
-  d.rating AS driver_rating
+  d.rating AS driver_rating,
+  CASE WHEN d.id IS NULL THEN NULL ELSE ('/api/drivers/' || d.id::text || '/avatar') END AS driver_avatar_url
 `;
 export function publicOrderResponse(order) {
   if (!order) return order;
@@ -143,6 +144,7 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
       SELECT o.status, o.tariff, o.pickup_text, o.dropoff_text, o.created_at,
              o.pickup_lat, o.pickup_lng, o.dropoff_lat, o.dropoff_lng,
              d.name AS driver_name, d.car_model AS driver_car_model, d.car_color AS driver_car_color, d.plate AS driver_plate,
+             CASE WHEN d.id IS NULL THEN NULL ELSE ('/api/drivers/' || d.id::text || '/avatar') END AS driver_avatar_url,
              dl.lat AS driver_lat, dl.lng AS driver_lng, dl.updated_at AS driver_location_updated_at
       FROM orders o
       LEFT JOIN drivers d ON d.id=o.driver_id
@@ -183,6 +185,7 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
         driverName: order.driver_name,
         driverCar: [order.driver_car_color, order.driver_car_model].filter(Boolean).join(" ") || null,
         driverPlate: order.driver_plate,
+        driverAvatarUrl: order.driver_avatar_url,
         driverLocation,
         route,
         createdAt: order.created_at

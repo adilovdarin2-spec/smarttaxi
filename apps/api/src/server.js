@@ -29,6 +29,7 @@ import notificationsRoutes from "./modules/notifications/notifications.routes.js
 import supportRoutes, { adminSupportRouter } from "./modules/support/support.routes.js";
 import walletRoutes from "./modules/wallet/wallet.routes.js";
 import driverDocumentsRoutes, { driverApplicationDocumentsRouter } from "./modules/driver-documents/driver-documents.routes.js";
+import driverAvatarRoutes from "./modules/drivers/driver-avatar.routes.js";
 import favoritesRoutes from "./modules/favorites/favorites.routes.js";
 import referralsRoutes from "./modules/referrals/referrals.routes.js";
 import recurringBookingsRoutes from "./modules/recurring-bookings/recurring-bookings.routes.js";
@@ -145,6 +146,7 @@ app.use("/api/notifications", notificationsRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/drivers/me/wallet", walletRoutes);
 app.use("/api/drivers/me/documents", driverDocumentsRoutes);
+app.use("/api/drivers/me/avatar", driverAvatarRoutes);
 app.use("/api/driver-applications", driverApplicationDocumentsRouter);
 app.use("/api/favorites", favoritesRoutes);
 app.use("/api/referrals", referralsRoutes);

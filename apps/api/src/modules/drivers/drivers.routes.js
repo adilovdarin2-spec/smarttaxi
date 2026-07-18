@@ -85,6 +85,12 @@ router.get("/me", requireAuth, requireRole("DRIVER"), async (req, res, next) => 
     const result = await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id]);
     if (!result.rows[0]) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
     const driver = await syncDriverAvailability(result.rows[0], query);
+    const avatar = (await query(
+      "SELECT updated_at FROM driver_avatars WHERE driver_id=$1", [driver.id]
+    )).rows[0];
+    driver.avatar_url = avatar
+      ? `/api/drivers/${driver.id}/avatar?v=${new Date(avatar.updated_at).getTime()}`
+      : null;
     res.json({ driver });
   } catch (e) { next(e); }
 });
@@ -305,6 +311,24 @@ router.patch("/:id/block", requireAuth, requireRole("OWNER"), async (req, res, n
       req
     });
     res.json({ driver: result.rows[0] });
+  } catch (e) { next(e); }
+});
+
+// Public and unauthenticated on purpose: a passenger's client shows this as
+// a plain <img>-style network request during an active order, with no
+// driver-scoped token to attach. Driver ids aren't guessable/enumerable from
+// the passenger side in practice — they only ever see the id of a driver
+// already assigned to their own order.
+router.get("/:id/avatar", async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const row = (await query(
+      "SELECT data, mime FROM driver_avatars WHERE driver_id=$1", [params.id]
+    )).rows[0];
+    if (!row) throw new AppError("Avatar not found", 404, "AVATAR_NOT_FOUND");
+    res.set("Content-Type", row.mime);
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(row.data);
   } catch (e) { next(e); }
 });
 
