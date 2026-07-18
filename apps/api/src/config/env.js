@@ -127,9 +127,14 @@ export const env = {
   DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD || "ChangeMe_2026!",
   DEFAULT_DRIVER_PHONE: process.env.DEFAULT_DRIVER_PHONE || "+77000000000",
   DEFAULT_DRIVER_PASSWORD: process.env.DEFAULT_DRIVER_PASSWORD || "123456",
-  // Path to the Firebase Admin SDK service-account JSON (Project settings ->
-  // Service accounts -> Generate new private key). Push sending is a no-op
-  // (logged, not thrown) whenever this is unset — see push.service.js.
+  // Firebase Admin SDK service-account credentials (Project settings ->
+  // Service accounts -> Generate new private key). _JSON takes the whole
+  // downloaded file's contents directly (the practical option on Railway,
+  // which has no durable place to put a file across deploys); _PATH reads
+  // it from disk instead, for local dev with the file sitting next to the
+  // repo. Push sending is a no-op (logged, not thrown) whenever neither is
+  // set — see push.service.js.
+  FIREBASE_SERVICE_ACCOUNT_JSON: process.env.FIREBASE_SERVICE_ACCOUNT_JSON || "",
   FIREBASE_SERVICE_ACCOUNT_PATH: process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "",
   // Crash/error monitoring (Sentry). Empty disables reporting entirely —
   // see common/sentry.js.

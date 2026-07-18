@@ -8,23 +8,35 @@ let initAttempted = false;
 function getApp() {
   if (initAttempted) return firebaseApp;
   initAttempted = true;
-  if (!env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+
+  // _JSON (the whole service-account file's contents, pasted as one env
+  // var) takes priority — Railway has no durable place to point _PATH at
+  // across deploys. _PATH stays for local dev, where the file can just sit
+  // next to the repo.
+  const source = env.FIREBASE_SERVICE_ACCOUNT_JSON
+    ? "FIREBASE_SERVICE_ACCOUNT_JSON"
+    : env.FIREBASE_SERVICE_ACCOUNT_PATH
+      ? "FIREBASE_SERVICE_ACCOUNT_PATH"
+      : null;
+  if (!source) {
     console.warn(
-      "[push] FIREBASE_SERVICE_ACCOUNT_PATH is not set — push notifications " +
-      "are disabled (in-app notification rows are still created)."
+      "[push] Neither FIREBASE_SERVICE_ACCOUNT_JSON nor FIREBASE_SERVICE_ACCOUNT_PATH " +
+      "is set — push notifications are disabled (in-app notification rows are still created)."
     );
     return null;
   }
   try {
-    const raw = readFileSync(env.FIREBASE_SERVICE_ACCOUNT_PATH, "utf8");
+    const raw = source === "FIREBASE_SERVICE_ACCOUNT_JSON"
+      ? env.FIREBASE_SERVICE_ACCOUNT_JSON
+      : readFileSync(env.FIREBASE_SERVICE_ACCOUNT_PATH, "utf8");
     const serviceAccount = JSON.parse(raw);
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
-    console.log("[push] Firebase Admin initialized");
+    console.log(`[push] Firebase Admin initialized from ${source}`);
   } catch (error) {
     console.error(
-      "[push] Failed to initialize Firebase Admin from FIREBASE_SERVICE_ACCOUNT_PATH — push notifications disabled:",
+      `[push] Failed to initialize Firebase Admin from ${source} — push notifications disabled:`,
       error.message
     );
     firebaseApp = null;
