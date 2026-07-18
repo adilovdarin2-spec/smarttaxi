@@ -2201,6 +2201,208 @@ additive, and mirrors an independently-already-verified widget exactly, so
 confidence is high, but this is the one piece in this round that's
 code-reviewed and regression-checked rather than end-to-end device-verified.
 
+**Permission-setting question, and a boundary worth recording.** Asked where
+to grant the permission the auto-mode classifier was withholding for
+Railway/DB actions (round 47). Explained the mechanism
+(`permissions.allow` Bash rules and the dedicated `autoMode.allow/soft_deny/
+hard_deny` classifier-customization keys) and where the settings files live.
+User then said to add it globally — attempting the edit to
+`~/.claude/settings.json` itself was **also denied by the same classifier**.
+Did not attempt to route around it (e.g. via a shell redirect instead of
+the Edit tool) — self-modifying the permission config that gates your own
+actions is exactly the kind of confused-deputy pattern that boundary exists
+to catch, so it stays a user-must-do-it-by-hand action, not something to
+work around.
+
+**Root cause of the theme bug**, found by reading `_showDriverFullSheet`
+(driver_shell.dart): it took a pre-built `Widget` (not a builder) and a
+`backgroundColor: context.palette.appBackground` argument passed directly to
+`showModalBottomSheet`. Both are resolved exactly once, at the moment the
+caller taps through (e.g. `_showDriverFullSheet(_driverSettingsContent())`)
+— any `context.palette.X` colors inside that content, and the sheet's own
+backdrop color, are baked into concrete `Color` values right then. Toggling
+theme while the sheet stays open changes nothing already-constructed;
+closing and reopening calls the content method fresh, which is exactly the
+symptom reported ("changes on the *next* open, not live").
+
+Fix: `_showDriverFullSheet` now takes `Widget Function() contentBuilder`
+and calls it inside its own `builder:` callback; the backdrop moved from
+the route-level `backgroundColor` argument (frozen) into a `ColoredBox`
+painted inside that same builder (`Colors.transparent` at the route level +
+`ClipRRect` for the rounded top corners, replacing the old `shape:`
+argument). All ~10 call sites updated to pass a builder/tear-off instead of
+an already-built widget (`_showDriverFullSheet(_driverSettingsContent)`
+instead of `_driverSettingsContent()`, `() => DriverWalletScreen(...)` for
+the screen-class ones). Verified live on-device both directions (light→dark
+and dark→light) with the Settings sheet held open across the switch — every
+card, the title strip, and the gaps between cards now repaint immediately;
+confirmed via direct pixel sampling of the screenshot (`(7,20,38)` dark vs
+`(254,254,254)` white at the same coordinates before/after) that no seam
+was left un-repainted.
+
+**The "white elements" complaint was a second, separate bug.** A parallel
+session (working the passenger side) had independently found and documented
+in `docs/status/NEXT-SESSION-PROMPT.md` that most of `driver_shell.dart` (and
+all of `passenger_shell.dart`) still reads static `SmartTaxiColors.xxx`
+instead of the theme-aware `context.palette.X`, and flagged it as its own
+follow-up task for after this driver session ends. Rather than doing a
+blanket find-replace across all 62 `SmartTaxiColors.` references in
+`driver_shell.dart` — many of those are the Smart Navigator "cockpit" screens
+(map, route line, turn-instruction banner, metrics), which are *deliberately*
+styled as a fixed dark/gold dashboard regardless of app theme, same as a
+dedicated GPS app — checked each cluster by its enclosing class and only
+migrated the ones that are genuine app chrome, not map/cockpit decoration:
+- `_RoadAlertsSheetState`'s own sheet background (`SmartTaxiColors.appBackground`
+  → `context.palette.appBackground`) — same class of bug as the
+  `_showDriverFullSheet` fix above, in a sheet that builds its own
+  `DraggableScrollableSheet` independently.
+- `_RoadAlertRow`'s card (background/border/four `textSecondary` text
+  colors) — a genuinely theme-broken card sitting inside an otherwise
+  already-palette-aware screen.
+- **`lib/core/widgets/empty_state.dart`** — the shared `EmptyState` widget
+  used for every "nothing here yet" screen across *both* driver and
+  passenger. Its card, icon badge, title, and body text were all hardcoded
+  (`SmartTaxiColors.cardWarm`/`Colors.white`/`textSecondary`), so any empty
+  list anywhere in the app showed a stark white card in dark mode — this is
+  almost certainly what the user actually saw and flagged. Migrated to
+  `context.palette` (`card` for the inner icon badge, matching the original
+  pure-white vs. tinted-card contrast intent; `cardWarm`/`border`/
+  `borderStrong`/`textSecondary`/`text`/`goldDeep` elsewhere). Fixing this
+  one file benefits every screen that renders an empty state, not just
+  driver ones.
+
+Deliberately left alone (by design, not oversight): `_SmartNavigatorMap`,
+`_NavigatorCurrentMarker`, `_NavigatorPointMarker`, `_NavigatorMetric`,
+`_DriverFullScreenNavigator`, `_NavCircleButton`, `_NavTargetStrip`,
+`_TripMap`, `_DriverMapBadge`, `_RoadAlertMap`, `_RoadAlertMapFallback`,
+`_alertColor()`'s semantic pin-color map — all map/cockpit decoration that
+should stay visually constant regardless of app theme. The rest of
+`driver_shell.dart`'s ~50 remaining static-color references live in these
+same clusters. `passenger_shell.dart`'s full migration remains the parallel
+session's task, unchanged by tonight's work.
+
+Verified live on-device: reopened Дорожные события in dark mode — sheet
+background, the empty-state card, and its icon badge all now render in
+dark tones with legible text (previously a bright white card sat inside an
+otherwise-dark sheet). `flutter analyze` clean after each edit (only the
+two pre-existing unrelated warnings in passenger_shell.dart/main.dart).
+
+**Note on git history for this round**: the theme-builder fix
+(`_showDriverFullSheet`) ended up committed as part of commit `af0d40b`
+("feat: app-update-available/required screen...") by a parallel session
+sharing this working tree, not as its own commit — confirmed via
+`git show --stat` that the diff is complete and correct, just bundled under
+an unrelated commit message (the git-staging-race risk this doc has flagged
+before: another live session's `git add`/`git commit` swept up these
+already-edited-but-uncommitted files). The `empty_state.dart` fix and this
+status-doc update are committed separately below, correctly attributed.
+
 ### Commits (round 47)
 
 - `Mobile: show driver's camera-only photo to passengers during a trip`
+
+## Round 48 — theme-toggle live-update bug (bottom sheets), plus a shared EmptyState fix
+
+User report: switching theme in Настройки left borders/backgrounds on the
+old colors until leaving the sheet and reopening it, and separately "many
+elements are still white" after switching to dark.
+
+**Permission-setting question, and a boundary worth recording.** Asked where
+to grant the permission the auto-mode classifier was withholding for
+Railway/DB actions (round 47). Explained the mechanism
+(`permissions.allow` Bash rules and the dedicated `autoMode.allow/soft_deny/
+hard_deny` classifier-customization keys) and where the settings files live.
+User then said to add it globally — attempting the edit to
+`~/.claude/settings.json` itself was **also denied by the same classifier**.
+Did not attempt to route around it (e.g. via a shell redirect instead of
+the Edit tool) — self-modifying the permission config that gates your own
+actions is exactly the kind of confused-deputy pattern that boundary exists
+to catch, so it stays a user-must-do-it-by-hand action, not something to
+work around.
+
+**Root cause of the theme bug**, found by reading `_showDriverFullSheet`
+(driver_shell.dart): it took a pre-built `Widget` (not a builder) and a
+`backgroundColor: context.palette.appBackground` argument passed directly to
+`showModalBottomSheet`. Both are resolved exactly once, at the moment the
+caller taps through (e.g. `_showDriverFullSheet(_driverSettingsContent())`)
+— any `context.palette.X` colors inside that content, and the sheet's own
+backdrop color, are baked into concrete `Color` values right then. Toggling
+theme while the sheet stays open changes nothing already-constructed;
+closing and reopening calls the content method fresh, which is exactly the
+symptom reported ("changes on the *next* open, not live").
+
+Fix: `_showDriverFullSheet` now takes `Widget Function() contentBuilder`
+and calls it inside its own `builder:` callback; the backdrop moved from
+the route-level `backgroundColor` argument (frozen) into a `ColoredBox`
+painted inside that same builder (`Colors.transparent` at the route level +
+`ClipRRect` for the rounded top corners, replacing the old `shape:`
+argument). All ~10 call sites updated to pass a builder/tear-off instead of
+an already-built widget (`_showDriverFullSheet(_driverSettingsContent)`
+instead of `_driverSettingsContent()`, `() => DriverWalletScreen(...)` for
+the screen-class ones). Verified live on-device both directions (light→dark
+and dark→light) with the Settings sheet held open across the switch — every
+card, the title strip, and the gaps between cards now repaint immediately;
+confirmed via direct pixel sampling of the screenshot (`(7,20,38)` dark vs
+`(254,254,254)` white at the same coordinates before/after) that no seam
+was left un-repainted.
+
+**The "white elements" complaint was a second, separate bug.** A parallel
+session (working the passenger side) had independently found and documented
+in `docs/status/NEXT-SESSION-PROMPT.md` that most of `driver_shell.dart` (and
+all of `passenger_shell.dart`) still reads static `SmartTaxiColors.xxx`
+instead of the theme-aware `context.palette.X`, and flagged it as its own
+follow-up task for after this driver session ends. Rather than doing a
+blanket find-replace across all 62 `SmartTaxiColors.` references in
+`driver_shell.dart` — many of those are the Smart Navigator "cockpit" screens
+(map, route line, turn-instruction banner, metrics), which are *deliberately*
+styled as a fixed dark/gold dashboard regardless of app theme, same as a
+dedicated GPS app — checked each cluster by its enclosing class and only
+migrated the ones that are genuine app chrome, not map/cockpit decoration:
+- `_RoadAlertsSheetState`'s own sheet background (`SmartTaxiColors.appBackground`
+  → `context.palette.appBackground`) — same class of bug as the
+  `_showDriverFullSheet` fix above, in a sheet that builds its own
+  `DraggableScrollableSheet` independently.
+- `_RoadAlertRow`'s card (background/border/four `textSecondary` text
+  colors) — a genuinely theme-broken card sitting inside an otherwise
+  already-palette-aware screen.
+- **`lib/core/widgets/empty_state.dart`** — the shared `EmptyState` widget
+  used for every "nothing here yet" screen across *both* driver and
+  passenger. Its card, icon badge, title, and body text were all hardcoded
+  (`SmartTaxiColors.cardWarm`/`Colors.white`/`textSecondary`), so any empty
+  list anywhere in the app showed a stark white card in dark mode — this is
+  almost certainly what the user actually saw and flagged. Migrated to
+  `context.palette` (`card` for the inner icon badge, matching the original
+  pure-white vs. tinted-card contrast intent; `cardWarm`/`border`/
+  `borderStrong`/`textSecondary`/`text`/`goldDeep` elsewhere). Fixing this
+  one file benefits every screen that renders an empty state, not just
+  driver ones.
+
+Deliberately left alone (by design, not oversight): `_SmartNavigatorMap`,
+`_NavigatorCurrentMarker`, `_NavigatorPointMarker`, `_NavigatorMetric`,
+`_DriverFullScreenNavigator`, `_NavCircleButton`, `_NavTargetStrip`,
+`_TripMap`, `_DriverMapBadge`, `_RoadAlertMap`, `_RoadAlertMapFallback`,
+`_alertColor()`'s semantic pin-color map — all map/cockpit decoration that
+should stay visually constant regardless of app theme. The rest of
+`driver_shell.dart`'s ~50 remaining static-color references live in these
+same clusters. `passenger_shell.dart`'s full migration remains the parallel
+session's task, unchanged by tonight's work.
+
+Verified live on-device: reopened Дорожные события in dark mode — sheet
+background, the empty-state card, and its icon badge all now render in
+dark tones with legible text (previously a bright white card sat inside an
+otherwise-dark sheet). `flutter analyze` clean after each edit (only the
+two pre-existing unrelated warnings in passenger_shell.dart/main.dart).
+
+**Note on git history for this round**: the theme-builder fix
+(`_showDriverFullSheet`) ended up committed as part of commit `af0d40b`
+("feat: app-update-available/required screen...") by a parallel session
+sharing this working tree, not as its own commit — confirmed via
+`git show --stat` that the diff is complete and correct, just bundled under
+an unrelated commit message (the git-staging-race risk this doc has flagged
+before: another live session's `git add`/`git commit` swept up these
+already-edited-but-uncommitted files). The `empty_state.dart` fix and this
+status-doc update are committed separately below, correctly attributed.
+
+### Commits (round 48)
+
+- `Mobile: fix theme not updating live in driver bottom sheets + shared EmptyState widget`

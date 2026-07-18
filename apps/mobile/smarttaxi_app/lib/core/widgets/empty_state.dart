@@ -27,8 +27,8 @@ class EmptyState extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
           decoration: BoxDecoration(
-            color: SmartTaxiColors.cardWarm,
-            border: Border.all(color: SmartTaxiColors.border),
+            color: context.palette.cardWarm,
+            border: Border.all(color: context.palette.border),
             borderRadius: BorderRadius.circular(28),
             boxShadow: const [
               BoxShadow(
@@ -45,8 +45,8 @@ class EmptyState extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: SmartTaxiColors.borderStrong),
+                  color: context.palette.card,
+                  border: Border.all(color: context.palette.borderStrong),
                   borderRadius: BorderRadius.circular(26),
                   boxShadow: const [
                     BoxShadow(
@@ -56,12 +56,13 @@ class EmptyState extends StatelessWidget {
                   ],
                 ),
                 child: Icon(icon ?? Icons.route_outlined,
-                    color: SmartTaxiColors.goldDeep, size: 31),
+                    color: context.palette.goldDeep, size: 31),
               ),
               const SizedBox(height: 16),
               Text(title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
+                      color: context.palette.text,
                       fontSize: 17.5,
                       height: 1.2,
                       fontWeight: FontWeight.w900)),
@@ -69,8 +70,8 @@ class EmptyState extends StatelessWidget {
               Text(
                 text,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                style: TextStyle(
+                    color: context.palette.textSecondary,
                     fontSize: 14,
                     height: 1.38,
                     fontWeight: FontWeight.w600),

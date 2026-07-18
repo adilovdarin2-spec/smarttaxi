@@ -5227,9 +5227,9 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       minChildSize: 0.58,
       maxChildSize: 0.96,
       builder: (context, controller) => Container(
-        decoration: const BoxDecoration(
-          color: SmartTaxiColors.appBackground,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: context.palette.appBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: ListView(
           controller: controller,
@@ -5632,8 +5632,8 @@ class _RoadAlertRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: context.palette.goldSurface,
+        border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -5654,8 +5654,8 @@ class _RoadAlertRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     alert.comment,
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: context.palette.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -5665,8 +5665,8 @@ class _RoadAlertRow extends StatelessWidget {
                   'Доверие: ${alert.confidenceScore}% · подтверждений: ${alert.confirmationsCount}',
                   // textSecondary, not textMuted — textMuted's contrast
                   // against the background fails WCAG AA (~2.5:1).
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: context.palette.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -5675,8 +5675,8 @@ class _RoadAlertRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Ограничение: ${alert.speedLimit} км/ч',
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: context.palette.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
@@ -5686,8 +5686,8 @@ class _RoadAlertRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Смотрит: ${compassLabel(alert.heading!)}',
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: context.palette.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                     ),
