@@ -13386,11 +13386,12 @@ class _SmartDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final width = MediaQuery.sizeOf(context).width;
     final drawerWidth = (width * 0.82).clamp(296.0, 368.0).toDouble();
     return Drawer(
       width: drawerWidth,
-      backgroundColor: Colors.white,
+      backgroundColor: palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(30)),
       ),
@@ -13402,8 +13403,8 @@ class _SmartDrawer extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: SmartTaxiColors.border),
+                color: palette.card,
+                border: Border.all(color: palette.border),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: const [
                   BoxShadow(
@@ -13437,19 +13438,16 @@ class _SmartDrawer extends StatelessWidget {
                               height: 40,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
+                                gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [
-                                    SmartTaxiColors.gold,
-                                    SmartTaxiColors.goldDeep,
-                                  ],
+                                  colors: [palette.gold, palette.goldDeep],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: SmartTaxiColors.gold
-                                        .withValues(alpha: 0.32),
+                                    color:
+                                        palette.gold.withValues(alpha: 0.32),
                                     blurRadius: 14,
                                     offset: const Offset(0, 6),
                                   ),
@@ -13479,8 +13477,8 @@ class _SmartDrawer extends StatelessWidget {
                                         : accountLabel,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: SmartTaxiColors.text,
+                                    style: TextStyle(
+                                      color: palette.text,
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -13492,8 +13490,8 @@ class _SmartDrawer extends StatelessWidget {
                                         accountPhone,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: SmartTaxiColors.textSecondary,
+                                        style: TextStyle(
+                                          color: palette.textSecondary,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -13502,9 +13500,9 @@ class _SmartDrawer extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right_rounded,
-                              color: SmartTaxiColors.textSecondary,
+                              color: palette.textSecondary,
                               size: 20,
                             ),
                           ],
@@ -13519,13 +13517,13 @@ class _SmartDrawer extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: SmartTaxiColors.goldSurface,
+                      color: palette.goldSurface,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Региональное такси',
                       style: TextStyle(
-                        color: SmartTaxiColors.goldDeep,
+                        color: palette.goldDeep,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                       ),
@@ -13648,10 +13646,10 @@ class _SmartDrawer extends StatelessWidget {
               onTap: onLogout,
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'SmartTaxi · v$_appVersion',
               style: TextStyle(
-                color: SmartTaxiColors.textMuted,
+                color: palette.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -13681,20 +13679,17 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = danger
-        ? SmartTaxiColors.danger
-        : active
-            ? SmartTaxiColors.text
-            : SmartTaxiColors.text;
+    final palette = context.palette;
+    final tone = danger ? palette.danger : palette.text;
     final iconTone = danger
-        ? SmartTaxiColors.danger
+        ? palette.danger
         : active
-            ? SmartTaxiColors.goldDeep
-            : SmartTaxiColors.text;
+            ? palette.goldDeep
+            : palette.text;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 1.5),
       child: Material(
-        color: active ? SmartTaxiColors.goldSurface : Colors.transparent,
+        color: active ? palette.goldSurface : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -13705,10 +13700,9 @@ class _DrawerItem extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 50),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: active ? SmartTaxiColors.goldSurface : Colors.transparent,
+              color: active ? palette.goldSurface : Colors.transparent,
               border: Border.all(
-                color:
-                    active ? SmartTaxiColors.borderStrong : Colors.transparent,
+                color: active ? palette.borderStrong : Colors.transparent,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: active
@@ -13729,16 +13723,16 @@ class _DrawerItem extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: danger
-                        ? const Color(0xfffff1f1)
+                        ? palette.dangerSoft
                         : active
-                            ? SmartTaxiColors.goldSurface
-                            : Colors.white,
+                            ? palette.goldSurface
+                            : palette.card,
                     border: Border.all(
                       color: danger
-                          ? const Color(0xffffd4d4)
+                          ? palette.danger.withValues(alpha: 0.35)
                           : active
-                              ? SmartTaxiColors.borderStrong
-                              : SmartTaxiColors.border,
+                              ? palette.borderStrong
+                              : palette.border,
                     ),
                     borderRadius: BorderRadius.circular(13),
                   ),
@@ -13764,10 +13758,10 @@ class _DrawerItem extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   color: danger
-                      ? SmartTaxiColors.danger
+                      ? palette.danger
                       : active
-                          ? SmartTaxiColors.goldDeep
-                          : SmartTaxiColors.textSecondary,
+                          ? palette.goldDeep
+                          : palette.textSecondary,
                   size: 22,
                 ),
               ],
@@ -13790,8 +13784,8 @@ class _DrawerSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 18, 14, 8),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          color: SmartTaxiColors.textMuted,
+        style: TextStyle(
+          color: context.palette.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.4,
