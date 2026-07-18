@@ -24,6 +24,25 @@ String _documentStatusLabel(AppLocalizations l10n, DriverDocument? document) {
   return l10n.driverDocumentStatusPending;
 }
 
+IconData _documentIcon(String type) {
+  switch (type) {
+    case DriverDocumentType.licenseFront:
+    case DriverDocumentType.licenseBack:
+      return Icons.badge_rounded;
+    case DriverDocumentType.idCardFront:
+    case DriverDocumentType.idCardBack:
+      return Icons.contact_page_rounded;
+    case DriverDocumentType.vehicleRegistration:
+      return Icons.directions_car_rounded;
+    case DriverDocumentType.insurancePolicy:
+      return Icons.shield_rounded;
+    case DriverDocumentType.profilePhoto:
+      return Icons.account_circle_rounded;
+    default:
+      return Icons.description_rounded;
+  }
+}
+
 class DriverDocumentsScreen extends StatefulWidget {
   const DriverDocumentsScreen({super.key, required this.api});
 
@@ -145,56 +164,93 @@ class _DriverDocumentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
+    final tone = _documentTone(document);
+    final toneColor = switch (tone) {
+      StatusTone.success => palette.success,
+      StatusTone.warning => palette.warning,
+      StatusTone.danger => palette.danger,
+      StatusTone.neutral => palette.textMuted,
+    };
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: palette.card,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: toneColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(_documentIcon(type), size: 19, color: toneColor),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  documentTypeLabel(l10n, type),
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      color: palette.text),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      documentTypeLabel(l10n, type),
+                      maxLines: 2,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                          color: palette.text),
+                    ),
+                    const SizedBox(height: 3),
+                    StatusPill(
+                      label: _documentStatusLabel(l10n, document),
+                      tone: tone,
+                    ),
+                  ],
                 ),
               ),
-              StatusPill(
-                label: _documentStatusLabel(l10n, document),
-                tone: _documentTone(document),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: onUpload,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    document == null
+                        ? l10n.driverDocumentUploadButton
+                        : l10n.driverDocumentReuploadButton,
+                    maxLines: 1,
+                  ),
+                ),
               ),
             ],
           ),
           if (document?.isRejected == true &&
               document?.rejectionReason != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              document!.rejectionReason!,
-              style: TextStyle(
-                color: palette.danger,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 52),
+              child: Text(
+                document!.rejectionReason!,
+                style: TextStyle(
+                  color: palette.danger,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onUpload,
-              child: Text(document == null
-                  ? l10n.driverDocumentUploadButton
-                  : l10n.driverDocumentReuploadButton),
-            ),
-          ),
         ],
       ),
     );
