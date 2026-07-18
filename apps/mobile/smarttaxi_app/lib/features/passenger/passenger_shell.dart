@@ -9338,6 +9338,7 @@ class _SimpleAddressSearchSheetState
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.5,
@@ -9345,9 +9346,9 @@ class _SimpleAddressSearchSheetState
       expand: false,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: palette.card,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
           child: Column(
@@ -9411,9 +9412,9 @@ class _SimpleAddressSearchSheetState
                                 itemBuilder: (context, index) {
                                   final item = _results[index];
                                   return ListTile(
-                                    leading: const Icon(
+                                    leading: Icon(
                                       Icons.place_rounded,
-                                      color: SmartTaxiColors.goldDeep,
+                                      color: palette.goldDeep,
                                     ),
                                     title: Text(
                                       item.label,
