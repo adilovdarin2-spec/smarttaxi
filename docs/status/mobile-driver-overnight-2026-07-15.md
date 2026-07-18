@@ -2056,9 +2056,23 @@ previously-committed avatar backend code hasn't changed since). Production
 is unaffected either way — Railway correctly kept the last successful
 deployment (5497e4bc) live and serving throughout; `railway status`
 confirms no duplicate/orphaned services or databases got created by the
-failed attempts. Stopping here rather than repeatedly retrying against
-what looks like a plan-level limit — flagged to the user, backend code is
-committed and ready to deploy once this is resolved.
+failed attempts.
+
+**Follow-up**: checked `railway usage` directly — "Over limit: no", so it
+isn't a billing/spend cap. Retried twice more; both got a real deployment
+ID and both came back `SKIPPED` (a third failure mode, distinct from the
+earlier "Deploy failed" one) with zero build or deploy logs either time.
+Four attempts, three different failure shapes, none pointing at the
+code — `node --check` clean throughout, and the one attempt that did
+produce logs showed the container starting fine ("SmartTaxi running on
+4000") before still being marked failed. This is Railway platform/account
+behavior I can't diagnose further from the CLI. Stopped retrying —
+repeatedly firing `railway up` against whatever this is risks compounding
+it rather than fixing it. Production unaffected throughout (`/api/health`
+→ 200 the entire time, resource list unchanged). Backend code is
+committed and ready; the deploy itself needs the user to look at the
+Railway dashboard directly, where more detail than the CLI surfaces
+should be visible.
 
 ### Commits (round 45)
 
