@@ -1984,3 +1984,84 @@ preserved the persisted theme choice across rebuilds, confirming
 
 - `Mobile: add theme (light/dark/system) picker to driver Настройки`
 - `fix(driver): stop hardcoding white card/surface backgrounds`
+
+## Round 45 — camera-only driver avatar; found lib/l10n was never committed
+
+Two user requests: (1) drivers need an avatar photo, camera-only — no
+gallery picker, so passengers can trust it's actually a photo of that
+driver — visible to passengers on the order; (2) confirmed the dark-theme
+requirement from round 44 is understood correctly (light = today's app,
+unchanged; dark = the whole app actually darkens) — no further action
+needed there, already satisfied.
+
+**Backend**: new `driver_avatars` table (driver_id PK, data BYTEA, mime,
+updated_at) — deliberately a separate table, not a column on `drivers`,
+since `drivers` is read all over this codebase with `SELECT *` and a BYTEA
+column there would put raw image bytes in every one of those payloads.
+Stored directly in Postgres rather than on disk: Railway's container
+filesystem doesn't survive a redeploy (same exposure the driver-documents
+upload dir already has), and a single compressed face photo is small enough
+that a BYTEA row beats standing up external object storage for it.
+`POST`/`DELETE /api/drivers/me/avatar` (authenticated, driver-only, multer
+memoryStorage). `GET /api/drivers/:id/avatar` is deliberately public/
+unauthenticated — a passenger's client loads it as a plain image request
+with no driver-scoped token to attach, and driver ids aren't meaningfully
+guessable from that side. `ORDER_SELECT` (and the separate share-token
+trip-tracking query) now computes `driver_avatar_url` as a plain string
+built from the driver id whenever one is assigned — no join to
+`driver_avatars` needed, the GET route just 404s cleanly if nothing was
+ever uploaded, so the client only needs to handle a broken-image case.
+Passenger-side display itself is out of scope here (`lib/features/
+passenger/**` is the parallel session's territory) — the field is just
+sitting in every order response, ready for whichever session wires up the
+image.
+
+**Mobile**: tapping the avatar circle on Профиль opens the camera directly
+(`ImagePicker().pickImage(source: ImageSource.camera, preferredCameraDevice:
+CameraDevice.front)`) — there is no gallery option anywhere in this flow,
+matching the explicit requirement. Uploads immediately, shows the result
+inline with a small camera-badge overlay, falls back to the plain icon on
+load failure or before any photo exists. Also fixed the driver name text in
+that same block having no explicit color (same class of dark-mode miss as
+round 44).
+
+**Verified live, as much as currently possible**: rebuilt, installed,
+confirmed the camera-permission prompt appears, the system camera opens in
+front-facing mode with no gallery button anywhere in reach, a captured
+photo triggers an upload attempt, and the correct localized error toast
+("Не удалось загрузить фото") shows since the backend isn't deployed yet.
+Full round-trip (successful upload + the photo actually displaying) still
+needs the backend deploy below to land.
+
+**Found something bigger while regenerating l10n for this feature's two new
+strings**: `lib/l10n` — every `.arb` source file and every generated
+`app_localizations*.dart` — has never been committed to git, not once, in
+this repo's entire history (`git log --all -- lib/l10n` is empty; not
+gitignored either, just never `git add`ed). Every `AppLocalizations` getter
+referenced across dozens of commits this whole session only ever existed on
+this machine. A fresh clone would fail to compile immediately — same
+failure class as the backend uncommitted-files incident earlier this
+session, just undiscovered on the mobile side until now. Committed the
+whole directory as its own dedicated fix.
+
+**Backend deploy blocked**: `railway up` from a fresh `git archive HEAD`
+staging dir (needed re-linking first — `railway link` — the fresh directory
+had no per-directory link state) failed twice with "Free plan resource
+provision limit exceeded" / "You are creating projects too quickly", then a
+third attempt got a deployment ID and the container logs show it starting
+cleanly ("SmartTaxi running on 4000") but Railway still marked it FAILED
+after ~35s — looks like an account-level resource/quota condition, not a
+code problem (`node --check` is clean on every touched file, and the
+previously-committed avatar backend code hasn't changed since). Production
+is unaffected either way — Railway correctly kept the last successful
+deployment (5497e4bc) live and serving throughout; `railway status`
+confirms no duplicate/orphaned services or databases got created by the
+failed attempts. Stopping here rather than repeatedly retrying against
+what looks like a plan-level limit — flagged to the user, backend code is
+committed and ready to deploy once this is resolved.
+
+### Commits (round 45)
+
+- `feat(api): camera-only driver avatar, exposed to passengers on orders`
+- `fix: commit lib/l10n — the entire localization system was never in git`
+- `Mobile: camera-only driver avatar on Профиль`
