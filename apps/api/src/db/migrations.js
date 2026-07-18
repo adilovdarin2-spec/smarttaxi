@@ -696,10 +696,16 @@ const statements = [
 
   // --- Stage: referral program ---
   "ALTER TABLE clients ADD COLUMN IF NOT EXISTS referral_code TEXT",
+  // UNIQUE constraints are backed by an index, so re-adding one Postgres
+  // already created raises duplicate_table (42P07), not duplicate_object
+  // (42710) like the CHECK-constraint DO-blocks elsewhere in this file —
+  // this is the only UNIQUE constraint added this way, and the mismatched
+  // exception class is exactly why it crashed every redeploy after the
+  // first one that successfully created it.
   `DO $$
   BEGIN
     ALTER TABLE clients ADD CONSTRAINT clients_referral_code_key UNIQUE (referral_code);
-  EXCEPTION WHEN duplicate_object THEN NULL;
+  EXCEPTION WHEN duplicate_object OR duplicate_table THEN NULL;
   END $$`,
   "ALTER TABLE clients ADD COLUMN IF NOT EXISTS referred_by_client_id UUID REFERENCES clients(id) ON DELETE SET NULL",
   "ALTER TABLE service_settings ADD COLUMN IF NOT EXISTS referral_bonus_kzt INTEGER NOT NULL DEFAULT 500",
