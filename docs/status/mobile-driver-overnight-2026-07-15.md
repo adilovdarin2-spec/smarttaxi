@@ -1858,3 +1858,45 @@ online anyway (the approval gate was intentionally removed 2026-07-15).
 ### Commits (round 41)
 
 - `feat(driver): remove Documents feature per product decision`
+
+## Round 42 — Кошелёк (Wallet): balance/debt pairing made clear
+
+Continuing "сделай все еще красивее." This was the specific item flagged in
+round 39 as "functional and clear, just not maximally compact" and deferred —
+picking it back up now that Documents is off the list.
+
+Checked the actual semantics before touching anything: `balance` and `debt`
+are two independent columns on `drivers` (`wallet.service.js`), not a netted
+figure — debt is commission owed from cash trips, auto-settled from balance
+opportunistically (`settleDriverDebtFromBalance` in `finance.service.js`) but
+not guaranteed to be in sync at every read. Payout requests are capped at the
+full `balanceKzt`, debt isn't subtracted from the requestable amount. So the
+fix had to stay purely visual — netting the numbers on-screen would misrepresent
+what the driver can actually withdraw, which is a business-logic question, not
+a design one.
+
+- **Balance/debt breakdown**: debt (and pending payout, when present) used to
+  render as a tiny inline icon+text row squeezed directly under the big
+  balance number — easy to miss, no visual grouping. Replaced with a
+  dedicated breakdown block below a divider: same icon-chip-in-a-circle
+  language already used by the transaction rows below (danger-tinted for
+  debt, neutral bordered for pending), each on its own line. The relationship
+  ("this is separate from what's shown above, and it's owed/pending") is now
+  legible instead of an easily-missed footnote.
+- **Added timestamps**: neither payout-request rows nor transaction rows
+  showed *any* date — with more than one or two entries there was no way to
+  tell which was recent. Added a relative "N ч назад" / "N дн назад" time
+  (matching the format already used on Уведомления) to both row types.
+- Verified live against real, non-synthetic data: current test driver has
+  balance 0 / debt 315 ₸ from two earlier cash-trip-commission test
+  transactions. The new debt row rendered exactly as intended — clearly
+  separated, legible, correctly red-toned — and transaction rows now show
+  "№ 2I92ZI · 4 ч назад" style captions. All colors go through
+  `context.palette`, so dark mode is handled by construction (not separately
+  screenshotted this round — same reasoning as prior rounds' palette-only
+  changes).
+- `flutter analyze lib/features/driver --no-fatal-infos` → clean.
+
+### Commits (round 42)
+
+- `Mobile: clarify balance/debt pairing on Кошелёк, add timestamps to rows`
