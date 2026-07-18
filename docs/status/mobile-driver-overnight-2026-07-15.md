@@ -1503,3 +1503,35 @@ this exact sequence never resolved.
 
 - `Mobile: make the navigator work standalone before going online + declutter its bottom
   metrics and map badge`
+
+## Round 35 — production backend was fully down, not a driver-app bug
+
+User reported the driver app showing "Не удалось выполнить запрос" on the Orders tab
+and that the design "still looks bad." Checked the production API directly before
+touching any mobile code: `curl https://smarttaxi-api-production.up.railway.app/api/health`
+returned `502` — the **entire backend was down**, every endpoint, not just orders. Any
+screen would have looked broken regardless of visual polish; this was never a driver-app
+or design issue. Full root-cause chain and fix are in
+`docs/status/INCIDENT-2026-07-18-api-down.md`. Summary: a stale Railway Custom Start
+Command, a malformed CLI deploy snapshot missing its `apps/` wrapper directory, 8 source
+files that existed locally but were never `git add`ed (`server.js` imports all of them,
+directly or transitively — `sentry.js`, `sms.provider.js`, `maps.diagnostics.js`, the
+whole `notifications/` module, `promo.service.js`, `osm-navigation.service.js`), and one
+already-committed file (`orders.routes.js`) importing an export (`offeredPriceBounds`)
+that only existed in an uncommitted working-copy diff of `order-pricing.service.js`.
+
+Fixed all of it; `/api/health` now returns `200` with `db: ok`, `redis: PONG`.
+
+**Live-verified on device** (`IBOVEMHQBQBQMJTS`): force-stopped and relaunched the driver
+app. "Линия" tab loads real stats (`0 Поездок сегодня`, `0 ₸`, `0 Новых заказов`, "Норма"
+sprос, map rendered with region label). "Заказы" tab shows the correct empty state
+("Выйдите на линию, чтобы получать заказы") with **no error banner** — the exact message
+the user saw is gone. No new mobile-side changes were needed; the driver code was already
+handling the error correctly (surfacing a readable message instead of crashing) — the
+message was accurate, the backend really was unreachable.
+
+### Commits (round 35)
+
+- `fix(api): commit missing source files causing production boot crash`
+- `fix(api): commit offeredPriceBounds export required by orders.routes.js`
+- `docs: incident report — production API restored, root cause fully resolved`
