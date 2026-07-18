@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Background color plus a small centered logo mark instead of a full-screen
+     bitmap: on a slow cold start this native splash can be visible for over
+     a second before the Flutter engine attaches, and a bare color read as a
+     frozen/blank screen — decoding one small pre-scaled 260x260 PNG here is
+     negligible next to that, and gives users something branded to look at
+     immediately. The animated Flutter _SplashScreen follows right after. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/smarttaxi_background" />
-    <item
-        android:drawable="@drawable/smarttaxi_app_icon"
-        android:gravity="center"
-        android:height="112dp"
-        android:width="112dp" />
+    <item android:gravity="center">
+        <bitmap
+            android:src="@drawable/smarttaxi_splash_icon"
+            android:gravity="center" />
+    </item>
 </layer-list>
