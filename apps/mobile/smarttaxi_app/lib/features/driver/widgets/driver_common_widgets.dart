@@ -329,27 +329,66 @@ class DrawerItem extends StatelessWidget {
   const DrawerItem(
       {super.key,
       required this.label,
+      required this.icon,
       required this.active,
       required this.onTap,
       this.danger = false});
 
   final String label;
+  final IconData icon;
   final bool active;
   final bool danger;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    // Coloring the Icon/Text widgets directly rather than relying on
+    // ListTile's selected/selectedColor plumbing, which doesn't reliably
+    // reach the title/leading widgets in practice.
+    // Note: "gold"/"goldDeep" are this app's actual brand-blue accent
+    // tokens (0xff1d6fff/0xff0b4fd1) — a legacy name from an earlier
+    // palette, not literal gold. Nothing wrong with the color you'll see
+    // here; the name is just misleading.
+    final tint = danger ? palette.danger : (active ? palette.goldDeep : palette.text);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: ListTile(
         minTileHeight: 52,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         selected: active,
-        selectedTileColor: context.palette.goldSurface,
-        textColor: danger ? context.palette.danger : context.palette.text,
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+        selectedTileColor: palette.goldSurface,
+        leading: Icon(icon, size: 22, color: tint),
+        title: Text(label,
+            style: TextStyle(fontWeight: FontWeight.w800, color: tint)),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// Small uppercase label separating groups of [DrawerItem]s so a 16-item
+/// menu reads as five short lists instead of one long undifferentiated one.
+class DrawerSectionLabel extends StatelessWidget {
+  const DrawerSectionLabel(this.label, {super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 6),
+      child: Text(
+        label.toUpperCase(),
+        // textSecondary, not textMuted — textMuted's contrast against a
+        // plain background fails WCAG AA at this size (same reasoning as
+        // elsewhere in this codebase).
+        style: TextStyle(
+          color: context.palette.textSecondary,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }

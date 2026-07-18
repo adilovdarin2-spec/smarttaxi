@@ -67,6 +67,8 @@ class DriverDrawer extends StatelessWidget {
     required this.onRoadAlerts,
     required this.onLogout,
     required this.onRecurringBookings,
+    this.regionName,
+    this.online = false,
   });
 
   final String accountLabel;
@@ -85,10 +87,15 @@ class DriverDrawer extends StatelessWidget {
   final VoidCallback onRoadAlerts;
   final VoidCallback onLogout;
   final VoidCallback onRecurringBookings;
+  final String? regionName;
+  final bool online;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final name = accountLabel.isEmpty ? 'Водитель SmartTaxi' : accountLabel;
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'S';
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.84,
       shape: const RoundedRectangleBorder(
@@ -99,64 +106,187 @@ class DriverDrawer extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              color: context.palette.goldSurface,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    palette.goldSurface,
+                    palette.goldSurface.withValues(alpha: 0.4),
+                  ],
+                ),
+              ),
               child: Row(
                 children: [
-                  const BrandLogo(),
-                  const SizedBox(width: 12),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: palette.gold, width: 1.6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: palette.gold.withValues(alpha: 0.28),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      initial,
+                      style: TextStyle(
+                        color: palette.goldDeep,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
                   Expanded(
-                      child: Text(
-                          accountLabel.isEmpty
-                              ? 'Водитель SmartTaxi'
-                              : accountLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w900))),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: palette.text,
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    online ? palette.success : palette.textMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                online
+                                    ? (regionName ?? 'На линии')
+                                    : (regionName ?? 'Не на линии'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: palette.textSecondary,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const BrandLogo(),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
+            const DrawerSectionLabel('Работа'),
             DrawerItem(
-                label: 'Линия', active: activeTab == 0, onTap: () => onTab(0)),
+                label: 'Линия',
+                icon: Icons.power_settings_new_rounded,
+                active: activeTab == 0,
+                onTap: () => onTab(0)),
             DrawerItem(
-                label: 'Заказы', active: activeTab == 1, onTap: () => onTab(1)),
+                label: 'Заказы',
+                icon: Icons.receipt_long_rounded,
+                active: activeTab == 1,
+                onTap: () => onTab(1)),
             DrawerItem(
                 label: 'Поездка',
+                icon: Icons.route_rounded,
                 active: activeTab == 2,
                 onTap: () => onTab(2)),
             DrawerItem(
                 label: 'Smart Navigator',
+                icon: Icons.explore_rounded,
                 active: activeTab == 3,
                 onTap: () => onTab(3)),
-            DrawerItem(label: 'Профиль', active: false, onTap: onProfile),
+            const Divider(height: 20, indent: 24, endIndent: 24),
+            const DrawerSectionLabel('Аккаунт'),
             DrawerItem(
-                label: l10n.driverDrawerWallet, active: false, onTap: onWallet),
+                label: 'Профиль',
+                icon: Icons.person_rounded,
+                active: false,
+                onTap: onProfile),
+            DrawerItem(
+                label: l10n.driverDrawerWallet,
+                icon: Icons.account_balance_wallet_rounded,
+                active: false,
+                onTap: onWallet),
             DrawerItem(
                 label: l10n.driverDrawerDocuments,
+                icon: Icons.description_rounded,
                 active: false,
                 onTap: onDocuments),
             DrawerItem(
-                label: l10n.driverDrawerRating, active: false, onTap: onRating),
+                label: l10n.driverDrawerRating,
+                icon: Icons.star_rounded,
+                active: false,
+                onTap: onRating),
+            const Divider(height: 20, indent: 24, endIndent: 24),
+            const DrawerSectionLabel('Сервис'),
             DrawerItem(
                 label: l10n.driverDrawerNotifications,
+                icon: Icons.notifications_rounded,
                 active: false,
                 onTap: onNotifications),
             DrawerItem(
-                label: 'Дорожные события', active: false, onTap: onRoadAlerts),
+                label: 'Дорожные события',
+                icon: Icons.shield_rounded,
+                active: false,
+                onTap: onRoadAlerts),
             DrawerItem(
                 label: 'Регулярные поездки',
+                icon: Icons.event_repeat_rounded,
                 active: false,
                 onTap: onRecurringBookings),
-            DrawerItem(label: 'Поддержка', active: false, onTap: onSupport),
-            DrawerItem(label: 'FAQ', active: false, onTap: onFaq),
-            DrawerItem(label: 'О нас', active: false, onTap: onAbout),
-            DrawerItem(label: 'Настройки', active: false, onTap: onSettings),
+            const Divider(height: 20, indent: 24, endIndent: 24),
+            const DrawerSectionLabel('Помощь'),
             DrawerItem(
-                label: 'Режим пассажира', active: false, onTap: onPassenger),
-            const SizedBox(height: 10),
+                label: 'Поддержка',
+                icon: Icons.support_agent_rounded,
+                active: false,
+                onTap: onSupport),
             DrawerItem(
-                label: 'Выйти', active: false, danger: true, onTap: onLogout),
+                label: 'FAQ',
+                icon: Icons.help_rounded,
+                active: false,
+                onTap: onFaq),
+            DrawerItem(
+                label: 'О нас',
+                icon: Icons.info_rounded,
+                active: false,
+                onTap: onAbout),
+            DrawerItem(
+                label: 'Настройки',
+                icon: Icons.settings_rounded,
+                active: false,
+                onTap: onSettings),
+            const Divider(height: 20, indent: 24, endIndent: 24),
+            DrawerItem(
+                label: 'Режим пассажира',
+                icon: Icons.swap_horiz_rounded,
+                active: false,
+                onTap: onPassenger),
+            DrawerItem(
+                label: 'Выйти',
+                icon: Icons.logout_rounded,
+                active: false,
+                danger: true,
+                onTap: onLogout),
             const SizedBox(height: 18),
           ],
         ),

@@ -1910,6 +1910,8 @@ class _DriverShellState extends State<DriverShell> {
         drawerScrimColor: Colors.black.withValues(alpha: 0.26),
         drawer: DriverDrawer(
           accountLabel: widget.accountLabel,
+          regionName: _selectedRegion?.name,
+          online: _online,
           activeTab: _tab,
           onTab: (index) {
             Navigator.pop(context);
