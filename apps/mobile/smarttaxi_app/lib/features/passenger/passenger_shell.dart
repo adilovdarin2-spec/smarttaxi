@@ -8478,6 +8478,7 @@ class _CancelConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final title =
         driverAssigned ? 'Отменить поездку?' : 'Отменить поиск водителя?';
     final subtitle = driverAssigned
@@ -8489,7 +8490,7 @@ class _CancelConfirmSheet extends StatelessWidget {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -8509,12 +8510,12 @@ class _CancelConfirmSheet extends StatelessWidget {
               height: 52,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: SmartTaxiColors.dangerSoft,
+                color: palette.dangerSoft,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.error_outline_rounded,
-                color: SmartTaxiColors.danger,
+                color: palette.danger,
                 size: 26,
               ),
             ),
@@ -8522,8 +8523,8 @@ class _CancelConfirmSheet extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: SmartTaxiColors.text,
+              style: TextStyle(
+                color: palette.text,
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
@@ -8532,8 +8533,8 @@ class _CancelConfirmSheet extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: SmartTaxiColors.textSecondary,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 13,
                 height: 1.4,
                 fontWeight: FontWeight.w600,
@@ -8545,9 +8546,9 @@ class _CancelConfirmSheet extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: SmartTaxiColors.danger,
+                  backgroundColor: palette.danger,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: SmartTaxiColors.danger,
+                  disabledBackgroundColor: palette.danger,
                   minimumSize: const Size.fromHeight(52),
                 ),
                 child: const Text('Да, отменить'),
