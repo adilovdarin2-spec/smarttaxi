@@ -12854,16 +12854,17 @@ class _PaymentIcon extends StatelessWidget {
       'KASPI' || 'CARD' => _iconCreditCard,
       _ => _iconBanknote,
     };
+    final palette = context.palette;
     return Container(
       width: 32,
       height: 32,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.borderStrong),
+        color: palette.goldSurface,
+        border: Border.all(color: palette.borderStrong),
         borderRadius: BorderRadius.circular(13),
       ),
-      child: _SvgIcon(icon, color: SmartTaxiColors.goldDeep, size: 18),
+      child: _SvgIcon(icon, color: palette.goldDeep, size: 18),
     );
   }
 }
@@ -13167,6 +13168,7 @@ class _PaymentMethodSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     const items = [
       ('CASH', 'Наличные', 'Оплата водителю после поездки'),
       ('CARD', 'Картой', 'Оплата картой через Kaspi Pay'),
@@ -13176,7 +13178,7 @@ class _PaymentMethodSheet extends StatelessWidget {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
@@ -13210,12 +13212,9 @@ class _PaymentMethodSheet extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color:
-                          active ? SmartTaxiColors.goldSurface : Colors.white,
+                      color: active ? palette.goldSurface : palette.card,
                       border: Border.all(
-                        color: active
-                            ? SmartTaxiColors.borderStrong
-                            : SmartTaxiColors.border,
+                        color: active ? palette.borderStrong : palette.border,
                       ),
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -13237,8 +13236,8 @@ class _PaymentMethodSheet extends StatelessWidget {
                               const SizedBox(height: 3),
                               Text(
                                 item.$3,
-                                style: const TextStyle(
-                                  color: SmartTaxiColors.textSecondary,
+                                style: TextStyle(
+                                  color: palette.textSecondary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -13247,9 +13246,9 @@ class _PaymentMethodSheet extends StatelessWidget {
                           ),
                         ),
                         if (active)
-                          const Icon(
+                          Icon(
                             Icons.check_circle_rounded,
-                            color: SmartTaxiColors.goldDeep,
+                            color: palette.goldDeep,
                           ),
                       ],
                     ),
