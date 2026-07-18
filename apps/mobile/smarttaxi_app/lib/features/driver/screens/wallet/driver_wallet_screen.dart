@@ -19,6 +19,14 @@ String _money(int value) {
   return '${value < 0 ? '-' : ''}$text ₸';
 }
 
+String _timeAgo(DateTime dateTime) {
+  final diff = DateTime.now().difference(dateTime);
+  if (diff.inMinutes < 1) return 'только что';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} мин назад';
+  if (diff.inHours < 24) return '${diff.inHours} ч назад';
+  return '${diff.inDays} дн назад';
+}
+
 StatusTone _payoutTone(PayoutRequest request) {
   if (request.isPaid) return StatusTone.success;
   if (request.isRejected || request.isCancelled) return StatusTone.danger;
@@ -211,37 +219,42 @@ class _WalletBalanceCard extends StatelessWidget {
           Text(
             _money(summary.balanceKzt),
             style: TextStyle(
-              fontSize: 30,
+              fontSize: 32,
               fontWeight: FontWeight.w900,
               color: palette.text,
             ),
           ),
-          if (summary.debtKzt > 0) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.warning_amber_rounded,
-                    color: palette.danger, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  l10n.driverWalletDebtLabel(_money(summary.debtKzt)),
-                  style: TextStyle(
-                    color: palette.danger,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (summary.pendingPayoutKzt > 0) ...[
-            const SizedBox(height: 6),
-            Text(
-              l10n.driverWalletPendingLabel(_money(summary.pendingPayoutKzt)),
-              style: TextStyle(
-                color: palette.textSecondary,
-                fontWeight: FontWeight.w600,
-                fontSize: 12.5,
+          if (summary.debtKzt > 0 || summary.pendingPayoutKzt > 0) ...[
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                border:
+                    Border(top: BorderSide(color: palette.border, width: 1)),
+              ),
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                children: [
+                  if (summary.debtKzt > 0)
+                    _WalletBreakdownRow(
+                      icon: Icons.warning_amber_rounded,
+                      iconColor: palette.danger,
+                      iconBg: palette.dangerSoft,
+                      text: l10n.driverWalletDebtLabel(_money(summary.debtKzt)),
+                      textColor: palette.danger,
+                    ),
+                  if (summary.debtKzt > 0 && summary.pendingPayoutKzt > 0)
+                    const SizedBox(height: 8),
+                  if (summary.pendingPayoutKzt > 0)
+                    _WalletBreakdownRow(
+                      icon: Icons.hourglass_top_rounded,
+                      iconColor: palette.textSecondary,
+                      iconBg: palette.card,
+                      iconBorder: palette.border,
+                      text: l10n.driverWalletPendingLabel(
+                          _money(summary.pendingPayoutKzt)),
+                      textColor: palette.textSecondary,
+                    ),
+                ],
               ),
             ),
           ],
@@ -264,6 +277,54 @@ class _WalletBalanceCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _WalletBreakdownRow extends StatelessWidget {
+  const _WalletBreakdownRow({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.text,
+    required this.textColor,
+    this.iconBorder,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final Color? iconBorder;
+  final String text;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: iconBg,
+            shape: BoxShape.circle,
+            border: iconBorder == null ? null : Border.all(color: iconBorder!),
+          ),
+          child: Icon(icon, size: 14, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -296,6 +357,10 @@ class _PayoutRequestRow extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
                         color: palette.text)),
+                const SizedBox(height: 2),
+                Text(_timeAgo(request.createdAt),
+                    style:
+                        TextStyle(color: palette.textMuted, fontSize: 11.5)),
                 if (request.isRejected && request.rejectionReason != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -372,14 +437,14 @@ class _WalletTransactionRow extends StatelessWidget {
                       fontSize: 13.5,
                       color: palette.text),
                 ),
-                if (transaction.orderShortId != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '№ ${transaction.orderShortId}',
-                    style:
-                        TextStyle(color: palette.textSecondary, fontSize: 11.5),
-                  ),
-                ],
+                const SizedBox(height: 2),
+                Text(
+                  transaction.orderShortId != null
+                      ? '№ ${transaction.orderShortId} · ${_timeAgo(transaction.createdAt)}'
+                      : _timeAgo(transaction.createdAt),
+                  style:
+                      TextStyle(color: palette.textSecondary, fontSize: 11.5),
+                ),
               ],
             ),
           ),
