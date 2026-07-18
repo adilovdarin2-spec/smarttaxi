@@ -9048,13 +9048,14 @@ class _AddDriverPreferenceSheetState
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -9083,7 +9084,7 @@ class _AddDriverPreferenceSheetState
             else ...[
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: SmartTaxiColors.border),
+                  border: Border.all(color: palette.border),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -9176,13 +9177,14 @@ class _CreateFavoriteAddressSheetState
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -9207,8 +9209,8 @@ class _CreateFavoriteAddressSheetState
               widget.suggestion.label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: SmartTaxiColors.textSecondary,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
