@@ -3404,9 +3404,10 @@ class _PassengerShellState extends State<PassengerShell>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _SectionLabel(
+              _SectionLabel(
                 title: 'Тема обращения',
                 text: 'Выберите, с чем нужна помощь',
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -3852,9 +3853,10 @@ class _PassengerShellState extends State<PassengerShell>
             )
           else ...[
             if (favorites.isNotEmpty) ...[
-              const _SectionLabel(
+              _SectionLabel(
                 title: 'Избранные',
                 text: 'Регулярные поездки предложат их в первую очередь',
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 10),
               ...favorites.map(
@@ -3871,9 +3873,10 @@ class _PassengerShellState extends State<PassengerShell>
               const SizedBox(height: 8),
             ],
             if (blocked.isNotEmpty) ...[
-              const _SectionLabel(
+              _SectionLabel(
                 title: 'Заблокированные',
                 text: 'Не будут предложены на регулярные поездки',
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 10),
               ...blocked.map(
@@ -4443,9 +4446,10 @@ class _LostItemOrderPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionLabel(
+        _SectionLabel(
           title: 'Какая поездка?',
           text: 'Нужна для того, чтобы уведомить водителя',
+          dark: Theme.of(context).brightness == Brightness.dark,
         ),
         const SizedBox(height: 8),
         Container(
@@ -14549,14 +14553,15 @@ class _PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: palette.card,
         border: Border.fromBorderSide(
-          BorderSide(color: SmartTaxiColors.border),
+          BorderSide(color: palette.border),
         ),
-        borderRadius: BorderRadius.all(Radius.circular(30)),
+        borderRadius: const BorderRadius.all(Radius.circular(30)),
         boxShadow: _cardShadow,
       ),
       child: child,
@@ -14679,13 +14684,14 @@ class _SkeletonListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: SmartTaxiColors.border),
+          color: palette.card,
+          border: Border.all(color: palette.border),
           borderRadius: BorderRadius.circular(18),
         ),
         child: const Row(
@@ -15144,8 +15150,8 @@ class _TitleBlock extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           text,
-          style: const TextStyle(
-            color: SmartTaxiColors.textSecondary,
+          style: TextStyle(
+            color: context.palette.textSecondary,
             fontSize: 14,
             height: 1.35,
           ),
@@ -15163,6 +15169,7 @@ class _LegalDocumentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -15171,8 +15178,8 @@ class _LegalDocumentTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: SmartTaxiColors.border),
+            color: palette.card,
+            border: Border.all(color: palette.border),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -15182,12 +15189,12 @@ class _LegalDocumentTile extends StatelessWidget {
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: SmartTaxiColors.goldSurface,
+                  color: palette.goldSurface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   document.icon,
-                  color: SmartTaxiColors.goldDeep,
+                  color: palette.goldDeep,
                   size: 21,
                 ),
               ),
@@ -15203,9 +15210,9 @@ class _LegalDocumentTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: SmartTaxiColors.textSecondary,
+                color: palette.textSecondary,
               ),
             ],
           ),
@@ -15379,25 +15386,26 @@ class _ProfileStatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
+        color: palette.goldSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SmartTaxiColors.border),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 18, color: SmartTaxiColors.goldDeep),
+          Icon(icon, size: 18, color: palette.goldDeep),
           const SizedBox(height: 6),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: SmartTaxiColors.text,
+              color: palette.text,
             ),
           ),
           const SizedBox(height: 2),
@@ -15405,10 +15413,10 @@ class _ProfileStatTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
-              color: SmartTaxiColors.textSecondary,
+              color: palette.textSecondary,
             ),
           ),
         ],
@@ -15436,6 +15444,7 @@ class _ProfileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final valueRow = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -15449,10 +15458,10 @@ class _ProfileRow extends StatelessWidget {
         ),
         if (copyable) ...[
           const SizedBox(width: 5),
-          const Icon(
+          Icon(
             Icons.copy_rounded,
             size: 14,
-            color: SmartTaxiColors.textMuted,
+            color: palette.textMuted,
           ),
         ],
       ],
@@ -15462,7 +15471,7 @@ class _ProfileRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: SmartTaxiColors.textSecondary),
+          style: TextStyle(color: palette.textSecondary),
         ),
         const SizedBox(width: 12),
         Flexible(
@@ -15503,13 +15512,8 @@ class _SettingsGroup extends StatelessWidget {
         children: [
           Text(
             title,
-            // Explicit color, not inherited from Theme.of(context) — this
-            // card's background is the hardcoded-light SmartTaxiColors.card,
-            // not the theme-aware palette, so an inherited dark-mode text
-            // color (near-white) would render unreadable on it. Confirmed
-            // live: this was invisible white-on-white before this fix.
-            style: const TextStyle(
-              color: SmartTaxiColors.text,
+            style: TextStyle(
+              color: context.palette.text,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
@@ -15537,7 +15541,8 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = danger ? SmartTaxiColors.danger : SmartTaxiColors.text;
+    final palette = context.palette;
+    final titleColor = danger ? palette.danger : palette.text;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -15559,8 +15564,8 @@ class _SettingsRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     text,
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 13,
                       height: 1.3,
                       fontWeight: FontWeight.w600,
@@ -15570,9 +15575,9 @@ class _SettingsRow extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: SmartTaxiColors.goldDeep,
+                color: palette.goldDeep,
               ),
           ],
         ),
@@ -15592,8 +15597,8 @@ class _ProfileGroupLabel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         text,
-        style: const TextStyle(
-          color: SmartTaxiColors.textSecondary,
+        style: TextStyle(
+          color: context.palette.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w900,
         ),
@@ -15621,7 +15626,8 @@ class _MenuLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = danger ? SmartTaxiColors.danger : SmartTaxiColors.text;
+    final palette = context.palette;
+    final tone = danger ? palette.danger : palette.text;
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
@@ -15636,10 +15642,9 @@ class _MenuLine extends StatelessWidget {
               decoration: BoxDecoration(
                 color: danger
                     ? const Color(0xfffff1f1)
-                    : SmartTaxiColors.goldSurface,
+                    : palette.goldSurface,
                 border: Border.all(
-                  color:
-                      danger ? const Color(0xfffecaca) : SmartTaxiColors.border,
+                  color: danger ? const Color(0xfffecaca) : palette.border,
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -15671,13 +15676,13 @@ class _MenuLine extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: SmartTaxiColors.goldSurface,
+                            color: palette.goldSurface,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             badge!,
-                            style: const TextStyle(
-                              color: SmartTaxiColors.goldDeep,
+                            style: TextStyle(
+                              color: palette.goldDeep,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w900,
                             ),
@@ -15694,8 +15699,8 @@ class _MenuLine extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: danger
-                            ? SmartTaxiColors.danger.withValues(alpha: 0.74)
-                            : SmartTaxiColors.textSecondary,
+                            ? palette.danger.withValues(alpha: 0.74)
+                            : palette.textSecondary,
                         fontSize: 12,
                         height: 1.2,
                         fontWeight: FontWeight.w600,
@@ -15707,8 +15712,7 @@ class _MenuLine extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color:
-                  danger ? SmartTaxiColors.danger : SmartTaxiColors.textMuted,
+              color: danger ? palette.danger : palette.textMuted,
             ),
           ],
         ),
@@ -15730,6 +15734,7 @@ class _DriverStepRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -15737,14 +15742,14 @@ class _DriverStepRow extends StatelessWidget {
           width: 28,
           height: 28,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: SmartTaxiColors.goldSurface,
+          decoration: BoxDecoration(
+            color: palette.goldSurface,
             shape: BoxShape.circle,
           ),
           child: Text(
             number,
-            style: const TextStyle(
-              color: SmartTaxiColors.goldDeep,
+            style: TextStyle(
+              color: palette.goldDeep,
               fontSize: 13,
               fontWeight: FontWeight.w900,
             ),
@@ -15765,8 +15770,8 @@ class _DriverStepRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 text,
-                style: const TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                style: TextStyle(
+                  color: palette.textSecondary,
                   fontSize: 12.5,
                   height: 1.3,
                   fontWeight: FontWeight.w600,
@@ -15802,7 +15807,7 @@ class _ApplicationField extends StatelessWidget {
           labelText: label,
           prefixIcon: icon == null
               ? null
-              : Icon(icon, color: SmartTaxiColors.textSecondary, size: 20),
+              : Icon(icon, color: context.palette.textSecondary, size: 20),
         ),
         keyboardType: keyboardType,
         onChanged: onChanged,
