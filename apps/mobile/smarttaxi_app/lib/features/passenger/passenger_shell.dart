@@ -2258,19 +2258,20 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _confirmAndLogout() async {
+    final palette = context.palette;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         title: const Text(
           'Выйти из аккаунта?',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
-        content: const Text(
+        content: Text(
           'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться SmartTaxi.',
           style: TextStyle(
-            color: SmartTaxiColors.textSecondary,
+            color: palette.textSecondary,
             fontWeight: FontWeight.w600,
             height: 1.4,
           ),
@@ -2282,7 +2283,7 @@ class _PassengerShellState extends State<PassengerShell>
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(foregroundColor: SmartTaxiColors.danger),
+            style: TextButton.styleFrom(foregroundColor: palette.danger),
             child: const Text('Выйти', style: TextStyle(fontWeight: FontWeight.w900)),
           ),
         ],
@@ -2338,7 +2339,7 @@ class _PassengerShellState extends State<PassengerShell>
     if (_order == null) {
       final groups = _groupTripsByDay(_tripHistory);
       return RefreshIndicator(
-        color: SmartTaxiColors.goldDeep,
+        color: context.palette.goldDeep,
         onRefresh: _loadTripHistory,
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -2640,6 +2641,7 @@ class _PassengerShellState extends State<PassengerShell>
   static const _profileCompletedStatuses = {'RATED', 'PAID', 'COMPLETED'};
 
   Widget _profileScreen() {
+    final palette = context.palette;
     final label =
         widget.accountLabel.isEmpty ? 'Пользователь' : widget.accountLabel;
     final completedTrips = _tripHistory
@@ -2671,18 +2673,18 @@ class _PassengerShellState extends State<PassengerShell>
                     height: 56,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          SmartTaxiColors.gold,
-                          SmartTaxiColors.goldDeep,
+                          palette.gold,
+                          palette.goldDeep,
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: SmartTaxiColors.gold.withValues(alpha: 0.32),
+                          color: palette.gold.withValues(alpha: 0.32),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -2712,10 +2714,10 @@ class _PassengerShellState extends State<PassengerShell>
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
+                        Text(
                           'Клиент SmartTaxi',
                           style: TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                            color: palette.textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
@@ -2908,6 +2910,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _promoCodesScreen() {
+    final palette = context.palette;
     final result = _promoCheckResult;
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -2928,12 +2931,12 @@ class _PassengerShellState extends State<PassengerShell>
                     height: 44,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: SmartTaxiColors.goldSurface,
+                      color: palette.goldSurface,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.confirmation_number_rounded,
-                      color: SmartTaxiColors.goldDeep,
+                      color: palette.goldDeep,
                       size: 22,
                     ),
                   ),
@@ -2948,10 +2951,10 @@ class _PassengerShellState extends State<PassengerShell>
                 ],
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Введите его, чтобы проверить, действует ли он в вашем регионе, и увидеть размер скидки.',
                 style: TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                  color: palette.textSecondary,
                   fontSize: 12.5,
                   height: 1.4,
                   fontWeight: FontWeight.w600,
@@ -2985,8 +2988,8 @@ class _PassengerShellState extends State<PassengerShell>
                 const SizedBox(height: 12),
                 Text(
                   _promoCheckError!,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.danger,
+                  style: TextStyle(
+                    color: palette.danger,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2997,9 +3000,9 @@ class _PassengerShellState extends State<PassengerShell>
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.successSoft,
+                    color: palette.successSoft,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: SmartTaxiColors.success),
+                    border: Border.all(color: palette.success),
                   ),
                   child: Row(
                     children: [
@@ -3008,11 +3011,11 @@ class _PassengerShellState extends State<PassengerShell>
                         height: 40,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: palette.card,
                           borderRadius: BorderRadius.circular(13),
                         ),
-                        child: const Icon(Icons.check_circle_rounded,
-                            color: SmartTaxiColors.success, size: 24),
+                        child: Icon(Icons.check_circle_rounded,
+                            color: palette.success, size: 24),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -3029,8 +3032,8 @@ class _PassengerShellState extends State<PassengerShell>
                             const SizedBox(height: 2),
                             Text(
                               'Скидка ${_formatTenge(result.discountAmountKzt)} · например, на поездке за ${_formatTenge(_promoPreviewPriceKzt)} вы заплатите ${_formatTenge(result.finalPriceKzt)}',
-                              style: const TextStyle(
-                                color: SmartTaxiColors.textSecondary,
+                              style: TextStyle(
+                                color: palette.textSecondary,
                                 fontSize: 12,
                                 height: 1.35,
                                 fontWeight: FontWeight.w600,
@@ -3070,6 +3073,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _driverApplicationScreen() {
+    final palette = context.palette;
     final submitted = _driverApplicationMessage != null;
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -3113,12 +3117,12 @@ class _PassengerShellState extends State<PassengerShell>
                   width: 56,
                   height: 56,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: SmartTaxiColors.successSoft,
+                  decoration: BoxDecoration(
+                    color: palette.successSoft,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_circle_rounded,
-                      color: SmartTaxiColors.success, size: 30),
+                  child: Icon(Icons.check_circle_rounded,
+                      color: palette.success, size: 30),
                 ),
                 const SizedBox(height: 14),
                 const Text(
@@ -3128,8 +3132,8 @@ class _PassengerShellState extends State<PassengerShell>
                 const SizedBox(height: 6),
                 Text(
                   _driverApplicationMessage!,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontWeight: FontWeight.w600,
                     height: 1.4,
                   ),
@@ -3141,21 +3145,21 @@ class _PassengerShellState extends State<PassengerShell>
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldSurface,
+                    color: palette.goldSurface,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(Icons.headset_mic_outlined,
-                          size: 16, color: SmartTaxiColors.goldDeep),
-                      SizedBox(width: 8),
+                          size: 16, color: palette.goldDeep),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Есть вопрос по заявке — напишите в поддержку.',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: SmartTaxiColors.text,
+                            color: palette.text,
                           ),
                         ),
                       ),
@@ -3248,8 +3252,8 @@ class _PassengerShellState extends State<PassengerShell>
                       padding: const EdgeInsets.only(top: 14),
                       child: RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                            color: SmartTaxiColors.text,
+                          style: TextStyle(
+                            color: palette.text,
                             fontSize: 13,
                             height: 1.35,
                             fontWeight: FontWeight.w600,
@@ -3258,8 +3262,8 @@ class _PassengerShellState extends State<PassengerShell>
                             const TextSpan(text: 'Я согласен с '),
                             TextSpan(
                               text: 'Условиями использования',
-                              style: const TextStyle(
-                                color: SmartTaxiColors.goldDeep,
+                              style: TextStyle(
+                                color: palette.goldDeep,
                                 fontWeight: FontWeight.w800,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -3270,8 +3274,8 @@ class _PassengerShellState extends State<PassengerShell>
                             const TextSpan(text: ' и '),
                             TextSpan(
                               text: 'Правилами безопасности',
-                              style: const TextStyle(
-                                color: SmartTaxiColors.goldDeep,
+                              style: TextStyle(
+                                color: palette.goldDeep,
                                 fontWeight: FontWeight.w800,
                               ),
                               recognizer: TapGestureRecognizer()
