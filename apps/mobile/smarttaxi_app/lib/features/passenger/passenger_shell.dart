@@ -3332,10 +3332,11 @@ class _PassengerShellState extends State<PassengerShell>
     // Regions don't carry their own support number today, so the
     // service-wide one from /api/regions/service-settings is the primary
     // source — a per-region override still wins if one is ever added.
+    final palette = context.palette;
     final supportPhone =
         (_selectedRegion?.supportPhone ?? _supportPhone ?? '').trim();
     return RefreshIndicator(
-      color: SmartTaxiColors.goldDeep,
+      color: palette.goldDeep,
       onRefresh: _loadMySupportMessages,
       child: ListView(
       padding: const EdgeInsets.all(20),
@@ -3357,13 +3358,13 @@ class _PassengerShellState extends State<PassengerShell>
                   height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldSurface,
-                    border: Border.all(color: SmartTaxiColors.border),
+                    color: palette.goldSurface,
+                    border: Border.all(color: palette.border),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.call_rounded,
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -3378,8 +3379,8 @@ class _PassengerShellState extends State<PassengerShell>
                       const SizedBox(height: 2),
                       Text(
                         'Позвоните напрямую: $supportPhone',
-                        style: const TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                        style: TextStyle(
+                          color: palette.textSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -3442,12 +3443,12 @@ class _PassengerShellState extends State<PassengerShell>
                 curve: Curves.easeOutCubic,
                 alignment: Alignment.topLeft,
                 child: _supportTopic == null
-                    ? const Padding(
-                        padding: EdgeInsets.only(top: 12),
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 12),
                         child: Text(
                           'Выберите тему выше, чтобы продолжить.',
                           style: TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                            color: palette.textSecondary,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                           ),
@@ -4334,6 +4335,7 @@ class _SupportHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return _PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4362,8 +4364,8 @@ class _SupportHistoryCard extends StatelessWidget {
             item.message,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 12.5,
               height: 1.35,
               fontWeight: FontWeight.w600,
@@ -4375,16 +4377,16 @@ class _SupportHistoryCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: SmartTaxiColors.goldSurface,
+                color: palette.goldSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Ответ поддержки',
                     style: TextStyle(
-                      color: SmartTaxiColors.goldDeep,
+                      color: palette.goldDeep,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                     ),
@@ -4458,7 +4460,7 @@ class _LostItemOrderPicker extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: SmartTaxiColors.border),
+            border: Border.all(color: context.palette.border),
             borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -4501,13 +4503,14 @@ class _SupportTopicChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: selected ? SmartTaxiColors.goldPale : Colors.white,
+        color: selected ? palette.goldPale : palette.card,
         border: Border.all(
-          color: selected ? SmartTaxiColors.gold : SmartTaxiColors.border,
+          color: selected ? palette.gold : palette.border,
           width: selected ? 1.6 : 1,
         ),
         borderRadius: BorderRadius.circular(999),
@@ -4529,9 +4532,7 @@ class _SupportTopicChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: selected
-                  ? SmartTaxiColors.text
-                  : SmartTaxiColors.textSecondary,
+              color: selected ? palette.text : palette.textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w900,
             ),
