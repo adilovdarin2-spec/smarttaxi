@@ -13803,13 +13803,14 @@ class _AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       height: 62,
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.card.withValues(alpha: 0.96),
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
@@ -13822,17 +13823,17 @@ class _AppHeader extends StatelessWidget {
       child: Row(
         children: [
           Material(
-            color: SmartTaxiColors.goldSurface,
+            color: palette.goldSurface,
             borderRadius: BorderRadius.circular(14),
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
               onTap: onMenu,
-              child: const Padding(
-                padding: EdgeInsets.all(9),
+              child: Padding(
+                padding: const EdgeInsets.all(9),
                 child: Icon(
                   Icons.menu_rounded,
                   size: 20,
-                  color: SmartTaxiColors.goldDeep,
+                  color: palette.goldDeep,
                 ),
               ),
             ),
