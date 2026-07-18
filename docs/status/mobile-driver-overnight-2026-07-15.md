@@ -1927,3 +1927,60 @@ under the fresh look — no further changes made there.
 ### Commits (round 43)
 
 - `Mobile: color the debt figure red on Профиль, matching Кошелёк`
+
+## Round 44 — driver dark mode: added the toggle, then found it was broken
+
+Went looking for the next round of "сделай все еще красивее" material and
+checked Настройки one more time for anything a fresh look would catch. Found
+something bigger than styling: `DriverShell` never received `themeMode`/
+`onChangeThemeMode` from `main.dart` at all — only `PassengerShell` did. Every
+driver screen's `context.palette` already had complete, deliberately-authored
+dark values (confirmed going all the way back to round 39's "dark-mode
+variants built in" note), but there was no UI anywhere in the driver app to
+ever turn dark mode on. A driver-only account (never touching passenger mode)
+could not reach it, full stop.
+
+**Added the toggle**: mirrored `PassengerShell`'s exact pattern — a "Тема" row
+in Настройки → Интерфейс, `_chooseTheme()` opening the same
+`RadioGroup<ThemeMode>` bottom sheet (Светлая/Тёмная/Как в системе, same
+hardcoded-Russian-only copy passenger uses for this feature — no l10n keys
+exist for it there either, so not a new gap I'm introducing). `DriverShell`
+gained optional `themeMode`/`onChangeThemeMode` params (same "optional,
+degrades gracefully" pattern already used for `currentLocale`); wired from
+`main.dart` the same way passenger's are, two lines just above.
+
+**Then it broke on the very first test.** Switched to Тёмная from the new
+row: the header, bottom nav, and map correctly went dark — but the Настройки
+card itself, the Line-tab shift-hero card, and the today-stat strip all
+stayed a flat, glaring white with barely-visible text floating on top. Root
+cause: several shared widgets hardcoded `color: Colors.white` for their own
+background instead of `context.palette.card`, while the text/icons drawn
+inside them already correctly used theme-aware colors — light-on-white
+became light-on-*white-that-should-have-been-dark*, i.e. invisible. This was
+never caught before for the obvious reason: there was no way to ever activate
+dark mode on the driver side until this exact round added it.
+
+Fixed everywhere this pattern showed up: `PremiumCard`, `TitleBlock`'s title,
+`FloatingNav` (bottom nav chrome), `DriverHeader` (top bar — also gave its
+menu icon an explicit color instead of trusting ambient `IconTheme`),
+`_DriverSosSheet`, `DriverShiftHero`, `_MiniStat` (backs `DriverTodayStrip`),
+`DriverOrderChip`, `OrderCard`'s price label, `DriverStatusStepper`'s
+not-yet-reached step, `_DriverTagChip`. Left two lower-severity spots alone —
+the drawer's white avatar-initial circle and a couple of translucent-white
+icon badges sitting on `goldSurface`-tinted cards — both still read fine
+against a colored background regardless of theme; not the same invisible-text
+failure, just a minor stylistic seam for a future pass.
+
+Verified live end-to-end: rebuilt, opened Настройки, switched Тема →
+Тёмная, then walked Линия (hero card + stat strip + map + bottom nav),
+Настройки, Профиль (including the round-43 red debt figure — still correctly
+red on a now-dark card), and Кошелёк (round 42's new breakdown rows — these
+were built with `context.palette` from the start and needed no fix, confirmed
+they already rendered correctly). Reinstalling over the existing app instance
+preserved the persisted theme choice across rebuilds, confirming
+`authStore.saveThemeMode`/`readThemeMode` round-trips correctly.
+
+### Commits (round 44)
+
+- `Mobile: add theme (light/dark/system) picker to driver Настройки`
+- `fix(driver): stop hardcoding white card/surface backgrounds`
