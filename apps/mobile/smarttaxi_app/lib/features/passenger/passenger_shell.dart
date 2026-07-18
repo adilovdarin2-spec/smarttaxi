@@ -13284,6 +13284,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final hasInitialNote = (widget.initialNote ?? '').isNotEmpty;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -13292,7 +13293,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
           margin: const EdgeInsets.all(12),
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: palette.card,
             borderRadius: BorderRadius.circular(30),
             boxShadow: const [
               BoxShadow(
@@ -13312,10 +13313,10 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Например: домофон 45, второй подъезд, встретить у шлагбаума',
                 style: TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                  color: palette.textSecondary,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -13348,7 +13349,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
                   child: TextButton(
                     onPressed: () => Navigator.pop(context, ''),
                     style: TextButton.styleFrom(
-                      foregroundColor: SmartTaxiColors.danger,
+                      foregroundColor: palette.danger,
                     ),
                     child: const Text(
                       'Удалить комментарий',
