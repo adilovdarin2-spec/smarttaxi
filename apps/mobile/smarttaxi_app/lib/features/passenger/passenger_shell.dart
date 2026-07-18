@@ -73,7 +73,7 @@ const _iconCreditCard = 'assets/icons/credit_card.svg';
 const _iconCar = 'assets/icons/car.svg';
 const _iconDelivery = 'assets/icons/delivery.svg';
 const _atakentFallbackCenter = LatLng(40.84719, 68.503834);
-const _appVersion = '1.0.0';
+const _appVersion = AppConfig.appVersion;
 
 class PassengerShell extends StatefulWidget {
   const PassengerShell({

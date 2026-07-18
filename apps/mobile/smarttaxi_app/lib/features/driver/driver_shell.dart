@@ -34,7 +34,7 @@ import 'widgets/driver_order_widgets.dart';
 import 'widgets/driver_profile_widgets.dart';
 import 'widgets/driver_shell_chrome.dart';
 
-const _appVersion = '1.0.0';
+const _appVersion = AppConfig.appVersion;
 
 class DriverShell extends StatefulWidget {
   const DriverShell({
@@ -587,7 +587,7 @@ class _DriverShellState extends State<DriverShell> {
       if (isApprovalBlock) {
         if (mounted) {
           AppToast.showError(context, readableError(error));
-          _showDriverFullSheet(_driverSupportContent());
+          _showDriverFullSheet(_driverSupportContent);
         }
       } else {
         setState(() => _error = readableError(error));
@@ -1505,27 +1505,42 @@ class _DriverShellState extends State<DriverShell> {
     return null;
   }
 
-  void _showDriverFullSheet(Widget content) {
+  // contentBuilder is called fresh every time this sheet rebuilds (not just
+  // once at the call site) — content built via context.palette.X used to be
+  // baked in as a plain Widget at the moment the caller tapped through, so
+  // toggling the theme while the sheet was open left borders/backgrounds
+  // showing the old colors until the sheet was closed and reopened.
+  //
+  // The sheet's own backdrop paints inside the builder too, not via
+  // showModalBottomSheet's `backgroundColor` argument — that argument is
+  // resolved once, outside the builder, so it froze at whatever theme was
+  // active when the sheet first opened (visible as a dark strip behind the
+  // title and between cards after switching to light while the sheet was
+  // already up).
+  void _showDriverFullSheet(Widget Function() contentBuilder) {
     Navigator.pop(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: context.palette.appBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.9,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: SheetHandle(),
+      backgroundColor: Colors.transparent,
+      builder: (context) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: ColoredBox(
+          color: context.palette.appBackground,
+          child: FractionallySizedBox(
+            heightFactor: 0.9,
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: SheetHandle(),
+                  ),
+                  Expanded(child: contentBuilder()),
+                ],
               ),
-              Expanded(child: content),
-            ],
+            ),
           ),
         ),
       ),
@@ -2065,20 +2080,20 @@ class _DriverShellState extends State<DriverShell> {
             Navigator.pop(context);
             widget.onOpenPassengerMode();
           },
-          onProfile: () => _showDriverFullSheet(_driverProfileContent()),
+          onProfile: () => _showDriverFullSheet(_driverProfileContent),
           onWallet: () =>
-              _showDriverFullSheet(DriverWalletScreen(api: widget.api)),
+              _showDriverFullSheet(() => DriverWalletScreen(api: widget.api)),
           onRating: () =>
-              _showDriverFullSheet(DriverRatingScreen(api: widget.api)),
-          onNotifications: () =>
-              _showDriverFullSheet(DriverNotificationsScreen(api: widget.api)),
-          onSupport: () => _showDriverFullSheet(_driverSupportContent()),
-          onFaq: () => _showDriverFullSheet(_driverFaqContent()),
-          onAbout: () => _showDriverFullSheet(_driverAboutContent()),
-          onSettings: () => _showDriverFullSheet(_driverSettingsContent()),
+              _showDriverFullSheet(() => DriverRatingScreen(api: widget.api)),
+          onNotifications: () => _showDriverFullSheet(
+              () => DriverNotificationsScreen(api: widget.api)),
+          onSupport: () => _showDriverFullSheet(_driverSupportContent),
+          onFaq: () => _showDriverFullSheet(_driverFaqContent),
+          onAbout: () => _showDriverFullSheet(_driverAboutContent),
+          onSettings: () => _showDriverFullSheet(_driverSettingsContent),
           onRoadAlerts: () => unawaited(_openRoadAlerts()),
           onRecurringBookings: () =>
-              _showDriverFullSheet(_driverRecurringBookingsContent()),
+              _showDriverFullSheet(_driverRecurringBookingsContent),
           onLogout: () async {
             Navigator.pop(context);
             final confirmed = await _confirmDriverAction(
@@ -2706,7 +2721,7 @@ class _DriverShellState extends State<DriverShell> {
         message:
             'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку, чтобы вам открыли доступ к региону.',
         actionLabel: 'Написать в поддержку',
-        onAction: () => _showDriverFullSheet(_driverSupportContent()),
+        onAction: () => _showDriverFullSheet(_driverSupportContent),
       );
     }
     if (_regionId == null) {
@@ -2738,7 +2753,7 @@ class _DriverShellState extends State<DriverShell> {
             ? 'Работа в регионе «${region.name}» заблокирована администратором.'
             : region.blockReason,
         actionLabel: 'Написать в поддержку',
-        onAction: () => _showDriverFullSheet(_driverSupportContent()),
+        onAction: () => _showDriverFullSheet(_driverSupportContent),
       );
     }
     if (region?.status != 'APPROVED') {
@@ -4692,11 +4707,13 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
   }
 }
 
-// Standalone, not coupled to DriverShell's own state — it's shown inside
-// _showDriverFullSheet's static `Widget content` (built once, not a
-// builder), so a screen that needs to load/refresh/mutate its own list
-// has to own that state itself rather than relying on the parent's
-// setState reaching a route it doesn't rebuild automatically.
+// Its own widget class, not inline content built by a DriverShell method —
+// _showDriverFullSheet re-invokes contentBuilder() on every sheet rebuild
+// (e.g. a theme change), constructing a new instance each time. Flutter
+// reconciles same-type widgets at the same tree position as an update
+// (didUpdateWidget), not a remount, so keeping this as its own
+// StatefulWidget preserves _bookings/_loading across those rebuilds instead
+// of re-fetching every time the sheet redraws.
 class _DriverRecurringBookingsScreen extends StatefulWidget {
   const _DriverRecurringBookingsScreen({required this.api});
 

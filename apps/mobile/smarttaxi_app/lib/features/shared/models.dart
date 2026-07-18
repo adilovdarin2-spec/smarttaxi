@@ -282,6 +282,39 @@ class AddressSuggestion {
   }
 }
 
+class AppVersionInfo {
+  const AppVersionInfo({
+    required this.latestVersion,
+    required this.minSupportedVersion,
+    this.updateUrl,
+    this.updateNotes,
+    this.updateRequired = false,
+    this.updateAvailable = false,
+  });
+
+  final String latestVersion;
+  final String minSupportedVersion;
+  final String? updateUrl;
+  final String? updateNotes;
+  final bool updateRequired;
+  final bool updateAvailable;
+
+  factory AppVersionInfo.fromJson(Map<String, dynamic> json) {
+    return AppVersionInfo(
+      latestVersion: '${json['latestVersion'] ?? '1.0.0'}',
+      minSupportedVersion: '${json['minSupportedVersion'] ?? '1.0.0'}',
+      updateUrl: (json['updateUrl'] as String?)?.trim().isEmpty ?? true
+          ? null
+          : json['updateUrl'] as String?,
+      updateNotes: (json['updateNotes'] as String?)?.trim().isEmpty ?? true
+          ? null
+          : json['updateNotes'] as String?,
+      updateRequired: json['updateRequired'] == true,
+      updateAvailable: json['updateAvailable'] == true,
+    );
+  }
+}
+
 class RegionOption {
   const RegionOption({
     required this.id,

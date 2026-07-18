@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'core/api/api_client.dart';
 import 'core/auth/auth_store.dart';
@@ -17,6 +18,7 @@ import 'core/widgets/brand_logo.dart';
 import 'core/widgets/exit_on_double_back.dart';
 import 'features/driver/driver_shell.dart';
 import 'features/passenger/passenger_shell.dart';
+import 'features/shared/models.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
@@ -82,6 +84,8 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   bool _offline = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   late final PushService _pushService = PushService(widget.api);
+  AppVersionInfo? _versionInfo;
+  bool _updateNudgeShown = false;
   Locale? _locale;
   ThemeMode _themeMode = ThemeMode.light;
 
@@ -120,6 +124,46 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       }
     });
     _watchConnectivity();
+    unawaited(_checkAppVersion());
+  }
+
+  // Best-effort — a failed/slow check never blocks the app from opening
+  // normally, it just means no update prompt this launch.
+  Future<void> _checkAppVersion() async {
+    try {
+      final info = await widget.api.getAppVersionInfo(AppConfig.appVersion);
+      if (mounted) setState(() => _versionInfo = info);
+    } catch (_) {}
+  }
+
+  Future<void> _openUpdateUrl() async {
+    final url = _versionInfo?.updateUrl;
+    if (url == null || url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  void _maybeShowUpdateNudge() {
+    if (_updateNudgeShown) return;
+    final info = _versionInfo;
+    if (info == null || info.updateRequired || !info.updateAvailable) return;
+    _updateNudgeShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _UpdateAvailableSheet(
+          info: info,
+          onUpdate: () {
+            Navigator.pop(context);
+            unawaited(_openUpdateUrl());
+          },
+        ),
+      );
+    });
   }
 
   @override
@@ -279,6 +323,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           onChangeThemeMode: setThemeMode,
         ),
     };
+    if (_session != AppSession.splash) _maybeShowUpdateNudge();
     return MaterialApp(
       title: 'SmartTaxi',
       debugShowCheckedModeBanner: false,
@@ -304,6 +349,16 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
               onRetry: () => Connectivity()
                   .checkConnectivity()
                   .then(_applyConnectivity),
+            ),
+          // Hard update gate — takes over the whole screen, no dismiss, no
+          // way to reach the app underneath. Only for updateRequired (below
+          // minSupportedVersion); the softer updateAvailable case is the
+          // dismissible bottom sheet in _maybeShowUpdateNudge instead.
+          if (_session != AppSession.splash &&
+              _versionInfo?.updateRequired == true)
+            _UpdateRequiredScreen(
+              info: _versionInfo!,
+              onUpdate: _openUpdateUrl,
             ),
         ],
       ),
@@ -1207,6 +1262,195 @@ class _OfflineOverlay extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Hard gate: covers the whole app, no back/close/dismiss action at all.
+// Only shown when the installed build is older than the backend's
+// APP_MIN_SUPPORTED_VERSION (main.dart's _versionInfo.updateRequired).
+class _UpdateRequiredScreen extends StatelessWidget {
+  const _UpdateRequiredScreen({required this.info, required this.onUpdate});
+
+  final AppVersionInfo info;
+  final VoidCallback onUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Material(
+        color: SmartTaxiColors.appBackground,
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const BrandLogo(large: true),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: 84,
+                    height: 84,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: SmartTaxiColors.goldPale,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.system_update_rounded,
+                      color: SmartTaxiColors.goldDeep,
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Нужно обновить приложение',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: SmartTaxiColors.authInk,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    (info.updateNotes?.trim().isNotEmpty ?? false)
+                        ? info.updateNotes!.trim()
+                        : 'Вышла новая версия SmartTaxi. Эта версия '
+                            'больше не поддерживается — обновите '
+                            'приложение, чтобы продолжить пользоваться.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: SmartTaxiColors.authMuted,
+                      fontSize: 14,
+                      height: 1.4,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onUpdate,
+                      icon: const Icon(Icons.system_update_rounded),
+                      label: const Text('Обновить'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Soft nudge: dismissible bottom sheet shown once per launch when a newer
+// version exists but the installed one still works fine (updateAvailable
+// without updateRequired) — "Позже" just closes it, no repeat within the
+// same app run (see main.dart's _updateNudgeShown).
+class _UpdateAvailableSheet extends StatelessWidget {
+  const _UpdateAvailableSheet({required this.info, required this.onUpdate});
+
+  final AppVersionInfo info;
+  final VoidCallback onUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(
+            color: SmartTaxiColors.gold.withValues(alpha: 0.32),
+          ),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x20785a14),
+              blurRadius: 34,
+              offset: Offset(0, 16),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: SmartTaxiColors.goldPale,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.system_update_rounded,
+                    color: SmartTaxiColors.goldDeep,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Доступно обновление',
+                        style: TextStyle(
+                          color: SmartTaxiColors.text,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        (info.updateNotes?.trim().isNotEmpty ?? false)
+                            ? info.updateNotes!.trim()
+                            : 'Новая версия ${info.latestVersion} уже '
+                                'доступна.',
+                        style: const TextStyle(
+                          color: SmartTaxiColors.textSecondary,
+                          fontSize: 13,
+                          height: 1.3,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Позже'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onUpdate,
+                    child: const Text('Обновить'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

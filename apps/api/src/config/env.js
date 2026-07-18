@@ -122,6 +122,14 @@ export const env = {
   KASPI_WEBHOOK_SECRET: process.env.KASPI_WEBHOOK_SECRET || "",
   CITY: process.env.CITY || "Atakent",
   CURRENCY: process.env.CURRENCY || "KZT",
+  // App update prompt (app-version module) — bump APP_LATEST_VERSION on
+  // every mobile release. APP_MIN_SUPPORTED_VERSION blocks the app entirely
+  // (hard update) instead of just nudging; leave it equal to the oldest
+  // version still fine to run. Both compared as dotted integers (1.2.3).
+  APP_LATEST_VERSION: process.env.APP_LATEST_VERSION || "1.0.0",
+  APP_MIN_SUPPORTED_VERSION: process.env.APP_MIN_SUPPORTED_VERSION || "1.0.0",
+  APP_UPDATE_URL: process.env.APP_UPDATE_URL || "",
+  APP_UPDATE_NOTES: process.env.APP_UPDATE_NOTES || "",
   CURRENCY_SYMBOL: process.env.CURRENCY_SYMBOL || "₸",
   DEFAULT_ADMIN_EMAIL: process.env.DEFAULT_ADMIN_EMAIL || "admin@smarttaxi.local",
   DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD || "ChangeMe_2026!",

@@ -156,6 +156,16 @@ class ApiClient {
     return response.data ?? {};
   }
 
+  Future<AppVersionInfo> getAppVersionInfo(String currentVersion) async {
+    final response = await _dio.get<dynamic>(
+      '/api/app-version',
+      queryParameters: {'version': currentVersion},
+    );
+    return AppVersionInfo.fromJson(
+      response.data is Map ? Map<String, dynamic>.from(response.data as Map) : const {},
+    );
+  }
+
   Future<List<RegionOption>> getActiveRegions() async {
     final response = await _dio.get<dynamic>('/api/regions/active');
     final items = _extractList(response.data, 'regions');
