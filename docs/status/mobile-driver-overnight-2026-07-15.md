@@ -1900,3 +1900,30 @@ a design one.
 ### Commits (round 42)
 
 - `Mobile: clarify balance/debt pairing on Кошелёк, add timestamps to rows`
+
+## Round 43 — fresh critical sweep of secondary screens, starting with Профиль
+
+Continuing "сделай все еще красивее" with the higher bar established since
+round 40 (the user's pushback that round 39's "already good" verdict was too
+easily satisfied). Re-opened the screens task #42 had already passed once,
+looking specifically for anything the earlier, lower-bar pass would have
+missed.
+
+**Found on Профиль**: the exact same debt figure (315 ₸ on the current test
+driver) that renders as an urgent red warning row on Кошелёк showed up on
+Профиль as a plain black stat — same weight and color as "Заказов сегодня" or
+"Заработано сегодня". A driver skimming their profile had no visual signal
+they owed money; the two screens disagreed about how serious the same number
+is. `DriverProfileRow` (in `driver_profile_widgets.dart`, shared by every
+stat row on Профиль and the version row on О нас) gained an optional
+`valueColor`; the debt row in `driver_shell.dart` now passes
+`context.palette.danger` when `stats.debt > 0`, `null` otherwise (every other
+row unaffected). Verified live against the same real 315 ₸ debt used in round
+42 — now shown in red on both screens.
+
+Rest of Профиль (avatar, region/status rows, trip history cards) held up
+under the fresh look — no further changes made there.
+
+### Commits (round 43)
+
+- `Mobile: color the debt figure red on Профиль, matching Кошелёк`
