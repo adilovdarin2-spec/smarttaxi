@@ -1796,3 +1796,34 @@ even required to go online.
 ### Commits (round 39)
 
 - `Mobile: clear stale error banner when switching driver tabs`
+
+## Round 40 — user pushed back: "сделай дизайн еще лучше... меню был красивым"
+
+Round 39's "already good" verdict was too easily satisfied. User explicitly
+called out the drawer menu by name. Went back in harder:
+
+- **Drawer menu redesign**: was 16 flat, iconless, undifferentiated
+  `ListTile`s. Added an `icon` to every `DrawerItem` (reusing the bottom
+  nav's icons for Line/Orders/Trip/Navigator for consistency), grouped all
+  16 items into four labeled sections (Работа/Аккаунт/Сервис/Помощь) with
+  dividers, and replaced the bare-name header with a circular initial
+  avatar + live online-status dot + region name. Also found and fixed a
+  real color bug while doing this: `DrawerItem`'s `selected` item relied on
+  `ListTile.selectedColor`/`iconColor`/`textColor`, which don't reliably
+  reach the title/leading widgets — colors the `Icon`/`Text` directly now.
+  (Tangent worth recording: chased this thinking it was "generic Material
+  blue instead of brand gold" — turns out `SmartTaxiColors.gold`/`goldDeep`
+  are literally blue hex values, `0xff1d6fff`/`0xff0b4fd1`. Legacy naming
+  from an earlier palette, not a bug — the color rendered was always
+  correct, just my diagnosis of *why* was wrong on the first pass.)
+- **Документы compacted**: 5 full-card-per-document rows (only 2-3 fit on
+  screen) collapsed into single compact rows — a tone-colored, category-
+  matched icon (badge/ID-card/car), title + status pill, small trailing
+  button instead of a full-width one below. All 5 now fit on one screen.
+
+Both verified live on-device after rebuild+reinstall.
+
+### Commits (round 40)
+
+- `Mobile: redesign the driver drawer menu — icons, sections, richer header`
+- `Mobile: compact the documents checklist — icons, one row per document`
