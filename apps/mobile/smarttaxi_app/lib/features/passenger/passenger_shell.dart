@@ -12019,15 +12019,15 @@ class _LocationPermissionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border:
-              Border.all(color: SmartTaxiColors.gold.withValues(alpha: 0.30)),
+          color: palette.card,
+          border: Border.all(color: palette.gold.withValues(alpha: 0.30)),
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -12051,24 +12051,24 @@ class _LocationPermissionSheet extends StatelessWidget {
                   height: 46,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.gold.withValues(alpha: 0.14),
+                    color: palette.gold.withValues(alpha: 0.14),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: SmartTaxiColors.gold.withValues(alpha: 0.34),
+                      color: palette.gold.withValues(alpha: 0.34),
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.my_location_rounded,
-                    color: SmartTaxiColors.gold,
+                    color: palette.gold,
                     size: 23,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Геолокация для подачи',
                     style: TextStyle(
-                      color: SmartTaxiColors.text,
+                      color: palette.text,
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
                       height: 1.05,
@@ -12078,10 +12078,10 @@ class _LocationPermissionSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Используем ваше местоположение только для точки подачи и расчёта маршрута. Можно выбрать точку на карте вручную.',
               style: TextStyle(
-                color: SmartTaxiColors.textSecondary,
+                color: palette.textSecondary,
                 fontSize: 13.2,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -12098,7 +12098,7 @@ class _LocationPermissionSheet extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               style: TextButton.styleFrom(
-                foregroundColor: SmartTaxiColors.textSecondary,
+                foregroundColor: palette.textSecondary,
                 minimumSize: const Size.fromHeight(42),
               ),
               child: const Text(
