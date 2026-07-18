@@ -1648,3 +1648,49 @@ direct install path.
 
 - `fix(api): commit driver rating-summary route + nearby drivers endpoint`
 - `Mobile: fix a live layout crash on the active-trip card + button text overflow`
+
+## Round 37 — user asked "точно готова?"; closed the gaps that answer honestly needed
+
+Round 36's report was solid but incomplete: several buttons and flows were visible in
+screenshots but never actually tapped/exercised, and `flutter test` hadn't been re-run
+after the round-36 edits. Went through all of them rather than repeat the same claim.
+
+- `flutter test test/driver_shell_helpers_test.dart` — 12/12 pass.
+- `flutter test test/widget_test.dart` — 5 failures, all pre-existing and 100%
+  passenger/logo-asset scope (`official icon-only logo asset is wired`, `passenger
+  home has map...`, `stage 3 route preview...`, `client navigation is drawer-only...`,
+  `passenger menu screens are useful...`). Every driver-named test in the same file
+  passed. Matches [[reference_widget_test_source_text_assertions]] — pre-existing
+  drift in code this session never touched, not a regression.
+- **Пропустить (decline order)**: confirmed via API that a declined order goes back
+  to `SEARCHING_DRIVER`/`driver_id: null` (open for other drivers) and correctly
+  stops resurfacing to the driver who declined it.
+- **Не принимать (block client)**: tapped for real post-trip, flipped to
+  "Заблокирован" — same real `setClientPreference` write path already confirmed for
+  favorites.
+- **Быстрое сообщение клиенту**: sent "Я приехал", confirmed a real
+  `type: QUICK_MESSAGE` notification landed for the client via the API — not
+  optimistic-UI-only.
+- **Предложить свою цену**: submitted a 900₸ counter-offer, confirmed
+  `driver_offer_price_kzt: 900, driver_offer_status: PENDING` on the order backend-side.
+- **Клиент не вышел / Отменить**: cancel showed a real confirm dialog with an honest
+  warning ("Частые отмены могут повлиять на ваш рейтинг"), and confirmed the order
+  correctly reopens for other drivers afterward.
+- **Wallet payout with insufficient balance**: `Запросить выплату` is correctly
+  disabled below the 3 000 ₸ minimum — tapping it does nothing, no crash, no
+  misleading state.
+- **New bug found while testing road alerts**: the "Отправить" submit button had the
+  exact same text-wrap issue as the other three from round 36 (half-Row + icon +
+  long label) — fixed with the same `FittedBox(scaleDown)` pattern. Also wrapped
+  "Клиент не вышел" in `IntrinsicWidth` as a precaution — it's a bare Material button
+  in the identical sliver-list card structure where "Позвонить" was confirmed to
+  intermittently break; never directly observed failing, but the structural
+  precondition is the same, and the fix is free.
+
+Everything above is now either confirmed working via a real device tap + a real
+backend-state check, or (Kazakh l10n, cash-payment-needs-operator) explicitly named
+as a known, unfixed gap rather than glossed over.
+
+### Commits (round 37)
+
+- `Mobile: fix road-alert submit button text wrap + harden no-show button`
