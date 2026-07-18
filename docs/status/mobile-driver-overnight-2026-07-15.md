@@ -1694,3 +1694,63 @@ as a known, unfixed gap rather than glossed over.
 ### Commits (round 37)
 
 - `Mobile: fix road-alert submit button text wrap + harden no-show button`
+
+## Round 38 — Firebase push wiring committed, WhatsApp/Kaspi deferred, a real crash-loop bug found
+
+User decision: drop WhatsApp OTP (Meta template approval not worth chasing right
+now), send Kaspi Pay credentials at the very end once everything else is done, and
+push notifications — user said "already enabled via Firebase" and shared
+`google-services.json` + a bare key.
+
+- **WhatsApp**: `whatsapp.provider.js` is already best-effort and self-disables
+  without `INFOBIP_WHATSAPP_OTP_TEMPLATE` (already unset in prod) — nothing to
+  change, it's already inert. Left the code as-is rather than deleting it.
+- **google-services.json**: already correctly in place at
+  `android/app/google-services.json` and gitignored (contains the client API key,
+  which is normal to keep out of git even though it's not a server secret).
+- **The bare key the user sent does not work for the backend.** `push.service.js`
+  needs a full Firebase **service-account JSON** (Project Settings → Service
+  Accounts → Generate new private key) — a structured file with a private key
+  block — not a single string. Told the user this directly; still waiting on the
+  real file.
+- **Found the mobile Firebase/push client code was 100% written and wired
+  (`PushService` in `main.dart` was already committed) but everything it depends
+  on was not**: `firebase_core`/`firebase_messaging` in `pubspec.yaml`, the
+  `google-services` Gradle plugin, `POST_NOTIFICATIONS` permission (required on
+  Android 13+ for the permission prompt to appear at all — has its own comment
+  explaining exactly this), and `core/push/push_service.dart` itself. Bundled in
+  with this, uncommitted for who knows how long: the real `applicationId`
+  (`kz.smarttaxi.app`, replacing the untouched `com.example.smarttaxi_app`
+  template default), real app icons, a release-signing keystore setup with a
+  build-time guard forcing a real keystore for release builds, and a pile of
+  other packages (`connectivity_plus`, `flutter_tts`, `image_picker`,
+  `file_picker`, `sentry_flutter`, `share_plus`, `url_launcher`, l10n
+  generation). Could not isolate just the Firebase parts — these are global
+  config files (pubspec.yaml, gradle files), not per-feature, and this
+  repo has no working hunk-level staging available. Verified the whole bundle is
+  coherent and buildable (every `flutter build apk` this entire session already
+  built on top of it successfully) and committed it as one unit rather than leave
+  it exposed to being silently lost.
+- **Backend**: added `FIREBASE_SERVICE_ACCOUNT_JSON` (takes the whole
+  service-account file's contents directly from an env var) alongside the
+  existing `FIREBASE_SERVICE_ACCOUNT_PATH` — Railway has no durable place to
+  point a file path at across deploys, so the JSON-content env var is the
+  practical option once the user provides the real file.
+- **Real bug found via the redeploy this round**: the backend crash-looped again
+  — completely unrelated to anything above. `ALTER TABLE clients ADD CONSTRAINT
+  clients_referral_code_key UNIQUE (referral_code)` inside a `DO $$ ... EXCEPTION
+  WHEN duplicate_object THEN NULL END $$` guard still crashed on the second-ever
+  clean redeploy, because a `UNIQUE` constraint is backed by an index — re-adding
+  one Postgres already created raises `duplicate_table` (42P07), not
+  `duplicate_object` (42710) like every other CHECK-constraint guard in this
+  file catches. This was the **only** UNIQUE constraint added this way, so it
+  was the only one that would crash-loop the server on literally every future
+  deploy with no schema changes at all, including ones from other sessions.
+  Fixed by also catching `duplicate_table`. Redeployed clean afterward,
+  `/api/health` back to 200.
+
+### Commits (round 38)
+
+- `Mobile: commit Android platform setup + Firebase push notifications`
+- `fix(api): accept Firebase service-account JSON directly via env var`
+- `fix(api): catch duplicate_table for the referral-code UNIQUE constraint`
