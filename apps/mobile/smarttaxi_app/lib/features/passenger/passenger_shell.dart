@@ -6759,6 +6759,7 @@ class _TripHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final card = _PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -6768,10 +6769,10 @@ class _TripHistoryCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   _formatTripDate(trip.createdAt),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
-                    color: SmartTaxiColors.textSecondary,
+                    color: palette.textSecondary,
                   ),
                 ),
               ),
@@ -6785,10 +6786,10 @@ class _TripHistoryCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 3),
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
                 child: Icon(Icons.radio_button_checked_rounded,
-                    size: 14, color: SmartTaxiColors.gold),
+                    size: 14, color: palette.gold),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -6812,10 +6813,10 @@ class _TripHistoryCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 3),
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
                 child: Icon(Icons.location_on_rounded,
-                    size: 14, color: SmartTaxiColors.text),
+                    size: 14, color: palette.text),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -6836,10 +6837,10 @@ class _TripHistoryCard extends StatelessWidget {
               if (trip.tariff != null && trip.tariff!.isNotEmpty)
                 Text(
                   trip.tariff!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: SmartTaxiColors.textSecondary,
+                    color: palette.textSecondary,
                   ),
                 ),
               if (trip.price != null)
@@ -8710,6 +8711,7 @@ class _RecurringBookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final (tone, label) = _statusMeta;
     return Opacity(
       opacity: booking.isCancelled ? 0.6 : 1,
@@ -8763,8 +8765,8 @@ class _RecurringBookingCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 booking.notes,
-                style: const TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                style: TextStyle(
+                  color: palette.textSecondary,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -8789,11 +8791,11 @@ class _RecurringBookingCard extends StatelessWidget {
                       ),
                     )
                   else
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Ждём подтверждения от водителя',
                         style: TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                          color: palette.textSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -8803,7 +8805,7 @@ class _RecurringBookingCard extends StatelessWidget {
                   TextButton(
                     onPressed: updating ? null : onCancel,
                     style: TextButton.styleFrom(
-                      foregroundColor: SmartTaxiColors.danger,
+                      foregroundColor: palette.danger,
                     ),
                     child: const Text('Отменить'),
                   ),
@@ -8825,16 +8827,17 @@ class _RecurringBookingChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
+        color: palette.goldSurface,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: SmartTaxiColors.goldDeep),
+          Icon(icon, size: 14, color: palette.goldDeep),
           const SizedBox(width: 5),
           Text(
             label,
@@ -8873,6 +8876,7 @@ class _FavoriteAddressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final (icon, labelText) = _labelMeta;
     return _PremiumCard(
       child: Row(
@@ -8882,11 +8886,11 @@ class _FavoriteAddressCard extends StatelessWidget {
             height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: SmartTaxiColors.goldSurface,
-              border: Border.all(color: SmartTaxiColors.border),
+              color: palette.goldSurface,
+              border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: SmartTaxiColors.goldDeep),
+            child: Icon(icon, color: palette.goldDeep),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -8911,8 +8915,8 @@ class _FavoriteAddressCard extends StatelessWidget {
                   address.addressText,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -8930,9 +8934,9 @@ class _FavoriteAddressCard extends StatelessWidget {
               : IconButton(
                   onPressed: onDelete,
                   tooltip: 'Удалить',
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
-                    color: SmartTaxiColors.danger,
+                    color: palette.danger,
                   ),
                 ),
         ],
@@ -8954,6 +8958,7 @@ class _DriverPreferenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final blocked = preference.isBlocked;
     final meta = [preference.driverCarModel, preference.driverPlate]
         .where((value) => (value ?? '').trim().isNotEmpty)
@@ -8966,17 +8971,13 @@ class _DriverPreferenceCard extends StatelessWidget {
             height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: blocked
-                  ? SmartTaxiColors.dangerSoft
-                  : SmartTaxiColors.goldSurface,
-              border: Border.all(color: SmartTaxiColors.border),
+              color: blocked ? palette.dangerSoft : palette.goldSurface,
+              border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               blocked ? Icons.block_rounded : Icons.star_rounded,
-              color: blocked
-                  ? SmartTaxiColors.danger
-                  : SmartTaxiColors.goldDeep,
+              color: blocked ? palette.danger : palette.goldDeep,
             ),
           ),
           const SizedBox(width: 12),
@@ -8998,8 +8999,8 @@ class _DriverPreferenceCard extends StatelessWidget {
                     meta,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -9018,9 +9019,9 @@ class _DriverPreferenceCard extends StatelessWidget {
               : IconButton(
                   onPressed: onRemove,
                   tooltip: 'Удалить',
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
-                    color: SmartTaxiColors.textSecondary,
+                    color: palette.textSecondary,
                   ),
                 ),
         ],
@@ -15058,6 +15059,7 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return _PremiumCard(
       child: Material(
         color: Colors.transparent,
@@ -15089,14 +15091,14 @@ class _FaqTileState extends State<_FaqTile> {
                       width: 26,
                       height: 26,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        color: SmartTaxiColors.goldSurface,
+                      decoration: BoxDecoration(
+                        color: palette.goldSurface,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.keyboard_arrow_down_rounded,
                         size: 18,
-                        color: SmartTaxiColors.goldDeep,
+                        color: palette.goldDeep,
                       ),
                     ),
                   ),
@@ -15112,8 +15114,8 @@ class _FaqTileState extends State<_FaqTile> {
                         padding: const EdgeInsets.only(top: 10),
                         child: Text(
                           widget.answer,
-                          style: const TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                          style: TextStyle(
+                            color: palette.textSecondary,
                             height: 1.4,
                             fontWeight: FontWeight.w600,
                           ),
