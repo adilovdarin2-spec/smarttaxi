@@ -1535,3 +1535,116 @@ message was accurate, the backend really was unreachable.
 - `fix(api): commit missing source files causing production boot crash`
 - `fix(api): commit offeredPriceBounds export required by orders.routes.js`
 - `docs: incident report — production API restored, root cause fully resolved`
+
+## Round 36 — full on-device QA pass of every driver screen, backend now healthy
+
+With the API confirmed healthy, did a systematic pass of every driver screen and the
+full order lifecycle on the real device, per "проверь все на телефоне и доведи до
+идеала." Went through: Профиль, Документы, Рейтинг, Уведомления, Дорожные события,
+Регулярные поездки, Поддержка, FAQ, О нас, Настройки, go-online, a full test order
+(created via direct API calls, since no passenger device is available) through
+accept → arrived → waiting → in-progress → complete → rate → favorite, and SOS.
+
+### Bugs found and fixed
+
+1. **Driver rating screen ("Рейтинг") permanently broken.** `GET
+   /api/drivers/me/rating-summary` existed as a complete, working route in
+   `drivers.routes.js` — the `driver_reviews` table and the client-rates-driver
+   write path were already live — but the route itself was sitting uncommitted
+   (same class of bug as the round-35 incident). Committed
+   (`90eca18`), along with a `/nearby` anonymized-driver-positions endpoint and
+   `syncDriverAvailability` calls that were part of the same uncommitted diff.
+
+2. **Road alerts map defaulted to Shymkent.** `_RoadAlertMap`'s fallback center
+   was a hardcoded Shymkent coordinate, used whenever neither a selected point
+   nor existing alerts were available — which is exactly the case for a driver
+   opening this screen in Мырзакент, where OSM has zero road alerts (confirmed
+   genuine data gap, round 34). Now threads the driver's live GPS position, then
+   the cached region-hint position, then (new) the driver's *assigned region's
+   own center coordinate* — the last one is available immediately after login,
+   before GPS/region-hint ever populate, which is what actually exposed the bug
+   (a driver opening Road Alerts before their first GPS fix landed).
+
+3. **Three buttons with long Russian labels wrapped or truncated ugly:**
+   "Пропустить" (order-accept row, 1/3 of the row's width against "Принять"'s
+   2/3) wrapped to two lines; "Отправить оценку" wrapped to two lines; "В
+   избранные"/"Не принимать" (both with an icon eating into an already-tight
+   `Expanded` half-row) were ellipsis-truncated to "В избра…"/"Не прин…". All
+   wrapped in `FittedBox(fit: BoxFit.scaleDown)`, matching the pattern already
+   used elsewhere in this codebase for exactly this failure mode — shrinks to
+   fit instead of wrapping/truncating.
+
+4. **Real layout-crashing bug: active-trip card silently lost all content below
+   the status stepper.** Live-verified via `flutter run` attached (matches
+   `reference_flutter_blank_screen_debugging` — logcat alone shows nothing):
+   ```
+   EXCEPTION CAUGHT BY RENDERING LIBRARY
+   BoxConstraints forces an infinite width.
+   ...RenderPhysicalShape's layout()... OutlinedButton...driver_shell.dart:2294
+   ```
+   The rider-name-plus-"Позвонить"-button `Row` (`Expanded(Text) +
+   OutlinedButton.icon`) could receive an infinite width constraint on its
+   first layout pass inside the sliver list — a known Flutter footgun where a
+   Material button as a bare (non-`Expanded`) Row child breaks under a
+   dry-layout probe. Once thrown, the exception aborted layout for
+   *everything after it* in the same card: address fields, price, tariff,
+   distance/ETA, message button, and the primary action button (Выехал к
+   клиенту/Прибыл/etc.) all silently vanished — a driver mid-trip could lose
+   the ability to advance their own trip status, intermittently, with no
+   visible error. Fixed by wrapping the button in `IntrinsicWidth`.
+   **This is the most severe bug found this session** — unlike the others, it
+   wasn't about the API being down or Мырзакент lacking data; it could hit any
+   driver, any trip, depending on timing.
+
+5. **Rating-submission error message was misleading.** Investigated *why*
+   rating submission failed even against the now-healthy backend: the backend
+   requires the order to reach `PAID` before accepting a rating, but for
+   CASH/KASPI trips (the only working payment methods today — Kaspi Pay isn't
+   really integrated yet) that transition is **only ever made by an operator**
+   via `POST /orders/:id/mark-paid` (`requireRole("OWNER","OPERATOR","FINANCE")`
+   — DRIVER is not in that list). Neither app ever calls it automatically —
+   confirmed by reading `payment-provider.js`'s `ManualPaymentProvider` and
+   grepping the passenger app's `onAcknowledgeReceipt` (purely local UI state,
+   no backend call). So a driver's rating action after every single cash trip
+   will fail until an operator manually processes it — not a "wait a moment"
+   race. Fixed the error message to say so (`Оплата поездки ещё не
+   подтверждена оператором.`) instead of the generic "Не удалось выполнить
+   запрос," and instead of my first, less-accurate attempt at this same
+   message which blamed the passenger. **Flagging for the user's judgment,
+   not deciding myself:** whether a driver should be able to self-confirm cash
+   received is a fraud-control/business decision, not something to change
+   unilaterally.
+
+### Also confirmed working (no changes needed)
+
+Профиль, Документы, Уведомления, Регулярные поездки, Поддержка (submitted a real
+test ticket, got a real "Обращение отправлено" response), FAQ, О нас, Настройки
+(including the language picker), go-online flow, "В избранные" (works
+immediately, no PAID gate unlike rating), and SOS (opens correctly; did not
+place the actual emergency call).
+
+### Also found: Kazakh localization is only partially wired
+
+Switching language to Қазақша only translates a few shared-chrome strings (e.g.
+the "Не на линии" status pill) — the driver screens themselves (titles, labels,
+buttons) stay in Russian. This is a big, separate effort (needs native-speaker
+grammar review, per the existing `_reviewsWord` comment's own caution about
+"shipping wrong grammar instead of just an untranslated string") — not
+attempted as part of this bug-fix pass. Switched back to Russian before
+continuing.
+
+### Device install note
+
+`adb install`/`flutter install` both fail on this device
+(`INSTALL_FAILED_USER_RESTRICTED`) regardless of debug/release build — this is
+a Xiaomi/MIUI install restriction, not a build problem (all the relevant
+Developer Options toggles were already correctly enabled). Worked around by
+pushing the APK to `/sdcard/Download/` and opening it via the device's own file
+manager (`com.mi.android.globalFileexplorer`), which routes through the normal
+system package-installer UI and its security-scan dialog instead of ADB's
+direct install path.
+
+### Commits (round 36)
+
+- `fix(api): commit driver rating-summary route + nearby drivers endpoint`
+- `Mobile: fix a live layout crash on the active-trip card + button text overflow`
