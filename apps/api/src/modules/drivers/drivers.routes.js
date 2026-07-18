@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createHash } from "crypto";
 import { z } from "zod";
 import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
@@ -11,8 +12,66 @@ import {
   selectDriverRegion
 } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { updateDriverLocation } from "../routing/routing.service.js";
-import { ACTIVE_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
+import { ACTIVE_ORDER_STATUSES, syncDriverAvailability } from "../orders/order-dispatch.service.js";
 const router = Router();
+
+function nearbyPublicId(driverId) {
+  return createHash("sha256").update(`smarttaxi-nearby:${driverId}`).digest("hex").slice(0, 16);
+}
+
+router.get("/nearby", requireAuth, async (req, res, next) => {
+  try {
+    const input = z.object({
+      lat: z.coerce.number().min(-90).max(90),
+      lng: z.coerce.number().min(-180).max(180),
+      limit: z.coerce.number().int().min(1).max(5).optional().default(5)
+    }).parse(req.query);
+
+    const result = await query(`
+      WITH latest_locations AS (
+        SELECT DISTINCT ON (driver_id)
+               driver_id, region_id, lat, lng, heading, updated_at
+        FROM driver_locations
+        ORDER BY driver_id, updated_at DESC
+      )
+      SELECT d.id,
+             l.lat,
+             l.lng,
+             l.heading,
+             l.updated_at,
+             (
+               6371 * acos(
+                 LEAST(1, GREATEST(-1,
+                   cos(radians($1)) * cos(radians(l.lat::double precision)) *
+                   cos(radians(l.lng::double precision) - radians($2)) +
+                   sin(radians($1)) * sin(radians(l.lat::double precision))
+                 ))
+               )
+             ) AS distance_km
+      FROM drivers d
+      JOIN latest_locations l ON l.driver_id = d.id
+      WHERE d.status = 'FREE'
+        AND d.is_blocked = false
+        AND l.updated_at >= NOW() - INTERVAL '2 hours'
+      ORDER BY distance_km ASC NULLS LAST
+      LIMIT $3
+    `, [input.lat, input.lng, input.limit]);
+
+    const drivers = result.rows.map(row => {
+      const distanceKm = Number(row.distance_km || 0);
+      return {
+        id: nearbyPublicId(row.id),
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        bearing: row.heading === null ? null : Number(row.heading),
+        etaMin: Math.max(2, Math.min(18, Math.round((distanceKm / 0.45) + 1))),
+        anonymous: true
+      };
+    });
+
+    res.json({ drivers });
+  } catch (e) { next(e); }
+});
 
 router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
   try {
@@ -25,7 +84,8 @@ router.get("/me", requireAuth, requireRole("DRIVER"), async (req, res, next) => 
   try {
     const result = await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id]);
     if (!result.rows[0]) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-    res.json({ driver: result.rows[0] });
+    const driver = await syncDriverAvailability(result.rows[0], query);
+    res.json({ driver });
   } catch (e) { next(e); }
 });
 
@@ -62,8 +122,9 @@ router.patch("/me/region", requireAuth, requireRole("DRIVER"), async (req, res, 
 
 router.get("/me/active-order", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
-    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    let driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    driver = await syncDriverAvailability(driver, query);
     const activeOrder = (await query(`
       SELECT o.*
       FROM orders o
@@ -134,8 +195,9 @@ router.patch("/me/location", requireAuth, requireRole("DRIVER"), async (req, res
 
 router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
-    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    let driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+    driver = await syncDriverAvailability(driver, query);
     const stats = await query(`
       SELECT COUNT(*)::int orders_total,
              COUNT(*) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED'))::int completed_orders,
@@ -158,6 +220,63 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
         debt: driver.debt,
         balance: driver.balance
       }
+    });
+  } catch (e) { next(e); }
+});
+
+router.get("/me/rating-summary", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+
+    const summary = (await query(`
+      SELECT
+        COUNT(*)::int review_count,
+        COUNT(*) FILTER (WHERE rating=5)::int stars_5,
+        COUNT(*) FILTER (WHERE rating=4)::int stars_4,
+        COUNT(*) FILTER (WHERE rating=3)::int stars_3,
+        COUNT(*) FILTER (WHERE rating=2)::int stars_2,
+        COUNT(*) FILTER (WHERE rating=1)::int stars_1
+      FROM driver_reviews
+      WHERE driver_id=$1
+    `, [driver.id])).rows[0];
+
+    const tags = (await query(`
+      SELECT tag, COUNT(*)::int count
+      FROM driver_reviews, unnest(tags) tag
+      WHERE driver_id=$1
+      GROUP BY tag
+      ORDER BY count DESC, tag ASC
+      LIMIT 5
+    `, [driver.id])).rows;
+
+    const recent = (await query(`
+      SELECT r.rating, r.tags, r.comment, r.created_at, o.short_id
+      FROM driver_reviews r
+      LEFT JOIN orders o ON o.id = r.order_id
+      WHERE r.driver_id=$1
+      ORDER BY r.created_at DESC
+      LIMIT 10
+    `, [driver.id])).rows;
+
+    res.json({
+      rating: Number(driver.rating || 0),
+      reviewCount: summary.review_count,
+      breakdown: {
+        5: summary.stars_5,
+        4: summary.stars_4,
+        3: summary.stars_3,
+        2: summary.stars_2,
+        1: summary.stars_1
+      },
+      topTags: tags.map(row => ({ tag: row.tag, count: row.count })),
+      recent: recent.map(row => ({
+        rating: row.rating,
+        tags: row.tags,
+        comment: row.comment,
+        createdAt: row.created_at,
+        orderShortId: row.short_id || null
+      }))
     });
   } catch (e) { next(e); }
 });
