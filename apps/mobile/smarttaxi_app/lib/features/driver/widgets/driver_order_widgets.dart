@@ -57,7 +57,7 @@ class DriverStatusStepper extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: done ? context.palette.goldPale : Colors.white,
+              color: done ? context.palette.goldPale : context.palette.card,
               border: Border.all(
                   color: done
                       ? context.palette.borderStrong
@@ -68,8 +68,10 @@ class DriverStatusStepper extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(labels[stepIndex],
                   maxLines: 1,
-                  style: const TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w900)),
+                  style: TextStyle(
+                      color: context.palette.text,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900)),
             ),
           ),
         );
@@ -182,7 +184,8 @@ class OrderCard extends StatelessWidget {
                         child: Text(
                           priceLabel,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
+                            color: context.palette.text,
                             fontSize: 28,
                             height: 1,
                             fontWeight: FontWeight.w900,
@@ -319,7 +322,7 @@ class DriverOrderChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.card,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(999),
       ),
@@ -817,7 +820,7 @@ class _DriverTagChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? context.palette.goldSurface : Colors.white,
+          color: selected ? context.palette.goldSurface : context.palette.card,
           border: Border.all(
               color: selected
                   ? context.palette.goldDeep

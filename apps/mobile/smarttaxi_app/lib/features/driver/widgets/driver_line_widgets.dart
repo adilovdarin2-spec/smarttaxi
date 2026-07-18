@@ -54,7 +54,7 @@ class DriverShiftHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: online
@@ -317,7 +317,7 @@ class _MiniStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.card,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [

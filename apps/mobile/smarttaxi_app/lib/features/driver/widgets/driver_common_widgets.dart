@@ -23,7 +23,7 @@ class FloatingNav extends StatelessWidget {
         borderRadius: BorderRadius.circular(26),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
+            color: context.palette.card.withValues(alpha: 0.96),
             border: Border.all(color: context.palette.border),
             borderRadius: BorderRadius.circular(26),
             boxShadow: const [
@@ -404,7 +404,7 @@ class PremiumCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.card,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(30),
         boxShadow: const [
@@ -427,8 +427,11 @@ class TitleBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title,
-          style: const TextStyle(
-              fontSize: 27, height: 1.12, fontWeight: FontWeight.w900)),
+          style: TextStyle(
+              color: context.palette.text,
+              fontSize: 27,
+              height: 1.12,
+              fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
       Text(text,
           style: TextStyle(
@@ -529,7 +532,7 @@ class _DriverSosSheet extends StatelessWidget {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(

@@ -24,7 +24,7 @@ class DriverHeader extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: context.palette.card.withValues(alpha: 0.96),
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
@@ -36,7 +36,7 @@ class DriverHeader extends StatelessWidget {
         children: [
           IconButton(
               onPressed: onMenu,
-              icon: const Icon(Icons.menu_rounded),
+              icon: Icon(Icons.menu_rounded, color: context.palette.text),
               tooltip: 'Меню'),
           const SizedBox(width: 4),
           const BrandLogo(),
