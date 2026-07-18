@@ -2415,23 +2415,30 @@ class _DriverShellState extends State<DriverShell> {
                       ),
                     if (_canNoShow(_activeOrder!.status)) ...[
                       const SizedBox(height: 10),
-                      OutlinedButton.icon(
-                          onPressed: _tripActionLabel != null
-                              ? null
-                              : () async {
-                                  final confirmed = await _confirmDriverAction(
-                                    title: 'Клиент не вышел?',
-                                    message:
-                                        'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.',
-                                    confirmLabel: 'Подтвердить неявку',
-                                  );
-                                  if (confirmed) {
-                                    _tripAction(l10n.driverTripNoShowButton,
-                                        widget.api.noShow);
-                                  }
-                                },
-                          icon: const Icon(Icons.person_off_rounded),
-                          label: Text(l10n.driverTripNoShowButton)),
+                      // IntrinsicWidth for the same reason as the "Позвонить"
+                      // button above — a bare Material button in this same
+                      // sliver-list card can get an infinite-width dry-layout
+                      // pass, aborting the rest of the card's layout.
+                      IntrinsicWidth(
+                        child: OutlinedButton.icon(
+                            onPressed: _tripActionLabel != null
+                                ? null
+                                : () async {
+                                    final confirmed =
+                                        await _confirmDriverAction(
+                                      title: 'Клиент не вышел?',
+                                      message:
+                                          'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.',
+                                      confirmLabel: 'Подтвердить неявку',
+                                    );
+                                    if (confirmed) {
+                                      _tripAction(l10n.driverTripNoShowButton,
+                                          widget.api.noShow);
+                                    }
+                                  },
+                            icon: const Icon(Icons.person_off_rounded),
+                            label: Text(l10n.driverTripNoShowButton)),
+                      ),
                     ],
                     if (_canCancel(_activeOrder!.status)) ...[
                       const SizedBox(height: 10),
@@ -5164,7 +5171,13 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                                   ),
                                 )
                               : const Icon(Icons.send_rounded),
-                          label: Text(_saving ? 'Отправляем...' : 'Отправить'),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _saving ? 'Отправляем...' : 'Отправить',
+                              maxLines: 1,
+                            ),
+                          ),
                         ),
                       ),
                     ],
