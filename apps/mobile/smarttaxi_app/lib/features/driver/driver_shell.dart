@@ -1899,7 +1899,7 @@ class _DriverShellState extends State<DriverShell> {
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_tab != 0) {
-          setState(() => _tab = 0);
+          _switchTab(0);
           return;
         }
         _exitGuard.handle(context);
@@ -1921,7 +1921,7 @@ class _DriverShellState extends State<DriverShell> {
               unawaited(_openFullScreenNavigator());
               return;
             }
-            setState(() => _tab = index);
+            _switchTab(index);
           },
           onPassenger: () {
             Navigator.pop(context);
@@ -1984,7 +1984,7 @@ class _DriverShellState extends State<DriverShell> {
                       unawaited(_openFullScreenNavigator());
                       return;
                     }
-                    setState(() => _tab = index);
+                    _switchTab(index);
                   },
                   destinations: [
                     NavigationDestination(
@@ -2012,6 +2012,18 @@ class _DriverShellState extends State<DriverShell> {
         ),
       ),
     );
+  }
+
+  // A failed action on one tab (e.g. a region-selection error on Линия)
+  // otherwise leaves `_error` set indefinitely — every tab that renders it
+  // (see _tripTab) would keep showing that same stale, unrelated message
+  // until some other action happens to reset it. Switching tabs is a clean
+  // enough signal that the user has moved on from whatever caused it.
+  void _switchTab(int index) {
+    setState(() {
+      _tab = index;
+      _error = null;
+    });
   }
 
   Widget _lineTab() {
