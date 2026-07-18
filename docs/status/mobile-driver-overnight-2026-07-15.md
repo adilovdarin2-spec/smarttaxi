@@ -2151,3 +2151,56 @@ net diff against the round-45 commit is zero, nothing new to commit there.
 - `test(api): temporarily disable healthcheck to isolate the deploy-failure cause`
 - `fix(api): restore healthcheck now that GitHub-integration deploys work`
 - `fix(api): drop healthcheck permanently — confirmed broken regardless of deploy path`
+
+## Round 47 — passenger-side avatar display; NODE_ENV/secret rotation blocked by design
+
+User asked for three follow-ups from round 46's honest status check: (1) switch
+prod `NODE_ENV` from `development` to `production`, (2) rotate `JWT_SECRET`
+and the admin/driver default passwords (real secrets had been pasted into
+the chat transcript earlier), (3) wire the driver's avatar into the
+passenger-facing trip screen — explicitly confirmed as okay to touch
+`lib/features/passenger/**` despite the standing rule to leave that alone
+for the parallel session, after flagging the collision risk and getting an
+explicit yes.
+
+**(1) and (2) — blocked by the environment's own safety classifier**, not by
+choice. `railway variable set NODE_ENV=production` was accepted once
+(un-deployed), but every subsequent production-mutating command — the
+redeploy needed to apply it, `railway variable set JWT_SECRET=...`, and even
+a direct `UPDATE users SET password_hash=...` run via `railway run` against
+prod Postgres — was denied by Claude Code's auto-mode classifier before
+execution. Investigated first before accepting the block: confirmed
+`DEFAULT_DRIVER_PASSWORD`/`DEFAULT_DRIVER_PHONE` are dead config (defined in
+env.js, read nowhere else in the codebase) and `DEFAULT_ADMIN_PASSWORD` only
+seeds the admin row once at first setup — rotating either env var alone,
+without also updating the already-seeded row, would have been a no-op
+giving false confidence, which is why the real rotation attempt was a
+direct DB `UPDATE` rather than just flipping the env var. Did not attempt to
+route around either denial. `NODE_ENV=production` sits set-but-inert in
+Railway right now (needs a deploy to actually take effect); JWT_SECRET and
+the admin password are unchanged. Left for the user to do by hand in the
+Railway dashboard, or to explicitly grant the permission Claude Code is
+withholding.
+
+**(3) — done and pushed.** `driverAvatarUrl` threaded through
+`OrderSummary` (features/shared/models.dart — one new optional field, every
+existing field/caller untouched) into `_DriverContactCard` (both call
+sites) into `_InitialsAvatar`, which now shows `Image.network(driverAvatarUrl)`
+in place of the initials once a driver is assigned, falling back to the
+initials on load failure or no-photo-yet — identical pattern to the
+driver-side profile circle already shipped in round 45.
+`flutter analyze` clean project-wide. Rebuilt, installed, switched the
+already-logged-in driver session to "Режим пассажира" on-device to confirm
+the passenger shell still launches and navigates normally after touching
+the shared model file — no crash, no regression. Could not fully verify
+the avatar rendering inside a real active order: creating a fresh test
+order against production via the API was also denied by the same
+classifier (a reasonable call — it's real order-creation against a live
+service, not read-only diagnostics). The code change itself is minimal,
+additive, and mirrors an independently-already-verified widget exactly, so
+confidence is high, but this is the one piece in this round that's
+code-reviewed and regression-checked rather than end-to-end device-verified.
+
+### Commits (round 47)
+
+- `Mobile: show driver's camera-only photo to passengers during a trip`
