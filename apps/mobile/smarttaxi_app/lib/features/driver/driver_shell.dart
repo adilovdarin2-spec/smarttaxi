@@ -46,6 +46,8 @@ class DriverShell extends StatefulWidget {
     required this.onOpenPassengerMode,
     this.currentLocale,
     this.onChangeLocale,
+    this.themeMode,
+    this.onChangeThemeMode,
   });
 
   final ApiClient api;
@@ -60,6 +62,8 @@ class DriverShell extends StatefulWidget {
   // silent no-op rather than a compile error.
   final Locale? currentLocale;
   final ValueChanged<Locale>? onChangeLocale;
+  final ThemeMode? themeMode;
+  final ValueChanged<ThemeMode>? onChangeThemeMode;
 
   @override
   State<DriverShell> createState() => _DriverShellState();
@@ -1236,6 +1240,40 @@ class _DriverShellState extends State<DriverShell> {
     widget.onChangeLocale?.call(Locale(code));
   }
 
+  Future<void> _chooseTheme() async {
+    final current = widget.themeMode ?? ThemeMode.light;
+    final mode = await showModalBottomSheet<ThemeMode>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: RadioGroup<ThemeMode>(
+          groupValue: current,
+          onChanged: (value) => Navigator.pop(sheetContext, value),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.light,
+                title: Text('Светлая'),
+              ),
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.dark,
+                title: Text('Тёмная'),
+              ),
+              RadioListTile<ThemeMode>(
+                value: ThemeMode.system,
+                title: Text('Как в системе'),
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (mode == null || mode == current) return;
+    widget.onChangeThemeMode?.call(mode);
+  }
+
   void _toggleVoice() {
     final next = !_voiceEnabled;
     setState(() => _voiceEnabled = next);
@@ -1800,6 +1838,15 @@ class _DriverShellState extends State<DriverShell> {
                   ? l10n.languageKazakh
                   : l10n.languageRussian,
               onTap: _chooseLanguage,
+            ),
+            DriverSettingsRow(
+              title: 'Тема',
+              text: switch (widget.themeMode ?? ThemeMode.light) {
+                ThemeMode.dark => 'Тёмная',
+                ThemeMode.system => 'Как в системе',
+                ThemeMode.light => 'Светлая',
+              },
+              onTap: _chooseTheme,
             ),
           ],
         ),

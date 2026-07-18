@@ -275,6 +275,8 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           onOpenPassengerMode: _openPassengerMode,
           currentLocale: _locale,
           onChangeLocale: setLocale,
+          themeMode: _themeMode,
+          onChangeThemeMode: setThemeMode,
         ),
     };
     return MaterialApp(
