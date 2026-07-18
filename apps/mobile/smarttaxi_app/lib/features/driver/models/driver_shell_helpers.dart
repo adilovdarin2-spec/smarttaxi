@@ -234,6 +234,15 @@ String readableError(Object error) {
     'DRIVER_LOCATION_OUTSIDE_REGION': 'Геолокация вне рабочего региона',
     'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен',
     'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
+    // Rating requires the order to reach PAID first. For CASH/KASPI trips
+    // (the only working payment methods today) that transition is only
+    // ever made by an operator via POST /orders/:id/mark-paid — DRIVER is
+    // not in that route's allowed roles, and neither app ever calls it
+    // automatically. So this isn't a "wait a moment" race the driver can
+    // just retry past; naming who it's actually waiting on is more honest
+    // than implying a short delay will fix it.
+    'ORDER_NOT_COMPLETED': 'Оплата поездки ещё не подтверждена оператором.',
+    'ORDER_ALREADY_RATED': 'Вы уже оценили этого пассажира',
   };
   final code = apiErrorCode(error);
   if (code != null && map.containsKey(code)) return map[code]!;

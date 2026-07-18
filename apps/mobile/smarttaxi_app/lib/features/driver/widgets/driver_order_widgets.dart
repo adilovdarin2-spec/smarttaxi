@@ -248,7 +248,10 @@ class OrderCard extends StatelessWidget {
                       : onReject,
                   child: rejecting
                       ? const ButtonSpinner(text: 'Пропускаем...')
-                      : const Text('Пропустить'),
+                      : const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Пропустить', maxLines: 1),
+                        ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -634,7 +637,10 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                         _stars == 0 || _submitting ? null : _submitRating,
                     child: _submitting
                         ? const ButtonSpinner(text: 'Отправляем...')
-                        : const Text('Отправить оценку'),
+                        : const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Отправить оценку', maxLines: 1),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -665,12 +671,14 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
                         size: 18),
-                    label: Text(
-                      _preferenceType == 'FAVORITE'
-                          ? 'В избранном'
-                          : 'В избранные',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _preferenceType == 'FAVORITE'
+                            ? 'В избранном'
+                            : 'В избранные',
+                        maxLines: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -692,12 +700,14 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                             ? Icons.block_rounded
                             : Icons.block_outlined,
                         size: 18),
-                    label: Text(
-                      _preferenceType == 'BLOCKED'
-                          ? 'Заблокирован'
-                          : 'Не принимать',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _preferenceType == 'BLOCKED'
+                            ? 'Заблокирован'
+                            : 'Не принимать',
+                        maxLines: 1,
+                      ),
                     ),
                   ),
                 ),

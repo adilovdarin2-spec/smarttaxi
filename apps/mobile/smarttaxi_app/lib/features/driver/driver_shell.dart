@@ -1406,9 +1406,25 @@ class _DriverShellState extends State<DriverShell> {
       builder: (context) => _RoadAlertsSheet(
         api: widget.api,
         regionId: _regionId,
+        initialCenter: _lastPosition != null
+            ? Coordinate(
+                lat: _lastPosition!.latitude, lng: _lastPosition!.longitude)
+            : (_regionHintPosition ?? _currentRegionCenter()),
       ),
     );
     if (mounted) unawaited(_loadRoadAlerts());
+  }
+
+  // GPS and the region-hint hue both need a live/recent position fix, which
+  // a driver who just logged in and hasn't gone online yet won't have —
+  // the assigned region's own center (loaded with the region list at login,
+  // no GPS required) is the next best guess before falling back to a
+  // hardcoded default.
+  Coordinate? _currentRegionCenter() {
+    for (final region in _regions) {
+      if (region.id == _regionId) return region.center;
+    }
+    return null;
   }
 
   void _showDriverFullSheet(Widget content) {
@@ -2275,11 +2291,23 @@ class _DriverShellState extends State<DriverShell> {
                               ),
                             ),
                           ),
-                          OutlinedButton.icon(
-                            onPressed: () => launchUrl(Uri(
-                                scheme: 'tel', path: _activeOrder!.riderPhone)),
-                            icon: const Icon(Icons.call_rounded, size: 16),
-                            label: const Text('Позвонить'),
+                          // IntrinsicWidth works around a Flutter footgun:
+                          // a Material button as a bare (non-Expanded) Row
+                          // child inside a sliver list can get dry-laid-out
+                          // with an infinite width constraint on first frame,
+                          // throwing "BoxConstraints forces an infinite
+                          // width" and aborting layout for the rest of this
+                          // card (price/route/action button all silently
+                          // disappear below it) — live-verified via
+                          // `flutter run`, not visible in logcat alone.
+                          IntrinsicWidth(
+                            child: OutlinedButton.icon(
+                              onPressed: () => launchUrl(Uri(
+                                  scheme: 'tel',
+                                  path: _activeOrder!.riderPhone)),
+                              icon: const Icon(Icons.call_rounded, size: 16),
+                              label: const Text('Позвонить'),
+                            ),
                           ),
                         ],
                       ),
@@ -4841,10 +4869,12 @@ class _RoadAlertsSheet extends StatefulWidget {
   const _RoadAlertsSheet({
     required this.api,
     required this.regionId,
+    this.initialCenter,
   });
 
   final ApiClient api;
   final String? regionId;
+  final Coordinate? initialCenter;
 
   @override
   State<_RoadAlertsSheet> createState() => _RoadAlertsSheetState();
@@ -5055,6 +5085,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
             _RoadAlertMap(
               alerts: _alerts,
               selectedPoint: _selectedPoint,
+              initialCenter: widget.initialCenter,
               mapUnavailable: _mapUnavailable,
               onTileError: () => setState(() => _mapUnavailable = true),
               onTap: (point) => setState(() {
@@ -5197,20 +5228,25 @@ class _RoadAlertMap extends StatelessWidget {
     required this.mapUnavailable,
     required this.onTileError,
     required this.onTap,
+    this.initialCenter,
   });
 
   final List<RoadAlert> alerts;
   final Coordinate? selectedPoint;
+  final Coordinate? initialCenter;
   final bool mapUnavailable;
   final VoidCallback onTileError;
   final ValueChanged<LatLng> onTap;
 
   @override
   Widget build(BuildContext context) {
+    // Falls back to the driver's own region/GPS before the hardcoded
+    // Shymkent coordinate — that default only fires if we somehow have
+    // neither (e.g. location permission denied and region lookup failed).
     final center = selectedPoint?.toLatLng() ??
         (alerts.isNotEmpty
             ? alerts.first.toLatLng()
-            : const LatLng(42.3167, 69.5958));
+            : (initialCenter?.toLatLng() ?? const LatLng(42.3167, 69.5958)));
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: SizedBox(
