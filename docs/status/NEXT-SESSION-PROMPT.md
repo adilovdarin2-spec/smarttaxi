@@ -16,10 +16,21 @@
 
 `passenger_shell.dart` (весь, 16000+ строк) и большая часть `driver_shell.dart` всё ещё используют статичные `SmartTaxiColors.xxx` — они НЕ меняются при переключении темы. Это и есть причина, почему тёмная тема выглядит наполовину рабочей.
 
-Задачи по приоритету:
-1. Мигрировать `_SmartDrawer` (пассажир) на `context.palette`, взяв за образец `DriverDrawer` — переиспользуй `DrawerItem`/`DrawerSectionLabel` (уже готовые, тема-зависимые), не изобретай заново. Это даст пассажиру меню "как у водителя", о чём просили.
-2. Дальше — постепенно мигрировать остальные самые заметные экраны пассажира (Настройки, Профиль, главный экран) на `context.palette`, начиная с тех, что уже показывали баги при тёмной теме (`_SettingsGroup` — уже был один найденный и исправленный баг с нечитаемым текстом).
-3. Полная миграция всего файла — нереалистично за один присест, двигайся экран за экраном, коммить каждый отдельно, обновляй статус-док с процентом покрытия.
+Задачи по приоритету — **готово**: `_SmartDrawer`/`_DrawerItem`/`_DrawerSectionLabel` (commit `0aaa077`), `_AppHeader` (`c94100d`), `_PaymentMethodSheet`/`_PaymentIcon` (`8fa141b`).
+
+**КРИТИЧНО — прочитай перед тем как продолжать мигрировать что-либо ещё:**
+Корневой `Scaffold` всего `PassengerShell` (`build()` метода `_PassengerShellState`, там же где `drawer: _SmartDrawer(...)`) имеет `backgroundColor: SmartTaxiColors.appBackground` — статичный, немигрированный. Это ЕДИНЫЙ фон для содержимого ВСЕХ вкладок (Настройки, Профиль, История и т.д.) — они сами не оборачивают себя в `Scaffold`.
+
+**Из-за этого миграция текста/карточек, лежащих ПРЯМО на этом фоне (`_TitleBlock`, `_PremiumCard` и всё что внутри — `_SettingsGroup`, `_SettingsRow`, `_ProfileGroupLabel`, `_MenuLine` и т.д.), НЕБЕЗОПАСНА поштучно** — если помигрировать, например, только `_SettingsGroup`'s текст на `palette.text` (в тёмной теме — почти белый), а фон Scaffold и `_PremiumCard` останутся белыми — получится светлый текст на светлом фоне, то есть станет ХУЖЕ, чем сейчас (сейчас всё просто "не адаптируется", а не "нечитаемо").
+
+**Безопасны только самодостаточные оверлеи** — виджеты, у которых СВОЙ явный `Container`/`decoration` с фоном, не зависящий от Scaffold: `Drawer`, `showModalBottomSheet`-шторки (`_PaymentMethodSheet` уже сделан; ещё есть `_CancelConfirmSheet`, `_SafetySheet`, `_ConfirmSheet`, `_OrderNoteSheet`, `_AddDriverPreferenceSheet`, `_CreateFavoriteAddressSheet`, `_SimpleAddressSearchSheet`, `_CreateRecurringBookingSheet`, `_ChatSheet`, `_AddressSearchSheet`, `_LocationPermissionSheet`, `_CollapsibleOrderSheet`, `_OrderSheet` — но последние два входят в защищённый tariff/address-flow, не трогать), плавающая chrome вроде `_AppHeader` (сделан).
+
+**НЕ трогай пока**: `_MapGlassChrome`/`_MapBrandPill`/`_MapChromeButton`/`_NotificationButton` — это полупрозрачное "стекло" поверх карты (`Colors.white.withValues(alpha: 0.72)`), возможно ЗАДУМАНО оставаться светлым независимо от темы (карта не темнеет). Нужна визуальная проверка перед решением, не мигрировать вслепую.
+
+Следующие шаги по приоритету:
+1. Догнать оставшиеся безопасные шторки (список выше) — по одной, коммитить каждую отдельно.
+2. Затем — большая, атомарная задача: мигрировать корневой `Scaffold.backgroundColor` (`palette.appBackground`) И `_PremiumCard`, И все ~29 мест, где `_PremiumCard(` вызывается (`grep -c "_PremiumCard(" passenger_shell.dart`), В ОДНОМ (или тщательно спланированной серии) коммитов — частично нельзя, будет хуже чем сейчас. Это правда большая задача, не торопись, проверяй каждый экран.
+3. `driver_shell.dart` — та же болезнь, вероятно та же ловушка с корневым Scaffold. Проверь так же, прежде чем трогать.
 
 ## Дальше — общая полировка
 
