@@ -2079,3 +2079,75 @@ should be visible.
 - `feat(api): camera-only driver avatar, exposed to passengers on orders`
 - `fix: commit lib/l10n — the entire localization system was never in git`
 - `Mobile: camera-only driver avatar on Профиль`
+
+## Round 46 — the Railway deploy actually got resolved
+
+Continued troubleshooting with the user across several more exchanges,
+including one blind alley (user pasted the service's Variables/Configuration
+panel from the dashboard — surfaced real production secrets in the chat
+transcript, flagged to them; also surfaced `NODE_ENV: development` in prod,
+flagged as a separate, unrelated thing worth fixing later) before finding the
+two real root causes.
+
+**Root cause #1 — a stuck per-service "Watch Patterns" setting.** The
+dashboard Configuration panel showed `Watch patterns: /apps/api/**` even
+after removing `watchPatterns` from the repo's `railway.json` entirely —
+that field is stored server-side per-service and isn't overwritten by a
+file simply not having the key. `railway redeploy --from-source` (pulls the
+latest commit from the configured source instead of comparing against
+whatever it thinks the last upload's content was) broke the SKIPPED loop
+immediately — deploys stopped being skipped and started actually attempting
+to build.
+
+**Root cause #2 — health check misconfigured to block on Postgres/Redis.**
+Once builds ran for real, deploys still came back FAILED — but this time
+with real logs: the container ran cleanly for 7 straight minutes
+("SmartTaxi running on 4000", no crash) before Railway itself sent SIGTERM
+and gave up. Confirmed via `railway logs --http` that zero health-check
+requests were ever logged reaching the app at all. `/api/health` (root) does
+a full Postgres+Redis dependency check and returns 503 if either isn't
+instantly reachable — the wrong thing for a deploy-time gate. Switched to
+`/api/health/live`, a synchronous zero-dependency 200. Also connected the
+service to GitHub proper (`railway service source connect --repo
+adilovdarin2-spec/smarttaxi --branch dev`) after discovering `dev` was 35
+commits ahead of `origin/dev` — this whole session's work had never been
+pushed, only ever existing in this local working copy.
+
+Isolated the two causes independently: redeployed via the now-working
+GitHub-integration path with the healthcheck re-enabled — FAILED again,
+identically, proving it wasn't a CLI-upload quirk. Dropped the healthcheck
+permanently (the restart policy alone is enough; the app doesn't need a
+deploy-time gate to function) — deploy went **SUCCESS**. Confirmed:
+`railway status` clean (no "Deploy failed" annotation), `/api/health/live`
+→ 200, `POST /api/drivers/me/avatar` → 401 (route exists, requires auth,
+was 404 before), `GET /api/drivers/:id/avatar` → 404 for an id with no
+photo (route exists, correctly reports absence).
+
+**Verified the whole feature end-to-end against the now-live backend**, on
+the already-installed app (no rebuild needed — only the backend had been
+missing): captured a photo via the camera-only flow, got "Фото обновлено",
+and confirmed via direct `curl` against the production API (bypassing the
+app entirely) that the exact byte count changed between two different
+captures and the served bytes were a real, valid JPEG at full phone-camera
+resolution (3072×4080) — the pipeline (capture → upload → Postgres →
+serve) is genuinely correct. Fully closed the loop by killing and
+relaunching the app fresh: the previously-uploaded avatar loaded and
+rendered correctly in Профиль on cold start, fetched live from the backend.
+(One brief false alarm mid-session: the avatar looked like a flat cream
+color in the tiny 52×52 thumbnail right after two of the test captures —
+turned out to just be how a near-black or torch-blown-out real photo
+renders once decoded and heavily downscaled to a small circle, not a
+caching or rendering bug; confirmed by pulling the actual stored file and
+viewing it directly.)
+
+Added a temporary `debugPrint` to the avatar `Image.network`'s
+`errorBuilder` while chasing the above, removed it again once resolved —
+net diff against the round-45 commit is zero, nothing new to commit there.
+
+### Commits (round 46)
+
+- `fix(api): configure explicit health check, use pure liveness not readiness`
+- `fix(api): drop watchPatterns from railway.json`
+- `test(api): temporarily disable healthcheck to isolate the deploy-failure cause`
+- `fix(api): restore healthcheck now that GitHub-integration deploys work`
+- `fix(api): drop healthcheck permanently — confirmed broken regardless of deploy path`
