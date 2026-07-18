@@ -92,16 +92,39 @@ export function calculateOrderPrice(tariff, distanceKm, durationMin) {
   return calculatePricingComponents(tariff, { distanceKm, durationMin }).finalPrice;
 }
 
+// Mirrors the mobile app's "своя цена" price-adjuster stepper bounds so the
+// server rejects anything the UI shouldn't have let the rider reach in the
+// first place. Pure function (no DB import) so it can be unit-tested
+// directly instead of only through orders.routes.js.
+//
+// Floor is a flat amount regardless of the estimated price (a rider can
+// always offer down to this), and there's no ceiling of our own — only
+// CreateOrder's zod schema (1,000,000 KZT) still applies as a sanity cap.
+export function offeredPriceBounds(_estimatedPrice) {
+  const minAllowed = 200;
+  const maxAllowed = 1_000_000;
+  return { minAllowed, maxAllowed };
+}
+
 export function buildPricingSnapshot({ region, tariff, distanceKm, durationMin, waitingMinutes = 0, components }) {
+  const basePrice = Number(tariff.base_price);
+  const pricePerKm = Number(tariff.price_per_km);
+  const pricePerMinute = Number(tariff.price_per_minute);
+  const minimumPrice = Number(tariff.min_price);
+  const fixedPriceKzt = pricePerKm === 0 && pricePerMinute === 0
+    ? Math.max(basePrice, minimumPrice)
+    : null;
   return {
     regionId: region.id,
     tariffId: tariff.id,
     tariffName: tariff.name,
     tariffDisplayName: tariff.display_name || tariff.name,
-    basePrice: Number(tariff.base_price),
-    pricePerKm: Number(tariff.price_per_km),
-    pricePerMinute: Number(tariff.price_per_minute),
-    minimumPrice: Number(tariff.min_price),
+    basePrice,
+    pricePerKm,
+    pricePerMinute,
+    minimumPrice,
+    fixedPriceKzt,
+    pricingType: fixedPriceKzt ? "fixed" : "formula",
     surgeMultiplier: Number(tariff.surge_multiplier ?? 1),
     includedKm: Number(tariff.included_km ?? 0),
     includedMinutes: Number(tariff.included_minutes ?? 0),
