@@ -9572,10 +9572,12 @@ class _CreateRecurringBookingSheetState
         maxChildSize: 0.95,
         expand: false,
         builder: (context, scrollController) {
+          final palette = context.palette;
           return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            decoration: BoxDecoration(
+              color: palette.card,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
             child: ListView(
@@ -9587,10 +9589,10 @@ class _CreateRecurringBookingSheetState
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Например, отвозить ребёнка в школу по будням',
                   style: TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                    color: palette.textSecondary,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -9725,6 +9727,7 @@ class _RecurringAddressField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -9734,13 +9737,12 @@ class _RecurringAddressField extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: SmartTaxiColors.border),
+            border: Border.all(color: palette.border),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             children: [
-              const Icon(Icons.place_outlined,
-                  size: 18, color: SmartTaxiColors.goldDeep),
+              Icon(Icons.place_outlined, size: 18, color: palette.goldDeep),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -9748,8 +9750,8 @@ class _RecurringAddressField extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.textSecondary,
+                      style: TextStyle(
+                        color: palette.textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -9760,8 +9762,8 @@ class _RecurringAddressField extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: value == null
-                            ? SmartTaxiColors.textMuted
-                            : SmartTaxiColors.text,
+                            ? palette.textMuted
+                            : palette.text,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -9769,8 +9771,8 @@ class _RecurringAddressField extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
-                  color: SmartTaxiColors.textSecondary),
+              Icon(Icons.chevron_right_rounded,
+                  color: palette.textSecondary),
             ],
           ),
         ),
