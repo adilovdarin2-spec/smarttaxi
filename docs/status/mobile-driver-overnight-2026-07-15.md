@@ -1827,3 +1827,34 @@ Both verified live on-device after rebuild+reinstall.
 
 - `Mobile: redesign the driver drawer menu — icons, sections, richer header`
 - `Mobile: compact the documents checklist — icons, one row per document`
+
+## Round 41 — Documents feature removed per product decision
+
+User: "документы не нужны м сделай все еще красивее" — the compacted-in-round-40
+Documents screen isn't wanted at all; drop it and keep polishing everything
+else. Matches the earlier round-39 note that documents aren't required to go
+online anyway (the approval gate was intentionally removed 2026-07-15).
+
+- Deleted `screens/documents/driver_documents_screen.dart` and
+  `screens/documents/driver_document_upload_sheet.dart` (the latter had no
+  other callers, confirmed via grep), then removed the now-empty
+  `screens/documents/` directory.
+- Removed the `onDocuments` wiring: the callback in `driver_shell.dart`'s
+  `DriverDrawer(...)` call, its now-unused import, and the constructor
+  param/field plus the "Документы" `DrawerItem` block in
+  `driver_shell_chrome.dart` (was between Кошелёк and Рейтинг).
+- Kept `models/driver_document_labels.dart` and `driver_document_models.dart`
+  — confirmed via grep these are still used by
+  `screens/onboarding/driver_application_documents_screen.dart`, the separate
+  driver-signup flow, unaffected by this change.
+- `flutter analyze lib/features/driver --no-fatal-infos` → clean, no broken
+  references.
+- Verified live: rebuilt debug APK, sideloaded via the file-manager workflow,
+  fresh launch restored the existing session (Test Driver, Мырзакент) with no
+  re-login needed. Opened the drawer — Аккаунт section now reads
+  Профиль → Кошелёк → Рейтинг directly, no Документы entry, everything else
+  unchanged (icons, sections, active-tab highlight all intact).
+
+### Commits (round 41)
+
+- `feat(driver): remove Documents feature per product decision`
