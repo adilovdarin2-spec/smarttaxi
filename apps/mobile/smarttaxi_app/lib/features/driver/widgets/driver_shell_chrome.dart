@@ -57,7 +57,6 @@ class DriverDrawer extends StatelessWidget {
     required this.onPassenger,
     required this.onProfile,
     required this.onWallet,
-    required this.onDocuments,
     required this.onRating,
     required this.onNotifications,
     required this.onSupport,
@@ -77,7 +76,6 @@ class DriverDrawer extends StatelessWidget {
   final VoidCallback onPassenger;
   final VoidCallback onProfile;
   final VoidCallback onWallet;
-  final VoidCallback onDocuments;
   final VoidCallback onRating;
   final VoidCallback onNotifications;
   final VoidCallback onSupport;
@@ -226,11 +224,6 @@ class DriverDrawer extends StatelessWidget {
                 icon: Icons.account_balance_wallet_rounded,
                 active: false,
                 onTap: onWallet),
-            DrawerItem(
-                label: l10n.driverDrawerDocuments,
-                icon: Icons.description_rounded,
-                active: false,
-                onTap: onDocuments),
             DrawerItem(
                 label: l10n.driverDrawerRating,
                 icon: Icons.star_rounded,

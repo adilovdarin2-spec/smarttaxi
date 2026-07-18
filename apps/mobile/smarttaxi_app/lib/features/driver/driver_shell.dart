@@ -24,7 +24,6 @@ import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/models.dart';
 import 'models/driver_shell_helpers.dart';
-import 'screens/documents/driver_documents_screen.dart';
 import 'screens/notifications/driver_notifications_screen.dart';
 import 'screens/rating/driver_rating_screen.dart';
 import 'screens/wallet/driver_wallet_screen.dart';
@@ -1932,8 +1931,6 @@ class _DriverShellState extends State<DriverShell> {
           onProfile: () => _showDriverFullSheet(_driverProfileContent()),
           onWallet: () =>
               _showDriverFullSheet(DriverWalletScreen(api: widget.api)),
-          onDocuments: () =>
-              _showDriverFullSheet(DriverDocumentsScreen(api: widget.api)),
           onRating: () =>
               _showDriverFullSheet(DriverRatingScreen(api: widget.api)),
           onNotifications: () =>
