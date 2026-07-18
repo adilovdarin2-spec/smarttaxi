@@ -503,6 +503,30 @@ class ApiClient {
     return DriverStats.fromJson(response.data ?? {});
   }
 
+  Future<String?> getDriverAvatarUrl() async {
+    await _attachToken();
+    final response = await _dio.get<Map<String, dynamic>>('/api/drivers/me');
+    final driver = response.data?['driver'] as Map<String, dynamic>?;
+    return driver?['avatar_url'] as String?;
+  }
+
+  Future<String> uploadDriverAvatar(String filePath) async {
+    await _attachToken();
+    final fileName = filePath.split(RegExp(r'[\\/]')).last;
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/drivers/me/avatar',
+      data: FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      }),
+    );
+    return response.data?['avatarUrl'] as String;
+  }
+
+  Future<void> deleteDriverAvatar() async {
+    await _attachToken();
+    await _dio.delete('/api/drivers/me/avatar');
+  }
+
   Future<List<OrderSummary>> getOrders() async {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/orders');

@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
     <!-- Required on Android 13+ (API 33+) for FirebaseMessaging.requestPermission()
          to actually show the OS prompt — without this, push notifications for new
          orders silently never arrive on any modern device. -->

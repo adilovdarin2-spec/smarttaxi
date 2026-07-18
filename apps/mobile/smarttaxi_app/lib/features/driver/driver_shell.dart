@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -130,6 +131,8 @@ class _DriverShellState extends State<DriverShell> {
   bool _tripHistoryLoading = false;
   bool _roadAlertsLoading = false;
   bool _driverStatsLoading = false;
+  String? _avatarUrl;
+  bool _avatarUploading = false;
   bool _navigatorMapUnavailable = false;
   int _navigatorTileErrorCount = 0;
   String _accountPhone = '';
@@ -239,6 +242,7 @@ class _DriverShellState extends State<DriverShell> {
     await _loadRoadAlerts();
     unawaited(_loadTripHistory());
     unawaited(_loadServiceContacts());
+    unawaited(_loadAvatar());
   }
 
   Future<void> _loadServiceContacts() async {
@@ -1294,6 +1298,43 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
+  Future<void> _loadAvatar() async {
+    try {
+      final url = await widget.api.getDriverAvatarUrl();
+      if (!mounted) return;
+      setState(() => _avatarUrl = url);
+    } catch (_) {
+      // No avatar yet, or the fetch failed — the profile screen falls back
+      // to a plain icon either way, not worth surfacing an error for.
+    }
+  }
+
+  // Camera only, never a gallery pick — a photo passengers rely on to
+  // recognize their driver has to actually be this driver, not whatever
+  // picture happens to be saved on their phone.
+  Future<void> _captureAvatar() async {
+    final l10n = AppLocalizations.of(context);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    if (!mounted) return;
+    setState(() => _avatarUploading = true);
+    try {
+      final url = await widget.api.uploadDriverAvatar(file.path);
+      if (!mounted) return;
+      setState(() => _avatarUrl = url);
+      AppToast.showSuccess(context, l10n.driverAvatarUpdated);
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.showError(context, l10n.driverAvatarUploadError);
+    } finally {
+      if (mounted) setState(() => _avatarUploading = false);
+    }
+  }
+
   Future<void> _accept(OrderSummary order) async {
     if (!_online) {
       setState(() =>
@@ -1518,17 +1559,62 @@ class _DriverShellState extends State<DriverShell> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: context.palette.goldSurface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: context.palette.border),
+                  GestureDetector(
+                    onTap: _avatarUploading ? null : _captureAvatar,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: context.palette.goldSurface,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: context.palette.border),
+                          ),
+                          child: _avatarUrl == null
+                              ? Icon(Icons.person_rounded,
+                                  color: context.palette.goldDeep, size: 26)
+                              : Image.network(
+                                  '${AppConfig.apiBaseUrl}$_avatarUrl',
+                                  fit: BoxFit.cover,
+                                  width: 52,
+                                  height: 52,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(Icons.person_rounded,
+                                          color: context.palette.goldDeep,
+                                          size: 26),
+                                ),
+                        ),
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: context.palette.goldDeep,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: context.palette.card, width: 2),
+                            ),
+                            child: _avatarUploading
+                                ? const SizedBox(
+                                    width: 10,
+                                    height: 10,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 1.6,
+                                        color: Colors.white),
+                                  )
+                                : const Icon(Icons.camera_alt_rounded,
+                                    size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Icon(Icons.person_rounded,
-                        color: context.palette.goldDeep, size: 26),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1539,8 +1625,10 @@ class _DriverShellState extends State<DriverShell> {
                           widget.accountLabel.isEmpty
                               ? l10n.driverProfileNameFallback
                               : widget.accountLabel,
-                          style: const TextStyle(
-                              fontSize: 17, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                              color: context.palette.text,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 2),
                         Text(
