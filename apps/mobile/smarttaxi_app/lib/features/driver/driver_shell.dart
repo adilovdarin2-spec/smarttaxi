@@ -1543,6 +1543,8 @@ class _DriverShellState extends State<DriverShell> {
                 DriverProfileRow(
                   label: l10n.driverProfileDebtLabel,
                   value: formatDriverMoney(stats.debt),
+                  valueColor:
+                      stats.debt > 0 ? context.palette.danger : null,
                 ),
               ],
             ],

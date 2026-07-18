@@ -7,10 +7,16 @@ import '../models/driver_shell_helpers.dart';
 import 'driver_common_widgets.dart';
 
 class DriverProfileRow extends StatelessWidget {
-  const DriverProfileRow({super.key, required this.label, required this.value});
+  const DriverProfileRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +35,11 @@ class DriverProfileRow extends StatelessWidget {
           ),
           Text(
             value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: valueColor,
+            ),
           ),
         ],
       ),
