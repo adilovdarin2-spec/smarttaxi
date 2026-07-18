@@ -7050,22 +7050,11 @@ class _TripDetailScreen extends StatelessWidget {
               _PremiumCard(
                 child: Row(
                   children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: SmartTaxiColors.goldSurface,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        driverName.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          color: SmartTaxiColors.goldDeep,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+                    _InitialsAvatar(
+                      name: driverName,
+                      size: 46,
+                      showStatusDot: false,
+                      avatarUrl: trip.driverAvatarUrl,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -7255,6 +7244,7 @@ class _TripStatusPanel extends StatelessWidget {
         key: const ValueKey('trip-panel-rate'),
         child: _RateDriverPanel(
           driverName: order.driverName ?? '',
+          driverAvatarUrl: order.driverAvatarUrl,
           stars: ratingStars,
           tags: ratingTags,
           commentController: ratingCommentController,
@@ -7736,9 +7726,11 @@ class _RateDriverPanel extends StatelessWidget {
     required this.onSubmit,
     required this.onSkip,
     this.error,
+    this.driverAvatarUrl,
   });
 
   final String driverName;
+  final String? driverAvatarUrl;
   final int stars;
   final Set<String> tags;
   final TextEditingController commentController;
@@ -7775,7 +7767,12 @@ class _RateDriverPanel extends StatelessWidget {
           children: [
             const _SheetHandle(dark: false),
             const SizedBox(height: 6),
-            _InitialsAvatar(name: name, size: 56, showStatusDot: false),
+            _InitialsAvatar(
+              name: name,
+              size: 56,
+              showStatusDot: false,
+              avatarUrl: driverAvatarUrl,
+            ),
             const SizedBox(height: 12),
             Text(
               'Как прошла поездка с $name?',
