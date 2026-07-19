@@ -4505,7 +4505,11 @@ class _DriverMapBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
           text,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: SmartTaxiColors.text,
+          ),
         ),
       ),
     );
@@ -5494,6 +5498,7 @@ class _RoadAlertMap extends StatelessWidget {
                       child: Text(
                         'Нажмите на карту, чтобы выбрать точку события',
                         style: TextStyle(
+                          color: SmartTaxiColors.text,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                         ),
@@ -5546,7 +5551,10 @@ class _RoadAlertMapFallback extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Карта временно недоступна. Выберите точку через GPS или повторите позже.',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: SmartTaxiColors.text,
+                  ),
                 ),
               ),
             ],
