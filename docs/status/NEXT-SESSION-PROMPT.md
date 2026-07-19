@@ -11,6 +11,22 @@
 - Продакшен API стабилен (`docs/status/INCIDENT-2026-07-18-api-down.md` — полная история инцидента и решения, включая правило: перед любым деплоем гонять `git status --porcelain apps/api` и коммитить забытые файлы).
 - Тема/меню пассажирской части (`passenger_shell.dart`) — полностью мигрированы на `context.palette`, подробности ниже.
 
+## driver_shell.dart — аудит темы ЗАВЕРШЁН, реальных пробелов не найдено (2026-07-19, ~06:35)
+
+**Признаки, что сессия "SmartTaxi driver app features" завершила работу:** `git status` на `apps/mobile/smarttaxi_app/lib/features/driver/` — чисто (нет незакоммиченных файлов); последний коммит по водительским файлам (`400cc37`, "fix theme not updating live in driver bottom sheets") имеет timestamp `2026-07-19 03:14:18`, который почти точно совпадает с `lastUpdateTime` установленного на телефоне APK (`03:08:38`) — то есть последний билд/коммит согласуются, а не "коммит недавно, а билд старый" (что указывало бы на незавершённую работу). Плюс `adb shell dumpsys power`: `mLastUserActivityTime` ~2.5 суток назад, `mLastWakeTime` ~29 часов назад — телефон физически не трогали очень долго. Совокупность сигналов достаточно сильная, чтобы начать аудит.
+
+**Попытка поставить свежий APK на телефон (`adb install -r`) заблокирована классификатором безопасности** — независимо от того, свободен телефон или нет, это отдельный уровень защиты для установки на физическое устройство. Не пытайся обойти другими путями (push + intent и т.п.) — задокументировано выше в разделе про веб-превью, тот же принцип.
+
+**Результат аудита:** `driver_shell.dart` уже имел корневой `Scaffold` на `context.palette.appBackground` (водительская сессия уже сделала свою версию "большой атомарной миграции") + 49 использований `context.palette` против оставшихся 55 `SmartTaxiColors.`. Прошёлся по ВСЕМ 55 оставшимся вручную — 100% оказались одной из категорий:
+1. Буквальные цвета `FlutterMap`/маркеров/полилиний (карта живая, не красится темой).
+2. "Матовое стекло" HUD-бейджи поверх карты (`_DriverMapBadge`, `_RoadAlertMapFallback` — тот же паттерн, что `_MapGlassChrome` на пассажирской стороне, сознательно не трогал).
+3. Полноэкранный навигатор — свой `Scaffold` с ЖЁСТКО заданным `Color(0xff0b1b33)` (тёмная "кокпит"-тема навигатора, как в реальных GPS-навигаторах — не связано с темой приложения).
+4. Спиннер на золотой кнопке, использующий тот же `SmartTaxiColors.text`, что и сама тема кнопки (`ElevatedButtonThemeData.foregroundColor` для ОБЕИХ тем в `app_theme.dart` тоже жёстко `SmartTaxiColors.text` — золотая кнопка сознательно всегда с тёмным текстом).
+
+Нашёл и починил один тривиальный момент (`driver_line_widgets.dart`, commit `6f0bb82`) — смешение `palette.X`/`SmartTaxiColors.X` в одном выражении, значение идентично в обеих темах, чисто консистентность.
+
+**Вывод: водительская часть — действительно готова по теме, как и утверждал тот чат.** Widgets/screens файлы (`driver_common_widgets`, `driver_line_widgets`, `driver_order_widgets`, `driver_profile_widgets`, `driver_shell_chrome`, всё в `driver/screens/*`) уже были ~0 статичных ссылок с активным использованием `context.palette`. Пробел закрывать не нужно.
+
 ## Тема и меню passenger_shell.dart — ЗАВЕРШЕНО (2026-07-19)
 
 `passenger_shell.dart` полностью мигрирован на `context.palette` — корневой `Scaffold` (`_PassengerShellState.build()`) и ВСЕ 16 экранов, которые на нём висят (home/trips/profile/promoCodes/notifications/driverApplication/support/faq/about/legalHub/legalDocument×5/settings/recurringBookings/favoriteAddresses/driverPreferences/referrals), плюс `_PremiumCard` и все общие row/label-виджеты внутри карточек, плюс все ранее начатые самодостаточные шторки. Коммиты (все запушены в `dev`): `0aaa077`, `c94100d`, `8fa141b`, `3611ffc`, `cf96c02`, `0e47308`, `cab306e`, `5ccc6b3`, `afeb580`, `69a8139`, `8543a97`, `74cbf22`, `b6213b7`, `7525a93`, `3001a9b`, `fd055ce`, `b7a42ec`.
