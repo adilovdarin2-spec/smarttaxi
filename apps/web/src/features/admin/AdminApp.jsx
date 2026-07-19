@@ -716,6 +716,16 @@ export default function AdminApp() {
     }, isBlocked ? "Водитель заблокирован" : "Водитель разблокирован");
   }
 
+  // Blocking (unlike unblocking, which is purely corrective) suspends a
+  // driver from the whole service in one click with no undo — worth a
+  // reason prompt + confirm step, matching the payout-reject precedent.
+  // Returns to the driver-detail view afterward (cancel or confirm) rather
+  // than closing everything, since that's where this was opened from.
+  async function confirmBlockDriver(driver, reason) {
+    await setDriverBlocked(driver, true, reason);
+    setModal({ type: "driver", driver });
+  }
+
   async function setDriverRegion(driverId, regionId, status, reason = "") {
     await runAction(async () => {
       await updateAdminDriverRegion(driverId, { regionId, status, reason });
@@ -1157,7 +1167,7 @@ export default function AdminApp() {
             canEditSettings={user?.role === "OWNER"}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
-            onToggleRegion={switchRegion}
+            onToggleRegion={region => (isActiveRegion(region) ? setModal({ type: "regionDeactivate", region }) : switchRegion(region))}
             onOpenDriver={openDriver}
             onBlockDriver={setDriverBlocked}
             onOpenApplication={application => setModal({ type: "application", application })}
@@ -1189,6 +1199,7 @@ export default function AdminApp() {
           onClose={() => setModal(null)}
           onRefresh={() => refreshDriverDetail(modal.driver.id)}
           onBlock={setDriverBlocked}
+          onRequestBlock={driver => setModal({ type: "driverBlock", driver })}
           onSetRegion={setDriverRegion}
           onSetCommission={setDriverCommission}
           onClearCommission={clearDriverCommission}
@@ -1279,6 +1290,20 @@ export default function AdminApp() {
           }}
         />
       )}
+      {modal?.type === "regionDeactivate" && (
+        <ConfirmPanel
+          title="Отключить регион"
+          text={`Регион «${modal.region.name}» перестанет принимать новые заказы — все водители и клиенты в нём потеряют доступ к сервису сразу. Активные поездки не прерываются, но новые заказы оформить будет нельзя.`}
+          confirmLabel="Отключить регион"
+          busy={actionState.loading}
+          danger
+          onClose={() => setModal(null)}
+          onConfirm={async () => {
+            await switchRegion(modal.region);
+            setModal(null);
+          }}
+        />
+      )}
       {modal?.type === "reviewDelete" && (
         <ConfirmPanel
           title="Удалить отзыв"
@@ -1296,6 +1321,14 @@ export default function AdminApp() {
           busy={actionState.loading}
           onClose={() => setModal(null)}
           onConfirm={reason => reviewPayout(modal.payoutRequest, "REJECTED", reason)}
+        />
+      )}
+      {modal?.type === "driverBlock" && (
+        <DriverBlockPanel
+          driver={modal.driver}
+          busy={actionState.loading}
+          onClose={() => setModal({ type: "driver", driver: modal.driver })}
+          onConfirm={reason => confirmBlockDriver(modal.driver, reason)}
         />
       )}
     </main>
@@ -3005,6 +3038,31 @@ function PayoutRejectPanel({ payoutRequest, busy, onClose, onConfirm }) {
   );
 }
 
+function DriverBlockPanel({ driver, busy, onClose, onConfirm }) {
+  const [reason, setReason] = useState("");
+  return (
+    <ModalFrame title="Заблокировать водителя" onClose={onClose}>
+      <div className="admin-detail-stack">
+        <p>
+          {driver.name || "Этот водитель"} потеряет доступ ко всему сервису
+          сразу во всех регионах — не сможет выйти на линию и принимать
+          заказы, пока вы не разблокируете его вручную.
+        </p>
+        <label className="admin-textarea-field">
+          <span>Причина блокировки</span>
+          <textarea value={reason} onChange={event => setReason(event.target.value)} rows={4} placeholder="Например: жалобы клиентов на агрессивное вождение" />
+        </label>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="button" className="admin-danger-button" disabled={busy || !reason.trim()} onClick={() => onConfirm(reason.trim())}>
+            {busy ? "Блокируем..." : "Заблокировать"}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
+  );
+}
+
 function QualityPage({ reviews, leaderboard, raffles, ratingScope, setRatingScope, ratingRaffleId, setRatingRaffleId, onDeleteReview }) {
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
@@ -3510,7 +3568,7 @@ function RegionEditor({ region, onClose, onSave, busy }) {
   );
 }
 
-function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onSetRegion, onSetCommission, onClearCommission }) {
+function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onRequestBlock, onSetRegion, onSetCommission, onClearCommission }) {
   const [reasonByRegion, setReasonByRegion] = useState({});
   const driver = detail.payload?.driver || initialDriver;
   const regions = detail.payload?.regions || [];
@@ -3565,7 +3623,12 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
           </div>
 
           <section className="admin-detail-actions">
-            <button type="button" className={driver.is_blocked ? "admin-secondary-button" : "admin-danger-button"} disabled={busy} onClick={() => onBlock(driver, !driver.is_blocked)}>
+            <button
+              type="button"
+              className={driver.is_blocked ? "admin-secondary-button" : "admin-danger-button"}
+              disabled={busy}
+              onClick={() => (driver.is_blocked ? onBlock(driver, false) : onRequestBlock(driver))}
+            >
               {driver.is_blocked ? "Разблокировать" : "Заблокировать"}
             </button>
           </section>
