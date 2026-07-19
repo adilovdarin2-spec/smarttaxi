@@ -1310,10 +1310,16 @@ class _PassengerShellState extends State<PassengerShell>
     setState(() => _target = target);
     final sheetAddresses = _recentAddresses;
     const sheetAddressTitle = 'Недавние адреса';
+    // Near-opaque barrier so the map fades almost entirely to the app
+    // background behind this sheet (a much softer look than the default
+    // dark scrim) — needs its own dark-mode color or the light cream tint
+    // washes a whitish haze over the dark map/dark sheet.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selected = await showModalBottomSheet<_PointResult>(
       context: context,
       isScrollControlled: true,
-      barrierColor: const Color(0xf6fffcf6),
+      barrierColor:
+          isDark ? const Color(0xf6071426) : const Color(0xf6fffcf6),
       backgroundColor: Colors.transparent,
       builder: (context) => _AddressSearchSheet(
         api: widget.api,
@@ -3435,7 +3441,6 @@ class _PassengerShellState extends State<PassengerShell>
               _SectionLabel(
                 title: 'Тема обращения',
                 text: 'Выберите, с чем нужна помощь',
-                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -3887,7 +3892,6 @@ class _PassengerShellState extends State<PassengerShell>
               _SectionLabel(
                 title: 'Избранные',
                 text: 'Регулярные поездки предложат их в первую очередь',
-                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 10),
               ...favorites.map(
@@ -3907,7 +3911,6 @@ class _PassengerShellState extends State<PassengerShell>
               _SectionLabel(
                 title: 'Заблокированные',
                 text: 'Не будут предложены на регулярные поездки',
-                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 10),
               ...blocked.map(
@@ -4487,7 +4490,6 @@ class _LostItemOrderPicker extends StatelessWidget {
         _SectionLabel(
           title: 'Какая поездка?',
           text: 'Нужна для того, чтобы уведомить водителя',
-          dark: Theme.of(context).brightness == Brightness.dark,
         ),
         const SizedBox(height: 8),
         Container(
@@ -4854,18 +4856,31 @@ class _MapCanvasState extends State<_MapCanvas> {
                 ],
               ),
             ),
-          const Positioned.fill(
+          // Fades the map to the app background at the top/bottom edges so
+          // the floating header and sheet read clearly over busy map tiles.
+          // Was a hardcoded cream tint (fine on the light map) — now that
+          // the map itself inverts to dark (see the ColorFiltered TileLayer
+          // above), the same cream fade left a whitish haze glowing across
+          // the top and bottom of an otherwise-dark map, most visible right
+          // behind the bottom sheet.
+          Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x55fffcf6),
-                      Color(0x08fffcf6),
-                      Color(0xaafffcf6),
-                    ],
+                    colors: isDark
+                        ? const [
+                            Color(0x55071426),
+                            Color(0x08071426),
+                            Color(0xaa071426),
+                          ]
+                        : const [
+                            Color(0x55fffcf6),
+                            Color(0x08fffcf6),
+                            Color(0xaafffcf6),
+                          ],
                   ),
                 ),
               ),
@@ -9913,6 +9928,7 @@ class _InitialsAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final trimmed = name.trim();
     final initial = trimmed.isEmpty ? '?' : trimmed[0].toUpperCase();
     return Stack(
@@ -9924,15 +9940,15 @@ class _InitialsAvatar extends StatelessWidget {
           alignment: Alignment.center,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [SmartTaxiColors.goldSoft, SmartTaxiColors.goldDeep],
+            gradient: LinearGradient(
+              colors: [palette.gold, palette.goldDeep],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(size * 0.34),
             boxShadow: [
               BoxShadow(
-                color: SmartTaxiColors.gold.withValues(alpha: 0.30),
+                color: palette.gold.withValues(alpha: 0.30),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -12438,7 +12454,6 @@ class _TariffSection extends StatelessWidget {
             title: 'Выберите тариф',
             text:
                 'Фиксированная цена, время и расстояние показаны для ориентира',
-            dark: dark,
           ),
           const SizedBox(height: 10),
         ] else ...[
@@ -14785,15 +14800,14 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel({
     required this.title,
     required this.text,
-    this.dark = false,
   });
 
   final String title;
   final String text;
-  final bool dark;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       children: [
         Expanded(
@@ -14803,7 +14817,7 @@ class _SectionLabel extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  color: dark ? Colors.white : SmartTaxiColors.text,
+                  color: palette.text,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
@@ -14812,7 +14826,7 @@ class _SectionLabel extends StatelessWidget {
               Text(
                 text,
                 style: TextStyle(
-                  color: dark ? Colors.white60 : SmartTaxiColors.textSecondary,
+                  color: palette.textSecondary,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),

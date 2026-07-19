@@ -49,15 +49,39 @@ Future<void> _runApp() async {
 
 Future<void> _showAppSystemUi() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // Just a sane pre-first-frame default (app boots into ThemeMode.light) —
+  // the MaterialApp `builder` below takes over every frame after that and
+  // keeps this in sync with the active theme, including live toggles and
+  // ThemeMode.system following the OS.
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
     systemStatusBarContrastEnforced: false,
-    systemNavigationBarColor: Colors.black,
-    systemNavigationBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: SmartTaxiColors.appBackground,
+    systemNavigationBarIconBrightness: Brightness.dark,
     systemNavigationBarContrastEnforced: false,
   ));
+}
+
+// Keeps the status bar + system gesture/nav bar in sync with the resolved
+// app theme (light/dark/system) on every rebuild — without this they stay
+// frozen at whatever `_showAppSystemUi` set once at boot, so toggling the
+// in-app theme left native chrome mismatched with the content (e.g. a black
+// nav bar under the light theme, or a light one under dark).
+SystemUiOverlayStyle _systemUiStyleFor(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarColor:
+        isDark ? SmartTaxiColors.bgDark : SmartTaxiColors.appBackground,
+    systemNavigationBarIconBrightness:
+        isDark ? Brightness.light : Brightness.dark,
+    systemNavigationBarContrastEnforced: false,
+  );
 }
 
 class SmartTaxiApp extends StatefulWidget {
@@ -338,6 +362,10 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _systemUiStyleFor(Theme.of(context).brightness),
+        child: child!,
+      ),
       // The splash screen manages its own loading state before the session
       // is known; showing the offline overlay on top of it would be
       // misleading (looks like a connectivity failure during normal boot).
