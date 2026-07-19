@@ -3051,12 +3051,13 @@ class _PassengerShellState extends State<PassengerShell>
           ),
         ),
         const SizedBox(height: 14),
-        const _PremiumCard(
+        _PremiumCard(
           child: _CompactNotice(
             icon: Icons.info_outline_rounded,
             title: 'Как применить скидку',
             text:
                 'Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.',
+            dark: Theme.of(context).brightness == Brightness.dark,
           ),
         ),
       ],
@@ -3296,7 +3297,11 @@ class _PassengerShellState extends State<PassengerShell>
           ),
           if (_error != null) ...[
             const SizedBox(height: 14),
-            _InlineMessage(text: _error!, danger: true),
+            _InlineMessage(
+              text: _error!,
+              danger: true,
+              dark: Theme.of(context).brightness == Brightness.dark,
+            ),
           ],
           const SizedBox(height: 14),
           _GoldCtaButton(
@@ -3485,6 +3490,8 @@ class _PassengerShellState extends State<PassengerShell>
                             _InlineMessage(
                               text: _supportMessage!,
                               danger: _supportMessageDanger,
+                              dark: Theme.of(context).brightness ==
+                                  Brightness.dark,
                             ),
                           ],
                           const SizedBox(height: 16),
@@ -3578,6 +3585,7 @@ class _PassengerShellState extends State<PassengerShell>
               icon: Icons.wifi_off_rounded,
               title: 'Не удалось загрузить обращения',
               text: 'Потяните экран вниз, чтобы попробовать снова.',
+              dark: Theme.of(context).brightness == Brightness.dark,
             ),
           ),
         ],
@@ -4045,11 +4053,12 @@ class _PassengerShellState extends State<PassengerShell>
               ],
             ),
             const SizedBox(height: 14),
-            const _CompactNotice(
+            _CompactNotice(
               icon: Icons.info_outline_rounded,
               title: 'Как это работает',
               text:
                   'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.',
+              dark: Theme.of(context).brightness == Brightness.dark,
             ),
           ],
         ],
@@ -4201,17 +4210,19 @@ class _PassengerShellState extends State<PassengerShell>
                 ),
               ),
               const SizedBox(height: 16),
-              const _CompactNotice(
+              _CompactNotice(
                 icon: Icons.map_outlined,
                 title: 'Региональная модель',
                 text:
                     'Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.',
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 12),
               _CompactNotice(
                 icon: Icons.support_agent_rounded,
                 title: 'Связь',
                 text: 'Если нужна помощь, откройте поддержку в левом меню.',
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
             ],
           ),
@@ -4445,10 +4456,11 @@ class _LostItemOrderPicker extends StatelessWidget {
     ].take(15).toList(growable: false);
 
     if (options.isEmpty) {
-      return const _InlineMessage(
+      return _InlineMessage(
         text:
             'Нет доступных поездок, к которым можно привязать эту заявку. '
             'Опишите поездку в сообщении ниже, мы найдём водителя вручную.',
+        dark: Theme.of(context).brightness == Brightness.dark,
       );
     }
 
@@ -9091,9 +9103,10 @@ class _AddDriverPreferenceSheetState
             ),
             const SizedBox(height: 14),
             if (widget.candidates.isEmpty)
-              const _InlineMessage(
+              _InlineMessage(
                 text:
                     'Нет водителей из истории поездок, которых ещё можно отметить.',
+                dark: Theme.of(context).brightness == Brightness.dark,
               )
             else ...[
               Container(
@@ -9616,11 +9629,12 @@ class _CreateRecurringBookingSheetState
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 if (widget.knownDrivers.isEmpty)
-                  const _CompactNotice(
+                  _CompactNotice(
                     icon: Icons.info_outline_rounded,
                     title: 'Нет доступных водителей',
                     text:
                         'Водителя можно выбрать только из тех, с кем у вас уже была поездка. Совершите хотя бы одну поездку, чтобы предложить регулярный маршрут.',
+                    dark: Theme.of(context).brightness == Brightness.dark,
                   )
                 else
                   DropdownButtonFormField<String>(
@@ -9709,7 +9723,11 @@ class _CreateRecurringBookingSheetState
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 10),
-                  _InlineMessage(text: _error!, danger: true, dark: false),
+                  _InlineMessage(
+                    text: _error!,
+                    danger: true,
+                    dark: Theme.of(context).brightness == Brightness.dark,
+                  ),
                 ],
                 const SizedBox(height: 18),
                 _GoldCtaButton(
@@ -14377,15 +14395,17 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
                 icon: Icons.error_outline_rounded,
                 title: 'Не удалось загрузить',
                 text: _error!,
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
             )
           else if (_items.isEmpty)
-            const _PremiumCard(
+            _PremiumCard(
               child: _CompactNotice(
                 icon: Icons.notifications_none_rounded,
                 title: 'Новых уведомлений нет',
                 text:
                     'Когда водитель примет заказ или поездка изменит статус, мы покажем это здесь и в статусе поездки.',
+                dark: Theme.of(context).brightness == Brightness.dark,
               ),
             )
           else
