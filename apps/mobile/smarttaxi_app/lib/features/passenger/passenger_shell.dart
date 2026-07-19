@@ -13458,7 +13458,22 @@ class _SmartDrawer extends StatelessWidget {
                   // screens) instead of the old dark "ST" monogram square +
                   // a hand-typed "SmartTaxi" RichText next to it — those two
                   // were drifting into visibly different brand marks.
-                  const BrandLogo.horizontal(),
+                  // The wordmark PNG is opaque white (not transparent, see
+                  // BrandLogo's own comment on why), so it needs its own
+                  // white card here to read as a deliberate logo badge
+                  // instead of a stray rectangle once the drawer itself
+                  // turns dark.
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      child: BrandLogo.horizontal(),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Material(
                     color: Colors.transparent,
