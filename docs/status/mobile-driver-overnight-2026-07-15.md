@@ -2505,4 +2505,4 @@ Verified via `flutter analyze --no-fatal-infos` (clean, same 2 pre-existing unre
 
 ### Commits (round 52)
 
-- (pending — not yet committed as of this doc update)
+- `Mobile(passenger): make order/tariff/trip flow dark-theme aware`
