@@ -9,28 +9,29 @@
 - Экран «нужно обновление» (`main.dart`, `_UpdateRequiredScreen`/`_UpdateAvailableSheet`) + бэкенд `GET /api/app-version` — готов, работает через `AppConfig.appVersion`.
 - Аватарка водителя (только с камеры, не из галереи) показывается в: driver-found/en-route (`_DriverContactCard`), в поездке, на экране отзыва (`_RateDriverPanel`), в деталях поездки (`_TripDetailScreen`). Проверь: не появились ли новые экраны с именем водителя без фото.
 - Продакшен API стабилен (`docs/status/INCIDENT-2026-07-18-api-down.md` — полная история инцидента и решения, включая правило: перед любым деплоем гонять `git status --porcelain apps/api` и коммитить забытые файлы).
+- Тема/меню пассажирской части (`passenger_shell.dart`) — полностью мигрированы на `context.palette`, подробности ниже.
 
-## Главная незакрытая задача — тема и меню
+## Тема и меню passenger_shell.dart — ЗАВЕРШЕНО (2026-07-19)
 
-`apps/mobile/smarttaxi_app/lib/core/theme/app_theme.dart` уже содержит ПРАВИЛЬНУЮ тему-зависимую систему (`SmartTaxiPalette`, `context.palette` — автоматически меняется light/dark). Она используется только в новых водительских экранах (`lib/features/driver/widgets/driver_shell_chrome.dart`, `driver_common_widgets.dart` — `DriverDrawer`, `DriverHeader`, `DrawerItem`, `DrawerSectionLabel`).
+`passenger_shell.dart` полностью мигрирован на `context.palette` — корневой `Scaffold` (`_PassengerShellState.build()`) и ВСЕ 16 экранов, которые на нём висят (home/trips/profile/promoCodes/notifications/driverApplication/support/faq/about/legalHub/legalDocument×5/settings/recurringBookings/favoriteAddresses/driverPreferences/referrals), плюс `_PremiumCard` и все общие row/label-виджеты внутри карточек, плюс все ранее начатые самодостаточные шторки. Коммиты (все запушены в `dev`): `0aaa077`, `c94100d`, `8fa141b`, `3611ffc`, `cf96c02`, `0e47308`, `cab306e`, `5ccc6b3`, `afeb580`, `69a8139`, `8543a97`, `74cbf22`, `b6213b7`, `7525a93`, `3001a9b`, `fd055ce`, `b7a42ec`.
 
-`passenger_shell.dart` (весь, 16000+ строк) и большая часть `driver_shell.dart` всё ещё используют статичные `SmartTaxiColors.xxx` — они НЕ меняются при переключении темы. Это и есть причина, почему тёмная тема выглядит наполовину рабочей.
+**Проверено механически (см. коммит `b7a42ec` для полного обоснования):** каждый перенесённый цвет — точная замена 1:1 `SmartTaxiColors.X` → `palette.X`, где `palette.light.X` побайтово совпадает со старым статичным значением (светлая тема гарантированно не изменилась), и каждая пара фон+контент читает из ОДНОГО И ТОГО ЖЕ `palette` внутри ОДНОГО build()-метода (тёмная тема всегда меняется синхронно).
 
-Задачи по приоритету — **готово**: `_SmartDrawer`/`_DrawerItem`/`_DrawerSectionLabel` (commit `0aaa077`), `_AppHeader` (`c94100d`), `_PaymentMethodSheet`/`_PaymentIcon` (`8fa141b`).
+**НЕ мигрировано (сознательно, задокументировано в коммитах):**
+- `_CompactNotice`/`_InlineMessage` — сами красят свой фон, есть ad hoc hex-значения и вызовы внутри защищённых `_OrderSheet`/`_TariffSection`; оставлены статичными везде для единообразия (не станет хуже — это самодостаточные карточки, не текст-на-чужом-фоне).
+- `_SectionLabel` (общий класс) — один вызов внутри защищённого `_TariffSection` с динамическим `dark`; 4 вызова в моих экранах теперь передают `dark: Theme.of(context).brightness == Brightness.dark` вместо трогания класса.
+- `StatusPill`, `LegalSectionCard` (`core/widgets`, `core/legal`) — сквозные, используются и водительской частью, самодостаточны.
+- `_GoldCtaButton`, map glass chrome (`_MapGlassChrome` и т.д.) — вероятно намеренно вне темы, не трогал.
+- `_OrderSheet`/`_MapPointPickerSheet`/`_TariffSection`/`_CollapsibleOrderSheet`/`_AddressSearchSheet` — защищённый tariff/address-flow. `_AddressSearchSheet` отдельно проверен: его фон красит ВЫЗЫВАЮЩИЙ `showModalBottomSheet(backgroundColor: Colors.white)`, а не сам виджет — мигрировать нельзя без правки protected-зоны.
+- `_TripDetailScreen`/`_LocationRequiredScreen` — у каждого СВОЙ Scaffold (не общий с остальными 16 экранами), можно мигрировать отдельно в будущем, не обязательно для этой задачи.
 
-**КРИТИЧНО — прочитай перед тем как продолжать мигрировать что-либо ещё:**
-Корневой `Scaffold` всего `PassengerShell` (`build()` метода `_PassengerShellState`, там же где `drawer: _SmartDrawer(...)`) имеет `backgroundColor: SmartTaxiColors.appBackground` — статичный, немигрированный. Это ЕДИНЫЙ фон для содержимого ВСЕХ вкладок (Настройки, Профиль, История и т.д.) — они сами не оборачивают себя в `Scaffold`.
+**Живая визуальная проверка (light/dark) НЕ выполнена** — заблокирована двумя не связанными с этой правкой, подтверждённо предсуществующими проблемами окружения:
+1. `flutter run -d chrome` падает с assertion при инициализации web-движка (`web/index.html`'s legacy `window.flutterConfiguration` конфликтует с новым `engineInitializer.initializeEngine()` API) — воспроизводится и на немодифицированном коде.
+2. `flutter build web` + статическая раздача успешно грузит `main.dart.js`/CanvasKit, но НИКОГДА не рисует первый кадр — проверено даже с временно отключённым `SentryFlutter.init()` (не помогло, изменение сразу отменено). Более глубокая web-платформенная проблема именно в этом sandboxed-браузере (Electron), возникает ДО любого моего кода.
 
-**Из-за этого миграция текста/карточек, лежащих ПРЯМО на этом фоне (`_TitleBlock`, `_PremiumCard` и всё что внутри — `_SettingsGroup`, `_SettingsRow`, `_ProfileGroupLabel`, `_MenuLine` и т.д.), НЕБЕЗОПАСНА поштучно** — если помигрировать, например, только `_SettingsGroup`'s текст на `palette.text` (в тёмной теме — почти белый), а фон Scaffold и `_PremiumCard` останутся белыми — получится светлый текст на светлом фоне, то есть станет ХУЖЕ, чем сейчас (сейчас всё просто "не адаптируется", а не "нечитаемо").
+**Если в следующей сессии будет доступен телефон/эмулятор** — это лучший способ реально увидеть тёмную тему: открыть Настройки → переключить тему → пройтись по всем 16 экранам + проверить, что `_OrderSheet`/тариф/карта по-прежнему выглядят как раньше (не должны были измениться вообще). Если веб-путь нужен, сначала почини `web/index.html` (убери legacy `window.flutterConfiguration`, используй новый `config:`-параметр `_flutter.loader.load()`) — это отдельная, не блокирующая задача, но она нужна для ЛЮБОЙ будущей веб-QA, не только этой.
 
-**Безопасны только самодостаточные оверлеи** — виджеты, у которых СВОЙ явный `Container`/`decoration` с фоном, не зависящий от Scaffold: `Drawer`, `showModalBottomSheet`-шторки (`_PaymentMethodSheet` уже сделан; ещё есть `_CancelConfirmSheet`, `_SafetySheet`, `_ConfirmSheet`, `_OrderNoteSheet`, `_AddDriverPreferenceSheet`, `_CreateFavoriteAddressSheet`, `_SimpleAddressSearchSheet`, `_CreateRecurringBookingSheet`, `_ChatSheet`, `_AddressSearchSheet`, `_LocationPermissionSheet`, `_CollapsibleOrderSheet`, `_OrderSheet` — но последние два входят в защищённый tariff/address-flow, не трогать), плавающая chrome вроде `_AppHeader` (сделан).
-
-**НЕ трогай пока**: `_MapGlassChrome`/`_MapBrandPill`/`_MapChromeButton`/`_NotificationButton` — это полупрозрачное "стекло" поверх карты (`Colors.white.withValues(alpha: 0.72)`), возможно ЗАДУМАНО оставаться светлым независимо от темы (карта не темнеет). Нужна визуальная проверка перед решением, не мигрировать вслепую.
-
-Следующие шаги по приоритету:
-1. Догнать оставшиеся безопасные шторки (список выше) — по одной, коммитить каждую отдельно.
-2. Затем — большая, атомарная задача: мигрировать корневой `Scaffold.backgroundColor` (`palette.appBackground`) И `_PremiumCard`, И все ~29 мест, где `_PremiumCard(` вызывается (`grep -c "_PremiumCard(" passenger_shell.dart`), В ОДНОМ (или тщательно спланированной серии) коммитов — частично нельзя, будет хуже чем сейчас. Это правда большая задача, не торопись, проверяй каждый экран.
-3. `driver_shell.dart` — та же болезнь, вероятно та же ловушка с корневым Scaffold. Проверь так же, прежде чем трогать.
+Следующий шаг: `driver_shell.dart` — та же болезнь (статичные `SmartTaxiColors`), вероятно та же ловушка с корневым Scaffold. Проверь так же (найди все Scaffold-инстансы, пойми что на них висит) прежде чем трогать, и только когда сессия "SmartTaxi driver app features" подтверждённо неактивна.
 
 ## Дальше — общая полировка
 
