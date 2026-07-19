@@ -1840,12 +1840,13 @@ class _PassengerShellState extends State<PassengerShell>
         year: int.tryParse(_driverYear.trim()),
         comment: _driverComment.trim(),
       );
+      if (!mounted) return;
       setState(
         () => _driverApplicationMessage =
             'Заявка отправлена. Администратор проверит данные.',
       );
       unawaited(widget.authStore.saveDriverApplicationSubmitted());
-      if (mounted && applicationId.isNotEmpty) {
+      if (applicationId.isNotEmpty) {
         unawaited(
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -1858,7 +1859,7 @@ class _PassengerShellState extends State<PassengerShell>
         );
       }
     } catch (error) {
-      setState(() => _error = _readableError(error));
+      if (mounted) setState(() => _error = _readableError(error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
