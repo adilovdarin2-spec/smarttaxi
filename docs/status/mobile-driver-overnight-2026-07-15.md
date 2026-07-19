@@ -2406,3 +2406,52 @@ status-doc update are committed separately below, correctly attributed.
 ### Commits (round 48)
 
 - `Mobile: fix theme not updating live in driver bottom sheets + shared EmptyState widget`
+
+## Round 49 — live pass on the passenger side (explicit user authorization)
+
+User asked to work on `passenger_shell.dart` the same way as the driver
+side, and to stop only once satisfied it's genuinely polished. Standing
+rule all session has been to leave `lib/features/passenger/**` to the
+parallel session — this round is an explicit, one-off exception per direct
+instruction, not a scope change going forward.
+
+Read the parallel session's `docs/status/NEXT-SESSION-PROMPT.md` first
+(33KB, very current) rather than re-deriving from scratch: full
+`context.palette` migration across all 16 screens + drawer + cards is
+already done and mechanically verified, `setState`/`mounted` guards audited
+(one real bug found and fixed: `_submitDriverApplication`), controller/timer
+disposal audited clean, and the exact "white glass badge with no explicit
+text color" bug class found on the driver side (round 48, this doc) was
+independently found and fixed here too (`_CompactNotice`/`_InlineMessage`,
+13 call sites). None of that needed redoing.
+
+**Live device pass (both themes) turned up one real gap the static
+migration didn't cover:** the drawer header's brand wordmark
+(`BrandLogo.horizontal()`, an opaque-white PNG, not transparent — see its
+own code comment for why) sat directly on the drawer's card background
+with no framing of its own. Fine on the light theme's near-white card;
+once the drawer went dark it read as a stray, unstyled white rectangle —
+likely exactly what "белые элементы" was pointing at. Wrapped it in its
+own small white rounded card with padding so it reads as a deliberate logo
+badge in both themes. Confirmed via screenshot in both light and dark.
+
+Also confirmed passenger's own Settings screen does **not** have the
+`_showDriverFullSheet`-style frozen-color bug from round 48 — its theme
+picker sheet sits on top of a normally-pushed screen (not a
+`showModalBottomSheet` built from pre-constructed content), so toggling
+theme there already updates live with no fix needed. Spot-checked the
+"protected" tariff/order flow (`_TariffCard` etc.) directly — genuinely
+well-crafted (animated selection state, gradients, stretch/narrow layout
+variants with a comment explaining why) — no changes made there, matches
+what the parallel session's docs already say to leave alone.
+
+**Verdict, since the user asked me to judge for myself:** the passenger
+side is in good shape. One real, user-visible gap found and fixed; nothing
+else stood out as rough across drawer/home/map/order-sheet/profile/
+settings. `flutter analyze` clean throughout (same 2 pre-existing unrelated
+warnings). Stopping here rather than re-auditing work the parallel session
+has already covered in depth.
+
+### Commits (round 49)
+
+- `Mobile(passenger): give the drawer wordmark its own white card in dark mode`
