@@ -6968,6 +6968,7 @@ class _TripDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final driverName = (trip.driverName ?? '').trim();
     final hasDriver = driverName.isNotEmpty;
     final driverMeta = [
@@ -6976,7 +6977,7 @@ class _TripDetailScreen extends StatelessWidget {
       trip.driverPlate,
     ].where((value) => (value ?? '').trim().isNotEmpty).join(' · ');
     return Scaffold(
-      backgroundColor: SmartTaxiColors.appBackground,
+      backgroundColor: palette.appBackground,
       appBar: AppBar(
         title: const Text('Поездка'),
         actions: [
@@ -6996,8 +6997,8 @@ class _TripDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     _formatTripDate(trip.createdAt),
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
@@ -7088,8 +7089,8 @@ class _TripDetailScreen extends StatelessWidget {
                               driverMeta,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: SmartTaxiColors.textSecondary,
+                              style: TextStyle(
+                                color: palette.textSecondary,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -7099,9 +7100,9 @@ class _TripDetailScreen extends StatelessWidget {
                       ),
                     ),
                     if (trip.driverRating != null) ...[
-                      const Icon(
+                      Icon(
                         Icons.star_rounded,
-                        color: SmartTaxiColors.warning,
+                        color: palette.warning,
                         size: 18,
                       ),
                       const SizedBox(width: 2),
@@ -11950,8 +11951,9 @@ class _LocationRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
-      backgroundColor: SmartTaxiColors.appBackground,
+      backgroundColor: palette.appBackground,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -11963,15 +11965,15 @@ class _LocationRequiredScreen extends StatelessWidget {
                   width: 88,
                   height: 88,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: SmartTaxiColors.goldPale,
+                  decoration: BoxDecoration(
+                    color: palette.goldPale,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     serviceDisabled
                         ? Icons.location_disabled_rounded
                         : Icons.location_off_rounded,
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                     size: 42,
                   ),
                 ),
@@ -11981,8 +11983,8 @@ class _LocationRequiredScreen extends StatelessWidget {
                       ? 'Включите геолокацию'
                       : 'Нет доступа к геолокации',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.text,
+                  style: TextStyle(
+                    color: palette.text,
                     fontSize: 21,
                     fontWeight: FontWeight.w900,
                   ),
@@ -11993,8 +11995,8 @@ class _LocationRequiredScreen extends StatelessWidget {
                       ? 'Чтобы находить ближайших водителей и точно определять место подачи, включите GPS на телефоне.'
                       : 'SmartTaxi нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontSize: 14,
                     height: 1.4,
                     fontWeight: FontWeight.w700,
