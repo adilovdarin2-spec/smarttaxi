@@ -1294,10 +1294,7 @@ class _PassengerShellState extends State<PassengerShell>
       context: context,
       isScrollControlled: true,
       barrierColor: const Color(0xf6fffcf6),
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => _AddressSearchSheet(
         api: widget.api,
         region: _selectedRegion?.name,
@@ -5407,41 +5404,42 @@ class _MapFallbackSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    final palette = context.palette;
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          center: Alignment(0.25, -0.35),
+          center: const Alignment(0.25, -0.35),
           radius: 1.1,
           colors: [
-            SmartTaxiColors.goldPale,
-            Color(0xfffbfdff),
-            Color(0xffffffff),
+            palette.goldPale,
+            palette.appBackground,
+            palette.card,
           ],
         ),
       ),
       child: Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.map_outlined, color: SmartTaxiColors.gold, size: 38),
-              SizedBox(height: 12),
+              Icon(Icons.map_outlined, color: palette.gold, size: 38),
+              const SizedBox(height: 12),
               Text(
                 'Карта загружается',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: SmartTaxiColors.text,
+                  color: palette.text,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
                 'Подключаем карту города',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                    color: palette.textSecondary,
                     fontWeight: FontWeight.w700),
               ),
             ],
@@ -5709,10 +5707,10 @@ class _HomeOrderPanel extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(18, 9, 18, 16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(30)),
-            boxShadow: [
+          decoration: BoxDecoration(
+            color: context.palette.card,
+            borderRadius: const BorderRadius.all(Radius.circular(30)),
+            boxShadow: const [
               BoxShadow(
                 color: Color(0x24785a14),
                 blurRadius: 30,
@@ -5735,6 +5733,7 @@ class _OrderSheetHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5742,8 +5741,8 @@ class _OrderSheetHeading extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: SmartTaxiColors.text,
+          style: TextStyle(
+            color: palette.text,
             fontSize: 22.5,
             height: 1.02,
             letterSpacing: 0,
@@ -5755,8 +5754,8 @@ class _OrderSheetHeading extends StatelessWidget {
           text,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: SmartTaxiColors.textSecondary,
+          style: TextStyle(
+            color: palette.textSecondary,
             fontSize: 13,
             height: 1.1,
             fontWeight: FontWeight.w700,
@@ -5772,6 +5771,7 @@ class _TrustRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -5782,23 +5782,23 @@ class _TrustRow extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                SmartTaxiColors.gold.withValues(alpha: 0.16),
-                SmartTaxiColors.gold.withValues(alpha: 0.05),
+                palette.gold.withValues(alpha: 0.16),
+                palette.gold.withValues(alpha: 0.05),
               ],
             ),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.verified_rounded,
             size: 13,
-            color: SmartTaxiColors.goldDeep,
+            color: palette.goldDeep,
           ),
         ),
         const SizedBox(width: 7),
-        const Text(
+        Text(
           'Проверенные водители · Безопасные поездки',
           style: TextStyle(
-            color: SmartTaxiColors.textSecondary,
+            color: palette.textSecondary,
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
@@ -5835,11 +5835,12 @@ class _SheetAddressEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.fromLTRB(15, 14, 12, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.card,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
@@ -5870,16 +5871,16 @@ class _SheetAddressEntryCard extends StatelessWidget {
                         onTap: onUseLocation,
                       ),
                     ),
-                    const Divider(height: 16, color: SmartTaxiColors.border),
+                    Divider(height: 16, color: palette.border),
                     _SheetAddressRow(
                       title: 'Куда',
                       label: dropoffLabel,
                       active: dropoffActive,
                       onTap: onDropoffTap,
-                      trailing: const _SvgIcon(
+                      trailing: _SvgIcon(
                         _iconChevronRight,
                         size: 18,
-                        color: SmartTaxiColors.textSecondary,
+                        color: palette.textSecondary,
                       ),
                     ),
                   ],
@@ -5907,11 +5908,10 @@ class _SwapPointsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
-      color: Colors.white,
-      shape: const CircleBorder(
-        side: BorderSide(color: SmartTaxiColors.borderStrong),
-      ),
+      color: palette.card,
+      shape: CircleBorder(side: BorderSide(color: palette.borderStrong)),
       elevation: 0,
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -5921,10 +5921,10 @@ class _SwapPointsButton extends StatelessWidget {
           height: 34,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [SmartTaxiColors.goldSurface, Color(0xffdeebff)],
+              colors: [palette.goldSurface, palette.goldPale],
             ),
             shape: BoxShape.circle,
             boxShadow: [
@@ -5935,10 +5935,10 @@ class _SwapPointsButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.swap_vert_rounded,
             size: 18,
-            color: SmartTaxiColors.goldDeep,
+            color: palette.goldDeep,
           ),
         ),
       ),
@@ -5963,6 +5963,7 @@ class _SheetAddressRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -5980,8 +5981,8 @@ class _SheetAddressRow extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.textSecondary,
+                      style: TextStyle(
+                        color: palette.textSecondary,
                         fontSize: 11.5,
                         height: 1.05,
                         fontWeight: FontWeight.w800,
@@ -5993,9 +5994,7 @@ class _SheetAddressRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: active
-                            ? SmartTaxiColors.goldDeep
-                            : SmartTaxiColors.text,
+                        color: active ? palette.goldDeep : palette.text,
                         fontSize: 14.4,
                         height: 1.12,
                         fontWeight: active ? FontWeight.w900 : FontWeight.w700,
@@ -6022,6 +6021,7 @@ class _CurrentLocationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Tooltip(
       message: 'Моё местоположение',
       child: InkWell(
@@ -6032,16 +6032,16 @@ class _CurrentLocationButton extends StatelessWidget {
           height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [SmartTaxiColors.goldSurface, Color(0xffdeebff)],
+              colors: [palette.goldSurface, palette.goldPale],
             ),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 1.5),
+            border: Border.all(color: palette.card, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: SmartTaxiColors.gold.withValues(alpha: 0.16),
+                color: palette.gold.withValues(alpha: 0.16),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -6049,16 +6049,16 @@ class _CurrentLocationButton extends StatelessWidget {
           ),
           child: Center(
             child: loading
-                ? const SizedBox.square(
+                ? SizedBox.square(
                     dimension: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: SmartTaxiColors.goldDeep,
+                      color: palette.goldDeep,
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.my_location_rounded,
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                     size: 18,
                   ),
           ),
@@ -6075,6 +6075,7 @@ class _RouteDotsColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SizedBox(
       width: 20,
       height: height,
@@ -6085,28 +6086,27 @@ class _RouteDotsColumn extends StatelessWidget {
             height: 16,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xff6fa8ff), SmartTaxiColors.gold],
+                colors: [const Color(0xff6fa8ff), palette.gold],
               ),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2.5),
+              border: Border.all(color: palette.card, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: SmartTaxiColors.gold.withValues(alpha: 0.38),
+                  color: palette.gold.withValues(alpha: 0.38),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
               ],
             ),
-            child: Container(
-              width: 5,
-              height: 5,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.card,
                 shape: BoxShape.circle,
               ),
+              child: const SizedBox(width: 5, height: 5),
             ),
           ),
           Expanded(
@@ -6124,7 +6124,7 @@ class _RouteDotsColumn extends StatelessWidget {
                       width: 2,
                       height: dash,
                       decoration: BoxDecoration(
-                        color: SmartTaxiColors.borderStrong.withValues(alpha: 0.45),
+                        color: palette.borderStrong.withValues(alpha: 0.45),
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
@@ -6145,7 +6145,7 @@ class _RouteDotsColumn extends StatelessWidget {
                   colors: [Color(0xff26314f), SmartTaxiColors.authInk],
                 ),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.white, width: 2.5),
+                border: Border.all(color: palette.card, width: 2.5),
                 boxShadow: [
                   BoxShadow(
                     color: SmartTaxiColors.authInk.withValues(alpha: 0.28),
@@ -6175,14 +6175,15 @@ class _RouteSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 10, 9, 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: palette.card,
         border: Border.fromBorderSide(
-          BorderSide(color: SmartTaxiColors.borderStrong),
+          BorderSide(color: palette.borderStrong),
         ),
-        borderRadius: BorderRadius.all(Radius.circular(22)),
+        borderRadius: const BorderRadius.all(Radius.circular(22)),
         boxShadow: _cardShadow,
       ),
       child: Row(
@@ -6194,7 +6195,7 @@ class _RouteSummaryCard extends StatelessWidget {
             child: Column(
               children: [
                 _RouteSummaryLine(title: 'Откуда', value: pickupLabel),
-                const Divider(height: 9, color: SmartTaxiColors.border),
+                Divider(height: 9, color: palette.border),
                 _RouteSummaryLine(title: 'Куда', value: dropoffLabel),
               ],
             ),
@@ -6203,14 +6204,14 @@ class _RouteSummaryCard extends StatelessWidget {
           TextButton(
             onPressed: onEdit,
             style: TextButton.styleFrom(
-              foregroundColor: SmartTaxiColors.goldDeep,
-              backgroundColor: SmartTaxiColors.goldSurface,
+              foregroundColor: palette.goldDeep,
+              backgroundColor: palette.goldSurface,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               minimumSize: const Size(0, 0),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: SmartTaxiColors.border),
+                side: BorderSide(color: palette.border),
               ),
             ),
             child: const Text(
@@ -6232,6 +6233,7 @@ class _RouteSummaryLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       children: [
         Expanded(
@@ -6240,8 +6242,8 @@ class _RouteSummaryLine extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: SmartTaxiColors.text,
+                style: TextStyle(
+                  color: palette.text,
                   fontSize: 12.3,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
@@ -6252,8 +6254,8 @@ class _RouteSummaryLine extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                style: TextStyle(
+                  color: palette.textSecondary,
                   fontSize: 11.8,
                   height: 1.05,
                   fontWeight: FontWeight.w700,
@@ -6285,6 +6287,7 @@ class _OrderNoteRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final hasNote = (note ?? '').isNotEmpty;
     final editable = onTap != null;
     return Material(
@@ -6296,11 +6299,9 @@ class _OrderNoteRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: hasNote ? SmartTaxiColors.goldSurface : Colors.white,
+            color: hasNote ? palette.goldSurface : palette.card,
             border: Border.all(
-              color: hasNote
-                  ? SmartTaxiColors.borderStrong
-                  : SmartTaxiColors.border,
+              color: hasNote ? palette.borderStrong : palette.border,
             ),
             borderRadius: BorderRadius.circular(16),
           ),
@@ -6311,9 +6312,7 @@ class _OrderNoteRow extends StatelessWidget {
                     ? Icons.edit_note_rounded
                     : Icons.add_comment_outlined,
                 size: 18,
-                color: hasNote
-                    ? SmartTaxiColors.goldDeep
-                    : SmartTaxiColors.textSecondary,
+                color: hasNote ? palette.goldDeep : palette.textSecondary,
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -6322,9 +6321,7 @@ class _OrderNoteRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: hasNote
-                        ? SmartTaxiColors.text
-                        : SmartTaxiColors.textSecondary,
+                    color: hasNote ? palette.text : palette.textSecondary,
                     fontSize: 12.5,
                     fontWeight: hasNote ? FontWeight.w700 : FontWeight.w600,
                   ),
@@ -6332,10 +6329,10 @@ class _OrderNoteRow extends StatelessWidget {
               ),
               if (editable) ...[
                 const SizedBox(width: 6),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: SmartTaxiColors.textMuted,
+                  color: palette.textMuted,
                 ),
               ],
             ],
@@ -6409,6 +6406,7 @@ class _OrderSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final routeError =
         error != null && error!.toLowerCase().contains('маршрут');
     final routeSelected =
@@ -6440,7 +6438,7 @@ class _OrderSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SheetHandle(dark: false),
+                  _SheetHandle(dark: isDark),
                   Flexible(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -6462,7 +6460,7 @@ class _OrderSheet extends StatelessWidget {
                             estimates: tariffEstimates,
                             loading: previewLoading,
                             onSelect: onTariff,
-                            dark: false,
+                            dark: isDark,
                             showHeader: false,
                           ),
                           if (!previewLoading &&
@@ -6481,7 +6479,7 @@ class _OrderSheet extends StatelessWidget {
                             _InlineMessage(
                               text: error!,
                               danger: true,
-                              dark: false,
+                              dark: isDark,
                             ),
                           ],
                         ],
@@ -6530,7 +6528,7 @@ class _OrderSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SheetHandle(dark: false),
+                _SheetHandle(dark: isDark),
                 if (!routeSelected) ...[
                   const _OrderSheetHeading(
                     title: 'Куда едем?',
@@ -6559,11 +6557,12 @@ class _OrderSheet extends StatelessWidget {
                   const SizedBox(height: 10),
                   const _TrustRow(),
                 ] else if (routeSelected && routeError)
-                  const _CompactNotice(
+                  _CompactNotice(
                     icon: Icons.route_outlined,
                     title: 'Уточните маршрут',
                     text:
                         'Не удалось построить маршрут. Измените адрес или выберите точку на карте.',
+                    dark: isDark,
                   ),
               ],
             ),
@@ -6591,6 +6590,7 @@ class _MapPointPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final isPickup = target == PointTarget.pickup;
     return _HomeOrderPanel(
       child: TweenAnimationBuilder<double>(
@@ -6607,7 +6607,7 @@ class _MapPointPickerSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _SheetHandle(dark: false),
+              _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -6616,8 +6616,8 @@ class _MapPointPickerSheet extends StatelessWidget {
                       isPickup ? 'Откуда?' : 'Куда едем?',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.text,
+                      style: TextStyle(
+                        color: palette.text,
                         fontSize: 22.5,
                         height: 1.02,
                         letterSpacing: 0,
@@ -6628,7 +6628,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                   TextButton(
                     onPressed: onCancel,
                     style: TextButton.styleFrom(
-                      foregroundColor: SmartTaxiColors.textSecondary,
+                      foregroundColor: palette.textSecondary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 8,
@@ -6644,12 +6644,12 @@ class _MapPointPickerSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 5),
-              const Text(
+              Text(
                 'Подвиньте карту так, чтобы маркер стоял над нужным входом.',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                  color: palette.textSecondary,
                   fontSize: 13.1,
                   height: 1.16,
                   fontWeight: FontWeight.w700,
@@ -6661,12 +6661,12 @@ class _MapPointPickerSheet extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.fromLTRB(13, 13, 12, 13),
                 decoration: BoxDecoration(
-                  color: SmartTaxiColors.goldSurface,
-                  border: Border.all(color: SmartTaxiColors.goldSoft),
+                  color: palette.goldSurface,
+                  border: Border.all(color: palette.goldPale),
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: SmartTaxiColors.gold.withValues(alpha: 0.09),
+                      color: palette.gold.withValues(alpha: 0.09),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -6679,9 +6679,9 @@ class _MapPointPickerSheet extends StatelessWidget {
                       height: 46,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: palette.card,
                         shape: BoxShape.circle,
-                        border: Border.all(color: SmartTaxiColors.border),
+                        border: Border.all(color: palette.border),
                       ),
                       child: Icon(
                         isPickup
@@ -6698,12 +6698,12 @@ class _MapPointPickerSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Точка на карте',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: SmartTaxiColors.text,
+                              color: palette.text,
                               fontSize: 15.4,
                               height: 1.05,
                               fontWeight: FontWeight.w900,
@@ -6716,8 +6716,8 @@ class _MapPointPickerSheet extends StatelessWidget {
                                 : addressLabel,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: SmartTaxiColors.textSecondary,
+                            style: TextStyle(
+                              color: palette.textSecondary,
                               fontSize: 12.5,
                               height: 1.15,
                               fontWeight: FontWeight.w700,
@@ -6727,10 +6727,10 @@ class _MapPointPickerSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const _SvgIcon(
+                    _SvgIcon(
                       _iconChevronRight,
                       size: 18,
-                      color: SmartTaxiColors.textSecondary,
+                      color: palette.textSecondary,
                     ),
                   ],
                 ),
@@ -7219,6 +7219,8 @@ class _TripStatusPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cancelled = const {
       'CANCELLED',
       'CANCELLED_BY_CLIENT',
@@ -7338,17 +7340,17 @@ class _TripStatusPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _SheetHandle(dark: false),
+                _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Поездка в пути',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: SmartTaxiColors.text,
+                          color: palette.text,
                           fontSize: 22,
                           height: 1.02,
                           fontWeight: FontWeight.w900,
@@ -7438,7 +7440,7 @@ class _TripStatusPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SheetHandle(dark: false),
+                _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -7446,24 +7448,24 @@ class _TripStatusPanel extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Ищем водителя',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: SmartTaxiColors.text,
+                              color: palette.text,
                               fontSize: 22,
                               height: 1.02,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          SizedBox(height: 5),
+                          const SizedBox(height: 5),
                           Text(
                             searchingSubtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: SmartTaxiColors.textSecondary,
+                              color: palette.textSecondary,
                               fontSize: 13,
                               height: 1.1,
                               fontWeight: FontWeight.w700,
@@ -7517,7 +7519,7 @@ class _TripStatusPanel extends StatelessWidget {
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  _InlineMessage(text: error!, danger: true),
+                  _InlineMessage(text: error!, danger: true, dark: isDark),
                 ],
                 if (canCancel) ...[
                   const SizedBox(height: 12),
@@ -7525,9 +7527,9 @@ class _TripStatusPanel extends StatelessWidget {
                     onPressed: loading ? null : onCancel,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
-                      foregroundColor: SmartTaxiColors.danger,
-                      side: const BorderSide(color: Color(0xffffd4d4)),
-                      backgroundColor: const Color(0xfffff6f6),
+                      foregroundColor: palette.danger,
+                      side: BorderSide(color: palette.danger.withValues(alpha: 0.3)),
+                      backgroundColor: palette.dangerSoft,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
                       ),
@@ -7549,7 +7551,7 @@ class _TripStatusPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _SheetHandle(dark: false),
+              _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -7563,8 +7565,8 @@ class _TripStatusPanel extends StatelessWidget {
                               : 'Водитель найден',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: SmartTaxiColors.text,
+                          style: TextStyle(
+                            color: palette.text,
                             fontSize: 22,
                             height: 1.02,
                             fontWeight: FontWeight.w900,
@@ -7575,8 +7577,8 @@ class _TripStatusPanel extends StatelessWidget {
                           statusText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                          style: TextStyle(
+                            color: palette.textSecondary,
                             fontSize: 13,
                             height: 1.1,
                             fontWeight: FontWeight.w700,
@@ -7638,6 +7640,7 @@ class _TripStatusPanel extends StatelessWidget {
                   icon: Icons.person_search_rounded,
                   title: driverText,
                   text: driverDescription,
+                  dark: isDark,
                 ),
               const SizedBox(height: 10),
               Row(
@@ -7671,7 +7674,7 @@ class _TripStatusPanel extends StatelessWidget {
               ),
               if (error != null) ...[
                 const SizedBox(height: 12),
-                _InlineMessage(text: error!, danger: true),
+                _InlineMessage(text: error!, danger: true, dark: isDark),
               ],
               if (canCancel || isTerminal) ...[
                 const SizedBox(height: 12),
@@ -7687,9 +7690,9 @@ class _TripStatusPanel extends StatelessWidget {
                     onPressed: loading ? null : onCancel,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
-                      foregroundColor: SmartTaxiColors.danger,
-                      side: const BorderSide(color: Color(0xffffd4d4)),
-                      backgroundColor: const Color(0xfffff6f6),
+                      foregroundColor: palette.danger,
+                      side: BorderSide(color: palette.danger.withValues(alpha: 0.3)),
+                      backgroundColor: palette.dangerSoft,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
                       ),
@@ -7728,8 +7731,9 @@ class _StarRatingSelector extends StatelessWidget {
               curve: Curves.easeOutBack,
               child: Icon(
                 filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                color:
-                    filled ? const Color(0xfff5a623) : SmartTaxiColors.border,
+                color: filled
+                    ? const Color(0xfff5a623)
+                    : context.palette.border,
                 size: 38,
               ),
             ),
@@ -7783,6 +7787,8 @@ class _RateDriverPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = driverName.trim().isEmpty ? 'водителем' : driverName.trim();
     final tagOptions = stars >= 4 ? _positiveTags : _negativeTags;
     return _HomeOrderPanel(
@@ -7791,7 +7797,7 @@ class _RateDriverPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const _SheetHandle(dark: false),
+            _SheetHandle(dark: isDark),
             const SizedBox(height: 6),
             _InitialsAvatar(
               name: name,
@@ -7803,8 +7809,8 @@ class _RateDriverPanel extends StatelessWidget {
             Text(
               'Как прошла поездка с $name?',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: SmartTaxiColors.text,
+              style: TextStyle(
+                color: palette.text,
                 fontSize: 17,
                 height: 1.2,
                 fontWeight: FontWeight.w900,
@@ -7834,36 +7840,30 @@ class _RateDriverPanel extends StatelessWidget {
                 minLines: 2,
                 maxLines: 4,
                 textAlign: TextAlign.left,
-                style: const TextStyle(color: SmartTaxiColors.text),
-                // _HomeOrderPanel (this panel's container) is hardcoded
-                // Colors.white regardless of app theme, but a bare
-                // InputDecoration inherits the ambient (theme-dependent)
-                // ambient InputDecorationTheme — in dark mode that painted
-                // a dark input box floating inside this white panel.
-                decoration: const InputDecoration(
+                style: TextStyle(color: palette.text),
+                decoration: InputDecoration(
                   hintText: 'Комментарий (необязательно)',
-                  hintStyle: TextStyle(color: SmartTaxiColors.textMuted),
+                  hintStyle: TextStyle(color: palette.textMuted),
                   filled: true,
-                  fillColor: SmartTaxiColors.background,
+                  fillColor: palette.card,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                    borderSide: BorderSide(color: SmartTaxiColors.border),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    borderSide: BorderSide(color: palette.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                    borderSide: BorderSide(color: SmartTaxiColors.border),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    borderSide: BorderSide(color: palette.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                    borderSide:
-                        BorderSide(color: SmartTaxiColors.gold, width: 1.8),
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    borderSide: BorderSide(color: palette.gold, width: 1.8),
                   ),
                 ),
               ),
             ],
             if (error != null) ...[
               const SizedBox(height: 14),
-              _InlineMessage(text: error!, danger: true),
+              _InlineMessage(text: error!, danger: true, dark: isDark),
             ],
             const SizedBox(height: 16),
             _GoldCtaButton(
@@ -7876,10 +7876,10 @@ class _RateDriverPanel extends StatelessWidget {
             const SizedBox(height: 6),
             TextButton(
               onPressed: submitting ? null : onSkip,
-              child: const Text(
+              child: Text(
                 'Пропустить',
                 style: TextStyle(
-                  color: SmartTaxiColors.textSecondary,
+                  color: palette.textSecondary,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -7898,42 +7898,44 @@ class _RatedThankYouPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HomeOrderPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const _SheetHandle(dark: false),
+          _SheetHandle(dark: isDark),
           const SizedBox(height: 12),
           Container(
             width: 60,
             height: 60,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: SmartTaxiColors.successSoft,
+              color: palette.successSoft,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.favorite_rounded,
-              color: SmartTaxiColors.success,
+              color: palette.success,
               size: 28,
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Спасибо за оценку!',
             style: TextStyle(
-              color: SmartTaxiColors.text,
+              color: palette.text,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Ваш отзыв помогает нам поддерживать качество поездок',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: SmartTaxiColors.textSecondary,
+              color: palette.textSecondary,
               fontSize: 13,
               height: 1.3,
               fontWeight: FontWeight.w600,
@@ -7981,13 +7983,15 @@ class _TripReceiptPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HomeOrderPanel(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _SheetHandle(dark: false),
+            _SheetHandle(dark: isDark),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -8009,12 +8013,12 @@ class _TripReceiptPanel extends StatelessWidget {
                       height: 48,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: SmartTaxiColors.successSoft,
+                        color: palette.successSoft,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.receipt_long_rounded,
-                        color: SmartTaxiColors.success,
+                        color: palette.success,
                         size: 24,
                       ),
                     ),
@@ -8025,17 +8029,17 @@ class _TripReceiptPanel extends StatelessWidget {
                     height: 48,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: SmartTaxiColors.successSoft,
+                      color: palette.successSoft,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.receipt_long_rounded,
-                      color: SmartTaxiColors.success,
+                      color: palette.success,
                       size: 24,
                     ),
                   ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -8044,17 +8048,17 @@ class _TripReceiptPanel extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: SmartTaxiColors.text,
+                          color: palette.text,
                           fontSize: 18,
                           height: 1.05,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
                         'Чек поездки',
                         style: TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                          color: palette.textSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -8105,14 +8109,14 @@ class _TripReceiptPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            _buildPaymentState(),
+            _buildPaymentState(palette),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPaymentState() {
+  Widget _buildPaymentState(SmartTaxiPalette palette) {
     if (paid) {
       return _GoldCtaButton(
         enabled: true,
@@ -8128,15 +8132,15 @@ class _TripReceiptPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: SmartTaxiColors.dangerSoft,
-              border: Border.all(color: const Color(0xffffd4d4)),
+              color: palette.dangerSoft,
+              border: Border.all(color: palette.danger.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline_rounded,
-                  color: SmartTaxiColors.danger,
+                  color: palette.danger,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -8145,8 +8149,8 @@ class _TripReceiptPanel extends StatelessWidget {
                     payment!.failureReason?.trim().isNotEmpty == true
                         ? payment!.failureReason!
                         : 'Не удалось провести оплату картой',
-                    style: const TextStyle(
-                      color: SmartTaxiColors.danger,
+                    style: TextStyle(
+                      color: palette.danger,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -8173,23 +8177,23 @@ class _TripReceiptPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: SmartTaxiColors.goldSurface,
-              border: Border.all(color: SmartTaxiColors.border),
+              color: palette.goldSurface,
+              border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.schedule_rounded,
-                  color: SmartTaxiColors.goldDeep,
+                  color: palette.goldDeep,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Оплата занимает больше времени, чем обычно',
                     style: TextStyle(
-                      color: SmartTaxiColors.goldDeep,
+                      color: palette.goldDeep,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -8211,18 +8215,18 @@ class _TripReceiptPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.goldSurface,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2.2,
-              color: SmartTaxiColors.goldDeep,
+              color: palette.goldDeep,
             ),
           ),
           const SizedBox(width: 10),
@@ -8231,8 +8235,8 @@ class _TripReceiptPanel extends StatelessWidget {
               processing
                   ? 'Обрабатываем оплату картой...'
                   : 'Ожидаем подтверждение оплаты',
-              style: const TextStyle(
-                color: SmartTaxiColors.goldDeep,
+              style: TextStyle(
+                color: palette.goldDeep,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
@@ -8259,43 +8263,45 @@ class _NoDriversFoundPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HomeOrderPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const _SheetHandle(dark: false),
+          _SheetHandle(dark: isDark),
           const SizedBox(height: 8),
           Container(
             width: 64,
             height: 64,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: SmartTaxiColors.goldPale,
+            decoration: BoxDecoration(
+              color: palette.goldPale,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_search_rounded,
-              color: SmartTaxiColors.goldDeep,
+              color: palette.goldDeep,
               size: 30,
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Водителей рядом нет',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: SmartTaxiColors.text,
+              color: palette.text,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Сейчас нет свободных водителей поблизости. Попробуйте повторить поиск через минуту или отмените заказ.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: SmartTaxiColors.textSecondary,
+              color: palette.textSecondary,
               fontSize: 13,
               height: 1.35,
               fontWeight: FontWeight.w600,
@@ -8303,7 +8309,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
           ),
           if (error != null) ...[
             const SizedBox(height: 14),
-            _InlineMessage(text: error!, danger: true),
+            _InlineMessage(text: error!, danger: true, dark: isDark),
           ],
           const SizedBox(height: 18),
           _GoldCtaButton(
@@ -8316,10 +8322,10 @@ class _NoDriversFoundPanel extends StatelessWidget {
           const SizedBox(height: 6),
           TextButton(
             onPressed: loading ? null : onCancel,
-            child: const Text(
+            child: Text(
               'Отменить заказ',
               style: TextStyle(
-                color: SmartTaxiColors.danger,
+                color: palette.danger,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -8343,6 +8349,8 @@ class _DriverPriceOfferPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final offered = order.driverOfferPriceKzt;
     final current = order.price;
     return _HomeOrderPanel(
@@ -8350,28 +8358,28 @@ class _DriverPriceOfferPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const _SheetHandle(dark: false),
+          _SheetHandle(dark: isDark),
           const SizedBox(height: 12),
           Container(
             width: 60,
             height: 60,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: SmartTaxiColors.goldSurface,
+              color: palette.goldSurface,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_offer_rounded,
-              color: SmartTaxiColors.goldDeep,
+              color: palette.goldDeep,
               size: 28,
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Водитель предлагает свою цену',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: SmartTaxiColors.text,
+              color: palette.text,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
@@ -8384,8 +8392,8 @@ class _DriverPriceOfferPanel extends StatelessWidget {
                     ? _formatTenge(offered.toDouble())
                     : '${_formatTenge(offered.toDouble())} вместо ${_formatTenge(current)}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 13,
               height: 1.3,
               fontWeight: FontWeight.w600,
@@ -8407,8 +8415,8 @@ class _DriverPriceOfferPanel extends StatelessWidget {
             child: OutlinedButton(
               onPressed: responding ? null : () => onRespond(false),
               style: OutlinedButton.styleFrom(
-                foregroundColor: SmartTaxiColors.textSecondary,
-                side: const BorderSide(color: SmartTaxiColors.border),
+                foregroundColor: palette.textSecondary,
+                side: BorderSide(color: palette.border),
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -8463,25 +8471,27 @@ class _TripCancelledPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final copy = _copy;
     return _HomeOrderPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const _SheetHandle(dark: false),
+          _SheetHandle(dark: isDark),
           const SizedBox(height: 12),
           Container(
             width: 60,
             height: 60,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: SmartTaxiColors.dangerSoft,
+              color: palette.dangerSoft,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               copy.icon,
-              color: SmartTaxiColors.danger,
+              color: palette.danger,
               size: 28,
             ),
           ),
@@ -8489,8 +8499,8 @@ class _TripCancelledPanel extends StatelessWidget {
           Text(
             copy.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SmartTaxiColors.text,
+            style: TextStyle(
+              color: palette.text,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
@@ -8499,8 +8509,8 @@ class _TripCancelledPanel extends StatelessWidget {
           Text(
             copy.subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 13,
               height: 1.3,
               fontWeight: FontWeight.w600,
@@ -8551,7 +8561,9 @@ class _CancelConfirmSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 12),
             Container(
               width: 52,
@@ -8661,7 +8673,9 @@ class _ConfirmSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 12),
             Container(
               width: 52,
@@ -9117,7 +9131,9 @@ class _AddDriverPreferenceSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             const Text(
               'Отметить водителя',
@@ -9247,7 +9263,9 @@ class _CreateFavoriteAddressSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             const Text(
               'Добавить в избранное',
@@ -9402,7 +9420,9 @@ class _SimpleAddressSearchSheetState
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
           child: Column(
             children: [
-              const Center(child: _SheetHandle(dark: false)),
+              Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
               Text(
                 widget.title,
                 style: const TextStyle(
@@ -9632,7 +9652,9 @@ class _CreateRecurringBookingSheetState
             child: ListView(
               controller: scrollController,
               children: [
-                const Center(child: _SheetHandle(dark: false)),
+                Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
                 const Text(
                   'Новый регулярный маршрут',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
@@ -9911,9 +9933,9 @@ class _InitialsAvatar extends StatelessWidget {
               width: 16,
               height: 16,
               decoration: BoxDecoration(
-                color: SmartTaxiColors.success,
+                color: context.palette.success,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
+                border: Border.all(color: context.palette.card, width: 3),
               ),
             ),
           ),
@@ -9950,6 +9972,7 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     // Isolated in its own RepaintBoundary: this is the one continuously
     // animating widget in an otherwise static panel, so its repaints must
     // not force the whole sheet (or the opaque panel background) to redraw
@@ -9964,12 +9987,12 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
             padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
             decoration: BoxDecoration(
               color: Color.lerp(
-                SmartTaxiColors.successSoft,
-                const Color(0xffd7f5e3),
+                palette.successSoft,
+                palette.success.withValues(alpha: 0.22),
                 t,
               ),
               border: Border.all(
-                color: SmartTaxiColors.success.withValues(
+                color: palette.success.withValues(
                   alpha: 0.35 + t * 0.25,
                 ),
                 width: 1.2,
@@ -9979,22 +10002,22 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
             child: child,
           );
         },
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.check_circle_rounded,
               size: 17,
-              color: SmartTaxiColors.success,
+              color: palette.success,
             ),
-            SizedBox(width: 7),
+            const SizedBox(width: 7),
             Flexible(
               child: Text(
                 'Водитель приехал и ждёт вас',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: SmartTaxiColors.success,
+                  color: palette.success,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w900,
                 ),
@@ -10014,26 +10037,27 @@ class _EtaStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            SmartTaxiColors.gold.withValues(alpha: 0.14),
-            SmartTaxiColors.gold.withValues(alpha: 0.04),
+            palette.gold.withValues(alpha: 0.14),
+            palette.gold.withValues(alpha: 0.04),
           ],
         ),
-        border: Border.all(color: SmartTaxiColors.gold.withValues(alpha: 0.28)),
+        border: Border.all(color: palette.gold.withValues(alpha: 0.28)),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.timer_rounded,
             size: 16,
-            color: SmartTaxiColors.goldDeep,
+            color: palette.goldDeep,
           ),
           const SizedBox(width: 7),
           Flexible(
@@ -10041,8 +10065,8 @@ class _EtaStrip extends StatelessWidget {
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: SmartTaxiColors.goldDeep,
+              style: TextStyle(
+                color: palette.goldDeep,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w900,
               ),
@@ -10081,6 +10105,7 @@ class _TripProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
@@ -10088,11 +10113,11 @@ class _TripProgressCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            SmartTaxiColors.gold.withValues(alpha: 0.12),
-            SmartTaxiColors.gold.withValues(alpha: 0.02),
+            palette.gold.withValues(alpha: 0.12),
+            palette.gold.withValues(alpha: 0.02),
           ],
         ),
-        border: Border.all(color: SmartTaxiColors.gold.withValues(alpha: 0.30)),
+        border: Border.all(color: palette.gold.withValues(alpha: 0.30)),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -10100,19 +10125,19 @@ class _TripProgressCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.directions_car_filled_rounded,
-                color: SmartTaxiColors.goldDeep,
+                color: palette.goldDeep,
                 size: 19,
               ),
               const SizedBox(width: 7),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Едем к месту назначения',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
@@ -10123,11 +10148,11 @@ class _TripProgressCard extends StatelessWidget {
                 builder: (context, elapsed, _) => Text(
                   _elapsedLabel(elapsed, elapsedReliable),
                   maxLines: 1,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.goldDeep,
+                  style: TextStyle(
+                    color: palette.goldDeep,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    fontFeatures: [FontFeature.tabularFigures()],
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -10154,8 +10179,8 @@ class _TripProgressCard extends StatelessWidget {
                         pickup,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                        style: TextStyle(
+                          color: palette.textSecondary,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -10164,8 +10189,8 @@ class _TripProgressCard extends StatelessWidget {
                         dropoff,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
+                        style: TextStyle(
+                          color: palette.text,
                           fontSize: 14.5,
                           fontWeight: FontWeight.w900,
                         ),
@@ -10195,6 +10220,7 @@ class _LiveRouteProgressColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     const dotSize = 6.0;
     final trackHeight = height - 20;
     final estimatedSeconds = (estimatedDurationMin ?? 0) * 60;
@@ -10223,7 +10249,7 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xff2f80ed),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: palette.card, width: 2),
                   ),
                 ),
                 Positioned(
@@ -10231,7 +10257,7 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                   bottom: 10,
                   child: Container(
                     width: 2,
-                    color: SmartTaxiColors.gold.withValues(alpha: 0.25),
+                    color: palette.gold.withValues(alpha: 0.25),
                   ),
                 ),
                 TweenAnimationBuilder<double>(
@@ -10246,11 +10272,11 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                     width: dotSize,
                     height: dotSize,
                     decoration: BoxDecoration(
-                      color: SmartTaxiColors.gold,
+                      color: palette.gold,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: SmartTaxiColors.gold.withValues(alpha: 0.45),
+                          color: palette.gold.withValues(alpha: 0.45),
                           blurRadius: 6,
                         ),
                       ],
@@ -10263,12 +10289,12 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                     width: 13,
                     height: 13,
                     decoration: BoxDecoration(
-                      color: SmartTaxiColors.gold,
+                      color: palette.gold,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: palette.card, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: SmartTaxiColors.gold.withValues(alpha: 0.25),
+                          color: palette.gold.withValues(alpha: 0.25),
                           blurRadius: 8,
                         ),
                       ],
@@ -10297,6 +10323,7 @@ class _ShareTripButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final token = shareToken;
     final enabled = token != null;
     return Tooltip(
@@ -10304,7 +10331,7 @@ class _ShareTripButton extends StatelessWidget {
           ? 'Поделиться отслеживанием поездки'
           : 'Ссылка появится, как только найдётся водитель',
       child: Material(
-        color: SmartTaxiColors.goldSurface,
+        color: palette.goldSurface,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -10325,9 +10352,7 @@ class _ShareTripButton extends StatelessWidget {
             height: 34,
             child: Icon(
               Icons.ios_share_rounded,
-              color: enabled
-                  ? SmartTaxiColors.goldDeep
-                  : SmartTaxiColors.textMuted,
+              color: enabled ? palette.goldDeep : palette.textMuted,
               size: 16,
             ),
           ),
@@ -10346,8 +10371,9 @@ class _SafetyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
-      color: SmartTaxiColors.dangerSoft,
+      color: palette.dangerSoft,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -10358,12 +10384,12 @@ class _SafetyButton extends StatelessWidget {
           builder: (_) =>
               _SafetySheet(sosPhone: sosPhone, api: api, orderId: orderId),
         ),
-        child: const SizedBox(
+        child: SizedBox(
           width: 34,
           height: 34,
           child: Icon(
             Icons.shield_outlined,
-            color: SmartTaxiColors.danger,
+            color: palette.danger,
             size: 17,
           ),
         ),
@@ -10417,13 +10443,15 @@ class _SafetySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -10437,7 +10465,7 @@ class _SafetySheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(child: _SheetHandle(dark: isDark)),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -10446,19 +10474,23 @@ class _SafetySheet extends StatelessWidget {
                   height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.dangerSoft,
+                    color: palette.dangerSoft,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.shield_outlined,
-                    color: SmartTaxiColors.danger,
+                    color: palette.danger,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Безопасность поездки',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      color: palette.text,
+                    ),
                   ),
                 ),
               ],
@@ -10474,7 +10506,7 @@ class _SafetySheet extends StatelessWidget {
                 unawaited(_sendSosAlert());
               },
             ),
-            const Divider(height: 18, color: SmartTaxiColors.border),
+            Divider(height: 18, color: palette.border),
             const _SettingsRow(
               title: 'Поддержка получит сигнал',
               text:
@@ -10609,7 +10641,9 @@ class _ChatSheetState extends State<_ChatSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 10),
             Text(
               widget.peerName.trim().isEmpty ? 'Чат' : widget.peerName.trim(),
@@ -10780,14 +10814,15 @@ class _DriverContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final displayName = name.trim().isEmpty ? 'Водитель' : name.trim();
     final hasPhone = (phone ?? '').trim().isNotEmpty;
     if (compact) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: SmartTaxiColors.border),
+          color: palette.card,
+          border: Border.all(color: palette.border),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -10809,8 +10844,8 @@ class _DriverContactCard extends StatelessWidget {
                           displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: SmartTaxiColors.text,
+                          style: TextStyle(
+                            color: palette.text,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -10818,15 +10853,15 @@ class _DriverContactCard extends StatelessWidget {
                       ),
                       if (rating != null) ...[
                         const SizedBox(width: 5),
-                        const Icon(
+                        Icon(
                           Icons.star_rounded,
-                          color: SmartTaxiColors.gold,
+                          color: palette.gold,
                           size: 14,
                         ),
                         Text(
                           rating!.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                          style: TextStyle(
+                            color: palette.textSecondary,
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                           ),
@@ -10839,8 +10874,8 @@ class _DriverContactCard extends StatelessWidget {
                       plate!.trim(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.textSecondary,
+                      style: TextStyle(
+                        color: palette.textSecondary,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: .3,
@@ -10874,8 +10909,8 @@ class _DriverContactCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.card,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
@@ -10905,8 +10940,8 @@ class _DriverContactCard extends StatelessWidget {
                             displayName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: SmartTaxiColors.text,
+                            style: TextStyle(
+                              color: palette.text,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w800,
                             ),
@@ -10914,16 +10949,16 @@ class _DriverContactCard extends StatelessWidget {
                         ),
                         if (rating != null) ...[
                           const SizedBox(width: 6),
-                          const Icon(
+                          Icon(
                             Icons.star_rounded,
-                            color: SmartTaxiColors.gold,
+                            color: palette.gold,
                             size: 16,
                           ),
                           const SizedBox(width: 2),
                           Text(
                             rating!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: SmartTaxiColors.textSecondary,
+                            style: TextStyle(
+                              color: palette.textSecondary,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -10937,8 +10972,8 @@ class _DriverContactCard extends StatelessWidget {
                         carLine,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                        style: TextStyle(
+                          color: palette.textSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -10952,14 +10987,14 @@ class _DriverContactCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: SmartTaxiColors.goldSurface,
-                          border: Border.all(color: SmartTaxiColors.border),
+                          color: palette.goldSurface,
+                          border: Border.all(color: palette.border),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           plate!.trim(),
-                          style: const TextStyle(
-                            color: SmartTaxiColors.text,
+                          style: TextStyle(
+                            color: palette.text,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             letterSpacing: .5,
@@ -11019,8 +11054,9 @@ class _RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
-      color: filled ? SmartTaxiColors.gold : SmartTaxiColors.goldSurface,
+      color: filled ? palette.gold : palette.goldSurface,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -11031,7 +11067,7 @@ class _RoundIconButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 17,
-            color: filled ? Colors.white : SmartTaxiColors.goldDeep,
+            color: filled ? Colors.white : palette.goldDeep,
           ),
         ),
       ),
@@ -11161,12 +11197,16 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final items = _SearchProgressRows._items;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: _blueSurface,
-        border: Border.all(color: _blueBorder),
+        color: isDark ? _blueAccent.withValues(alpha: 0.14) : _blueSurface,
+        border: Border.all(
+          color: isDark ? _blueAccent.withValues(alpha: 0.4) : _blueBorder,
+        ),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -11184,12 +11224,14 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
                         ? _blueAccent
                         : i < _activeIndex
                             ? _blueAccent.withValues(alpha: 0.16)
-                            : Colors.white,
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.white),
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: i <= _activeIndex
                           ? _blueAccent
-                          : SmartTaxiColors.borderStrong,
+                          : palette.borderStrong,
                     ),
                     boxShadow: i == _activeIndex
                         ? [
@@ -11213,8 +11255,8 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
                     duration: const Duration(milliseconds: 220),
                     style: TextStyle(
                       color: i <= _activeIndex
-                          ? SmartTaxiColors.text
-                          : SmartTaxiColors.textSecondary,
+                          ? palette.text
+                          : palette.textSecondary,
                       fontSize: 12.4,
                       height: 1.15,
                       fontWeight: FontWeight.w800,
@@ -11244,11 +11286,12 @@ class _TripRouteMiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.goldSurface,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
@@ -11260,7 +11303,7 @@ class _TripRouteMiniCard extends StatelessWidget {
             child: Column(
               children: [
                 _TripRouteMiniLine(label: 'Откуда', value: pickup),
-                const Divider(height: 15, color: SmartTaxiColors.border),
+                Divider(height: 15, color: palette.border),
                 _TripRouteMiniLine(label: 'Куда', value: dropoff),
               ],
             ),
@@ -11279,6 +11322,7 @@ class _TripRouteMiniLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       children: [
         SizedBox(
@@ -11287,8 +11331,8 @@ class _TripRouteMiniLine extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 12,
               height: 1,
               fontWeight: FontWeight.w800,
@@ -11301,8 +11345,8 @@ class _TripRouteMiniLine extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SmartTaxiColors.text,
+            style: TextStyle(
+              color: palette.text,
               fontSize: 14,
               height: 1.05,
               fontWeight: FontWeight.w900,
@@ -11327,14 +11371,14 @@ class _TripInfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       constraints: const BoxConstraints(minHeight: 56),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: emphasis ? SmartTaxiColors.goldSurface : Colors.white,
+        color: emphasis ? palette.goldSurface : palette.card,
         border: Border.all(
-          color:
-              emphasis ? SmartTaxiColors.borderStrong : SmartTaxiColors.border,
+          color: emphasis ? palette.borderStrong : palette.border,
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -11346,8 +11390,8 @@ class _TripInfoPill extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 10.5,
               height: 1,
               fontWeight: FontWeight.w800,
@@ -11359,7 +11403,7 @@ class _TripInfoPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: emphasis ? SmartTaxiColors.goldDeep : SmartTaxiColors.text,
+              color: emphasis ? palette.goldDeep : palette.text,
               fontSize: 13.5,
               height: 1,
               fontWeight: FontWeight.w900,
@@ -11461,191 +11505,192 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          14,
-          18,
-          18 + MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.sizeOf(context).height * 0.56,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _SheetHandle(dark: false),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.text,
-                        fontSize: 21,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: SmartTaxiColors.goldDeep,
-                    ),
-                    child: const Text(
-                      'Отмена',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                ],
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: ColoredBox(
+        color: palette.card,
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              14,
+              18,
+              18 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.sizeOf(context).height * 0.56,
               ),
-              const SizedBox(height: 12),
-              if ((widget.region ?? '').trim().isNotEmpty) ...[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldPale,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: SmartTaxiColors.border),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SheetHandle(dark: isDark),
+                  Row(
                     children: [
-                      const Icon(
-                        Icons.location_city_rounded,
-                        size: 16,
-                        color: SmartTaxiColors.goldDeep,
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: TextStyle(
+                            color: palette.text,
+                            fontSize: 21,
+                            height: 1.05,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 7),
-                      Text(
-                        widget.region!,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
-                          fontWeight: FontWeight.w900,
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: palette.goldDeep,
+                        ),
+                        child: const Text(
+                          'Отмена',
+                          style: TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              TextField(
-                controller: _query,
-                autofocus: false,
-                style: const TextStyle(
-                  color: SmartTaxiColors.text,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-                textInputAction: TextInputAction.search,
-                onChanged: _onQueryChanged,
-                onSubmitted: _search,
-                decoration: InputDecoration(
-                  hintText: widget.hint,
-                  hintStyle: const TextStyle(
-                    color: SmartTaxiColors.textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: SmartTaxiColors.textSecondary,
-                  ),
-                  // This sheet's background is forced light regardless of
-                  // app theme (showModalBottomSheet's own backgroundColor,
-                  // see the call site), but this field doesn't set its own
-                  // fill/border — without that it inherits the ambient
-                  // (theme-dependent) InputDecorationTheme, which in dark
-                  // mode painted a dark box floating inside the otherwise
-                  // light sheet.
-                  filled: true,
-                  fillColor: SmartTaxiColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: SmartTaxiColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: SmartTaxiColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide:
-                        const BorderSide(color: SmartTaxiColors.gold, width: 1.8),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-                  suffixIcon: _loading
-                      ? const Padding(
-                          padding: EdgeInsets.all(14),
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: SmartTaxiColors.goldDeep,
+                  const SizedBox(height: 12),
+                  if ((widget.region ?? '').trim().isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: palette.goldPale,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: palette.border),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.location_city_rounded,
+                            size: 16,
+                            color: palette.goldDeep,
+                          ),
+                          const SizedBox(width: 7),
+                          Text(
+                            widget.region!,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                        )
-                      : _query.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(
-                                Icons.close_rounded,
-                                color: SmartTaxiColors.textMuted,
-                                size: 18,
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: _query,
+                    autofocus: false,
+                    style: TextStyle(
+                      color: palette.text,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onChanged: _onQueryChanged,
+                    onSubmitted: _search,
+                    decoration: InputDecoration(
+                      hintText: widget.hint,
+                      hintStyle: TextStyle(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: palette.textSecondary,
+                      ),
+                      filled: true,
+                      fillColor: palette.appBackground,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: palette.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: palette.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide:
+                            BorderSide(color: palette.gold, width: 1.8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 15),
+                      suffixIcon: _loading
+                          ? Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: palette.goldDeep,
+                                ),
                               ),
-                              onPressed: () {
-                                _query.clear();
-                                _debounce?.cancel();
-                                _search('');
-                              },
                             )
-                          : null,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _MapPointChoiceButton(
-                onTap: () {
-                  Navigator.pop(
-                    context,
-                    _PointResult.openMapPicker(),
-                  );
-                },
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                _InlineMessage(text: _error!, danger: true),
-              ],
-              const SizedBox(height: 12),
-              if (_query.text.trim().length < 2 &&
-                  widget.suggestedAddresses.isNotEmpty)
-                _RecentAddressSection(
-                  title: widget.suggestionTitle,
-                  addresses: widget.suggestedAddresses,
-                  onSelect: _select,
-                )
-              else if (_query.text.trim().length < 2)
-                const _AddressEmptyHint()
-              else if (!_loading && _results.isEmpty && _error == null)
-                const _AddressEmptyHint(
-                  title: 'Ничего не найдено',
-                  text: 'Уточните улицу, район или название места.',
-                )
-              else
-                ..._results.map(
-                  (item) => _AddressResultTile(
-                    item: item,
-                    onTap: () => _select(item),
-                    highlight: _query.text.trim(),
+                          : _query.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    color: palette.textMuted,
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    _query.clear();
+                                    _debounce?.cancel();
+                                    _search('');
+                                  },
+                                )
+                              : null,
+                    ),
                   ),
-                ),
-              const SizedBox(height: 4),
-            ],
+                  const SizedBox(height: 10),
+                  _MapPointChoiceButton(
+                    onTap: () {
+                      Navigator.pop(
+                        context,
+                        _PointResult.openMapPicker(),
+                      );
+                    },
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    _InlineMessage(text: _error!, danger: true, dark: isDark),
+                  ],
+                  const SizedBox(height: 12),
+                  if (_query.text.trim().length < 2 &&
+                      widget.suggestedAddresses.isNotEmpty)
+                    _RecentAddressSection(
+                      title: widget.suggestionTitle,
+                      addresses: widget.suggestedAddresses,
+                      onSelect: _select,
+                    )
+                  else if (_query.text.trim().length < 2)
+                    const _AddressEmptyHint()
+                  else if (!_loading && _results.isEmpty && _error == null)
+                    const _AddressEmptyHint(
+                      title: 'Ничего не найдено',
+                      text: 'Уточните улицу, район или название места.',
+                    )
+                  else
+                    ..._results.map(
+                      (item) => _AddressResultTile(
+                        item: item,
+                        onTap: () => _select(item),
+                        highlight: _query.text.trim(),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -11660,6 +11705,7 @@ class _MapPointChoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
@@ -11669,8 +11715,8 @@ class _MapPointChoiceButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
-            color: SmartTaxiColors.goldSurface,
-            border: Border.all(color: SmartTaxiColors.border),
+            color: palette.goldSurface,
+            border: Border.all(color: palette.border),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
@@ -11679,18 +11725,18 @@ class _MapPointChoiceButton extends StatelessWidget {
                 width: 32,
                 height: 32,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: palette.card,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.add_location_alt_rounded,
-                  color: SmartTaxiColors.goldDeep,
+                  color: palette.goldDeep,
                   size: 19,
                 ),
               ),
               const SizedBox(width: 11),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -11699,19 +11745,19 @@ class _MapPointChoiceButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: SmartTaxiColors.text,
+                        color: palette.text,
                         fontSize: 13.2,
                         height: 1.05,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
                     Text(
                       'Выберите точку на карте',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: SmartTaxiColors.textSecondary,
+                        color: palette.textSecondary,
                         fontSize: 11.2,
                         height: 1.05,
                         fontWeight: FontWeight.w700,
@@ -11720,10 +11766,10 @@ class _MapPointChoiceButton extends StatelessWidget {
                   ],
                 ),
               ),
-              const _SvgIcon(
+              _SvgIcon(
                 _iconChevronRight,
                 size: 16,
-                color: SmartTaxiColors.goldDeep,
+                color: palette.goldDeep,
               ),
             ],
           ),
@@ -11753,8 +11799,8 @@ class _RecentAddressSection extends StatelessWidget {
           padding: const EdgeInsets.only(left: 2, bottom: 10),
           child: Text(
             title,
-            style: const TextStyle(
-              color: SmartTaxiColors.text,
+            style: TextStyle(
+              color: context.palette.text,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
@@ -11776,14 +11822,15 @@ TextSpan _highlightedLabelSpan(
   String label,
   String? highlight,
   TextStyle baseStyle,
+  SmartTaxiPalette palette,
 ) {
   final query = (highlight ?? '').trim();
   if (query.length < 2) return TextSpan(text: label, style: baseStyle);
   final matchIndex = label.toLowerCase().indexOf(query.toLowerCase());
   if (matchIndex < 0) return TextSpan(text: label, style: baseStyle);
   final matchStyle = baseStyle.copyWith(
-    color: SmartTaxiColors.goldDeep,
-    backgroundColor: SmartTaxiColors.goldPale,
+    color: palette.goldDeep,
+    backgroundColor: palette.goldPale,
   );
   return TextSpan(
     style: baseStyle,
@@ -11862,10 +11909,11 @@ class _AddressResultTile extends StatelessWidget {
     }
     final subtitle = subtitleParts.join(' • ');
     final icon = _addressIconFor(item.label, recent: recent);
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: SmartTaxiColors.cardWarm,
+        color: palette.cardWarm,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -11873,7 +11921,7 @@ class _AddressResultTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
             decoration: BoxDecoration(
-              border: Border.all(color: SmartTaxiColors.border),
+              border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
@@ -11882,13 +11930,13 @@ class _AddressResultTile extends StatelessWidget {
                   width: 36,
                   height: 36,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: SmartTaxiColors.goldPale,
+                  decoration: BoxDecoration(
+                    color: palette.goldPale,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                     size: 20,
                   ),
                 ),
@@ -11901,11 +11949,12 @@ class _AddressResultTile extends StatelessWidget {
                         _highlightedLabelSpan(
                           item.label,
                           highlight,
-                          const TextStyle(
+                          TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 14,
-                            color: SmartTaxiColors.text,
+                            color: palette.text,
                           ),
+                          palette,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -11916,8 +11965,8 @@ class _AddressResultTile extends StatelessWidget {
                           subtitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: SmartTaxiColors.textSecondary,
+                          style: TextStyle(
+                            color: palette.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -11926,8 +11975,7 @@ class _AddressResultTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
-                    color: SmartTaxiColors.goldDeep),
+                Icon(Icons.chevron_right_rounded, color: palette.goldDeep),
               ],
             ),
           ),
@@ -11948,11 +11996,12 @@ class _AddressEmptyHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.cardWarm,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.cardWarm,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -11961,13 +12010,13 @@ class _AddressEmptyHint extends StatelessWidget {
             width: 34,
             height: 34,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: SmartTaxiColors.goldPale,
+            decoration: BoxDecoration(
+              color: palette.goldPale,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.manage_search_rounded,
-              color: SmartTaxiColors.goldDeep,
+              color: palette.goldDeep,
               size: 18,
             ),
           ),
@@ -11981,8 +12030,8 @@ class _AddressEmptyHint extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.text,
+                  style: TextStyle(
+                    color: palette.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     height: 1.1,
@@ -11993,8 +12042,8 @@ class _AddressEmptyHint extends StatelessWidget {
                   text,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     height: 1.15,
@@ -12126,7 +12175,7 @@ class _LocationPermissionSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SheetHandle(dark: false),
+            _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
             const SizedBox(height: 6),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -12348,11 +12397,11 @@ class _TariffSection extends StatelessWidget {
             padding: const EdgeInsets.only(left: 2, right: 2, bottom: 8),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Выберите тариф',
                     style: TextStyle(
-                      color: SmartTaxiColors.text,
+                      color: context.palette.text,
                       fontSize: 15.4,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -12363,14 +12412,14 @@ class _TariffSection extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldSurface,
+                    color: context.palette.goldSurface,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: SmartTaxiColors.goldSoft),
+                    border: Border.all(color: context.palette.gold),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Фикс. цена',
                     style: TextStyle(
-                      color: SmartTaxiColors.goldDeep,
+                      color: context.palette.goldDeep,
                       fontSize: 10.5,
                       height: 1,
                       fontWeight: FontWeight.w900,
@@ -12485,30 +12534,37 @@ class _TariffCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final price = estimate?.estimatedPrice;
     final iconBox = Container(
       height: stretch ? 52 : 48,
       width: stretch ? 52 : double.infinity,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: selected
-              ? [SmartTaxiColors.goldSurface, Colors.white]
-              : [const Color(0xfffbfbfb), const Color(0xfff5f6f8)],
-        ),
+        gradient: dark
+            ? null
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: selected
+                    ? [SmartTaxiColors.goldSurface, Colors.white]
+                    : [const Color(0xfffbfbfb), const Color(0xfff5f6f8)],
+              ),
+        color: dark
+            ? (selected
+                ? palette.goldSurface
+                : Colors.white.withValues(alpha: 0.06))
+            : null,
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
-          color:
-              selected ? SmartTaxiColors.borderStrong : SmartTaxiColors.border,
+          color: selected ? palette.borderStrong : palette.border,
         ),
       ),
       child: item.asset.isEmpty
           ? _SvgIcon(
               item.title == 'Доставка' ? _iconDelivery : _iconCar,
               size: 24,
-              color: SmartTaxiColors.goldDeep,
+              color: palette.goldDeep,
             )
           : Image.asset(
               item.asset,
@@ -12519,7 +12575,7 @@ class _TariffCard extends StatelessWidget {
               errorBuilder: (_, __, ___) => _SvgIcon(
                 item.title == 'Доставка' ? _iconDelivery : _iconCar,
                 size: 24,
-                color: SmartTaxiColors.goldDeep,
+                color: palette.goldDeep,
               ),
             ),
     );
@@ -12673,15 +12729,16 @@ class _TariffSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             'Выберите тариф',
             style: TextStyle(
-              color: SmartTaxiColors.text,
+              color: palette.text,
               fontSize: 14.2,
               fontWeight: FontWeight.w800,
             ),
@@ -12752,6 +12809,7 @@ class _PriceAdjuster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final hint = currentPrice > basePrice
         ? 'Быстрее найдём водителя'
         : currentPrice < basePrice
@@ -12759,15 +12817,15 @@ class _PriceAdjuster extends StatelessWidget {
             : 'Обычная скорость подачи';
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: palette.card,
         // Matches _PaymentMethodRow right below it — both are supplementary
         // order-config rows and previously disagreed (faint gray border
         // here vs. the bold blue border there), which read as unfinished.
         border: Border.fromBorderSide(
-          BorderSide(color: SmartTaxiColors.borderStrong),
+          BorderSide(color: palette.borderStrong),
         ),
-        borderRadius: BorderRadius.all(Radius.circular(18)),
+        borderRadius: const BorderRadius.all(Radius.circular(18)),
         boxShadow: _cardShadow,
       ),
       child: Row(
@@ -12776,10 +12834,10 @@ class _PriceAdjuster extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Ваша цена',
                   style: TextStyle(
-                    color: SmartTaxiColors.text,
+                    color: palette.text,
                     fontSize: 12.5,
                     height: 1.1,
                     fontWeight: FontWeight.w700,
@@ -12790,8 +12848,8 @@ class _PriceAdjuster extends StatelessWidget {
                   hint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontSize: 10.5,
                     height: 1.1,
                     fontWeight: FontWeight.w600,
@@ -12811,11 +12869,11 @@ class _PriceAdjuster extends StatelessWidget {
               _formatTenge(currentPrice),
               textAlign: TextAlign.center,
               maxLines: 1,
-              style: const TextStyle(
-                color: SmartTaxiColors.text,
+              style: TextStyle(
+                color: palette.text,
                 fontSize: 14.5,
                 fontWeight: FontWeight.w900,
-                fontFeatures: [FontFeature.tabularFigures()],
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
@@ -12837,9 +12895,10 @@ class _PriceStepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final enabled = onTap != null;
     return Material(
-      color: SmartTaxiColors.goldSurface.withValues(alpha: enabled ? 1 : 0.5),
+      color: palette.goldSurface.withValues(alpha: enabled ? 1 : 0.5),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -12850,8 +12909,7 @@ class _PriceStepButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 16,
-            color:
-                enabled ? SmartTaxiColors.goldDeep : SmartTaxiColors.textMuted,
+            color: enabled ? palette.goldDeep : palette.textMuted,
           ),
         ),
       ),
@@ -12874,18 +12932,19 @@ class _PaymentMethodRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
       opacity: enabled ? 1 : 0.56,
       child: Container(
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 13),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: palette.card,
           border: Border.fromBorderSide(
-            BorderSide(color: SmartTaxiColors.borderStrong),
+            BorderSide(color: palette.borderStrong),
           ),
-          borderRadius: BorderRadius.all(Radius.circular(18)),
+          borderRadius: const BorderRadius.all(Radius.circular(18)),
           boxShadow: _cardShadow,
         ),
         child: InkWell(
@@ -12893,17 +12952,17 @@ class _PaymentMethodRow extends StatelessWidget {
           onTap: enabled ? onTap : null,
           child: Row(
             children: [
-              _PaymentIcon(method: method, forceLight: true),
+              _PaymentIcon(method: method),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Способ оплаты',
                       style: TextStyle(
-                        color: SmartTaxiColors.textSecondary,
+                        color: palette.textSecondary,
                         fontSize: 10.8,
                         height: 1,
                         fontWeight: FontWeight.w700,
@@ -12912,8 +12971,8 @@ class _PaymentMethodRow extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       label,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.text,
+                      style: TextStyle(
+                        color: palette.text,
                         fontSize: 14,
                         height: 1,
                         fontWeight: FontWeight.w800,
@@ -12924,8 +12983,7 @@ class _PaymentMethodRow extends StatelessWidget {
               ),
               _SvgIcon(
                 _iconChevronRight,
-                color:
-                    enabled ? SmartTaxiColors.text : SmartTaxiColors.textMuted,
+                color: enabled ? palette.text : palette.textMuted,
                 size: 18,
               ),
             ],
@@ -12937,17 +12995,9 @@ class _PaymentMethodRow extends StatelessWidget {
 }
 
 class _PaymentIcon extends StatelessWidget {
-  const _PaymentIcon({required this.method, this.forceLight = false});
+  const _PaymentIcon({required this.method});
 
   final String method;
-  // _PaymentMethodRow (the tariff/order sheet's own summary row) sits
-  // inside the protected order-flow area, which stays a hardcoded white
-  // Container regardless of app theme — this badge needs to match that,
-  // not the ambient (theme-dependent) palette, or it renders as a dark
-  // navy square on a white row in dark mode. _PaymentMethodSheet, the
-  // other caller, is already fully migrated to context.palette, so it
-  // keeps the theme-aware default.
-  final bool forceLight;
 
   @override
   Widget build(BuildContext context) {
@@ -12956,19 +13006,16 @@ class _PaymentIcon extends StatelessWidget {
       _ => _iconBanknote,
     };
     final palette = context.palette;
-    final surface = forceLight ? SmartTaxiColors.goldSurface : palette.goldSurface;
-    final border = forceLight ? SmartTaxiColors.borderStrong : palette.borderStrong;
-    final iconColor = forceLight ? SmartTaxiColors.goldDeep : palette.goldDeep;
     return Container(
       width: 32,
       height: 32,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: surface,
-        border: Border.all(color: border),
+        color: palette.goldSurface,
+        border: Border.all(color: palette.borderStrong),
         borderRadius: BorderRadius.circular(13),
       ),
-      child: _SvgIcon(icon, color: iconColor, size: 18),
+      child: _SvgIcon(icon, color: palette.goldDeep, size: 18),
     );
   }
 }
@@ -13002,7 +13049,9 @@ class _RegionConfirmSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -13138,7 +13187,9 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(child: _SheetHandle(dark: false)),
+            Center(
+              child: _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             Text(
               widget.title,
@@ -14541,15 +14592,16 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         border: Border.all(
           color: notification.isUnread
-              ? SmartTaxiColors.borderStrong
-              : SmartTaxiColors.border,
+              ? palette.borderStrong
+              : palette.border,
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -14560,13 +14612,13 @@ class _NotificationTile extends StatelessWidget {
             width: 38,
             height: 38,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: SmartTaxiColors.goldSurface,
+            decoration: BoxDecoration(
+              color: palette.goldSurface,
               shape: BoxShape.circle,
             ),
             child: Icon(
               _iconFor(notification.type),
-              color: SmartTaxiColors.goldDeep,
+              color: palette.goldDeep,
               size: 18,
             ),
           ),
@@ -14582,8 +14634,8 @@ class _NotificationTile extends StatelessWidget {
                         notification.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
+                        style: TextStyle(
+                          color: palette.text,
                           fontSize: 14.5,
                           fontWeight: FontWeight.w800,
                         ),
@@ -14594,8 +14646,8 @@ class _NotificationTile extends StatelessWidget {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: SmartTaxiColors.gold,
+                        decoration: BoxDecoration(
+                          color: palette.gold,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -14605,8 +14657,8 @@ class _NotificationTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   notification.body,
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontSize: 12.5,
                     height: 1.3,
                     fontWeight: FontWeight.w600,
@@ -14615,8 +14667,8 @@ class _NotificationTile extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   _timeAgo(notification.createdAt),
-                  style: const TextStyle(
-                    color: SmartTaxiColors.textMuted,
+                  style: TextStyle(
+                    color: palette.textMuted,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -14741,13 +14793,14 @@ class _SkeletonLineState extends State<_SkeletonLine>
         animation: _controller,
         builder: (context, child) {
           final t = Curves.easeInOut.transform(_controller.value);
+          final palette = context.palette;
           return Container(
             width: widget.width,
             height: widget.height,
             decoration: BoxDecoration(
               color: Color.lerp(
-                SmartTaxiColors.goldSurface,
-                SmartTaxiColors.goldSoft.withValues(alpha: 0.75),
+                palette.goldSurface,
+                palette.goldPale.withValues(alpha: 0.75),
                 t,
               ),
               borderRadius: BorderRadius.circular(widget.radius),
@@ -15349,7 +15402,7 @@ class _CompactNotice extends StatelessWidget {
                   : Colors.white.withValues(alpha: 0.72),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: SmartTaxiColors.goldDeep, size: 17),
+            child: Icon(icon, color: context.palette.goldDeep, size: 17),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -15972,6 +16025,7 @@ class _MinimizedSheetBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         10,
@@ -15982,10 +16036,10 @@ class _MinimizedSheetBar extends StatelessWidget {
       child: Container(
         height: _CollapsibleOrderSheet._collapsedHeight,
         alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(999)),
-          boxShadow: [
+        decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: const BorderRadius.all(Radius.circular(999)),
+          boxShadow: const [
             BoxShadow(
               color: Color(0x24785a14),
               blurRadius: 24,
@@ -16001,15 +16055,15 @@ class _MinimizedSheetBar extends StatelessWidget {
               width: 44,
               height: 5,
               decoration: BoxDecoration(
-                color: SmartTaxiColors.borderStrong,
+                color: palette.borderStrong,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
             const SizedBox(height: 5),
-            const Icon(
+            Icon(
               Icons.keyboard_arrow_up_rounded,
               size: 16,
-              color: SmartTaxiColors.textMuted,
+              color: palette.textMuted,
             ),
           ],
         ),
@@ -16048,6 +16102,7 @@ class _StatusStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     // Terminal statuses (completed in any form, cancelled in any form) never
     // actually reach this widget — _TripStatusPanel returns a different
     // panel for all of them before a _StatusStepper is ever built, so a
@@ -16084,19 +16139,17 @@ class _StatusStepper extends StatelessWidget {
                       width: done ? 12 : 9,
                       height: done ? 12 : 9,
                       decoration: BoxDecoration(
-                        color: done ? SmartTaxiColors.gold : Colors.white,
+                        color: done ? palette.gold : palette.card,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: done
-                              ? SmartTaxiColors.gold
-                              : SmartTaxiColors.borderStrong,
+                          color: done ? palette.gold : palette.borderStrong,
                           width: 1.5,
                         ),
                         boxShadow: done
                             ? [
                                 BoxShadow(
-                                  color: SmartTaxiColors.gold
-                                      .withValues(alpha: 0.25),
+                                  color:
+                                      palette.gold.withValues(alpha: 0.25),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -16110,9 +16163,7 @@ class _StatusStepper extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: done
-                            ? SmartTaxiColors.text
-                            : SmartTaxiColors.textSecondary,
+                        color: done ? palette.text : palette.textSecondary,
                         fontSize: 10,
                         height: 1,
                         fontWeight: FontWeight.w800,
@@ -16127,9 +16178,7 @@ class _StatusStepper extends StatelessWidget {
                     height: 2,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: stepIndex < index
-                          ? SmartTaxiColors.gold
-                          : SmartTaxiColors.border,
+                      color: stepIndex < index ? palette.gold : palette.border,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),

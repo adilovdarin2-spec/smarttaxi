@@ -2478,3 +2478,31 @@ Everything else checked (drawer parity, tariff card animations/layout, payment s
 ### Commits (round 50)
 
 - `Mobile(passenger): fix dark-mode readability in address search + order flow`
+
+## Round 51 — remove drawer wordmark entirely (explicit user request)
+
+Round 49 had given the drawer's brand wordmark (car illustration + "SmartTaxi" name) its own white card so it would read correctly in dark mode. User's next instruction was simpler than a styling fix: drop the wordmark from the drawer header entirely ("лого убери в меню, ну там где машина и под ним название"), not just fix its dark-mode appearance. Removed the `DecoratedBox`/`BrandLogo.horizontal()` block and its white-card wrapper from `_SmartDrawer` — account info (avatar, name, phone, region badge) is now the first thing in the card.
+
+### Commits (round 51)
+
+- `Mobile(passenger): remove brand wordmark from drawer header`
+
+## Round 52 — user overrides "protected zone" assumption: order/tariff/trip flow must be dark-aware too
+
+User's instruction directly contradicted rounds 49-50's working assumption ("сами экраны белые а меню черные и тд, тут много багов / Ты должен исправить все и сделать идеально" — the order/tariff/trip screens themselves stay white while the drawer goes dark, that's a real bug, fix everything). Round 50 had explicitly spot-checked `_TariffCard` and the order flow and judged them "genuinely well-crafted... no changes made there" — that judgment call is now overridden by direct instruction, not something to re-litigate.
+
+Went through every class reachable from the home order sheet through tariff selection, payment, and trip-status/tracking panels, converting static `SmartTaxiColors.x`/`Colors.white` to `context.palette.x` (~20+ classes: `_HomeOrderPanel`, `_OrderSheet` family, `_TariffSection`/`_PriceAdjuster`/`_PaymentMethodRow`/`_PaymentIcon`, `_TripStatusPanel` and all its sub-panels — waiting/searching/rated/no-drivers/cancelled/receipt, `_DriverContactCard`, `_AddressSearchSheet` and its result tiles/empty hint, `_MapPointPickerSheet`, `_NotificationTile`, `_MinimizedSheetBar`, `StatusPill` — plus removing the now-unneeded `_PaymentIcon.forceLight` escape hatch since both its callers are palette-aware now).
+
+Two bugs found that were novel this round, not just "missed" instances of the already-known pattern:
+- `_TariffCard`'s icon box (the car/delivery icon square on each tariff option) had its own `selected`-only gradient/border that never checked the `dark` flag at all, despite the card's outer container correctly branching on `dark` — so even after previous rounds, this specific icon square stayed a bright light-gradient square inside an otherwise-dark tariff card. Added a real `dark` branch.
+- `_SkeletonLine`/`_TariffSkeleton` (the tariff-loading shimmer and its "Выберите тариф" label) used hardcoded gold-surface colors and a `const` static text style with no `dark` awareness whatsoever — the loading skeleton would flash light-gold regardless of theme.
+
+**Important scope correction made mid-round, based on the driver side's own most recent precedent (commit `038cd38`, this doc's round 48):** floating chips/badges that sit *over the live map* (`_NearbyDriversPill`, `_MapUnavailableCard`, `_MapPermissionCard`, `_MapRouteState`, `_ActiveOrderBanner`, the `_MapGlassChrome` family) are a different category from actual sheets/screens — the just-committed driver-side fix for the identical widget class (`_DriverMapBadge`, `_RoadAlertMapFallback`) deliberately kept their backgrounds static/frosted-white and only hardcoded their text to a fixed dark color, rather than making the badges theme-reactive. Initially converted these to `context.palette` along with everything else, then reverted that subset to match the validated driver-side pattern once the precedent was found — map-chrome badges over the live map stay static (map tiles themselves don't invert in dark mode either), only real sheets/screens/list-cards became theme-reactive. `_MapFallbackSurface` (the full-screen "map loading" replacement, not a small badge) was kept theme-aware since it dominates the whole viewport rather than floating briefly over live map content.
+
+**Also noted, not acted on:** `docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md` is a canonical, product-owner-approved color-token system (with its own light/dark tokens) meant to eventually supersede the current gold-named-but-actually-blue `SmartTaxiColors`/`SmartTaxiPalette` system app-wide — explicitly flagged there as "migrate opportunistically, not a blanket repaint," and already informing at least one other concurrent session's work (`_blueAccent`/`_blueSurface`/`_blueBorder` in the "searching for driver" panel are its tokens). This round's fixes stayed inside the *existing* `SmartTaxiPalette` system (making static colors theme-reactive) rather than adopting the new token system, to avoid colliding with that separate, larger, cross-session migration effort. Did give `_SearchProgressRows`' blue-tinted card a minimal `dark` branch (translucent-tinted background instead of the light `_blueSurface`) since it had the exact same "light card floating in dark sheet" bug — done using the existing `_blueAccent` constant already in the file, not a new token import.
+
+Verified via `flutter analyze --no-fatal-infos` (clean, same 2 pre-existing unrelated warnings) and a live on-device pass in dark theme: rebuilt debug APK, sideloaded, walked home → destination search (typed a real query, confirmed the result-tile highlight and empty-hint card) → tariff selection (confirmed the icon-box fix specifically — car icon squares now sit correctly dark instead of flashing white) → notifications empty state. Screenshotted before continuing to the next screen at each step.
+
+### Commits (round 52)
+
+- (pending — not yet committed as of this doc update)
