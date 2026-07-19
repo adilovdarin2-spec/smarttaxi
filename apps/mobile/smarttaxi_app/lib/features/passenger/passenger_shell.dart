@@ -65,6 +65,26 @@ const _blueBorder = Color(0xffe1e7f5);
 const _cardShadow = <BoxShadow>[
   BoxShadow(color: Color(0x14785a14), blurRadius: 24, offset: Offset(0, 10)),
 ];
+// Darkens the OSM raster tile layer for dark theme without a separate dark
+// tile provider/API key. Same math as the well-known CSS
+// `filter: invert(1) hue-rotate(180deg)` dark-map trick (invert flips
+// luminosity so light backgrounds go dark; the hue-rotate afterwards undoes
+// the hue shift invert alone would cause, so green stays green-ish and blue
+// water stays blue-ish instead of turning magenta/orange). Left as a flat
+// list (not computed from two chained ColorFilter.matrix calls) since
+// ColorFiltered only composes one matrix per widget.
+const _darkMapTileMatrix = <double>[
+  0.574, -1.430, -0.144, 0, 255,
+  -0.426, -0.430, -0.144, 0, 255,
+  -0.426, -1.430, 0.856, 0, 255,
+  0, 0, 0, 1, 0,
+];
+const _identityColorMatrix = <double>[
+  1, 0, 0, 0, 0,
+  0, 1, 0, 0, 0,
+  0, 0, 1, 0, 0,
+  0, 0, 0, 1, 0,
+];
 const _iconMenu = 'assets/icons/menu.svg';
 const _iconBell = 'assets/icons/bell.svg';
 const _iconChevronRight = 'assets/icons/chevron_right.svg';
@@ -4714,6 +4734,7 @@ class _MapCanvasState extends State<_MapCanvas> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final center = widget.center;
     final pickup = widget.pickup;
     final dropoff = widget.dropoff;
@@ -4763,15 +4784,20 @@ class _MapCanvasState extends State<_MapCanvas> {
                   onPositionChanged: (camera, hasGesture) {
                     if (hasGesture) onCenterChanged(camera.center);
                   },
-                  backgroundColor: SmartTaxiColors.appBackground,
+                  backgroundColor: context.palette.appBackground,
                 ),
                 children: [
-                  TileLayer(
-                    urlTemplate: AppConfig.osmTileUrl,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    retinaMode: true,
-                    userAgentPackageName: 'com.smarttaxi.app',
-                    errorTileCallback: (_, __, ___) => onTileError(),
+                  ColorFiltered(
+                    colorFilter: ColorFilter.matrix(
+                      isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                    ),
+                    child: TileLayer(
+                      urlTemplate: AppConfig.osmTileUrl,
+                      subdomains: const ['a', 'b', 'c', 'd'],
+                      retinaMode: true,
+                      userAgentPackageName: 'com.smarttaxi.app',
+                      errorTileCallback: (_, __, ___) => onTileError(),
+                    ),
                   ),
                   if (route.isNotEmpty)
                     PolylineLayer(
@@ -5151,14 +5177,15 @@ class _NearbyDriversPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final label = '$count ${_pluralCars(count)} рядом';
     return Semantics(
       label: label,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.98),
-          border: Border.all(color: SmartTaxiColors.border),
+          color: palette.card.withValues(alpha: 0.98),
+          border: Border.all(color: palette.border),
           borderRadius: BorderRadius.circular(14),
           boxShadow: const [
             BoxShadow(
@@ -5175,10 +5202,10 @@ class _NearbyDriversPill extends StatelessWidget {
             const SizedBox(width: 7),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
-                color: SmartTaxiColors.text,
+                color: palette.text,
               ),
             ),
           ],
@@ -5457,11 +5484,12 @@ class _MapUnavailableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        border: Border.all(color: SmartTaxiColors.borderStrong),
+        color: palette.card.withValues(alpha: 0.95),
+        border: Border.all(color: palette.borderStrong),
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
@@ -5473,13 +5501,13 @@ class _MapUnavailableCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.map_outlined,
-            color: SmartTaxiColors.goldDeep,
+            color: palette.goldDeep,
             size: 24,
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -5487,17 +5515,17 @@ class _MapUnavailableCard extends StatelessWidget {
                 Text(
                   'Карта временно недоступна',
                   style: TextStyle(
-                    color: SmartTaxiColors.text,
+                    color: palette.text,
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
                     height: 1.15,
                   ),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Text(
                   'Маршрут и заказ можно выбрать вручную. Карта восстановится после подключения.',
                   style: TextStyle(
-                    color: SmartTaxiColors.textSecondary,
+                    color: palette.textSecondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 12.5,
                     height: 1.25,
@@ -5509,7 +5537,7 @@ class _MapUnavailableCard extends StatelessWidget {
           TextButton(
             onPressed: onRetry,
             style:
-                TextButton.styleFrom(foregroundColor: SmartTaxiColors.goldDeep),
+                TextButton.styleFrom(foregroundColor: palette.goldDeep),
             child: const Text('Повторить'),
           ),
         ],
@@ -5529,11 +5557,12 @@ class _MapPermissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        border: Border.all(color: SmartTaxiColors.borderStrong),
+        color: palette.card.withValues(alpha: 0.95),
+        border: Border.all(color: palette.borderStrong),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
@@ -5549,22 +5578,22 @@ class _MapPermissionCard extends StatelessWidget {
             width: 34,
             height: 34,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: SmartTaxiColors.gold,
+            decoration: BoxDecoration(
+              color: palette.gold,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.near_me_disabled_outlined,
               size: 18,
-              color: SmartTaxiColors.text,
+              color: palette.text,
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: SmartTaxiColors.text,
+              style: TextStyle(
+                color: palette.text,
                 fontSize: 12.5,
                 height: 1.25,
                 fontWeight: FontWeight.w800,
@@ -5574,8 +5603,8 @@ class _MapPermissionCard extends StatelessWidget {
           IconButton(
             onPressed: onUseLocation,
             tooltip: 'Разрешить геолокацию',
-            icon: const Icon(Icons.my_location_rounded,
-                color: SmartTaxiColors.gold),
+            icon: Icon(Icons.my_location_rounded,
+                color: palette.gold),
           ),
         ],
       ),
@@ -5599,6 +5628,7 @@ class _MapRouteState extends StatelessWidget {
     if (!loading && !routeReady && error == null) {
       return const SizedBox.shrink();
     }
+    final palette = context.palette;
     final text = loading ? 'Считаем маршрут...' : error ?? 'Маршрут готов';
     final icon = loading
         ? null
@@ -5621,12 +5651,12 @@ class _MapRouteState extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: danger
-                ? SmartTaxiColors.danger.withValues(alpha: 0.18)
-                : Colors.white.withValues(alpha: 0.96),
+                ? palette.danger.withValues(alpha: 0.18)
+                : palette.card.withValues(alpha: 0.96),
             border: Border.all(
               color: danger
-                  ? SmartTaxiColors.danger.withValues(alpha: 0.34)
-                  : SmartTaxiColors.borderStrong,
+                  ? palette.danger.withValues(alpha: 0.34)
+                  : palette.borderStrong,
             ),
             borderRadius: BorderRadius.circular(999),
             boxShadow: const [
@@ -5641,12 +5671,12 @@ class _MapRouteState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (loading)
-                const SizedBox(
+                SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: SmartTaxiColors.gold,
+                    color: palette.gold,
                   ),
                 )
               else
@@ -5654,8 +5684,8 @@ class _MapRouteState extends StatelessWidget {
                   icon,
                   size: 17,
                   color: danger
-                      ? SmartTaxiColors.danger
-                      : SmartTaxiColors.gold,
+                      ? palette.danger
+                      : palette.gold,
                 ),
               const SizedBox(width: 8),
               Flexible(
@@ -5665,8 +5695,8 @@ class _MapRouteState extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: danger
-                        ? SmartTaxiColors.danger
-                        : SmartTaxiColors.text,
+                        ? palette.danger
+                        : palette.text,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -7587,10 +7617,17 @@ class _TripStatusPanel extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  StatusPill(label: statusText, tone: statusTone),
+                  // No StatusPill here (unlike the searching/in-progress
+                  // headers' own accent widgets, this one used to duplicate
+                  // the subtitle text verbatim) — on real device widths it
+                  // squeezed the Expanded title/subtitle column down to
+                  // ~85dp, truncating "Водитель найден" to "Водит..." and
+                  // the subtitle even harder. The stepper right below
+                  // already shows progress; the subtitle already shows the
+                  // specific status text, so the pill added crowding
+                  // without adding information.
                   if (order.driverId != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _ShareTripButton(
                       shareToken: order.shareToken,
                       pickup: order.pickup,
@@ -11015,9 +11052,15 @@ class _DriverContactCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => _openChat(context),
                     icon: const Icon(Icons.chat_bubble_rounded, size: 18),
-                    label: const Text('Написать'),
+                    label: const Text(
+                      'Написать',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                     ),
                   ),
                 ),
@@ -11026,9 +11069,15 @@ class _DriverContactCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: _call,
                     icon: const Icon(Icons.call_rounded, size: 18),
-                    label: const Text('Позвонить'),
+                    label: const Text(
+                      'Позвонить',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                     ),
                   ),
                 ),
@@ -12542,7 +12591,19 @@ class _TariffCard extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: dark
-            ? null
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: selected
+                    ? [
+                        palette.goldSurface,
+                        Color.lerp(palette.goldSurface, Colors.black, 0.28)!,
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.08),
+                        Colors.white.withValues(alpha: 0.03),
+                      ],
+              )
             : LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -12550,15 +12611,17 @@ class _TariffCard extends StatelessWidget {
                     ? [SmartTaxiColors.goldSurface, Colors.white]
                     : [const Color(0xfffbfbfb), const Color(0xfff5f6f8)],
               ),
-        color: dark
-            ? (selected
-                ? palette.goldSurface
-                : Colors.white.withValues(alpha: 0.06))
-            : null,
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
           color: selected ? palette.borderStrong : palette.border,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.22 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: item.asset.isEmpty
           ? _SvgIcon(
@@ -12584,7 +12647,7 @@ class _TariffCard extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        color: dark ? Colors.white.withValues(alpha: 0.78) : SmartTaxiColors.textSecondary,
+        color: palette.textSecondary,
         fontSize: 11.5,
         height: 1.1,
         fontWeight: FontWeight.w800,
@@ -12594,7 +12657,7 @@ class _TariffCard extends StatelessWidget {
       price == null ? '...' : _formatTenge(price),
       maxLines: 1,
       style: TextStyle(
-        color: dark ? Colors.white : SmartTaxiColors.text,
+        color: palette.text,
         fontSize: 16.5,
         height: 1.05,
         fontWeight: FontWeight.w900,
@@ -12606,13 +12669,13 @@ class _TariffCard extends StatelessWidget {
         ? Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
-              color: SmartTaxiColors.success.withValues(alpha: dark ? 0.22 : 0.12),
+              color: palette.success.withValues(alpha: dark ? 0.22 : 0.12),
               borderRadius: BorderRadius.circular(999),
             ),
-            child: const Text(
+            child: Text(
               'Выгодно',
               style: TextStyle(
-                color: SmartTaxiColors.success,
+                color: palette.success,
                 fontSize: 9.5,
                 height: 1,
                 fontWeight: FontWeight.w900,
@@ -12674,18 +12737,21 @@ class _TariffCard extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(12, stretch ? 11 : 12, 12, stretch ? 11 : 11),
           decoration: BoxDecoration(
             color: dark
-                ? Colors.white.withValues(alpha: selected ? 0.10 : 0.06)
-                : selected
-                    ? null
-                    : Colors.white,
-            gradient: !dark && selected
+                ? (selected ? null : Colors.white.withValues(alpha: 0.06))
+                : (selected ? null : Colors.white),
+            gradient: selected
                 ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      SmartTaxiColors.gold.withValues(alpha: 0.12),
-                      SmartTaxiColors.gold.withValues(alpha: 0.03),
-                    ],
+                    colors: dark
+                        ? [
+                            palette.gold.withValues(alpha: 0.20),
+                            Colors.white.withValues(alpha: 0.05),
+                          ]
+                        : [
+                            SmartTaxiColors.gold.withValues(alpha: 0.12),
+                            SmartTaxiColors.gold.withValues(alpha: 0.03),
+                          ],
                   )
                 : null,
             // No checkmark badge anymore — the border + glow below is the
@@ -12693,7 +12759,7 @@ class _TariffCard extends StatelessWidget {
             // a visibly thicker ring, not just a color swap.
             border: Border.all(
               color: selected
-                  ? SmartTaxiColors.gold
+                  ? palette.gold
                   : (dark
                       ? Colors.white.withValues(alpha: 0.10)
                       : SmartTaxiColors.border),
@@ -12703,15 +12769,15 @@ class _TariffCard extends StatelessWidget {
             boxShadow: [
               if (selected)
                 BoxShadow(
-                  color: SmartTaxiColors.gold.withValues(alpha: 0.28),
+                  color: palette.gold.withValues(alpha: dark ? 0.35 : 0.28),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
-              if (!selected && !dark)
-                const BoxShadow(
-                  color: Color(0x0a141414),
+              if (!selected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: dark ? 0.28 : 0.04),
                   blurRadius: 10,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 ),
             ],
           ),
@@ -14003,6 +14069,7 @@ class _ActiveOrderBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Material(
@@ -14018,11 +14085,11 @@ class _ActiveOrderBanner extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  SmartTaxiColors.gold.withValues(alpha: 0.16),
-                  SmartTaxiColors.gold.withValues(alpha: 0.06),
+                  palette.gold.withValues(alpha: 0.16),
+                  palette.gold.withValues(alpha: 0.06),
                 ],
               ),
-              border: Border.all(color: SmartTaxiColors.goldSoft),
+              border: Border.all(color: palette.goldPale),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -14031,13 +14098,13 @@ class _ActiveOrderBanner extends StatelessWidget {
                   width: 22,
                   height: 22,
                   child: _searching
-                      ? const CircularProgressIndicator(
+                      ? CircularProgressIndicator(
                           strokeWidth: 2.4,
-                          color: SmartTaxiColors.goldDeep,
+                          color: palette.goldDeep,
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.directions_car_filled_rounded,
-                          color: SmartTaxiColors.goldDeep,
+                          color: palette.goldDeep,
                           size: 20,
                         ),
                 ),
@@ -14050,8 +14117,8 @@ class _ActiveOrderBanner extends StatelessWidget {
                         _statusLabel(order.status),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
+                        style: TextStyle(
+                          color: palette.text,
                           fontSize: 13.5,
                           height: 1.05,
                           fontWeight: FontWeight.w900,
@@ -14064,8 +14131,8 @@ class _ActiveOrderBanner extends StatelessWidget {
                             : '${order.driverName} · ${order.dropoff}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                        style: TextStyle(
+                          color: palette.textSecondary,
                           fontSize: 11.5,
                           height: 1.05,
                           fontWeight: FontWeight.w700,
@@ -14075,9 +14142,9 @@ class _ActiveOrderBanner extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
-                  color: SmartTaxiColors.goldDeep,
+                  color: palette.goldDeep,
                   size: 20,
                 ),
               ],
@@ -14159,6 +14226,7 @@ class _MapBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
@@ -14170,8 +14238,8 @@ class _MapBackButton extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.98),
-            border: Border.all(color: SmartTaxiColors.borderStrong),
+            color: palette.card.withValues(alpha: 0.98),
+            border: Border.all(color: palette.borderStrong),
             borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
@@ -14181,9 +14249,9 @@ class _MapBackButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: SmartTaxiColors.text,
+            color: palette.text,
             size: 19,
           ),
         ),
@@ -14199,6 +14267,7 @@ class _RouteSummaryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 168),
       child: Container(
@@ -14206,8 +14275,8 @@ class _RouteSummaryPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.98),
-          border: Border.all(color: SmartTaxiColors.borderStrong),
+          color: palette.card.withValues(alpha: 0.98),
+          border: Border.all(color: palette.borderStrong),
           borderRadius: BorderRadius.circular(22),
           boxShadow: const [
             BoxShadow(
@@ -14222,8 +14291,8 @@ class _RouteSummaryPill extends StatelessWidget {
           child: Text(
             text,
             maxLines: 1,
-            style: const TextStyle(
-              color: SmartTaxiColors.text,
+            style: TextStyle(
+              color: palette.text,
               fontSize: 14.5,
               height: 1,
               fontWeight: FontWeight.w800,
@@ -14251,21 +14320,27 @@ class _MapGlassChrome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.72),
+            color: palette.card.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.55),
+            ),
             // Chrome sat flush against the map with nothing to lift it —
             // a soft shadow reads as floating glass instead of a flat
             // cutout, especially over busy map tiles.
             boxShadow: [
               BoxShadow(
-                color: SmartTaxiColors.text.withValues(alpha: 0.10),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -14304,13 +14379,13 @@ class _MapBrandPill extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Flexible(
+            Flexible(
               child: Text(
                 'SmartTaxi',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: SmartTaxiColors.text,
+                  color: context.palette.text,
                   fontSize: 14.5,
                   height: 1,
                   fontWeight: FontWeight.w900,
@@ -14350,7 +14425,7 @@ class _MapChromeButton extends StatelessWidget {
               height: 44,
               child: Center(
                 child: _SvgIcon(iconAsset,
-                    color: SmartTaxiColors.goldDeep, size: 20),
+                    color: context.palette.goldDeep, size: 20),
               ),
             ),
           ),
@@ -14368,6 +14443,7 @@ class _NotificationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Tooltip(
       message: 'Уведомления',
       child: _MapGlassChrome(
@@ -14382,9 +14458,9 @@ class _NotificationButton extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const _SvgIcon(
+                  _SvgIcon(
                     _iconBell,
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                     size: 20,
                   ),
                   if (unreadCount > 0)
@@ -14395,9 +14471,9 @@ class _NotificationButton extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: SmartTaxiColors.gold,
+                          color: palette.gold,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(color: palette.card, width: 1.5),
                         ),
                       ),
                     ),
