@@ -73,6 +73,36 @@ class WalletTransaction {
   }
 }
 
+/// The driver's saved payout destination (Settings -> "Способ выплаты"),
+/// or the backend's fallback to whatever their last payout request carried
+/// if they never explicitly saved one. `source` is 'saved' vs 'history' —
+/// purely informational, not used for any branching in the UI today.
+class PayoutDetailsStatus {
+  const PayoutDetailsStatus({
+    required this.hasDetails,
+    this.method,
+    this.cardNumber,
+    this.phone,
+  });
+
+  final bool hasDetails;
+  final String? method;
+  final String? cardNumber;
+  final String? phone;
+
+  factory PayoutDetailsStatus.fromJson(Map<String, dynamic> json) {
+    final details = json['lastPayoutDetails'] is Map
+        ? Map<String, dynamic>.from(json['lastPayoutDetails'])
+        : const <String, dynamic>{};
+    return PayoutDetailsStatus(
+      hasDetails: json['hasPayoutDetails'] == true,
+      method: json['lastMethod']?.toString(),
+      cardNumber: details['cardNumber']?.toString(),
+      phone: details['phone']?.toString(),
+    );
+  }
+}
+
 class PayoutRequest {
   const PayoutRequest({
     required this.id,

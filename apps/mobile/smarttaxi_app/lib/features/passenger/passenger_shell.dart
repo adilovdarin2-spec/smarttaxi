@@ -4382,7 +4382,10 @@ class _PassengerShellState extends State<PassengerShell>
         _TitleBlock(title: document.title, text: document.lead),
         const SizedBox(height: 16),
         for (final section in document.sections) ...[
-          LegalSectionCard(section: section),
+          LegalSectionCard(
+            section: section,
+            dark: Theme.of(context).brightness == Brightness.dark,
+          ),
           const SizedBox(height: 10),
         ],
       ],
@@ -13461,6 +13464,7 @@ class _PaymentMethodSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const items = [
       ('CASH', 'Наличные', 'Оплата водителю после поездки'),
       ('CARD', 'Картой', 'Оплата картой через Kaspi Pay'),
@@ -13472,11 +13476,11 @@ class _PaymentMethodSheet extends StatelessWidget {
         decoration: BoxDecoration(
           color: palette.card,
           borderRadius: BorderRadius.circular(30),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color(0x33141414),
+              color: Colors.black.withValues(alpha: isDark ? 0.42 : 0.20),
               blurRadius: 28,
-              offset: Offset(0, 14),
+              offset: const Offset(0, 14),
             ),
           ],
         ),
@@ -13484,65 +13488,142 @@ class _PaymentMethodSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SheetHandle(),
-            const Text(
+            Center(child: _SheetHandle(dark: isDark)),
+            const SizedBox(height: 4),
+            Text(
               'Способ оплаты',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
+            Text(
+              'Выберите, как расплатиться за поездку',
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
             ...items.map((item) {
               final active = item.$1 == selected;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () => Navigator.pop(context, item.$1),
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 62),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: active ? palette.goldSurface : palette.card,
-                      border: Border.all(
-                        color: active ? palette.borderStrong : palette.border,
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      children: [
-                        _PaymentIcon(method: item.$1),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.$2,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                item.$3,
-                                style: TextStyle(
-                                  color: palette.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.pop(context, item.$1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      constraints: const BoxConstraints(minHeight: 76),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: active
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  palette.gold
+                                      .withValues(alpha: isDark ? 0.22 : 0.12),
+                                  palette.gold
+                                      .withValues(alpha: isDark ? 0.06 : 0.03),
+                                ],
+                              )
+                            : null,
+                        color: active ? null : palette.appBackground,
+                        border: Border.all(
+                          color: active ? palette.gold : palette.border,
+                          width: active ? 1.8 : 1,
                         ),
-                        if (active)
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: palette.goldDeep,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: active
+                            ? [
+                                BoxShadow(
+                                  color: palette.gold
+                                      .withValues(alpha: isDark ? 0.30 : 0.20),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 7),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: active
+                                    ? [palette.gold, palette.goldDeep]
+                                    : [
+                                        palette.goldSurface,
+                                        palette.goldSurface,
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: active
+                                  ? [
+                                      BoxShadow(
+                                        color: palette.gold
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: _SvgIcon(
+                              item.$1 == 'CASH' ? _iconBanknote : _iconCreditCard,
+                              color: active ? Colors.white : palette.goldDeep,
+                              size: 22,
+                            ),
                           ),
-                      ],
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.$2,
+                                  style: TextStyle(
+                                    color: palette.text,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  item.$3,
+                                  style: TextStyle(
+                                    color: palette.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          AnimatedScale(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutBack,
+                            scale: active ? 1 : 0,
+                            child: Icon(
+                              Icons.check_circle_rounded,
+                              color: palette.gold,
+                              size: 26,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

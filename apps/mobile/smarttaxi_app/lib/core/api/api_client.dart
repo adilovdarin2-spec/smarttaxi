@@ -1072,6 +1072,32 @@ class ApiClient {
     await _dio.post('/api/drivers/me/wallet/payout-requests/$id/cancel');
   }
 
+  Future<PayoutDetailsStatus> getPayoutDetailsStatus() async {
+    await _attachToken();
+    final response = await _dio
+        .get<Map<String, dynamic>>('/api/drivers/me/wallet/payout-details-status');
+    return PayoutDetailsStatus.fromJson(response.data ?? {});
+  }
+
+  /// Saves the driver's payout destination independent of submitting an
+  /// actual withdrawal — Settings' "Способ выплаты" add/edit action. Exactly
+  /// one of [cardNumber]/[phone] should be set; the backend rejects both
+  /// missing. Never touches balance — see createPayoutRequest for that.
+  Future<void> savePayoutDetails({
+    String method = 'KASPI_TRANSFER',
+    String? cardNumber,
+    String? phone,
+  }) async {
+    await _attachToken();
+    await _dio.put('/api/drivers/me/wallet/payout-details', data: {
+      'method': method,
+      'details': {
+        if (cardNumber != null) 'cardNumber': cardNumber,
+        if (phone != null) 'phone': phone,
+      },
+    });
+  }
+
   Future<DriverRatingSummary> getDriverRatingSummary() async {
     await _attachToken();
     final response = await _dio

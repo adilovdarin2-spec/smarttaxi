@@ -31,6 +31,7 @@ import 'screens/wallet/driver_wallet_screen.dart';
 import 'widgets/driver_common_widgets.dart';
 import 'widgets/driver_line_widgets.dart';
 import 'widgets/driver_order_widgets.dart';
+import 'widgets/driver_payout_widgets.dart';
 import 'widgets/driver_profile_widgets.dart';
 import 'widgets/driver_shell_chrome.dart';
 
@@ -1959,6 +1960,13 @@ class _DriverShellState extends State<DriverShell> {
         ),
         const SizedBox(height: 14),
         DriverSettingsGroup(
+          title: 'Выплаты',
+          children: [
+            PayoutMethodSettingsRow(api: widget.api),
+          ],
+        ),
+        const SizedBox(height: 14),
+        DriverSettingsGroup(
           title: l10n.driverSettingsInterfaceGroup,
           children: [
             DriverSettingsRow(
@@ -2017,7 +2025,7 @@ class _DriverShellState extends State<DriverShell> {
     showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.card,
       showDragHandle: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -2054,7 +2062,10 @@ class _DriverShellState extends State<DriverShell> {
                   itemCount: sections.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    return LegalSectionCard(section: sections[index]);
+                    return LegalSectionCard(
+                      section: sections[index],
+                      dark: Theme.of(context).brightness == Brightness.dark,
+                    );
                   },
                 ),
               ),

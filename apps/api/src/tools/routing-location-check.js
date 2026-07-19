@@ -175,8 +175,18 @@ function createExecutor(overrides = {}) {
         return { rows: [row] };
       }
       if (/UPDATE drivers SET lat=\$1, lng=\$2/i.test(sql)) return { rows: [] };
-      if (/SELECT id\s+FROM orders\s+WHERE driver_id=\$1 AND status = ANY/i.test(sql)) {
-        return { rows: state.orders.filter(order => order.driver_id === params[0] && params[1].includes(order.status)).map(order => ({ id: order.id })).slice(0, 1) };
+      if (/SELECT id, status, distance_traveled_m\s+FROM orders\s+WHERE driver_id=\$1 AND status = ANY/i.test(sql)) {
+        return {
+          rows: state.orders
+            .filter(order => order.driver_id === params[0] && params[1].includes(order.status))
+            .map(order => ({ id: order.id, status: order.status, distance_traveled_m: order.distance_traveled_m || 0 }))
+            .slice(0, 1)
+        };
+      }
+      if (/UPDATE orders SET distance_traveled_m=\$1 WHERE id=\$2/i.test(sql)) {
+        const order = state.orders.find(candidate => candidate.id === params[1]);
+        if (order) order.distance_traveled_m = params[0];
+        return { rows: [] };
       }
       if (/SELECT \* FROM orders WHERE id=\$1/i.test(sql)) return { rows: state.orders.filter(order => order.id === params[0]) };
       if (/SELECT id FROM clients WHERE user_id=\$1/i.test(sql)) return { rows: state.clients.filter(client => client.user_id === params[0]).map(client => ({ id: client.id })) };

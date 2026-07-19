@@ -2729,7 +2729,7 @@ function PayoutsPage({ payoutRequests, payoutStatus, setPayoutStatus, onApprove,
                 <InfoLine label="Сумма" value={formatMoney(item.amountKzt)} />
                 <InfoLine label="Способ" value={payoutMethodLabels[item.method] || item.method} />
                 <InfoLine label="Создана" value={formatDate(item.createdAt)} />
-                <InfoLine label="Реквизиты" value={item.payoutDetails?.phone || item.payoutDetails?.account || "Не указаны"} />
+                <InfoLine label="Реквизиты" value={item.payoutDetails?.phone || item.payoutDetails?.cardNumber || item.payoutDetails?.account || "Не указаны"} />
               </div>
               {item.rejectionReason && <p className="admin-honest-note">Причина отклонения: {item.rejectionReason}</p>}
               {item.status === "PENDING" && (

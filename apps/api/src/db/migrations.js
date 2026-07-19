@@ -813,7 +813,17 @@ const statements = [
   // Accumulated ping-by-ping in routing.service.js's updateDriverLocation
   // while the order is TRIP_STARTED/IN_PROGRESS; NULL/0 the rest of the
   // order's life.
-  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS distance_traveled_m INTEGER NOT NULL DEFAULT 0"
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS distance_traveled_m INTEGER NOT NULL DEFAULT 0",
+
+  // --- Driver's explicitly-saved payout destination (Settings -> "Способ
+  // выплаты"), distinct from driver_payout_requests.payout_details (a log of
+  // what each past request actually used). Before this, "details on file"
+  // meant only "whatever the last payout request happened to carry" —
+  // useful as a fallback, but there was no way to set/change a payout
+  // destination without submitting a real withdrawal first. wallet.routes.js
+  // now checks this column before falling back to request history.
+  "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS payout_method TEXT",
+  "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS payout_details JSONB NOT NULL DEFAULT '{}'::jsonb"
 ];
 
 export async function runMigrations() {

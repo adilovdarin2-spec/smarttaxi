@@ -1432,7 +1432,7 @@ export async function updateDriverLocation({ userId, location, io = null, execut
   // Captured before the upsert below overwrites it — the only way to know
   // how far the driver has actually moved since their last ping, for the
   // live "distance traveled" trip counter further down.
-  const previousLocation = (await run(executor, "SELECT lat, lng FROM driver_locations WHERE driver_id=$1", [driver.id])).rows[0] || null;
+  const previousLocation = (await run(executor, "SELECT * FROM driver_locations WHERE driver_id=$1", [driver.id])).rows[0] || null;
 
   const result = await run(executor, `
     INSERT INTO driver_locations(driver_id, region_id, lat, lng, heading, speed, accuracy, source)

@@ -12,6 +12,50 @@ function run(executor, sql, params = []) {
 
 export const MIN_PAYOUT_KZT = 3000;
 
+// Standard mod-10 checksum every real card PAN satisfies — catches typos
+// (transposed/missing digits) before they end up as a "send money to this
+// number" instruction an admin manually keys into their own banking app.
+// Not a substitute for real card verification (there isn't one without a
+// PCI-scoped processor), just a cheap first line of defense against a
+// pure fat-finger entry.
+function passesLuhnCheck(digits) {
+  let sum = 0;
+  let shouldDouble = false;
+  for (let i = digits.length - 1; i >= 0; i -= 1) {
+    let digit = Number(digits[i]);
+    if (shouldDouble) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    shouldDouble = !shouldDouble;
+  }
+  return sum % 10 === 0;
+}
+
+// Card numbers are stored so an admin/finance user can manually transfer a
+// driver's payout to it — same trust model this codebase already applies to
+// the Kaspi transfer phone number stored right next to it (see
+// driver_payout_requests.payout_details), not a PCI-scoped "charge this
+// card" flow. No CVV/expiry is ever collected — only the number a human
+// needs to send a bank transfer to.
+export function normalizeCardNumber(raw) {
+  const digits = String(raw || "").replace(/[\s-]/g, "");
+  if (!/^\d{12,19}$/.test(digits)) {
+    throw new AppError("Invalid card number", 400, "INVALID_CARD_NUMBER");
+  }
+  if (!passesLuhnCheck(digits)) {
+    throw new AppError("Invalid card number", 400, "INVALID_CARD_NUMBER");
+  }
+  return digits;
+}
+
+export function maskCardNumber(digits) {
+  const value = String(digits || "");
+  if (value.length < 4) return value;
+  return `•• •• •• ${value.slice(-4)}`;
+}
+
 // financial_transactions is written per completed order regardless of payment
 // method (see finance.service.js createOrderCompletedTransaction); which
 // driver column it actually moved depends on payment_method — KASPI trips
@@ -112,22 +156,62 @@ export async function listPayoutRequests({ driverId = null, status = null, limit
   return result.rows.map(publicPayoutRequest);
 }
 
+// The driver's explicitly-saved payout destination (Settings), or — for a
+// driver who saved one before this existed — whatever their most recent
+// payout request happened to carry. Two different sources, same shape,
+// checked in that priority order everywhere "does this driver have payout
+// details" matters.
+export async function resolveDriverPayoutDetails(driverId, executor = defaultQuery) {
+  const driver = (await run(executor, "SELECT payout_method, payout_details FROM drivers WHERE id=$1", [driverId])).rows[0];
+  if (driver?.payout_details && Object.keys(driver.payout_details).length > 0) {
+    return { method: driver.payout_method || "KASPI_TRANSFER", details: driver.payout_details, source: "saved" };
+  }
+  const last = (await run(executor, `
+    SELECT method, payout_details FROM driver_payout_requests
+    WHERE driver_id=$1 AND payout_details IS NOT NULL AND payout_details <> '{}'::jsonb
+    ORDER BY created_at DESC
+    LIMIT 1
+  `, [driverId])).rows[0];
+  if (last) return { method: last.method, details: last.payout_details, source: "history" };
+  return null;
+}
+
+export async function saveDriverPayoutDetails({ driverId, method, details }, executor = defaultQuery) {
+  if (!["KASPI_TRANSFER", "CASH"].includes(method)) {
+    throw new AppError("Invalid payout method", 400, "INVALID_PAYOUT_METHOD");
+  }
+  const cleanDetails = { ...details };
+  if (cleanDetails.cardNumber) {
+    cleanDetails.cardNumber = normalizeCardNumber(cleanDetails.cardNumber);
+  }
+  if (cleanDetails.phone) {
+    cleanDetails.phone = String(cleanDetails.phone).trim();
+  }
+  const updated = (await run(executor, `
+    UPDATE drivers SET payout_method=$1, payout_details=$2::jsonb WHERE id=$3 RETURNING payout_method, payout_details
+  `, [method, JSON.stringify(cleanDetails), driverId])).rows[0];
+  if (!updated) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+  return { method: updated.payout_method, details: updated.payout_details };
+}
+
 export async function createPayoutRequest({ driverId, amountKzt, method, details = {} }, executor) {
   const driver = (await run(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [driverId])).rows[0];
   if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
   if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+  if (amountKzt < MIN_PAYOUT_KZT) {
+    throw new AppError(`Minimum payout is ${MIN_PAYOUT_KZT} KZT`, 400, "PAYOUT_BELOW_MINIMUM");
+  }
 
   // Defensive: balance/debt should already be net of each other by the time
   // a driver gets here (settleDriverDebtFromBalance runs right after every
   // non-cash trip), but a payout request is the last checkpoint before real
   // money leaves — worth re-settling here too in case debt appeared some
-  // other way (an admin adjustment, a correction) since the last trip.
+  // other way (an admin adjustment, a correction) since the last trip. Runs
+  // after the cheap validations above so a doomed-anyway request (below
+  // minimum, blocked driver) doesn't touch the ledger first.
   await settleDriverDebtFromBalance(driverId, executor);
   const refreshedDriver = (await run(executor, "SELECT balance FROM drivers WHERE id=$1", [driverId])).rows[0];
 
-  if (amountKzt < MIN_PAYOUT_KZT) {
-    throw new AppError(`Minimum payout is ${MIN_PAYOUT_KZT} KZT`, 400, "PAYOUT_BELOW_MINIMUM");
-  }
   if (amountKzt > Number(refreshedDriver.balance || 0)) {
     throw new AppError("Payout amount exceeds available balance", 409, "PAYOUT_EXCEEDS_BALANCE");
   }

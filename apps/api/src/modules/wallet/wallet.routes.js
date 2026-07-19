@@ -10,7 +10,9 @@ import {
   createPayoutRequest,
   getWalletSummary,
   listPayoutRequests,
-  listWalletTransactions
+  listWalletTransactions,
+  resolveDriverPayoutDetails,
+  saveDriverPayoutDetails
 } from "./wallet.service.js";
 
 const router = Router();
@@ -41,27 +43,57 @@ router.get("/transactions", requireAuth, requireRole("DRIVER"), async (req, res,
   } catch (e) { next(e); }
 });
 
-// payout_details lives on each driver_payout_requests row, not as a
-// persistent field on the driver profile — so "does this driver have
-// payout details on file" means "did their most recent payout request
-// actually carry any", which also doubles as something to pre-fill a
-// details form with. Lets the mobile app show "enter your payout details"
-// up front instead of only finding out when a payout request is rejected.
+// Prefers the driver's explicitly-saved payout destination (Settings ->
+// "Способ выплаты", PUT /payout-details below) over "whatever their most
+// recent payout request happened to carry" — the latter still works as a
+// fallback for anyone who saved details before this endpoint existed. Lets
+// the mobile app show "add a payout method" up front instead of only
+// finding out when a payout request is rejected.
 router.get("/payout-details-status", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const driver = await getDriverOrThrow(req.user.id);
-    const last = (await query(
-      `SELECT method, payout_details FROM driver_payout_requests
-       WHERE driver_id=$1 AND payout_details IS NOT NULL AND payout_details <> '{}'::jsonb
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [driver.id]
-    )).rows[0];
+    const resolved = await resolveDriverPayoutDetails(driver.id, query);
     res.json({
-      hasPayoutDetails: !!last,
-      lastMethod: last?.method || null,
-      lastPayoutDetails: last?.payout_details || null
+      hasPayoutDetails: !!resolved,
+      lastMethod: resolved?.method || null,
+      lastPayoutDetails: resolved?.details || null,
+      source: resolved?.source || null
     });
+  } catch (e) { next(e); }
+});
+
+// Saves a payout destination independent of submitting an actual
+// withdrawal — this is the driver Settings "add a card"/"set Kaspi number"
+// action. Card numbers are Luhn-checked (normalizeCardNumber) but this is
+// never charged or tokenized with a real processor: it's stored purely so
+// an admin/finance user can manually transfer this driver's payout to it,
+// same trust model as the phone number already stored alongside it.
+router.put("/payout-details", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const body = z.object({
+      method: z.enum(["KASPI_TRANSFER", "CASH"]).default("KASPI_TRANSFER"),
+      details: z.object({
+        cardNumber: z.string().trim().min(1).optional(),
+        phone: z.string().trim().min(1).optional()
+      }).refine(value => value.cardNumber || value.phone, {
+        message: "Provide a card number or a phone number"
+      })
+    }).parse(req.body);
+    const driver = await getDriverOrThrow(req.user.id);
+    const saved = await saveDriverPayoutDetails({
+      driverId: driver.id,
+      method: body.method,
+      details: body.details
+    }, query);
+    await writeAudit(query, {
+      action: "driver_payout_details_saved",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: driver.id,
+      metadata: { method: body.method, hasCard: Boolean(body.details.cardNumber), hasPhone: Boolean(body.details.phone) },
+      req
+    });
+    res.json(saved);
   } catch (e) { next(e); }
 });
 
@@ -91,26 +123,21 @@ router.post("/payout-requests", requireAuth, requireRole("DRIVER"), async (req, 
 
       let details = body.details;
       if (body.method === "KASPI_TRANSFER" && Object.keys(details).length === 0) {
-        // Omitting details on a repeat request reuses whatever was on the
-        // last one that had any — same UX as not re-entering a card number
-        // every time. Only a driver who has genuinely never provided any
-        // hits the error, which is what GET /payout-details-status is for
-        // checking up front.
-        const last = (await client.query(
-          `SELECT payout_details FROM driver_payout_requests
-           WHERE driver_id=$1 AND payout_details IS NOT NULL AND payout_details <> '{}'::jsonb
-           ORDER BY created_at DESC
-           LIMIT 1`,
-          [driver.id]
-        )).rows[0];
-        if (!last) {
+        // Omitting details on a repeat request reuses the driver's saved
+        // payout destination (Settings) first, or — for a driver who never
+        // used that — whatever their last payout request happened to
+        // carry. Same UX as not re-entering a card number every time. Only
+        // a driver who has genuinely never provided either hits the error,
+        // which is what GET /payout-details-status is for checking up front.
+        const resolved = await resolveDriverPayoutDetails(driver.id, client);
+        if (!resolved) {
           throw new AppError(
             "No payout details on file yet — provide your Kaspi transfer details first",
             400,
             "PAYOUT_DETAILS_MISSING"
           );
         }
-        details = last.payout_details;
+        details = resolved.details;
       }
 
       const created = await createPayoutRequest({
