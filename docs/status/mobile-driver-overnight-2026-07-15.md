@@ -2455,3 +2455,26 @@ has already covered in depth.
 ### Commits (round 49)
 
 - `Mobile(passenger): give the drawer wordmark its own white card in dark mode`
+
+## Round 50 — exhaustive passenger walkthrough per explicit user mandate ("every screen must actually please me")
+
+User's instruction this round was stronger than a spot-check: don't stop until genuinely satisfied with every screen, not just theme-bug-free. Phone was available throughout, so this round is fully live-verified rather than code-review-only.
+
+Walked the real order flow end to end (home → destination via map picker → tariff selection → payment method → address search), plus drawer, notifications, promo codes, recurring bookings, favorite addresses, support, FAQ, about, settings, profile — in dark theme, cross-checking light where it mattered.
+
+**Three more real dark-mode bugs found and fixed, all in the "protected, stays light" order-flow family** — the same bug class as round 48, just in places round 48 didn't touch:
+- `_AddressSearchSheet` ("Куда"/"Откуда" destination search) — the "Куда" title `Text` and the search `TextField` had no explicit styling, so both inherited the *ambient* (theme-dependent) text/InputDecorationTheme even though the sheet's own background is forced light. In dark theme the title went nearly invisible and the search box rendered as a dark navy rectangle sitting inside an otherwise white sheet. Gave both explicit static colors/fill/border.
+- `_RateDriverPanel`'s post-trip comment `TextField` — identical bare-decoration problem, inside `_HomeOrderPanel` (hardcoded `Colors.white`). Every passenger hits this screen after every ride, so this was probably the highest-traffic instance of the bug.
+- `_PaymentIcon` — a shared widget between `_PaymentMethodSheet` (properly migrated to `context.palette`, correct) and `_PaymentMethodRow` inside the order summary (still static, hardcoded white row). The palette migration for the *sheet* inadvertently broke the *row*, since the widget is shared: in dark theme the row's badge rendered as a dark navy square on its own white background. Rather than reverting the sheet's correct migration, added a `forceLight` param so each caller gets the styling appropriate to its own container.
+
+All three verified live on-device, screenshotted before/after.
+
+**One functional (non-visual) gap found, deliberately not fixed:** "Регулярные поездки" and "Избранные адреса" both show "Не удалось загрузить" for the account used to test tonight. Root cause, confirmed by reading the backend routes: both endpoints (`GET /api/recurring-bookings/mine`, and the equivalent favorites route) gate with `requireRole("CLIENT")`, but tonight's test account is fundamentally a DRIVER account being viewed through "Режим пассажира" — its JWT role is `DRIVER`, not `CLIENT`, so the request 403s. Confirmed this is account-specific, not a general bug: `Уведомления` and `Поддержка` (which only `requireAuth`, no role gate) loaded fine on the same account. A real passenger account (role `CLIENT`) would never hit this. Not fixed because it's a role/architecture question (should a driver-in-passenger-mode be able to use CLIENT-only endpoints?), not a UI polish item — flagging rather than deciding unilaterally.
+
+Everything else checked (drawer parity, tariff card animations/layout, payment sheet, notifications empty state, promo code screen, support ticket history, FAQ, about) was already genuinely well put together — polished empty/loading states, consistent spacing, no further changes made.
+
+**Verdict:** passenger side now covers the two whole-file passes (parallel session's systematic palette migration + lifecycle audit, this session's two rounds of live device testing) without an outstanding known visual bug. `flutter analyze` clean throughout.
+
+### Commits (round 50)
+
+- `Mobile(passenger): fix dark-mode readability in address search + order flow`
