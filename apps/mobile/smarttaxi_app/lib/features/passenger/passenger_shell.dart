@@ -12898,15 +12898,15 @@ class _RegionConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border:
-              Border.all(color: SmartTaxiColors.gold.withValues(alpha: 0.32)),
+          color: palette.card,
+          border: Border.all(color: palette.gold.withValues(alpha: 0.32)),
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
@@ -12930,13 +12930,13 @@ class _RegionConfirmSheet extends StatelessWidget {
                   height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldPale,
-                    border: Border.all(color: SmartTaxiColors.borderStrong),
+                    color: palette.goldPale,
+                    border: Border.all(color: palette.borderStrong),
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.near_me_rounded,
-                    color: SmartTaxiColors.goldDeep,
+                    color: palette.goldDeep,
                     size: 24,
                   ),
                 ),
@@ -12947,18 +12947,18 @@ class _RegionConfirmSheet extends StatelessWidget {
                     children: [
                       Text(
                         'Ваш регион: ${region.name}?',
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
+                        style: TextStyle(
+                          color: palette.text,
                           fontSize: 22,
                           height: 1.08,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Мы определили регион по геолокации. Проверьте, чтобы заказы работали правильно.',
                         style: TextStyle(
-                          color: SmartTaxiColors.textSecondary,
+                          color: palette.textSecondary,
                           fontSize: 14,
                           height: 1.35,
                           fontWeight: FontWeight.w700,
@@ -13024,6 +13024,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final query = _search.text.trim().toLowerCase();
     final regions = query.isEmpty
         ? widget.regions
@@ -13040,8 +13041,8 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
           maxHeight: MediaQuery.sizeOf(context).height * 0.72,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: SmartTaxiColors.border),
+          color: palette.card,
+          border: Border.all(color: palette.border),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           boxShadow: const [
             BoxShadow(
@@ -13059,18 +13060,18 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
             const SizedBox(height: 14),
             Text(
               widget.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 height: 1.08,
                 fontWeight: FontWeight.w900,
-                color: SmartTaxiColors.text,
+                color: palette.text,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               widget.subtitle,
-              style: const TextStyle(
-                color: SmartTaxiColors.textSecondary,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
@@ -13101,9 +13102,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                   final region = regions[index];
                   final selected = region.id == widget.selectedId;
                   return Material(
-                    color: selected
-                        ? SmartTaxiColors.goldPale
-                        : SmartTaxiColors.cardWarm,
+                    color: selected ? palette.goldPale : palette.cardWarm,
                     borderRadius: BorderRadius.circular(18),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
@@ -13117,9 +13116,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: selected
-                                ? SmartTaxiColors.gold
-                                : SmartTaxiColors.border,
+                            color: selected ? palette.gold : palette.border,
                           ),
                         ),
                         child: Row(
@@ -13129,19 +13126,18 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                               height: 38,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: selected
-                                    ? SmartTaxiColors.gold
-                                    : Colors.white,
+                                color:
+                                    selected ? palette.gold : palette.card,
                                 borderRadius: BorderRadius.circular(15),
                                 border: Border.all(
-                                  color: SmartTaxiColors.borderStrong,
+                                  color: palette.borderStrong,
                                 ),
                               ),
                               child: Icon(
                                 Icons.location_city_rounded,
                                 color: selected
-                                    ? SmartTaxiColors.text
-                                    : SmartTaxiColors.goldDeep,
+                                    ? palette.text
+                                    : palette.goldDeep,
                                 size: 20,
                               ),
                             ),
@@ -13151,22 +13147,22 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                                 region.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: SmartTaxiColors.text,
+                                style: TextStyle(
+                                  color: palette.text,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16,
                                 ),
                               ),
                             ),
                             if (selected)
-                              const Icon(
+                              Icon(
                                 Icons.check_circle_rounded,
-                                color: SmartTaxiColors.success,
+                                color: palette.success,
                               )
                             else
-                              const Icon(
+                              Icon(
                                 Icons.chevron_right_rounded,
-                                color: SmartTaxiColors.textSecondary,
+                                color: palette.textSecondary,
                               ),
                           ],
                         ),
