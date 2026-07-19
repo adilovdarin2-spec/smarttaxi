@@ -23,7 +23,7 @@ assert.match(server, /app\.use\("\/api\/referrals", referralsRoutes\)/, "referra
 assert.match(referralsRoutes, /router\.get\("\/mine", requireAuth, requireRole\("CLIENT"\), referralSummary\)/, "GET /referrals/mine must require CLIENT role");
 assert.match(referralsRoutes, /router\.get\("\/me", requireAuth, requireRole\("CLIENT"\), referralSummary\)/, "GET /referrals/me alias must exist for the web client and use the same handler as /mine");
 assert.match(authRoutes, /referralCode/, "registration must accept an optional referralCode field");
-assert.match(adminRoutes, /router\.get\("\/referrals", requireAuth, requireRole\("OWNER", "OPERATOR", "FINANCE"\)/, "admin referrals overview must require OWNER/OPERATOR/FINANCE");
+assert.match(adminRoutes, /router\.get\("\/referrals", requireAuth, requireRole\("OWNER", "FINANCE"\)/, "admin referrals overview must require OWNER/FINANCE");
 
 // Known, deliberately-not-fixed risk (see SECURITY_CHECKLIST.md "New risk
 // areas" / referral self-referral): applyReferralCode only blocks a client

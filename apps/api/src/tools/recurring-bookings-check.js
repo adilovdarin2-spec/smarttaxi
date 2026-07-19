@@ -60,6 +60,6 @@ assert(scheduler.includes("EXTRACT(ISODOW FROM NOW())::int = ANY(days_of_week)")
 assert(scheduler.includes("last_triggered_date IS NULL OR last_triggered_date <> CURRENT_DATE"), "scheduler must dedupe so a booking cannot fire twice on the same day");
 assert(scheduler.includes('driverRow.status !== "FREE"'), "scheduler must skip (not force) a booking whose driver isn't currently FREE");
 
-assert(admin.includes('router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE")'), "admin recurring-bookings overview must require OWNER/OPERATOR/FINANCE");
+assert(admin.includes('router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "FINANCE")'), "admin recurring-bookings overview must require OWNER/FINANCE");
 
 console.log("Recurring bookings (\"школьный маршрут\") checks ok");

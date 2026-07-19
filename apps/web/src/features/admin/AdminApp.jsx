@@ -3,6 +3,7 @@ import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import {
   adjustAdminDriverDebt,
   blockAdminDriver,
+  clearAdminDriverCommissionOverride,
   clearToken,
   createAdminPromoCode,
   createAdminRaffle,
@@ -44,6 +45,7 @@ import {
   respondAdminSupport,
   reviewAdminDriverDocument,
   reviewAdminPayoutRequest,
+  setAdminDriverCommissionOverride,
   setAdminPromoCodeStatus,
   setAdminTariffStatus,
   toggleAdminRegion,
@@ -56,7 +58,7 @@ import {
   updateAdminTariff
 } from "../../lib/mvpApi.js";
 
-const adminRoles = new Set(["OWNER", "OPERATOR", "FINANCE"]);
+const adminRoles = new Set(["OWNER", "FINANCE"]);
 
 const navigation = [
   { key: "dashboard", label: "Главная", eyebrow: "Состояние системы" },
@@ -170,7 +172,7 @@ function statusLabel(status) {
     CANCELLED: "Отменён",
     CANCELLED_BY_CLIENT: "Отменён клиентом",
     CANCELLED_BY_DRIVER: "Отменён водителем",
-    CANCELLED_BY_OPERATOR: "Отменён оператором",
+    CANCELLED_BY_OPERATOR: "Отменён администрацией",
     NO_SHOW: "Клиент не вышел",
     FREE: "На линии",
     BUSY: "Занят",
@@ -206,13 +208,13 @@ const orderStatusOptions = [
   ["RATED", "Оценён"],
   ["CANCELLED_BY_CLIENT", "Отменён клиентом"],
   ["CANCELLED_BY_DRIVER", "Отменён водителем"],
-  ["CANCELLED_BY_OPERATOR", "Отменён оператором"],
+  ["CANCELLED_BY_OPERATOR", "Отменён администрацией"],
   ["NO_SHOW", "Клиент не вышел"]
 ];
 
 function readError(error) {
   if (error?.code === "FORBIDDEN" || error?.message?.includes("Forbidden")) {
-    return "Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем, оператором или финансовым пользователем.";
+    return "Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем или финансовым пользователем.";
   }
   if (error?.code === "NOT_FOUND") return "Данные не найдены";
   if (error?.code === "PROMO_CODE_HAS_REDEMPTIONS") return "Промокод уже использовался в заказах — отключите его вместо удаления, чтобы сохранить историю цен.";
@@ -390,9 +392,9 @@ export default function AdminApp() {
       setDashboard(data);
       setUser(resolvedUser);
       if (!resolvedUser) {
-        setAccessError("Войдите под владельцем, оператором или финансовым пользователем.");
+        setAccessError("Войдите под владельцем или финансовым пользователем.");
       } else if (!adminRoles.has(resolvedUser.role)) {
-        setAccessError("Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем, оператором или финансовым пользователем.");
+        setAccessError("Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем или финансовым пользователем.");
       }
     } catch (error) {
       setAccessError(readError(error));
@@ -697,6 +699,20 @@ export default function AdminApp() {
       await loadPage("drivers");
       await loadDashboard();
     }, status === "APPROVED" ? "Доступ к региону одобрен" : "Регион заблокирован");
+  }
+
+  async function setDriverCommission(driverId, percent, active) {
+    await runAction(async () => {
+      await setAdminDriverCommissionOverride(driverId, { percent, active });
+      await refreshDriverDetail(driverId);
+    }, "Индивидуальная комиссия сохранена");
+  }
+
+  async function clearDriverCommission(driverId) {
+    await runAction(async () => {
+      await clearAdminDriverCommissionOverride(driverId);
+      await refreshDriverDetail(driverId);
+    }, "Индивидуальная комиссия удалена");
   }
 
   async function reviewApplication(application, status, comment = "") {
@@ -1123,6 +1139,8 @@ export default function AdminApp() {
           onRefresh={() => refreshDriverDetail(modal.driver.id)}
           onBlock={setDriverBlocked}
           onSetRegion={setDriverRegion}
+          onSetCommission={setDriverCommission}
+          onClearCommission={clearDriverCommission}
         />
       )}
       {modal?.type === "application" && (
@@ -2214,16 +2232,17 @@ function SupportTicketCard({ message, onRespond, onReopen }) {
   }
 
   const isLostItem = message.topic === "LOST_ITEM";
+  const isUrgent = Boolean(message.isUrgent);
 
   return (
-    <article className="admin-road-alert-card">
+    <article className={`admin-road-alert-card${isUrgent ? " urgent" : ""}`}>
       <header>
         <div>
-          <strong>{isLostItem ? "Забыл вещь" : message.topic}</strong>
+          <strong>{isUrgent ? "🆘 SOS" : isLostItem ? "Забыл вещь" : message.topic}</strong>
           <span>{supportRoleLabels[message.role] || message.role} · {formatDate(message.createdAt)}</span>
         </div>
-        <Badge tone={isResolved ? "muted" : isLostItem ? "danger" : "warning"}>
-          {isResolved ? "Закрыто" : isLostItem ? "Забытая вещь" : "Открыто"}
+        <Badge tone={isResolved ? "muted" : isUrgent || isLostItem ? "danger" : "warning"}>
+          {isResolved ? "Закрыто" : isUrgent ? "Экстренно" : isLostItem ? "Забытая вещь" : "Открыто"}
         </Badge>
       </header>
       <p>{message.message}</p>
@@ -3262,7 +3281,7 @@ function RegionEditor({ region, onClose, onSave, busy }) {
   );
 }
 
-function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onSetRegion }) {
+function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onSetRegion, onSetCommission, onClearCommission }) {
   const [reasonByRegion, setReasonByRegion] = useState({});
   const driver = detail.payload?.driver || initialDriver;
   const regions = detail.payload?.regions || [];
@@ -3322,6 +3341,16 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
             </button>
           </section>
 
+          <DataCard title="Индивидуальная комиссия" text="Заменяет стандартный процент комиссии тарифа для этого водителя. Применяется только к новым завершённым поездкам, задним числом не пересчитывается.">
+            <CommissionOverrideEditor
+              driverId={driver.id}
+              override={detail.payload?.commissionOverride}
+              busy={busy}
+              onSave={onSetCommission}
+              onClear={onClearCommission}
+            />
+          </DataCard>
+
           <DataCard title="Региональный доступ" text="Одобрение и блокировка работают по каждому региону отдельно.">
             {!regions.length ? (
               <StatePanel title="Нет регионов" text="Сначала настройте регионы сервиса." />
@@ -3366,6 +3395,13 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
               mode="driver"
               onReview={requestDocumentResubmission}
               busyDocumentId={busyDocumentId}
+            />
+          </DataCard>
+
+          <DataCard title="Избранное и блокировки" text="Только просмотр — управляют этим сами клиент и водитель, справочно при разборе спорной ситуации.">
+            <ClientDriverPreferencesPanel
+              clientPreferences={detail.payload?.clientPreferences || []}
+              driverPreferences={detail.payload?.driverPreferences || []}
             />
           </DataCard>
         </div>
@@ -3430,6 +3466,93 @@ function DocumentThumbnail({ documentId }) {
     <a className="admin-document-thumb" href={state.url} target="_blank" rel="noreferrer" title="Открыть в полном размере">
       {isImage ? <img src={state.url} alt="Документ" /> : <span className="admin-document-thumb-file"><Icon name="document" size={28} /></span>}
     </a>
+  );
+}
+
+function CommissionOverrideEditor({ driverId, override, busy, onSave, onClear }) {
+  const [percent, setPercent] = useState(override ? String(override.percent) : "");
+  const [active, setActive] = useState(override ? override.active : true);
+
+  useEffect(() => {
+    setPercent(override ? String(override.percent) : "");
+    setActive(override ? override.active : true);
+  }, [override, driverId]);
+
+  function submit(event) {
+    event.preventDefault();
+    const value = Number(percent);
+    if (!Number.isFinite(value) || value < 0 || value > 100) return;
+    onSave(driverId, value, active);
+  }
+
+  return (
+    <form className="admin-inline-form" onSubmit={submit}>
+      {override ? (
+        <p className="admin-detail-note">
+          Сейчас: {Number(override.percent)}% · {override.active ? "активна" : "выключена"} · обновлено {formatDate(override.updatedAt)}
+        </p>
+      ) : (
+        <p className="admin-detail-note">Используется стандартный процент из тарифа — индивидуальная комиссия не задана.</p>
+      )}
+      <div className="admin-inline-form-row">
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="0.1"
+          placeholder="Процент, %"
+          value={percent}
+          onChange={event => setPercent(event.target.value)}
+        />
+        <label className="admin-checkbox-label">
+          <input type="checkbox" checked={active} onChange={event => setActive(event.target.checked)} />
+          Активна
+        </label>
+        <button type="submit" className="admin-primary-button compact" disabled={busy || percent.trim() === ""}>
+          Сохранить
+        </button>
+        {override && (
+          <button type="button" className="admin-danger-button compact" disabled={busy} onClick={() => onClear(driverId)}>
+            Убрать override
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+const preferenceTypeLabels = { FAVORITE: "В избранном", BLOCKED: "Заблокирован(а)" };
+const preferenceTypeTones = { FAVORITE: "success", BLOCKED: "danger" };
+
+function PreferenceList({ items, emptyText }) {
+  if (!items.length) return <p className="admin-detail-note">{emptyText}</p>;
+  return (
+    <ul className="admin-preference-list">
+      {items.map(item => (
+        <li key={item.clientId} className="admin-preference-row">
+          <div>
+            <strong>{item.clientName || "Без имени"}</strong>
+            <span>{item.clientPhone || "Телефон не указан"} · {formatDate(item.createdAt)}</span>
+          </div>
+          <Badge tone={preferenceTypeTones[item.type] || "muted"}>{preferenceTypeLabels[item.type] || item.type}</Badge>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ClientDriverPreferencesPanel({ clientPreferences, driverPreferences }) {
+  return (
+    <div className="admin-preference-columns">
+      <div>
+        <h4>Клиенты о водителе</h4>
+        <PreferenceList items={clientPreferences} emptyText="Ни один клиент не добавил этого водителя в избранное или блокировку." />
+      </div>
+      <div>
+        <h4>Водитель о клиентах</h4>
+        <PreferenceList items={driverPreferences} emptyText="Водитель не отмечал клиентов как избранных или заблокированных." />
+      </div>
+    </div>
   );
 }
 

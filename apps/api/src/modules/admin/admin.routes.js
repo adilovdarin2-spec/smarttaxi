@@ -307,7 +307,7 @@ function summarizeTariffAnalytics(analytics) {
   };
 }
 
-router.get("/dashboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const [
       regions,
@@ -374,7 +374,7 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"
   } catch (error) { next(error); }
 });
 
-router.get("/drivers", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+router.get("/drivers", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
   try {
     const result = await query(`
       SELECT d.id, d.name, d.phone, d.car_model, d.car_color, d.plate, d.status,
@@ -393,7 +393,7 @@ router.get("/drivers", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"),
   } catch (error) { next(error); }
 });
 
-router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/drivers/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const driver = (await query(`
@@ -419,7 +419,30 @@ router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
       WHERE d.id=$1
     `, [params.id, ["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"]])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-    const approvals = await listDriverRegionApprovals(params.id, query);
+    const [approvals, clientPreferences, driverPreferences] = await Promise.all([
+      listDriverRegionApprovals(params.id, query),
+      query(`
+        SELECT cdp.type, cdp.created_at, c.id client_id, c.name client_name, c.phone client_phone
+        FROM client_driver_preferences cdp
+        JOIN clients c ON c.id=cdp.client_id
+        WHERE cdp.driver_id=$1
+        ORDER BY cdp.created_at DESC
+      `, [params.id]),
+      query(`
+        SELECT dcp.type, dcp.created_at, c.id client_id, c.name client_name, c.phone client_phone
+        FROM driver_client_preferences dcp
+        JOIN clients c ON c.id=dcp.client_id
+        WHERE dcp.driver_id=$1
+        ORDER BY dcp.created_at DESC
+      `, [params.id])
+    ]);
+    const mapClientPreference = row => ({
+      clientId: row.client_id,
+      clientName: row.client_name,
+      clientPhone: row.client_phone,
+      type: row.type,
+      createdAt: row.created_at
+    });
     res.json({
       driver,
       activeOrder: driver.active_order_id ? {
@@ -434,12 +457,19 @@ router.get("/drivers/:id", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
         active: driver.commission_override_active,
         updatedAt: driver.commission_override_updated_at
       } : null,
-      regions: approvals.map(publicDriverRegionApproval)
+      regions: approvals.map(publicDriverRegionApproval),
+      // How clients feel about this driver (client_driver_preferences) vs.
+      // how this driver feels about clients (driver_client_preferences) —
+      // read-only visibility for support investigating a dispute; managing
+      // these stays a client/driver self-service action, admin doesn't
+      // create or remove entries here.
+      clientPreferences: clientPreferences.rows.map(mapClientPreference),
+      driverPreferences: driverPreferences.rows.map(mapClientPreference)
     });
   } catch (error) { next(error); }
 });
 
-router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const body = z.object({
@@ -495,7 +525,7 @@ const CommissionOverrideBody = z.object({
 // replaces the tariff's flat service_commission_percent for that driver's
 // trip. Deliberately not retroactive: only ever read at the moment a trip
 // completes, never re-applied to orders that already finished.
-router.get("/commission-overrides", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+router.get("/commission-overrides", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
   try {
     const rows = (await query(`
       SELECT co.*, d.name AS driver_name, d.phone AS driver_phone, d.plate AS driver_plate
@@ -547,7 +577,7 @@ router.delete("/commission-overrides/:driverId", requireAuth, requireRole("OWNER
   } catch (error) { next(error); }
 });
 
-router.get("/audit-logs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/audit-logs", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({
       limit: z.coerce.number().int().min(1).max(200).default(100)
@@ -565,7 +595,7 @@ router.get("/audit-logs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE
   } catch (error) { next(error); }
 });
 
-router.get("/road-alerts", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.get("/road-alerts", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = AdminRoadAlertQuery.parse(req.query);
     const filters = [];
@@ -597,7 +627,7 @@ router.get("/road-alerts", requireAuth, requireRole("OWNER", "OPERATOR"), async 
   } catch (error) { next(error); }
 });
 
-router.patch("/road-alerts/:id/expire", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.patch("/road-alerts/:id/expire", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const result = await query(`
@@ -621,7 +651,7 @@ router.patch("/road-alerts/:id/expire", requireAuth, requireRole("OWNER", "OPERA
   } catch (error) { next(error); }
 });
 
-router.get("/regions", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+router.get("/regions", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
   try {
     const regions = await listRegions(query);
     res.json({ regions: regions.map(publicRegion) });
@@ -686,7 +716,7 @@ router.delete("/regions/:id", requireAuth, requireRole("OWNER"), async (req, res
   } catch (error) { next(error); }
 });
 
-router.get("/tariffs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/tariffs", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({
       regionId: z.string().uuid().optional()
@@ -696,7 +726,7 @@ router.get("/tariffs", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"),
   } catch (error) { next(error); }
 });
 
-router.get("/tariffs/analytics", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/tariffs/analytics", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = TariffAnalyticsQuery.parse(req.query);
     const dateRange = resolveTariffAnalyticsDateRange(params);
@@ -713,7 +743,7 @@ router.get("/tariffs/analytics", requireAuth, requireRole("OWNER", "OPERATOR", "
   } catch (error) { next(error); }
 });
 
-router.get("/tariffs/:id/analytics", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/tariffs/:id/analytics", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const queryParams = TariffAnalyticsQuery.omit({ regionId: true }).parse(req.query);
@@ -731,7 +761,7 @@ router.get("/tariffs/:id/analytics", requireAuth, requireRole("OWNER", "OPERATOR
   } catch (error) { next(error); }
 });
 
-router.post("/tariffs/preview-price", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.post("/tariffs/preview-price", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const body = TariffPricePreview.parse(req.body);
     let tariff;
@@ -849,6 +879,26 @@ const PromoCodeCreate = z.object({
 
 const PromoCodeStatusUpdate = z.object({ isActive: z.boolean() });
 
+const RaffleCreate = z.object({
+  title: z.string().trim().min(2).max(120),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime()
+}).refine(body => new Date(body.endsAt) > new Date(body.startsAt), {
+  message: "endsAt must be after startsAt",
+  path: ["endsAt"]
+});
+
+function publicRaffle(raffle) {
+  if (!raffle) return null;
+  return {
+    id: raffle.id,
+    title: raffle.title,
+    startsAt: raffle.starts_at,
+    endsAt: raffle.ends_at,
+    createdAt: raffle.created_at
+  };
+}
+
 function publicPromoCode(promo) {
   if (!promo) return null;
   return {
@@ -868,7 +918,7 @@ function publicPromoCode(promo) {
   };
 }
 
-router.get("/promo-codes", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/promo-codes", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const rows = (await query("SELECT * FROM promo_codes ORDER BY created_at DESC")).rows;
     res.json({ promoCodes: rows.map(publicPromoCode) });
@@ -995,7 +1045,7 @@ function publicAdminRecurringBooking(row) {
   };
 }
 
-router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({
       status: z.enum(["PENDING_DRIVER", "ACTIVE", "PAUSED", "CANCELLED"]).optional()
@@ -1016,7 +1066,7 @@ router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "OPERATOR", 
 // One row per referred client (not per client who has referred others) —
 // mirrors how the invite actually happened: someone used someone else's
 // code once, at registration.
-router.get("/referrals", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/referrals", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const rows = (await query(`
       SELECT
@@ -1046,7 +1096,7 @@ router.get("/referrals", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"
   } catch (error) { next(error); }
 });
 
-router.get("/finance/summary", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/finance/summary", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = FinanceQuery.omit({ driverId: true, tariffId: true, type: true, paymentMethod: true, status: true, limit: true, offset: true }).parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
@@ -1059,7 +1109,7 @@ router.get("/finance/summary", requireAuth, requireRole("OWNER", "OPERATOR", "FI
   } catch (error) { next(error); }
 });
 
-router.get("/finance/driver-debts", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/finance/driver-debts", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = FinanceQuery.omit({ tariffId: true, type: true, paymentMethod: true, status: true, limit: true, offset: true }).parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
@@ -1104,7 +1154,7 @@ router.post("/finance/driver-debts/:driverId/adjust", requireAuth, requireRole("
   } catch (error) { next(error); }
 });
 
-router.get("/finance/reports", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/finance/reports", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = FinanceReportQuery.parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
@@ -1123,7 +1173,7 @@ router.get("/finance/reports", requireAuth, requireRole("OWNER", "OPERATOR", "FI
   } catch (error) { next(error); }
 });
 
-router.get("/finance/transactions.csv", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/finance/transactions.csv", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = FinanceQuery.parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
@@ -1145,7 +1195,7 @@ router.get("/finance/transactions.csv", requireAuth, requireRole("OWNER", "OPERA
   } catch (error) { next(error); }
 });
 
-router.get("/finance/transactions", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/finance/transactions", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = FinanceQuery.parse(req.query);
     const dateRange = resolveFinanceDateRange(params);
@@ -1204,7 +1254,7 @@ router.patch("/drivers/:id/regions", requireAuth, requireRole("OWNER"), async (r
   } catch (error) { next(error); }
 });
 
-router.get("/settings", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+router.get("/settings", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
   try {
     const result = await query("SELECT * FROM service_settings WHERE id=1");
     res.json({ settings: mapSettings(result.rows[0]) });
@@ -1264,7 +1314,7 @@ router.post("/driver-applications", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.get("/driver-applications", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.get("/driver-applications", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({
       status: z.enum(["PENDING", "APPROVED", "REJECTED", "NEEDS_INFO"]).optional(),
@@ -1277,7 +1327,7 @@ router.get("/driver-applications", requireAuth, requireRole("OWNER", "OPERATOR")
   } catch (error) { next(error); }
 });
 
-router.patch("/driver-applications/:id", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.patch("/driver-applications/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const body = z.object({
@@ -1327,7 +1377,58 @@ router.post("/driver-reviews", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.get("/reviews", requireAuth, requireRole("OWNER", "OPERATOR"), async (_req, res, next) => {
+router.get("/raffles", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
+  try {
+    const rows = (await query("SELECT * FROM raffles ORDER BY starts_at DESC")).rows;
+    res.json({ raffles: rows.map(publicRaffle) });
+  } catch (error) { next(error); }
+});
+
+router.post("/raffles", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const body = RaffleCreate.parse(req.body);
+    const created = await tx(async client => {
+      const row = (await client.query(`
+        INSERT INTO raffles(title, starts_at, ends_at)
+        VALUES($1,$2,$3)
+        RETURNING *
+      `, [body.title, body.startsAt, body.endsAt])).rows[0];
+      await writeAudit(client, {
+        action: "raffle_created",
+        actorUserId: req.user.id,
+        entityType: "raffle",
+        entityId: row.id,
+        metadata: { title: row.title, startsAt: row.starts_at, endsAt: row.ends_at },
+        req
+      });
+      return row;
+    });
+    res.status(201).json({ raffle: publicRaffle(created) });
+  } catch (error) { next(error); }
+});
+
+router.delete("/raffles/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const deleted = await tx(async client => {
+      const row = (await client.query("SELECT * FROM raffles WHERE id=$1", [params.id])).rows[0];
+      if (!row) throw new AppError("Raffle not found", 404, "RAFFLE_NOT_FOUND");
+      await client.query("DELETE FROM raffles WHERE id=$1", [params.id]);
+      await writeAudit(client, {
+        action: "raffle_deleted",
+        actorUserId: req.user.id,
+        entityType: "raffle",
+        entityId: row.id,
+        metadata: { title: row.title },
+        req
+      });
+      return row;
+    });
+    res.json({ raffle: publicRaffle(deleted) });
+  } catch (error) { next(error); }
+});
+
+router.get("/reviews", requireAuth, requireRole("OWNER"), async (_req, res, next) => {
   try {
     const result = await query(`
       SELECT r.*, d.name driver_name, d.phone driver_phone, o.short_id
@@ -1341,8 +1442,49 @@ router.get("/reviews", requireAuth, requireRole("OWNER", "OPERATOR"), async (_re
   } catch (error) { next(error); }
 });
 
-router.get("/leaderboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+router.delete("/reviews/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const deleted = await tx(async client => {
+      const existing = (await client.query("SELECT * FROM driver_reviews WHERE id=$1", [params.id])).rows[0];
+      if (!existing) throw new AppError("Review not found", 404, "REVIEW_NOT_FOUND");
+      await client.query("DELETE FROM driver_reviews WHERE id=$1", [params.id]);
+      const rating = (await client.query("SELECT AVG(rating)::numeric(3,2) rating FROM driver_reviews WHERE driver_id=$1", [existing.driver_id])).rows[0];
+      await client.query("UPDATE drivers SET rating=$1 WHERE id=$2", [rating.rating || 5.00, existing.driver_id]);
+      await writeAudit(client, {
+        action: "driver_review_deleted",
+        actorUserId: req.user.id,
+        entityType: "driver_review",
+        entityId: params.id,
+        metadata: { driverId: existing.driver_id, rating: existing.rating },
+        req
+      });
+      return existing;
+    });
+    res.json({ review: deleted });
+  } catch (error) { next(error); }
+});
+
+router.get("/leaderboard", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      dateFrom: z.string().trim().optional(),
+      dateTo: z.string().trim().optional()
+    }).parse(req.query);
+    // Raffle windows are real start/end instants (raffle.startsAt/endsAt,
+    // ISO timestamps), not date-only strings like the finance/tariff
+    // reports use — so this scopes by timestamptz directly instead of the
+    // ::date + INTERVAL '1 day' idiom used elsewhere in this file. Applied
+    // in the JOIN condition (not a WHERE clause) so a driver with zero
+    // orders in the window still appears with zero counts, not dropped.
+    const dateFrom = params.dateFrom ? new Date(params.dateFrom) : null;
+    const dateTo = params.dateTo ? new Date(params.dateTo) : null;
+    if (params.dateFrom && Number.isNaN(dateFrom?.getTime())) {
+      throw new AppError("dateFrom must be a valid date", 400, "VALIDATION_ERROR");
+    }
+    if (params.dateTo && Number.isNaN(dateTo?.getTime())) {
+      throw new AppError("dateTo must be a valid date", 400, "VALIDATION_ERROR");
+    }
     const result = await query(`
       SELECT d.id, d.name, d.phone, d.car_model, d.plate, d.status, d.rating,
              COUNT(o.id)::int total_orders,
@@ -1351,15 +1493,17 @@ router.get("/leaderboard", requireAuth, requireRole("OWNER", "OPERATOR", "FINANC
              COALESCE(SUM(o.price) FILTER (WHERE o.status='COMPLETED'),0)::int revenue_total
       FROM drivers d
       LEFT JOIN orders o ON o.driver_id=d.id
+        AND ($1::timestamptz IS NULL OR o.created_at >= $1::timestamptz)
+        AND ($2::timestamptz IS NULL OR o.created_at <= $2::timestamptz)
       GROUP BY d.id
       ORDER BY d.rating DESC, completed_orders DESC, revenue_total DESC
       LIMIT 100
-    `);
+    `, [dateFrom, dateTo]);
     res.json({ leaderboard: result.rows });
   } catch (error) { next(error); }
 });
 
-router.get("/driver-applications/:id/documents", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.get("/driver-applications/:id/documents", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const documents = await listDocumentsForApplication(params.id, query);
@@ -1367,7 +1511,7 @@ router.get("/driver-applications/:id/documents", requireAuth, requireRole("OWNER
   } catch (error) { next(error); }
 });
 
-router.get("/drivers/:id/documents", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.get("/drivers/:id/documents", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const documents = await listDocumentsForDriver(params.id, query);
@@ -1375,7 +1519,7 @@ router.get("/drivers/:id/documents", requireAuth, requireRole("OWNER", "OPERATOR
   } catch (error) { next(error); }
 });
 
-router.patch("/driver-documents/:id", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.patch("/driver-documents/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const body = z.object({
@@ -1417,7 +1561,7 @@ router.patch("/driver-documents/:id", requireAuth, requireRole("OWNER", "OPERATO
   } catch (error) { next(error); }
 });
 
-router.get("/driver-documents/:id/file", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.get("/driver-documents/:id/file", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const document = await getDriverDocumentById(params.id, query);

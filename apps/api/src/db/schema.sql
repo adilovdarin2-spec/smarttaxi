@@ -106,12 +106,29 @@ CREATE TABLE IF NOT EXISTS road_alerts (
   lat NUMERIC(10,6) NOT NULL,
   lng NUMERIC(10,6) NOT NULL,
   speed_limit INTEGER,
+  heading NUMERIC(6,2),
   status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','EXPIRED')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '2 hours'),
   confirmations_count INTEGER NOT NULL DEFAULT 0,
   dismissals_count INTEGER NOT NULL DEFAULT 0,
   confidence_score INTEGER NOT NULL DEFAULT 50
+);
+
+CREATE TABLE IF NOT EXISTS support_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('CLIENT','DRIVER')),
+  contact_name TEXT NOT NULL DEFAULT '',
+  contact_phone TEXT NOT NULL DEFAULT '',
+  topic TEXT NOT NULL,
+  message TEXT NOT NULL,
+  order_id UUID,
+  status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','RESOLVED')),
+  admin_response TEXT,
+  responded_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  responded_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS tariffs (
@@ -295,6 +312,45 @@ CREATE TABLE IF NOT EXISTS client_reviews (
   comment TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS driver_documents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+  driver_application_id UUID REFERENCES driver_applications(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('DRIVER_LICENSE_FRONT','DRIVER_LICENSE_BACK','ID_CARD_FRONT','ID_CARD_BACK','VEHICLE_REGISTRATION','INSURANCE_POLICY','PROFILE_PHOTO','OTHER')),
+  file_path TEXT NOT NULL,
+  original_filename TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','APPROVED','REJECTED')),
+  rejection_reason TEXT,
+  reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT driver_documents_owner_check CHECK (driver_id IS NOT NULL OR driver_application_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_documents_application_id ON driver_documents(driver_application_id);
+CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status);
+
+CREATE TABLE IF NOT EXISTS driver_payout_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  amount_kzt INTEGER NOT NULL CHECK (amount_kzt > 0),
+  method TEXT NOT NULL DEFAULT 'KASPI_TRANSFER' CHECK (method IN ('KASPI_TRANSFER','CASH')),
+  payout_details JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','APPROVED','PAID','REJECTED','CANCELLED')),
+  rejection_reason TEXT,
+  provider_reference TEXT,
+  reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_driver_payout_requests_driver_id ON driver_payout_requests(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_payout_requests_status ON driver_payout_requests(status);
 
 CREATE TABLE IF NOT EXISTS commission_overrides (
   driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
@@ -488,15 +544,15 @@ VALUES (1, 'SmartTaxi', 'Atakent', 'KZT', '₸')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
-SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, true
+SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, seed.is_active
 FROM regions r
 CROSS JOIN (
   VALUES
-    ('Economy','Эконом','Быстро и доступно для ежедневных поездок',350,110,18,500,15,2,1,3,50,0,10),
-    ('Comfort','Комфорт','Больше удобства для городских поездок',500,140,22,750,15,2,1,3,60,0,20),
-    ('Business','Бизнес','Премиальный автомобиль и спокойная поездка',800,210,35,1200,15,2,1,3,80,0,30),
-    ('Delivery','Доставка','Передать посылку по региону',300,80,12,450,15,0,1,3,50,0,40)
-) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
+    ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,15,0,1,3,50,0,10,true),
+    ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,15,0,1,3,60,0,20,true),
+    ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,15,0,1,3,80,0,999,false),
+    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,15,0,1,3,50,0,30,true)
+) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
 WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
 ON CONFLICT (region_id, name) DO UPDATE
 SET region_id=EXCLUDED.region_id,
@@ -518,13 +574,23 @@ SET region_id=EXCLUDED.region_id,
 
 DO $$
 BEGIN
-  ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CLIENT','DRIVER','OWNER','OPERATOR','FINANCE'));
+  ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CLIENT','DRIVER','OWNER','FINANCE'));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$
 BEGIN
   ALTER TABLE drivers ADD CONSTRAINT drivers_status_check CHECK (status IN ('OFFLINE','FREE','BUSY','BREAK'));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- support_messages.order_id references orders, but orders is declared later in
+-- this file than support_messages, so the FK is added here instead of inline
+-- on the CREATE TABLE (which would fail on a fresh database).
+DO $$
+BEGIN
+  ALTER TABLE support_messages ADD CONSTRAINT support_messages_order_id_fkey
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

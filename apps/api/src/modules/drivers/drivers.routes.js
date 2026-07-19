@@ -73,7 +73,7 @@ router.get("/nearby", requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (_req, res, next) => {
+router.get("/", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
   try {
     const result = await query("SELECT * FROM drivers ORDER BY created_at DESC");
     res.json({ drivers: result.rows });

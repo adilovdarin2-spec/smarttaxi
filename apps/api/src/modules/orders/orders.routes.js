@@ -392,7 +392,7 @@ router.post("/:id/cancel-public", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE", "DRIVER"), async (req, res, next) => {
+router.get("/", requireAuth, requireRole("OWNER", "FINANCE", "DRIVER"), async (req, res, next) => {
   try {
     const params = z.object({
       status: OrderStatus.optional(),
@@ -494,7 +494,7 @@ router.get("/:id/status-history", requireAuth, async (req, res, next) => {
     } else if (req.user.role === "DRIVER") {
       const driver = (await query("SELECT id FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
       if (!driver || driver.id !== order.driver_id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
-    } else if (!["OWNER", "OPERATOR", "FINANCE"].includes(req.user.role)) {
+    } else if (!["OWNER", "FINANCE"].includes(req.user.role)) {
       throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
     }
     const history = (await query(`
@@ -812,7 +812,7 @@ router.post("/:id/quick-message", requireAuth, requireRole("CLIENT", "DRIVER"), 
   } catch (e) { next(e); }
 });
 
-router.post("/:id/assign-driver", requireAuth, requireRole("OWNER", "OPERATOR"), async (req, res, next) => {
+router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
     const body = z.object({ driverId: z.string().uuid() }).parse(req.body);
@@ -1030,14 +1030,14 @@ async function updateStatus(req, res, next, status) {
   } catch (e) { next(e); }
 }
 
-router.post("/:id/going-to-client", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"DRIVER_GOING_TO_CLIENT"));
-router.post("/:id/arrived", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"DRIVER_ARRIVED"));
-router.post("/:id/waiting", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"WAITING_CLIENT"));
-router.post("/:id/start", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"TRIP_STARTED"));
-router.post("/:id/complete", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"TRIP_COMPLETED"));
-router.post("/:id/payment-pending", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAYMENT_PENDING"));
-router.post("/:id/mark-paid", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAID"));
-router.post("/:id/no-show", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), (req,res,next)=>updateStatus(req,res,next,"NO_SHOW"));
+router.post("/:id/going-to-client", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"DRIVER_GOING_TO_CLIENT"));
+router.post("/:id/arrived", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"DRIVER_ARRIVED"));
+router.post("/:id/waiting", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"WAITING_CLIENT"));
+router.post("/:id/start", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"TRIP_STARTED"));
+router.post("/:id/complete", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"TRIP_COMPLETED"));
+router.post("/:id/payment-pending", requireAuth, requireRole("OWNER", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAYMENT_PENDING"));
+router.post("/:id/mark-paid", requireAuth, requireRole("OWNER", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAID"));
+router.post("/:id/no-show", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"NO_SHOW"));
 // A driver cancelling an order they've already accepted is not the same as
 // an operator cancelling it outright: the rider still wants a ride, so this
 // reopens the order for dispatch (status back to SEARCHING_DRIVER, driver
@@ -1046,7 +1046,7 @@ router.post("/:id/no-show", requireAuth, requireRole("DRIVER", "OWNER", "OPERATO
 // (last_cancelled_by_driver_id) so listOrdersForDriver/acceptOrderForDriver
 // (order-dispatch.service.js) never route it back to them. Operator
 // cancellation keeps the old terminal behavior via updateStatus.
-router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER", "OPERATOR"), async (req, res, next) => {
+router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (req, res, next) => {
   if (req.user.role !== "DRIVER") {
     return updateStatus(req, res, next, "CANCELLED_BY_OPERATOR");
   }

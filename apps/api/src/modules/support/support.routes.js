@@ -70,14 +70,14 @@ router.post("/", requireAuth, requireRole("CLIENT", "DRIVER"), async (req, res, 
         }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
       }
     }
-    // SOS gets a distinct alert to every operator/owner, not just a spot in
-    // the same FIFO queue as everything else (see SECURITY_CHECKLIST.md).
+    // SOS gets a distinct alert to every OWNER (admin/operator), not just a
+    // spot in the same FIFO queue as everything else (see SECURITY_CHECKLIST.md).
     // Best-effort and non-blocking, same pattern as the LOST_ITEM push
     // above — a notification failure must never fail the SOS submission
     // itself.
     if (created.topic === SOS_TOPIC) {
       (async () => {
-        const operators = (await query("SELECT id FROM users WHERE role IN ('OWNER','OPERATOR') AND is_active=true")).rows;
+        const operators = (await query("SELECT id FROM users WHERE role='OWNER' AND is_active=true")).rows;
         await Promise.all(operators.map((op) => notifyUser(op.id, {
           title: "🆘 SOS",
           body: `${created.contact_name || "Пользователь"} (${created.contact_phone || "нет телефона"}) нажал(а) SOS`,
@@ -121,7 +121,7 @@ const AdminIdParams = z.object({ id: z.string().uuid() });
 
 export const adminSupportRouter = Router();
 
-adminSupportRouter.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+adminSupportRouter.get("/", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = AdminListQuery.parse(req.query);
     const status = params.status || "OPEN";
@@ -136,7 +136,7 @@ adminSupportRouter.get("/", requireAuth, requireRole("OWNER", "OPERATOR", "FINAN
   }
 });
 
-adminSupportRouter.patch("/:id/respond", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+adminSupportRouter.patch("/:id/respond", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = AdminIdParams.parse(req.params);
     const body = AdminRespondBody.parse(req.body);
@@ -165,7 +165,7 @@ adminSupportRouter.patch("/:id/respond", requireAuth, requireRole("OWNER", "OPER
   }
 });
 
-adminSupportRouter.patch("/:id/reopen", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+adminSupportRouter.patch("/:id/reopen", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = AdminIdParams.parse(req.params);
     const existing = (await query("SELECT * FROM support_messages WHERE id=$1", [params.id])).rows[0];

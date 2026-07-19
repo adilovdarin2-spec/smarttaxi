@@ -23,7 +23,7 @@ async function loadOrderPayment(executor, orderId) {
 }
 
 async function assertCanAccessOrderPayment(req, order) {
-  if (["OWNER", "OPERATOR", "FINANCE"].includes(req.user.role)) return;
+  if (["OWNER", "FINANCE"].includes(req.user.role)) return;
   if (req.user.role === "CLIENT") {
     const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
     if (client && client.id === order.client_id) return;

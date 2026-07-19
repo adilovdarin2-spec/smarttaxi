@@ -24,13 +24,6 @@ const ACCOUNTS = {
     email: env.DEFAULT_ADMIN_EMAIL || "admin@smarttaxi.local",
     password: env.DEFAULT_ADMIN_PASSWORD || "ChangeMe_2026!"
   },
-  operator: {
-    name: "Test Operator",
-    role: "OPERATOR",
-    phone: "+77000000098",
-    email: "operator@smarttaxi.local",
-    password: "123456"
-  },
   finance: {
     name: "Test Finance",
     role: "FINANCE",
@@ -78,7 +71,7 @@ async function seedRegions() {
       (
         'ATAKENT',
         'Атакент',
-        '[[68.4300,40.7800],[68.5700,40.7800],[68.5700,40.9000],[68.4300,40.9000],[68.4300,40.7800]]'::jsonb,
+        '[[68.4750,40.8200],[68.5350,40.8200],[68.5350,40.8750],[68.4750,40.8750],[68.4750,40.8200]]'::jsonb,
         40.844435,
         68.509021,
         'KZT',
@@ -96,9 +89,9 @@ async function seedRegions() {
       (
         'ZHETYSAY',
         'Жетысай',
-        '[[68.0500,40.8000],[68.3300,40.8000],[68.3300,41.0000],[68.0500,41.0000],[68.0500,40.8000]]'::jsonb,
-        40.884303,
-        68.212621,
+        '[[68.2800,40.7350],[68.3700,40.7350],[68.3700,40.8150],[68.2800,40.8150],[68.2800,40.7350]]'::jsonb,
+        40.777134,
+        68.324677,
         'KZT',
         true
       ),
@@ -108,6 +101,87 @@ async function seedRegions() {
         '[[69.3000,42.1000],[69.8500,42.1000],[69.8500,42.4800],[69.3000,42.4800],[69.3000,42.1000]]'::jsonb,
         42.314696,
         69.588328,
+        'KZT',
+        true
+      ),
+      (
+        'KIROV',
+        'Киров',
+        '[[68.5000,40.7500],[68.5700,40.7500],[68.5700,40.8200],[68.5000,40.8200],[68.5000,40.7500]]'::jsonb,
+        40.786900,
+        68.534400,
+        'KZT',
+        true
+      ),
+      (
+        'ASYKATA',
+        'Асыката',
+        '[[68.3200,40.8600],[68.4100,40.8600],[68.4100,40.9300],[68.3200,40.9300],[68.3200,40.8600]]'::jsonb,
+        40.894700,
+        68.363500,
+        'KZT',
+        true
+      ),
+      (
+        'DOSTYK',
+        'Достык',
+        '[[68.4200,40.7800],[68.4900,40.7800],[68.4900,40.8400],[68.4200,40.8400],[68.4200,40.7800]]'::jsonb,
+        40.807200,
+        68.459200,
+        'KZT',
+        true
+      ),
+      (
+        'YNTYMAK',
+        'Ынтымак',
+        '[[68.4600,40.7300],[68.5300,40.7300],[68.5300,40.7900],[68.4600,40.7900],[68.4600,40.7300]]'::jsonb,
+        40.760600,
+        68.497900,
+        'KZT',
+        true
+      ),
+      (
+        'BIRLIK',
+        'Бирлик',
+        '[[68.3700,40.7900],[68.4350,40.7900],[68.4350,40.8550],[68.3700,40.8550],[68.3700,40.7900]]'::jsonb,
+        40.822500,
+        68.401800,
+        'KZT',
+        true
+      ),
+      (
+        'FIRDOUSI',
+        'Фирдоуси',
+        '[[68.4700,40.6900],[68.5350,40.6900],[68.5350,40.7550],[68.4700,40.7550],[68.4700,40.6900]]'::jsonb,
+        40.723100,
+        68.501600,
+        'KZT',
+        true
+      ),
+      (
+        'ZHANA_ZHOL',
+        'Жана Жол',
+        '[[68.5300,40.7250],[68.6000,40.7250],[68.6000,40.7900],[68.5300,40.7900],[68.5300,40.7250]]'::jsonb,
+        40.756700,
+        68.566100,
+        'KZT',
+        true
+      ),
+      (
+        'MAKTAARAL',
+        'Мақтаарал',
+        '[[68.5050,40.7050],[68.5700,40.7050],[68.5700,40.7650],[68.5050,40.7650],[68.5050,40.7050]]'::jsonb,
+        40.735800,
+        68.536400,
+        'KZT',
+        true
+      ),
+      (
+        'ATAMEKEN',
+        'Атамекен',
+        '[[68.5450,40.7800],[68.6200,40.7800],[68.6200,40.8450],[68.5450,40.8450],[68.5450,40.7800]]'::jsonb,
+        40.812100,
+        68.583900,
         'KZT',
         true
       )
@@ -126,14 +200,15 @@ async function seedRegions() {
 async function seedTariffs(regions) {
   await query(`
     INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
-    SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, true
+    SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, seed.price_per_km, seed.price_per_minute, seed.min_price, seed.service_commission_percent, seed.cashback_percent, seed.surge_multiplier, seed.free_waiting_minutes, seed.waiting_price_per_minute, seed.cancellation_fee, seed.sort_order, seed.is_active
     FROM regions r
     CROSS JOIN (
       VALUES
-        ('Economy','Эконом','Быстро и доступно',400,110,20,700,15,2,1,3,50,0,10),
-        ('Comfort','Комфорт','Больше удобства',600,150,25,1000,15,2,1,3,60,0,20),
-        ('Business','Бизнес','Премиальная поездка',900,220,35,1600,15,2,1,3,80,0,30)
-    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order)
+        ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,15,0,1,3,50,0,10,true),
+        ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,15,0,1,3,60,0,20,false),
+        ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,15,0,1,3,80,0,999,false),
+        ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,15,0,1,3,50,0,30,true)
+    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
     WHERE r.code = ANY($1)
     ON CONFLICT (region_id, name) DO UPDATE
     SET region_id=EXCLUDED.region_id,
@@ -150,13 +225,7 @@ async function seedTariffs(regions) {
         waiting_price_per_minute=EXCLUDED.waiting_price_per_minute,
         cancellation_fee=EXCLUDED.cancellation_fee,
         sort_order=EXCLUDED.sort_order,
-        is_active=true
-  `, [regions.map((region) => region.code)]);
-  await query(`
-    UPDATE tariffs
-    SET is_active=false, updated_at=NOW()
-    WHERE name='Delivery'
-      AND region_id IN (SELECT id FROM regions WHERE code = ANY($1))
+        is_active=EXCLUDED.is_active
   `, [regions.map((region) => region.code)]);
 }
 
@@ -257,7 +326,6 @@ async function seed() {
   const owner = await upsertUser(ACCOUNTS.owner);
   const client = await upsertUser(ACCOUNTS.client);
   const driverUser = await upsertUser(ACCOUNTS.driver);
-  await upsertUser(ACCOUNTS.operator);
   await upsertUser(ACCOUNTS.finance);
 
   await seedClient(client);

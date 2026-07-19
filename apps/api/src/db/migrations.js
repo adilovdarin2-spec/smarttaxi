@@ -434,7 +434,7 @@ const statements = [
    ON CONFLICT (id) DO NOTHING`,
   `DO $$
   BEGIN
-    ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CLIENT','DRIVER','OWNER','OPERATOR','FINANCE'));
+    ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CLIENT','DRIVER','OWNER','FINANCE'));
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`,
   `DO $$
@@ -781,7 +781,32 @@ const statements = [
     data BYTEA NOT NULL,
     mime TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`
+  )`,
+
+  // --- Retire the OPERATOR role: OWNER already had every permission
+  // OPERATOR did (every route was already gated OWNER+OPERATOR, never
+  // OPERATOR alone), so this is a pure cleanup, not a permission change.
+  // Reassign any existing OPERATOR user(s) to OWNER *before* tightening the
+  // constraint, otherwise the ADD CONSTRAINT below would fail on a
+  // database that already has an OPERATOR row (e.g. the seeded
+  // operator@smarttaxi.local account from before this migration).
+  "UPDATE users SET role='OWNER' WHERE role='OPERATOR'",
+  "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check",
+  "ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('CLIENT','DRIVER','OWNER','FINANCE'))",
+
+  // --- Raffles: named date windows admins tag onto the driver leaderboard
+  // (QualityPage's "За розыгрыш" filter) — no prize/entry/winner tracking,
+  // just a labeled starts_at/ends_at pair the leaderboard query filters by.
+  // The admin UI for this already existed (create/list/delete) with no
+  // backend behind it at all.
+  `CREATE TABLE IF NOT EXISTS raffles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    starts_at TIMESTAMPTZ NOT NULL,
+    ends_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_raffles_starts_at ON raffles(starts_at DESC)"
 ];
 
 export async function runMigrations() {

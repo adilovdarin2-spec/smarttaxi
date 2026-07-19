@@ -101,16 +101,6 @@ export const env = {
   SMS_DEV_CODE: process.env.SMS_DEV_CODE || "111111",
   INFOBIP_BASE_URL: process.env.INFOBIP_BASE_URL || "",
   INFOBIP_API_KEY: process.env.INFOBIP_API_KEY || "",
-  // WhatsApp OTP delivery (whatsapp.provider.js) — separate from SMS so a
-  // WhatsApp Business Account can live on a different Infobip App/base URL
-  // than plain SMS; falls back to the SMS Infobip credentials when unset,
-  // since most Infobip accounts bundle both channels under one App.
-  WHATSAPP_PROVIDER: (process.env.WHATSAPP_PROVIDER || "").trim().toLowerCase(),
-  INFOBIP_WHATSAPP_BASE_URL: process.env.INFOBIP_WHATSAPP_BASE_URL || "",
-  INFOBIP_WHATSAPP_API_KEY: process.env.INFOBIP_WHATSAPP_API_KEY || "",
-  INFOBIP_WHATSAPP_SENDER: process.env.INFOBIP_WHATSAPP_SENDER || "",
-  INFOBIP_WHATSAPP_OTP_TEMPLATE: process.env.INFOBIP_WHATSAPP_OTP_TEMPLATE || "",
-  INFOBIP_WHATSAPP_OTP_LANGUAGE: process.env.INFOBIP_WHATSAPP_OTP_LANGUAGE || "ru",
   // Kaspi Pay (payment-provider.js). All four blank = KaspiPayProvider
   // stays a mock, same as today — nothing else in the app changes behavior
   // until the business has a real merchant account and these are filled

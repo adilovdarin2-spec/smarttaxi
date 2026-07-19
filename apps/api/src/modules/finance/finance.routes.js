@@ -27,7 +27,7 @@ function dateWhere(range, params) {
   return `WHERE ${clauses.join(" AND ")}`;
 }
 
-router.get("/stats", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/stats", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const range = RangeQuery.parse(req.query);
     const params = [];

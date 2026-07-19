@@ -16,7 +16,7 @@ assert(migrations.includes("CREATE TABLE IF NOT EXISTS commission_overrides"), "
 
 // --- Admin CRUD ---
 
-assert(adminRoutes.includes('router.get("/commission-overrides", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE")'), "listing commission overrides must be readable by OWNER/OPERATOR/FINANCE");
+assert(adminRoutes.includes('router.get("/commission-overrides", requireAuth, requireRole("OWNER", "FINANCE")'), "listing commission overrides must be readable by OWNER/FINANCE");
 assert(adminRoutes.includes('router.put("/commission-overrides/:driverId", requireAuth, requireRole("OWNER", "FINANCE")'), "setting a commission override must require OWNER/FINANCE");
 assert(adminRoutes.includes('router.delete("/commission-overrides/:driverId", requireAuth, requireRole("OWNER", "FINANCE")'), "removing a commission override must require OWNER/FINANCE");
 assert(adminRoutes.includes("ON CONFLICT (driver_id) DO UPDATE SET percent=EXCLUDED.percent, active=EXCLUDED.active"), "setting a commission override must upsert (one row per driver)");

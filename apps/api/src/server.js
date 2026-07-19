@@ -67,7 +67,7 @@ io.use((socket, next) => {
 io.on("connection", socket => {
   socket.on("join_dispatch", async payload => {
     try {
-      if (!["OWNER", "OPERATOR", "FINANCE"].includes(socket.user?.role)) return;
+      if (!["OWNER", "FINANCE"].includes(socket.user?.role)) return;
       const regionId = payload?.regionId;
       if (!regionId) return;
       const region = (await query("SELECT id, is_active FROM regions WHERE id=$1", [regionId])).rows[0];

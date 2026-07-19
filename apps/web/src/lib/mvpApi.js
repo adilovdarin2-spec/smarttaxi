@@ -355,6 +355,17 @@ export function unblockAdminDriver(driverId) {
   });
 }
 
+export function setAdminDriverCommissionOverride(driverId, payload) {
+  return api(`/api/admin/commission-overrides/${driverId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function clearAdminDriverCommissionOverride(driverId) {
+  return api(`/api/admin/commission-overrides/${driverId}`, { method: "DELETE" });
+}
+
 export function getAdminDriverRegions(driverId) {
   return api(`/api/admin/drivers/${driverId}/regions`);
 }

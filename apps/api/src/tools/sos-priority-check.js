@@ -23,7 +23,7 @@ assert(supportRoutes.includes("ORDER BY (topic=$2) DESC, created_at DESC"), "the
 // --- SOS reports get a distinct push/in-app alert to operators, not just a FIFO slot ---
 
 assert(supportRoutes.includes("if (created.topic === SOS_TOPIC)"), "creating a support message must check for SOS specifically to trigger operator alerts");
-assert(supportRoutes.includes("SELECT id FROM users WHERE role IN ('OWNER','OPERATOR') AND is_active=true"), "SOS alerts must go to every active OWNER/OPERATOR user, not a hardcoded single admin");
+assert(supportRoutes.includes("SELECT id FROM users WHERE role='OWNER' AND is_active=true"), "SOS alerts must go to every active OWNER user, not a hardcoded single admin");
 assert(supportRoutes.includes('type: "SOS_ALERT"'), "SOS operator notifications must use a distinct type so a notifications UI can filter/highlight them");
 assert(supportRoutes.includes(".catch((error) => console.error(\"[push] SOS operator notify failed\", error))"), "SOS notification failures must never fail the SOS submission itself (best-effort, same as the existing LOST_ITEM push)");
 

@@ -1474,7 +1474,7 @@ export async function updateDriverLocation({ userId, location, io = null, execut
 }
 
 export async function assertCanAccessOrderLocation({ user, order, executor = defaultQuery }) {
-  if (["OWNER", "OPERATOR"].includes(user.role)) return true;
+  if (user.role === "OWNER") return true;
   if (user.role === "DRIVER") {
     const driver = (await run(executor, "SELECT id FROM drivers WHERE user_id=$1", [user.id])).rows[0];
     if (driver?.id === order.driver_id) return true;

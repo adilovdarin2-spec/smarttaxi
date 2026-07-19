@@ -41,9 +41,6 @@ for (const expected of [
   "SmartTaxi Owner",
   "admin@smarttaxi.local",
   "+77000000099",
-  "Test Operator",
-  "operator@smarttaxi.local",
-  "+77000000098",
   "Test Finance",
   "finance@smarttaxi.local",
   "+77000000097"
@@ -54,7 +51,6 @@ for (const expected of [
 assert.match(seed, /role:\s*"CLIENT"/, "seed must create client role");
 assert.match(seed, /role:\s*"DRIVER"/, "seed must create driver role");
 assert.match(seed, /role:\s*"OWNER"/, "seed must create owner role");
-assert.match(seed, /role:\s*"OPERATOR"/, "seed must create operator role");
 assert.match(seed, /role:\s*"FINANCE"/, "seed must create finance role");
 assert.match(seed, /Toyota Camry/, "seed must set driver car model");
 assert.match(seed, /Белый/, "seed must set driver car color");
