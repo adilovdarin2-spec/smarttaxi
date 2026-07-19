@@ -806,7 +806,14 @@ const statements = [
     ends_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
-  "CREATE INDEX IF NOT EXISTS idx_raffles_starts_at ON raffles(starts_at DESC)"
+  "CREATE INDEX IF NOT EXISTS idx_raffles_starts_at ON raffles(starts_at DESC)",
+
+  // --- Live "km driven so far" trip counter (purely informational — every
+  // tariff is fixed-price today, this never affects the charged amount).
+  // Accumulated ping-by-ping in routing.service.js's updateDriverLocation
+  // while the order is TRIP_STARTED/IN_PROGRESS; NULL/0 the rest of the
+  // order's life.
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS distance_traveled_m INTEGER NOT NULL DEFAULT 0"
 ];
 
 export async function runMigrations() {

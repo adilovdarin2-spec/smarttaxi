@@ -97,6 +97,11 @@ class _DriverShellState extends State<DriverShell> {
   List<OrderSummary> _orders = const [];
   List<RoadAlert> _roadAlerts = const [];
   OrderSummary? _activeOrder;
+  // Live "km driven so far" for the trip in progress — see the matching
+  // field/comment on the passenger side (_tripDistanceTraveledM in
+  // passenger_shell.dart). Null until the first location ping since
+  // TRIP_STARTED arrives; reset whenever the active order is dismissed.
+  int? _tripDistanceTraveledM;
   StreamSubscription<Position>? _positionSub;
   StreamSubscription<bool>? _socketConnectionSub;
   Timer? _socketFallbackPollTimer;
@@ -322,6 +327,14 @@ class _DriverShellState extends State<DriverShell> {
       }
       if (!order.isActive && !order.isOpen) {
         _driverRoute = null;
+      }
+      // Never move the live distance counter backwards from what a more
+      // recent location ping already established — see the matching
+      // comment on the passenger side (_applyOrderSnapshot).
+      if (order.distanceTraveledM != null &&
+          (_tripDistanceTraveledM == null ||
+              order.distanceTraveledM! > _tripDistanceTraveledM!)) {
+        _tripDistanceTraveledM = order.distanceTraveledM;
       }
     });
     // Open orders are visible to every driver in the region, so
@@ -639,12 +652,15 @@ class _DriverShellState extends State<DriverShell> {
       unawaited(_maybeFetchOsmNavigation(position));
       unawaited(_maybeRefreshDriverRoute(position));
       try {
-        await widget.api.updateDriverLocation(
+        final tripDistanceM = await widget.api.updateDriverLocation(
           location: Coordinate(lat: position.latitude, lng: position.longitude),
           heading: position.heading.isFinite ? position.heading : null,
           speed: position.speed.isFinite ? position.speed : null,
           accuracy: position.accuracy.isFinite ? position.accuracy : null,
         );
+        if (mounted && tripDistanceM != null) {
+          setState(() => _tripDistanceTraveledM = tripDistanceM);
+        }
       } catch (error) {
         // readableError, not a hardcoded generic string — the backend
         // rejects this for real, specific, non-retryable reasons too
@@ -727,6 +743,9 @@ class _DriverShellState extends State<DriverShell> {
       setState(() {
         _orders = orders;
         _activeOrder = restoredActive;
+        if (restoredActive != null && restoredActive.distanceTraveledM != null) {
+          _tripDistanceTraveledM = restoredActive.distanceTraveledM;
+        }
       });
       // Cold start (or app resume) landing on an order that's already in
       // progress — e.g. the app was killed mid-trip — needs its route line
@@ -2498,6 +2517,14 @@ class _DriverShellState extends State<DriverShell> {
                             _activeOrder!.waitingPricePerMinute,
                       ),
                     ],
+                    if ((_activeOrder!.status == 'TRIP_STARTED' ||
+                            _activeOrder!.status == 'IN_PROGRESS') &&
+                        _tripDistanceTraveledM != null) ...[
+                      const SizedBox(height: 12),
+                      DriverTripDistanceCard(
+                        distanceTraveledM: _tripDistanceTraveledM!,
+                      ),
+                    ],
                     if ((_activeOrder!.notes ?? '').isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Container(
@@ -2845,6 +2872,7 @@ class _DriverShellState extends State<DriverShell> {
     setState(() {
       _activeOrder = null;
       _driverRoute = null;
+      _tripDistanceTraveledM = null;
     });
   }
 

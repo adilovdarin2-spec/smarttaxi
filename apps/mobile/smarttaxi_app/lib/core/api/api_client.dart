@@ -472,14 +472,20 @@ class ApiClient {
     await _dio.patch('/api/drivers/me/status', data: {'status': status});
   }
 
-  Future<void> updateDriverLocation({
+  // Returns the live "km driven so far" total for the trip in progress
+  // (server-accumulated in routing.service.js's updateDriverLocation from
+  // real consecutive GPS pings) — null whenever there's no order in
+  // TRIP_STARTED/IN_PROGRESS for this driver right now. Purely informational
+  // for the on-screen counter; every tariff is fixed-price today, so this
+  // never affects what the rider is charged.
+  Future<int?> updateDriverLocation({
     required Coordinate location,
     double? heading,
     double? speed,
     double? accuracy,
   }) async {
     await _attachToken();
-    await _dio.patch('/api/drivers/me/location', data: {
+    final response = await _dio.patch('/api/drivers/me/location', data: {
       'lat': location.lat,
       'lng': location.lng,
       if (heading != null) 'heading': heading,
@@ -487,6 +493,8 @@ class ApiClient {
       if (accuracy != null) 'accuracy': accuracy,
       'source': 'mobile',
     });
+    final tripDistanceM = response.data?['location']?['tripDistanceM'];
+    return tripDistanceM == null ? null : (tripDistanceM as num).round();
   }
 
   Future<List<NearbyDriver>> getNearbyDrivers({

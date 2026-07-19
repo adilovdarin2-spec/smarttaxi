@@ -467,6 +467,56 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
   }
 }
 
+/// Live, real GPS-accumulated "km driven so far" for the trip in progress
+/// (see updateDriverLocation in routing.service.js — never a re-hash of the
+/// pre-trip route estimate, which never changes once the trip starts).
+/// Purely informational: every tariff is fixed-price today, so this never
+/// affects the fare. Static display (unlike DriverWaitingTimerCard, nothing
+/// here ticks locally) — it only changes when a fresh value arrives from a
+/// location ping.
+class DriverTripDistanceCard extends StatelessWidget {
+  const DriverTripDistanceCard({super.key, required this.distanceTraveledM});
+
+  final int distanceTraveledM;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.palette.goldSurface,
+        border: Border.all(color: context.palette.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.route_rounded, color: context.palette.goldDeep),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Пройдено в этой поездке',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: context.palette.textSecondary,
+              ),
+            ),
+          ),
+          Text(
+            '${(distanceTraveledM / 1000).toStringAsFixed(1)} км',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: context.palette.text,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Shown once a trip settles into a terminal state (TRIP_COMPLETED and
 /// after) instead of the old bare "Готово" button: a real payout summary,
 /// then rate-the-passenger (stars + tags + comment) and favorite/block

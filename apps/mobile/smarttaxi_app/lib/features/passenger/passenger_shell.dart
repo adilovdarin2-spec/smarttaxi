@@ -211,6 +211,13 @@ class _PassengerShellState extends State<PassengerShell>
   int _driverRouteRequestId = 0;
   OrderSummary? _order;
   DriverLocation? _driverLocation;
+  // Live "km driven so far" for the trip in progress — accumulated
+  // server-side from real GPS pings (see updateDriverLocation in
+  // routing.service.js), arrives piggybacked on the same
+  // driver_location_updated socket event as _driverLocation. Null until the
+  // first such update for this trip; distinct from 0, which means "at least
+  // one update arrived and the driver genuinely hasn't moved yet".
+  int? _tripDistanceTraveledM;
   DateTime? _tripStartedAt;
   // False when _tripStartedAt was seeded from an order that was already
   // TRIP_STARTED/IN_PROGRESS the first time we saw it this session (e.g. the
@@ -948,6 +955,16 @@ class _PassengerShellState extends State<PassengerShell>
         _tripElapsed.value = Duration.zero;
         _tripElapsedReliable = true;
       }
+      // Seeds the live distance counter from a fresh REST snapshot (app
+      // resume/restart mid-trip, reconnect) so it isn't stuck at null until
+      // the next driver_location_updated ping — but never lets a
+      // possibly-stale REST value move it backwards from what a more recent
+      // live ping already established, since distance only ever accumulates.
+      if (order.distanceTraveledM != null &&
+          (_tripDistanceTraveledM == null ||
+              order.distanceTraveledM! > _tripDistanceTraveledM!)) {
+        _tripDistanceTraveledM = order.distanceTraveledM;
+      }
     });
     _tripElapsedTimer?.cancel();
     _tripElapsedTimer = tripInProgress
@@ -1099,15 +1116,24 @@ class _PassengerShellState extends State<PassengerShell>
       return;
     }
     final next = DriverLocation.fromJson(payload);
-    setState(
-      () => _driverLocation = next.heading == null && _driverLocation != null
+    // Only present (non-null) once the order is actually TRIP_STARTED
+    // server-side — see updateDriverLocation in routing.service.js. Once a
+    // trip is under way this arrives on every ping, so "only apply when
+    // present" never actually withholds an update, it just avoids
+    // overwriting a real running total with null on some other order phase.
+    final tripDistanceRaw = payload['tripDistanceM'];
+    final tripDistance =
+        tripDistanceRaw == null ? null : (tripDistanceRaw as num).round();
+    setState(() {
+      _driverLocation = next.heading == null && _driverLocation != null
           ? DriverLocation(
               lat: next.lat,
               lng: next.lng,
               heading: _driverLocation!.heading,
             )
-          : next,
-    );
+          : next;
+      if (tripDistance != null) _tripDistanceTraveledM = tripDistance;
+    });
     _loadDriverRoute(_order!.id);
   }
 
@@ -2501,6 +2527,7 @@ class _PassengerShellState extends State<PassengerShell>
               isTerminal: _isPassengerOrderTerminal(order.status),
               tripElapsedListenable: _tripElapsed,
               tripElapsedReliable: _tripElapsedReliable,
+              tripDistanceTraveledM: _tripDistanceTraveledM,
               ratingStars: _ratingStars,
               ratingTags: _ratingTags,
               ratingCommentController: _ratingCommentController,
@@ -2566,6 +2593,7 @@ class _PassengerShellState extends State<PassengerShell>
     setState(() {
       _order = null;
       _driverLocation = null;
+      _tripDistanceTraveledM = null;
       _driverPickupRoute = null;
       _driverRouteError = null;
       _dropoff = null;
@@ -5389,40 +5417,42 @@ class _CenterMapMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Address-picker crosshair, not the confirmed pickup/dropoff pins (see
-    // _assetMarker calls in _MapCanvas). Enlarged twice on 2026-07-15 direct
-    // request (27->36->50) — the rider needs to clearly see which exact
-    // spot the pin's tip is over while dragging the map under it, so this
-    // one stays bigger even as the confirmed-route pins below get smaller.
+    // _assetMarker calls in _MapCanvas). Enlarged three times now on direct
+    // request (27->36->50->75, 2026-07-15 then 2026-07-19, the last a
+    // straight 1.5x of every dimension below, not just pinWidth) — the rider
+    // needs to clearly see which exact spot the pin's tip is over while
+    // dragging the map under it, so this one stays bigger even as the
+    // confirmed-route pins below get smaller.
     // Note: the source PNG has real transparent padding (content bbox is
     // ~77% of canvas width, ~91% of height — measured directly off the
     // asset), so the visually solid part of the pin is noticeably smaller
     // than pinWidth itself; sized up further to compensate.
-    const pinWidth = 50.0;
+    const pinWidth = 75.0;
     const pinHeight = pinWidth * _assetAspect;
     const tipShift = pinHeight * (_tipFraction - 0.5);
     return SizedBox(
-      width: 126,
-      height: 126,
+      width: 189,
+      height: 189,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Transform.translate(
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 7.5),
             child: const _MarkerRadarPulse(
               color: _addressPickMarkerColor,
-              baseSize: 35,
+              baseSize: 52.5,
             ),
           ),
           // Ground-contact shadow directly under the pin's tip.
           Transform.translate(
-            offset: const Offset(0, 9),
+            offset: const Offset(0, 13.5),
             child: Container(
-              width: 22,
-              height: 7,
+              width: 33,
+              height: 10.5,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
           ),
@@ -7205,6 +7235,7 @@ class _TripStatusPanel extends StatelessWidget {
     required this.isTerminal,
     required this.tripElapsedListenable,
     required this.tripElapsedReliable,
+    this.tripDistanceTraveledM,
     required this.ratingStars,
     required this.ratingTags,
     required this.ratingCommentController,
@@ -7240,6 +7271,7 @@ class _TripStatusPanel extends StatelessWidget {
   final bool isTerminal;
   final ValueListenable<Duration> tripElapsedListenable;
   final bool tripElapsedReliable;
+  final int? tripDistanceTraveledM;
   final int ratingStars;
   final Set<String> ratingTags;
   final TextEditingController ratingCommentController;
@@ -7422,6 +7454,7 @@ class _TripStatusPanel extends StatelessWidget {
                   elapsedListenable: tripElapsedListenable,
                   elapsedReliable: tripElapsedReliable,
                   estimatedDurationMin: order.durationMin,
+                  distanceTraveledM: tripDistanceTraveledM,
                 ),
                 const SizedBox(height: 10),
                 _DriverContactCard(
@@ -10138,6 +10171,7 @@ class _TripProgressCard extends StatelessWidget {
     required this.elapsedListenable,
     required this.elapsedReliable,
     this.estimatedDurationMin,
+    this.distanceTraveledM,
   });
 
   final String pickup;
@@ -10145,15 +10179,30 @@ class _TripProgressCard extends StatelessWidget {
   final ValueListenable<Duration> elapsedListenable;
   final bool elapsedReliable;
   final double? estimatedDurationMin;
+  // Live, real GPS-accumulated distance for this trip so far (see
+  // updateDriverLocation in routing.service.js) — null until the first
+  // driver-location ping since the trip started arrives, distinct from 0
+  // (a real update saying the driver hasn't moved yet).
+  final int? distanceTraveledM;
 
-  static String _elapsedLabel(Duration elapsed, bool reliable) {
+  static String _progressLabel(
+    Duration elapsed,
+    bool reliable,
+    int? distanceTraveledM,
+  ) {
+    final kmText = distanceTraveledM == null
+        ? null
+        : '${(distanceTraveledM / 1000).toStringAsFixed(1)} км';
     // Seeded from an order that was already in progress when we first saw
     // it this session (app resumed mid-trip) — we don't actually know how
     // long it's been running, so don't claim it "just started".
-    if (!reliable) return 'В пути';
+    if (!reliable) return kmText == null ? 'В пути' : '$kmText · в пути';
     final minutes = elapsed.inMinutes;
-    if (minutes <= 0) return 'Только начали';
-    return '$minutes мин в пути';
+    final timeText = minutes <= 0 ? 'только начали' : '$minutes мин в пути';
+    if (kmText == null) {
+      return minutes <= 0 ? 'Только начали' : timeText;
+    }
+    return '$kmText · $timeText';
   }
 
   @override
@@ -10196,20 +10245,31 @@ class _TripProgressCard extends StatelessWidget {
                   ),
                 ),
               ),
-              ValueListenableBuilder<Duration>(
-                valueListenable: elapsedListenable,
-                builder: (context, elapsed, _) => Text(
-                  _elapsedLabel(elapsed, elapsedReliable),
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: palette.goldDeep,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Own row rather than crammed next to the title above: with the
+          // live km appended ("2.4 км · 12 мин в пути" vs. just "12 мин в
+          // пути" before), the combined text got long enough to risk
+          // squeezing the title into a near-empty sliver on real device
+          // widths — same class of bug fixed on the driver-found header
+          // (see docs/status/mobile-driver-overnight-2026-07-15.md round 53).
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: ValueListenableBuilder<Duration>(
+              valueListenable: elapsedListenable,
+              builder: (context, elapsed, _) => Text(
+                _progressLabel(elapsed, elapsedReliable, distanceTraveledM),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: palette.goldDeep,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 14),
           SizedBox(

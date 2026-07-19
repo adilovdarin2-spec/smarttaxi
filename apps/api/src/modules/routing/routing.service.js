@@ -1429,6 +1429,11 @@ export async function updateDriverLocation({ userId, location, io = null, execut
   if (!region?.is_active) throw new AppError("Region is inactive", 403, "DRIVER_REGION_INACTIVE");
   if (!pointInPolygon(point, region.boundary)) throw new AppError("Driver location is outside selected region", 403, "DRIVER_LOCATION_OUTSIDE_REGION");
 
+  // Captured before the upsert below overwrites it — the only way to know
+  // how far the driver has actually moved since their last ping, for the
+  // live "distance traveled" trip counter further down.
+  const previousLocation = (await run(executor, "SELECT lat, lng FROM driver_locations WHERE driver_id=$1", [driver.id])).rows[0] || null;
+
   const result = await run(executor, `
     INSERT INTO driver_locations(driver_id, region_id, lat, lng, heading, speed, accuracy, source)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8)
@@ -1446,12 +1451,36 @@ export async function updateDriverLocation({ userId, location, io = null, execut
   await run(executor, "UPDATE drivers SET lat=$1, lng=$2, last_seen_at=NOW() WHERE id=$3", [point.lat, point.lng, driver.id]);
 
   const activeOrder = (await run(executor, `
-    SELECT id
+    SELECT id, status, distance_traveled_m
     FROM orders
     WHERE driver_id=$1 AND status = ANY($2::text[])
     ORDER BY created_at DESC
     LIMIT 1
   `, [driver.id, ACTIVE_ORDER_STATUSES])).rows[0] || null;
+
+  // Live, purely informational "km driven so far" counter for the trip in
+  // progress (pickup -> dropoff only, not the drive/wait to reach the
+  // client) — every tariff today is fixed-price, so this never feeds
+  // pricing, only the on-screen counter. Accumulated from real consecutive
+  // GPS pings rather than derived from the pre-trip route estimate, which
+  // never changes once the trip actually starts. Two guards against GPS
+  // noise: a floor so jitter while stationary (red light, waiting) doesn't
+  // silently rack up fake distance, and a ceiling so one bad/cold fix can't
+  // teleport the total (pings arrive roughly every 8-10s, so even a
+  // generous few-times-normal gap can't legitimately cover more than this).
+  const MIN_TRIP_PING_DELTA_KM = 0.005;
+  const MAX_TRIP_PING_DELTA_KM = 1.5;
+  let tripDistanceM = null;
+  if (activeOrder && TO_DROPOFF_ORDER_STATUSES.includes(activeOrder.status)) {
+    tripDistanceM = Number(activeOrder.distance_traveled_m) || 0;
+    if (previousLocation) {
+      const deltaKm = distanceKmBetween(previousLocation, point);
+      if (Number.isFinite(deltaKm) && deltaKm >= MIN_TRIP_PING_DELTA_KM && deltaKm <= MAX_TRIP_PING_DELTA_KM) {
+        tripDistanceM += Math.round(deltaKm * 1000);
+        await run(executor, "UPDATE orders SET distance_traveled_m=$1 WHERE id=$2", [tripDistanceM, activeOrder.id]);
+      }
+    }
+  }
 
   const publicLocation = {
     orderId: activeOrder?.id || null,
@@ -1462,6 +1491,7 @@ export async function updateDriverLocation({ userId, location, io = null, execut
     heading: result.rows[0].heading === null ? null : Number(result.rows[0].heading),
     speed: result.rows[0].speed === null ? null : Number(result.rows[0].speed),
     accuracy: result.rows[0].accuracy === null ? null : Number(result.rows[0].accuracy),
+    tripDistanceM,
     updatedAt: result.rows[0].updated_at
   };
 

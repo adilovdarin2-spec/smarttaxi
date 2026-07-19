@@ -626,6 +626,7 @@ class OrderSummary {
     this.waitingPricePerMinute = 0,
     this.clientId,
     this.serviceCommission,
+    this.distanceTraveledM,
   });
 
   final String id;
@@ -694,6 +695,12 @@ class OrderSummary {
   final String? clientId;
   // service_commission on `orders` — driver payout is price - serviceCommission.
   final double? serviceCommission;
+  // Live "km driven so far" for the trip in progress (orders.distance_traveled_m,
+  // accumulated server-side from real GPS pings — see updateDriverLocation in
+  // routing.service.js). Only ever non-zero once TRIP_STARTED; seeds the
+  // live counter on a fresh REST fetch (app resume/restart mid-trip) until
+  // the next socket ping arrives with a more current value.
+  final int? distanceTraveledM;
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
@@ -736,6 +743,7 @@ class OrderSummary {
       waitingPricePerMinute: waitingPricePerMinute,
       clientId: clientId,
       serviceCommission: serviceCommission,
+      distanceTraveledM: distanceTraveledM,
     );
   }
 
@@ -832,6 +840,8 @@ class OrderSummary {
       clientId: (json['client_id'] ?? json['clientId'])?.toString(),
       serviceCommission: _nullableDouble(
           json['service_commission'] ?? json['serviceCommission']),
+      distanceTraveledM: int.tryParse(
+          '${json['distance_traveled_m'] ?? json['distanceTraveledM'] ?? ''}'),
     );
   }
 }
