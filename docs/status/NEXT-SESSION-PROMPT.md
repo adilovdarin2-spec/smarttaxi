@@ -27,6 +27,15 @@
 
 **Вывод: водительская часть — действительно готова по теме, как и утверждал тот чат.** Widgets/screens файлы (`driver_common_widgets`, `driver_line_widgets`, `driver_order_widgets`, `driver_profile_widgets`, `driver_shell_chrome`, всё в `driver/screens/*`) уже были ~0 статичных ссылок с активным использованием `context.palette`. Пробел закрывать не нужно.
 
+**Код-ревью driver_shell.dart (тот же setState/mounted аудит, что и на пассажирской стороне) — commit `8176dd7`.** Прошёлся вручную по ВСЕМ 34 async-методам файла. Нашёл и починил реальные пробелы в 6 функциях — все среди САМЫХ используемых действий водителя:
+- `_accept` — принятие заказа: success-path и catch без guard.
+- `_setOnline` — переключатель на линию/с линии (главное действие всего приложения!): 4 места setState без guard (только `finally` был защищён) — многошаговый async-флоу (запрос статуса, затем geolocation-разрешение, которое реально может занять время), где водитель вполне может уйти с экрана посреди выполнения.
+- `_startLocationFlow` — два early-return (сервис геолокации выключен / разрешение отклонено) без guard.
+- `_tripAction` — общий хелпер для start/complete поездки: success и catch без guard.
+- `_loadRegions`, `_selectRegion`, `_loadOrders` — catch-блоки (и у `_loadOrders` — весь success-путь) без guard, при том что `finally` каждой функции уже был защищён (та же непоследовательность, что везде).
+
+Всё, что дальше в файле (навигатор/road-alerts экран, шторка регулярных поездок, быстрые сообщения, standalone-трекинг позиции навигатора) — уже было аккуратно защищено везде, похоже на более недавно написанный код. `driver/widgets/*` и `driver/screens/*` — тоже чисто, отдельно проверено.
+
 ## Тема и меню passenger_shell.dart — ЗАВЕРШЕНО (2026-07-19)
 
 `passenger_shell.dart` полностью мигрирован на `context.palette` — корневой `Scaffold` (`_PassengerShellState.build()`) и ВСЕ 16 экранов, которые на нём висят (home/trips/profile/promoCodes/notifications/driverApplication/support/faq/about/legalHub/legalDocument×5/settings/recurringBookings/favoriteAddresses/driverPreferences/referrals), плюс `_PremiumCard` и все общие row/label-виджеты внутри карточек, плюс все ранее начатые самодостаточные шторки. Коммиты (все запушены в `dev`): `0aaa077`, `c94100d`, `8fa141b`, `3611ffc`, `cf96c02`, `0e47308`, `cab306e`, `5ccc6b3`, `afeb580`, `69a8139`, `8543a97`, `74cbf22`, `b6213b7`, `7525a93`, `3001a9b`, `fd055ce`, `b7a42ec`.
