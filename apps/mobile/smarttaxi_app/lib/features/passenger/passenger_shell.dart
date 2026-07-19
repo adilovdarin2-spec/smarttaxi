@@ -1896,7 +1896,7 @@ class _PassengerShellState extends State<PassengerShell>
       },
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: SmartTaxiColors.appBackground,
+        backgroundColor: context.palette.appBackground,
         drawerScrimColor: Colors.black.withValues(alpha: 0.26),
         drawer: _SmartDrawer(
           accountLabel: widget.accountLabel,
