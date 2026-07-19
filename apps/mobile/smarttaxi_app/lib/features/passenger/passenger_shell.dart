@@ -7834,8 +7834,30 @@ class _RateDriverPanel extends StatelessWidget {
                 minLines: 2,
                 maxLines: 4,
                 textAlign: TextAlign.left,
+                style: const TextStyle(color: SmartTaxiColors.text),
+                // _HomeOrderPanel (this panel's container) is hardcoded
+                // Colors.white regardless of app theme, but a bare
+                // InputDecoration inherits the ambient (theme-dependent)
+                // ambient InputDecorationTheme — in dark mode that painted
+                // a dark input box floating inside this white panel.
                 decoration: const InputDecoration(
                   hintText: 'Комментарий (необязательно)',
+                  hintStyle: TextStyle(color: SmartTaxiColors.textMuted),
+                  filled: true,
+                  fillColor: SmartTaxiColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                    borderSide: BorderSide(color: SmartTaxiColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                    borderSide: BorderSide(color: SmartTaxiColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                    borderSide:
+                        BorderSide(color: SmartTaxiColors.gold, width: 1.8),
+                  ),
                 ),
               ),
             ],
@@ -11463,6 +11485,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                     child: Text(
                       widget.title,
                       style: const TextStyle(
+                        color: SmartTaxiColors.text,
                         fontSize: 21,
                         height: 1.05,
                         fontWeight: FontWeight.w900,
@@ -11525,7 +11548,36 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                 onSubmitted: _search,
                 decoration: InputDecoration(
                   hintText: widget.hint,
-                  prefixIcon: const Icon(Icons.search_rounded),
+                  hintStyle: const TextStyle(
+                    color: SmartTaxiColors.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: SmartTaxiColors.textSecondary,
+                  ),
+                  // This sheet's background is forced light regardless of
+                  // app theme (showModalBottomSheet's own backgroundColor,
+                  // see the call site), but this field doesn't set its own
+                  // fill/border — without that it inherits the ambient
+                  // (theme-dependent) InputDecorationTheme, which in dark
+                  // mode painted a dark box floating inside the otherwise
+                  // light sheet.
+                  filled: true,
+                  fillColor: SmartTaxiColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: const BorderSide(color: SmartTaxiColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: const BorderSide(color: SmartTaxiColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide:
+                        const BorderSide(color: SmartTaxiColors.gold, width: 1.8),
+                  ),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
                   suffixIcon: _loading
@@ -12841,7 +12893,7 @@ class _PaymentMethodRow extends StatelessWidget {
           onTap: enabled ? onTap : null,
           child: Row(
             children: [
-              _PaymentIcon(method: method),
+              _PaymentIcon(method: method, forceLight: true),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -12885,9 +12937,17 @@ class _PaymentMethodRow extends StatelessWidget {
 }
 
 class _PaymentIcon extends StatelessWidget {
-  const _PaymentIcon({required this.method});
+  const _PaymentIcon({required this.method, this.forceLight = false});
 
   final String method;
+  // _PaymentMethodRow (the tariff/order sheet's own summary row) sits
+  // inside the protected order-flow area, which stays a hardcoded white
+  // Container regardless of app theme — this badge needs to match that,
+  // not the ambient (theme-dependent) palette, or it renders as a dark
+  // navy square on a white row in dark mode. _PaymentMethodSheet, the
+  // other caller, is already fully migrated to context.palette, so it
+  // keeps the theme-aware default.
+  final bool forceLight;
 
   @override
   Widget build(BuildContext context) {
@@ -12896,16 +12956,19 @@ class _PaymentIcon extends StatelessWidget {
       _ => _iconBanknote,
     };
     final palette = context.palette;
+    final surface = forceLight ? SmartTaxiColors.goldSurface : palette.goldSurface;
+    final border = forceLight ? SmartTaxiColors.borderStrong : palette.borderStrong;
+    final iconColor = forceLight ? SmartTaxiColors.goldDeep : palette.goldDeep;
     return Container(
       width: 32,
       height: 32,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: palette.goldSurface,
-        border: Border.all(color: palette.borderStrong),
+        color: surface,
+        border: Border.all(color: border),
         borderRadius: BorderRadius.circular(13),
       ),
-      child: _SvgIcon(icon, color: palette.goldDeep, size: 18),
+      child: _SvgIcon(icon, color: iconColor, size: 18),
     );
   }
 }
