@@ -34,7 +34,9 @@
 - `_tripAction` — общий хелпер для start/complete поездки: success и catch без guard.
 - `_loadRegions`, `_selectRegion`, `_loadOrders` — catch-блоки (и у `_loadOrders` — весь success-путь) без guard, при том что `finally` каждой функции уже был защищён (та же непоследовательность, что везде).
 
-Всё, что дальше в файле (навигатор/road-alerts экран, шторка регулярных поездок, быстрые сообщения, standalone-трекинг позиции навигатора) — уже было аккуратно защищено везде, похоже на более недавно написанный код. `driver/widgets/*` и `driver/screens/*` — тоже чисто, отдельно проверено.
+Всё, что дальше в файле (навигатор/road-alerts экран, шторка регулярных поездок, быстрые сообщения, standalone-трекинг позиции навигатора) — уже было аккуратно защищено везде, похоже на более недавно написанный код.
+
+**`driver/widgets/*` и `driver/screens/*` — отдельно, тщательно проверено (2026-07-19, следующий цикл), полностью чисто.** Все 9 StatefulWidget-классов в этих директориях (`DriverPressScale`, `DriverFaqTile`, `DriverWaitingTimerCard`, `DriverTripCompletionCard`, `DriverWalletScreen`, `DriverPayoutRequestSheet`, `DriverRatingScreen`, `DriverNotificationsScreen`, `DriverApplicationDocumentsScreen`) прочитаны вручную (НЕ регексом — один регекс-паттерн `class \w+ extends State<` пропустил классы, где `extends State<...>` перенесён на следующую строку, дал ложное "нет совпадений"; будь осторожен с регексом на многострочных объявлениях классов в этом кодстайле). Проверено: setState/mounted-guard паттерн — везде корректно; disposal контроллеров/таймеров (`_commentController`, `_amountController`/`_phoneController`, `_timer` в `DriverWaitingTimerCard`) — везде есть парный `dispose()`/`cancel()`. Пробелов не найдено — это ХОРОШАЯ новость, не "не успел проверить".
 
 ## Тема и меню passenger_shell.dart — ЗАВЕРШЕНО (2026-07-19)
 
