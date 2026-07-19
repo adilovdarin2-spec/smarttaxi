@@ -411,7 +411,7 @@ class _DriverShellState extends State<DriverShell> {
       });
       unawaited(_loadDemandHint());
     } catch (error) {
-      setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _regionsLoading = false);
     }
@@ -489,7 +489,7 @@ class _DriverShellState extends State<DriverShell> {
       await _loadRoadAlerts();
       unawaited(_loadDemandHint());
     } catch (error) {
-      setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -537,6 +537,7 @@ class _DriverShellState extends State<DriverShell> {
         final locationStarted = await _startLocationFlow();
         if (!locationStarted) {
           await widget.api.setDriverStatus('OFFLINE');
+          if (!mounted) return;
           setState(() {
             _online = false;
             _locationMessage = null;
@@ -553,6 +554,7 @@ class _DriverShellState extends State<DriverShell> {
         _locationMessage = null;
         _navigatorMessage = null;
       }
+      if (!mounted) return;
       setState(() => _online = nextOnline);
     } catch (error) {
       // Belt-and-suspenders: _disabledReason() already checks region
@@ -589,10 +591,10 @@ class _DriverShellState extends State<DriverShell> {
           AppToast.showError(context, readableError(error));
           _showDriverFullSheet(_driverSupportContent);
         }
-      } else {
+      } else if (mounted) {
         setState(() => _error = readableError(error));
       }
-      if (nextOnline) setState(() => _locationMessage = null);
+      if (nextOnline && mounted) setState(() => _locationMessage = null);
     } finally {
       if (mounted) {
         setState(() {
@@ -605,6 +607,7 @@ class _DriverShellState extends State<DriverShell> {
 
   Future<bool> _startLocationFlow() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!mounted) return false;
     if (!enabled) {
       setState(() =>
           _error = AppLocalizations.of(context).driverLocationRequiredError);
@@ -614,6 +617,7 @@ class _DriverShellState extends State<DriverShell> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
+    if (!mounted) return false;
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       setState(() =>
@@ -719,6 +723,7 @@ class _DriverShellState extends State<DriverShell> {
       final needsRoute = restoredActive != null &&
           restoredActive.id != current?.id &&
           _hasActiveDrivingLeg(restoredActive.status);
+      if (!mounted) return;
       setState(() {
         _orders = orders;
         _activeOrder = restoredActive;
@@ -728,7 +733,7 @@ class _DriverShellState extends State<DriverShell> {
       // fetched explicitly since nothing else has triggered it yet.
       if (needsRoute) unawaited(_loadDriverRoute(restoredActive.id));
     } catch (error) {
-      setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _ordersLoading = false);
     }
@@ -1348,6 +1353,7 @@ class _DriverShellState extends State<DriverShell> {
     try {
       final accepted = await widget.api.acceptOrder(order.id);
       widget.sockets.joinOrder(accepted.id);
+      if (!mounted) return;
       setState(() {
         _activeOrder = accepted;
         _orders = mergeOrder(_orders, accepted);
@@ -1357,7 +1363,7 @@ class _DriverShellState extends State<DriverShell> {
       await _loadDriverRoute(accepted.id);
       await _loadDriverStats();
     } catch (error) {
-      setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _acceptingOrderId = null);
     }
@@ -1425,6 +1431,7 @@ class _DriverShellState extends State<DriverShell> {
     });
     try {
       final order = await action(_activeOrder!.id);
+      if (!mounted) return;
       setState(() {
         _activeOrder = order;
         _orders = mergeOrder(_orders, order);
@@ -1434,7 +1441,7 @@ class _DriverShellState extends State<DriverShell> {
       });
       await _loadDriverStats();
     } catch (error) {
-      setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(error));
     } finally {
       if (mounted) setState(() => _tripActionLabel = null);
     }
