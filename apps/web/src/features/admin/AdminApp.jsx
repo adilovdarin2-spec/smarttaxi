@@ -1177,7 +1177,7 @@ export default function AdminApp() {
             onOpenApplication={application => setModal({ type: "application", application })}
             onAddTariff={() => setModal({ type: "tariff", tariff: null })}
             onEditTariff={tariff => setModal({ type: "tariff", tariff })}
-            onToggleTariff={switchTariff}
+            onToggleTariff={tariff => (isTariffActive(tariff) ? setModal({ type: "tariffDeactivate", tariff }) : switchTariff(tariff))}
             onPreviewTariff={tariff => setModal({ type: "tariffPreview", tariff })}
             canAdjustFinance={user?.role === "OWNER" || user?.role === "FINANCE"}
             onAdjustDebt={driver => setModal({ type: "debtAdjustment", driver })}
@@ -1304,6 +1304,20 @@ export default function AdminApp() {
           onClose={() => setModal(null)}
           onConfirm={async () => {
             await switchRegion(modal.region);
+            setModal(null);
+          }}
+        />
+      )}
+      {modal?.type === "tariffDeactivate" && (
+        <ConfirmPanel
+          title="Отключить тариф"
+          text={`Тариф «${modal.tariff.displayName || modal.tariff.name}» перестанет предлагаться клиентам в своём регионе. Активные поездки на этом тарифе не прерываются.`}
+          confirmLabel="Отключить тариф"
+          busy={actionState.loading}
+          danger
+          onClose={() => setModal(null)}
+          onConfirm={async () => {
+            await switchTariff(modal.tariff);
             setModal(null);
           }}
         />
