@@ -51,6 +51,16 @@ export const CLIENT_ACTIVE_ORDER_STATUSES = [
   "TRIP_COMPLETED",
   "PAYMENT_PENDING"
 ];
+// A trip that finished the ride itself, at any stage of post-trip settlement
+// (still awaiting payment, paid, or rated) — as opposed to still open/active,
+// or cancelled/no-show. Used for admin-facing "completed" counts.
+export const SETTLED_ORDER_STATUSES = [
+  "TRIP_COMPLETED",
+  "PAYMENT_PENDING",
+  "PAID",
+  "RATED",
+  "COMPLETED"
+];
 export const RECENT_DRIVER_STATUSES = [
   ...ACTIVE_ORDER_STATUSES,
   "TRIP_COMPLETED",

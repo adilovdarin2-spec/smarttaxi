@@ -1720,7 +1720,15 @@ class _PassengerShellState extends State<PassengerShell>
       });
       _startNoDriversTimer();
     } catch (error) {
-      setState(() => _error = _readableError(error));
+      if (!mounted) return;
+      // The inline error banner below lives inside the tariff sheet's
+      // scrollable content, which is often already scrolled/sized to fill
+      // the sheet once a tariff+price are showing — appending it there can
+      // land off-screen with nothing visibly changing on tap. A toast
+      // always surfaces regardless of scroll position.
+      final message = _readableError(error);
+      setState(() => _error = message);
+      AppToast.showError(context, message);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

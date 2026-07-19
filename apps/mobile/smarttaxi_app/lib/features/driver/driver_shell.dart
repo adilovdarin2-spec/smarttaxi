@@ -37,6 +37,24 @@ import 'widgets/driver_shell_chrome.dart';
 
 const _appVersion = AppConfig.appVersion;
 
+// Darkens the OSM raster tile layer for dark theme, same treatment as
+// passenger_shell.dart's map (invert + hue-rotate so it isn't a plain photo
+// negative — green stays green-ish, water stays blue-ish). Duplicated here
+// rather than shared since these are two independent widget trees, not a
+// common map component.
+const _darkMapTileMatrix = <double>[
+  0.574, -1.430, -0.144, 0, 255,
+  -0.426, -0.430, -0.144, 0, 255,
+  -0.426, -1.430, 0.856, 0, 255,
+  0, 0, 0, 1, 0,
+];
+const _identityColorMatrix = <double>[
+  1, 0, 0, 0, 0,
+  0, 1, 0, 0, 0,
+  0, 0, 1, 0, 0,
+  0, 0, 0, 1, 0,
+];
+
 class DriverShell extends StatefulWidget {
   const DriverShell({
     super.key,
@@ -3263,6 +3281,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final mapHeight = widget.height ?? (screenHeight < 850 ? 330.0 : 420.0);
     final center = widget.current?.toLatLng() ??
@@ -3305,15 +3324,20 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                           ? 13
                           : 14,
                   initialCameraFit: fit,
-                  backgroundColor: SmartTaxiColors.goldSurface,
+                  backgroundColor: context.palette.appBackground,
                 ),
                 children: [
-                  TileLayer(
-                    urlTemplate: AppConfig.osmTileUrl,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    retinaMode: true,
-                    userAgentPackageName: 'com.smarttaxi.app',
-                    errorTileCallback: (_, __, ___) => widget.onTileError(),
+                  ColorFiltered(
+                    colorFilter: ColorFilter.matrix(
+                      isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                    ),
+                    child: TileLayer(
+                      urlTemplate: AppConfig.osmTileUrl,
+                      subdomains: const ['a', 'b', 'c', 'd'],
+                      retinaMode: true,
+                      userAgentPackageName: 'com.smarttaxi.app',
+                      errorTileCallback: (_, __, ___) => widget.onTileError(),
+                    ),
                   ),
                   if (widget.route.isNotEmpty)
                     PolylineLayer(
@@ -3888,18 +3912,25 @@ class _DriverFullScreenNavigatorState
                       onMapEvent: _handleMapEvent,
                     ),
                     children: [
-                      TileLayer(
-                        urlTemplate: AppConfig.osmTileUrl,
-                        subdomains: const ['a', 'b', 'c', 'd'],
-                        retinaMode: true,
-                        userAgentPackageName: 'com.smarttaxi.app',
-                        errorTileCallback: (_, __, ___) {
-                          if (_mapUnavailable) return;
-                          _tileErrorCount++;
-                          if (_tileErrorCount >= 12 && mounted) {
-                            setState(() => _mapUnavailable = true);
-                          }
-                        },
+                      // Unconditional (not theme-gated): this screen's
+                      // scaffold is always dark navy regardless of app
+                      // theme (turn-by-turn nav stays low-glare day or
+                      // night), so the tiles must always match it.
+                      ColorFiltered(
+                        colorFilter: ColorFilter.matrix(_darkMapTileMatrix),
+                        child: TileLayer(
+                          urlTemplate: AppConfig.osmTileUrl,
+                          subdomains: const ['a', 'b', 'c', 'd'],
+                          retinaMode: true,
+                          userAgentPackageName: 'com.smarttaxi.app',
+                          errorTileCallback: (_, __, ___) {
+                            if (_mapUnavailable) return;
+                            _tileErrorCount++;
+                            if (_tileErrorCount >= 12 && mounted) {
+                              setState(() => _mapUnavailable = true);
+                            }
+                          },
+                        ),
                       ),
                       if (route.isNotEmpty)
                         PolylineLayer(
@@ -4365,6 +4396,7 @@ class _TripMapState extends State<_TripMap> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final pickup = widget.order.pickupCoordinate?.toLatLng();
     final dropoff = widget.order.dropoffCoordinate?.toLatLng();
     if (pickup == null && dropoff == null && widget.route.isEmpty) {
@@ -4397,11 +4429,16 @@ class _TripMapState extends State<_TripMap> {
                 initialCameraFit: cameraFit,
               ),
               children: [
-                TileLayer(
-                    urlTemplate: AppConfig.osmTileUrl,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    retinaMode: true,
-                    userAgentPackageName: 'com.smarttaxi.app'),
+                ColorFiltered(
+                  colorFilter: ColorFilter.matrix(
+                    isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                  ),
+                  child: TileLayer(
+                      urlTemplate: AppConfig.osmTileUrl,
+                      subdomains: const ['a', 'b', 'c', 'd'],
+                      retinaMode: true,
+                      userAgentPackageName: 'com.smarttaxi.app'),
+                ),
                 if (widget.route.isNotEmpty)
                   PolylineLayer(polylines: [
                     Polyline(
@@ -5468,6 +5505,7 @@ class _RoadAlertMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Falls back to the driver's own region/GPS before the hardcoded
     // Shymkent coordinate — that default only fires if we somehow have
     // neither (e.g. location permission denied and region lookup failed).
@@ -5489,15 +5527,20 @@ class _RoadAlertMap extends StatelessWidget {
                   initialCenter: center,
                   initialZoom: 13,
                   onTap: (_, point) => onTap(point),
-                  backgroundColor: SmartTaxiColors.goldSurface,
+                  backgroundColor: context.palette.appBackground,
                 ),
                 children: [
-                  TileLayer(
-                    urlTemplate: AppConfig.osmTileUrl,
-                    subdomains: const ['a', 'b', 'c', 'd'],
-                    retinaMode: true,
-                    userAgentPackageName: 'com.smarttaxi.app',
-                    errorTileCallback: (_, __, ___) => onTileError(),
+                  ColorFiltered(
+                    colorFilter: ColorFilter.matrix(
+                      isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                    ),
+                    child: TileLayer(
+                      urlTemplate: AppConfig.osmTileUrl,
+                      subdomains: const ['a', 'b', 'c', 'd'],
+                      retinaMode: true,
+                      userAgentPackageName: 'com.smarttaxi.app',
+                      errorTileCallback: (_, __, ___) => onTileError(),
+                    ),
                   ),
                   MarkerLayer(
                     markers: [

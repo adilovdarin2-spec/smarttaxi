@@ -5358,6 +5358,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-weight: 900;
 }
 
+.admin-primary-button.compact,
 .admin-secondary-button.compact,
 .admin-danger-button.compact {
   min-height: 38px;
@@ -5376,6 +5377,55 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .admin-table-row.orders {
   grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.1fr) minmax(140px, 1fr) auto minmax(110px, .7fr);
+}
+
+/* Order row is now wrapped in .admin-order-block (row + optional detail
+   panel), so the block owns the divider border instead of each row —
+   otherwise every collapsed row would be its own last-child and lose its
+   bottom border, since it'd be the only child of its wrapper. */
+.admin-order-block {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-order-block:last-child {
+  border-bottom: none;
+}
+
+.admin-table-row.orders.admin-order-row-toggle {
+  width: 100%;
+  border: none;
+  border-bottom: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 16px 18px;
+  background: var(--admin-warm);
+}
+
+.admin-order-assign-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-order-assign-row .admin-control-select {
+  flex: 1;
+  min-width: 220px;
+}
+
+.admin-order-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .admin-modal-backdrop {
@@ -5594,6 +5644,17 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border-radius: 16px;
   color: var(--admin-text);
   font-weight: 900;
+}
+
+.admin-settings-note {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--admin-warm);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  color: var(--admin-secondary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .admin-detail-hero {

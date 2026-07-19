@@ -38,6 +38,11 @@ import {
   reviewDriverDocument
 } from "../driver-documents/driver-documents.service.js";
 import { UPLOAD_ROOT } from "../driver-documents/upload.middleware.js";
+import {
+  ACTIVE_ORDER_STATUSES,
+  OPEN_ORDER_STATUSES,
+  SETTLED_ORDER_STATUSES
+} from "../orders/order-dispatch.service.js";
 import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -326,11 +331,12 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
       `),
       query(`
         SELECT COUNT(*)::int total,
-               COUNT(*) FILTER (WHERE status='NEW')::int searching,
-               COUNT(*) FILTER (WHERE status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS'))::int active,
-               COUNT(*) FILTER (WHERE status='COMPLETED')::int completed
+               COUNT(*) FILTER (WHERE status = ANY($1::text[]))::int searching,
+               COUNT(*) FILTER (WHERE status = ANY($1::text[]) AND created_at < NOW() - INTERVAL '3 minutes')::int stuck,
+               COUNT(*) FILTER (WHERE status = ANY($2::text[]))::int active,
+               COUNT(*) FILTER (WHERE status = ANY($3::text[]))::int completed
         FROM orders
-      `),
+      `, [OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, SETTLED_ORDER_STATUSES]),
       query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='PENDING')::int pending FROM driver_applications"),
       query("SELECT * FROM service_settings WHERE id=1")
     ]);
@@ -379,7 +385,7 @@ router.get("/drivers", requireAuth, requireRole("OWNER", "FINANCE"), async (_req
     const result = await query(`
       SELECT d.id, d.name, d.phone, d.car_model, d.car_color, d.plate, d.status,
              d.rating, d.balance, d.debt, d.is_blocked, d.last_seen_at, d.created_at,
-             r.name region_name,
+             d.current_region_id, r.name region_name,
              COUNT(o.id)::int total_orders,
              COUNT(o.id) FILTER (WHERE o.status='COMPLETED')::int completed_orders
       FROM drivers d

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import {
   adjustAdminDriverDebt,
+  assignAdminOrderDriver,
   blockAdminDriver,
   clearAdminDriverCommissionOverride,
   clearToken,
@@ -40,6 +41,7 @@ import {
   getAdminTariffAnalytics,
   getAdminTariffs,
   loginUser,
+  markOperatorOrderStatus,
   previewAdminTariffPrice,
   reopenAdminSupport,
   respondAdminSupport,
@@ -278,7 +280,9 @@ function financeTypeLabel(type) {
 function paymentMethodLabel(method) {
   return {
     CASH: "Наличные",
+    KASPI: "Kaspi",
     KASPI_TRANSFER: "Kaspi перевод",
+    CARD: "Картой",
     UNKNOWN: "Требует проверки"
   }[method] || method || "—";
 }
@@ -415,8 +419,17 @@ export default function AdminApp() {
       applications: getAdminDriverApplications,
       orders: async () => {
         const status = orderStatus !== "all" ? orderStatus : undefined;
-        const data = await getAdminOrders({ status });
-        return { orders: data.orders || [] };
+        const [orders, drivers, regions] = await Promise.allSettled([
+          getAdminOrders({ status }),
+          getAdminDrivers(),
+          getAdminRegions()
+        ]);
+        if (orders.status === "rejected") throw orders.reason;
+        return {
+          orders: orders.value.orders || [],
+          drivers: drivers.status === "fulfilled" ? drivers.value.drivers || [] : [],
+          regions: regions.status === "fulfilled" ? regions.value.regions || [] : []
+        };
       },
       tariffs: async () => {
         const selectedRegionId = tariffRegion !== "all" ? tariffRegion : undefined;
@@ -576,10 +589,21 @@ export default function AdminApp() {
       JSON.stringify(item).toLowerCase().includes(needle)
     );
 
+    // Checked before the generic `regions`/`drivers` branches below: the
+    // orders page payload now also carries `drivers`/`regions` (for the
+    // manual-dispatch driver picker), which would otherwise satisfy those
+    // more generic checks first and skip filtering `orders` entirely.
+    if (payload.orders) {
+      return {
+        ...payload,
+        orders: filter(payload.orders),
+        drivers: payload.drivers || [],
+        regions: payload.regions || []
+      };
+    }
     if (payload.regions) return { ...payload, regions: filter(payload.regions) };
     if (payload.drivers) return { ...payload, drivers: filter(payload.drivers) };
     if (payload.applications) return { ...payload, applications: filter(payload.applications) };
-    if (payload.orders) return { ...payload, orders: filter(payload.orders) };
     if (payload.tariffs) return { ...payload, tariffs: filter(payload.tariffs), regions: payload.regions || [] };
     if (payload.alerts) return { ...payload, alerts: filter(payload.alerts), regions: payload.regions || [] };
     if (payload.reviews || payload.leaderboard) {
@@ -713,6 +737,30 @@ export default function AdminApp() {
       await clearAdminDriverCommissionOverride(driverId);
       await refreshDriverDetail(driverId);
     }, "Индивидуальная комиссия удалена");
+  }
+
+  async function assignOrderDriver(orderId, driverId) {
+    await runAction(async () => {
+      await assignAdminOrderDriver(orderId, driverId);
+      await loadPage("orders");
+      await loadDashboard();
+    }, "Водитель назначен");
+  }
+
+  async function advanceOrderStatus(orderId, action, successMessage) {
+    await runAction(async () => {
+      await markOperatorOrderStatus(orderId, action);
+      await loadPage("orders");
+      await loadDashboard();
+    }, successMessage);
+  }
+
+  async function cancelOrder(orderId) {
+    await runAction(async () => {
+      await markOperatorOrderStatus(orderId, "cancel");
+      await loadPage("orders");
+      await loadDashboard();
+    }, "Заказ отменён");
   }
 
   async function reviewApplication(application, status, comment = "") {
@@ -1049,6 +1097,9 @@ export default function AdminApp() {
             setApplicationStatus={setApplicationStatus}
             orderStatus={orderStatus}
             setOrderStatus={setOrderStatus}
+            onAssignOrderDriver={assignOrderDriver}
+            onAdvanceOrderStatus={advanceOrderStatus}
+            onRequestCancelOrder={order => setModal({ type: "orderCancel", order })}
             tariffStatus={tariffStatus}
             setTariffStatus={setTariffStatus}
             tariffRegion={tariffRegion}
@@ -1214,6 +1265,20 @@ export default function AdminApp() {
           onConfirm={() => deleteRaffle(modal.raffle)}
         />
       )}
+      {modal?.type === "orderCancel" && (
+        <ConfirmPanel
+          title="Отменить заказ"
+          text={`Заказ ${modal.order.short_id || modal.order.id} будет отменён от имени администрации. Клиент и назначенный водитель (если есть) получат уведомление. Это действие нельзя отменить.`}
+          confirmLabel="Отменить заказ"
+          busy={actionState.loading}
+          danger
+          onClose={() => setModal(null)}
+          onConfirm={async () => {
+            await cancelOrder(modal.order.id);
+            setModal(null);
+          }}
+        />
+      )}
       {modal?.type === "reviewDelete" && (
         <ConfirmPanel
           title="Удалить отзыв"
@@ -1306,8 +1371,8 @@ function DashboardPage({ dashboard, health, onSelectPage }) {
         <DataCard title="Карта управления" text="Все ключевые рычаги бизнеса собраны по ролям: владелец, оператор, финансы.">
           <div className="admin-solution-grid">
             <button type="button" onClick={() => onSelectPage("orders")}>
-              <strong>{Number(summary.orders?.searching || 0)}</strong>
-              <span>Заказы без водителя</span>
+              <strong>{Number(summary.orders?.stuck || 0)}</strong>
+              <span>Заказы без водителя больше 3 мин</span>
               <small>Назначение и контроль статуса</small>
             </button>
             <button type="button" onClick={() => onSelectPage("drivers")}>
@@ -1361,10 +1426,16 @@ function buildAdminProblemItems(dashboard, health) {
     {
       key: "searching-orders",
       index: "02",
-      tone: Number(orders.searching || 0) > 0 ? "warning" : "success",
+      // A handful of orders in SEARCHING_DRIVER is completely normal at any
+      // moment (a request takes a few seconds to match) — the real signal an
+      // owner needs is orders stuck searching well past that, since nobody
+      // else is watching this instead of them.
+      tone: Number(orders.stuck || 0) > 0 ? "warning" : "success",
       page: "orders",
-      title: Number(orders.searching || 0) > 0 ? "Есть заказы в поиске" : "Заказы распределяются нормально",
-      text: `${Number(orders.searching || 0)} заказов ждут назначения водителя.`,
+      title: Number(orders.stuck || 0) > 0 ? "Есть зависшие заказы" : "Заказы распределяются нормально",
+      text: Number(orders.stuck || 0) > 0
+        ? `${Number(orders.stuck)} заказов ищут водителя больше 3 минут (всего в поиске: ${Number(orders.searching || 0)}).`
+        : `Сейчас в поиске: ${Number(orders.searching || 0)}, зависших нет.`,
       action: "К заказам"
     },
     {
@@ -1403,7 +1474,16 @@ function AdminPage(props) {
   if (active === "regions") return <RegionsPage regions={asArray(payload, "regions")} {...props} />;
   if (active === "drivers") return <DriversPage drivers={asArray(payload, "drivers")} {...props} />;
   if (active === "applications") return <ApplicationsPage applications={asArray(payload, "applications")} {...props} />;
-  if (active === "orders") return <OrdersPage orders={asArray(payload, "orders")} {...props} />;
+  if (active === "orders") {
+    return (
+      <OrdersPage
+        orders={asArray(payload, "orders")}
+        drivers={asArray(payload, "drivers")}
+        regions={asArray(payload, "regions")}
+        {...props}
+      />
+    );
+  }
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
   if (active === "roadAlerts") return <RoadAlertsPage alerts={asArray(payload, "alerts")} regions={asArray(payload, "regions")} {...props} />;
@@ -2049,7 +2129,48 @@ function FinancePage({
   );
 }
 
-function OrdersPage({ orders, orderStatus, setOrderStatus }) {
+// Mirrors order-dispatch.service.js's OPEN_ORDER_STATUSES / the
+// CANCELLED_BY_OPERATOR entry of TRANSITION_RULES on the backend — kept as a
+// separate frontend constant (this file can't import server code) purely to
+// decide which buttons to show. The backend independently re-validates every
+// transition, so drift here only ever means a button is missing or shown
+// when it would 409, never an unsafe action actually going through.
+const OPEN_ORDER_STATUSES = ["SEARCHING_DRIVER", "NEW"];
+const CANCELLABLE_ORDER_STATUSES = [
+  "SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_ASSIGNED",
+  "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT"
+];
+
+function nextOrderStatusAction(status) {
+  if (["DRIVER_FOUND", "DRIVER_ASSIGNED"].includes(status)) {
+    return { action: "going-to-client", buttonLabel: "Водитель выехал", successMessage: "Отмечено: водитель выехал" };
+  }
+  if (status === "DRIVER_GOING_TO_CLIENT") {
+    return { action: "arrived", buttonLabel: "Водитель приехал", successMessage: "Отмечено: водитель приехал" };
+  }
+  if (["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(status)) {
+    return { action: "start", buttonLabel: "Поездка началась", successMessage: "Отмечено: поездка началась" };
+  }
+  if (["TRIP_STARTED", "IN_PROGRESS"].includes(status)) {
+    return { action: "complete", buttonLabel: "Поездка завершена", successMessage: "Отмечено: поездка завершена" };
+  }
+  if (status === "TRIP_COMPLETED") {
+    return { action: "mark-paid", buttonLabel: "Отметить оплаченным", successMessage: "Заказ отмечен оплаченным" };
+  }
+  return null;
+}
+
+function OrdersPage({
+  orders,
+  orderStatus,
+  setOrderStatus,
+  drivers = [],
+  regions = [],
+  onAssignOrderDriver,
+  onAdvanceOrderStatus,
+  onRequestCancelOrder
+}) {
+  const [expandedId, setExpandedId] = useState(null);
   return (
     <div className="admin-page-stack">
       <PageHeader title="Заказы" subtitle="Список загружен из регионально проверенных заказов">
@@ -2064,17 +2185,129 @@ function OrdersPage({ orders, orderStatus, setOrderStatus }) {
       ) : (
         <div className="admin-table premium">
           {orders.map(order => (
-            <div className="admin-table-row orders" key={order.id}>
-              <strong>{order.short_id || order.id}</strong>
-              <span>{order.pickup_text} → {order.dropoff_text}</span>
-              <Badge tone={badgeTone(order.status)}>{statusLabel(order.status)}</Badge>
-              <span>
-                {formatMoney(order.price)}
-                {order.offered_price_kzt ? <Badge tone="warning"> Своя цена</Badge> : null}
-              </span>
-              <span>{formatDate(order.created_at)}</span>
-            </div>
+            <OrderRow
+              key={order.id}
+              order={order}
+              drivers={drivers}
+              regions={regions}
+              expanded={expandedId === order.id}
+              onToggle={() => setExpandedId(current => (current === order.id ? null : order.id))}
+              onAssignDriver={onAssignOrderDriver}
+              onAdvanceStatus={onAdvanceOrderStatus}
+              onRequestCancel={onRequestCancelOrder}
+            />
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver, onAdvanceStatus, onRequestCancel }) {
+  const [selectedDriverId, setSelectedDriverId] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const nextAction = nextOrderStatusAction(order.status);
+  const canAssign = OPEN_ORDER_STATUSES.includes(order.status) && !order.driver_id;
+  const canCancel = CANCELLABLE_ORDER_STATUSES.includes(order.status);
+  const regionName = regions.find(region => region.id === order.region_id)?.name;
+  const eligibleDrivers = drivers.filter(driver =>
+    driver.status === "FREE" && !driver.is_blocked && driver.current_region_id === order.region_id
+  );
+
+  async function handleAssign() {
+    if (!selectedDriverId || !onAssignDriver) return;
+    setBusy(true);
+    try {
+      await onAssignDriver(order.id, selectedDriverId);
+      setSelectedDriverId("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleAdvance() {
+    if (!nextAction || !onAdvanceStatus) return;
+    setBusy(true);
+    try {
+      await onAdvanceStatus(order.id, nextAction.action, nextAction.successMessage);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const hasActions = canAssign || nextAction || canCancel;
+
+  return (
+    <div className="admin-order-block">
+      <button type="button" className="admin-table-row orders admin-order-row-toggle" onClick={onToggle}>
+        <strong>{order.short_id || order.id}</strong>
+        <span>{order.pickup_text} → {order.dropoff_text}</span>
+        <Badge tone={badgeTone(order.status)}>{statusLabel(order.status)}</Badge>
+        <span>
+          {formatMoney(order.price)}
+          {order.offered_price_kzt ? <Badge tone="warning"> Своя цена</Badge> : null}
+        </span>
+        <span>{formatDate(order.created_at)}</span>
+      </button>
+      {expanded && (
+        <div className="admin-order-detail">
+          <div className="admin-card-facts">
+            <InfoLine label="Регион" value={regionName || "—"} />
+            <InfoLine label="Тариф" value={order.tariff || "—"} />
+            <InfoLine label="Оплата" value={paymentMethodLabel(order.payment_method)} />
+            <InfoLine
+              label="Водитель"
+              value={order.driver_id ? `${order.driver_name || "—"} · ${order.driver_phone || "—"} · ${order.driver_car_model || ""} ${order.driver_plate || ""}`.trim() : "Не назначен"}
+            />
+          </div>
+          {!hasActions && (
+            <p className="admin-settings-note">Заказ находится в финальном статусе — ручные действия недоступны.</p>
+          )}
+          {canAssign && (
+            <div className="admin-order-assign-row">
+              <select
+                className="admin-control-select"
+                value={selectedDriverId}
+                onChange={event => setSelectedDriverId(event.target.value)}
+                disabled={busy}
+              >
+                <option value="">
+                  {eligibleDrivers.length ? "Выберите свободного водителя в регионе" : "Нет свободных водителей в этом регионе"}
+                </option>
+                {eligibleDrivers.map(driver => (
+                  <option value={driver.id} key={driver.id}>
+                    {driver.name} · {driver.car_model} · ★{Number(driver.rating || 0).toFixed(1)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="admin-primary-button compact"
+                disabled={!selectedDriverId || busy}
+                onClick={handleAssign}
+              >
+                Назначить
+              </button>
+            </div>
+          )}
+          <div className="admin-order-actions">
+            {nextAction && (
+              <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={handleAdvance}>
+                {nextAction.buttonLabel}
+              </button>
+            )}
+            {canCancel && (
+              <button
+                type="button"
+                className="admin-danger-button compact"
+                disabled={busy}
+                onClick={() => onRequestCancel?.(order)}
+              >
+                Отменить заказ
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -2930,8 +3163,7 @@ function SettingsPage({ settings, onSave, canEdit }) {
         defaultCommissionPercent: settings.defaultCommissionPercent ?? 0,
         supportPhone: settings.supportPhone || "",
         sosPhone: settings.sosPhone || "",
-        autoApproveDrivers: !!settings.autoApproveDrivers,
-        autoAssignOrders: !!settings.autoAssignOrders
+        autoApproveDrivers: !!settings.autoApproveDrivers
       });
     }
   }, [settings]);
@@ -2959,8 +3191,7 @@ function SettingsPage({ settings, onSave, canEdit }) {
         defaultCommissionPercent: Number(form.defaultCommissionPercent),
         supportPhone: form.supportPhone.trim(),
         sosPhone: form.sosPhone.trim(),
-        autoApproveDrivers: form.autoApproveDrivers,
-        autoAssignOrders: form.autoAssignOrders
+        autoApproveDrivers: form.autoApproveDrivers
       });
     } finally {
       setBusy(false);
@@ -3027,16 +3258,14 @@ function SettingsPage({ settings, onSave, canEdit }) {
               />
               <span>Автоматически одобрять заявки водителей</span>
             </label>
-            <label className="admin-toggle-line">
-              <input
-                type="checkbox"
-                checked={form.autoAssignOrders}
-                onChange={event => setField("autoAssignOrders", event.target.checked)}
-                disabled={!canEdit}
-              />
-              <span>Автоматически назначать заказы водителям</span>
-            </label>
           </div>
+          <p className="admin-settings-note">
+            Заказы всегда распределяются одинаково: система уведомляет всех
+            свободных водителей в регионе, и заказ достаётся первому, кто
+            откликнется. Отдельного назначения «ближайшему водителю» пока нет —
+            если заказ долго висит без водителя, назначьте его вручную на
+            странице «Заказы».
+          </p>
           {error && <InlineMessage danger text={error} />}
           {canEdit && (
             <div className="admin-modal-actions">
