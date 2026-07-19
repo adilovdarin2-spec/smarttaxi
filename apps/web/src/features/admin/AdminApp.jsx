@@ -498,8 +498,12 @@ export default function AdminApp() {
         };
       },
       quality: async () => {
+        // getAdminReviews is OWNER-only; getAdminLeaderboard (below) is open
+        // to FINANCE too. Without this .catch, a FINANCE user's reviews-403
+        // would reject the whole Promise.all and take the leaderboard down
+        // with it, even though they're perfectly entitled to see that part.
         const [reviews, raffles] = await Promise.all([
-          getAdminReviews(),
+          getAdminReviews().catch(() => ({ reviews: [] })),
           getAdminRaffles().catch(() => ({ raffles: [] }))
         ]);
         const raffleList = raffles.raffles || [];
