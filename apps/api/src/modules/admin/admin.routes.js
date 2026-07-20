@@ -319,7 +319,11 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
       drivers,
       orders,
       applications,
-      settings
+      settings,
+      highDebtDrivers,
+      frequentCancelClients,
+      activeRoadAlerts,
+      lowReviews
     ] = await Promise.all([
       query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE is_active)::int active FROM regions"),
       query(`
@@ -338,7 +342,24 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
         FROM orders
       `, [OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, SETTLED_ORDER_STATUSES]),
       query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='PENDING')::int pending FROM driver_applications"),
-      query("SELECT * FROM service_settings WHERE id=1")
+      query("SELECT * FROM service_settings WHERE id=1"),
+      // 15000 is the hard debt ceiling that blocks a driver from accepting
+      // new orders (order-dispatch.service.js) — this is an early warning
+      // well before that, not a duplicate of it.
+      query("SELECT COUNT(*)::int total FROM drivers WHERE debt > 10000 AND NOT is_blocked"),
+      // A real, grounded abuse signal from data that already exists (no
+      // fraud-score fabrication) — a client cancelling repeatedly in a
+      // short window is worth a human look, win or lose either way.
+      query(`
+        SELECT COUNT(*)::int total FROM (
+          SELECT client_id FROM orders
+          WHERE status='CANCELLED_BY_CLIENT' AND created_at > NOW() - INTERVAL '7 days' AND client_id IS NOT NULL
+          GROUP BY client_id
+          HAVING COUNT(*) >= 3
+        ) frequent_cancellers
+      `),
+      query("SELECT COUNT(*)::int total FROM road_alerts WHERE status='ACTIVE'"),
+      query("SELECT COUNT(*)::int total FROM driver_reviews WHERE rating <= 3 AND created_at > NOW() - INTERVAL '30 days'")
     ]);
 
     res.json({
@@ -374,7 +395,13 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
         regions: regions.rows[0],
         drivers: drivers.rows[0],
         orders: orders.rows[0],
-        applications: applications.rows[0]
+        applications: applications.rows[0],
+        attention: {
+          highDebtDrivers: highDebtDrivers.rows[0].total,
+          frequentCancelClients: frequentCancelClients.rows[0].total,
+          activeRoadAlerts: activeRoadAlerts.rows[0].total,
+          lowReviews: lowReviews.rows[0].total
+        }
       }
     });
   } catch (error) { next(error); }

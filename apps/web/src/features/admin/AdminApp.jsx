@@ -674,6 +674,12 @@ export default function AdminApp() {
   const regions = asArray(pageState.payload, "regions");
 
   function selectPage(key) {
+    // Central gate against every entry point that can jump pages (nav,
+    // dashboard tiles, problem-item "action" buttons) — the nav list
+    // itself is already filtered, but tiles/buttons elsewhere call this
+    // directly with a hardcoded key, which would otherwise bypass that.
+    const target = pageTitles[key];
+    if (target?.ownerOnly && user?.role !== "OWNER") return;
     setActive(key);
     setQuery("");
     setDrawerOpen(false);
@@ -1479,18 +1485,18 @@ function DashboardPage({ dashboard, health, onSelectPage }) {
               <small>Тарифы и зоны запуска</small>
             </button>
             <button type="button" onClick={() => onSelectPage("finance")}>
-              <strong>FIN</strong>
-              <span>Финансы и долги</span>
+              <strong>{Number(summary.attention?.highDebtDrivers || 0)}</strong>
+              <span>Водителей с высоким долгом</span>
               <small>Комиссия, касса, CSV</small>
             </button>
             <button type="button" onClick={() => onSelectPage("roadAlerts")}>
-              <strong>ROAD</strong>
-              <span>Дорожные события</span>
+              <strong>{Number(summary.attention?.activeRoadAlerts || 0)}</strong>
+              <span>Активных дорожных событий</span>
               <small>Модерация предупреждений</small>
             </button>
             <button type="button" onClick={() => onSelectPage("quality")}>
-              <strong>5</strong>
-              <span>Качество сервиса</span>
+              <strong>{Number(summary.attention?.lowReviews || 0)}</strong>
+              <span>Низких оценок за 30 дней</span>
               <small>Отзывы и рейтинг водителей</small>
             </button>
           </div>
@@ -1506,6 +1512,7 @@ function buildAdminProblemItems(dashboard, health) {
   const drivers = summary.drivers || {};
   const regions = summary.regions || {};
   const applications = summary.applications || {};
+  const attention = summary.attention || {};
   const items = [
     {
       key: "health",
@@ -1557,6 +1564,32 @@ function buildAdminProblemItems(dashboard, health) {
       title: Number(regions.active || 0) > 0 ? "Регионы включены" : "Нет активных регионов",
       text: `${Number(regions.active || 0)} из ${Number(regions.total || 0)} регионов принимают заказы.`,
       action: "Регионы"
+    },
+    {
+      key: "high-debt-drivers",
+      index: "06",
+      // 15000₸ debt blocks a driver from accepting new orders outright —
+      // this flags them well before that point, while there's still time
+      // to reach out instead of a driver silently discovering the block
+      // mid-shift.
+      tone: Number(attention.highDebtDrivers || 0) > 0 ? "warning" : "success",
+      page: "finance",
+      title: Number(attention.highDebtDrivers || 0) > 0 ? "Есть водители с высоким долгом" : "Долги водителей в норме",
+      text: Number(attention.highDebtDrivers || 0) > 0
+        ? `${Number(attention.highDebtDrivers)} водителей с долгом больше 10 000 ₸ (лимит для блокировки — 15 000 ₸).`
+        : "Ни у одного водителя долг не превышает 10 000 ₸.",
+      action: "Финансы"
+    },
+    {
+      key: "frequent-cancel-clients",
+      index: "07",
+      tone: Number(attention.frequentCancelClients || 0) > 0 ? "warning" : "success",
+      page: "orders",
+      title: Number(attention.frequentCancelClients || 0) > 0 ? "Клиенты часто отменяют заказы" : "Отмены клиентов в норме",
+      text: Number(attention.frequentCancelClients || 0) > 0
+        ? `${Number(attention.frequentCancelClients)} клиентов отменили 3+ заказа за последние 7 дней — возможно, стоит разобраться.`
+        : "Никто не отменял 3 и более заказов за последнюю неделю.",
+      action: "Заказы"
     }
   ];
   return items;
