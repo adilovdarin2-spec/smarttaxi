@@ -80,6 +80,9 @@ function createExecutor() {
       if (/SELECT \* FROM orders WHERE id=\$1 FOR UPDATE/i.test(sql)) {
         return { rows: state.orders.filter(o => o.id === params[0]) };
       }
+      if (/^SELECT \* FROM orders WHERE id=\$1$/i.test(sql.trim())) {
+        return { rows: state.orders.filter(o => o.id === params[0]) };
+      }
       if (/SELECT 1 FROM client_driver_preferences WHERE client_id=\$1 AND driver_id=\$2 AND type='BLOCKED'/i.test(sql)) {
         return { rows: state.preferences.filter(p => p.client_id === params[0] && p.driver_id === params[1] && p.type === "BLOCKED") };
       }

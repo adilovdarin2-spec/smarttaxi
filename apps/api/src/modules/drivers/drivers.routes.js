@@ -149,13 +149,13 @@ router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, 
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
     if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
 
-    if (body.status === "FREE") {
-      await assertDriverCanGoOnline(driver, query);
-    }
-
-    if (["OFFLINE", "BREAK"].includes(body.status)) {
+    if (["FREE", "OFFLINE", "BREAK"].includes(body.status)) {
       const active = await query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ACTIVE_ORDER_STATUSES]);
       if (active.rows[0]) throw new AppError("Driver has active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
+    }
+
+    if (body.status === "FREE") {
+      await assertDriverCanGoOnline(driver, query);
     }
 
     const result = await query("UPDATE drivers SET status=$1,last_seen_at=NOW() WHERE user_id=$2 RETURNING *", [body.status, req.user.id]);

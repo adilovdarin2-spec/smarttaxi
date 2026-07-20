@@ -21,7 +21,8 @@ import {
   publicOrderStatus,
   respondToDriverPriceOffer,
   submitDriverPriceOffer,
-  syncDriverAvailability
+  syncDriverAvailability,
+  TRANSITION_RULES
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { buildActiveLegRoute } from "../routing/routing.service.js";
@@ -116,7 +117,17 @@ async function insertOrderWithShortId(client, params) {
       `, [shortId(), ...params]);
       return result.rows[0];
     } catch (error) {
-      if (error.code !== "23505") throw error;
+      // Only the short_id collision is meant to be retried here — orders
+      // also has unique constraints for one-active-order-per-client and
+      // share_token. Those can theoretically 23505 on the same INSERT if the
+      // caller's own active-order pre-check raced, and silently retrying
+      // against an unrelated conflict 5 times just wastes time before
+      // returning the wrong, generic ORDER_NUMBER_COLLISION error instead of
+      // the specific one the client UI needs to react to correctly.
+      if (error.code === "23505" && error.constraint === "idx_orders_one_active_per_client") {
+        throw new AppError("Client already has an active order", 409, "CLIENT_HAS_ACTIVE_ORDER");
+      }
+      if (error.code !== "23505" || error.constraint !== "orders_short_id_key") throw error;
     }
   }
   throw new AppError("Could not allocate order number", 500, "ORDER_NUMBER_COLLISION");
@@ -1066,7 +1077,13 @@ router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (r
       const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
       if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
       if (existing.driver_id !== driver.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
-      if (!ACTIVE_ORDER_STATUSES.includes(existing.status)) {
+      // Reopening for dispatch only makes sense before the trip physically
+      // starts — once TRIP_STARTED/IN_PROGRESS the rider is already in this
+      // driver's car, so "cancel and let another driver accept" would abandon
+      // them mid-ride. Reuse the same pre-pickup-only status list the
+      // terminal CANCELLED_BY_DRIVER transition already uses elsewhere, so
+      // the two paths can't drift out of sync on what counts as cancellable.
+      if (!TRANSITION_RULES.CANCELLED_BY_DRIVER.includes(existing.status)) {
         throw new AppError("Invalid order status transition", 409, "INVALID_STATUS_TRANSITION", {
           currentStatus: existing.status,
           nextStatus: "SEARCHING_DRIVER"

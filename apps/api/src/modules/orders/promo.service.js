@@ -7,8 +7,11 @@ export async function findValidPromoCode({ code, regionId, clientId, orderPriceK
   const normalizedCode = String(code || "").trim().toUpperCase();
   if (!normalizedCode) throw new AppError("Promo code is required", 400, "PROMO_CODE_REQUIRED");
 
+  // FOR UPDATE serializes concurrent redemptions of the same code within the
+  // order-creation transaction, so the usage_limit/per_client_limit counts
+  // below can't both pass for two requests racing on the same promo code.
   const promo = (await executor.query(
-    `SELECT * FROM promo_codes WHERE UPPER(code)=$1 AND is_active=true AND (region_id IS NULL OR region_id=$2)`,
+    `SELECT * FROM promo_codes WHERE UPPER(code)=$1 AND is_active=true AND (region_id IS NULL OR region_id=$2) FOR UPDATE`,
     [normalizedCode, regionId]
   )).rows[0];
   if (!promo) throw new AppError("Promo code not found", 404, "PROMO_NOT_FOUND");

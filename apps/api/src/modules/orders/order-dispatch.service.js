@@ -456,14 +456,13 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
   const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
   if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
 
-  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
-  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
-  if (existing.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
-  if (existing.driver_offer_status !== "PENDING" || !existing.driver_offer_by_driver_id) {
-    throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
-  }
-
   if (!accept) {
+    const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+    if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+    if (existing.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+    if (existing.driver_offer_status !== "PENDING" || !existing.driver_offer_by_driver_id) {
+      throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+    }
     const declined = (await runQuery(
       executor,
       `UPDATE orders
@@ -475,8 +474,27 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
     return { order: declined, driver: null, accepted: false };
   }
 
-  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [existing.driver_offer_by_driver_id])).rows[0];
+  // Accepting locks both the order and the driver — acceptOrderForDriver and
+  // submitDriverPriceOffer both lock driver-then-order, so this path must use
+  // the same order to avoid a deadlock when they run concurrently. The
+  // driver id isn't known until the order is read, so peek unlocked first,
+  // lock the driver, then lock+re-validate the order — its state may have
+  // changed since the peek (offer withdrawn, order cancelled, etc.).
+  const peek = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1", [orderId])).rows[0];
+  if (!peek) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+  if (peek.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+  if (peek.driver_offer_status !== "PENDING" || !peek.driver_offer_by_driver_id) {
+    throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+  }
+
+  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [peek.driver_offer_by_driver_id])).rows[0];
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (existing.driver_offer_status !== "PENDING" || existing.driver_offer_by_driver_id !== driver.id) {
+    throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+  }
+
   await assertDriverDispatchReady(driver, executor);
   await assertDriverHasNoActiveOrder(driver, executor);
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
