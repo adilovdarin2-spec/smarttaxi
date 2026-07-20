@@ -85,30 +85,49 @@ build pointed at a domain that doesn't answer; either finish standing up
 `api.smarttaxi.kz` first, or deliberately release against the Railway URL
 until it's ready, but pick one on purpose rather than by omitted flag.
 
-**Payment methods — a review-honesty note, not a blocker**: `CASH` and
-`KASPI` payment methods are both settled directly between rider and
-driver outside the app (confirmed in
+**Payment methods — a review-honesty note, not a blocker (updated
+2026-07-20, superseding the 2026-07-15 note below)**: `CASH` and `KASPI`
+are both settled directly between rider and driver outside the app
+(confirmed in
 [payment-provider.js](../apps/api/src/modules/payments/payment-provider.js) —
-`ManualPaymentProvider`, operator-confirmed). The `CARD` method routes to
-`KaspiPayProvider`, which is an explicitly-labeled **mock** (`TEMPORARY
-MOCK` comment in source) that fakes a `PROCESSING → PAID/FAILED`
-transition after ~4s with no real gateway behind it. If `CARD` is
-reachable in the build submitted for review, a reviewer or early tester
-could complete a fake "successful" card payment — not fraudulent (no
-real charge happens) but potentially confusing. Either hide/disable
-`CARD` until Kaspi Pay is real, or make sure the mock's `note` field
-("Kaspi Pay API is not connected yet...") surfaces somewhere in the UI
-so it's not silently indistinguishable from a real payment.
+`ManualPaymentProvider`). `CARD` routes to `KaspiPayProvider` — a **real**
+implementation now exists (create payment, check status, refund, webhook
+signature verification — see
+[KASPI_PAY_READINESS_2026-07-15.md](status/KASPI_PAY_READINESS_2026-07-15.md)),
+but it only activates once `KASPI_MERCHANT_ID`/`KASPI_API_KEY`/
+`KASPI_API_BASE_URL` are set to real values from an approved Kaspi
+partnership — none of which exist yet (no ИП, no partnership, all three
+still unset). Until then, `getPaymentProvider("KASPI_PAY")` automatically
+falls back to `MockKaspiPayProvider`, which fakes a `PROCESSING →
+PAID/FAILED` transition after ~4s with no real gateway behind it — same
+review-honesty concern as before: a reviewer or early tester could
+complete a fake "successful" card payment (not fraudulent, no real charge
+happens, but potentially confusing). The fix is the same either way:
+hide/disable `CARD` until the real credentials are set, or surface the
+mock's `note` field ("Kaspi Pay API is not connected yet...") in the UI so
+it's never silently indistinguishable from a real payment. No code change
+is needed to go live later — setting the 4 env vars is the entire
+cutover.
 
 Still needed before Play submission (code/config is not ready for these,
 none of them are code changes I made here):
 
 - Play Console app listing (see human-actions doc — requires the
   Console account itself);
-- **proper store screenshots** — `docs/design/screenshots-*.png` exist
-  but are 390px-wide web-preview captures, not Play's required
-  device-frame phone screenshots; these need a real on-device or
-  emulator capture pass;
+- **proper store screenshots** — real on-device captures now exist
+  (`docs/design/screenshots-real-device-driver-home-light.png`,
+  `-passenger-home-light.png`, `-passenger-tariff-light.png`; taken
+  2026-07-20 on a real Android device, light theme, at native device
+  resolution — not the older 390px web-preview mockups, which are still
+  present under `docs/design/screenshots-*.png` for reference but are
+  not store-submission material). This is a real improvement but not
+  full curation: only 3 of the ~5-8 screens Play/App Store listings
+  typically want are covered, there's no dark-theme set, and neither
+  store's exact required dimensions/aspect ratios (which vary by device
+  category) have been produced — Play in particular wants at minimum a
+  16:9 or 9:16 set per supported form factor. Treat this as raw source
+  material a human/design pass should crop, caption, and complete rather
+  than final submission assets;
 - Data Safety form filled in Play Console, using the permission/data
   list above as the source (location, phone number, device identifiers,
   camera/photos for driver documents, push token);
