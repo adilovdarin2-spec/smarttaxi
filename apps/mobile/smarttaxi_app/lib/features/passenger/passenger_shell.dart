@@ -36,7 +36,8 @@ const _tariffComfortAsset =
     'assets/cars/tariff_comfort_white_sedan_flutter.png';
 const _tariffBusinessAsset =
     'assets/cars/tariff_business_white_premium_sedan_flutter.png';
-const _tariffDeliveryAsset = 'assets/cars/tariff_v11_delivery.png';
+// tariff_v11_delivery.png (a white sports coupe, not a delivery vehicle) is
+// intentionally unused — see _passengerTariffVisual's Доставка case.
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One consistent marker family app-wide (client, driver, tracking, share
 // links, recurring bookings): a pulsing dot for "my location", one pin
@@ -92,6 +93,7 @@ const _iconBanknote = 'assets/icons/banknote.svg';
 const _iconCreditCard = 'assets/icons/credit_card.svg';
 const _iconCar = 'assets/icons/car.svg';
 const _iconDelivery = 'assets/icons/delivery.svg';
+const _iconDeliveryVan = 'assets/icons/delivery_van_illustration.svg';
 const _atakentFallbackCenter = LatLng(40.84719, 68.503834);
 const _appVersion = AppConfig.appVersion;
 
@@ -12714,11 +12716,18 @@ class _TariffCard extends StatelessWidget {
         ],
       ),
       child: item.asset.isEmpty
-          ? _SvgIcon(
-              item.title == 'Доставка' ? _iconDelivery : _iconCar,
-              size: 24,
-              color: palette.goldDeep,
-            )
+          ? (item.title == 'Доставка'
+              // Full-color illustration, not tinted through _SvgIcon — a
+              // flat single-color glyph looked cheap next to the real photo
+              // renders on the other cards. This has its own shading, so it
+              // needs to render at roughly the same visual weight as those.
+              ? SvgPicture.asset(
+                  _iconDeliveryVan,
+                  width: stretch ? 46 : 58,
+                  height: stretch ? 34 : 42,
+                  fit: BoxFit.contain,
+                )
+              : _SvgIcon(_iconCar, size: 24, color: palette.goldDeep))
           : Image.asset(
               item.asset,
               width: stretch ? 46 : 58,
@@ -13268,7 +13277,11 @@ class _RegionConfirmSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
+                  // ElevatedButton, not FilledButton — FilledButton has no
+                  // entry in the app's ButtonThemeData, so it fell back to
+                  // Material 3's default fully-pill shape next to this row's
+                  // themed (rounded-rect) OutlinedButton, a jarring mismatch.
+                  child: ElevatedButton(
                     onPressed: () =>
                         Navigator.pop(context, _RegionConfirmAction.accept),
                     child: const Text('Да, верно'),
