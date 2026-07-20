@@ -4434,8 +4434,22 @@ function DebtAdjustmentPanel({ driver, regions, onClose, onSave, busy }) {
 }
 
 function ModalFrame({ title, onClose, children, wide = false }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="admin-modal-backdrop" role="presentation">
+    <div
+      className="admin-modal-backdrop"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}
+    >
       <section className={`admin-modal ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <header>
           <h2>{title}</h2>

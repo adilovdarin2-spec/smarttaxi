@@ -1461,12 +1461,18 @@ export default function ClientApp() {
   }
 
   async function deleteFavorite(favoriteId) {
-    setFavoritesState(current => ({ ...current, error: "" }));
+    // deletingId guards against a fast double-click firing two deletes for
+    // the same row before the list reloads and the button unmounts — the
+    // button itself was never disabled while the request was in flight.
+    if (favoritesState.deletingId) return;
+    setFavoritesState(current => ({ ...current, error: "", deletingId: favoriteId }));
     try {
       await deleteFavoriteAddress(favoriteId);
       await loadFavorites();
     } catch (error) {
       setFavoritesState(current => ({ ...current, error: formatError(error) }));
+    } finally {
+      setFavoritesState(current => ({ ...current, deletingId: null }));
     }
   }
 
@@ -1742,6 +1748,16 @@ function ClientHeader({ routeReady = false, addressSelectionMode = false, route,
 function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, onLogout }) {
   const title = authenticated ? formatKzPhoneDisplay(rider.phone) : "Войти в аккаунт";
   const subtitle = authenticated ? rider.name || "Пассажир" : "или зарегистрироваться";
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   return (
     <>
       <div className={`client-drawer-backdrop ${open ? "open" : ""}`} onClick={onClose} />
@@ -3409,6 +3425,15 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
     if (open) setNotice("");
   }, [open, order?.id]);
 
+  useEffect(() => {
+    if (!open) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const pickupText = pickup?.title || order.pickup_text || "Моё местоположение";
@@ -4158,7 +4183,14 @@ function FavoritesSection({ onHome, authenticated, favorites, favoritesState, on
           favorites.map(favorite => (
             <div className="favorite-row-premium" key={favorite.id}>
               <SettingsRow icon={favoriteIcon[favorite.label?.toUpperCase()] || "star"} title={favorite.title || "Адрес"} text={favorite.addressText || favorite.address_text || ""} />
-              <button type="button" className="admin-danger-button compact" onClick={() => onDelete(favorite.id)}>Удалить</button>
+              <button
+                type="button"
+                className="admin-danger-button compact"
+                disabled={Boolean(favoritesState.deletingId)}
+                onClick={() => onDelete(favorite.id)}
+              >
+                {favoritesState.deletingId === favorite.id ? "Удаление..." : "Удалить"}
+              </button>
             </div>
           ))
         )}
