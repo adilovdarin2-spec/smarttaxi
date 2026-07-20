@@ -537,7 +537,11 @@ class ApiClient {
         'file': await MultipartFile.fromFile(filePath, filename: fileName),
       }),
     );
-    return response.data?['avatarUrl'] as String;
+    final avatarUrl = response.data?['avatarUrl'] as String?;
+    if (avatarUrl == null) {
+      throw Exception('Avatar upload response missing avatarUrl');
+    }
+    return avatarUrl;
   }
 
   Future<void> deleteDriverAvatar() async {

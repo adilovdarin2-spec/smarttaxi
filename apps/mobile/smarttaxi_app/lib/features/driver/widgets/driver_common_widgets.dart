@@ -112,20 +112,23 @@ class DriverGradientButton extends StatelessWidget {
         opacity: enabled ? 1 : 0.5,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            // gold itself is identical in both palettes, but goldDeep isn't
+            // (light 0xff0b4fd1 vs dark 0xff5b9bff) — this was const, so it
+            // could never pick up the dark-theme value at all.
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xff5b9dff),
-                SmartTaxiColors.gold,
-                SmartTaxiColors.goldDeep,
+                const Color(0xff5b9dff),
+                context.palette.gold,
+                context.palette.goldDeep,
               ],
             ),
             borderRadius: BorderRadius.circular(18),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: SmartTaxiColors.gold.withValues(alpha: 0.32),
+                      color: context.palette.gold.withValues(alpha: 0.32),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),

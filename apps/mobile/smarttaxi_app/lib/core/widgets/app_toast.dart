@@ -147,23 +147,25 @@ class _ToastCardState extends State<_ToastCard>
     super.dispose();
   }
 
-  (Color, Color, IconData) _tone() {
+  (Color, Color, IconData) _tone(BuildContext context) {
+    final palette = context.palette;
     switch (widget.type) {
       case AppToastType.error:
-        return (SmartTaxiColors.danger, SmartTaxiColors.dangerSoft,
-            Icons.error_rounded);
+        return (palette.danger, palette.dangerSoft, Icons.error_rounded);
       case AppToastType.success:
-        return (SmartTaxiColors.success, SmartTaxiColors.successSoft,
-            Icons.check_circle_rounded);
+        return (
+          palette.success,
+          palette.successSoft,
+          Icons.check_circle_rounded
+        );
       case AppToastType.info:
-        return (SmartTaxiColors.goldDeep, SmartTaxiColors.goldSurface,
-            Icons.info_rounded);
+        return (palette.goldDeep, palette.goldSurface, Icons.info_rounded);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final (accent, soft, icon) = _tone();
+    final (accent, soft, icon) = _tone(context);
     final topInset = MediaQuery.paddingOf(context).top;
     return Positioned(
       top: topInset + 10 + widget.stackIndex * 8,
@@ -194,7 +196,7 @@ class _ToastCardState extends State<_ToastCard>
                 vertical: 14,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.card,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: soft, width: 1.4),
                 boxShadow: const [
@@ -226,8 +228,8 @@ class _ToastCardState extends State<_ToastCard>
                         widget.message,
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
+                        style: TextStyle(
+                          color: context.palette.text,
                           fontSize: 13.5,
                           height: 1.32,
                           fontWeight: FontWeight.w700,

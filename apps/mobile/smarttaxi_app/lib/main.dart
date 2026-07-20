@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -213,7 +214,17 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
 
   Future<void> _restoreSession() async {
     await Future<void>.delayed(const Duration(milliseconds: 1200));
-    final token = await widget.authStore.readToken();
+    String? token;
+    try {
+      token = await widget.authStore.readToken();
+    } catch (_) {
+      // Secure storage can throw if the device's lock-screen credentials
+      // changed and invalidated the keystore entry — without this catch,
+      // _restoreSession() itself throws (this runs from a post-frame
+      // callback with nothing awaiting it) and _session never advances
+      // past AppSession.splash, stranding the user there indefinitely.
+      token = null;
+    }
     if (!mounted) return;
     if (token == null || token.isEmpty) {
       await _showAppSystemUi();
@@ -238,7 +249,36 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
         if (!mounted) return;
         setState(() => _session = AppSession.passenger);
       }
-    } catch (_) {
+    } catch (error) {
+      // A connectivity blip at launch (timeout/no route to host) isn't
+      // proof the token is invalid — only a real response from the server
+      // (e.g. 401) is. Wiping a valid session here meant a flaky network
+      // at exactly the wrong moment logged the user out for no reason.
+      final isConnectivityFailure = error is DioException &&
+          error.response == null &&
+          const {
+            DioExceptionType.connectionTimeout,
+            DioExceptionType.sendTimeout,
+            DioExceptionType.receiveTimeout,
+            DioExceptionType.connectionError,
+          }.contains(error.type);
+      if (isConnectivityFailure) {
+        // me() never answered, so there's no fresh payload to save — fall
+        // back to whatever account details were cached from the last
+        // successful login rather than leaving them blank.
+        final cachedUser = await widget.authStore.readUser();
+        if (!mounted) return;
+        _accountLabel = cachedUser['label'] ?? '';
+        _accountPhone = cachedUser['phone'] ?? '';
+        _accountId = cachedUser['id'] ?? '';
+        final savedMode = await widget.authStore.readMode();
+        if (!mounted) return;
+        await _showAppSystemUi();
+        if (!mounted) return;
+        setState(() => _session =
+            savedMode == 'driver' ? AppSession.driver : AppSession.passenger);
+        return;
+      }
       await widget.authStore.clear();
       await _showAppSystemUi();
       if (mounted) setState(() => _session = AppSession.auth);
