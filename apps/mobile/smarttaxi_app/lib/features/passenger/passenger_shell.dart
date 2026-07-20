@@ -36,8 +36,7 @@ const _tariffComfortAsset =
     'assets/cars/tariff_comfort_white_sedan_flutter.png';
 const _tariffBusinessAsset =
     'assets/cars/tariff_business_white_premium_sedan_flutter.png';
-// tariff_v11_delivery.png (a white sports coupe, not a delivery vehicle) is
-// intentionally unused — see _passengerTariffVisual's Доставка case.
+const _tariffDeliveryAsset = 'assets/cars/tariff_v11_delivery.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One consistent marker family app-wide (client, driver, tracking, share
 // links, recurring bookings): a pulsing dot for "my location", one pin
@@ -1926,6 +1925,30 @@ class _PassengerShellState extends State<PassengerShell>
 
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
+  // Every tab besides Home, and every step of the booking flow inside Home
+  // (map-point picker, address/tariff sheet), is reached via local state
+  // instead of a pushed route, so there is nothing on the Navigator stack
+  // for the OS/gesture back action to pop — this walks back one step at a
+  // time instead. Shared by the Android/gesture PopScope handler below and
+  // by _AppHeader's explicit back arrow (iOS has no equivalent system
+  // back gesture for state that isn't a pushed route, so screens reached
+  // this way need a visible on-screen way back too).
+  void _handleBackNavigation() {
+    if (_mapPointPickerActive) {
+      _cancelMapPointSelection();
+      return;
+    }
+    if (_tab == PassengerTab.home && _dropoff != null) {
+      _backToAddressSelection();
+      return;
+    }
+    if (_tab != PassengerTab.home) {
+      setState(() => _tab = PassengerTab.home);
+      return;
+    }
+    _exitGuard.handle(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final showTopHeader = _tab != PassengerTab.home &&
@@ -1940,19 +1963,7 @@ class _PassengerShellState extends State<PassengerShell>
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        if (_mapPointPickerActive) {
-          _cancelMapPointSelection();
-          return;
-        }
-        if (_tab == PassengerTab.home && _dropoff != null) {
-          _backToAddressSelection();
-          return;
-        }
-        if (_tab != PassengerTab.home) {
-          setState(() => _tab = PassengerTab.home);
-          return;
-        }
-        _exitGuard.handle(context);
+        _handleBackNavigation();
       },
       child: Scaffold(
         key: _scaffoldKey,
@@ -2001,6 +2012,7 @@ class _PassengerShellState extends State<PassengerShell>
               if (showTopHeader)
                 _AppHeader(
                   onMenu: _openDrawer,
+                  onBack: _handleBackNavigation,
                   trailing: _HeaderProfileButton(
                     onTap: () => setState(() => _tab = PassengerTab.profile),
                   ),
@@ -2021,7 +2033,11 @@ class _PassengerShellState extends State<PassengerShell>
                   _tab != PassengerTab.trips)
                 _ActiveOrderBanner(
                   order: _order!,
-                  onTap: () => setState(() => _tab = PassengerTab.home),
+                  // Trips, not Home — the tracking panel (searching/driver
+                  // found/en route/etc, keyed off order.status) lives on
+                  // _tripsScreen(), which Home never renders regardless of
+                  // whether an order is active.
+                  onTap: () => setState(() => _tab = PassengerTab.trips),
                 ),
               Expanded(
                 child: AnimatedSwitcher(
@@ -2146,6 +2162,21 @@ class _PassengerShellState extends State<PassengerShell>
             activeTarget: _target,
           ),
         ),
+        // Home always renders the address/tariff picker regardless of
+        // whether the rider already has a searching/active order elsewhere
+        // — without this, picking a new destination or tariff while one is
+        // already in flight gives zero indication until the create-order
+        // call itself rejects with CLIENT_HAS_ACTIVE_ORDER at the very end.
+        if (_order != null && !_isPassengerOrderTerminal(_order!.status))
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 84,
+            child: _ActiveOrderBanner(
+              order: _order!,
+              onTap: () => setState(() => _tab = PassengerTab.trips),
+            ),
+          ),
         Align(
           alignment: Alignment.bottomCenter,
           child: _CollapsibleOrderSheet(
@@ -2497,6 +2528,8 @@ class _PassengerShellState extends State<PassengerShell>
             showLocationButton: false,
             showCenterMarker: false,
             activeTarget: PointTarget.dropoff,
+            searching: const {'SEARCHING_DRIVER', 'NEW'}
+                .contains(order.status),
           ),
         ),
         Align(
@@ -4644,6 +4677,7 @@ class _MapCanvas extends StatefulWidget {
     required this.showLocationButton,
     required this.showCenterMarker,
     required this.activeTarget,
+    this.searching = false,
   });
 
   final LatLng center;
@@ -4670,6 +4704,10 @@ class _MapCanvas extends StatefulWidget {
   final bool showLocationButton;
   final bool showCenterMarker;
   final PointTarget activeTarget;
+  // No driver assigned yet and an order is actively searching — shows an
+  // expanding radar pulse behind the pickup pin so this doesn't read as a
+  // static, stuck screen while the rider waits.
+  final bool searching;
 
   @override
   State<_MapCanvas> createState() => _MapCanvasState();
@@ -4800,6 +4838,7 @@ class _MapCanvasState extends State<_MapCanvas> {
     final onRouteBack = widget.onRouteBack;
     final showCenterMarker = widget.showCenterMarker;
     final activeTarget = widget.activeTarget;
+    final searching = widget.searching;
     final initialPoints = _initialCameraPoints();
     final initialFit = initialPoints.length > 1
         ? CameraFit.coordinates(
@@ -4860,13 +4899,37 @@ class _MapCanvasState extends State<_MapCanvas> {
                   MarkerLayer(
                     markers: [
                       if (pickup != null)
-                        _assetMarker(
-                          point: pickup.toLatLng(),
-                          asset: _userLocationMarkerAsset,
-                          semanticLabel: 'Точка подачи',
-                          size: 14,
-                          fallbackIcon: Icons.radio_button_checked_rounded,
-                        ),
+                        searching
+                            ? Marker(
+                                point: pickup.toLatLng(),
+                                width: 72,
+                                height: 72,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    const _MarkerRadarPulse(
+                                      color: _blueAccent,
+                                      baseSize: 60,
+                                    ),
+                                    _assetMarkerContent(
+                                      asset: _userLocationMarkerAsset,
+                                      semanticLabel: 'Точка подачи',
+                                      size: 14,
+                                      fallbackIcon: Icons
+                                          .radio_button_checked_rounded,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _assetMarker(
+                                point: pickup.toLatLng(),
+                                asset: _userLocationMarkerAsset,
+                                semanticLabel: 'Точка подачи',
+                                size: 14,
+                                fallbackIcon:
+                                    Icons.radio_button_checked_rounded,
+                              ),
                       if (dropoff != null)
                         _assetMarker(
                           point: dropoff.toLatLng(),
@@ -12448,11 +12511,7 @@ _PassengerTariffVisual? _passengerTariffVisual(TariffOption tariff) {
       tariff: tariff,
       title: 'Доставка',
       description: 'Посылки · до 15 кг',
-      // tariff_v11_delivery.png is a white sports coupe (leftover from the
-      // same photoshoot as the other tariff cars), not a delivery vehicle —
-      // it read as a mismatched/broken icon next to the real car photos.
-      // Empty asset falls through to _iconDelivery, a real van glyph.
-      asset: '',
+      asset: _tariffDeliveryAsset,
     );
   }
   return null;
@@ -12601,8 +12660,13 @@ class _TariffSection extends StatelessWidget {
               final naturalWidth = visibleTariffs.length * cardWidth +
                   (visibleTariffs.length - 1) * gap;
               final stretch = naturalWidth <= constraints.maxWidth;
+              // The stretch (icon-left, text-right) layout is much shorter
+              // than the stacked (icon-above-text) layout the scrollable
+              // case uses — sharing one fixed height between both left the
+              // stretch cards centered in a box roughly 50px taller than
+              // their content, i.e. visible dead space above and below.
               return SizedBox(
-                height: 132,
+                height: stretch ? 88 : 132,
                 child: stretch
                     ? Row(
                         children: [
@@ -14188,10 +14252,17 @@ class _DrawerSectionLabel extends StatelessWidget {
 }
 
 class _AppHeader extends StatelessWidget {
-  const _AppHeader({required this.onMenu, required this.trailing});
+  const _AppHeader({required this.onMenu, required this.trailing, this.onBack});
 
   final VoidCallback onMenu;
   final Widget trailing;
+  // Every screen using this header is a step away from Home reached via
+  // local state, not a pushed route — Android's gesture/hardware back
+  // already walks back one step via PopScope, but iOS has no equivalent
+  // system-level trigger for that, so these screens need an explicit
+  // on-screen way back too. When set, this replaces the hamburger menu
+  // with a back arrow (the drawer is still reachable from Home itself).
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -14219,11 +14290,13 @@ class _AppHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
-              onTap: onMenu,
+              onTap: onBack ?? onMenu,
               child: Padding(
                 padding: const EdgeInsets.all(9),
                 child: Icon(
-                  Icons.menu_rounded,
+                  onBack != null
+                      ? Icons.arrow_back_ios_new_rounded
+                      : Icons.menu_rounded,
                   size: 20,
                   color: palette.goldDeep,
                 ),
