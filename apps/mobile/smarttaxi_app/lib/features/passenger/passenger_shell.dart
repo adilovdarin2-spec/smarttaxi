@@ -9161,8 +9161,15 @@ class _FavoriteAddressCard extends StatelessWidget {
                       style:
                           const TextStyle(fontWeight: FontWeight.w900),
                     ),
-                    const SizedBox(width: 6),
-                    _RecurringBookingChip(icon: icon, label: labelText),
+                    // The chip repeats the category name (Дом/Работа/Другое)
+                    // for context — but the create sheet pre-fills the title
+                    // with that same word, so showing both when the user
+                    // never customized the title just duplicates it.
+                    if (address.title.trim().toLowerCase() !=
+                        labelText.toLowerCase()) ...[
+                      const SizedBox(width: 6),
+                      _RecurringBookingChip(icon: icon, label: labelText),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 3),
