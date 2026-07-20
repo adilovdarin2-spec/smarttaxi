@@ -1576,14 +1576,37 @@ class _DriverShellState extends State<DriverShell> {
             heightFactor: 0.9,
             child: SafeArea(
               top: false,
-              child: Column(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: SheetHandle(),
-                  ),
-                  Expanded(child: contentBuilder()),
-                ],
+              child: Builder(
+                builder: (sheetContext) => Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 10),
+                          child: SheetHandle(),
+                        ),
+                        // Drag-to-dismiss works but isn't discoverable —
+                        // this sheet is used for 9 different driver screens
+                        // (Profile, Wallet, Rating, Notifications, Support,
+                        // FAQ, About, Settings, Recurring Bookings) and none
+                        // of them had any other visible way back.
+                        Positioned(
+                          right: 8,
+                          top: 4,
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: sheetContext.palette.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Expanded(child: contentBuilder()),
+                  ],
+                ),
               ),
             ),
           ),
@@ -5338,6 +5361,13 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                   tooltip: 'Обновить',
                   icon: const Icon(Icons.refresh_rounded),
                 ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'Закрыть',
+                  icon: Icon(Icons.close_rounded,
+                      color: context.palette.textSecondary),
+                ),
               ],
             ),
             const SizedBox(height: 14),
@@ -5801,12 +5831,15 @@ class _RoadAlertRow extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: TextButton(
+                      // OutlinedButton, not TextButton — TextButton has no
+                      // entry in the app's ButtonThemeData, so next to the
+                      // themed OutlinedButton above (52px min height,
+                      // visible border) it rendered noticeably smaller and
+                      // borderless despite both being equal-weight choices
+                      // in the same row.
+                      child: OutlinedButton(
                         onPressed: updating ? null : onDismiss,
-                        child: const Text(
-                          'Нет',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
+                        child: const Text('Нет'),
                       ),
                     ),
                   ],

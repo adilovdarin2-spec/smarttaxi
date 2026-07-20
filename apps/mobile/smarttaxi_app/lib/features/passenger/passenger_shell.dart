@@ -9813,9 +9813,23 @@ class _CreateRecurringBookingSheetState
             child: ListView(
               controller: scrollController,
               children: [
-                Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Center(
+                        child: _SheetHandle(
+                            dark: Theme.of(context).brightness ==
+                                Brightness.dark)),
+                    Positioned(
+                      right: 0,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close_rounded,
+                            color: palette.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
                 const Text(
                   'Новый регулярный маршрут',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
