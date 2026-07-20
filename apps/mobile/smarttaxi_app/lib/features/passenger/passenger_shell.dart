@@ -12446,7 +12446,11 @@ _PassengerTariffVisual? _passengerTariffVisual(TariffOption tariff) {
       tariff: tariff,
       title: 'Доставка',
       description: 'Посылки · до 15 кг',
-      asset: _tariffDeliveryAsset,
+      // tariff_v11_delivery.png is a white sports coupe (leftover from the
+      // same photoshoot as the other tariff cars), not a delivery vehicle —
+      // it read as a mismatched/broken icon next to the real car photos.
+      // Empty asset falls through to _iconDelivery, a real van glyph.
+      asset: '',
     );
   }
   return null;
