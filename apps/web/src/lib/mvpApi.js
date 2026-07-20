@@ -521,6 +521,10 @@ export function getAdminAudit(params = {}) {
   return api(`/api/admin/audit-logs${queryString(params)}`);
 }
 
+export function broadcastAdminNotification(payload) {
+  return api("/api/admin/notifications/broadcast", { method: "POST", body: JSON.stringify(payload) });
+}
+
 export function getAdminRoadAlerts(params = {}) {
   return api(`/api/admin/road-alerts${queryString(params)}`);
 }

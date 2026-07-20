@@ -4,6 +4,7 @@ import {
   adjustAdminDriverDebt,
   assignAdminOrderDriver,
   blockAdminDriver,
+  broadcastAdminNotification,
   clearAdminDriverCommissionOverride,
   clearToken,
   createAdminPromoCode,
@@ -551,7 +552,14 @@ export default function AdminApp() {
         return { payoutRequests: data.payoutRequests || [] };
       },
       audit: getAdminAudit,
-      settings: getAdminSettings
+      settings: async () => {
+        const [settings, regions] = await Promise.allSettled([getAdminSettings(), getAdminRegions()]);
+        if (settings.status === "rejected") throw settings.reason;
+        return {
+          settings: settings.value.settings,
+          regions: regions.status === "fulfilled" ? regions.value.regions || [] : []
+        };
+      }
     };
 
     const loader = loaders[page];
@@ -1013,6 +1021,13 @@ export default function AdminApp() {
     }, "Настройки сохранены");
   }
 
+  // Plain passthrough (like runTariffPreview) rather than routed through
+  // runAction: the composer wants to show its own inline "sent to N people"
+  // result next to the form, not the generic top-of-page success banner.
+  async function sendBroadcast(payload) {
+    return broadcastAdminNotification(payload);
+  }
+
   if (bootLoading) {
     return (
       <main className="admin-control-shell">
@@ -1215,6 +1230,7 @@ export default function AdminApp() {
             onRejectPayout={payoutRequest => setModal({ type: "payoutReject", payoutRequest })}
             onSaveSettings={saveSettings}
             canEditSettings={user?.role === "OWNER"}
+            onSendBroadcast={sendBroadcast}
             canManageOwnerOnly={user?.role === "OWNER"}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
@@ -1637,7 +1653,17 @@ function AdminPage(props) {
       />
     );
   }
-  if (active === "settings") return <SettingsPage settings={payload?.settings} onSave={props.onSaveSettings} canEdit={props.canEditSettings} />;
+  if (active === "settings") {
+    return (
+      <SettingsPage
+        settings={payload?.settings}
+        regions={asArray(payload, "regions")}
+        onSave={props.onSaveSettings}
+        canEdit={props.canEditSettings}
+        onSendBroadcast={props.onSendBroadcast}
+      />
+    );
+  }
   if (active === "support") return <SupportPage messages={asArray(payload, "messages")} {...props} />;
   if (active === "promoCodes") return <PromoCodesPage promoCodes={asArray(payload, "promoCodes")} {...props} />;
   if (active === "recurringBookings") return <RecurringBookingsPage bookings={asArray(payload, "recurringBookings")} {...props} />;
@@ -3339,7 +3365,7 @@ function AuditPage({ logs, total, loadingMore, onLoadMore }) {
   );
 }
 
-function SettingsPage({ settings, onSave, canEdit }) {
+function SettingsPage({ settings, regions = [], onSave, canEdit, onSendBroadcast }) {
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -3467,6 +3493,121 @@ function SettingsPage({ settings, onSave, canEdit }) {
           )}
         </form>
       </DataCard>
+      {canEdit && (
+        <DataCard title="Рассылка уведомлений" text="Push- и внутреннее уведомление всем клиентам, всем водителям или водителям одного региона сразу.">
+          <BroadcastComposer regions={regions} onSend={onSendBroadcast} />
+        </DataCard>
+      )}
+    </div>
+  );
+}
+
+function BroadcastComposer({ regions, onSend }) {
+  const [segment, setSegment] = useState("ALL_CLIENTS");
+  const [regionId, setRegionId] = useState(regions[0]?.id || "");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const [confirming, setConfirming] = useState(false);
+
+  const segmentLabels = {
+    ALL_CLIENTS: "Все клиенты",
+    ALL_DRIVERS: "Все водители",
+    REGION_DRIVERS: "Водители одного региона"
+  };
+
+  async function send() {
+    setError("");
+    setResult(null);
+    if (!title.trim() || !body.trim()) {
+      setError("Заголовок и текст обязательны");
+      return;
+    }
+    if (segment === "REGION_DRIVERS" && !regionId) {
+      setError("Выберите регион");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await onSend({
+        segment,
+        regionId: segment === "REGION_DRIVERS" ? regionId : undefined,
+        title: title.trim(),
+        body: body.trim()
+      });
+      setResult(response);
+      setTitle("");
+      setBody("");
+    } catch (submitError) {
+      setError(readError(submitError));
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <div className="admin-detail-stack">
+      <div className="admin-form-row">
+        <label className="admin-field">
+          <span>Кому</span>
+          <select className="admin-control-select" value={segment} onChange={event => setSegment(event.target.value)}>
+            {Object.entries(segmentLabels).map(([value, label]) => (
+              <option value={value} key={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+        {segment === "REGION_DRIVERS" ? (
+          <label className="admin-field">
+            <span>Регион</span>
+            <select className="admin-control-select" value={regionId} onChange={event => setRegionId(event.target.value)}>
+              {regions.map(region => (
+                <option value={region.id} key={region.id}>{region.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : <div />}
+      </div>
+      <label className="admin-field">
+        <span>Заголовок</span>
+        <input value={title} onChange={event => setTitle(event.target.value)} maxLength={80} placeholder="Например: Изменение тарифов" />
+      </label>
+      <label className="admin-textarea-field">
+        <span>Текст сообщения</span>
+        <textarea value={body} onChange={event => setBody(event.target.value)} rows={3} maxLength={400} placeholder="Текст, который увидят получатели" />
+      </label>
+      {error && <InlineMessage danger text={error} />}
+      {result && (
+        <InlineMessage text={`Отправлено: ${result.recipientCount} получателей, push доставлен на ${result.pushSentCount} устройств.`} />
+      )}
+      {!confirming ? (
+        <div className="admin-modal-actions">
+          <button
+            type="button"
+            className="admin-primary-button"
+            disabled={busy || !title.trim() || !body.trim()}
+            onClick={() => setConfirming(true)}
+          >
+            Отправить рассылку
+          </button>
+        </div>
+      ) : (
+        <div className="admin-detail-stack">
+          <p className="admin-settings-note">
+            Подтвердите: сообщение получат «{segmentLabels[segment]}»
+            {segment === "REGION_DRIVERS" ? ` (${regions.find(r => r.id === regionId)?.name || "регион не выбран"})` : ""}.
+            Это действие нельзя отменить или отозвать после отправки.
+          </p>
+          <div className="admin-modal-actions">
+            <button type="button" className="admin-secondary-button" disabled={busy} onClick={() => setConfirming(false)}>Отмена</button>
+            <button type="button" className="admin-danger-button" disabled={busy} onClick={send}>
+              {busy ? "Отправляем..." : "Да, отправить"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

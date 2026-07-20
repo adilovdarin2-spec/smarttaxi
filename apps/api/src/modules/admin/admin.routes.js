@@ -29,7 +29,7 @@ import {
   getTransactions
 } from "../finance/finance.service.js";
 import { publicPayoutRequest, reviewPayoutRequest } from "../wallet/wallet.service.js";
-import { notifyUser } from "../notifications/notification.service.js";
+import { broadcastNotification, notifyUser } from "../notifications/notification.service.js";
 import {
   getDriverDocumentById,
   listDocumentsForApplication,
@@ -632,6 +632,35 @@ router.get("/audit-logs", requireAuth, requireRole("OWNER", "FINANCE"), async (r
       LIMIT $1 OFFSET $2
     `, [params.limit, params.offset]);
     res.json({ logs: result.rows, total: total.rows[0].total, limit: params.limit, offset: params.offset });
+  } catch (error) { next(error); }
+});
+
+const BroadcastNotification = z.object({
+  segment: z.enum(["ALL_CLIENTS", "ALL_DRIVERS", "REGION_DRIVERS"]),
+  regionId: z.string().uuid().optional(),
+  title: z.string().trim().min(1).max(80),
+  body: z.string().trim().min(1).max(400)
+}).refine(
+  data => data.segment !== "REGION_DRIVERS" || Boolean(data.regionId),
+  { message: "regionId is required for REGION_DRIVERS", path: ["regionId"] }
+);
+
+// OWNER-only: this reaches every client or every driver at once (or a
+// whole region's drivers) — a broader blast radius than any other single
+// admin action, so it doesn't get the FINANCE-can-also-do-this treatment
+// most of this file's read/finance actions do.
+router.post("/notifications/broadcast", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const body = BroadcastNotification.parse(req.body);
+    const result = await broadcastNotification(body);
+    await writeAudit(query, {
+      action: "notification_broadcast",
+      actorUserId: req.user.id,
+      entityType: "broadcast",
+      metadata: { segment: body.segment, regionId: body.regionId || null, title: body.title, recipientCount: result.recipientCount },
+      req
+    });
+    res.status(201).json(result);
   } catch (error) { next(error); }
 });
 
