@@ -66,14 +66,18 @@ const navigation = [
   { key: "dashboard", label: "Главная", eyebrow: "Состояние системы" },
   { key: "regions", label: "Регионы", eyebrow: "Активные зоны" },
   { key: "drivers", label: "Водители", eyebrow: "Доступ и статусы" },
-  { key: "applications", label: "Заявки", eyebrow: "Проверка водителей" },
+  // Both pages' underlying list endpoints are OWNER-only server-side (no
+  // FINANCE-visible data to fall back to at all, unlike e.g. Quality's
+  // leaderboard) — hidden from FINANCE's nav entirely rather than leading
+  // to a dead-end "failed to load" page.
+  { key: "applications", label: "Заявки", eyebrow: "Проверка водителей", ownerOnly: true },
   { key: "orders", label: "Заказы", eyebrow: "Поездки клиентов" },
   { key: "tariffs", label: "Тарифы", eyebrow: "Цены по регионам" },
   { key: "promoCodes", label: "Промокоды", eyebrow: "Скидки и акции" },
   { key: "recurringBookings", label: "Регулярные поездки", eyebrow: "Постоянные привязки" },
   { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
   { key: "payouts", label: "Выплаты", eyebrow: "Заявки водителей на вывод" },
-  { key: "roadAlerts", label: "Дорога", eyebrow: "События и безопасность" },
+  { key: "roadAlerts", label: "Дорога", eyebrow: "События и безопасность", ownerOnly: true },
   { key: "quality", label: "Качество", eyebrow: "Отзывы и рейтинг" },
   { key: "raffles", label: "Розыгрыши", eyebrow: "Конкурсы водителей" },
   { key: "referrals", label: "Рефералы", eyebrow: "Приглашения клиентов" },
@@ -1033,7 +1037,7 @@ export default function AdminApp() {
           </div>
         </div>
         <nav>
-          {navigation.map(item => (
+          {navigation.filter(item => !item.ownerOnly || user?.role === "OWNER").map(item => (
             <button
               type="button"
               key={item.key}
@@ -1169,6 +1173,7 @@ export default function AdminApp() {
             onRejectPayout={payoutRequest => setModal({ type: "payoutReject", payoutRequest })}
             onSaveSettings={saveSettings}
             canEditSettings={user?.role === "OWNER"}
+            canManageOwnerOnly={user?.role === "OWNER"}
             onAddRegion={() => setModal({ type: "region", region: null })}
             onEditRegion={region => setModal({ type: "region", region })}
             onToggleRegion={region => (isActiveRegion(region) ? setModal({ type: "regionDeactivate", region }) : switchRegion(region))}
@@ -1205,6 +1210,7 @@ export default function AdminApp() {
           onBlock={setDriverBlocked}
           onRequestBlock={driver => setModal({ type: "driverBlock", driver })}
           onSetRegion={setDriverRegion}
+          canManageOwnerOnly={user?.role === "OWNER"}
           onSetCommission={setDriverCommission}
           onClearCommission={clearDriverCommission}
         />
@@ -1589,7 +1595,7 @@ function PageHeader({ title, subtitle, action, children }) {
   );
 }
 
-function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEditRegion, onToggleRegion }) {
+function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEditRegion, onToggleRegion, canManageOwnerOnly }) {
   const visible = regions.filter(region => {
     if (regionStatus === "active") return isActiveRegion(region);
     if (regionStatus === "inactive") return !isActiveRegion(region);
@@ -1601,7 +1607,7 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
       <PageHeader
         title="Регионы"
         subtitle="Управление зонами работы SmartTaxi"
-        action={<button type="button" className="admin-primary-button" onClick={onAddRegion}>Добавить регион</button>}
+        action={canManageOwnerOnly ? <button type="button" className="admin-primary-button" onClick={onAddRegion}>Добавить регион</button> : null}
       >
         <SegmentedFilter
           value={regionStatus}
@@ -1618,8 +1624,8 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
         <StatePanel
           title="Регионы пока не настроены"
           text="Добавьте первый регион, чтобы сервис мог принимать заказы."
-          action="Добавить регион"
-          onAction={onAddRegion}
+          action={canManageOwnerOnly ? "Добавить регион" : undefined}
+          onAction={canManageOwnerOnly ? onAddRegion : undefined}
         />
       ) : (
         <section className="admin-card-grid regions">
@@ -1639,12 +1645,14 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
                 <InfoLine label="Центр" value={`${region.centerLat ?? region.center_lat}, ${region.centerLng ?? region.center_lng}`} />
                 <InfoLine label="Граница" value={region.boundary ? "Polygon JSON задан" : "Граница не задана"} />
               </div>
-              <footer>
-                <button type="button" className="admin-secondary-button" onClick={() => onEditRegion(region)}>Редактировать</button>
-                <button type="button" className={isActiveRegion(region) ? "admin-danger-button" : "admin-secondary-button"} onClick={() => onToggleRegion(region)}>
-                  {isActiveRegion(region) ? "Отключить" : "Активировать"}
-                </button>
-              </footer>
+              {canManageOwnerOnly && (
+                <footer>
+                  <button type="button" className="admin-secondary-button" onClick={() => onEditRegion(region)}>Редактировать</button>
+                  <button type="button" className={isActiveRegion(region) ? "admin-danger-button" : "admin-secondary-button"} onClick={() => onToggleRegion(region)}>
+                    {isActiveRegion(region) ? "Отключить" : "Активировать"}
+                  </button>
+                </footer>
+              )}
             </article>
           ))}
         </section>
@@ -3586,7 +3594,7 @@ function RegionEditor({ region, onClose, onSave, busy }) {
   );
 }
 
-function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onRequestBlock, onSetRegion, onSetCommission, onClearCommission }) {
+function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onRequestBlock, onSetRegion, onSetCommission, onClearCommission, canManageOwnerOnly }) {
   const [reasonByRegion, setReasonByRegion] = useState({});
   const driver = detail.payload?.driver || initialDriver;
   const regions = detail.payload?.regions || [];
@@ -3602,8 +3610,11 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
   }
 
   useEffect(() => {
-    loadDocuments();
-  }, [driver.id]);
+    // Document list/review/file endpoints are all OWNER-only server-side —
+    // skip the request entirely for FINANCE rather than firing a doomed
+    // fetch and showing a misleading "failed to load" error in its card.
+    if (canManageOwnerOnly) loadDocuments();
+  }, [driver.id, canManageOwnerOnly]);
 
   async function requestDocumentResubmission(document, status, docReason) {
     setBusyDocumentId(document.id);
@@ -3640,16 +3651,18 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
             <InfoLine label="Активный заказ" value={activeOrder ? `${activeOrder.shortId || activeOrder.id} · ${statusLabel(activeOrder.status)}` : "Нет активного заказа"} />
           </div>
 
-          <section className="admin-detail-actions">
-            <button
-              type="button"
-              className={driver.is_blocked ? "admin-secondary-button" : "admin-danger-button"}
-              disabled={busy}
-              onClick={() => (driver.is_blocked ? onBlock(driver, false) : onRequestBlock(driver))}
-            >
-              {driver.is_blocked ? "Разблокировать" : "Заблокировать"}
-            </button>
-          </section>
+          {canManageOwnerOnly && (
+            <section className="admin-detail-actions">
+              <button
+                type="button"
+                className={driver.is_blocked ? "admin-secondary-button" : "admin-danger-button"}
+                disabled={busy}
+                onClick={() => (driver.is_blocked ? onBlock(driver, false) : onRequestBlock(driver))}
+              >
+                {driver.is_blocked ? "Разблокировать" : "Заблокировать"}
+              </button>
+            </section>
+          )}
 
           <DataCard title="Индивидуальная комиссия" text="Заменяет стандартный процент комиссии тарифа для этого водителя. Применяется только к новым завершённым поездкам, задним числом не пересчитывается.">
             <CommissionOverrideEditor
@@ -3677,25 +3690,30 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
                     </header>
                     {region.blockReason && <p>Причина блокировки: {region.blockReason}</p>}
                     {!region.regionIsActive && <p>Регион отключён</p>}
-                    <input
-                      value={reasonByRegion[region.regionId] || ""}
-                      onChange={event => setReasonByRegion(current => ({ ...current, [region.regionId]: event.target.value }))}
-                      placeholder="Причина блокировки"
-                    />
-                    <footer>
-                      <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={() => onSetRegion(driver.id, region.regionId, "APPROVED")}>
-                        Одобрить
-                      </button>
-                      <button type="button" className="admin-danger-button compact" disabled={busy} onClick={() => onSetRegion(driver.id, region.regionId, "BLOCKED", reasonByRegion[region.regionId] || "")}>
-                        Заблокировать
-                      </button>
-                    </footer>
+                    {canManageOwnerOnly && (
+                      <>
+                        <input
+                          value={reasonByRegion[region.regionId] || ""}
+                          onChange={event => setReasonByRegion(current => ({ ...current, [region.regionId]: event.target.value }))}
+                          placeholder="Причина блокировки"
+                        />
+                        <footer>
+                          <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={() => onSetRegion(driver.id, region.regionId, "APPROVED")}>
+                            Одобрить
+                          </button>
+                          <button type="button" className="admin-danger-button compact" disabled={busy} onClick={() => onSetRegion(driver.id, region.regionId, "BLOCKED", reasonByRegion[region.regionId] || "")}>
+                            Заблокировать
+                          </button>
+                        </footer>
+                      </>
+                    )}
                   </article>
                 ))}
               </div>
             )}
           </DataCard>
 
+          {canManageOwnerOnly && (
           <DataCard title="Документы водителя" text="Просмотр без возможности удаления — при жалобах или сомнениях запросите переоформление конкретного документа.">
             <DriverDocumentsPanel
               documents={docs.items}
@@ -3707,6 +3725,7 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
               busyDocumentId={busyDocumentId}
             />
           </DataCard>
+          )}
 
           <DataCard title="Избранное и блокировки" text="Только просмотр — управляют этим сами клиент и водитель, справочно при разборе спорной ситуации.">
             <ClientDriverPreferencesPanel
