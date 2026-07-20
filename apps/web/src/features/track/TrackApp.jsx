@@ -61,15 +61,19 @@ export default function TrackApp() {
       return undefined;
     }
     let alive = true;
+    let hasLoadedOnce = false;
     async function load() {
       try {
         const data = await api(`/api/orders/track/${token}`);
         if (alive) {
           setTrip(data.trip);
           setError("");
+          hasLoadedOnce = true;
         }
       } catch (err) {
-        if (alive) setError(err.message || "Не удалось загрузить поездку.");
+        // A transient failure on a later poll shouldn't wipe an already
+        // displayed trip — only surface the error while nothing has loaded yet.
+        if (alive && !hasLoadedOnce) setError(err.message || "Не удалось загрузить поездку.");
       } finally {
         if (alive) setLoading(false);
       }

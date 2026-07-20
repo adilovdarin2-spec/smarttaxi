@@ -1,5 +1,6 @@
 import React from "react";
-import { Icon, SmartLogo } from "./icons.jsx";
+import SmartTaxiLogo from "../components/ui/SmartTaxiLogo.jsx";
+import { Icon } from "./icons.jsx";
 
 export function Money({ value }) {
   return <>{Number(value || 0).toLocaleString("ru-RU")} ₸</>;
@@ -34,7 +35,7 @@ export function BottomNav({ active, onSelect }) {
     <nav className="bottom-nav" aria-label="Навигация">
       {items.map(([icon, label, key]) => (
         <button key={key} type="button" className={`${active === key ? "active" : ""} ${icon === "logo" ? "center" : ""}`} onClick={() => onSelect(key)}>
-          {icon === "logo" ? <SmartLogo compact /> : <Icon name={icon} />}
+          {icon === "logo" ? <SmartTaxiLogo className="compact" /> : <Icon name={icon} />}
           {label && <span>{label}</span>}
         </button>
       ))}

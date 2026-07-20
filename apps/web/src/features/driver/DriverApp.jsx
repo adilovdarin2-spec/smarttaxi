@@ -405,6 +405,7 @@ export default function DriverApp() {
   const [loginError, setLoginError] = useState("");
   const [driver, setDriver] = useState(null);
   const [regions, setRegions] = useState([]);
+  const [regionsLoadFailed, setRegionsLoadFailed] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [incomingOrders, setIncomingOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
@@ -451,6 +452,9 @@ export default function DriverApp() {
 
     if (regionsResult.status === "fulfilled") {
       setRegions(regionsResult.value.regions || regionsResult.value.items || []);
+      setRegionsLoadFailed(false);
+    } else {
+      setRegionsLoadFailed(true);
     }
     if (incomingResult.status === "fulfilled") {
       setIncomingOrders(extractOrders(incomingResult.value).map(normalizeOrder).filter(Boolean));
@@ -634,8 +638,8 @@ export default function DriverApp() {
 
   async function handleRegionSelect(regionId) {
     if (!regionId) return;
-    await withAction("region", () => selectDriverRegion(regionId));
-    setSelectedRegionId(regionId);
+    const result = await withAction("region", () => selectDriverRegion(regionId));
+    if (result) setSelectedRegionId(regionId);
   }
 
   async function handleStatusToggle() {
@@ -699,6 +703,18 @@ export default function DriverApp() {
               onSelect={handleRegionSelect}
               disabled={Boolean(actionLoading || activeOrder)}
             />
+            {!regions.length && regionsLoadFailed && (
+              <div className="driver-core-error">
+                Не удалось загрузить регионы.{" "}
+                <button
+                  type="button"
+                  onClick={() => refreshDriver().catch(error => setError(formatError(error)))}
+                  style={{ background: "none", border: "none", padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer", font: "inherit" }}
+                >
+                  Повторить
+                </button>
+              </div>
+            )}
             {error && <div className="driver-core-error">{error}</div>}
 
             {tab === "line" && (
