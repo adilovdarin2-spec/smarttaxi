@@ -245,6 +245,7 @@ class _PassengerShellState extends State<PassengerShell>
   String? _paymentInitiatedForOrderId;
   int _paymentPollAttempts = 0;
   bool _paymentTimedOut = false;
+  bool _retryingPayment = false;
   LatLng? _mapCenter;
   // Backs the bell icon's badge dot — real state from the backend, not a
   // permanently-on decoration. Refreshed at bootstrap and bumped locally
@@ -1103,10 +1104,19 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
-  void _retryPayment() {
+  Future<void> _retryPayment() async {
+    // Both _GoldCtaButton call sites for this hardcoded enabled:true,
+    // loading:false regardless of state, so a fast double-tap could fire
+    // two concurrent initiatePayment calls — guard here instead.
+    if (_retryingPayment) return;
     final order = _order;
     if (order == null) return;
-    unawaited(_initiatePayment(order.id));
+    setState(() => _retryingPayment = true);
+    try {
+      await _initiatePayment(order.id);
+    } finally {
+      if (mounted) setState(() => _retryingPayment = false);
+    }
   }
 
   void _handleDriverLocation(dynamic data) {
@@ -2580,6 +2590,7 @@ class _PassengerShellState extends State<PassengerShell>
               noDriversFound: _noDriversFound,
               payment: _payment,
               paymentTimedOut: _paymentTimedOut,
+              retryingPayment: _retryingPayment,
               sosPhone: _sosPhone,
               error: _error,
               onRatingStarsChanged: (value) => setState(() {
@@ -7321,6 +7332,7 @@ class _TripStatusPanel extends StatelessWidget {
     required this.noDriversFound,
     required this.payment,
     required this.paymentTimedOut,
+    required this.retryingPayment,
     this.sosPhone,
     this.error,
     required this.onRatingStarsChanged,
@@ -7357,6 +7369,7 @@ class _TripStatusPanel extends StatelessWidget {
   final bool noDriversFound;
   final PaymentInfo? payment;
   final bool paymentTimedOut;
+  final bool retryingPayment;
   final String? sosPhone;
   final String? error;
   final ValueChanged<int> onRatingStarsChanged;
@@ -7415,6 +7428,7 @@ class _TripStatusPanel extends StatelessWidget {
           paid: true,
           payment: payment,
           paymentTimedOut: paymentTimedOut,
+          retryingPayment: retryingPayment,
           onContinue: onAcknowledgeReceipt,
           onRetryPayment: onRetryPayment,
         ),
@@ -7447,6 +7461,7 @@ class _TripStatusPanel extends StatelessWidget {
           paid: false,
           payment: payment,
           paymentTimedOut: paymentTimedOut,
+          retryingPayment: retryingPayment,
           onContinue: onAcknowledgeReceipt,
           onRetryPayment: onRetryPayment,
         ),
@@ -8121,6 +8136,7 @@ class _TripReceiptPanel extends StatelessWidget {
     required this.paid,
     required this.payment,
     required this.paymentTimedOut,
+    required this.retryingPayment,
     required this.onContinue,
     required this.onRetryPayment,
   });
@@ -8129,6 +8145,7 @@ class _TripReceiptPanel extends StatelessWidget {
   final bool paid;
   final PaymentInfo? payment;
   final bool paymentTimedOut;
+  final bool retryingPayment;
   final VoidCallback onContinue;
   final VoidCallback onRetryPayment;
 
@@ -8322,8 +8339,8 @@ class _TripReceiptPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _GoldCtaButton(
-            enabled: true,
-            loading: false,
+            enabled: !retryingPayment,
+            loading: retryingPayment,
             text: 'Повторить оплату',
             onTap: onRetryPayment,
           ),
@@ -8365,8 +8382,8 @@ class _TripReceiptPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _GoldCtaButton(
-            enabled: true,
-            loading: false,
+            enabled: !retryingPayment,
+            loading: retryingPayment,
             text: 'Повторить оплату',
             onTap: onRetryPayment,
           ),
@@ -12833,6 +12850,7 @@ class _TariffCard extends StatelessWidget {
     final priceText = Text(
       price == null ? '...' : _formatTenge(price),
       maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: TextStyle(
         color: palette.text,
         fontSize: 16.5,
@@ -13107,11 +13125,15 @@ class _PriceAdjuster extends StatelessWidget {
             onTap: currentPrice > _minPrice ? () => _adjust(-_step) : null,
           ),
           SizedBox(
-            width: 66,
+            // 66 clipped digits mid-number on realistic values — _maxPrice
+            // is 1,000,000, formatted as "1 000 000 ₸" (11 chars), which
+            // never fit 66px at this size even before three-digit fares.
+            width: 96,
             child: Text(
               _formatTenge(currentPrice),
               textAlign: TextAlign.center,
               maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: palette.text,
                 fontSize: 14.5,

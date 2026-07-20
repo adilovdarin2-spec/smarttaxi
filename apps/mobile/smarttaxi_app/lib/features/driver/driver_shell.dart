@@ -2864,9 +2864,15 @@ class _DriverShellState extends State<DriverShell> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: dialogContext.palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: dialogContext.palette.text,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         content: Text(
           message,
           style: TextStyle(
@@ -3081,7 +3087,7 @@ class _MapChipButton extends StatelessWidget {
       button: true,
       label: semanticLabel,
       child: Material(
-        color: Colors.white,
+        color: context.palette.card,
         shape: const CircleBorder(),
         elevation: 3,
         shadowColor: Colors.black26,
@@ -3107,7 +3113,8 @@ class _MapChipButton extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: context.palette.danger,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white, width: 1.4),
+                        border: Border.all(
+                            color: context.palette.card, width: 1.4),
                       ),
                       child: Text(
                         '$badge',
@@ -3150,7 +3157,7 @@ class _RegionPickerRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? palette.goldPale : Colors.white,
+          color: selected ? palette.goldPale : palette.card,
           border: Border.all(
               color: selected ? palette.borderStrong : palette.border),
           borderRadius: BorderRadius.circular(18),
@@ -4668,7 +4675,7 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.card,
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -4682,9 +4689,13 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Быстрое сообщение',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                color: context.palette.text,
+              ),
             ),
             const SizedBox(height: 14),
             ..._messages.entries.map(
@@ -5174,6 +5185,11 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
   Coordinate? _selectedPoint;
   double? _selectedHeading;
   List<RoadAlert> _alerts = const [];
+  // _message doubles as the status line for the "report new event" form
+  // (GPS status, submit result, etc), so a load failure set there never
+  // reached the separate "nearby events" list — it silently rendered the
+  // same empty state as a genuinely empty, successful result.
+  bool _alertsLoadFailed = false;
 
   @override
   void initState() {
@@ -5192,6 +5208,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
     setState(() {
       _loading = true;
       _message = null;
+      _alertsLoadFailed = false;
     });
     try {
       final alerts =
@@ -5200,7 +5217,10 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       setState(() => _alerts = alerts);
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(error));
+      setState(() {
+        _message = readableError(error);
+        _alertsLoadFailed = true;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -5490,6 +5510,15 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                   const SizedBox(height: 12),
                   if (_loading)
                     const LoadingStrip(text: 'Загружаем события...')
+                  else if (_alertsLoadFailed)
+                    EmptyState(
+                      title: 'Не удалось загрузить события',
+                      text: _message ??
+                          'Проверьте связь и попробуйте ещё раз.',
+                      icon: Icons.wifi_off_rounded,
+                      action: 'Повторить',
+                      onAction: _loadAlerts,
+                    )
                   else if (_alerts.isEmpty)
                     const EmptyState(
                       title: 'Пока нет дорожных событий рядом',
