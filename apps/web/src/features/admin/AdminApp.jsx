@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import DriversLiveMap from "./DriversLiveMap.jsx";
 import {
   adjustAdminDriverDebt,
   assignAdminOrderDriver,
@@ -22,6 +23,7 @@ import {
   getAdminDriverApplications,
   getAdminDriverDetail,
   getAdminDriverDocuments,
+  getAdminDriverLiveLocations,
   getAdminDrivers,
   getAdminFinanceDriverDebts,
   getAdminFinanceReports,
@@ -1766,6 +1768,7 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
 }
 
 function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onBlockDriver, payload, loadingMore, onLoadMoreDrivers }) {
+  const [view, setView] = useState("list");
   const total = payload?.total;
   const hasMore = typeof total === "number" && drivers.length < total;
   const visible = drivers.filter(driver => {
@@ -1779,20 +1782,25 @@ function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onB
   return (
     <div className="admin-page-stack">
       <PageHeader title="Водители" subtitle="Контроль водителей, статусов и доступа к регионам">
-        <SegmentedFilter
-          value={driverStatus}
-          onChange={setDriverStatus}
-          items={[
-            ["all", "Все"],
-            ["online", "На линии"],
-            ["busy", "Заняты"],
-            ["offline", "Не на линии"],
-            ["blocked", "Заблокированы"]
-          ]}
-        />
+        <SegmentedFilter value={view} onChange={setView} items={[["list", "Список"], ["map", "Карта"]]} />
+        {view === "list" && (
+          <SegmentedFilter
+            value={driverStatus}
+            onChange={setDriverStatus}
+            items={[
+              ["all", "Все"],
+              ["online", "На линии"],
+              ["busy", "Заняты"],
+              ["offline", "Не на линии"],
+              ["blocked", "Заблокированы"]
+            ]}
+          />
+        )}
       </PageHeader>
 
-      {!visible.length ? (
+      {view === "map" ? (
+        <DriversLiveMapSection />
+      ) : !visible.length ? (
         <StatePanel title="Нет водителей" text="Нет данных для отображения." />
       ) : (
         <DataCard title="Водители" text="Откройте карточку водителя, чтобы управлять региональным доступом.">
@@ -1822,6 +1830,45 @@ function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onB
         </DataCard>
       )}
     </div>
+  );
+}
+
+function DriversLiveMapSection() {
+  const [state, setState] = useState({ loading: true, error: "", drivers: [] });
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  async function load() {
+    try {
+      const data = await getAdminDriverLiveLocations();
+      setState({ loading: false, error: "", drivers: data.drivers || [] });
+      setLastUpdated(new Date());
+    } catch (error) {
+      setState(current => ({ loading: false, error: readError(error), drivers: current.drivers }));
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // A dispatcher tool needs to actually be live — refetch periodically
+    // while this view is open rather than only on manual action.
+    const timer = setInterval(load, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  if (state.loading) return <LoadingState />;
+  if (state.error) {
+    return <StatePanel title="Не удалось загрузить карту" text={state.error} action="Повторить" onAction={load} />;
+  }
+  if (!state.drivers.length) {
+    return <StatePanel title="Сейчас никто не на линии" text="Как только водитель выйдет на линию, он появится здесь." />;
+  }
+  return (
+    <DataCard
+      title={`Водителей на карте: ${state.drivers.length}`}
+      text={lastUpdated ? `Обновлено: ${formatDate(lastUpdated)} · обновляется автоматически каждые 15 секунд` : ""}
+    >
+      <DriversLiveMap drivers={state.drivers} />
+    </DataCard>
   );
 }
 

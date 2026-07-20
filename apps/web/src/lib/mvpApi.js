@@ -337,6 +337,10 @@ export function getAdminDrivers(params = {}) {
   return api(`/api/admin/drivers${queryString(params)}`);
 }
 
+export function getAdminDriverLiveLocations(params = {}) {
+  return api(`/api/admin/drivers/live-locations${queryString(params)}`);
+}
+
 export function getAdminDriverDetail(driverId) {
   return api(`/api/admin/drivers/${driverId}`);
 }

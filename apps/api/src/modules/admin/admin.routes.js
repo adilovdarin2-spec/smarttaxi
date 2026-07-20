@@ -431,6 +431,32 @@ router.get("/drivers", requireAuth, requireRole("OWNER", "FINANCE"), async (req,
   } catch (error) { next(error); }
 });
 
+// Live snapshot of where every currently-online driver actually is — the
+// classic dispatcher tool, and previously missing entirely from admin
+// despite the mobile apps' own MapView component already existing for
+// single-driver order tracking. A 10-minute staleness cutoff on
+// driver_locations.updated_at guards against showing a phantom pin for a
+// driver whose app crashed mid-shift without flipping their status back.
+router.get("/drivers/live-locations", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ regionId: z.string().uuid().optional() }).parse(req.query);
+    const result = await query(`
+      SELECT d.id, d.name, d.phone, d.car_model, d.car_color, d.plate, d.status, d.rating,
+             dl.lat, dl.lng, dl.heading, dl.updated_at,
+             r.id region_id, r.name region_name
+      FROM drivers d
+      JOIN driver_locations dl ON dl.driver_id = d.id
+      LEFT JOIN regions r ON r.id = d.current_region_id
+      WHERE d.status IN ('FREE', 'BUSY')
+        AND NOT d.is_blocked
+        AND dl.updated_at > NOW() - INTERVAL '10 minutes'
+        AND ($1::uuid IS NULL OR d.current_region_id = $1)
+      ORDER BY dl.updated_at DESC
+    `, [params.regionId || null]);
+    res.json({ drivers: result.rows });
+  } catch (error) { next(error); }
+});
+
 router.get("/drivers/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
