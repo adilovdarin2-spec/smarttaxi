@@ -133,16 +133,17 @@ forward:
   in `APP_STORE_READINESS.md`. Submitting a build pointed at a domain
   that doesn't resolve would fail store review outright.
 
-## 6. SMS provider (Infobip)
+## 6. SMS provider (Infobip) — DONE per owner (2026-07-20)
 
-- Production phone-verification (registration/login OTP) needs a real
-  **Infobip account** with a funded balance — `.env.example` currently
-  ships `SMS_PROVIDER=dev`, which only works for local testing (returns
-  a fixed dev code, never sends a real SMS).
-- Sign up for Infobip, obtain `INFOBIP_BASE_URL`/`INFOBIP_API_KEY`, and
-  set `SMS_PROVIDER=infobip` in production `.env` — this is a config
-  change once you have the credentials, not something blocked on
-  further code work.
+- Owner confirms a real **Infobip account with a funded balance** is
+  already set up and `SMS_PROVIDER=infobip` is configured in production.
+  `.env.example` in this repo still shows `SMS_PROVIDER=dev` — that's
+  expected, `.env.example` is just a template for local dev and is never
+  the source of truth for what production actually runs (there's no
+  real `.env` file in this repo at all, by design — it's git-ignored).
+  Not independently re-verified against the live Railway environment
+  variables from this session (no dashboard access), taken on the
+  owner's word.
 
 ## 7. Firebase / push notifications
 

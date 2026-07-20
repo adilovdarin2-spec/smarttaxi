@@ -208,10 +208,11 @@ noted.
 - Admin auth/role checks, own-order access, lat/lng validation: all
   spot-checked against `admin.routes.js`/`orders.routes.js` this session
   — ready.
-- `SMS_PROVIDER=infobip`: **not ready** — `.env.example` still ships
-  `SMS_PROVIDER=dev`. Blocked on a human action (Infobip account, see
-  `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` §6), not a code gap — the config
-  switch itself is a one-line change once credentials exist.
+- `SMS_PROVIDER=infobip`: **ready per owner** (2026-07-20) — real Infobip
+  account with a funded balance already configured in production. Local
+  `.env.example` still shows `SMS_PROVIDER=dev`, which is expected (it's
+  a dev-only template, never the production source of truth). See
+  `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` §6.
 - `CORS_ORIGINS`: currently lists dev localhost ports plus
   `app.smarttaxi.kz`/`smarttaxi.kz` — **those domains don't resolve
   yet** (see below), so this list is aspirational, not wrong; revisit

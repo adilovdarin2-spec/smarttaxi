@@ -133,10 +133,10 @@ none of them are code changes I made here):
   camera/photos for driver documents, push token);
 - test account/credentials for the Play reviewer if the review flow
   requires login (register/OTP) to reach core functionality;
-- real SMS provider enabled in production — `.env.example` still ships
-  `SMS_PROVIDER=dev`; production needs `SMS_PROVIDER=infobip` with real
-  `INFOBIP_BASE_URL`/`INFOBIP_API_KEY` (Infobip account is a human
-  action, see the checklist doc).
+- ~~real SMS provider enabled in production~~ — done per owner
+  (2026-07-20): real Infobip account with a funded balance already
+  configured. `.env.example`'s `SMS_PROVIDER=dev` is just the local-dev
+  template default, not evidence either way about production.
 
 Privacy policy / terms: already lawyer-drafted and current (see
 `apps/mobile/smarttaxi_app/lib/core/legal/legal_content.dart`, dated
