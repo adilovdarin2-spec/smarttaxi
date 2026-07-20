@@ -167,9 +167,13 @@ positioning:
 
 - App Store / Play Store listing copy (title, short description, full
   description) in Russian and Kazakh.
-- Real device-frame screenshots for both stores (the images in
-  `docs/design/screenshots-*.png` are 390px web-preview captures, not
-  store-ready — see `APP_STORE_READINESS.md`).
+- Real device-frame screenshots for both stores — a first on-device
+  batch now exists (`docs/design/screenshots-real-device-*-light.png`,
+  2026-07-20), but it's only 3 screens, light theme only, and not yet
+  cropped/captioned to either store's exact dimension requirements; the
+  older 390px web-preview captures (`docs/design/screenshots-*.png`,
+  no `real-device` prefix) are not store-ready — see
+  `APP_STORE_READINESS.md`.
 - Optionally, a feature graphic / promo video for Play Store.
 - Play's "Data safety" form and Apple's "App Privacy" questionnaire —
   both need to be filled in through each console's own UI by whoever has
