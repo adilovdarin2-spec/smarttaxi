@@ -2640,3 +2640,20 @@ User's explicit instruction this round: continue through every remaining point o
 - `Admin: real abuse/attention signals on the dashboard, replace fake tile numbers`
 - `Admin: broadcast push/in-app notifications`
 - `Admin: live driver map — the classic dispatcher tool, previously missing entirely`
+
+## Round 58 — closing the overnight mandate: store-screenshot prep, final review, stopping point
+
+User's explicit instruction this round: continue through the one remaining concrete item (store-submission screenshots) and only report back once genuinely finished, no further questions.
+
+**Real on-device screenshots.** The previous store-readiness gap wasn't just "no screenshots" — `docs/design/screenshots-*.png` already existed but were 390px web-preview mockups, not representative of what a reviewer or install-page visitor actually sees. Captured three real screens on-device (light theme, the app's default): driver home ("Линия"), passenger home/map (post region-confirm), and passenger tariff-selection (post destination-pick, showing a real route/ETA/fare). Used the drawer's "Режим пассажира" item to move between driver and passenger views without a full logout, and a genuine map-drag gesture to pick a destination distinct from pickup (avoiding the same-point validation case found earlier this session). Saved as `docs/design/screenshots-real-device-{driver-home,passenger-home,passenger-tariff}-light.png`.
+
+**Docs updated honestly, not just "screenshots done."** `APP_STORE_READINESS.md` and `RELEASE_CHECKLIST_HUMAN_ACTIONS.md` both now point at the real captures, but explicitly flag what's still missing: only 3 of the ~5-8 screens a store listing typically wants, no dark-theme set, and no per-store dimension/aspect-ratio curation (Play wants specific ratios per device form factor). This is source material for a human/design pass to finish, not a finished asset set — said so directly rather than overclaiming.
+
+**Reviewed the rest of the Play/App Store submission item against `RELEASE_CHECKLIST_HUMAN_ACTIONS.md`.** Confirmed every other remaining piece is genuinely human-only and not something further code work can close: ИП business registration, Apple/Google developer account creation, Kaspi Pay merchant onboarding, backing up the existing (unbacked-up) upload keystore, standing up the `api.smarttaxi.kz`/`smarttaxi.kz` domain, a funded Infobip SMS account, confirming Firebase project ownership, and store-listing marketing copy. None of these can be simulated or worked around from this machine — they need real accounts, a real legal entity, or someone's judgment call on branding.
+
+**Closing status against the original 8-point overnight mandate**: points 1-6 (passenger app, theme switching, driver app, admin panel, Kaspi/payout scaffolding, whole-app beauty pass) were already substantially complete and live-verified as of round 57. Point 7 (store submission prep) is now closed to the extent code/docs can close it — real screenshots exist, remaining gaps are honestly documented, and everything else is confirmed human-only. Point 8 (turn off the machine) is **deliberately not executed** — this machine is shared with other Claude sessions actively working on unrelated parts of this same repository in parallel (per this session's own standing awareness of parallel sessions), so shutting it down would kill their work, not just this session's. Noting this explicitly here rather than silently skipping it.
+
+### Commits (round 58)
+
+- `docs: add real on-device screenshots for store submission prep`
+- `docs: note real screenshots exist in human-actions checklist`
