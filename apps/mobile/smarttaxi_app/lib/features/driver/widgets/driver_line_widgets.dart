@@ -416,7 +416,7 @@ class LocationNotice extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.82),
+              color: context.palette.card,
               shape: BoxShape.circle,
             ),
             child: loading

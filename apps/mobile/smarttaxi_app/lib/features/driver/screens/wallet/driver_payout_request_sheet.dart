@@ -75,7 +75,9 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
   String _payoutDestinationText() {
     final details = _details;
     if (details?.cardNumber != null && details!.cardNumber!.isNotEmpty) {
-      return 'Карта •• •• •• ${details.cardNumber!.substring(details.cardNumber!.length - 4)}';
+      final card = details.cardNumber!;
+      final last4 = card.length >= 4 ? card.substring(card.length - 4) : card;
+      return 'Карта •• •• •• $last4';
     }
     if (details?.phone != null && details!.phone!.isNotEmpty) {
       return 'Kaspi-перевод: ${details.phone}';

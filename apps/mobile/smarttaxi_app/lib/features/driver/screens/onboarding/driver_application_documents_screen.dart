@@ -33,13 +33,13 @@ class DriverApplicationDocumentsScreen extends StatefulWidget {
 class _DriverApplicationDocumentsScreenState
     extends State<DriverApplicationDocumentsScreen> {
   final Map<String, DriverDocument> _uploaded = {};
-  String? _uploadingType;
+  final Set<String> _uploadingTypes = {};
   String? _error;
 
   Future<void> _uploadFromPath(String type, String? path) async {
-    if (path == null) return;
+    if (path == null || _uploadingTypes.contains(type)) return;
     setState(() {
-      _uploadingType = type;
+      _uploadingTypes.add(type);
       _error = null;
     });
     try {
@@ -51,12 +51,12 @@ class _DriverApplicationDocumentsScreenState
       if (!mounted) return;
       setState(() {
         _uploaded[type] = document;
-        _uploadingType = null;
+        _uploadingTypes.remove(type);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _uploadingType = null;
+        _uploadingTypes.remove(type);
         _error = AppLocalizations.of(context).driverDocumentUploadError;
       });
     }
@@ -109,7 +109,7 @@ class _DriverApplicationDocumentsScreenState
               _ApplicationDocumentRow(
                 type: type,
                 uploaded: _uploaded[type],
-                uploading: _uploadingType == type,
+                uploading: _uploadingTypes.contains(type),
                 onCamera: () => _pickFromCamera(type),
                 onFile: () => _pickFromGallery(type),
               ),

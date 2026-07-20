@@ -122,9 +122,12 @@ class DriverDrawer extends StatelessWidget {
                     height: 52,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [palette.gold, palette.goldDeep],
+                      ),
                       shape: BoxShape.circle,
-                      border: Border.all(color: palette.gold, width: 1.6),
                       boxShadow: [
                         BoxShadow(
                           color: palette.gold.withValues(alpha: 0.28),
@@ -135,8 +138,8 @@ class DriverDrawer extends StatelessWidget {
                     ),
                     child: Text(
                       initial,
-                      style: TextStyle(
-                        color: palette.goldDeep,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                       ),

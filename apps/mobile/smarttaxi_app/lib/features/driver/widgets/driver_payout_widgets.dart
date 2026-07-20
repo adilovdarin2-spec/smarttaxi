@@ -58,7 +58,9 @@ class PayoutMethodSettingsRowState extends State<PayoutMethodSettingsRow> {
     if (_loading) return 'Загрузка...';
     final status = _status;
     if (status?.cardNumber != null && status!.cardNumber!.isNotEmpty) {
-      return 'Карта •• •• •• ${status.cardNumber!.substring(status.cardNumber!.length - 4)}';
+      final card = status.cardNumber!;
+      final last4 = card.length >= 4 ? card.substring(card.length - 4) : card;
+      return 'Карта •• •• •• $last4';
     }
     if (status?.phone != null && status!.phone!.isNotEmpty) {
       return 'Kaspi-перевод: ${status.phone}';
