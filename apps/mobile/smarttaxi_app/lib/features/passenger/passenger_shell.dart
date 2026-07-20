@@ -16720,6 +16720,14 @@ String _readableError(Object error) {
       'TARIFF_REGION_MISMATCH': 'Тариф недоступен для выбранного региона',
       'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен.',
       'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
+      'PROMO_CODE_REQUIRED': 'Введите промокод.',
+      'PROMO_NOT_FOUND': 'Такой промокод не найден. Проверьте код.',
+      'PROMO_NOT_STARTED': 'Этот промокод ещё не начал действовать.',
+      'PROMO_EXPIRED': 'Срок действия промокода истёк.',
+      'PROMO_MIN_ORDER_NOT_MET':
+          'Сумма заказа меньше минимальной для этого промокода.',
+      'PROMO_LIMIT_REACHED': 'Лимит использования этого промокода исчерпан.',
+      'PROMO_ALREADY_USED': 'Вы уже использовали этот промокод.',
     };
     final mapped = apiMap[apiCode];
     if (mapped != null) return mapped;
