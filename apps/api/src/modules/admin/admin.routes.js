@@ -71,13 +71,6 @@ const SettingsUpdate = z.object({
   referralBonusKzt: z.coerce.number().int().min(0).max(1_000_000).optional()
 }).refine(value => Object.keys(value).length > 0, "at least one field is required");
 
-const Review = z.object({
-  orderId: z.string().uuid(),
-  rating: z.coerce.number().int().min(1).max(5),
-  tags: z.array(z.string().trim().max(40)).max(8).optional().default([]),
-  comment: z.string().trim().max(500).optional().default("")
-});
-
 const BoundaryPoint = z.tuple([
   z.coerce.number().min(-180).max(180),
   z.coerce.number().min(-90).max(90)
@@ -1449,26 +1442,6 @@ router.patch("/driver-applications/:id", requireAuth, requireRole("OWNER"), asyn
       return updated;
     });
     res.json({ application });
-  } catch (error) { next(error); }
-});
-
-router.post("/driver-reviews", async (req, res, next) => {
-  try {
-    const body = Review.parse(req.body);
-    const review = await tx(async client => {
-      const order = (await client.query("SELECT * FROM orders WHERE id=$1", [body.orderId])).rows[0];
-      if (!order || !order.driver_id) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
-      if (order.status !== "COMPLETED") throw new AppError("Trip is not completed", 409, "INVALID_STATUS_TRANSITION");
-      const created = (await client.query(`
-        INSERT INTO driver_reviews(order_id, driver_id, client_id, rating, tags, comment)
-        VALUES($1,$2,$3,$4,$5,$6)
-        RETURNING *
-      `, [order.id, order.driver_id, order.client_id, body.rating, body.tags, body.comment])).rows[0];
-      const rating = (await client.query("SELECT AVG(rating)::numeric(3,2) rating FROM driver_reviews WHERE driver_id=$1", [order.driver_id])).rows[0];
-      await client.query("UPDATE drivers SET rating=$1 WHERE id=$2", [rating.rating || body.rating, order.driver_id]);
-      return created;
-    });
-    res.status(201).json({ review });
   } catch (error) { next(error); }
 });
 

@@ -5,16 +5,34 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { normalizePoint, pointInPolygon } from "../regions/regions.service.js";
+import { dispatchRegionRoom } from "../orders/order-dispatch.service.js";
+import { nearbyOsmCameras, nearestSpeedLimit, nearbyOsmTrafficSigns } from "./osm-navigation.service.js";
 
 const router = Router();
+
+const OsmNavigationQuery = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  radiusM: z.coerce.number().int().min(200).max(8000).optional()
+});
 
 const alertTypes = [
   "ROAD_HAZARD",
   "ACCIDENT",
   "ROAD_WORK",
   "SPEED_CAMERA",
+  "POLICE",
   "TRAFFIC_JAM",
   "ROAD_CLOSED",
+  "BAD_ROAD",
+  "POTHOLE",
+  "SPEED_BUMP",
+  "ICY_ROAD",
+  "SCHOOL_ZONE",
+  "TEMPORARY_SPEED_LIMIT",
+  "DANGEROUS_TURN",
+  "RAILROAD_CROSSING",
+  "PEDESTRIAN_CROSSING",
   "OTHER"
 ];
 
@@ -37,7 +55,13 @@ const CreateAlertBody = z.object({
   type: z.enum(alertTypes),
   comment: z.string().trim().max(300).optional().default(""),
   lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180)
+  lng: z.coerce.number().min(-180).max(180),
+  speedLimit: z.coerce.number().int().min(5).max(160).optional(),
+  // Compass heading (0-360, clockwise from north) the reporting driver was
+  // travelling at the moment of the report — used as an approximation of
+  // which direction a SPEED_CAMERA faces, since that's rarely something a
+  // driver can measure directly.
+  heading: z.coerce.number().min(0).max(360).optional()
 });
 
 const AlertParams = z.object({
@@ -55,6 +79,10 @@ function publicAlert(row) {
     lng: Number(row.lng),
     status: row.status,
     confirmationsCount: Number(row.confirmations_count || 0),
+    dismissalsCount: Number(row.dismissals_count || 0),
+    confidenceScore: Number(row.confidence_score || 50),
+    speedLimit: row.speed_limit == null ? null : Number(row.speed_limit),
+    heading: row.heading == null ? null : Number(row.heading),
     createdAt: row.created_at,
     expiresAt: row.expires_at
   };
@@ -111,6 +139,33 @@ router.get("/", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   }
 });
 
+// Live OSM-sourced navigation layer: speed cameras + posted speed limit
+// around the driver's current position. Read-only, never persisted to
+// road_alerts — see osm-navigation.service.js for why (no free Kazakhstan
+// camera API exists; this is the real, legal, zero-cost alternative).
+router.get("/osm-navigation", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const params = OsmNavigationQuery.parse(req.query);
+    // allSettled, not all: each lookup already catches its own network
+    // errors internally and resolves to an empty result, but this is the
+    // backstop against an unexpected processing exception in any one of
+    // them taking the other two down with it — a driver should still get
+    // cameras even if, say, the sign-parsing path throws on a malformed tag.
+    const [camerasResult, speedLimitResult, signsResult] = await Promise.allSettled([
+      nearbyOsmCameras(params.lat, params.lng, params.radiusM),
+      nearestSpeedLimit(params.lat, params.lng),
+      nearbyOsmTrafficSigns(params.lat, params.lng, Math.min(params.radiusM || 1500, 1500))
+    ]);
+    res.json({
+      cameras: camerasResult.status === "fulfilled" ? camerasResult.value : [],
+      speedLimit: speedLimitResult.status === "fulfilled" ? speedLimitResult.value : null,
+      signs: signsResult.status === "fulfilled" ? signsResult.value : []
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const body = CreateAlertBody.parse(req.body);
@@ -122,10 +177,10 @@ router.post("/", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
       throw new AppError("Road alert point is outside selected region", 403, "ROAD_ALERT_OUTSIDE_REGION");
     }
     const result = await query(`
-      INSERT INTO road_alerts(region_id, driver_id, type, comment, lat, lng)
-      VALUES($1,$2,$3,$4,$5,$6)
+      INSERT INTO road_alerts(region_id, driver_id, type, comment, lat, lng, speed_limit, heading)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8)
       RETURNING *
-    `, [region.id, driver.id, body.type, body.comment, point.lat, point.lng]);
+    `, [region.id, driver.id, body.type, body.comment, point.lat, point.lng, body.speedLimit || null, body.heading ?? null]);
     await writeAudit(query, {
       action: "road_alert_created",
       actorUserId: req.user.id,
@@ -134,7 +189,7 @@ router.post("/", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
       metadata: { regionId: region.id, type: body.type },
       req
     });
-    req.io?.to(`dispatch:region:${region.id}`).emit("road_alert_created", publicAlert(result.rows[0]));
+    req.io?.to(dispatchRegionRoom(region.id)).emit("road_alert_created", publicAlert(result.rows[0]));
     res.status(201).json({ alert: publicAlert(result.rows[0]) });
   } catch (error) {
     next(error);
@@ -147,10 +202,14 @@ router.patch("/:id/confirm", requireAuth, requireRole("DRIVER"), async (req, res
     const driver = await loadDriver(req.user.id);
     const alert = (await query("SELECT * FROM road_alerts WHERE id=$1", [params.id])).rows[0];
     if (!alert) throw new AppError("Road alert not found", 404, "ROAD_ALERT_NOT_FOUND");
+    if (alert.driver_id === driver.id) {
+      throw new AppError("You cannot confirm your own report", 403, "CANNOT_CONFIRM_OWN_ALERT");
+    }
     await resolveDriverRegion(driver, alert.region_id);
     const result = await query(`
       UPDATE road_alerts
-      SET confirmations_count=confirmations_count + 1
+      SET confirmations_count=confirmations_count + 1,
+          confidence_score=LEAST(100, confidence_score + 12)
       WHERE id=$1 AND status='ACTIVE' AND expires_at > NOW()
       RETURNING *
     `, [params.id]);
@@ -170,7 +229,10 @@ router.patch("/:id/expire", requireAuth, requireRole("DRIVER"), async (req, res,
     await resolveDriverRegion(driver, alert.region_id);
     const result = await query(`
       UPDATE road_alerts
-      SET status='EXPIRED', expires_at=LEAST(expires_at, NOW())
+      SET status='EXPIRED',
+          dismissals_count=dismissals_count + 1,
+          confidence_score=GREATEST(0, confidence_score - 20),
+          expires_at=LEAST(expires_at, NOW())
       WHERE id=$1
       RETURNING *
     `, [params.id]);
