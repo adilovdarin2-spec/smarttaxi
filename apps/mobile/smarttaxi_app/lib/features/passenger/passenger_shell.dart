@@ -1949,6 +1949,10 @@ class _PassengerShellState extends State<PassengerShell>
   // back gesture for state that isn't a pushed route, so screens reached
   // this way need a visible on-screen way back too).
   void _handleBackNavigation() {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      _scaffoldKey.currentState?.closeDrawer();
+      return;
+    }
     if (_mapPointPickerActive) {
       _cancelMapPointSelection();
       return;

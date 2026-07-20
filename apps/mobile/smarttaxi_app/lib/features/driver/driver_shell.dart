@@ -2127,6 +2127,10 @@ class _DriverShellState extends State<DriverShell> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
+        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          _scaffoldKey.currentState?.closeDrawer();
+          return;
+        }
         if (_tab != 0) {
           _switchTab(0);
           return;
