@@ -919,21 +919,54 @@ function roundedPointKey({ lat, lng }, precision = 4) {
   return `${Number(lat).toFixed(precision)},${Number(lng).toFixed(precision)}`;
 }
 
+// Rural Kazakhstan OSM data frequently mistags a farm/plot id (e.g. "КХ-100",
+// "КХМR-13") as the road name itself, and Nominatim's display_name leads with
+// the same kind of code when no road is tagged at all — strip that pattern
+// before ever showing it to a user, wherever it appears.
+const CODE_LIKE_TOKEN = /^[a-zа-яёіғқңөұүh]{1,4}[-\s]?№?\d+[a-zа-яё]?$/i;
+
+function isCodeLikeToken(value) {
+  return Boolean(value) && CODE_LIKE_TOKEN.test(compactText(value));
+}
+
+function cleanDisplayNameSegments(displayName) {
+  const segments = String(displayName || "")
+    .split(",")
+    .map(segment => compactText(segment))
+    .filter(Boolean);
+  while (segments.length > 1 && isCodeLikeToken(segments[0])) {
+    segments.shift();
+  }
+  return segments;
+}
+
 function publicAddressSuggestion(item) {
   const lat = Number(item?.lat);
   const lng = Number(item?.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   const address = item.address || {};
-  const city = address.city || address.town || address.village || address.county || "";
+  // Kazakhstan OSM data often tags "city" as the broader rural administrative
+  // wrapper ("...ауылдық округі" / "...кенттік әкімдігі") while "town"/"village"
+  // holds the actual settlement name — prefer the more specific one for display.
+  const city = address.town || address.village || address.city || address.hamlet || address.county || "";
   const region = address.state || address.region || "";
-  const shortParts = [
-    address.road || address.pedestrian || address.neighbourhood || address.suburb,
-    address.house_number,
-    city
-  ].filter(Boolean);
-  const label = shortParts.length
-    ? shortParts.join(address.house_number ? ", " : " ")
-    : String(item.display_name || "Точка на карте").split(",").slice(0, 3).join(",").trim();
+  const rawRoad = address.road || address.pedestrian || address.footway || address.cycleway;
+  const road = isCodeLikeToken(rawRoad) ? null : rawRoad;
+  const locality = address.neighbourhood || address.suburb || address.city_district || address.residential;
+
+  let label;
+  if (road) {
+    const streetPart = [road, address.house_number].filter(Boolean).join(", ");
+    label = city && !streetPart.includes(city) ? `${streetPart}, ${city}` : streetPart;
+  } else if (locality) {
+    label = [locality, city].filter(Boolean).join(", ");
+  } else if (city) {
+    label = city;
+  } else {
+    const segments = cleanDisplayNameSegments(item.display_name);
+    label = compactText(segments.slice(0, 2).join(", ")) || "Точка на карте";
+  }
+
   return {
     label,
     subtitle: String(item.display_name || "").split(",").slice(1, 5).join(",").trim(),
