@@ -133,7 +133,7 @@ forward:
   in `APP_STORE_READINESS.md`. Submitting a build pointed at a domain
   that doesn't resolve would fail store review outright.
 
-## 6. SMS provider (Infobip) — DONE per owner (2026-07-20)
+## 6. SMS provider (Infobip) — account funded, but sender ID still blocks real delivery
 
 - Owner confirms a real **Infobip account with a funded balance** is
   already set up and `SMS_PROVIDER=infobip` is configured in production.
@@ -141,9 +141,17 @@ forward:
   expected, `.env.example` is just a template for local dev and is never
   the source of truth for what production actually runs (there's no
   real `.env` file in this repo at all, by design — it's git-ignored).
-  Not independently re-verified against the live Railway environment
-  variables from this session (no dashboard access), taken on the
-  owner's word.
+- **Live-tested this session: production correctly reaches Infobip
+  (`provider: "infobip"` in the response), but Infobip itself returns
+  HTTP 403** — this is not a bad API key or misconfiguration, it means
+  Infobip has authenticated the request but won't send it, because the
+  alphanumeric sender ID (e.g. "ServiceSMS") is not yet registered.
+  Registering a sender ID requires submitting real company legal details
+  (name, address, tax code, industry, a message example) through
+  Infobip's own business-verification form — this needs the owner
+  personally, since it needs real ИП/business documents that don't exist
+  in this repo and can't be fabricated. Until that's approved, no OTP SMS
+  will actually deliver in production regardless of code changes.
 
 ## 7. Firebase / push notifications
 
