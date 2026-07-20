@@ -396,9 +396,11 @@ router.get("/", requireAuth, requireRole("OWNER", "FINANCE", "DRIVER"), async (r
   try {
     const params = z.object({
       status: OrderStatus.optional(),
-      limit: z.coerce.number().int().min(1).max(200).default(100)
+      limit: z.coerce.number().int().min(1).max(200).default(100),
+      offset: z.coerce.number().int().min(0).default(0)
     }).parse(req.query);
     let result;
+    let total;
     if (req.user.role === "DRIVER") {
       let driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
       if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
@@ -411,11 +413,17 @@ router.get("/", requireAuth, requireRole("OWNER", "FINANCE", "DRIVER"), async (r
         orderSelect: ORDER_SELECT
       }) };
     } else {
+      total = (await (params.status
+        ? query("SELECT COUNT(*)::int total FROM orders WHERE status=$1", [params.status])
+        : query("SELECT COUNT(*)::int total FROM orders"))).rows[0].total;
       result = params.status
-        ? await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id WHERE o.status=$1 ORDER BY o.created_at DESC LIMIT $2`, [params.status, params.limit])
-        : await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id ORDER BY o.created_at DESC LIMIT $1`, [params.limit]);
+        ? await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id WHERE o.status=$1 ORDER BY o.created_at DESC LIMIT $2 OFFSET $3`, [params.status, params.limit, params.offset])
+        : await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id ORDER BY o.created_at DESC LIMIT $1 OFFSET $2`, [params.limit, params.offset]);
     }
-    res.json({ orders: result.rows.map(publicOrderResponse) });
+    res.json({
+      orders: result.rows.map(publicOrderResponse),
+      ...(total !== undefined ? { total, limit: params.limit, offset: params.offset } : {})
+    });
   } catch (e) { next(e); }
 });
 

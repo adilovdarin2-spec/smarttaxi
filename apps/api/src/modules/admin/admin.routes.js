@@ -380,8 +380,13 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
   } catch (error) { next(error); }
 });
 
-router.get("/drivers", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
+router.get("/drivers", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
+    const params = z.object({
+      limit: z.coerce.number().int().min(1).max(200).default(100),
+      offset: z.coerce.number().int().min(0).default(0)
+    }).parse(req.query);
+    const total = await query("SELECT COUNT(*)::int total FROM drivers");
     const result = await query(`
       SELECT d.id, d.name, d.phone, d.car_model, d.car_color, d.plate, d.status,
              d.rating, d.balance, d.debt, d.is_blocked, d.last_seen_at, d.created_at,
@@ -393,9 +398,9 @@ router.get("/drivers", requireAuth, requireRole("OWNER", "FINANCE"), async (_req
       LEFT JOIN orders o ON o.driver_id=d.id
       GROUP BY d.id, r.name
       ORDER BY d.created_at DESC
-      LIMIT 100
-    `);
-    res.json({ drivers: result.rows });
+      LIMIT $1 OFFSET $2
+    `, [params.limit, params.offset]);
+    res.json({ drivers: result.rows, total: total.rows[0].total, limit: params.limit, offset: params.offset });
   } catch (error) { next(error); }
 });
 
@@ -586,8 +591,10 @@ router.delete("/commission-overrides/:driverId", requireAuth, requireRole("OWNER
 router.get("/audit-logs", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const params = z.object({
-      limit: z.coerce.number().int().min(1).max(200).default(100)
+      limit: z.coerce.number().int().min(1).max(200).default(100),
+      offset: z.coerce.number().int().min(0).default(0)
     }).parse(req.query);
+    const total = await query("SELECT COUNT(*)::int total FROM audit_logs");
     const result = await query(`
       SELECT a.id, a.action, a.actor_user_id, a.entity_type, a.entity_id,
              a.metadata, a.ip, a.user_agent, a.created_at,
@@ -595,9 +602,9 @@ router.get("/audit-logs", requireAuth, requireRole("OWNER", "FINANCE"), async (r
       FROM audit_logs a
       LEFT JOIN users u ON u.id=a.actor_user_id
       ORDER BY a.created_at DESC
-      LIMIT $1
-    `, [params.limit]);
-    res.json({ logs: result.rows });
+      LIMIT $1 OFFSET $2
+    `, [params.limit, params.offset]);
+    res.json({ logs: result.rows, total: total.rows[0].total, limit: params.limit, offset: params.offset });
   } catch (error) { next(error); }
 });
 

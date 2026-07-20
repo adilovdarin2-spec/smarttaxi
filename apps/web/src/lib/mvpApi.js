@@ -333,8 +333,8 @@ export function toggleAdminRegion(regionId, isActive) {
   return updateAdminRegion(regionId, { isActive });
 }
 
-export function getAdminDrivers() {
-  return api("/api/admin/drivers");
+export function getAdminDrivers(params = {}) {
+  return api(`/api/admin/drivers${queryString(params)}`);
 }
 
 export function getAdminDriverDetail(driverId) {
@@ -517,8 +517,8 @@ export function markOperatorOrderStatus(orderId, action) {
   return api(`/api/orders/${orderId}/${action}`, { method: "POST" });
 }
 
-export function getAdminAudit() {
-  return api("/api/admin/audit-logs");
+export function getAdminAudit(params = {}) {
+  return api(`/api/admin/audit-logs${queryString(params)}`);
 }
 
 export function getAdminRoadAlerts(params = {}) {

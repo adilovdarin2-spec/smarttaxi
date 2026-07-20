@@ -5657,6 +5657,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   line-height: 1.5;
 }
 
+.admin-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 4px;
+}
+
 .admin-detail-hero {
   padding: 18px;
   background: linear-gradient(135deg, var(--admin-warm), #fff);

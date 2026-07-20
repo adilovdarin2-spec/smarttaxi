@@ -569,6 +569,38 @@ export default function AdminApp() {
     }
   }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
+  // Fetches the next page from the server and appends it to whatever's
+  // already loaded under itemsKey (e.g. "orders"), rather than replacing
+  // the whole payload — orders/drivers/audit all now return
+  // {total,limit,offset} from the backend to make this possible. Other
+  // keys already on the payload (e.g. orders' bundled drivers/regions for
+  // the dispatch picker) are left untouched.
+  const [loadingMore, setLoadingMore] = useState(false);
+  async function loadMoreItems(itemsKey, fetchNextPage) {
+    const payload = pageState.payload;
+    if (!payload) return;
+    const currentItems = payload[itemsKey] || [];
+    if (typeof payload.total === "number" && currentItems.length >= payload.total) return;
+    setLoadingMore(true);
+    try {
+      const data = await fetchNextPage(currentItems.length);
+      setPageState(current => ({
+        ...current,
+        payload: {
+          ...current.payload,
+          [itemsKey]: [...(current.payload[itemsKey] || []), ...(data[itemsKey] || [])],
+          total: data.total,
+          limit: data.limit,
+          offset: data.offset
+        }
+      }));
+    } catch (error) {
+      setActionState({ loading: false, error: readError(error), message: "" });
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
     setDriverDetail({ loading: true, error: "", payload: null });
@@ -1118,6 +1150,10 @@ export default function AdminApp() {
             onAssignOrderDriver={assignOrderDriver}
             onAdvanceOrderStatus={advanceOrderStatus}
             onRequestCancelOrder={order => setModal({ type: "orderCancel", order })}
+            loadingMore={loadingMore}
+            onLoadMoreOrders={() => loadMoreItems("orders", offset => getAdminOrders({ status: orderStatus !== "all" ? orderStatus : undefined, offset }))}
+            onLoadMoreDrivers={() => loadMoreItems("drivers", offset => getAdminDrivers({ offset }))}
+            onLoadMoreAudit={() => loadMoreItems("logs", offset => getAdminAudit({ offset }))}
             tariffStatus={tariffStatus}
             setTariffStatus={setTariffStatus}
             tariffRegion={tariffRegion}
@@ -1558,7 +1594,16 @@ function AdminPage(props) {
       />
     );
   }
-  if (active === "audit") return <AuditPage logs={asArray(payload, "logs")} />;
+  if (active === "audit") {
+    return (
+      <AuditPage
+        logs={asArray(payload, "logs")}
+        total={payload?.total}
+        loadingMore={props.loadingMore}
+        onLoadMore={props.onLoadMoreAudit}
+      />
+    );
+  }
   if (active === "settings") return <SettingsPage settings={payload?.settings} onSave={props.onSaveSettings} canEdit={props.canEditSettings} />;
   if (active === "support") return <SupportPage messages={asArray(payload, "messages")} {...props} />;
   if (active === "promoCodes") return <PromoCodesPage promoCodes={asArray(payload, "promoCodes")} {...props} />;
@@ -1661,7 +1706,9 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
   );
 }
 
-function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onBlockDriver }) {
+function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onBlockDriver, payload, loadingMore, onLoadMoreDrivers }) {
+  const total = payload?.total;
+  const hasMore = typeof total === "number" && drivers.length < total;
   const visible = drivers.filter(driver => {
     if (driverStatus === "blocked") return driver.is_blocked;
     if (driverStatus === "online") return !driver.is_blocked && driver.status === "FREE";
@@ -1706,6 +1753,13 @@ function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onB
               </div>
             ))}
           </div>
+          {hasMore && (
+            <div className="admin-load-more">
+              <button type="button" className="admin-secondary-button" disabled={loadingMore} onClick={onLoadMoreDrivers}>
+                {loadingMore ? "Загружаем..." : `Загрузить ещё водителей (${drivers.length} из ${total})`}
+              </button>
+            </div>
+          )}
         </DataCard>
       )}
     </div>
@@ -2227,9 +2281,14 @@ function OrdersPage({
   regions = [],
   onAssignOrderDriver,
   onAdvanceOrderStatus,
-  onRequestCancelOrder
+  onRequestCancelOrder,
+  payload,
+  loadingMore,
+  onLoadMoreOrders
 }) {
   const [expandedId, setExpandedId] = useState(null);
+  const total = payload?.total;
+  const hasMore = typeof total === "number" && orders.length < total;
   return (
     <div className="admin-page-stack">
       <PageHeader title="Заказы" subtitle="Список загружен из регионально проверенных заказов">
@@ -2256,6 +2315,13 @@ function OrdersPage({
               onRequestCancel={onRequestCancelOrder}
             />
           ))}
+        </div>
+      )}
+      {hasMore && (
+        <div className="admin-load-more">
+          <button type="button" className="admin-secondary-button" disabled={loadingMore} onClick={onLoadMoreOrders}>
+            {loadingMore ? "Загружаем..." : `Показать ещё заказы (${orders.length} из ${total})`}
+          </button>
         </div>
       )}
     </div>
@@ -3214,8 +3280,9 @@ function QualityPage({ reviews, leaderboard, raffles, ratingScope, setRatingScop
   );
 }
 
-function AuditPage({ logs }) {
+function AuditPage({ logs, total, loadingMore, onLoadMore }) {
   if (!logs.length) return <StatePanel title="Журнал пока пуст" text="Записи появятся после действий пользователей." />;
+  const hasMore = typeof total === "number" && logs.length < total;
   return (
     <DataCard title="Журнал действий" text="Последние системные события сервиса.">
       <div className="admin-table premium">
@@ -3228,6 +3295,13 @@ function AuditPage({ logs }) {
           </div>
         ))}
       </div>
+      {hasMore && (
+        <div className="admin-load-more">
+          <button type="button" className="admin-secondary-button" disabled={loadingMore} onClick={onLoadMore}>
+            {loadingMore ? "Загружаем..." : `Показать ещё (${logs.length} из ${total})`}
+          </button>
+        </div>
+      )}
     </DataCard>
   );
 }
