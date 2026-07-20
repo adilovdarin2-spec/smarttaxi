@@ -364,7 +364,15 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
         value: _systemUiStyleFor(Theme.of(context).brightness),
-        child: child!,
+        // Tapping outside a focused field anywhere in the app dismisses the
+        // keyboard — none of the ~14 forms/sheets across passenger/driver
+        // shells handle this individually, so it was app-wide missing
+        // rather than one screen's oversight.
+        child: GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: child!,
+        ),
       ),
       // The splash screen manages its own loading state before the session
       // is known; showing the offline overlay on top of it would be

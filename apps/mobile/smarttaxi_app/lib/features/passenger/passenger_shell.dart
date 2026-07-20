@@ -1715,6 +1715,7 @@ class _PassengerShellState extends State<PassengerShell>
         offeredPriceKzt: _offeredPriceKzt,
         notes: _orderNote,
       );
+      if (!mounted) return;
       widget.sockets.joinOrder(order.id);
       _paymentPollTimer?.cancel();
       _paymentPollTimer = null;
@@ -1883,10 +1884,14 @@ class _PassengerShellState extends State<PassengerShell>
       if (_driverFullName.trim().length < 2) {
         throw const FormatException('DRIVER_NAME_REQUIRED');
       }
-      if ((_driverPhone.isEmpty ? widget.accountPhone : _driverPhone)
-              .trim()
-              .length <
-          6) {
+      final driverPhoneDigits =
+          (_driverPhone.isEmpty ? widget.accountPhone : _driverPhone)
+              .replaceAll(RegExp(r'[^0-9]'), '');
+      // A pure .length check on the raw string let non-numeric text like
+      // "aaaaaa" through (6+ chars, zero digits) straight to the API — the
+      // phone field also had no keyboardType, so nothing nudged users away
+      // from typing letters there in the first place.
+      if (driverPhoneDigits.length < 6) {
         throw const FormatException('DRIVER_PHONE_REQUIRED');
       }
       if (_driverCarModel.trim().length < 2) {
@@ -3291,6 +3296,7 @@ class _PassengerShellState extends State<PassengerShell>
                 _ApplicationField(
                   label: 'Телефон',
                   icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
                   initialValue: _driverPhone.isEmpty
                       ? widget.accountPhone
                       : _driverPhone,
@@ -7570,7 +7576,12 @@ class _TripStatusPanel extends StatelessWidget {
                     Expanded(
                       child: _TripInfoPill(
                         label: 'Тариф',
-                        value: (order.tariff ?? 'Эконом').trim().isEmpty
+                        // (order.tariff ?? 'Эконом') meant the null case
+                        // itself never produced an empty string to trigger
+                        // the "use Эконом" branch — it fell through to the
+                        // null-check operator below and crashed for any
+                        // order with no tariff at all.
+                        value: (order.tariff?.trim().isEmpty ?? true)
                             ? 'Эконом'
                             : order.tariff!,
                       ),
@@ -7662,7 +7673,12 @@ class _TripStatusPanel extends StatelessWidget {
                     Expanded(
                       child: _TripInfoPill(
                         label: 'Тариф',
-                        value: (order.tariff ?? 'Эконом').trim().isEmpty
+                        // (order.tariff ?? 'Эконом') meant the null case
+                        // itself never produced an empty string to trigger
+                        // the "use Эконом" branch — it fell through to the
+                        // null-check operator below and crashed for any
+                        // order with no tariff at all.
+                        value: (order.tariff?.trim().isEmpty ?? true)
                             ? 'Эконом'
                             : order.tariff!,
                       ),
