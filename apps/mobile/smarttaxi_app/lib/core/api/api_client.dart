@@ -856,6 +856,15 @@ class ApiClient {
     return ReferralSummary.fromJson(data);
   }
 
+  // Mirrors GET /drivers/me/wallet for the client side — backs the
+  // "Бонусы" notifications tab's balance summary card.
+  Future<ClientBalance> getMyClientBalance() async {
+    await _attachToken();
+    final response = await _dio.get<Map<String, dynamic>>('/api/clients/me');
+    final data = response.data ?? {};
+    return ClientBalance.fromJson(data);
+  }
+
   Future<String> sendQuickMessage({
     required String orderId,
     required String messageKey,

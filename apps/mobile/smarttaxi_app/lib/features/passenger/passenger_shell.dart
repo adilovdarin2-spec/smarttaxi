@@ -3250,6 +3250,7 @@ class _PassengerShellState extends State<PassengerShell>
   Widget _notificationsScreen() {
     return _NotificationsScreen(
       api: widget.api,
+      regionId: _selectedRegion?.id,
       onUnreadCountChanged: (count) {
         if (!mounted) return;
         setState(() => _unreadNotificationCount = count);
@@ -15213,19 +15214,34 @@ class _NotificationsScreen extends StatefulWidget {
   const _NotificationsScreen({
     required this.api,
     required this.onUnreadCountChanged,
+    this.regionId,
   });
 
   final ApiClient api;
   final ValueChanged<int> onUnreadCountChanged;
+  // Only used to look up a cheapest-tariff reference price for the bonus
+  // balance's ride-count estimate -- null just means that one number is
+  // skipped, the notifications list itself doesn't depend on a region.
+  final String? regionId;
 
   @override
   State<_NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
+const _notificationCategories = [
+  (NotificationCategory.orders, 'Заказы'),
+  (NotificationCategory.support, 'Поддержка'),
+  (NotificationCategory.service, 'Сервис'),
+  (NotificationCategory.bonus, 'Бонусы'),
+];
+
 class _NotificationsScreenState extends State<_NotificationsScreen> {
   bool _loading = true;
   String? _error;
   List<AppNotification> _items = const [];
+  NotificationCategory _category = NotificationCategory.orders;
+  int? _cashbackBalanceKzt;
+  double? _cheapestTariffPriceKzt;
 
   @override
   void initState() {
@@ -15261,10 +15277,38 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
         _loading = false;
       });
     }
+    unawaited(_loadBonusSummary());
+  }
+
+  // Best-effort, kept separate from _load()'s error state -- a failure here
+  // must never block the notifications list itself from showing.
+  Future<void> _loadBonusSummary() async {
+    try {
+      final balance = await widget.api.getMyClientBalance();
+      if (mounted) {
+        setState(() => _cashbackBalanceKzt = balance.cashbackBalanceKzt);
+      }
+    } catch (_) {}
+    final regionId = widget.regionId;
+    if (regionId == null) return;
+    try {
+      final tariffs = await widget.api.getTariffs(regionId);
+      if (!mounted) return;
+      double? cheapest;
+      for (final tariff in tariffs) {
+        if (tariff.minimumPrice <= 0) continue;
+        if (cheapest == null || tariff.minimumPrice < cheapest) {
+          cheapest = tariff.minimumPrice;
+        }
+      }
+      if (cheapest != null) setState(() => _cheapestTariffPriceKzt = cheapest);
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
+    final filtered =
+        _items.where((item) => item.category == _category).toList();
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -15278,6 +15322,27 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
             text: 'Статусы поездок и важные сообщения SmartTaxi',
           ),
           const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in _notificationCategories)
+                _SupportTopicChip(
+                  label: entry.$2,
+                  selected: _category == entry.$1,
+                  onTap: () => setState(() => _category = entry.$1),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_category == NotificationCategory.bonus &&
+              (_cashbackBalanceKzt != null || _cheapestTariffPriceKzt != null)) ...[
+            _BonusBalanceCard(
+              balanceKzt: _cashbackBalanceKzt,
+              cheapestTariffPriceKzt: _cheapestTariffPriceKzt,
+            ),
+            const SizedBox(height: 16),
+          ],
           if (_loading)
             const _SkeletonList()
           else if (_error != null)
@@ -15289,18 +15354,21 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
                 dark: Theme.of(context).brightness == Brightness.dark,
               ),
             )
-          else if (_items.isEmpty)
+          else if (filtered.isEmpty)
             _PremiumCard(
               child: _CompactNotice(
                 icon: Icons.notifications_none_rounded,
-                title: 'Новых уведомлений нет',
-                text:
-                    'Когда водитель примет заказ или поездка изменит статус, мы покажем это здесь и в статусе поездки.',
+                title: _items.isEmpty
+                    ? 'Новых уведомлений нет'
+                    : 'Здесь пока пусто',
+                text: _items.isEmpty
+                    ? 'Когда водитель примет заказ или поездка изменит статус, мы покажем это здесь и в статусе поездки.'
+                    : 'В этой категории пока нет уведомлений.',
                 dark: Theme.of(context).brightness == Brightness.dark,
               ),
             )
           else
-            for (final group in _groupNotificationsByDay(_items)) ...[
+            for (final group in _groupNotificationsByDay(filtered)) ...[
               _ProfileGroupLabel(group.label),
               const SizedBox(height: 8),
               for (final item in group.items) ...[
@@ -15312,6 +15380,82 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
         ],
       ),
     );
+  }
+}
+
+class _BonusBalanceCard extends StatelessWidget {
+  const _BonusBalanceCard({
+    required this.balanceKzt,
+    required this.cheapestTariffPriceKzt,
+  });
+
+  final int? balanceKzt;
+  final double? cheapestTariffPriceKzt;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final balance = balanceKzt ?? 0;
+    final price = cheapestTariffPriceKzt;
+    final rides = (price != null && price > 0) ? (balance / price).floor() : null;
+    return _PremiumCard(
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: palette.goldSurface,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.savings_rounded,
+              color: palette.goldDeep,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$balance ₸',
+                  style: TextStyle(
+                    color: palette.text,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  rides == null
+                      ? 'Баланс кешбэка и бонусов'
+                      : rides > 0
+                          ? 'Хватит ещё на $rides ${_rideWord(rides)}'
+                          : 'Пока не хватит на поездку по минимальному тарифу',
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _rideWord(int count) {
+    final mod100 = count % 100;
+    final mod10 = count % 10;
+    if (mod100 >= 11 && mod100 <= 14) return 'поездок';
+    if (mod10 == 1) return 'поездку';
+    if (mod10 >= 2 && mod10 <= 4) return 'поездки';
+    return 'поездок';
   }
 }
 
@@ -15360,6 +15504,14 @@ class _NotificationTile extends StatelessWidget {
         return Icons.receipt_long_rounded;
       case 'ORDER_STATUS':
         return Icons.local_taxi_rounded;
+      case 'CASHBACK_EARNED':
+      case 'REFERRAL_BONUS':
+        return Icons.savings_rounded;
+      case 'SOS_ALERT':
+      case 'LOST_ITEM':
+        return Icons.support_agent_rounded;
+      case 'BROADCAST':
+        return Icons.campaign_rounded;
       default:
         return Icons.notifications_none_rounded;
     }

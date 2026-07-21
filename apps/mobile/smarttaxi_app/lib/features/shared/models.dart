@@ -253,6 +253,25 @@ class ReferralSummary {
   }
 }
 
+// GET /clients/me returns the raw clients row (clients.routes.js), so this
+// only parses the one field the app actually needs today rather than
+// mirroring the whole row.
+class ClientBalance {
+  const ClientBalance({required this.cashbackBalanceKzt});
+
+  final int cashbackBalanceKzt;
+
+  factory ClientBalance.fromJson(Map<String, dynamic> json) {
+    final client = json['client'] as Map<String, dynamic>? ?? json;
+    return ClientBalance(
+      cashbackBalanceKzt: int.tryParse(
+            '${client['cashback_balance'] ?? client['cashbackBalance'] ?? 0}',
+          ) ??
+          0,
+    );
+  }
+}
+
 class AddressSuggestion {
   const AddressSuggestion({
     required this.label,
@@ -451,6 +470,7 @@ class TariffOption {
     this.description,
     this.surgeMultiplier = 1,
     this.demandCoefficient = 1,
+    this.minimumPrice = 0,
   });
 
   final String id;
@@ -461,6 +481,11 @@ class TariffOption {
   // there is no separate spatial "demand zone"/heatmap endpoint.
   final double surgeMultiplier;
   final double demandCoefficient;
+  // Floor price for this tariff regardless of distance/time (tariffs.min_price
+  // via publicTariff's minimumPrice) — used as the cheapest-ride reference for
+  // the "balance covers N more rides" estimate, since that has to work
+  // without an active route preview (no pickup/dropoff chosen yet).
+  final double minimumPrice;
 
   factory TariffOption.fromJson(Map<String, dynamic> json) {
     return TariffOption(
@@ -469,6 +494,9 @@ class TariffOption {
       description: json['description']?.toString(),
       surgeMultiplier: _toDouble(json['surgeMultiplier'] ?? 1),
       demandCoefficient: _toDouble(json['demandCoefficient'] ?? 1),
+      minimumPrice: _toDouble(
+        json['minimumPrice'] ?? json['minimum_price'] ?? 0,
+      ),
     );
   }
 }
@@ -968,6 +996,43 @@ class AppNotification {
           : DateTime.tryParse(createdAtRaw) ?? DateTime.now(),
     );
   }
+
+  NotificationCategory get category => notificationCategoryForType(type);
+}
+
+// Grouping is derived purely from the backend's existing `type` string —
+// no new column/migration needed. `type` values are added freely across
+// orders.routes.js, referrals.service.js, support.routes.js etc; anything
+// not explicitly listed here falls into `service` rather than being lost,
+// so a forgotten mapping shows up as "misfiled", never as "missing".
+enum NotificationCategory { orders, support, bonus, service }
+
+NotificationCategory notificationCategoryForType(String type) {
+  const orderTypes = {
+    'ORDER_STATUS',
+    'DRIVER_FOUND',
+    'DRIVER_ARRIVED',
+    'TRIP_COMPLETED',
+    'DRIVER_CANCELLED',
+    'ORDER_CANCELLED',
+    'DRIVER_PRICE_OFFER',
+    'DRIVER_PRICE_OFFER_ACCEPTED',
+    'DRIVER_PRICE_OFFER_DECLINED',
+    'CLIENT_COUNTER_OFFER',
+    'CLIENT_COUNTER_OFFER_ACCEPTED',
+    'CLIENT_COUNTER_OFFER_DECLINED',
+    'QUICK_MESSAGE',
+    'RECURRING_BOOKING_ORDER_CREATED',
+    'RECURRING_BOOKING_REQUEST',
+    'RECURRING_BOOKING_ACCEPTED',
+    'RECURRING_BOOKING_DECLINED',
+  };
+  const supportTypes = {'SOS_ALERT', 'LOST_ITEM'};
+  const bonusTypes = {'CASHBACK_EARNED', 'REFERRAL_BONUS'};
+  if (orderTypes.contains(type)) return NotificationCategory.orders;
+  if (supportTypes.contains(type)) return NotificationCategory.support;
+  if (bonusTypes.contains(type)) return NotificationCategory.bonus;
+  return NotificationCategory.service;
 }
 
 class DriverLocation {
