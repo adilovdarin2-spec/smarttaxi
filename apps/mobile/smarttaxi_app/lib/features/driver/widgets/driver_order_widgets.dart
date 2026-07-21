@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_toast.dart';
-import '../../../core/widgets/route_fields.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../shared/models.dart';
 import '../models/driver_shell_helpers.dart';
@@ -91,6 +90,8 @@ class OrderCard extends StatelessWidget {
     this.onOfferPrice,
     this.offeringPrice = false,
     this.myDriverId,
+    this.onRespondToCounter,
+    this.respondingToCounter = false,
   });
 
   final OrderSummary order;
@@ -107,6 +108,11 @@ class OrderCard extends StatelessWidget {
   // concurrently with their own not-yet-resolved price offer on the same
   // order.
   final bool offeringPrice;
+  // Accept/decline the rider's counter to this driver's own price offer
+  // (order.isClientCounterAwaitingDriver). Null hides the row, same as
+  // onOfferPrice being null.
+  final ValueChanged<bool>? onRespondToCounter;
+  final bool respondingToCounter;
   // This driver's own drivers.id — an open order is visible to every driver
   // in the region, so order.driverOfferStatus/driverOfferPriceKzt might
   // belong to a *different* driver's offer on the same order. Only treat
@@ -135,24 +141,17 @@ class OrderCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 32,
+                height: 32,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: context.palette.gold,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x33d4af37),
-                      blurRadius: 18,
-                      offset: Offset(0, 8),
-                    )
-                  ],
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.local_taxi_rounded,
-                    color: context.palette.text, size: 24),
+                    color: context.palette.text, size: 18),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: SectionLabel(
                   title: 'Новый заказ',
@@ -165,83 +164,137 @@ class OrderCard extends StatelessWidget {
                   label: statusLabel(order.status), tone: StatusTone.neutral),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
+          // Price + payment + route condensed into one compact block instead
+          // of three separate sections — the card was taking up most of the
+          // screen for a single order, which made scanning several at once
+          // awkward and left little room to see anything else on screen.
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: context.palette.goldSurface,
               border: Border.all(color: context.palette.borderStrong),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          priceLabel,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: context.palette.text,
-                            fontSize: 28,
-                            height: 1,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      if (order.offeredPriceKzt != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: context.palette.success,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text(
-                            'Своя цена',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w900,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              priceLabel,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.palette.text,
+                                fontSize: 21,
+                                height: 1,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
+                          if (order.offeredPriceKzt != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: context.palette.success,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Text(
+                                'Своя цена',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Payment + distance/duration meta share the remaining
+                    // width and ellipsize together rather than risking an
+                    // overflow on narrow screens once both are present.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.account_balance_wallet_rounded,
+                                size: 14, color: context.palette.textSecondary),
+                            const SizedBox(width: 4),
+                            Text(
+                              payment,
+                              style: TextStyle(
+                                color: context.palette.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (meta != null) ...[
+                              const SizedBox(width: 8),
+                              Icon(Icons.route_rounded,
+                                  size: 14,
+                                  color: context.palette.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                meta,
+                                style: TextStyle(
+                                  color: context.palette.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
-                    ],
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
-                DriverOrderChip(
-                    icon: Icons.account_balance_wallet_rounded, label: payment),
+                const SizedBox(height: 8),
+                Divider(height: 1, color: context.palette.borderStrong),
+                const SizedBox(height: 8),
+                _CompactRouteRow(
+                  icon: Icons.radio_button_checked_rounded,
+                  iconColor: context.palette.text,
+                  label: order.pickup,
+                ),
+                const SizedBox(height: 5),
+                _CompactRouteRow(
+                  icon: Icons.location_on_rounded,
+                  iconColor: SmartTaxiColors.gold,
+                  label: order.dropoff,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          RouteFields(
-              pickupLabel: order.pickup,
-              dropoffLabel: order.dropoff,
-              onPickupTap: null,
-              onDropoffTap: null),
-          if (meta != null || phone.isNotEmpty || riderName.isNotEmpty) ...[
-            const SizedBox(height: 12),
+          if (riderName.isNotEmpty || phone.isNotEmpty) ...[
+            const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children: [
                 if (riderName.isNotEmpty)
                   DriverOrderChip(
                       icon: Icons.person_outline_rounded, label: riderName),
-                if (meta != null)
-                  DriverOrderChip(icon: Icons.route_rounded, label: meta),
                 if (phone.isNotEmpty)
                   DriverOrderChip(icon: Icons.phone_rounded, label: phone),
               ],
             ),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -273,7 +326,65 @@ class OrderCard extends StatelessWidget {
           ),
           if (onOfferPrice != null) ...[
             const SizedBox(height: 10),
-            if (isMyOffer && order.driverOfferStatus == 'PENDING')
+            // The rider countered this driver's own offer — show it plainly
+            // with accept/decline instead of the generic "waiting" row,
+            // since there's now something concrete for the driver to act on.
+            if (isMyOffer &&
+                order.driverOfferStatus == 'PENDING' &&
+                order.driverOfferProposedBy == 'CLIENT' &&
+                onRespondToCounter != null)
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: context.palette.goldSurface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Клиент предложил ${order.driverOfferPriceKzt == null ? 'свою цену' : formatDriverMoney(order.driverOfferPriceKzt!)}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: context.palette.text,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: respondingToCounter
+                                ? null
+                                : () => onRespondToCounter!(false),
+                            child: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text('Отказаться', maxLines: 1),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: respondingToCounter
+                                ? null
+                                : () => onRespondToCounter!(true),
+                            child: respondingToCounter
+                                ? const ButtonSpinner(text: 'Отвечаем...')
+                                : const Text('Принять'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+            else if (isMyOffer && order.driverOfferStatus == 'PENDING')
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -307,6 +418,45 @@ class OrderCard extends StatelessWidget {
           ],
         ]),
       ),
+    );
+  }
+}
+
+// A single-line pickup/dropoff row instead of RouteFields' two full
+// address-picker-style buttons (60px min-height each plus a connecting
+// line) — this card only ever displays these addresses, never lets the
+// driver edit them, so the compact form loses nothing.
+class _CompactRouteRow extends StatelessWidget {
+  const _CompactRouteRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: iconColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: context.palette.text,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
