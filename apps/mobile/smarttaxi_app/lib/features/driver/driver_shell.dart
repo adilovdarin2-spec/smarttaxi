@@ -3952,8 +3952,9 @@ class _DriverFullScreenNavigatorState
     final topInset = MediaQuery.paddingOf(context).top;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xff0b1b33),
+      backgroundColor: context.palette.appBackground,
       body: Stack(
         children: [
           Positioned.fill(
@@ -3965,14 +3966,18 @@ class _DriverFullScreenNavigatorState
                       initialCenter: center,
                       initialZoom: 17,
                       onMapEvent: _handleMapEvent,
+                      backgroundColor: context.palette.appBackground,
                     ),
                     children: [
-                      // Unconditional (not theme-gated): this screen's
-                      // scaffold is always dark navy regardless of app
-                      // theme (turn-by-turn nav stays low-glare day or
-                      // night), so the tiles must always match it.
+                      // Theme-gated like every other map in this screen
+                      // (_SmartNavigatorMap, _TripMap) — this one used to
+                      // force the dark matrix unconditionally, which is why
+                      // a driver on the light theme still saw a black map
+                      // here even though the rest of the app was light.
                       ColorFiltered(
-                        colorFilter: ColorFilter.matrix(_darkMapTileMatrix),
+                        colorFilter: ColorFilter.matrix(
+                          isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                        ),
                         child: TileLayer(
                           urlTemplate: AppConfig.osmTileUrl,
                           subdomains: const ['a', 'b', 'c', 'd'],
