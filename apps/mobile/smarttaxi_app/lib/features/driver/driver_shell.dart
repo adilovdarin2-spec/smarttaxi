@@ -329,12 +329,15 @@ class _DriverShellState extends State<DriverShell> {
     // orders.routes.js), this covers the foregrounded-app case that a
     // background push wouldn't visibly interrupt.
     String? previousOfferStatus;
+    String? previousProposedBy;
     if (_activeOrder?.id == order.id) {
       previousOfferStatus = _activeOrder?.driverOfferStatus;
+      previousProposedBy = _activeOrder?.driverOfferProposedBy;
     } else {
       for (final existing in _orders) {
         if (existing.id == order.id) {
           previousOfferStatus = existing.driverOfferStatus;
+          previousProposedBy = existing.driverOfferProposedBy;
           break;
         }
       }
@@ -371,6 +374,11 @@ class _DriverShellState extends State<DriverShell> {
         previousOfferStatus == 'PENDING' &&
         order.driverOfferStatus == 'DECLINED') {
       AppToast.showError(context, 'Клиент отклонил ваше предложение цены');
+    } else if (isMyOffer &&
+        previousProposedBy != 'CLIENT' &&
+        order.isClientCounterAwaitingDriver) {
+      AppToast.showSuccess(context,
+          'Клиент предложил свою цену: ${formatDriverMoney(order.driverOfferPriceKzt ?? 0)}');
     }
     if (!hasRouteDetails) unawaited(_loadOrders());
     if (!order.isActive) unawaited(_loadTripHistory());
@@ -1479,6 +1487,31 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
+  String? _respondingToCounterOrderId;
+
+  Future<void> _respondToClientCounter(OrderSummary order, bool accept) async {
+    if (_respondingToCounterOrderId != null) return;
+    setState(() => _respondingToCounterOrderId = order.id);
+    try {
+      final updated = await widget.api.respondToClientCounterOffer(
+        orderId: order.id,
+        accept: accept,
+      );
+      if (!mounted) return;
+      setState(() => _orders = mergeOrder(_orders, updated));
+      if (accept) {
+        AppToast.showSuccess(context, 'Вы приняли цену клиента — заказ ваш');
+      } else {
+        AppToast.showInfo(context, 'Вы отклонили предложение клиента');
+      }
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, readableError(error));
+    } finally {
+      if (mounted) setState(() => _respondingToCounterOrderId = null);
+    }
+  }
+
   Future<void> _tripAction(
     String label,
     Future<OrderSummary> Function(String id) action,
@@ -2480,7 +2513,11 @@ class _DriverShellState extends State<DriverShell> {
                       onOfferPrice: _offeringPriceOrderId == order.id
                           ? null
                           : () => _offerPrice(order),
-                      myDriverId: _driverStats?.driverId),
+                      myDriverId: _driverStats?.driverId,
+                      onRespondToCounter: (accept) =>
+                          _respondToClientCounter(order, accept),
+                      respondingToCounter:
+                          _respondingToCounterOrderId == order.id),
                 )),
           if (_error != null) InlineMessage(text: _error!, danger: true),
         ],
@@ -3519,6 +3556,15 @@ Widget _driverSelfMarkerContent({
   double size = 46,
   double rotationRadians = 0,
 }) {
+  // The source PNG is 1024x1024 (a raw export, never downscaled for actual
+  // use) — decoding it at full resolution for a marker rendered at ~46
+  // logical px, then re-rotating that full bitmap on every position update,
+  // is exactly the kind of decode/paint cost that shows up as map jank.
+  // cacheWidth/cacheHeight tell Flutter's image cache to decode at a size
+  // that still looks sharp on high-DPI screens (roughly 3x logical size)
+  // instead of the full source resolution — same pixels on screen, far less
+  // work to get there.
+  final cachePixels = (size * 3).round();
   return Semantics(
     label: 'Ваш автомобиль',
     image: true,
@@ -3528,6 +3574,8 @@ Widget _driverSelfMarkerContent({
         _driverSelfCarAsset,
         width: size,
         height: size,
+        cacheWidth: cachePixels,
+        cacheHeight: cachePixels,
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => const _NavigatorCurrentMarker(),
       ),
@@ -3827,8 +3875,15 @@ class _DriverFullScreenNavigatorState
   @override
   void initState() {
     super.initState();
+    // This poll exists only because the shell's own setState calls don't
+    // reach this widget (a separate pushed route, not a descendant) -- every
+    // tick unconditionally rebuilds the whole map/banner/cockpit tree, which
+    // at 350ms (~2.9x/sec) was heavier than it needed to be: real GPS fixes
+    // land roughly every 1-2s in practice, so most ticks were rebuilding
+    // identical content. 500ms is still smooth for camera-follow and the
+    // GPS-lost/maneuver timers below, at meaningfully lower rebuild frequency.
     _pollTimer =
-        Timer.periodic(const Duration(milliseconds: 350), (_) => _tick());
+        Timer.periodic(const Duration(milliseconds: 500), (_) => _tick());
     if (widget.shell._currentCoordinate != null) {
       _lastFixAt = DateTime.now();
     }

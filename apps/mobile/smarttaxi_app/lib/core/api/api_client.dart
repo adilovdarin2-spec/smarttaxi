@@ -610,6 +610,42 @@ class ApiClient {
         Map<String, dynamic>.from(data['order'] ?? data));
   }
 
+  // Rider counters the driver's price instead of accepting/declining it
+  // outright — only valid while the driver's own proposal is still pending
+  // (OrderSummary.isDriverOfferAwaitingClient). Flips the turn to the
+  // driver, who responds via respondToClientCounterOffer below.
+  Future<OrderSummary> submitClientCounterOffer({
+    required String orderId,
+    required int priceKzt,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/orders/$orderId/price-offer/counter',
+      data: {'priceKzt': priceKzt},
+    );
+    final data = response.data ?? {};
+    return OrderSummary.fromJson(
+        Map<String, dynamic>.from(data['order'] ?? data));
+  }
+
+  // Driver's response to the rider's counter (OrderSummary
+  // .isClientCounterAwaitingDriver on the driver's own order view) —
+  // accept assigns the order at that price, decline clears the offer so the
+  // driver can submit a fresh one or move on.
+  Future<OrderSummary> respondToClientCounterOffer({
+    required String orderId,
+    required bool accept,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/orders/$orderId/price-offer/driver-respond',
+      data: {'accept': accept},
+    );
+    final data = response.data ?? {};
+    return OrderSummary.fromJson(
+        Map<String, dynamic>.from(data['order'] ?? data));
+  }
+
   // "School route" recurring bookings — see
   // recurring-bookings.routes.js for the authoritative contract.
   Future<RecurringBooking> createRecurringBooking({

@@ -618,6 +618,10 @@ class OrderSummary {
     this.driverOfferPriceKzt,
     this.driverOfferStatus,
     this.driverOfferByDriverId,
+    this.driverOfferProposedBy,
+    this.offerDriverName,
+    this.offerDriverRating,
+    this.offerDriverAvatarUrl,
     this.searchTimedOut = false,
     this.notes,
     this.driverArrivedAt,
@@ -666,6 +670,18 @@ class OrderSummary {
   final int? driverOfferPriceKzt;
   final String? driverOfferStatus;
   final String? driverOfferByDriverId;
+  // Whose number is currently on the table: 'DRIVER' right after a fresh
+  // price-offer, flips to 'CLIENT' once the rider counters back via
+  // POST /orders/:id/price-offer/counter. Null before any offer exists.
+  final String? driverOfferProposedBy;
+  // The OFFERING driver's own name/rating/avatar (order-dispatch.service.js
+  // joins on driver_offer_by_driver_id) — distinct from driverName/
+  // driverRating/driverAvatarUrl above, which stay null until the order is
+  // actually assigned (driver_id set). The negotiation banner needs to show
+  // who's making the offer before either side has accepted anything.
+  final String? offerDriverName;
+  final double? offerDriverRating;
+  final String? offerDriverAvatarUrl;
   // Server-authoritative — the order has sat open (SEARCHING_DRIVER/NEW,
   // no driver_id) for >75s (DRIVER_SEARCH_TIMEOUT_MS,
   // order-dispatch.service.js isOrderSearchTimedOut). Recomputed live on
@@ -704,6 +720,16 @@ class OrderSummary {
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
+  // Whose turn it actually is to act right now, for a rider viewing this
+  // order: true means the driver's price is the one on the table and the
+  // rider can accept/decline/counter it; false means the rider already
+  // countered and is waiting on the driver instead (driverOfferProposedBy
+  // defaults to 'DRIVER' semantics for pre-negotiation-feature orders that
+  // never got the column populated).
+  bool get isDriverOfferAwaitingClient =>
+      hasPendingDriverOffer && driverOfferProposedBy != 'CLIENT';
+  bool get isClientCounterAwaitingDriver =>
+      hasPendingDriverOffer && driverOfferProposedBy == 'CLIENT';
 
   OrderSummary copyWith({String? status}) {
     return OrderSummary(
@@ -735,6 +761,10 @@ class OrderSummary {
       driverOfferPriceKzt: driverOfferPriceKzt,
       driverOfferStatus: driverOfferStatus,
       driverOfferByDriverId: driverOfferByDriverId,
+      driverOfferProposedBy: driverOfferProposedBy,
+      offerDriverName: offerDriverName,
+      offerDriverRating: offerDriverRating,
+      offerDriverAvatarUrl: offerDriverAvatarUrl,
       searchTimedOut: searchTimedOut,
       notes: notes,
       driverArrivedAt: driverArrivedAt,
@@ -823,6 +853,16 @@ class OrderSummary {
               ?.toString(),
       driverOfferByDriverId: (json['driver_offer_by_driver_id'] ??
               json['driverOfferByDriverId'])
+          ?.toString(),
+      driverOfferProposedBy: (json['driver_offer_proposed_by'] ??
+              json['driverOfferProposedBy'])
+          ?.toString(),
+      offerDriverName:
+          (json['offer_driver_name'] ?? json['offerDriverName'])?.toString(),
+      offerDriverRating: _nullableDouble(
+          json['offer_driver_rating'] ?? json['offerDriverRating']),
+      offerDriverAvatarUrl: (json['offer_driver_avatar_url'] ??
+              json['offerDriverAvatarUrl'])
           ?.toString(),
       searchTimedOut:
           json['search_timed_out'] == true || json['searchTimedOut'] == true,

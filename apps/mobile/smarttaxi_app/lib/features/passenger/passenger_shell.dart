@@ -1808,6 +1808,29 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
+  Future<void> _submitClientCounterOffer(int priceKzt) async {
+    final order = _order;
+    if (order == null || _respondingToPriceOffer) return;
+    setState(() => _respondingToPriceOffer = true);
+    try {
+      final updated = await widget.api.submitClientCounterOffer(
+        orderId: order.id,
+        priceKzt: priceKzt,
+      );
+      if (!mounted) return;
+      setState(() => _order = updated);
+      AppToast.showSuccess(
+        context,
+        'Ваше предложение отправлено водителю: ${_formatTenge(priceKzt.toDouble())}',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(error));
+    } finally {
+      if (mounted) setState(() => _respondingToPriceOffer = false);
+    }
+  }
+
 
   // Called both on every driver GPS ping (frequent — needs throttling so we
   // don't hammer the routing provider) and on order status changes (rare —
@@ -2618,6 +2641,7 @@ class _PassengerShellState extends State<PassengerShell>
               onNewTrip: _startNewPassengerTrip,
               respondingToPriceOffer: _respondingToPriceOffer,
               onRespondToPriceOffer: _respondToDriverPriceOffer,
+              onSubmitCounterOffer: _submitClientCounterOffer,
               ),
             ),
           ),
@@ -5084,6 +5108,14 @@ Widget _assetMarkerContent({
   double size = 50,
   double rotationRadians = 0,
 }) {
+  // These marker PNGs are raw exports (some 500KB-2MB+, up to ~2000px on a
+  // side) never downscaled for actual use -- decoding at full source
+  // resolution for a marker rendered at ~15-50 logical px, then re-rotating
+  // that full bitmap on every position update, is real, avoidable decode/
+  // paint cost on a screen that's already redrawing the map underneath it.
+  // cacheWidth/cacheHeight decode at a size that still looks sharp on
+  // high-DPI screens (~3x logical size) instead of the full source.
+  final cachePixels = (size * 3).round();
   return Semantics(
     label: semanticLabel,
     image: true,
@@ -5093,6 +5125,8 @@ Widget _assetMarkerContent({
         asset,
         width: size,
         height: size,
+        cacheWidth: cachePixels,
+        cacheHeight: cachePixels,
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => Container(
           width: size,
@@ -5555,8 +5589,17 @@ class _CenterMapMarker extends StatelessWidget {
           ),
           Transform.translate(
             offset: const Offset(0, -tipShift),
-            child: const Image(
-              image: AssetImage(_addressPickMarkerAsset),
+            // Same oversized-source-asset issue as the other map markers
+            // (see _assetMarkerContent) -- the plain Image(image:) constructor
+            // has no cacheWidth/cacheHeight of its own (only Image.asset/
+            // network/file/memory do), so ResizeImage wraps the provider to
+            // get the same decode-at-a-reasonable-size effect.
+            child: Image(
+              image: ResizeImage(
+                const AssetImage(_addressPickMarkerAsset),
+                width: (pinWidth * 3).round(),
+                height: (pinHeight * 3).round(),
+              ),
               width: pinWidth,
               height: pinHeight,
               fit: BoxFit.contain,
@@ -7355,6 +7398,7 @@ class _TripStatusPanel extends StatelessWidget {
     required this.onNewTrip,
     required this.respondingToPriceOffer,
     required this.onRespondToPriceOffer,
+    required this.onSubmitCounterOffer,
   });
 
   final ApiClient api;
@@ -7392,6 +7436,7 @@ class _TripStatusPanel extends StatelessWidget {
   final VoidCallback onNewTrip;
   final bool respondingToPriceOffer;
   final ValueChanged<bool> onRespondToPriceOffer;
+  final ValueChanged<int> onSubmitCounterOffer;
 
   @override
   Widget build(BuildContext context) {
@@ -7414,13 +7459,20 @@ class _TripStatusPanel extends StatelessWidget {
     // waiting on an answer, and the offered price also needs to be visible
     // before the rider decides whether to cancel/keep searching for
     // anything else on this screen.
-    if (order.hasPendingDriverOffer) {
+    if (order.isClientCounterAwaitingDriver) {
+      return _PanelEntrance(
+        key: const ValueKey('trip-panel-counter-pending'),
+        child: _ClientCounterPendingPanel(order: order),
+      );
+    }
+    if (order.isDriverOfferAwaitingClient) {
       return _PanelEntrance(
         key: const ValueKey('trip-panel-price-offer'),
         child: _DriverPriceOfferPanel(
           order: order,
           responding: respondingToPriceOffer,
           onRespond: onRespondToPriceOffer,
+          onSubmitCounter: onSubmitCounterOffer,
         ),
       );
     }
@@ -8534,23 +8586,74 @@ class _NoDriversFoundPanel extends StatelessWidget {
   }
 }
 
-class _DriverPriceOfferPanel extends StatelessWidget {
+class _DriverPriceOfferPanel extends StatefulWidget {
   const _DriverPriceOfferPanel({
     required this.order,
     required this.responding,
     required this.onRespond,
+    required this.onSubmitCounter,
   });
 
   final OrderSummary order;
   final bool responding;
   final ValueChanged<bool> onRespond;
+  final ValueChanged<int> onSubmitCounter;
+
+  @override
+  State<_DriverPriceOfferPanel> createState() =>
+      _DriverPriceOfferPanelState();
+}
+
+class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
+  static const _stepKzt = 100;
+  static const _floorKzt = 200;
+  late int _counterKzt;
+
+  @override
+  void initState() {
+    super.initState();
+    _counterKzt = _initialCounter();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DriverPriceOfferPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A fresh offer (new price, or the driver countering again after the
+    // rider's own counter got declined) resets the starting point for the
+    // stepper — otherwise it would keep showing a number the rider set
+    // against a now-stale driver price.
+    if (oldWidget.order.driverOfferPriceKzt != widget.order.driverOfferPriceKzt) {
+      setState(() => _counterKzt = _initialCounter());
+    }
+  }
+
+  int _initialCounter() {
+    final offered = widget.order.driverOfferPriceKzt;
+    final current = widget.order.price;
+    // Starting point for the rider's own counter: halfway between what the
+    // driver asked for and the rider's original price — a neutral opening
+    // move rather than either side's number, rounded to a clean step.
+    if (offered == null) return _floorKzt;
+    if (current == null) return offered;
+    final midpoint = ((offered + current) / 2 / _stepKzt).round() * _stepKzt;
+    return midpoint.clamp(_floorKzt, 1000000);
+  }
+
+  void _adjust(int delta) {
+    setState(() => _counterKzt = (_counterKzt + delta).clamp(_floorKzt, 1000000));
+  }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final order = widget.order;
+    final responding = widget.responding;
     final offered = order.driverOfferPriceKzt;
     final current = order.price;
+    final driverName = (order.offerDriverName ?? '').trim().isEmpty
+        ? 'Водитель'
+        : order.offerDriverName!.trim();
     return _HomeOrderPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -8558,44 +8661,66 @@ class _DriverPriceOfferPanel extends StatelessWidget {
         children: [
           _SheetHandle(dark: isDark),
           const SizedBox(height: 12),
-          Container(
-            width: 60,
-            height: 60,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: palette.goldSurface,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.local_offer_rounded,
-              color: palette.goldDeep,
-              size: 28,
-            ),
+          // Avatar + name + rating up top — the rider should see WHO is
+          // asking for a different price before deciding whether to
+          // negotiate, not just a bare number.
+          _InitialsAvatar(
+            name: driverName,
+            size: 56,
+            showStatusDot: false,
+            avatarUrl: order.offerDriverAvatarUrl,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
-            'Водитель предлагает свою цену',
+            driverName,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.text,
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            offered == null
-                ? 'Новая цена поездки'
-                : current == null
-                    ? _formatTenge(offered.toDouble())
-                    : '${_formatTenge(offered.toDouble())} вместо ${_formatTenge(current)}',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 13,
-              height: 1.3,
-              fontWeight: FontWeight.w600,
+          if (order.offerDriverRating != null) ...[
+            const SizedBox(height: 3),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.star_rounded, color: palette.gold, size: 16),
+                const SizedBox(width: 3),
+                Text(
+                  order.offerDriverRating!.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
+          ],
+          const SizedBox(height: 16),
+          // Both prices side by side — the whole point is letting the rider
+          // compare at a glance instead of having to remember what they
+          // originally agreed to.
+          Row(
+            children: [
+              Expanded(
+                child: _PriceCompareTile(
+                  label: 'Ваша цена',
+                  value: current == null ? '—' : _formatTenge(current),
+                  palette: palette,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _PriceCompareTile(
+                  label: 'Цена водителя',
+                  value: offered == null ? '—' : _formatTenge(offered.toDouble()),
+                  palette: palette,
+                  emphasize: true,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           _GoldCtaButton(
@@ -8605,26 +8730,228 @@ class _DriverPriceOfferPanel extends StatelessWidget {
             loadingText: 'Отправляем ответ...',
             trailingText:
                 offered == null ? null : _formatTenge(offered.toDouble()),
-            onTap: () => onRespond(true),
+            onTap: () => widget.onRespond(true),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Или предложите свою цену',
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: palette.goldSurface,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _StepperCircleButton(
+                  icon: Icons.remove_rounded,
+                  enabled: !responding && _counterKzt > _floorKzt,
+                  onTap: () => _adjust(-_stepKzt),
+                ),
+                Text(
+                  _formatTenge(_counterKzt.toDouble()),
+                  style: TextStyle(
+                    color: palette.text,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                _StepperCircleButton(
+                  icon: Icons.add_rounded,
+                  enabled: !responding,
+                  onTap: () => _adjust(_stepKzt),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: responding ? null : () => onRespond(false),
+              onPressed:
+                  responding ? null : () => widget.onSubmitCounter(_counterKzt),
               style: OutlinedButton.styleFrom(
-                foregroundColor: palette.textSecondary,
-                side: BorderSide(color: palette.border),
+                foregroundColor: palette.goldDeep,
+                side: BorderSide(color: palette.gold),
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
               child: const Text(
-                'Отказаться',
+                'Отправить предложение',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
+          ),
+          const SizedBox(height: 6),
+          TextButton(
+            onPressed: responding ? null : () => widget.onRespond(false),
+            child: Text(
+              'Отказаться',
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PriceCompareTile extends StatelessWidget {
+  const _PriceCompareTile({
+    required this.label,
+    required this.value,
+    required this.palette,
+    this.emphasize = false,
+  });
+
+  final String label;
+  final String value;
+  final SmartTaxiPalette palette;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: emphasize ? palette.goldSurface : palette.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: emphasize ? palette.gold.withValues(alpha: 0.4) : palette.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: emphasize ? palette.goldDeep : palette.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperCircleButton extends StatelessWidget {
+  const _StepperCircleButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Opacity(
+      opacity: enabled ? 1 : 0.4,
+      child: Material(
+        color: palette.card,
+        shape: const CircleBorder(),
+        elevation: 1,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled ? onTap : null,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(icon, color: palette.goldDeep, size: 22),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Rider already countered; nothing more for them to do until the driver
+// accepts, declines, or counters again — a distinct, non-interactive state
+// so it's clear the ball is in the driver's court.
+class _ClientCounterPendingPanel extends StatelessWidget {
+  const _ClientCounterPendingPanel({required this.order});
+
+  final OrderSummary order;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final driverName = (order.offerDriverName ?? '').trim().isEmpty
+        ? 'Водитель'
+        : order.offerDriverName!.trim();
+    final myOffer = order.driverOfferPriceKzt;
+    return _HomeOrderPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _SheetHandle(dark: isDark),
+          const SizedBox(height: 12),
+          _InitialsAvatar(
+            name: driverName,
+            size: 56,
+            showStatusDot: false,
+            avatarUrl: order.offerDriverAvatarUrl,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Ждём ответа водителя',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            myOffer == null
+                ? 'Ваше предложение отправлено'
+                : 'Вы предложили ${_formatTenge(myOffer.toDouble())}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 13,
+              height: 1.3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.4),
           ),
         ],
       ),
@@ -12854,6 +13181,13 @@ class _TariffCard extends StatelessWidget {
               item.asset,
               width: stretch ? 46 : 58,
               height: stretch ? 34 : 42,
+              // Comfort/Business car photos are raw exports (650KB-1.3MB,
+              // full camera resolution) shown at under 60px here -- decoding
+              // at that source size for every tariff card is wasted work on
+              // a screen that's already busy. ~3x the rendered size keeps it
+              // sharp on high-DPI screens without the full decode cost.
+              cacheWidth: ((stretch ? 46 : 58) * 3).round(),
+              cacheHeight: ((stretch ? 34 : 42) * 3).round(),
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
               errorBuilder: (_, __, ___) => _SvgIcon(
@@ -14692,6 +15026,8 @@ class _MapBrandPill extends StatelessWidget {
                 child: Image.asset(
                   BrandLogo.iconAssetPath,
                   fit: BoxFit.cover,
+                  cacheWidth: 90,
+                  cacheHeight: 90,
                 ),
               ),
             ),
