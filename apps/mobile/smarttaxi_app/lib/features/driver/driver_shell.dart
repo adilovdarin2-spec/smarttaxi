@@ -413,6 +413,9 @@ class _DriverShellState extends State<DriverShell> {
           ? _nearestApprovedRegionId(regions, _regionHintPosition)
           : null;
       if (!mounted) return;
+      // Only set (not awaited inside setState) when the auto-pick below
+      // actually needs to push a change to the server — left null otherwise.
+      String? regionToSync;
       setState(() {
         _regions = regions;
         if (_regionId == null) {
@@ -427,6 +430,16 @@ class _DriverShellState extends State<DriverShell> {
             // in Атакент opened the app in Мырзакент and kept getting
             // rejected until manually reselecting).
             _regionId = nearestId;
+            // Picking it here only updates local UI state — nothing tells
+            // the backend, so drivers.current_region_id (what the
+            // go-online location check in routing.service.js's
+            // updateDriverLocation actually enforces) stays wherever it was
+            // last explicitly selected, even days out of date. The region
+            // chip then shows the right city while going online still
+            // fails against the stale one, with no visible reason why.
+            if (nearestId != result.currentRegionId) {
+              regionToSync = nearestId;
+            }
           } else {
             // No GPS fix available yet (permission not granted, nothing
             // cached) — fall back to what the backend has as
@@ -441,6 +454,9 @@ class _DriverShellState extends State<DriverShell> {
           }
         }
       });
+      if (regionToSync != null) {
+        unawaited(widget.api.selectDriverRegion(regionToSync!));
+      }
       unawaited(_loadDemandHint());
     } catch (error) {
       if (mounted) setState(() => _error = readableError(error));
