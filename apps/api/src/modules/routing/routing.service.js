@@ -953,11 +953,22 @@ function publicAddressSuggestion(item) {
   const rawRoad = address.road || address.pedestrian || address.footway || address.cycleway;
   const road = isCodeLikeToken(rawRoad) ? null : rawRoad;
   const locality = address.neighbourhood || address.suburb || address.city_district || address.residential;
+  // Nominatim's top-level `name` is the POI's own name (shop/café/business)
+  // whenever the result IS a named place -- e.g. reverse-geocoding a point
+  // sitting on a "Magnum" store returns name:"Magnum" alongside the plain
+  // street address in `address`. Previously this was read nowhere, so a
+  // shop's address showed only its street+house number, with no way to tell
+  // it apart from any other building on that street.
+  const rawPoiName = compactText(item.name);
+  const poiName = rawPoiName && rawPoiName !== road && !isCodeLikeToken(rawPoiName) ? rawPoiName : null;
 
   let label;
   if (road) {
     const streetPart = [road, address.house_number].filter(Boolean).join(", ");
-    label = city && !streetPart.includes(city) ? `${streetPart}, ${city}` : streetPart;
+    const withCity = city && !streetPart.includes(city) ? `${streetPart}, ${city}` : streetPart;
+    label = poiName ? `${poiName}, ${withCity}` : withCity;
+  } else if (poiName) {
+    label = [poiName, locality || city].filter(Boolean).join(", ");
   } else if (locality) {
     label = [locality, city].filter(Boolean).join(", ");
   } else if (city) {
@@ -987,9 +998,19 @@ function publicPhotonAddressSuggestion(feature) {
   if (properties.countrycode && String(properties.countrycode).toUpperCase() !== "KZ") return null;
   const city = properties.city || properties.town || properties.village || properties.district || properties.county || "";
   const region = properties.state || "";
-  const name = properties.name || properties.street || properties.osm_value || "Точка на карте";
+  const street = properties.street || "";
   const house = properties.housenumber || properties.house_number || "";
-  const label = [name, house].filter(Boolean).join(", ");
+  const streetPart = [street, house].filter(Boolean).join(", ");
+  // Photon tags a POI's own name (shop/café/business) separately from the
+  // street it's on -- a bare street address has no `name` at all. Combining
+  // both ("Magnum, Уалиханова көшесі, 217") instead of picking just one lets
+  // people recognize the actual place, not only its bare house number, and
+  // keeps the street visible instead of dropping it whenever a POI name
+  // exists (the previous name-OR-street behavior did exactly that).
+  const poiName = properties.name && properties.name !== street ? properties.name : null;
+  const label = poiName
+    ? (streetPart ? `${poiName}, ${streetPart}` : poiName)
+    : (streetPart || properties.osm_value || "Точка на карте");
   const subtitle = [
     properties.district,
     city,
@@ -1008,7 +1029,12 @@ function publicPhotonAddressSuggestion(feature) {
 
 function readableAddressTitle({ name, street, houseNumber, locality }) {
   const streetTitle = [street, houseNumber].filter(Boolean).join(", ");
-  return compactText(streetTitle || name || locality || "Точка на карте");
+  // `name` is the POI's own name (shop/café/business) when the feature is a
+  // named place, distinct from `street` -- previously dropped whenever a
+  // street existed, showing only the bare street+house number.
+  const poiName = name && name !== street ? name : null;
+  if (poiName && streetTitle) return compactText(`${poiName}, ${streetTitle}`);
+  return compactText(poiName || streetTitle || locality || "Точка на карте");
 }
 
 function publicMapTilerAddressSuggestion(feature) {
