@@ -334,6 +334,14 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _bootstrap() async {
+    // Fired first, before the socket connect and region load below --
+    // "do I already have an active order" is a plain REST call that needs
+    // neither of those, but used to run after both, so a slow socket
+    // handshake or region fetch (either one network-latency-dependent)
+    // delayed the moment a rider relaunching/resuming mid-trip actually saw
+    // their trip screen again, reading as "confirming the order didn't do
+    // anything" for however many seconds that chain took.
+    unawaited(_restoreActiveOrder());
     try {
       await widget.sockets.connect();
       widget.sockets.onOrderUpdate(_handleOrderUpdate);
@@ -352,7 +360,6 @@ class _PassengerShellState extends State<PassengerShell>
     _startNearbyDriverPolling();
     unawaited(_loadServiceContacts());
     unawaited(_loadMySupportMessages());
-    unawaited(_restoreActiveOrder());
     unawaited(_loadTripHistory());
     unawaited(_loadUnreadNotificationCount());
   }
@@ -1692,15 +1699,24 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() => _error = 'Выберите тариф');
       return;
     }
-    if (_preview == null || _preview!.estimatedPrice == null) {
-      await _refreshPreview();
-      return;
-    }
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
+      if (_preview == null || _preview!.estimatedPrice == null) {
+        // A single tap on the CTA must either place the order or visibly
+        // show progress — silently doing only a price refresh here (with a
+        // separate _previewLoading flag the CTA text never checks) looked
+        // to riders like the tap did nothing, requiring an unsignaled
+        // second tap. Refresh once, then fall through to actually create
+        // the order the moment a price is available.
+        await _refreshPreview();
+        if (!mounted) return;
+        if (_preview == null || _preview!.estimatedPrice == null) {
+          return;
+        }
+      }
       final order = await widget.api.createOrder(
         pickup: _pickup!,
         dropoff: _dropoff!,
