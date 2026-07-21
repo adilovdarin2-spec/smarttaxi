@@ -3542,6 +3542,7 @@ class _AnimatedSelfMarkerLayer extends StatefulWidget {
   const _AnimatedSelfMarkerLayer({
     required this.point,
     required this.rotationRadians,
+    this.animateRotation = true,
   });
 
   final LatLng point;
@@ -3549,6 +3550,20 @@ class _AnimatedSelfMarkerLayer extends StatefulWidget {
   // meaningless while stationary) — the marker should hold its last known
   // angle rather than snap to north, see didUpdateWidget below.
   final double? rotationRadians;
+  // The full-screen course-up Navigator rotates the whole map to keep the
+  // direction of travel pointing "up" (MapController.moveAndRotate, applied
+  // instantly, no animation) while ALSO passing this marker the raw compass
+  // heading — the two are meant to cancel out exactly so the car icon stays
+  // pointing up on screen. Animating the marker's own angle over 700ms while
+  // the map's rotation snaps instantly broke that cancellation for the
+  // duration of every glide, showing the car rotate crookedly mid-turn.
+  // False here skips only the angle glide (position still glides normally,
+  // GPS fixes are still sparse) so the marker's rotation snaps in the same
+  // frame as the map's, staying exactly canceled out. The other two
+  // instances of this widget (Line-tab map, active-trip map) are north-up —
+  // their map never rotates, so the marker's own smooth angle glide is the
+  // only thing indicating heading and should stay animated.
+  final bool animateRotation;
 
   @override
   State<_AnimatedSelfMarkerLayer> createState() =>
@@ -3615,8 +3630,9 @@ class _AnimatedSelfMarkerLayerState extends State<_AnimatedSelfMarkerLayer>
             (_toPoint.longitude - _fromPoint.longitude) * _controller.value,
       );
 
-  double get _currentAngle =>
-      _fromAngle + (_toAngle - _fromAngle) * _controller.value;
+  double get _currentAngle => widget.animateRotation
+      ? _fromAngle + (_toAngle - _fromAngle) * _controller.value
+      : _toAngle;
 
   double _shortestAngleTarget(double from, double to) {
     const twoPi = math.pi * 2;
@@ -4051,6 +4067,7 @@ class _DriverFullScreenNavigatorState
                           point: current.toLatLng(),
                           rotationRadians:
                               heading == null ? null : heading * math.pi / 180,
+                          animateRotation: false,
                         ),
                     ],
                   ),
