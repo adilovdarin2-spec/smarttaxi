@@ -150,37 +150,56 @@ function releaseOverpassSlot() {
   if (next) next();
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// One full pass tries every mirror in OVERPASS_URLS once each. Confirmed live
+// (2026-07-21): a fresh query against a coordinate with real, verified OSM
+// camera data came back empty on the first attempt, then succeeded moments
+// later against the exact same point with no code change in between — a
+// transient blip (mirror overloaded/rate-limiting) on public shared
+// infrastructure, not a real "no data here". A single failed pass used to be
+// the end of it (empty result handed straight to the driver); one retried
+// pass after a short pause gives a genuine transient failure a real second
+// chance without turning a live navigation query into a many-second stall.
+const OVERPASS_PASS_ATTEMPTS = 2;
+const OVERPASS_RETRY_DELAY_MS = 1200;
+
 async function overpassQuery(ql) {
   await acquireOverpassSlot();
   try {
     let lastError = null;
-    for (const url of OVERPASS_URLS) {
-      const controller = new AbortController();
-      // Each query string below asks Overpass for `[timeout:10]` (its own
-      // 10s processing budget) — the client abort must sit above that or
-      // we'd cut the connection before the server's own deadline had a
-      // chance to fire, discarding an answer that was about to arrive.
-      const timeout = setTimeout(() => controller.abort(), 11000);
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "*/*",
-            "User-Agent": "SmartTaxi-Driver-App/1.0 (+https://smarttaxi.kz)"
-          },
-          body: `data=${encodeURIComponent(ql)}`,
-          signal: controller.signal
-        });
-        if (!response.ok) throw new Error(`Overpass HTTP ${response.status}`);
-        const data = await response.json();
-        return Array.isArray(data.elements) ? data.elements : [];
-      } catch (error) {
-        lastError = error;
-        // Try the next mirror instead of failing the whole lookup.
-      } finally {
-        clearTimeout(timeout);
+    for (let attempt = 1; attempt <= OVERPASS_PASS_ATTEMPTS; attempt++) {
+      for (const url of OVERPASS_URLS) {
+        const controller = new AbortController();
+        // Each query string below asks Overpass for `[timeout:10]` (its own
+        // 10s processing budget) — the client abort must sit above that or
+        // we'd cut the connection before the server's own deadline had a
+        // chance to fire, discarding an answer that was about to arrive.
+        const timeout = setTimeout(() => controller.abort(), 11000);
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Accept": "*/*",
+              "User-Agent": "SmartTaxi-Driver-App/1.0 (+https://smarttaxi.kz)"
+            },
+            body: `data=${encodeURIComponent(ql)}`,
+            signal: controller.signal
+          });
+          if (!response.ok) throw new Error(`Overpass HTTP ${response.status}`);
+          const data = await response.json();
+          return Array.isArray(data.elements) ? data.elements : [];
+        } catch (error) {
+          lastError = error;
+          // Try the next mirror instead of failing the whole lookup.
+        } finally {
+          clearTimeout(timeout);
+        }
       }
+      if (attempt < OVERPASS_PASS_ATTEMPTS) await delay(OVERPASS_RETRY_DELAY_MS);
     }
     throw lastError ?? new Error("All Overpass mirrors failed");
   } finally {
