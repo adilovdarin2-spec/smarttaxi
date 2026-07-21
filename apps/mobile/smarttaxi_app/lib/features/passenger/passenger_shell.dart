@@ -247,6 +247,11 @@ class _PassengerShellState extends State<PassengerShell>
   bool _paymentTimedOut = false;
   bool _retryingPayment = false;
   LatLng? _mapCenter;
+  // Persisted at the shell level (not inside _MapCanvasState) so a pinch
+  // zoom survives leaving Home and coming back — that widget is fully torn
+  // down and rebuilt on every tab switch, which otherwise silently reset
+  // the camera back to the default zoom each time.
+  double? _mapZoom;
   // Backs the bell icon's badge dot — real state from the backend, not a
   // permanently-on decoration. Refreshed at bootstrap and bumped locally
   // when an order-status toast fires (the same event that made the backend
@@ -342,6 +347,13 @@ class _PassengerShellState extends State<PassengerShell>
     // their trip screen again, reading as "confirming the order didn't do
     // anything" for however many seconds that chain took.
     unawaited(_restoreActiveOrder());
+    // Best-effort cached fix, purely local (no network, no permission
+    // prompt) -- lands before _loadRegions()'s network round trip so the
+    // map's first real paint is already close to the rider's actual
+    // position instead of the Atakent placeholder, cutting out one of the
+    // two visible jumps a cold start otherwise did (placeholder -> region
+    // center -> real GPS).
+    unawaited(_seedMapCenterFromLastKnownLocation());
     try {
       await widget.sockets.connect();
       widget.sockets.onOrderUpdate(_handleOrderUpdate);
@@ -718,6 +730,17 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
+  Future<void> _seedMapCenterFromLastKnownLocation() async {
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last == null || !mounted || _mapCenter != null) return;
+      setState(() => _mapCenter = LatLng(last.latitude, last.longitude));
+    } catch (_) {
+      // No cached fix, or permission not yet granted -- the region/GPS
+      // chain below still lands on the real center a moment later.
+    }
+  }
+
   Future<void> _loadRegions() async {
     try {
       final regions = await widget.api.getActiveRegions();
@@ -726,7 +749,10 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() {
         _regions = regions;
         _selectedRegion = activeRegion;
-        _mapCenter = activeRegion == null
+        // ??= not = -- a cached-location seed or an in-flight pan/GPS
+        // result may have already landed a better center than the
+        // region's administrative point; don't jump away from it.
+        _mapCenter ??= activeRegion == null
             ? _atakentFallbackCenter
             : (activeRegion.center?.toLatLng() ?? _atakentFallbackCenter);
       });
@@ -736,7 +762,7 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() {
         _regions = const [];
         _selectedRegion = null;
-        _mapCenter = _atakentFallbackCenter;
+        _mapCenter ??= _atakentFallbackCenter;
       });
       _maybeAskLocationOnStart();
     }
@@ -1437,8 +1463,9 @@ class _PassengerShellState extends State<PassengerShell>
     });
   }
 
-  void _handleMapCenterChanged(LatLng point) {
+  void _handleMapCenterChanged(LatLng point, double zoom) {
     _mapCenter = point;
+    _mapZoom = zoom;
     if (!_mapPointPickerActive) return;
     _scheduleMapPickerReverse(point);
   }
@@ -2192,6 +2219,7 @@ class _PassengerShellState extends State<PassengerShell>
         Positioned.fill(
           child: _MapCanvas(
             center: _mapCenter ?? _atakentFallbackCenter,
+            zoom: _mapZoom,
             pickup: _pickup,
             dropoff: _dropoff,
             driver: _order?.driverId == null ? null : _driverLocation,
@@ -2563,6 +2591,7 @@ class _PassengerShellState extends State<PassengerShell>
                 _pickup?.toLatLng() ??
                 _mapCenter ??
                 _atakentFallbackCenter,
+            zoom: _mapZoom,
             pickup: order.pickupCoordinate ?? _pickup,
             dropoff: order.dropoffCoordinate ?? _dropoff,
             driver: order.driverId == null ? null : _driverLocation,
@@ -4715,6 +4744,7 @@ class _SupportTopicChip extends StatelessWidget {
 class _MapCanvas extends StatefulWidget {
   const _MapCanvas({
     required this.center,
+    this.zoom,
     required this.pickup,
     required this.dropoff,
     required this.driver,
@@ -4742,6 +4772,10 @@ class _MapCanvas extends StatefulWidget {
   });
 
   final LatLng center;
+  // Last zoom the rider actually chose, persisted by the parent shell
+  // state (not this widget's own State, which gets recreated on every
+  // Home tab re-entry). Null only on the very first mount of the app.
+  final double? zoom;
   final Coordinate? pickup;
   final Coordinate? dropoff;
   final DriverLocation? driver;
@@ -4752,7 +4786,7 @@ class _MapCanvas extends StatefulWidget {
   final String? routeError;
   final bool mapUnavailable;
   final ValueChanged<LatLng> onTap;
-  final ValueChanged<LatLng> onCenterChanged;
+  final void Function(LatLng center, double zoom) onCenterChanged;
   final VoidCallback onTileError;
   final VoidCallback onUseLocation;
   final VoidCallback onRetryMap;
@@ -4900,6 +4934,7 @@ class _MapCanvasState extends State<_MapCanvas> {
     final showCenterMarker = widget.showCenterMarker;
     final activeTarget = widget.activeTarget;
     final searching = widget.searching;
+    final zoom = widget.zoom;
     final initialPoints = _initialCameraPoints();
     final initialFit = initialPoints.length > 1
         ? CameraFit.coordinates(
@@ -4921,11 +4956,14 @@ class _MapCanvasState extends State<_MapCanvas> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: pickup == null && dropoff == null ? 12 : 14,
+                  initialZoom:
+                      zoom ?? (pickup == null && dropoff == null ? 12 : 14),
                   initialCameraFit: initialFit,
                   onTap: (_, point) => onTap(point),
                   onPositionChanged: (camera, hasGesture) {
-                    if (hasGesture) onCenterChanged(camera.center);
+                    if (hasGesture) {
+                      onCenterChanged(camera.center, camera.zoom);
+                    }
                   },
                   backgroundColor: context.palette.appBackground,
                 ),
