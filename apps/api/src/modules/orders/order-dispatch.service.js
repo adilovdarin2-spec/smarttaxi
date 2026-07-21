@@ -437,6 +437,7 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
      SET driver_offer_price_kzt=$1,
          driver_offer_status='PENDING',
          driver_offer_by_driver_id=$2,
+         driver_offer_proposed_by='DRIVER',
          driver_offer_created_at=NOW(),
          driver_offer_responded_at=NULL
      WHERE id=$3
@@ -460,7 +461,13 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
     const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
     if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
     if (existing.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
-    if (existing.driver_offer_status !== "PENDING" || !existing.driver_offer_by_driver_id) {
+    // proposed_by must be 'DRIVER' -- this endpoint is the rider responding
+    // to what the DRIVER most recently put on the table. If the rider's own
+    // counter is what's currently pending (proposed_by='CLIENT'), there's
+    // nothing of the driver's left to accept/decline; the rider is just
+    // waiting on the driver's response via respondToClientCounterOffer.
+    if (existing.driver_offer_status !== "PENDING" || !existing.driver_offer_by_driver_id ||
+        existing.driver_offer_proposed_by !== "DRIVER") {
       throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
     }
     const declined = (await runQuery(
@@ -483,7 +490,8 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
   const peek = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1", [orderId])).rows[0];
   if (!peek) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
   if (peek.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
-  if (peek.driver_offer_status !== "PENDING" || !peek.driver_offer_by_driver_id) {
+  if (peek.driver_offer_status !== "PENDING" || !peek.driver_offer_by_driver_id ||
+      peek.driver_offer_proposed_by !== "DRIVER") {
     throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
   }
 
@@ -491,7 +499,8 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
 
   const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
-  if (existing.driver_offer_status !== "PENDING" || existing.driver_offer_by_driver_id !== driver.id) {
+  if (existing.driver_offer_status !== "PENDING" || existing.driver_offer_by_driver_id !== driver.id ||
+      existing.driver_offer_proposed_by !== "DRIVER") {
     throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
   }
 
@@ -525,6 +534,115 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
     executor,
     "INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'DRIVER_FOUND','Client accepted driver price offer',$2)",
     [existing.id, clientUserId]
+  );
+
+  return { order, driver: updatedDriver, accepted: true };
+}
+
+// Rider's counter to a pending driver price offer -- only valid while the
+// driver's own proposal is still the one on the table (proposed_by='DRIVER');
+// once the rider counters, it's the driver's turn (respondToClientCounterOffer
+// below) until either side accepts, declines, or counters again. Reuses the
+// same single pending-offer slot as submitDriverPriceOffer/
+// respondToDriverPriceOffer rather than a new table -- there is never more
+// than one live proposal on an order at a time, so nothing else needs to
+// track whose turn it is beyond this flag.
+export async function submitClientCounterOffer({ orderId, clientUserId, priceKzt, executor }) {
+  const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
+  if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
+
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+  if (existing.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+  if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
+    throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
+  }
+  if (existing.driver_offer_status !== "PENDING" || !existing.driver_offer_by_driver_id ||
+      existing.driver_offer_proposed_by !== "DRIVER") {
+    throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+  }
+
+  const order = (await runQuery(
+    executor,
+    `UPDATE orders
+     SET driver_offer_price_kzt=$1,
+         driver_offer_proposed_by='CLIENT',
+         driver_offer_responded_at=NULL
+     WHERE id=$2
+     RETURNING *`,
+    [priceKzt, existing.id]
+  )).rows[0];
+
+  return { order, driverId: existing.driver_offer_by_driver_id };
+}
+
+// Driver's response to the rider's counter -- mirrors respondToDriverPriceOffer
+// but from the other side: only the specific driver who owns the pending
+// offer slot (driver_offer_by_driver_id) can respond, since a different
+// driver has no standing proposal on this order to accept or decline.
+export async function respondToClientCounterOffer({ orderId, driverUserId, accept, executor }) {
+  const driverRow = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1", [driverUserId])).rows[0];
+  if (!driverRow) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+
+  if (!accept) {
+    const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+    if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+    if (existing.driver_offer_status !== "PENDING" || existing.driver_offer_by_driver_id !== driverRow.id ||
+        existing.driver_offer_proposed_by !== "CLIENT") {
+      throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+    }
+    const declined = (await runQuery(
+      executor,
+      `UPDATE orders
+       SET driver_offer_status='DECLINED', driver_offer_responded_at=NOW()
+       WHERE id=$1
+       RETURNING *`,
+      [existing.id]
+    )).rows[0];
+    return { order: declined, driver: null, accepted: false };
+  }
+
+  // Same lock ordering as respondToDriverPriceOffer's accept path (driver
+  // then order) to avoid a deadlock against acceptOrderForDriver/
+  // submitDriverPriceOffer running concurrently.
+  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [driverRow.id])).rows[0];
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+  if (existing.driver_offer_status !== "PENDING" || existing.driver_offer_by_driver_id !== driver.id ||
+      existing.driver_offer_proposed_by !== "CLIENT") {
+    throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
+  }
+
+  await assertDriverDispatchReady(driver, executor);
+  await assertDriverHasNoActiveOrder(driver, executor);
+  if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
+  if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
+  if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
+    throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
+  }
+
+  const order = (await runQuery(
+    executor,
+    `UPDATE orders
+     SET status='DRIVER_FOUND',
+         driver_id=$1,
+         price=$2,
+         accepted_at=NOW(),
+         driver_offer_status='ACCEPTED',
+         driver_offer_responded_at=NOW()
+     WHERE id=$3
+     RETURNING *`,
+    [driver.id, existing.driver_offer_price_kzt, existing.id]
+  )).rows[0];
+  const updatedDriver = (await runQuery(
+    executor,
+    "UPDATE drivers SET status='BUSY', last_seen_at=NOW() WHERE id=$1 RETURNING *",
+    [driver.id]
+  )).rows[0];
+  await runQuery(
+    executor,
+    "INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'DRIVER_FOUND','Driver accepted client counter-offer',$2)",
+    [existing.id, driverUserId]
   );
 
   return { order, driver: updatedDriver, accepted: true };

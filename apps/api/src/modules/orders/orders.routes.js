@@ -19,7 +19,9 @@ import {
   ORDER_STATUSES,
   publicOrderEvent,
   publicOrderStatus,
+  respondToClientCounterOffer,
   respondToDriverPriceOffer,
+  submitClientCounterOffer,
   submitDriverPriceOffer,
   syncDriverAvailability,
   TRANSITION_RULES
@@ -44,7 +46,15 @@ export const ORDER_SELECT = `
   d.car_color AS driver_car_color,
   d.plate AS driver_plate,
   d.rating AS driver_rating,
-  CASE WHEN d.id IS NULL THEN NULL ELSE ('/api/drivers/' || d.id::text || '/avatar') END AS driver_avatar_url
+  CASE WHEN d.id IS NULL THEN NULL ELSE ('/api/drivers/' || d.id::text || '/avatar') END AS driver_avatar_url,
+  -- The order isn't assigned to a driver yet while a price offer is merely
+  -- PENDING (o.driver_id stays null until accepted), so the rider's
+  -- negotiation banner needs the OFFERING driver's own name/rating/avatar --
+  -- a separate join keyed on driver_offer_by_driver_id, distinct from the
+  -- fields above which only populate once the order is actually assigned.
+  od.name AS offer_driver_name,
+  od.rating AS offer_driver_rating,
+  CASE WHEN od.id IS NULL THEN NULL ELSE ('/api/drivers/' || od.id::text || '/avatar') END AS offer_driver_avatar_url
 `;
 export function publicOrderResponse(order) {
   if (!order) return order;
@@ -158,7 +168,7 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
              CASE WHEN d.id IS NULL THEN NULL ELSE ('/api/drivers/' || d.id::text || '/avatar') END AS driver_avatar_url,
              dl.lat AS driver_lat, dl.lng AS driver_lng, dl.updated_at AS driver_location_updated_at
       FROM orders o
-      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       LEFT JOIN driver_locations dl ON dl.driver_id=o.driver_id
       WHERE o.share_token=$1
     `, [token])).rows[0];
@@ -394,7 +404,7 @@ router.post("/:id/cancel-public", async (req, res, next) => {
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [updated.id])).rows[0];
     });
@@ -428,8 +438,8 @@ router.get("/", requireAuth, requireRole("OWNER", "FINANCE", "DRIVER"), async (r
         ? query("SELECT COUNT(*)::int total FROM orders WHERE status=$1", [params.status])
         : query("SELECT COUNT(*)::int total FROM orders"))).rows[0].total;
       result = params.status
-        ? await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id WHERE o.status=$1 ORDER BY o.created_at DESC LIMIT $2 OFFSET $3`, [params.status, params.limit, params.offset])
-        : await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id ORDER BY o.created_at DESC LIMIT $1 OFFSET $2`, [params.limit, params.offset]);
+        ? await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id WHERE o.status=$1 ORDER BY o.created_at DESC LIMIT $2 OFFSET $3`, [params.status, params.limit, params.offset])
+        : await query(`SELECT ${ORDER_SELECT} FROM orders o LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id ORDER BY o.created_at DESC LIMIT $1 OFFSET $2`, [params.limit, params.offset]);
     }
     res.json({
       orders: result.rows.map(publicOrderResponse),
@@ -445,7 +455,7 @@ router.get("/me/active", requireAuth, requireRole("CLIENT"), async (req, res, ne
     const order = (await query(`
       SELECT ${ORDER_SELECT}
       FROM orders o
-      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.client_id=$1 AND o.status = ANY($2::text[])
       ORDER BY o.created_at DESC
       LIMIT 1
@@ -469,7 +479,7 @@ router.get("/me/history", requireAuth, requireRole("CLIENT"), async (req, res, n
     const orders = (await query(`
       SELECT ${ORDER_SELECT}
       FROM orders o
-      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.client_id=$1 AND NOT (o.status = ANY($2::text[]))
       ORDER BY o.created_at DESC
       LIMIT $3
@@ -488,7 +498,7 @@ router.get("/me/driver-history", requireAuth, requireRole("DRIVER"), async (req,
     const orders = (await query(`
       SELECT ${ORDER_SELECT}
       FROM orders o
-      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.driver_id=$1 AND NOT (o.status = ANY($2::text[]))
       ORDER BY o.created_at DESC
       LIMIT $3
@@ -503,7 +513,7 @@ router.get("/:id/status-history", requireAuth, async (req, res, next) => {
     const order = (await query(`
       SELECT ${ORDER_SELECT}
       FROM orders o
-      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.id=$1
     `, [id])).rows[0];
     if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
@@ -536,7 +546,7 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
         SELECT o.*, d.name AS driver_name, d.phone AS driver_phone, d.car_model AS driver_car_model,
                d.plate AS driver_plate, d.rating AS driver_rating
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
         FOR UPDATE OF o
       `, [id])).rows[0];
@@ -597,7 +607,7 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });
@@ -667,7 +677,7 @@ router.post("/:id/rate-client", requireAuth, requireRole("DRIVER"), async (req, 
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });
@@ -691,7 +701,7 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [accepted.order.id])).rows[0];
     });
@@ -735,7 +745,7 @@ router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ 
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [result.order.id])).rows[0];
     });
@@ -769,7 +779,7 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [result.order.id])).rows[0];
     });
@@ -780,6 +790,84 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
         : { title: "Клиент отклонил вашу цену", body: "Можете предложить другую цену или взять другой заказ", type: "DRIVER_PRICE_OFFER_DECLINED" }
       ).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     }
+    res.json({ order: publicOrderResponse(order) });
+  } catch (e) { next(e); }
+});
+
+// Rider counters the driver's price instead of just accepting/declining it --
+// only valid while the driver's proposal is still the one pending (see
+// submitClientCounterOffer). Once submitted, it's the driver's turn via
+// price-offer/driver-respond below.
+router.post("/:id/price-offer/counter", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-price-offer-counter", windowMs: 60_000, max: 30 }), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = PriceOfferBody.parse(req.body);
+    const order = await tx(async (client) => {
+      const target = (await client.query("SELECT price FROM orders WHERE id=$1", [id])).rows[0];
+      if (!target) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      const { minAllowed, maxAllowed } = offeredPriceBounds(target.price);
+      if (body.priceKzt < minAllowed || body.priceKzt > maxAllowed) {
+        throw new AppError("Offered price is outside allowed bounds", 400, "OFFERED_PRICE_OUT_OF_BOUNDS", {
+          minAllowed,
+          maxAllowed
+        });
+      }
+      const result = await submitClientCounterOffer({ orderId: id, clientUserId: req.user.id, priceKzt: body.priceKzt, executor: client });
+      await writeAudit(client, {
+        action: "order_client_counter_offer_submitted",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: result.order.id,
+        metadata: { driverId: result.driverId, priceKzt: body.priceKzt },
+        req
+      });
+      return { row: (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
+        WHERE o.id=$1
+      `, [result.order.id])).rows[0], driverId: result.driverId };
+    });
+    emitOrderUpdated(req.io, order.row, "order.client_counter_offer");
+    notifyOrderDriver({ driver_id: order.driverId }, {
+      title: "Клиент предложил свою цену",
+      body: `Новая цена поездки: ${order.row.driver_offer_price_kzt} ₸`,
+      type: "CLIENT_COUNTER_OFFER"
+    }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
+    res.status(201).json({ order: publicOrderResponse(order.row) });
+  } catch (e) { next(e); }
+});
+
+// Driver's response to the rider's counter — accept assigns the order at
+// that price (same end state as any other acceptance path), decline just
+// clears the offer; the driver can still submit a fresh price-offer
+// afterward, same as declining the other direction.
+router.post("/:id/price-offer/driver-respond", requireAuth, requireRole("DRIVER"), rateLimit({ prefix: "orders-price-offer-driver-respond", windowMs: 60_000, max: 30 }), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const body = z.object({ accept: z.boolean() }).parse(req.body);
+    const order = await tx(async (client) => {
+      const result = await respondToClientCounterOffer({ orderId: id, driverUserId: req.user.id, accept: body.accept, executor: client });
+      await writeAudit(client, {
+        action: body.accept ? "order_client_counter_offer_accepted" : "order_client_counter_offer_declined",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: result.order.id,
+        metadata: { priceKzt: result.order.driver_offer_price_kzt },
+        req
+      });
+      return (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
+        WHERE o.id=$1
+      `, [result.order.id])).rows[0];
+    });
+    emitOrderUpdated(req.io, order, body.accept ? "order.client_counter_offer_accepted" : "order.client_counter_offer_declined");
+    notifyOrderClient(order, body.accept
+      ? { title: "Водитель принял вашу цену", body: "Водитель уже едет к вам", type: "CLIENT_COUNTER_OFFER_ACCEPTED" }
+      : { title: "Водитель отклонил вашу цену", body: "Можете предложить другую цену", type: "CLIENT_COUNTER_OFFER_DECLINED" }
+    ).catch((error) => console.error("[push] notifyOrderClient failed", error));
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });
@@ -806,7 +894,7 @@ router.post("/:id/quick-message", requireAuth, requireRole("CLIENT", "DRIVER"), 
     const order = (await query(`
       SELECT ${ORDER_SELECT}
       FROM orders o
-      LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.id=$1
     `, [id])).rows[0];
     if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
@@ -863,7 +951,7 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req,
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });
@@ -1026,7 +1114,7 @@ async function updateStatus(req, res, next, status) {
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });
@@ -1123,7 +1211,7 @@ router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (r
       return (await client.query(`
         SELECT ${ORDER_SELECT}
         FROM orders o
-        LEFT JOIN drivers d ON d.id=o.driver_id
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });

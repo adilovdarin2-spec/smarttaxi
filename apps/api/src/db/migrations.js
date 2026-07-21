@@ -667,6 +667,20 @@ const statements = [
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_created_at TIMESTAMPTZ",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_responded_at TIMESTAMPTZ",
 
+  // --- Stage: two-way price negotiation ("торг") ---
+  // The rider used to only be able to accept/decline whatever price a driver
+  // proposed. This lets the rider counter back with their own number, which
+  // the driver can then accept, decline, or counter again -- the same
+  // pending-offer slot on the order just flips whose turn it is via this
+  // column instead of needing a separate table for a back-and-forth that
+  // never has more than one live proposal at a time.
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS driver_offer_proposed_by TEXT",
+  `DO $$
+  BEGIN
+    ALTER TABLE orders ADD CONSTRAINT orders_driver_offer_proposed_by_check CHECK (driver_offer_proposed_by IS NULL OR driver_offer_proposed_by IN ('DRIVER','CLIENT'));
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+
   // --- Stage: client favorite addresses ---
   `CREATE TABLE IF NOT EXISTS client_favorite_addresses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

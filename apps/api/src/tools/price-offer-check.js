@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 import { offeredPriceBounds } from "../modules/orders/order-pricing.service.js";
 import {
   submitDriverPriceOffer,
-  respondToDriverPriceOffer
+  respondToDriverPriceOffer,
+  submitClientCounterOffer,
+  respondToClientCounterOffer
 } from "../modules/orders/order-dispatch.service.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -17,9 +19,13 @@ assert.match(migrations, /ADD COLUMN IF NOT EXISTS driver_offer_price_kzt INTEGE
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS driver_offer_status TEXT/i, "migration must add driver_offer_status");
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS driver_offer_by_driver_id/i, "migration must add driver_offer_by_driver_id");
 assert.match(migrations, /driver_offer_status IN \('PENDING','ACCEPTED','DECLINED'\)/i, "driver_offer_status must be constrained to PENDING/ACCEPTED/DECLINED");
+assert.match(migrations, /ADD COLUMN IF NOT EXISTS driver_offer_proposed_by TEXT/i, "migration must add driver_offer_proposed_by (whose turn it is in the negotiation)");
+assert.match(migrations, /driver_offer_proposed_by IN \('DRIVER','CLIENT'\)/i, "driver_offer_proposed_by must be constrained to DRIVER/CLIENT");
 
 assert.match(server, /app\.use\("\/api\/orders", ordersRoutes\)/, "orders routes must be mounted at /api/orders");
 assert.match(server, /app\.use\("\/api\/driver\/orders", ordersRoutes\)/, "orders routes must also be mounted at /api/driver/orders (price-offer reachable from the driver-facing base path too)");
+assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer\/counter", requireAuth, requireRole\("CLIENT"\), rateLimit\(\{ prefix: "orders-price-offer-counter", windowMs: 60_000, max: 30 \}\)/, "rider counter-offer route must require CLIENT role and be rate limited 30/min");
+assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer\/driver-respond", requireAuth, requireRole\("DRIVER"\), rateLimit\(\{ prefix: "orders-price-offer-driver-respond", windowMs: 60_000, max: 30 \}\)/, "driver response-to-counter route must require DRIVER role and be rate limited 30/min");
 
 assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer", requireAuth, requireRole\("DRIVER"\), rateLimit\(\{ prefix: "orders-price-offer", windowMs: 60_000, max: 20 \}\)/, "price-offer submit route must require DRIVER role and be rate limited 20/min");
 assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer\/respond", requireAuth, requireRole\("CLIENT"\), rateLimit\(\{ prefix: "orders-price-offer-respond", windowMs: 60_000, max: 30 \}\)/, "price-offer respond route must require CLIENT role and be rate limited 30/min");
@@ -58,7 +64,8 @@ function createExecutor() {
       client_id: "client-1",
       driver_offer_price_kzt: null,
       driver_offer_status: null,
-      driver_offer_by_driver_id: null
+      driver_offer_by_driver_id: null,
+      driver_offer_proposed_by: null
     }]
   };
 
@@ -70,6 +77,9 @@ function createExecutor() {
       }
       if (/SELECT \* FROM drivers WHERE id=\$1 FOR UPDATE/i.test(sql)) {
         return { rows: state.drivers.filter(d => d.id === params[0]) };
+      }
+      if (/^SELECT \* FROM drivers WHERE user_id=\$1$/i.test(sql.trim())) {
+        return { rows: state.drivers.filter(d => d.user_id === params[0]) };
       }
       if (/SELECT \* FROM regions WHERE id=\$1/i.test(sql)) {
         return { rows: state.regions.filter(r => r.id === params[0]) };
@@ -89,12 +99,26 @@ function createExecutor() {
       if (/SELECT 1 FROM driver_client_preferences WHERE driver_id=\$1 AND client_id=\$2 AND type='BLOCKED'/i.test(sql)) {
         return { rows: state.driverClientPreferences.filter(p => p.driver_id === params[0] && p.client_id === params[1] && p.type === "BLOCKED") };
       }
+      // Must be checked before the driver-offer-submit handler below --
+      // that one's regex is a plain prefix match on "driver_offer_price_kzt=$1"
+      // which this query also starts with, so it would otherwise swallow
+      // this one first and corrupt the mocked state (wrong param indices).
+      if (/UPDATE orders\s+SET driver_offer_price_kzt=\$1,\s*driver_offer_proposed_by='CLIENT'/i.test(sql)) {
+        const order = state.orders.find(o => o.id === params[1]);
+        Object.assign(order, {
+          driver_offer_price_kzt: params[0],
+          driver_offer_proposed_by: "CLIENT",
+          driver_offer_responded_at: null
+        });
+        return { rows: [order] };
+      }
       if (/UPDATE orders\s+SET driver_offer_price_kzt=\$1/i.test(sql)) {
         const order = state.orders.find(o => o.id === params[2]);
         Object.assign(order, {
           driver_offer_price_kzt: params[0],
           driver_offer_status: "PENDING",
           driver_offer_by_driver_id: params[1],
+          driver_offer_proposed_by: "DRIVER",
           driver_offer_responded_at: null
         });
         return { rows: [order] };
@@ -219,6 +243,68 @@ function createExecutor() {
     () => respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-2", accept: true, executor }),
     { code: "FORBIDDEN_ORDER" },
     "a client must not be able to respond to a price offer on someone else's order"
+  );
+}
+
+// Two-way negotiation: rider counters the driver's offer instead of just
+// accepting/declining, then the driver accepts the rider's counter.
+{
+  const executor = createExecutor();
+  await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
+  const { order: countered, driverId } = await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 350, executor });
+  assert.equal(countered.driver_offer_price_kzt, 350, "the rider's counter replaces the driver's price on the same pending slot");
+  assert.equal(countered.driver_offer_proposed_by, "CLIENT", "countering flips whose turn it is to CLIENT");
+  assert.equal(driverId, "driver-1", "the counter reports which driver needs to be notified");
+
+  const { order, accepted } = await respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-1", accept: true, executor });
+  assert.equal(accepted, true, "driver accepting the rider's counter must report accepted:true");
+  assert.equal(order.status, "DRIVER_FOUND", "accepting the counter assigns the order");
+  assert.equal(order.driver_id, "driver-1", "accepting the counter assigns the same driver who was negotiating");
+  assert.equal(order.price, 350, "accepting the counter locks in the rider's countered price");
+}
+
+// Driver can decline the rider's counter and come back with a fresh offer.
+{
+  const executor = createExecutor();
+  await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
+  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 250, executor });
+  const { order, accepted } = await respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-1", accept: false, executor });
+  assert.equal(accepted, false, "declining the rider's counter must report accepted:false");
+  assert.equal(order.driver_offer_status, "DECLINED", "declining the counter marks the offer DECLINED");
+  assert.equal(order.driver_id, null, "declining the counter must not assign a driver");
+
+  const fresh = await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 400, executor });
+  assert.equal(fresh.order.driver_offer_proposed_by, "DRIVER", "after declining a counter, a fresh driver offer resets whose turn it is to DRIVER");
+}
+
+// The rider can't counter their own pending counter -- it must be the
+// driver's proposal on the table before the rider can respond to it at all.
+{
+  const executor = createExecutor();
+  await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
+  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 300, executor });
+  await assert.rejects(
+    () => submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 280, executor }),
+    { code: "NO_PENDING_PRICE_OFFER" },
+    "the rider must not be able to counter again while their own counter is still awaiting the driver's response"
+  );
+  await assert.rejects(
+    () => respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: true, executor }),
+    { code: "NO_PENDING_PRICE_OFFER" },
+    "the rider must not be able to accept/decline via the driver-offer endpoint while their own counter is pending"
+  );
+}
+
+// A different driver has no standing offer on the order and can't respond to
+// the rider's counter meant for the driver who's actually negotiating.
+{
+  const executor = createExecutor();
+  await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
+  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 300, executor });
+  await assert.rejects(
+    () => respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-2", accept: true, executor }),
+    { code: "NO_PENDING_PRICE_OFFER" },
+    "a driver who isn't the one negotiating must not be able to accept the rider's counter"
   );
 }
 
