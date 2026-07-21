@@ -70,7 +70,7 @@ function createExecutor(clients = []) {
       if (/UPDATE clients SET cashback_balance=cashback_balance\+\$1 WHERE id=\$2 RETURNING cashback_balance/i.test(sql)) {
         const client = state.clients.find(c => c.id === params[1]);
         client.cashback_balance = (client.cashback_balance || 0) + params[0];
-        return { rows: [{ cashback_balance: client.cashback_balance }] };
+        return { rows: [{ cashback_balance: client.cashback_balance, user_id: client.user_id ?? null }] };
       }
       if (/INSERT INTO cashback_transactions/i.test(sql)) {
         state.transactions = state.transactions || [];
@@ -133,14 +133,16 @@ function createExecutor(clients = []) {
 // Bonus is awarded once, on the referred client's first completed order, to both sides.
 {
   const executor = createExecutor([
-    { id: "referrer-1", cashback_balance: 0 },
-    { id: "referee-1", referred_by_client_id: "referrer-1", cashback_balance: 0 }
+    { id: "referrer-1", user_id: "referrer-user-1", cashback_balance: 0 },
+    { id: "referee-1", user_id: "referee-user-1", referred_by_client_id: "referrer-1", cashback_balance: 0 }
   ]);
   executor.state.completedOrderCounts = { "referee-1": 1 };
   executor.state.bonus = 500;
   const result = await awardReferralBonusOnFirstCompletedOrder({ clientId: "referee-1", orderId: "order-1", executor });
   assert.equal(result.bonus, 500, "bonus amount must come from service_settings.referral_bonus_kzt");
   assert.equal(result.referrerId, "referrer-1");
+  assert.equal(result.referredUserId, "referee-user-1", "must return the referred client's user_id so the caller can notify them post-transaction");
+  assert.equal(result.referrerUserId, "referrer-user-1", "must return the referrer's user_id so the caller can notify them post-transaction");
   assert.equal(executor.state.clients.find(c => c.id === "referee-1").cashback_balance, 500, "referee is credited the bonus");
   assert.equal(executor.state.clients.find(c => c.id === "referrer-1").cashback_balance, 500, "referrer is credited the same bonus");
 }

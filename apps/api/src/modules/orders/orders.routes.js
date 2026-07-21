@@ -29,7 +29,7 @@ import {
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { buildActiveLegRoute } from "../routing/routing.service.js";
 import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleDriverDebtFromBalance } from "../finance/finance.service.js";
-import { notifyOrderClient, notifyOrderDriver } from "../notifications/notification.service.js";
+import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
 
@@ -968,6 +968,12 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req,
 async function updateStatus(req, res, next, status) {
   try {
     IdParam.parse(req.params);
+    // Set inside the transaction below, read after it commits -- notifyUser
+    // writes through the plain pool connection, not the transaction client,
+    // so firing it must wait until the transaction is done (same reason
+    // every other notify call here happens after tx() returns, not inside).
+    let cashbackEarned = 0;
+    let referralBonusResult = null;
     const order = await tx(async (client) => {
       const driver = req.user.role === "DRIVER" ? (await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id])).rows[0] : null;
       if (req.user.role === "DRIVER" && !driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
@@ -1073,11 +1079,12 @@ async function updateStatus(req, res, next, status) {
         }
 
         const cashback = Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
+        cashbackEarned = cashback;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
         if (updated.client_id) {
           const c = await client.query("UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance", [cashback, updated.client_id]);
           await client.query("INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after) VALUES($1,$2,'EARN',$3,$4)", [updated.client_id, updated.id, cashback, c.rows[0].cashback_balance]);
-          await awardReferralBonusOnFirstCompletedOrder({ clientId: updated.client_id, orderId: updated.id, executor: client });
+          referralBonusResult = await awardReferralBonusOnFirstCompletedOrder({ clientId: updated.client_id, orderId: updated.id, executor: client });
         }
         if (updated.driver_id) {
           if (["CASH", "KASPI"].includes(updated.payment_method)) {
@@ -1132,6 +1139,30 @@ async function updateStatus(req, res, next, status) {
         body: order.price ? `Стоимость поездки: ${order.price} ₸` : "Спасибо, что выбрали SmartTaxi",
         type: "TRIP_COMPLETED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+      // These two feed the mobile app's "Бонусы" notification category —
+      // until now cashback_balance and cashback_transactions changed
+      // silently with nothing surfaced in-app.
+      if (cashbackEarned > 0) {
+        notifyOrderClient(order, {
+          title: "Начислен кешбэк",
+          body: `+${cashbackEarned} ₸ за поездку — спишется на следующей оплате`,
+          type: "CASHBACK_EARNED"
+        }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+      }
+      if (referralBonusResult?.referredUserId) {
+        notifyUser(referralBonusResult.referredUserId, {
+          title: "Бонус за приглашение",
+          body: `+${referralBonusResult.bonus} ₸ начислено на баланс`,
+          type: "REFERRAL_BONUS"
+        }).catch((error) => console.error("[push] notifyUser failed", error));
+      }
+      if (referralBonusResult?.referrerUserId) {
+        notifyUser(referralBonusResult.referrerUserId, {
+          title: "Бонус за приглашение",
+          body: `+${referralBonusResult.bonus} ₸ — приглашённый друг совершил первую поездку`,
+          type: "REFERRAL_BONUS"
+        }).catch((error) => console.error("[push] notifyUser failed", error));
+      }
     }
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }

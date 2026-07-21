@@ -69,7 +69,7 @@ export async function awardReferralBonusOnFirstCompletedOrder({ clientId, orderI
   if (bonus <= 0) return null;
 
   const referred = (await run(
-    "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance",
+    "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance, user_id",
     [bonus, clientId]
   )).rows[0];
   await run(
@@ -78,7 +78,7 @@ export async function awardReferralBonusOnFirstCompletedOrder({ clientId, orderI
   );
 
   const referrer = (await run(
-    "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance",
+    "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance, user_id",
     [bonus, client.referred_by_client_id]
   )).rows[0];
   await run(
@@ -86,5 +86,15 @@ export async function awardReferralBonusOnFirstCompletedOrder({ clientId, orderI
     [client.referred_by_client_id, orderId, bonus, referrer.cashback_balance]
   );
 
-  return { bonus, referrerId: client.referred_by_client_id };
+  // No notifyUser call here on purpose -- this runs inside the caller's
+  // DB transaction (executor: client), and notifyUser writes through the
+  // plain pool connection, not the transaction client. Return the ids so
+  // orders.routes.js can fire both notifications after the transaction
+  // commits, the same way it already does for every other order event.
+  return {
+    bonus,
+    referrerId: client.referred_by_client_id,
+    referredUserId: referred.user_id,
+    referrerUserId: referrer.user_id
+  };
 }
