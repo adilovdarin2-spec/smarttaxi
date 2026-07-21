@@ -8710,7 +8710,13 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
         ? 'Водитель'
         : order.offerDriverName!.trim();
     return _HomeOrderPanel(
-      child: Column(
+      // This panel's content (avatar, name, rating, both prices, accept
+      // CTA, stepper, counter-offer button, decline) is taller than the
+      // ConstrainedBox(maxHeight: screen.height * sheetFraction) the caller
+      // wraps _TripStatusPanel in on shorter/compact screens -- without a
+      // scroll view here, that overflow rendered as a hazard-striped
+      // "BOTTOM OVERFLOWED" bar instead of the decline button.
+      child: SingleChildScrollView(child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -8859,7 +8865,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 }

@@ -1498,10 +1498,24 @@ class _DriverShellState extends State<DriverShell> {
         accept: accept,
       );
       if (!mounted) return;
-      setState(() => _orders = mergeOrder(_orders, updated));
       if (accept) {
+        // Accepting assigns driver_id server-side same as _accept() above --
+        // without setting _activeOrder here too, the "Поездка" tab kept
+        // showing "нет активной поездки" until the app was fully relaunched,
+        // since it reads _activeOrder, not the _orders list this used to
+        // only update.
+        widget.sockets.joinOrder(updated.id);
+        setState(() {
+          _activeOrder = updated;
+          _orders = mergeOrder(_orders, updated);
+          _tab = 2;
+          _online = true;
+        });
         AppToast.showSuccess(context, 'Вы приняли цену клиента — заказ ваш');
+        await _loadDriverRoute(updated.id);
+        await _loadDriverStats();
       } else {
+        setState(() => _orders = mergeOrder(_orders, updated));
         AppToast.showInfo(context, 'Вы отклонили предложение клиента');
       }
     } catch (error) {
