@@ -280,6 +280,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     return (await runQuery(executor, `
       SELECT ${orderSelect} FROM orders o
       LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.driver_id=$1 AND o.region_id=$2 AND o.status = ANY($3::text[])
       ORDER BY o.created_at DESC
       LIMIT $4
@@ -317,6 +318,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     return (await runQuery(executor, `
       SELECT ${orderSelect} FROM orders o
       LEFT JOIN drivers d ON d.id=o.driver_id
+      LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       WHERE o.region_id=$2
         AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR o.driver_id=$1)
         AND o.status=$3
@@ -333,6 +335,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
   return (await runQuery(executor, `
     SELECT ${orderSelect} FROM orders o
     LEFT JOIN drivers d ON d.id=o.driver_id
+    LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
     WHERE o.region_id=$2
       AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR (o.driver_id=$1 AND o.status = ANY($3::text[])))
       AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notPreviouslyCancelledByThisDriver}))
