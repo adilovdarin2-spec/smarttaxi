@@ -574,6 +574,11 @@ class _DriverShellState extends State<DriverShell> {
             _online = false;
             _locationMessage = null;
           });
+          // The InlineMessage banner this sets `_error` for renders below the
+          // map on the Line tab — easy to miss without scrolling right after
+          // the toggle silently reverts. A toast makes the reason impossible
+          // to miss the moment it happens.
+          if (_error != null) AppToast.showError(context, _error!);
           return;
         }
         widget.sockets.joinDrivers();
