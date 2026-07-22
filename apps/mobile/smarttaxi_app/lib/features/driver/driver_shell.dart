@@ -5537,11 +5537,10 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                     runSpacing: 8,
                     children: [
                       for (final type in roadAlertTypes)
-                        ChoiceChip(
-                          label: Text(roadAlertLabel(type)),
+                        DriverSupportTopicChip(
+                          label: roadAlertLabel(type),
                           selected: _selectedType == type,
-                          onSelected: (_) =>
-                              setState(() => _selectedType = type),
+                          onTap: () => setState(() => _selectedType = type),
                         ),
                     ],
                   ),
