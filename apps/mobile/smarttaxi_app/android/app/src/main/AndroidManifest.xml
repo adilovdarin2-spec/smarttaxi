@@ -38,6 +38,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Without these two, FCM falls back to the full-color launcher
+             icon and an auto-named "Miscellaneous" channel: the OS then
+             renders the launcher icon as a solid white blob in the status
+             bar (color is stripped, only alpha survives) instead of a
+             recognizable silhouette. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="smarttaxi_default_channel" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
