@@ -850,16 +850,19 @@ function getJsonViaHttps(url, { headers = {}, rejectUnauthorized = true } = {}) 
       rejectUnauthorized,
       timeout: 20_000
     }, response => {
-      let body = "";
-      response.setEncoding("utf8");
-      response.on("data", chunk => { body += chunk; });
+      // Collect raw bytes and decode once at the end -- setEncoding("utf8")
+      // decodes each TCP chunk independently, so a multi-byte character
+      // (e.g. Cyrillic) split across a chunk boundary gets corrupted into
+      // U+FFFD replacement characters in the middle of an address string.
+      const chunks = [];
+      response.on("data", chunk => { chunks.push(chunk); });
       response.on("end", () => {
         if (response.statusCode < 200 || response.statusCode >= 300) {
           resolve({ ok: false, status: response.statusCode, data: null });
           return;
         }
         try {
-          resolve({ ok: true, status: response.statusCode, data: JSON.parse(body) });
+          resolve({ ok: true, status: response.statusCode, data: JSON.parse(Buffer.concat(chunks).toString("utf8")) });
         } catch (error) {
           reject(error);
         }
