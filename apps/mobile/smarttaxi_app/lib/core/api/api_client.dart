@@ -128,28 +128,6 @@ class ApiClient {
     return data;
   }
 
-  Future<Map<String, dynamic>> register({
-    required String name,
-    required String phone,
-    String? email,
-    required String password,
-  }) async {
-    final response =
-        await _dio.post<Map<String, dynamic>>('/api/auth/register', data: {
-      'name': name,
-      'phone': phone,
-      if (email != null && email.isNotEmpty) 'email': email,
-      'password': password,
-    });
-    final data = response.data ?? {};
-    final token = data['token']?.toString() ?? data['accessToken']?.toString();
-    if (token != null && token.isNotEmpty) {
-      await _authStore.saveToken(token);
-      _dio.options.headers['Authorization'] = 'Bearer $token';
-    }
-    return data;
-  }
-
   Future<Map<String, dynamic>> me() async {
     await _attachToken();
     final response = await _dio.get<Map<String, dynamic>>('/api/auth/me');

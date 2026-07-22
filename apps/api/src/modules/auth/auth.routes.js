@@ -29,14 +29,6 @@ const LoginSchema = z.object({
   password: z.string().min(6).max(128)
 }).refine(v => v.email || v.phone, "email or phone required");
 
-const RegisterSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  phone: kzPhone(),
-  email: z.string().trim().toLowerCase().email().optional(),
-  password: z.string().min(6).max(128),
-  referralCode: z.string().trim().min(1).max(16).optional()
-});
-
 const PhoneSchema = z.object({
   phone: kzPhone()
 });
@@ -383,50 +375,6 @@ router.post("/login", rateLimit({ prefix: "auth-login", windowMs: 60_000, max: 1
     }
     next(e);
   }
-});
-
-router.post("/register", rateLimit({ prefix: "auth-register", windowMs: 60_000, max: 8 }), async (req, res, next) => {
-  try {
-    const body = RegisterSchema.parse(req.body);
-    const normalized = normalizePhone(body.phone);
-    const existing = await query(`
-      SELECT id
-      FROM users
-      WHERE phone=$1 OR ($2::text IS NOT NULL AND email=$2)
-      LIMIT 1
-    `, [normalized.phone, body.email || null]);
-    if (existing.rows[0]) throw new AppError("User already exists", 409, "USER_ALREADY_EXISTS");
-
-    const passwordHash = await bcrypt.hash(body.password, 10);
-    const result = await query(`
-      INSERT INTO users(name,email,phone,password_hash,role,is_active)
-      VALUES($1,$2,$3,$4,'CLIENT',true)
-      RETURNING *
-    `, [body.name, body.email || null, normalized.phone, passwordHash]);
-    const user = result.rows[0];
-
-    const client = (await query(`
-      INSERT INTO clients(user_id, name, phone)
-      VALUES($1,$2,$3)
-      ON CONFLICT (phone) DO UPDATE
-      SET user_id=EXCLUDED.user_id,
-          name=EXCLUDED.name
-      RETURNING *
-    `, [user.id, user.name, user.phone])).rows[0];
-    await ensureReferralCode(client.id);
-    if (body.referralCode) await applyReferralCode(client.id, body.referralCode);
-
-    await writeAudit(query, {
-      action: "client_registered",
-      actorUserId: user.id,
-      entityType: "user",
-      entityId: user.id,
-      metadata: { role: user.role, method: body.email ? "email" : "phone", referralCode: body.referralCode || null },
-      req
-    });
-
-    res.status(201).json({ token: signToken(user), user: publicUser(user) });
-  } catch (e) { next(e); }
 });
 
 router.get("/me", requireAuth, (req, res) => res.json({ user: req.user }));

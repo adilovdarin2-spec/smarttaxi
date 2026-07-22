@@ -10,17 +10,17 @@ const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 
 assert.match(authRoutes, /router\.post\("\/login"/, "login endpoint must exist");
-assert.match(authRoutes, /router\.post\("\/register"/, "register endpoint must exist");
 assert.match(authRoutes, /router\.post\("\/phone\/check"/, "phone check endpoint must exist");
 assert.match(authRoutes, /router\.post\("\/sms\/send"/, "SMS send endpoint must exist");
 assert.match(authRoutes, /router\.post\("\/sms\/verify"/, "SMS verify endpoint must exist");
 assert.match(authRoutes, /router\.post\("\/register\/password"/, "SMS registration password endpoint must exist");
+assert.doesNotMatch(authRoutes, /router\.post\("\/register",/, "registration must only be reachable through the SMS-verified /register/password endpoint");
 assert.match(authRoutes, /router\.post\("\/login\/password"/, "phone password login endpoint must exist");
 assert.match(authRoutes, /router\.get\("\/me", requireAuth/, "me endpoint must require auth");
-assert.match(authRoutes, /email: z\.string\(\)\.trim\(\)\.toLowerCase\(\)\.email\(\)\.optional\(\)/, "login/register must support email");
-assert.match(authRoutes, /phone: z\.string\(\)\.trim\(\)\.min\(6\)\.max\(32\)/, "login/register must support phone");
-assert.match(authRoutes, /VALUES\(\$1,\$2,\$3,\$4,'CLIENT',true\)/, "public register must create CLIENT users only");
-assert.doesNotMatch(authRoutes.match(/router\.post\("\/register"[\s\S]*?router\.get\("\/me"/)?.[0] || "", /role:\s*z\.enum|role\s*=/, "public register must not accept a role");
+assert.match(authRoutes, /email: z\.string\(\)\.trim\(\)\.toLowerCase\(\)\.email\(\)\.optional\(\)/, "login must support email");
+assert.match(authRoutes, /phone: z\.string\(\)\.trim\(\)\.min\(6\)\.max\(32\)/, "login must support phone");
+assert.match(authRoutes, /VALUES\(\$1,NULL,\$2,\$3,'CLIENT',true\)/, "SMS-verified register must create CLIENT users only");
+assert.doesNotMatch(authRoutes.match(/const RegisterPasswordSchema[\s\S]*?\}\);/)?.[0] || "", /role:\s*z\.enum|role\s*=/, "public register must not accept a role");
 
 assert.match(schema, /car_color TEXT/i, "driver profile must support car color");
 assert.match(schema, /CREATE TABLE IF NOT EXISTS auth_sms_codes/i, "schema must include auth_sms_codes");
