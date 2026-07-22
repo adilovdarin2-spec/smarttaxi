@@ -7,6 +7,9 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      JWT_SECRET: ci_only_placeholder_secret_not_a_real_credential_32chars
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
