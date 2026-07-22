@@ -52,6 +52,98 @@ class AppLocalizationsKk extends AppLocalizations {
       'Интерфейс тілі өзгертілді. Кейбір экрандар әзірге ішінара ғана аударылған.';
 
   @override
+  String get passengerSettingsTitle => 'Баптаулар';
+
+  @override
+  String get passengerSettingsSubtitle =>
+      'Аккаунт, сапарлар және қосымша туралы ақпарат';
+
+  @override
+  String get passengerSettingsAccountGroup => 'Аккаунт';
+
+  @override
+  String get passengerSettingsPhoneLabel => 'Телефон нөмірі';
+
+  @override
+  String get passengerSettingsPhoneMissing => 'Көрсетілмеген';
+
+  @override
+  String get passengerSettingsPhoneCopied => 'Нөмір көшірілді';
+
+  @override
+  String get passengerSettingsRegionLabel => 'Аймақ';
+
+  @override
+  String get passengerSettingsRegionNotSelected => 'Таңдалмаған';
+
+  @override
+  String get passengerSettingsLogoutTitle => 'Аккаунттан шығу';
+
+  @override
+  String get passengerSettingsLogoutText => 'Ағымдағы сессияны аяқтау';
+
+  @override
+  String get passengerSettingsInterfaceGroup => 'Интерфейс';
+
+  @override
+  String get passengerSettingsLanguageLabel => 'Тіл';
+
+  @override
+  String get passengerSettingsThemeLabel => 'Тема';
+
+  @override
+  String get passengerSettingsThemeDark => 'Қараңғы';
+
+  @override
+  String get passengerSettingsThemeSystem => 'Жүйедегідей';
+
+  @override
+  String get passengerSettingsThemeLight => 'Ашық';
+
+  @override
+  String get passengerSettingsPermissionsGroup => 'Рұқсаттар';
+
+  @override
+  String get passengerSettingsPushLabel => 'Push-хабарландырулар';
+
+  @override
+  String get passengerSettingsPushEnabled =>
+      'Қосулы — баптауларды ашу үшін басыңыз';
+
+  @override
+  String get passengerSettingsPushDisabled => 'Телефон баптауларында өшірілген';
+
+  @override
+  String get passengerSettingsPushNotRequested => 'Сұралмаған';
+
+  @override
+  String get passengerSettingsPushCheckError =>
+      'Тапсырыс өзгерген кезде қосымшада пайда болады';
+
+  @override
+  String get passengerSettingsPushChecking => 'Мәртебені тексеріп жатырмыз...';
+
+  @override
+  String get passengerSettingsLocationLabel => 'Геолокация';
+
+  @override
+  String get passengerSettingsLocationText =>
+      'Телефонның геолокация баптауларын ашу';
+
+  @override
+  String get passengerSettingsAboutGroup => 'Қосымша туралы';
+
+  @override
+  String get passengerSettingsVersionLabel => 'Қосымша нұсқасы';
+
+  @override
+  String get passengerSettingsLegalTitle => 'Құқықтық ақпарат';
+
+  @override
+  String get passengerSettingsLegalText =>
+      'Пайдалану шарттары, төлем, бас тарту, қауіпсіздік';
+
+  @override
   String get home => 'Басты бет';
 
   @override

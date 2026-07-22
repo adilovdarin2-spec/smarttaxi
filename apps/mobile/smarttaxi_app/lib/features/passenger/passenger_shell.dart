@@ -4249,21 +4249,22 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _settingsScreen() {
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(
-          title: 'Настройки',
-          text: 'Аккаунт, поездки и информация о приложении',
+        _TitleBlock(
+          title: l10n.passengerSettingsTitle,
+          text: l10n.passengerSettingsSubtitle,
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          title: 'Аккаунт',
+          title: l10n.passengerSettingsAccountGroup,
           children: [
             _SettingsRow(
-              title: 'Номер телефона',
+              title: l10n.passengerSettingsPhoneLabel,
               text: widget.accountPhone.isEmpty
-                  ? 'Не указан'
+                  ? l10n.passengerSettingsPhoneMissing
                   : widget.accountPhone,
               onTap: widget.accountPhone.isEmpty
                   ? null
@@ -4272,17 +4273,19 @@ class _PassengerShellState extends State<PassengerShell>
                         ClipboardData(text: widget.accountPhone),
                       );
                       if (!mounted) return;
-                      AppToast.showSuccess(context, 'Номер скопирован');
+                      AppToast.showSuccess(
+                          context, l10n.passengerSettingsPhoneCopied);
                     },
             ),
             _SettingsRow(
-              title: 'Регион',
-              text: _selectedRegion?.name ?? 'Не выбран',
+              title: l10n.passengerSettingsRegionLabel,
+              text: _selectedRegion?.name ??
+                  l10n.passengerSettingsRegionNotSelected,
               onTap: () => unawaited(_chooseRegion()),
             ),
             _SettingsRow(
-              title: 'Выход из аккаунта',
-              text: 'Завершить текущую сессию',
+              title: l10n.passengerSettingsLogoutTitle,
+              text: l10n.passengerSettingsLogoutText,
               danger: true,
               onTap: () => unawaited(_confirmAndLogout()),
             ),
@@ -4290,21 +4293,21 @@ class _PassengerShellState extends State<PassengerShell>
         ),
         const SizedBox(height: 14),
         _SettingsGroup(
-          title: 'Интерфейс',
+          title: l10n.passengerSettingsInterfaceGroup,
           children: [
             _SettingsRow(
-              title: 'Язык',
+              title: l10n.passengerSettingsLanguageLabel,
               text: widget.currentLocale?.languageCode == 'kk'
-                  ? AppLocalizations.of(context).languageKazakh
-                  : AppLocalizations.of(context).languageRussian,
+                  ? l10n.languageKazakh
+                  : l10n.languageRussian,
               onTap: _chooseLanguage,
             ),
             _SettingsRow(
-              title: 'Тема',
+              title: l10n.passengerSettingsThemeLabel,
               text: switch (widget.themeMode) {
-                ThemeMode.dark => 'Тёмная',
-                ThemeMode.system => 'Как в системе',
-                ThemeMode.light => 'Светлая',
+                ThemeMode.dark => l10n.passengerSettingsThemeDark,
+                ThemeMode.system => l10n.passengerSettingsThemeSystem,
+                ThemeMode.light => l10n.passengerSettingsThemeLight,
               },
               onTap: _chooseTheme,
             ),
@@ -4312,33 +4315,36 @@ class _PassengerShellState extends State<PassengerShell>
         ),
         const SizedBox(height: 14),
         _SettingsGroup(
-          title: 'Разрешения',
+          title: l10n.passengerSettingsPermissionsGroup,
           children: [
             FutureBuilder<String>(
               future: _notificationPermissionLabel(),
               builder: (context, snapshot) {
                 return _SettingsRow(
-                  title: 'Push-уведомления',
-                  text: snapshot.data ?? 'Проверяем статус...',
+                  title: l10n.passengerSettingsPushLabel,
+                  text: snapshot.data ?? l10n.passengerSettingsPushChecking,
                   onTap: () => Geolocator.openAppSettings(),
                 );
               },
             ),
             _SettingsRow(
-              title: 'Геолокация',
-              text: 'Открыть настройки геолокации телефона',
+              title: l10n.passengerSettingsLocationLabel,
+              text: l10n.passengerSettingsLocationText,
               onTap: () => Geolocator.openLocationSettings(),
             ),
           ],
         ),
         const SizedBox(height: 14),
         _SettingsGroup(
-          title: 'О приложении',
+          title: l10n.passengerSettingsAboutGroup,
           children: [
-            const _SettingsRow(title: 'Версия приложения', text: _appVersion),
             _SettingsRow(
-              title: 'Правовая информация',
-              text: 'Условия использования, оплата, отмена, безопасность',
+              title: l10n.passengerSettingsVersionLabel,
+              text: _appVersion,
+            ),
+            _SettingsRow(
+              title: l10n.passengerSettingsLegalTitle,
+              text: l10n.passengerSettingsLegalText,
               onTap: () => setState(() => _tab = PassengerTab.legalHub),
             ),
           ],
@@ -4348,20 +4354,21 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<String> _notificationPermissionLabel() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final settings =
           await FirebaseMessaging.instance.getNotificationSettings();
       switch (settings.authorizationStatus) {
         case AuthorizationStatus.authorized:
         case AuthorizationStatus.provisional:
-          return 'Включены — нажмите, чтобы открыть настройки';
+          return l10n.passengerSettingsPushEnabled;
         case AuthorizationStatus.denied:
-          return 'Отключены в настройках телефона';
+          return l10n.passengerSettingsPushDisabled;
         case AuthorizationStatus.notDetermined:
-          return 'Не запрошены';
+          return l10n.passengerSettingsPushNotRequested;
       }
     } catch (_) {
-      return 'Появляются в приложении при изменении заказа';
+      return l10n.passengerSettingsPushCheckError;
     }
   }
 
@@ -9225,14 +9232,12 @@ class _ConfirmSheet extends StatelessWidget {
     required this.title,
     required this.text,
     required this.confirmLabel,
-    this.cancelLabel = 'Отмена',
     this.danger = false,
   });
 
   final String title;
   final String text;
   final String confirmLabel;
-  final String cancelLabel;
   final bool danger;
 
   @override
@@ -9314,7 +9319,7 @@ class _ConfirmSheet extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text(cancelLabel),
+                child: const Text('Отмена'),
               ),
             ),
           ],

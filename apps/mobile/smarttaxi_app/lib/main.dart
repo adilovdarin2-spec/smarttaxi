@@ -4233,15 +4233,14 @@ class _PhotoAuthPrimaryButton extends StatelessWidget {
 }
 
 class _PremiumCard extends StatelessWidget {
-  const _PremiumCard({required this.child, this.padding = 20});
+  const _PremiumCard({required this.child});
 
   final Widget child;
-  final double padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(padding),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: SmartTaxiColors.border),

@@ -182,6 +182,180 @@ abstract class AppLocalizations {
   /// **'Язык интерфейса изменён. Часть экранов пока переведена только частично.'**
   String get languageChangedNote;
 
+  /// No description provided for @passengerSettingsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Настройки'**
+  String get passengerSettingsTitle;
+
+  /// No description provided for @passengerSettingsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт, поездки и информация о приложении'**
+  String get passengerSettingsSubtitle;
+
+  /// No description provided for @passengerSettingsAccountGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт'**
+  String get passengerSettingsAccountGroup;
+
+  /// No description provided for @passengerSettingsPhoneLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер телефона'**
+  String get passengerSettingsPhoneLabel;
+
+  /// No description provided for @passengerSettingsPhoneMissing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не указан'**
+  String get passengerSettingsPhoneMissing;
+
+  /// No description provided for @passengerSettingsPhoneCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер скопирован'**
+  String get passengerSettingsPhoneCopied;
+
+  /// No description provided for @passengerSettingsRegionLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регион'**
+  String get passengerSettingsRegionLabel;
+
+  /// No description provided for @passengerSettingsRegionNotSelected.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не выбран'**
+  String get passengerSettingsRegionNotSelected;
+
+  /// No description provided for @passengerSettingsLogoutTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выход из аккаунта'**
+  String get passengerSettingsLogoutTitle;
+
+  /// No description provided for @passengerSettingsLogoutText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершить текущую сессию'**
+  String get passengerSettingsLogoutText;
+
+  /// No description provided for @passengerSettingsInterfaceGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Интерфейс'**
+  String get passengerSettingsInterfaceGroup;
+
+  /// No description provided for @passengerSettingsLanguageLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык'**
+  String get passengerSettingsLanguageLabel;
+
+  /// No description provided for @passengerSettingsThemeLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема'**
+  String get passengerSettingsThemeLabel;
+
+  /// No description provided for @passengerSettingsThemeDark.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тёмная'**
+  String get passengerSettingsThemeDark;
+
+  /// No description provided for @passengerSettingsThemeSystem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как в системе'**
+  String get passengerSettingsThemeSystem;
+
+  /// No description provided for @passengerSettingsThemeLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Светлая'**
+  String get passengerSettingsThemeLight;
+
+  /// No description provided for @passengerSettingsPermissionsGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешения'**
+  String get passengerSettingsPermissionsGroup;
+
+  /// No description provided for @passengerSettingsPushLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Push-уведомления'**
+  String get passengerSettingsPushLabel;
+
+  /// No description provided for @passengerSettingsPushEnabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включены — нажмите, чтобы открыть настройки'**
+  String get passengerSettingsPushEnabled;
+
+  /// No description provided for @passengerSettingsPushDisabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отключены в настройках телефона'**
+  String get passengerSettingsPushDisabled;
+
+  /// No description provided for @passengerSettingsPushNotRequested.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не запрошены'**
+  String get passengerSettingsPushNotRequested;
+
+  /// No description provided for @passengerSettingsPushCheckError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Появляются в приложении при изменении заказа'**
+  String get passengerSettingsPushCheckError;
+
+  /// No description provided for @passengerSettingsPushChecking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверяем статус...'**
+  String get passengerSettingsPushChecking;
+
+  /// No description provided for @passengerSettingsLocationLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация'**
+  String get passengerSettingsLocationLabel;
+
+  /// No description provided for @passengerSettingsLocationText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть настройки геолокации телефона'**
+  String get passengerSettingsLocationText;
+
+  /// No description provided for @passengerSettingsAboutGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'О приложении'**
+  String get passengerSettingsAboutGroup;
+
+  /// No description provided for @passengerSettingsVersionLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Версия приложения'**
+  String get passengerSettingsVersionLabel;
+
+  /// No description provided for @passengerSettingsLegalTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правовая информация'**
+  String get passengerSettingsLegalTitle;
+
+  /// No description provided for @passengerSettingsLegalText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Условия использования, оплата, отмена, безопасность'**
+  String get passengerSettingsLegalText;
+
   /// No description provided for @home.
   ///
   /// In ru, this message translates to:

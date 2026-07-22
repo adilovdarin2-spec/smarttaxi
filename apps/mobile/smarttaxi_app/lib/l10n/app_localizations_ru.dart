@@ -52,6 +52,98 @@ class AppLocalizationsRu extends AppLocalizations {
       'Язык интерфейса изменён. Часть экранов пока переведена только частично.';
 
   @override
+  String get passengerSettingsTitle => 'Настройки';
+
+  @override
+  String get passengerSettingsSubtitle =>
+      'Аккаунт, поездки и информация о приложении';
+
+  @override
+  String get passengerSettingsAccountGroup => 'Аккаунт';
+
+  @override
+  String get passengerSettingsPhoneLabel => 'Номер телефона';
+
+  @override
+  String get passengerSettingsPhoneMissing => 'Не указан';
+
+  @override
+  String get passengerSettingsPhoneCopied => 'Номер скопирован';
+
+  @override
+  String get passengerSettingsRegionLabel => 'Регион';
+
+  @override
+  String get passengerSettingsRegionNotSelected => 'Не выбран';
+
+  @override
+  String get passengerSettingsLogoutTitle => 'Выход из аккаунта';
+
+  @override
+  String get passengerSettingsLogoutText => 'Завершить текущую сессию';
+
+  @override
+  String get passengerSettingsInterfaceGroup => 'Интерфейс';
+
+  @override
+  String get passengerSettingsLanguageLabel => 'Язык';
+
+  @override
+  String get passengerSettingsThemeLabel => 'Тема';
+
+  @override
+  String get passengerSettingsThemeDark => 'Тёмная';
+
+  @override
+  String get passengerSettingsThemeSystem => 'Как в системе';
+
+  @override
+  String get passengerSettingsThemeLight => 'Светлая';
+
+  @override
+  String get passengerSettingsPermissionsGroup => 'Разрешения';
+
+  @override
+  String get passengerSettingsPushLabel => 'Push-уведомления';
+
+  @override
+  String get passengerSettingsPushEnabled =>
+      'Включены — нажмите, чтобы открыть настройки';
+
+  @override
+  String get passengerSettingsPushDisabled => 'Отключены в настройках телефона';
+
+  @override
+  String get passengerSettingsPushNotRequested => 'Не запрошены';
+
+  @override
+  String get passengerSettingsPushCheckError =>
+      'Появляются в приложении при изменении заказа';
+
+  @override
+  String get passengerSettingsPushChecking => 'Проверяем статус...';
+
+  @override
+  String get passengerSettingsLocationLabel => 'Геолокация';
+
+  @override
+  String get passengerSettingsLocationText =>
+      'Открыть настройки геолокации телефона';
+
+  @override
+  String get passengerSettingsAboutGroup => 'О приложении';
+
+  @override
+  String get passengerSettingsVersionLabel => 'Версия приложения';
+
+  @override
+  String get passengerSettingsLegalTitle => 'Правовая информация';
+
+  @override
+  String get passengerSettingsLegalText =>
+      'Условия использования, оплата, отмена, безопасность';
+
+  @override
   String get home => 'Главная';
 
   @override
