@@ -1,5 +1,6 @@
 import { redis } from "../db/redis.js";
 import { AppError } from "./errors.js";
+import { env } from "../config/env.js";
 
 const memoryBuckets = new Map();
 
@@ -16,6 +17,8 @@ function memoryHit(key, windowMs) {
 
 export function rateLimit({ prefix = "api", windowMs = 60_000, max = 120 } = {}) {
   return async (req, res, next) => {
+    if (!env.RATE_LIMIT_ENABLED) return next();
+
     const identity = req.ip || req.socket?.remoteAddress || "unknown";
     const key = `rl:${prefix}:${identity}`;
 
@@ -43,8 +46,14 @@ export function rateLimit({ prefix = "api", windowMs = 60_000, max = 120 } = {})
       next();
     } catch (error) {
       const bucket = memoryHit(key, windowMs);
+      const ttlMs = bucket.resetAt - Date.now();
+      res.setHeader("RateLimit-Limit", String(max));
+      res.setHeader("RateLimit-Remaining", String(Math.max(0, max - bucket.count)));
+      res.setHeader("RateLimit-Reset", String(Math.ceil(Math.max(0, ttlMs) / 1000)));
+
       if (bucket.count > max) return next(new AppError("Too many requests", 429, "RATE_LIMITED"));
-      next(error);
+      console.warn(`[RATE_LIMIT] Redis fallback for ${key}: ${error.message}`);
+      next();
     }
   };
 }

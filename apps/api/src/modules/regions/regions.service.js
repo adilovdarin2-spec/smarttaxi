@@ -67,6 +67,7 @@ export function publicRegion(region) {
     centerLat: Number(region.center_lat),
     centerLng: Number(region.center_lng),
     currency: region.currency,
+    supportPhone: region.support_phone,
     boundary: region.boundary,
     createdAt: region.created_at,
     updatedAt: region.updated_at

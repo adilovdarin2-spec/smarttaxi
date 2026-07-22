@@ -45,8 +45,11 @@ assert(server.includes('app.use("/api/driver/road-alerts", roadAlertsRoutes)'), 
   "ROAD_CLOSED",
   "OTHER",
   "unsafeCommentPattern",
-  "pointInPolygon"
+  "pointInPolygon",
+  "dispatchRegionRoom(region.id)"
 ].forEach(token => assert(routes.includes(token), `road alert route missing ${token}`));
+
+assert(!routes.includes("dispatch:region:"), "road alert realtime room must match dispatchRegionRoom");
 
 const unsafeSearchNeedles = [
   String.fromCharCode(0x043c, 0x0435, 0x043d, 0x0442, 0x044b),

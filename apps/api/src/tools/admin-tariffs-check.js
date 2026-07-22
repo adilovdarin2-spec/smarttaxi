@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,8 +9,11 @@ const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const adminRoutes = readFileSync(join(root, "modules", "admin", "admin.routes.js"), "utf8");
 const tariffsService = readFileSync(join(root, "modules", "tariffs", "tariffs.service.js"), "utf8");
 const pricingService = readFileSync(join(root, "modules", "orders", "order-pricing.service.js"), "utf8");
-const adminApp = readFileSync(join(root, "..", "..", "web", "src", "features", "admin", "AdminApp.jsx"), "utf8");
-const adminApi = readFileSync(join(root, "..", "..", "web", "src", "lib", "mvpApi.js"), "utf8");
+const adminAppPath = join(root, "..", "..", "web", "src", "features", "admin", "AdminApp.jsx");
+const adminApiPath = join(root, "..", "..", "web", "src", "lib", "mvpApi.js");
+const hasWebSource = existsSync(adminAppPath) && existsSync(adminApiPath);
+const adminApp = hasWebSource ? readFileSync(adminAppPath, "utf8") : "";
+const adminApi = hasWebSource ? readFileSync(adminApiPath, "utf8") : "";
 
 assert.match(schema, /UNIQUE\(region_id, name\)/i, "tariffs must keep region-scoped identity");
 assert.doesNotMatch(schema, /name TEXT UNIQUE NOT NULL/i, "tariff name must not be globally unique");
@@ -69,6 +72,7 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
   "waitingPricePerMinute"
 ].forEach(token => assert(pricingService.includes(token), `pricing service missing ${token}`));
 
+if (hasWebSource) {
 [
   "getAdminTariffs",
   "createAdminTariff",
@@ -104,5 +108,8 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
   "╤",
   "тЖТ"
 ].forEach(token => assert(!adminApp.includes(token), `Admin tariff UI contains forbidden token ${token}`));
+} else {
+  console.warn("Admin tariff web-source checks skipped: apps/web is not present in this runtime image");
+}
 
 console.log("Admin tariff management checks ok");

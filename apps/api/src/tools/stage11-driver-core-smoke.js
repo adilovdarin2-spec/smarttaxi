@@ -164,6 +164,12 @@ async function main() {
   }
   mark("offline_blocked_with_active", { error: offlineWithActive.error || offlineWithActive.code });
 
+  const onlineWithActive = await request("/api/driver/status/online", { method: "POST", token: driverToken });
+  if (onlineWithActive.driver.publicStatus !== "BUSY") {
+    throw new Error(`Online with active order must keep BUSY, got ${onlineWithActive.driver.publicStatus}`);
+  }
+  mark("online_with_active_keeps_busy", { publicStatus: onlineWithActive.driver.publicStatus });
+
   const active = await request("/api/driver/orders/active", { token: driverToken });
   if (active.activeOrder?.id !== orderId) throw new Error("Active driver order mismatch");
   mark("active_order", { publicStatus: active.activeOrder.public_status });
@@ -180,6 +186,17 @@ async function main() {
       throw new Error(`${step} expected ${expected}, got ${updated.order.public_status}`);
     }
     mark(step, { publicStatus: updated.order.public_status });
+    if (action === "start") {
+      const cancelStarted = await request(`/api/driver/orders/${orderId}/cancel`, {
+        method: "POST",
+        token: driverToken,
+        expectStatus: 409
+      });
+      if ((cancelStarted.error || cancelStarted.code) !== "INVALID_STATUS_TRANSITION") {
+        throw new Error("Driver must not cancel an already started trip");
+      }
+      mark("cancel_after_start_rejected", { error: cancelStarted.error || cancelStarted.code });
+    }
   }
 
   const operator = await login("+77000000098", "123456");

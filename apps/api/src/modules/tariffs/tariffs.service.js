@@ -11,16 +11,25 @@ function run(executor, sql, params = []) {
 
 export function publicTariff(tariff) {
   if (!tariff) return null;
+  const basePrice = Number(tariff.base_price);
+  const pricePerKm = Number(tariff.price_per_km);
+  const pricePerMinute = Number(tariff.price_per_minute);
+  const minimumPrice = Number(tariff.min_price);
+  const fixedPriceKzt = pricePerKm === 0 && pricePerMinute === 0
+    ? Math.max(basePrice, minimumPrice)
+    : null;
   return {
     id: tariff.id,
     regionId: tariff.region_id,
     name: tariff.name,
     displayName: tariff.display_name || tariff.name,
     description: tariff.description || "",
-    basePrice: Number(tariff.base_price),
-    pricePerKm: Number(tariff.price_per_km),
-    pricePerMinute: Number(tariff.price_per_minute),
-    minimumPrice: Number(tariff.min_price),
+    basePrice,
+    pricePerKm,
+    pricePerMinute,
+    minimumPrice,
+    fixedPriceKzt,
+    pricingType: fixedPriceKzt ? "fixed" : "formula",
     serviceCommissionPercent: Number(tariff.service_commission_percent),
     cashbackPercent: Number(tariff.cashback_percent),
     surgeMultiplier: Number(tariff.surge_multiplier ?? 1),

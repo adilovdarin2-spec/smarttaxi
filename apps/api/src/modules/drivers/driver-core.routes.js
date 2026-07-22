@@ -12,7 +12,8 @@ import {
   ACTIVE_ORDER_STATUSES,
   OPEN_ORDER_STATUSES,
   listOrdersForDriver,
-  publicOrderStatus
+  publicOrderStatus,
+  syncDriverAvailability
 } from "../orders/order-dispatch.service.js";
 
 const router = Router();
@@ -93,7 +94,7 @@ async function activeOrderForDriver(driver, executor = query) {
 
 router.get("/profile", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
-    const driver = await getDriverForUser(req.user.id);
+    const driver = await syncDriverAvailability(await getDriverForUser(req.user.id), query);
     const activeOrder = await activeOrderForDriver(driver);
     res.json({ driver: publicDriver(driver), activeOrder: publicOrder(activeOrder) });
   } catch (e) { next(e); }
@@ -104,13 +105,15 @@ router.post("/status/online", requireAuth, requireRole("DRIVER"), async (req, re
     const driver = await getDriverForUser(req.user.id);
     if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
     await assertDriverCanGoOnline(driver, query);
-    const updated = (await query("UPDATE drivers SET status='FREE', last_seen_at=NOW() WHERE id=$1 RETURNING *", [driver.id])).rows[0];
+    const activeOrder = await activeOrderForDriver(driver);
+    const nextStatus = activeOrder ? "BUSY" : "FREE";
+    const updated = (await query("UPDATE drivers SET status=$2, last_seen_at=NOW() WHERE id=$1 RETURNING *", [driver.id, nextStatus])).rows[0];
     await writeAudit(query, {
       action: "driver_online",
       actorUserId: req.user.id,
       entityType: "driver",
       entityId: driver.id,
-      metadata: { from: driver.status, to: "FREE" },
+      metadata: { from: driver.status, to: nextStatus, activeOrderId: activeOrder?.id || null },
       req
     });
     req.io?.to(`region:${updated.current_region_id}:dispatch`).emit("driver.online", publicDriver(updated));
@@ -139,7 +142,7 @@ router.post("/status/offline", requireAuth, requireRole("DRIVER"), async (req, r
 
 router.get("/orders/incoming", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
-    const driver = await getDriverForUser(req.user.id);
+    const driver = await syncDriverAvailability(await getDriverForUser(req.user.id), query);
     await assertDriverDispatchReady(driver, query);
     if (driver.status !== "FREE") return res.json({ driver: publicDriver(driver), orders: [] });
     const orders = await listOrdersForDriver({

@@ -27,7 +27,21 @@ const atakentBoundary = [
   [68.43, 40.78]
 ];
 
-const launchRegionCodes = ["ATAKENT", "MYRZAKENT", "ZHETYSAY", "SHYMKENT"];
+const launchRegionCodes = [
+  "ATAKENT",
+  "MYRZAKENT",
+  "ZHETYSAY",
+  "SHYMKENT",
+  "KIROV",
+  "ASYKATA",
+  "DOSTYK",
+  "YNTYMAK",
+  "BIRLIK",
+  "FIRDOUSI",
+  "ZHANA_ZHOL",
+  "MAKTAARAL",
+  "ATAMEKEN"
+];
 
 assert.match(schema, /CREATE TABLE IF NOT EXISTS regions/i, "schema must create regions table");
 assert.match(schema, /code TEXT UNIQUE NOT NULL/i, "regions must have unique code");

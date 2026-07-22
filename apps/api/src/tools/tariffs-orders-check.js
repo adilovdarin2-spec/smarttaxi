@@ -91,6 +91,17 @@ assert.equal(calculateOrderPrice({ ...formulaTariff, min_price: 1000 }, 1, 1), 1
 assert.equal(calculateOrderPrice({ ...formulaTariff, surge_multiplier: 1.5 }, 3, 10), 1350, "surge multiplier must apply");
 assert.equal(calculateOrderPrice({ ...formulaTariff, included_km: 1, included_minutes: 5 }, 3, 10), 700, "included distance/minutes must reduce billable metrics");
 assert.equal(calculateOrderPrice({ ...formulaTariff, zone_surcharge: 100, night_coefficient: 1.2, demand_coefficient: 1.1 }, 3, 10), 1320, "zone/night/demand coefficients must apply");
+const fixedLaunchTariff = {
+  ...formulaTariff,
+  id: "tariff-fixed",
+  name: "Economy",
+  base_price: 700,
+  price_per_km: 0,
+  price_per_minute: 0,
+  min_price: 700
+};
+assert.equal(calculateOrderPrice(fixedLaunchTariff, 1, 3), 700, "fixed launch tariff must return its configured price for a short route");
+assert.equal(calculateOrderPrice(fixedLaunchTariff, 20, 45), 700, "fixed launch tariff must not change with distance or duration");
 const previewComponents = calculatePricingComponents({
   ...formulaTariff,
   free_waiting_minutes: 2,
