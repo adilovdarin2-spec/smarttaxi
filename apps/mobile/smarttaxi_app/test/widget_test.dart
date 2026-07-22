@@ -44,18 +44,15 @@ void main() {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
 
-    expect(logo, contains('assets/brand/smarttaxi_app_icon.svg'));
+    expect(logo, contains('assets/brand/smarttaxi_app_icon_2026.png'));
     expect(
       logo,
-      contains('assets/brand/smarttaxi_logo_horizontal.svg'),
+      contains('assets/brand/smarttaxi_wordmark_2026.png'),
     );
-    expect(logo, contains('placeholderBuilder'));
-    expect(logo, contains('_LogoFallbackMark'));
-    expect(logo, contains('_HorizontalLogoFallback'));
-    expect(pubspec, contains('assets/brand/smarttaxi_app_icon_websafe.png'));
+    expect(pubspec, contains('assets/brand/smarttaxi_app_icon_2026.png'));
     expect(
       pubspec,
-      contains('assets/brand/smarttaxi_logo_horizontal_transparent.png'),
+      contains('assets/brand/smarttaxi_wordmark_2026.png'),
     );
     expect(
       pubspec,
@@ -169,7 +166,7 @@ void main() {
       expect(passenger, contains('FlutterMap'));
       expect(passenger, contains('_OrderSheet'));
       expect(passenger, contains('_MapOverlayHeader'));
-      expect(passenger, contains('_MapRoundButton'));
+      expect(passenger, contains('_MapChromeButton'));
       expect(passenger, contains('_SheetAddressEntryCard'));
       expect(passenger, isNot(contains('_FloatingAddressCard')));
       expect(passenger, contains('_MapPermissionCard'));
@@ -197,8 +194,13 @@ void main() {
       );
       expect(passenger, isNot(contains('_FloatingAddressCard')));
       expect(passenger, isNot(contains('_QuickAddressGrid')));
-      expect(passenger, contains('_popularAddressesForRegion'));
-      expect(passenger, contains('_HomeRecentAddresses'));
+      // _popularAddressesForRegion hand-typed fabricated place names/coords
+      // as fallback suggestions; deliberately deleted (commit 387007f,
+      // "Mobile: remove fabricated fallback addresses from picker") so
+      // suggestions only ever come from real recent addresses or live
+      // search. Guard against it quietly coming back.
+      expect(passenger, isNot(contains('_popularAddressesForRegion')));
+      expect(passenger, contains('_RecentAddressSection'));
       expect(passenger, contains('_RouteSummaryCard'));
       expect(passenger, isNot(contains('_OrderRouteCompact')));
       expect(passenger, isNot(contains('_OrderRouteButton')));
@@ -215,7 +217,7 @@ void main() {
       expect(passenger, contains('Доставка'));
       expect(
         passenger,
-        contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+        contains('assets/cars/tariff_v11_economy.png'),
       );
       expect(
         passenger,
@@ -270,8 +272,8 @@ void main() {
     expect(passenger, contains('showMapFallback'));
     expect(passenger, contains('mapUnavailable'));
     expect(passenger, contains('errorTileCallback'));
-    expect(
-        passenger, contains('backgroundColor: SmartTaxiColors.appBackground'));
+    expect(passenger,
+        contains('backgroundColor: context.palette.appBackground'));
     expect(passenger, isNot(contains('IndexedStack(')));
   });
 
@@ -325,17 +327,19 @@ void main() {
     expect(passenger, contains('CameraFit.coordinates'));
     expect(passenger, contains('if (route.isNotEmpty)'));
     expect(passenger, contains('PolylineLayer'));
-    expect(
-        passenger, contains('assets/map/user_location_marker_blue_gold.png'));
-    expect(passenger, contains('assets/map/destination_pin_gold_white.png'));
+    expect(passenger, contains('assets/map/marker_my_location_2026.png'));
+    expect(passenger, contains('assets/map/marker_destination_2026.png'));
     expect(passenger, contains('assets/map/driver_car_topview_white.png'));
-    expect(passenger, contains('assets/map/navigation_button_gold_white.png'));
+    // navigation_button_gold_white.png (an image-based recenter/nav button)
+    // isn't referenced anywhere under lib/ anymore -- the map chrome moved to
+    // icon-only controls (Icons.my_location_rounded / _MapChromeButton,
+    // already covered elsewhere in this file).
     expect(passenger, contains('_driverPickupRoute'));
     expect(passenger, contains('_driverRouteError'));
     expect(passenger, contains('Маршрут водителя временно недоступен.'));
     expect(
       passenger,
-      contains('До точки посадки: \$distance км · \$minutes мин'),
+      contains('\$label: \$distance км · \$minutes мин'),
     );
     expect(
       passenger,
@@ -378,8 +382,12 @@ void main() {
     expect(passenger, contains("label: 'Настройки'"));
     expect(passenger, contains("label: 'Выйти'"));
     expect(passenger, contains('drawerWidth'));
-    expect(passenger, contains('_DrawerDivider'));
-    expect(passenger, contains('Icons.map_rounded'));
+    // _DrawerDivider (a plain line separator) was replaced by labeled
+    // _DrawerSectionLabel headers (Аккаунт/Помощь/О сервисе) grouping the
+    // drawer entries.
+    expect(passenger, contains('_DrawerSectionLabel'));
+    // Главная's icon changed from a map pin to a house icon.
+    expect(passenger, contains('Icons.home_rounded'));
     expect(passenger, contains('Icons.support_agent_rounded'));
     expect(passenger, contains('Icons.tune_rounded'));
     expect(passenger, contains('Региональное такси'));
@@ -398,17 +406,31 @@ void main() {
     expect(passenger, contains('Водитель не приехал'));
     expect(passenger, contains('Сообщение'));
     expect(passenger, contains('Напишите сообщение'));
+    // The support form used to just copy the text to the clipboard for the
+    // user to paste elsewhere ("Текст скопирован..."); it now actually
+    // submits via widget.api.submitSupportMessage and shows a real
+    // confirmation.
     expect(
       passenger,
-      contains('Текст скопирован. Отправьте его в поддержку удобным способом.'),
+      contains(
+          'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.'),
     );
     expect(passenger, contains('_settingsScreen'));
     expect(passenger, contains('Аккаунт'));
-    expect(passenger, contains('Интерфейс'));
+    // Settings screen group/row labels were localized (passengerSettings*
+    // arb keys) instead of hardcoded Russian literals, so the copy itself
+    // now lives in app_ru.arb rather than passenger_shell.dart's source.
+    final ruArb = _read('lib/l10n/app_ru.arb');
+    expect(passenger, contains('l10n.passengerSettingsInterfaceGroup'));
+    expect(ruArb, contains('"passengerSettingsInterfaceGroup": "Интерфейс"'));
     expect(passenger, contains('Поездки'));
-    expect(passenger, contains('Уведомления о статусе'));
+    // The old standalone "Уведомления о статусе" toggle was replaced by a
+    // real OS-permission-backed row (FirebaseMessaging.getNotificationSettings).
+    expect(passenger, contains('l10n.passengerSettingsPushLabel'));
+    expect(ruArb, contains('"passengerSettingsPushLabel": "Push-уведомления"'));
     expect(passenger, contains('Геолокация'));
-    expect(passenger, contains('О приложении'));
+    expect(passenger, contains('l10n.passengerSettingsAboutGroup'));
+    expect(ruArb, contains('"passengerSettingsAboutGroup": "О приложении"'));
     expect(passenger, isNot(contains('Скоро')));
     expect(passenger, isNot(contains('будут добавлены')));
     expect(passenger, contains('_faqScreen'));
@@ -420,8 +442,10 @@ void main() {
     expect(passenger, contains('SmartTaxi'));
     expect(passenger, contains('региональный сервис такси'));
     expect(passenger, contains('_ProfileGroupLabel'));
-    expect(passenger, contains("const _ProfileGroupLabel('Основное')"));
-    expect(passenger, contains("const _ProfileGroupLabel('Приложение')"));
+    // Profile screen groups were consolidated from 3 (Основное/Приложение/
+    // Аккаунт) down to 2 in the later redesign -- "Приложение" no longer
+    // exists as its own group.
+    expect(passenger, contains("const _ProfileGroupLabel('Быстрые действия')"));
     expect(passenger, contains("const _ProfileGroupLabel('Аккаунт')"));
     expect(passenger, contains("action: 'На главную'"));
   });

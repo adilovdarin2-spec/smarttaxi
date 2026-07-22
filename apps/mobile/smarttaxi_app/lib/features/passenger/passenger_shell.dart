@@ -9771,15 +9771,15 @@ class _AddDriverPreferenceSheetState
               Wrap(
                 spacing: 8,
                 children: [
-                  ChoiceChip(
-                    label: const Text('В избранное'),
+                  _SupportTopicChip(
+                    label: 'В избранное',
                     selected: _type == 'FAVORITE',
-                    onSelected: (_) => setState(() => _type = 'FAVORITE'),
+                    onTap: () => setState(() => _type = 'FAVORITE'),
                   ),
-                  ChoiceChip(
-                    label: const Text('Заблокировать'),
+                  _SupportTopicChip(
+                    label: 'Заблокировать',
                     selected: _type == 'BLOCKED',
-                    onSelected: (_) => setState(() => _type = 'BLOCKED'),
+                    onTap: () => setState(() => _type = 'BLOCKED'),
                   ),
                 ],
               ),
@@ -9884,26 +9884,26 @@ class _CreateFavoriteAddressSheetState
             Wrap(
               spacing: 8,
               children: [
-                ChoiceChip(
-                  label: const Text('Дом'),
+                _SupportTopicChip(
+                  label: 'Дом',
                   selected: _label == 'HOME',
-                  onSelected: (_) => setState(() {
+                  onTap: () => setState(() {
                     _label = 'HOME';
                     _titleController.text = _defaultTitleFor('HOME');
                   }),
                 ),
-                ChoiceChip(
-                  label: const Text('Работа'),
+                _SupportTopicChip(
+                  label: 'Работа',
                   selected: _label == 'WORK',
-                  onSelected: (_) => setState(() {
+                  onTap: () => setState(() {
                     _label = 'WORK';
                     _titleController.text = _defaultTitleFor('WORK');
                   }),
                 ),
-                ChoiceChip(
-                  label: const Text('Другое'),
+                _SupportTopicChip(
+                  label: 'Другое',
                   selected: _label == 'OTHER',
-                  onSelected: (_) => setState(() {
+                  onTap: () => setState(() {
                     _label = 'OTHER';
                     _titleController.text = _defaultTitleFor('OTHER');
                   }),
@@ -10329,14 +10329,14 @@ class _CreateRecurringBookingSheetState
                   spacing: 8,
                   children: _dayLabels.entries.map((entry) {
                     final selected = _days.contains(entry.key);
-                    return ChoiceChip(
-                      label: Text(entry.value),
+                    return _SupportTopicChip(
+                      label: entry.value,
                       selected: selected,
-                      onSelected: (value) => setState(() {
-                        if (value) {
-                          _days.add(entry.key);
-                        } else {
+                      onTap: () => setState(() {
+                        if (selected) {
                           _days.remove(entry.key);
+                        } else {
+                          _days.add(entry.key);
                         }
                       }),
                     );
