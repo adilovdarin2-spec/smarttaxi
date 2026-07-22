@@ -11,27 +11,12 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final colors = switch (tone) {
-      StatusTone.success => (
-          SmartTaxiColors.success,
-          const Color(0xfff0fdf4),
-          const Color(0xffbbf7d0)
-        ),
-      StatusTone.warning => (
-          SmartTaxiColors.warning,
-          SmartTaxiColors.goldSoft,
-          SmartTaxiColors.borderStrong
-        ),
-      StatusTone.danger => (
-          SmartTaxiColors.danger,
-          const Color(0xfffff1f1),
-          const Color(0xfffecaca)
-        ),
-      StatusTone.neutral => (
-          SmartTaxiColors.textSecondary,
-          Colors.white,
-          SmartTaxiColors.border
-        ),
+      StatusTone.success => (palette.success, palette.successSoft, palette.success.withValues(alpha: 0.35)),
+      StatusTone.warning => (palette.warning, palette.goldPale, palette.borderStrong),
+      StatusTone.danger => (palette.danger, palette.dangerSoft, palette.danger.withValues(alpha: 0.35)),
+      StatusTone.neutral => (palette.textSecondary, palette.card, palette.border),
     };
 
     return ConstrainedBox(

@@ -16,8 +16,8 @@ class RouteFields extends StatelessWidget {
 
   final String pickupLabel;
   final String dropoffLabel;
-  final VoidCallback onPickupTap;
-  final VoidCallback onDropoffTap;
+  final VoidCallback? onPickupTap;
+  final VoidCallback? onDropoffTap;
   final bool pickupActive;
   final bool dropoffActive;
   final bool dark;
@@ -49,7 +49,7 @@ class RouteFields extends StatelessWidget {
               children: [
                 const SizedBox(height: 18),
                 _RouteMarker(
-                    label: 'A',
+                    icon: Icons.radio_button_checked_rounded,
                     background:
                         dark ? SmartTaxiColors.gold : SmartTaxiColors.text,
                     foreground: Colors.white),
@@ -60,7 +60,7 @@ class RouteFields extends StatelessWidget {
                       color: lineColor),
                 ),
                 const _RouteMarker(
-                    label: 'B',
+                    icon: Icons.location_on_rounded,
                     background: SmartTaxiColors.gold,
                     foreground: SmartTaxiColors.text),
                 const SizedBox(height: 18),
@@ -95,11 +95,9 @@ class RouteFields extends StatelessWidget {
 
 class _RouteMarker extends StatelessWidget {
   const _RouteMarker(
-      {required this.label,
-      required this.background,
-      required this.foreground});
+      {required this.icon, required this.background, required this.foreground});
 
-  final String label;
+  final IconData icon;
   final Color background;
   final Color foreground;
 
@@ -120,9 +118,7 @@ class _RouteMarker extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(label,
-          style: TextStyle(
-              color: foreground, fontSize: 11, fontWeight: FontWeight.w900)),
+      child: Icon(icon, color: foreground, size: 13),
     );
   }
 }
@@ -138,7 +134,7 @@ class _RouteButton extends StatelessWidget {
   final String label;
   final String value;
   final bool active;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool dark;
 
   @override
@@ -157,46 +153,48 @@ class _RouteButton extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.60)
         : SmartTaxiColors.textSecondary;
     final valueColor = dark ? Colors.white : SmartTaxiColors.text;
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: background,
+        border: Border.all(color: border, width: active ? 1.8 : 1),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: active
+            ? const [
+                BoxShadow(
+                    color: Color(0x2ed4af37),
+                    blurRadius: 18,
+                    offset: Offset(0, 8))
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: labelColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 5),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: valueColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+    if (onTap == null) return content;
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 60),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: background,
-          border: Border.all(color: border, width: active ? 1.8 : 1),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: active
-              ? const [
-                  BoxShadow(
-                      color: Color(0x2ed4af37),
-                      blurRadius: 18,
-                      offset: Offset(0, 8))
-                ]
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: labelColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700)),
-            const SizedBox(height: 5),
-            Text(value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: valueColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900)),
-          ],
-        ),
-      ),
+      child: content,
     );
   }
 }
