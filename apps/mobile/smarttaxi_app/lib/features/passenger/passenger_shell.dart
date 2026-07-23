@@ -1023,11 +1023,12 @@ class _PassengerShellState extends State<PassengerShell>
       // the app is open but the rider has wandered to another tab, where a
       // background-only push wouldn't be visible at all.
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         AppToast.showSuccess(
           context,
           (order.driverName ?? '').isEmpty
-              ? 'Водитель найден!'
-              : 'Водитель найден: ${order.driverName} едет к вам',
+              ? l10n.passengerDriverFoundExclamation
+              : l10n.passengerDriverFoundNamedText(order.driverName!),
         );
         // The backend just wrote the matching notification row for this same
         // event — bump the bell badge locally instead of waiting for the
@@ -1046,7 +1047,8 @@ class _PassengerShellState extends State<PassengerShell>
       if (mounted) {
         AppToast.showInfo(
           context,
-          'Водитель отменил поездку — ищем для вас другого',
+          AppLocalizations.of(context)
+              .passengerDriverCancelledSearchingAnotherToast,
         );
         setState(() => _unreadNotificationCount++);
       }
@@ -1111,13 +1113,14 @@ class _PassengerShellState extends State<PassengerShell>
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _payment = const PaymentInfo(
+      setState(() => _payment = PaymentInfo(
             id: '',
             orderId: '',
             method: 'CARD',
             provider: 'KASPI_PAY',
             status: 'FAILED',
-            failureReason: 'Не удалось начать оплату. Проверьте соединение.',
+            failureReason:
+                AppLocalizations.of(context).passengerPaymentInitiateFailedError,
           ));
     }
   }
@@ -1718,8 +1721,9 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _createOrder() async {
+    final l10n = AppLocalizations.of(context);
     if (widget.accountPhone.trim().isEmpty) {
-      setState(() => _error = 'Для заказа войдите по номеру телефона.');
+      setState(() => _error = l10n.passengerLoginRequiredForOrderError);
       return;
     }
     if (_pickup == null) {
@@ -1731,7 +1735,7 @@ class _PassengerShellState extends State<PassengerShell>
       return;
     }
     if (_tariffId == null) {
-      setState(() => _error = 'Выберите тариф');
+      setState(() => _error = l10n.passengerTariffSectionTitle);
       return;
     }
     setState(() {
@@ -1846,10 +1850,12 @@ class _PassengerShellState extends State<PassengerShell>
       if (accept) {
         AppToast.showSuccess(
           context,
-          'Вы согласились на новую цену: ${_formatTenge(updated.driverOfferPriceKzt?.toDouble() ?? updated.price ?? 0)}',
+          AppLocalizations.of(context).passengerAcceptedNewPriceToast(
+              _formatTenge(updated.driverOfferPriceKzt?.toDouble() ?? updated.price ?? 0)),
         );
       } else {
-        AppToast.showInfo(context, 'Вы отклонили предложенную цену');
+        AppToast.showInfo(
+            context, AppLocalizations.of(context).passengerDeclinedOfferedPriceToast);
       }
     } catch (error) {
       if (!mounted) return;
@@ -1872,7 +1878,8 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() => _order = updated);
       AppToast.showSuccess(
         context,
-        'Ваше предложение отправлено водителю: ${_formatTenge(priceKzt.toDouble())}',
+        AppLocalizations.of(context)
+            .passengerCounterOfferSentToast(_formatTenge(priceKzt.toDouble())),
       );
     } catch (error) {
       if (!mounted) return;

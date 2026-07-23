@@ -1703,6 +1703,40 @@ class AppLocalizationsKk extends AppLocalizations {
       'Белсенді аймақтар әлі жүктелген жоқ';
 
   @override
+  String get passengerDriverFoundExclamation => 'Жүргізуші табылды!';
+
+  @override
+  String passengerDriverFoundNamedText(String name) {
+    return 'Жүргізуші табылды: $name сізге қарай келеді';
+  }
+
+  @override
+  String get passengerDriverCancelledSearchingAnotherToast =>
+      'Жүргізуші сапарды болдырмады — сізге басқасын іздеудеміз';
+
+  @override
+  String get passengerPaymentInitiateFailedError =>
+      'Төлемді бастау мүмкін болмады. Байланысты тексеріңіз.';
+
+  @override
+  String get passengerLoginRequiredForOrderError =>
+      'Тапсырыс беру үшін телефон нөміріңізбен кіріңіз.';
+
+  @override
+  String passengerAcceptedNewPriceToast(String amount) {
+    return 'Сіз жаңа бағамен келістіңіз: $amount';
+  }
+
+  @override
+  String get passengerDeclinedOfferedPriceToast =>
+      'Сіз ұсынылған бағадан бас тарттыңыз';
+
+  @override
+  String passengerCounterOfferSentToast(String amount) {
+    return 'Сіздің ұсынысыңыз жүргізушіге жіберілді: $amount';
+  }
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
 

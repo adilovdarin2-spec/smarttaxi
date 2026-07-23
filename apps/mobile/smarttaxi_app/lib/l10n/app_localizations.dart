@@ -3117,6 +3117,54 @@ abstract class AppLocalizations {
   /// **'Активные регионы пока не загружены'**
   String get passengerActiveRegionsNotLoadedError;
 
+  /// No description provided for @passengerDriverFoundExclamation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель найден!'**
+  String get passengerDriverFoundExclamation;
+
+  /// No description provided for @passengerDriverFoundNamedText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель найден: {name} едет к вам'**
+  String passengerDriverFoundNamedText(String name);
+
+  /// No description provided for @passengerDriverCancelledSearchingAnotherToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель отменил поездку — ищем для вас другого'**
+  String get passengerDriverCancelledSearchingAnotherToast;
+
+  /// No description provided for @passengerPaymentInitiateFailedError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось начать оплату. Проверьте соединение.'**
+  String get passengerPaymentInitiateFailedError;
+
+  /// No description provided for @passengerLoginRequiredForOrderError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для заказа войдите по номеру телефона.'**
+  String get passengerLoginRequiredForOrderError;
+
+  /// No description provided for @passengerAcceptedNewPriceToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы согласились на новую цену: {amount}'**
+  String passengerAcceptedNewPriceToast(String amount);
+
+  /// No description provided for @passengerDeclinedOfferedPriceToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы отклонили предложенную цену'**
+  String get passengerDeclinedOfferedPriceToast;
+
+  /// No description provided for @passengerCounterOfferSentToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше предложение отправлено водителю: {amount}'**
+  String passengerCounterOfferSentToast(String amount);
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:

@@ -1690,6 +1690,40 @@ class AppLocalizationsRu extends AppLocalizations {
       'Активные регионы пока не загружены';
 
   @override
+  String get passengerDriverFoundExclamation => 'Водитель найден!';
+
+  @override
+  String passengerDriverFoundNamedText(String name) {
+    return 'Водитель найден: $name едет к вам';
+  }
+
+  @override
+  String get passengerDriverCancelledSearchingAnotherToast =>
+      'Водитель отменил поездку — ищем для вас другого';
+
+  @override
+  String get passengerPaymentInitiateFailedError =>
+      'Не удалось начать оплату. Проверьте соединение.';
+
+  @override
+  String get passengerLoginRequiredForOrderError =>
+      'Для заказа войдите по номеру телефона.';
+
+  @override
+  String passengerAcceptedNewPriceToast(String amount) {
+    return 'Вы согласились на новую цену: $amount';
+  }
+
+  @override
+  String get passengerDeclinedOfferedPriceToast =>
+      'Вы отклонили предложенную цену';
+
+  @override
+  String passengerCounterOfferSentToast(String amount) {
+    return 'Ваше предложение отправлено водителю: $amount';
+  }
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 

@@ -362,7 +362,7 @@ void main() {
     expect(api, contains("'riderPhone': riderPhone"));
     expect(api, contains("data: {'riderPhone': riderPhone}"));
     expect(passenger, contains('accountPhone'));
-    expect(passenger, contains('Для заказа войдите по номеру телефона.'));
+    expect(passenger, contains('l10n.passengerLoginRequiredForOrderError'));
   });
 
   test('client navigation is drawer-only with full passenger sections', () {
