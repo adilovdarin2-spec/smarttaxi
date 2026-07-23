@@ -3104,4 +3104,113 @@ class AppLocalizationsKk extends AppLocalizations {
     );
     return 'Баға: $count $_temp0';
   }
+
+  @override
+  String get driverUpdatingGeneric => 'Жаңартылуда...';
+
+  @override
+  String get driverEmergencyHelpTitle => 'Шұғыл көмек';
+
+  @override
+  String driverEmergencyCallButton(String phone) {
+    return '$phone қоңырау шалу';
+  }
+
+  @override
+  String get driverEmergencyLineSubtitle =>
+      'Бірдеңе дұрыс болмаса, SmartTaxi шұғыл желісі';
+
+  @override
+  String get driverSupportWillReceiveSignal => 'Қолдау қызметі сигнал алады';
+
+  @override
+  String get driverSupportSignalDescription =>
+      'Координаттарыңыз бен сапар нөмірі (болса) бар өтінім қоңыраумен бірге қолдау қызметіне жіберіледі';
+
+  @override
+  String get driverChooseRegionButton => 'Аймақты таңдау';
+
+  @override
+  String get driverTodayLabel => 'Бүгін';
+
+  @override
+  String get driverGoOfflineButton => 'Желіден шығу';
+
+  @override
+  String get driverGoOnlineButton => 'Желіге шығу';
+
+  @override
+  String get driverDemandHigh => 'Жоғары';
+
+  @override
+  String get driverDemandAboveNormal => 'Жоғарылау';
+
+  @override
+  String get driverDemandNormal => 'Қалыпты';
+
+  @override
+  String get driverTripsTodayLabel => 'Бүгінгі сапарлар';
+
+  @override
+  String get driverNewOrdersLabel => 'Жаңа тапсырыстар';
+
+  @override
+  String get driverDemandNearbyLabel => 'Жақын сұраныс';
+
+  @override
+  String get driverLocationOnlineHint =>
+      'Геолокация тек желіде жұмыс істеу кезінде жіберіледі.';
+
+  @override
+  String get driverUpdatingStatusButton => 'Мәртебе жаңартылуда...';
+
+  @override
+  String get driverPayoutMethodTitle => 'Төлем әдісі';
+
+  @override
+  String driverPayoutCardSummary(String last4) {
+    return 'Карта •• •• •• $last4';
+  }
+
+  @override
+  String driverPayoutKaspiSummary(String phone) {
+    return 'Kaspi аударымы: $phone';
+  }
+
+  @override
+  String get driverPayoutMethodNotSet =>
+      'Көрсетілмеген — қаражат шығару үшін қосыңыз';
+
+  @override
+  String get driverPayoutMethodSubtitle =>
+      'Қаражатты шығарғанда қайда аудару керек';
+
+  @override
+  String get driverPayoutMethodKaspiOption => 'Kaspi аударымы';
+
+  @override
+  String get driverPayoutMethodCardOption => 'Карта';
+
+  @override
+  String get driverCardNumberLabel => 'Карта нөмірі';
+
+  @override
+  String get driverPhoneNumberKaspiLabel => 'Телефон нөмірі (Kaspi)';
+
+  @override
+  String get driverSavingButton => 'Сақтап жатырмыз...';
+
+  @override
+  String get driverErrorInvalidCardNumber => 'Дұрыс карта нөмірін енгізіңіз';
+
+  @override
+  String get driverErrorPhoneRequiredGeneric => 'Телефон нөмірін енгізіңіз';
+
+  @override
+  String get driverErrorCardTypo =>
+      'Карта нөмірінде қате бар сияқты — тексеріп, қайта көріңіз';
+
+  @override
+  String get driverErrorSaveFailedGeneric =>
+      'Сақтау мүмкін болмады. Деректерді тексеріп, қайта көріңіз.';
 }

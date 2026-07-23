@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 import 'driver_common_widgets.dart';
 
@@ -49,6 +50,7 @@ class DriverShiftHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     final toneColor = _toneColor(context);
     return Container(
@@ -86,7 +88,7 @@ class DriverShiftHero extends StatelessWidget {
                     Text(
                       (driverName ?? '').trim().isNotEmpty
                           ? driverName!.trim()
-                          : 'Водитель SmartTaxi',
+                          : l10n.driverDrawerNameFallback,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -107,7 +109,7 @@ class DriverShiftHero extends StatelessWidget {
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
-                              regionName ?? 'Выбрать регион',
+                              regionName ?? l10n.driverChooseRegionButton,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -162,7 +164,7 @@ class DriverShiftHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Сегодня',
+                        l10n.driverTodayLabel,
                         // textSecondary, not textMuted — textMuted's contrast
                         // against the background fails WCAG AA (~2.5:1).
                         style: TextStyle(
@@ -197,18 +199,18 @@ class DriverShiftHero extends StatelessWidget {
                   side: BorderSide(color: palette.borderStrong),
                 ),
                 child: loading
-                    ? const ButtonSpinner(text: 'Обновляем статус...')
-                    : const Text('Уйти с линии'),
+                    ? ButtonSpinner(text: l10n.driverUpdatingStatusButton)
+                    : Text(l10n.driverGoOfflineButton),
               ),
             )
           else
             DriverGradientButton(
-              text: 'Выйти на линию',
+              text: l10n.driverGoOnlineButton,
               icon: Icons.power_settings_new_rounded,
               onTap: onToggle,
               loading: loading,
               enabled: onToggle != null,
-              loadingText: 'Обновляем статус...',
+              loadingText: l10n.driverUpdatingStatusButton,
             ),
         ],
       ),
@@ -240,13 +242,15 @@ class DriverTodayStrip extends StatelessWidget {
   // Short enough to fit a third-width mini-stat card at the emphasized
   // value font size without wrapping or ellipsizing.
   (String, Color) _demandMeta(BuildContext context) {
-    if (demandLevel >= 1.5) return ('Высокий', context.palette.danger);
-    if (demandLevel > 1.0) return ('Выше', context.palette.goldDeep);
-    return ('Норма', context.palette.textSecondary);
+    final l10n = AppLocalizations.of(context);
+    if (demandLevel >= 1.5) return (l10n.driverDemandHigh, context.palette.danger);
+    if (demandLevel > 1.0) return (l10n.driverDemandAboveNormal, context.palette.goldDeep);
+    return (l10n.driverDemandNormal, context.palette.textSecondary);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final current = stats;
     final tripsValue = loading && current == null
         ? '···'
@@ -267,7 +271,7 @@ class DriverTodayStrip extends StatelessWidget {
           Expanded(
             child: _MiniStat(
               icon: Icons.done_all_rounded,
-              label: 'Поездок сегодня',
+              label: l10n.driverTripsTodayLabel,
               value: tripsValue,
               tone: context.palette.success,
             ),
@@ -276,7 +280,7 @@ class DriverTodayStrip extends StatelessWidget {
           Expanded(
             child: _MiniStat(
               icon: Icons.receipt_long_rounded,
-              label: 'Новых заказов',
+              label: l10n.driverNewOrdersLabel,
               value: '$openOrders',
               tone: context.palette.warning,
             ),
@@ -285,7 +289,7 @@ class DriverTodayStrip extends StatelessWidget {
           Expanded(
             child: _MiniStat(
               icon: Icons.trending_up_rounded,
-              label: 'Спрос рядом',
+              label: l10n.driverDemandNearbyLabel,
               value: demandLabel,
               tone: demandColor,
               loading: demandLoading,
@@ -391,10 +395,11 @@ class LocationNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = message ??
         (online
-            ? 'Геолокация отправляется только во время работы на линии.'
-            : 'Для работы на линии нужна геолокация.');
+            ? l10n.driverLocationOnlineHint
+            : l10n.driverLocationRequiredError);
     final icon = loading
         ? Icons.my_location_rounded
         : online

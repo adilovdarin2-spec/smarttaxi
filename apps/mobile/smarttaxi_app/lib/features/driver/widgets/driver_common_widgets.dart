@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Rounded, floating chrome wrapper used around the bottom tab bar.
 class FloatingNav extends StatelessWidget {
@@ -89,7 +90,7 @@ class DriverGradientButton extends StatelessWidget {
     required this.text,
     required this.onTap,
     this.loading = false,
-    this.loadingText = 'Обновляем...',
+    this.loadingText,
     this.enabled = true,
     this.icon,
     this.height = 56,
@@ -98,13 +99,15 @@ class DriverGradientButton extends StatelessWidget {
   final String text;
   final VoidCallback? onTap;
   final bool loading;
-  final String loadingText;
+  final String? loadingText;
   final bool enabled;
   final IconData? icon;
   final double height;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedLoadingText =
+        loadingText ?? AppLocalizations.of(context).driverUpdatingGeneric;
     final active = enabled && onTap != null && !loading;
     return DriverPressScale(
       enabled: active,
@@ -158,7 +161,7 @@ class DriverGradientButton extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Text(loadingText,
+                            Text(resolvedLoadingText,
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w900)),
@@ -461,7 +464,7 @@ class DriverSosButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Экстренная помощь',
+      label: AppLocalizations.of(context).driverEmergencyHelpTitle,
       child: Material(
         color: context.palette.dangerSoft,
         shape: const CircleBorder(),
@@ -529,6 +532,7 @@ class _DriverSosSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -564,18 +568,18 @@ class _DriverSosSheet extends StatelessWidget {
                   child: Icon(Icons.sos_rounded, color: context.palette.danger),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Экстренная помощь',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                    l10n.driverEmergencyHelpTitle,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
             _DriverSosRow(
-              title: 'Позвонить ${sosPhone ?? '112'}',
-              text: 'Экстренная линия SmartTaxi, если что-то пошло не так',
+              title: l10n.driverEmergencyCallButton(sosPhone ?? '112'),
+              text: l10n.driverEmergencyLineSubtitle,
               onTap: () {
                 Navigator.pop(context);
                 unawaited(_callEmergency());
@@ -583,10 +587,9 @@ class _DriverSosSheet extends StatelessWidget {
               },
             ),
             const Divider(height: 18),
-            const _DriverSosRow(
-              title: 'Поддержка получит сигнал',
-              text:
-                  'Заявка с вашими координатами и номером поездки (если есть) уходит в поддержку одновременно со звонком',
+            _DriverSosRow(
+              title: l10n.driverSupportWillReceiveSignal,
+              text: l10n.driverSupportSignalDescription,
             ),
           ],
         ),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../models/driver_shell_helpers.dart';
 import '../models/driver_wallet_models.dart';
 import 'driver_common_widgets.dart';
@@ -54,18 +55,18 @@ class PayoutMethodSettingsRowState extends State<PayoutMethodSettingsRow> {
     }
   }
 
-  String _summaryText() {
-    if (_loading) return 'Загрузка...';
+  String _summaryText(AppLocalizations l10n) {
+    if (_loading) return l10n.loading;
     final status = _status;
     if (status?.cardNumber != null && status!.cardNumber!.isNotEmpty) {
       final card = status.cardNumber!;
       final last4 = card.length >= 4 ? card.substring(card.length - 4) : card;
-      return 'Карта •• •• •• $last4';
+      return l10n.driverPayoutCardSummary(last4);
     }
     if (status?.phone != null && status!.phone!.isNotEmpty) {
-      return 'Kaspi-перевод: ${status.phone}';
+      return l10n.driverPayoutKaspiSummary(status.phone!);
     }
-    return 'Не указан — добавьте, чтобы выводить средства';
+    return l10n.driverPayoutMethodNotSet;
   }
 
   Future<void> edit() async {
@@ -84,9 +85,10 @@ class PayoutMethodSettingsRowState extends State<PayoutMethodSettingsRow> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return DriverSettingsRow(
-      title: 'Способ выплаты',
-      text: _summaryText(),
+      title: l10n.driverPayoutMethodTitle,
+      text: _summaryText(l10n),
       onTap: _loading ? null : edit,
     );
   }
@@ -195,6 +197,7 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _saving = true;
       _error = null;
@@ -205,7 +208,7 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
         if (digits.length < 12) {
           setState(() {
             _saving = false;
-            _error = 'Введите корректный номер карты';
+            _error = l10n.driverErrorInvalidCardNumber;
           });
           return;
         }
@@ -215,7 +218,7 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
         if (phone.length < 6) {
           setState(() {
             _saving = false;
-            _error = 'Введите номер телефона';
+            _error = l10n.driverErrorPhoneRequiredGeneric;
           });
           return;
         }
@@ -228,14 +231,15 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
       setState(() {
         _saving = false;
         _error = apiErrorCode(error) == 'INVALID_CARD_NUMBER'
-            ? 'Похоже, в номере карты опечатка — проверьте и попробуйте снова'
-            : 'Не удалось сохранить. Проверьте данные и попробуйте снова.';
+            ? l10n.driverErrorCardTypo
+            : l10n.driverErrorSaveFailedGeneric;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     return Padding(
       padding: EdgeInsets.only(
@@ -259,11 +263,11 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Способ выплаты',
+          Text(l10n.driverPayoutMethodTitle,
               style: SmartTaxiTextStyles.title.copyWith(color: palette.text)),
           const SizedBox(height: 4),
           Text(
-            'Куда переводить деньги при выводе средств',
+            l10n.driverPayoutMethodSubtitle,
             style: SmartTaxiTextStyles.subtitle
                 .copyWith(color: palette.textSecondary),
           ),
@@ -272,7 +276,7 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
             children: [
               Expanded(
                 child: _MethodChoiceButton(
-                  label: 'Kaspi-перевод',
+                  label: l10n.driverPayoutMethodKaspiOption,
                   selected: !_useCard,
                   onTap: () => setState(() => _useCard = false),
                 ),
@@ -280,7 +284,7 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
               const SizedBox(width: 10),
               Expanded(
                 child: _MethodChoiceButton(
-                  label: 'Карта',
+                  label: l10n.driverPayoutMethodCardOption,
                   selected: _useCard,
                   onTap: () => setState(() => _useCard = true),
                 ),
@@ -294,8 +298,8 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
               controller: _cardController,
               keyboardType: TextInputType.number,
               inputFormatters: [_CardNumberFormatter()],
-              decoration: const InputDecoration(
-                labelText: 'Номер карты',
+              decoration: InputDecoration(
+                labelText: l10n.driverCardNumberLabel,
                 hintText: '4111 1111 1111 1111',
               ),
             )
@@ -304,8 +308,8 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
               key: const ValueKey('payout-phone-field'),
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Номер телефона (Kaspi)',
+              decoration: InputDecoration(
+                labelText: l10n.driverPhoneNumberKaspiLabel,
                 hintText: '+7 700 000 00 00',
               ),
             ),
@@ -315,9 +319,9 @@ class _EditPayoutMethodSheetState extends State<EditPayoutMethodSheet> {
           ],
           const SizedBox(height: 18),
           DriverGradientButton(
-            text: 'Сохранить',
+            text: l10n.save,
             loading: _saving,
-            loadingText: 'Сохраняем...',
+            loadingText: l10n.driverSavingButton,
             onTap: _save,
           ),
         ],

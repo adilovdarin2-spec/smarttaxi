@@ -3096,4 +3096,113 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return 'Оценка: $count $_temp0';
   }
+
+  @override
+  String get driverUpdatingGeneric => 'Обновляем...';
+
+  @override
+  String get driverEmergencyHelpTitle => 'Экстренная помощь';
+
+  @override
+  String driverEmergencyCallButton(String phone) {
+    return 'Позвонить $phone';
+  }
+
+  @override
+  String get driverEmergencyLineSubtitle =>
+      'Экстренная линия SmartTaxi, если что-то пошло не так';
+
+  @override
+  String get driverSupportWillReceiveSignal => 'Поддержка получит сигнал';
+
+  @override
+  String get driverSupportSignalDescription =>
+      'Заявка с вашими координатами и номером поездки (если есть) уходит в поддержку одновременно со звонком';
+
+  @override
+  String get driverChooseRegionButton => 'Выбрать регион';
+
+  @override
+  String get driverTodayLabel => 'Сегодня';
+
+  @override
+  String get driverGoOfflineButton => 'Уйти с линии';
+
+  @override
+  String get driverGoOnlineButton => 'Выйти на линию';
+
+  @override
+  String get driverDemandHigh => 'Высокий';
+
+  @override
+  String get driverDemandAboveNormal => 'Выше';
+
+  @override
+  String get driverDemandNormal => 'Норма';
+
+  @override
+  String get driverTripsTodayLabel => 'Поездок сегодня';
+
+  @override
+  String get driverNewOrdersLabel => 'Новых заказов';
+
+  @override
+  String get driverDemandNearbyLabel => 'Спрос рядом';
+
+  @override
+  String get driverLocationOnlineHint =>
+      'Геолокация отправляется только во время работы на линии.';
+
+  @override
+  String get driverUpdatingStatusButton => 'Обновляем статус...';
+
+  @override
+  String get driverPayoutMethodTitle => 'Способ выплаты';
+
+  @override
+  String driverPayoutCardSummary(String last4) {
+    return 'Карта •• •• •• $last4';
+  }
+
+  @override
+  String driverPayoutKaspiSummary(String phone) {
+    return 'Kaspi-перевод: $phone';
+  }
+
+  @override
+  String get driverPayoutMethodNotSet =>
+      'Не указан — добавьте, чтобы выводить средства';
+
+  @override
+  String get driverPayoutMethodSubtitle =>
+      'Куда переводить деньги при выводе средств';
+
+  @override
+  String get driverPayoutMethodKaspiOption => 'Kaspi-перевод';
+
+  @override
+  String get driverPayoutMethodCardOption => 'Карта';
+
+  @override
+  String get driverCardNumberLabel => 'Номер карты';
+
+  @override
+  String get driverPhoneNumberKaspiLabel => 'Номер телефона (Kaspi)';
+
+  @override
+  String get driverSavingButton => 'Сохраняем...';
+
+  @override
+  String get driverErrorInvalidCardNumber => 'Введите корректный номер карты';
+
+  @override
+  String get driverErrorPhoneRequiredGeneric => 'Введите номер телефона';
+
+  @override
+  String get driverErrorCardTypo =>
+      'Похоже, в номере карты опечатка — проверьте и попробуйте снова';
+
+  @override
+  String get driverErrorSaveFailedGeneric =>
+      'Не удалось сохранить. Проверьте данные и попробуйте снова.';
 }

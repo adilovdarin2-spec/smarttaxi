@@ -5660,6 +5660,198 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Оценка: {count} {count, plural, one{звезда} few{звезды} many{звёзд} other{звёзд}}'**
   String driverStarRatingSemanticLabel(int count);
+
+  /// No description provided for @driverUpdatingGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновляем...'**
+  String get driverUpdatingGeneric;
+
+  /// No description provided for @driverEmergencyHelpTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экстренная помощь'**
+  String get driverEmergencyHelpTitle;
+
+  /// No description provided for @driverEmergencyCallButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить {phone}'**
+  String driverEmergencyCallButton(String phone);
+
+  /// No description provided for @driverEmergencyLineSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экстренная линия SmartTaxi, если что-то пошло не так'**
+  String get driverEmergencyLineSubtitle;
+
+  /// No description provided for @driverSupportWillReceiveSignal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка получит сигнал'**
+  String get driverSupportWillReceiveSignal;
+
+  /// No description provided for @driverSupportSignalDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка с вашими координатами и номером поездки (если есть) уходит в поддержку одновременно со звонком'**
+  String get driverSupportSignalDescription;
+
+  /// No description provided for @driverChooseRegionButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать регион'**
+  String get driverChooseRegionButton;
+
+  /// No description provided for @driverTodayLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get driverTodayLabel;
+
+  /// No description provided for @driverGoOfflineButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уйти с линии'**
+  String get driverGoOfflineButton;
+
+  /// No description provided for @driverGoOnlineButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти на линию'**
+  String get driverGoOnlineButton;
+
+  /// No description provided for @driverDemandHigh.
+  ///
+  /// In ru, this message translates to:
+  /// **'Высокий'**
+  String get driverDemandHigh;
+
+  /// No description provided for @driverDemandAboveNormal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выше'**
+  String get driverDemandAboveNormal;
+
+  /// No description provided for @driverDemandNormal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Норма'**
+  String get driverDemandNormal;
+
+  /// No description provided for @driverTripsTodayLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездок сегодня'**
+  String get driverTripsTodayLabel;
+
+  /// No description provided for @driverNewOrdersLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новых заказов'**
+  String get driverNewOrdersLabel;
+
+  /// No description provided for @driverDemandNearbyLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спрос рядом'**
+  String get driverDemandNearbyLabel;
+
+  /// No description provided for @driverLocationOnlineHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация отправляется только во время работы на линии.'**
+  String get driverLocationOnlineHint;
+
+  /// No description provided for @driverUpdatingStatusButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновляем статус...'**
+  String get driverUpdatingStatusButton;
+
+  /// No description provided for @driverPayoutMethodTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Способ выплаты'**
+  String get driverPayoutMethodTitle;
+
+  /// No description provided for @driverPayoutCardSummary.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта •• •• •• {last4}'**
+  String driverPayoutCardSummary(String last4);
+
+  /// No description provided for @driverPayoutKaspiSummary.
+  ///
+  /// In ru, this message translates to:
+  /// **'Kaspi-перевод: {phone}'**
+  String driverPayoutKaspiSummary(String phone);
+
+  /// No description provided for @driverPayoutMethodNotSet.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не указан — добавьте, чтобы выводить средства'**
+  String get driverPayoutMethodNotSet;
+
+  /// No description provided for @driverPayoutMethodSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Куда переводить деньги при выводе средств'**
+  String get driverPayoutMethodSubtitle;
+
+  /// No description provided for @driverPayoutMethodKaspiOption.
+  ///
+  /// In ru, this message translates to:
+  /// **'Kaspi-перевод'**
+  String get driverPayoutMethodKaspiOption;
+
+  /// No description provided for @driverPayoutMethodCardOption.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта'**
+  String get driverPayoutMethodCardOption;
+
+  /// No description provided for @driverCardNumberLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер карты'**
+  String get driverCardNumberLabel;
+
+  /// No description provided for @driverPhoneNumberKaspiLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер телефона (Kaspi)'**
+  String get driverPhoneNumberKaspiLabel;
+
+  /// No description provided for @driverSavingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохраняем...'**
+  String get driverSavingButton;
+
+  /// No description provided for @driverErrorInvalidCardNumber.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите корректный номер карты'**
+  String get driverErrorInvalidCardNumber;
+
+  /// No description provided for @driverErrorPhoneRequiredGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите номер телефона'**
+  String get driverErrorPhoneRequiredGeneric;
+
+  /// No description provided for @driverErrorCardTypo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Похоже, в номере карты опечатка — проверьте и попробуйте снова'**
+  String get driverErrorCardTypo;
+
+  /// No description provided for @driverErrorSaveFailedGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить. Проверьте данные и попробуйте снова.'**
+  String get driverErrorSaveFailedGeneric;
 }
 
 class _AppLocalizationsDelegate

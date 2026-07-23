@@ -586,7 +586,7 @@ void main() {
     expect(lineWidgets, contains('LineGlyph('));
     expect(arb, contains('"driverLineRegionSectionTitle": "Рабочий регион"'));
     expect(driver, contains('Выйти на линию'));
-    expect(lineWidgets, contains('Уйти с линии'));
+    expect(lineWidgets, contains('driverGoOfflineButton'));
     expect(arb,
         contains('"driverLocationRequiredError": "Для работы на линии нужна геолокация"'));
     expect(arb, contains('"driverLocationChecking": "Проверяем геолокацию..."'));
