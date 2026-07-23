@@ -5,16 +5,19 @@ class AppConfig {
   static const appVersion = '1.0.0';
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://smarttaxi-api-production.up.railway.app',
+    defaultValue: 'https://api.smarttaxi.kz',
   );
   static const socketUrl = String.fromEnvironment(
     'SOCKET_URL',
     defaultValue: apiBaseUrl,
   );
-  // Public web app used for the "поделиться поездкой" tracking link.
+  // Public web app used for the "поделиться поездкой" tracking link. Must be
+  // www (not the bare apex) -- ps.kz's panel can't put a CNAME on the apex
+  // record (it already carries the zone's NS/MX/TXT records), so the apex
+  // has no working DNS entry at all; only the www subdomain resolves.
   static const webBaseUrl = String.fromEnvironment(
     'WEB_BASE_URL',
-    defaultValue: 'https://smarttaxi.kz',
+    defaultValue: 'https://www.smarttaxi.kz',
   );
   // Crash/error monitoring (Sentry). Empty disables reporting entirely —
   // see main.dart's SentryFlutter.init call.

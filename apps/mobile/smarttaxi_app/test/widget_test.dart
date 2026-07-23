@@ -33,7 +33,7 @@ String _visibleSource(String source) {
 
 void main() {
   test('map configuration is explicit and attributed', () {
-    expect(AppConfig.apiBaseUrl, 'https://smarttaxi-api-production.up.railway.app');
+    expect(AppConfig.apiBaseUrl, 'https://api.smarttaxi.kz');
     expect(AppConfig.osmTileUrl, contains('{z}'));
     expect(AppConfig.osmTileUrl, contains('{x}'));
     expect(AppConfig.osmTileUrl, contains('{y}'));
