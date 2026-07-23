@@ -386,6 +386,78 @@ abstract class AppLocalizations {
   /// **'Поддержка'**
   String get support;
 
+  /// No description provided for @passengerDrawerTrips.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мои поездки'**
+  String get passengerDrawerTrips;
+
+  /// No description provided for @passengerDrawerPromoCodes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Промокоды'**
+  String get passengerDrawerPromoCodes;
+
+  /// No description provided for @passengerDrawerRecurringBookings.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулярные поездки'**
+  String get passengerDrawerRecurringBookings;
+
+  /// No description provided for @passengerDrawerFavoriteAddresses.
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранные адреса'**
+  String get passengerDrawerFavoriteAddresses;
+
+  /// No description provided for @passengerDrawerDrivers.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водители'**
+  String get passengerDrawerDrivers;
+
+  /// No description provided for @passengerDrawerReferrals.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пригласить друзей'**
+  String get passengerDrawerReferrals;
+
+  /// No description provided for @passengerDrawerBecomeDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стать водителем'**
+  String get passengerDrawerBecomeDriver;
+
+  /// No description provided for @passengerDrawerHelpSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Помощь'**
+  String get passengerDrawerHelpSection;
+
+  /// No description provided for @passengerDrawerFaq.
+  ///
+  /// In ru, this message translates to:
+  /// **'FAQ'**
+  String get passengerDrawerFaq;
+
+  /// No description provided for @passengerDrawerAboutSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'О сервисе'**
+  String get passengerDrawerAboutSection;
+
+  /// No description provided for @passengerDrawerAboutUs.
+  ///
+  /// In ru, this message translates to:
+  /// **'О нас'**
+  String get passengerDrawerAboutUs;
+
+  /// No description provided for @passengerDrawerRegionalBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Региональное такси'**
+  String get passengerDrawerRegionalBadge;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:
@@ -847,6 +919,48 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Уведомления'**
   String get driverDrawerNotifications;
+
+  /// No description provided for @driverDrawerMenuTooltip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Меню'**
+  String get driverDrawerMenuTooltip;
+
+  /// No description provided for @driverDrawerNameFallback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель SmartTaxi'**
+  String get driverDrawerNameFallback;
+
+  /// No description provided for @driverDrawerWorkSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа'**
+  String get driverDrawerWorkSection;
+
+  /// No description provided for @driverDrawerNavigatorBrand.
+  ///
+  /// In ru, this message translates to:
+  /// **'Smart Navigator'**
+  String get driverDrawerNavigatorBrand;
+
+  /// No description provided for @driverDrawerServiceSection.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервис'**
+  String get driverDrawerServiceSection;
+
+  /// No description provided for @driverDrawerRoadAlerts.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дорожные события'**
+  String get driverDrawerRoadAlerts;
+
+  /// No description provided for @driverDrawerPassengerMode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Режим пассажира'**
+  String get driverDrawerPassengerMode;
 
   /// No description provided for @driverWalletTitle.
   ///

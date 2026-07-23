@@ -159,6 +159,42 @@ class AppLocalizationsKk extends AppLocalizations {
   String get support => 'Қолдау';
 
   @override
+  String get passengerDrawerTrips => 'Менің сапарларым';
+
+  @override
+  String get passengerDrawerPromoCodes => 'Промокодтар';
+
+  @override
+  String get passengerDrawerRecurringBookings => 'Тұрақты сапарлар';
+
+  @override
+  String get passengerDrawerFavoriteAddresses => 'Таңдаулы мекенжайлар';
+
+  @override
+  String get passengerDrawerDrivers => 'Жүргізушілер';
+
+  @override
+  String get passengerDrawerReferrals => 'Достарды шақыру';
+
+  @override
+  String get passengerDrawerBecomeDriver => 'Жүргізуші болу';
+
+  @override
+  String get passengerDrawerHelpSection => 'Көмек';
+
+  @override
+  String get passengerDrawerFaq => 'FAQ';
+
+  @override
+  String get passengerDrawerAboutSection => 'Қызмет туралы';
+
+  @override
+  String get passengerDrawerAboutUs => 'Біз туралы';
+
+  @override
+  String get passengerDrawerRegionalBadge => 'Аймақтық такси';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override
@@ -405,6 +441,27 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverDrawerNotifications => 'Хабарландырулар';
+
+  @override
+  String get driverDrawerMenuTooltip => 'Мәзір';
+
+  @override
+  String get driverDrawerNameFallback => 'SmartTaxi жүргізушісі';
+
+  @override
+  String get driverDrawerWorkSection => 'Жұмыс';
+
+  @override
+  String get driverDrawerNavigatorBrand => 'Smart Navigator';
+
+  @override
+  String get driverDrawerServiceSection => 'Қызмет';
+
+  @override
+  String get driverDrawerRoadAlerts => 'Жол оқиғалары';
+
+  @override
+  String get driverDrawerPassengerMode => 'Жолаушы режимі';
 
   @override
   String get driverWalletTitle => 'Әмиян';

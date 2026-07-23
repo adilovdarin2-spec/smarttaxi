@@ -159,6 +159,42 @@ class AppLocalizationsRu extends AppLocalizations {
   String get support => 'Поддержка';
 
   @override
+  String get passengerDrawerTrips => 'Мои поездки';
+
+  @override
+  String get passengerDrawerPromoCodes => 'Промокоды';
+
+  @override
+  String get passengerDrawerRecurringBookings => 'Регулярные поездки';
+
+  @override
+  String get passengerDrawerFavoriteAddresses => 'Избранные адреса';
+
+  @override
+  String get passengerDrawerDrivers => 'Водители';
+
+  @override
+  String get passengerDrawerReferrals => 'Пригласить друзей';
+
+  @override
+  String get passengerDrawerBecomeDriver => 'Стать водителем';
+
+  @override
+  String get passengerDrawerHelpSection => 'Помощь';
+
+  @override
+  String get passengerDrawerFaq => 'FAQ';
+
+  @override
+  String get passengerDrawerAboutSection => 'О сервисе';
+
+  @override
+  String get passengerDrawerAboutUs => 'О нас';
+
+  @override
+  String get passengerDrawerRegionalBadge => 'Региональное такси';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override
@@ -405,6 +441,27 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverDrawerNotifications => 'Уведомления';
+
+  @override
+  String get driverDrawerMenuTooltip => 'Меню';
+
+  @override
+  String get driverDrawerNameFallback => 'Водитель SmartTaxi';
+
+  @override
+  String get driverDrawerWorkSection => 'Работа';
+
+  @override
+  String get driverDrawerNavigatorBrand => 'Smart Navigator';
+
+  @override
+  String get driverDrawerServiceSection => 'Сервис';
+
+  @override
+  String get driverDrawerRoadAlerts => 'Дорожные события';
+
+  @override
+  String get driverDrawerPassengerMode => 'Режим пассажира';
 
   @override
   String get driverWalletTitle => 'Кошелёк';

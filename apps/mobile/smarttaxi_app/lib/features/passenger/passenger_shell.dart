@@ -2058,7 +2058,7 @@ class _PassengerShellState extends State<PassengerShell>
           accountLabel: widget.accountLabel,
           accountPhone: widget.accountPhone,
           active: _tab,
-          driverLabel: 'Стать водителем',
+          driverLabel: AppLocalizations.of(context).passengerDrawerBecomeDriver,
           onSelect: (tab) {
             Navigator.pop(context);
             setState(() => _tab = tab);
@@ -2398,6 +2398,12 @@ class _PassengerShellState extends State<PassengerShell>
     );
     if (code == null || code == current) return;
     widget.onChangeLocale(Locale(code));
+    if (!mounted) return;
+    if (code == 'kk') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).languageChangedNote)),
+      );
+    }
   }
 
   Future<void> _chooseTheme() async {
@@ -14312,6 +14318,7 @@ class _SmartDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final drawerWidth = (width * 0.82).clamp(296.0, 368.0).toDouble();
     return Drawer(
@@ -14392,7 +14399,7 @@ class _SmartDrawer extends StatelessWidget {
                                 children: [
                                   Text(
                                     accountLabel.isEmpty
-                                        ? 'Аккаунт'
+                                        ? l10n.passengerSettingsAccountGroup
                                         : accountLabel,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -14440,7 +14447,7 @@ class _SmartDrawer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      'Региональное такси',
+                      l10n.passengerDrawerRegionalBadge,
                       style: TextStyle(
                         color: palette.goldDeep,
                         fontSize: 11,
@@ -14458,56 +14465,56 @@ class _SmartDrawer extends StatelessWidget {
                 children: [
                   _DrawerItem(
                     icon: Icons.home_rounded,
-                    label: 'Главная',
+                    label: l10n.home,
                     active: active == PassengerTab.home,
                     onTap: () => onSelect(PassengerTab.home),
                   ),
                   _DrawerItem(
                     icon: Icons.history_rounded,
-                    label: 'Мои поездки',
+                    label: l10n.passengerDrawerTrips,
                     active: active == PassengerTab.trips,
                     onTap: () => onSelect(PassengerTab.trips),
                   ),
                   _DrawerItem(
                     icon: Icons.notifications_outlined,
-                    label: 'Уведомления',
+                    label: l10n.notifications,
                     active: active == PassengerTab.notifications,
                     onTap: () => onSelect(PassengerTab.notifications),
                   ),
                   _DrawerItem(
                     icon: Icons.person_outline_rounded,
-                    label: 'Профиль',
+                    label: l10n.profile,
                     active: active == PassengerTab.profile,
                     onTap: () => onSelect(PassengerTab.profile),
                   ),
-                  const _DrawerSectionLabel('Аккаунт'),
+                  _DrawerSectionLabel(l10n.passengerSettingsAccountGroup),
                   _DrawerItem(
                     icon: Icons.local_offer_outlined,
-                    label: 'Промокоды',
+                    label: l10n.passengerDrawerPromoCodes,
                     active: active == PassengerTab.promoCodes,
                     onTap: () => onSelect(PassengerTab.promoCodes),
                   ),
                   _DrawerItem(
                     icon: Icons.event_repeat_rounded,
-                    label: 'Регулярные поездки',
+                    label: l10n.passengerDrawerRecurringBookings,
                     active: active == PassengerTab.recurringBookings,
                     onTap: () => onSelect(PassengerTab.recurringBookings),
                   ),
                   _DrawerItem(
                     icon: Icons.star_outline_rounded,
-                    label: 'Избранные адреса',
+                    label: l10n.passengerDrawerFavoriteAddresses,
                     active: active == PassengerTab.favoriteAddresses,
                     onTap: () => onSelect(PassengerTab.favoriteAddresses),
                   ),
                   _DrawerItem(
                     icon: Icons.people_alt_outlined,
-                    label: 'Водители',
+                    label: l10n.passengerDrawerDrivers,
                     active: active == PassengerTab.driverPreferences,
                     onTap: () => onSelect(PassengerTab.driverPreferences),
                   ),
                   _DrawerItem(
                     icon: Icons.card_giftcard_rounded,
-                    label: 'Пригласить друзей',
+                    label: l10n.passengerDrawerReferrals,
                     active: active == PassengerTab.referrals,
                     onTap: () => onSelect(PassengerTab.referrals),
                   ),
@@ -14517,35 +14524,35 @@ class _SmartDrawer extends StatelessWidget {
                     active: active == PassengerTab.driverApplication,
                     onTap: onDriver,
                   ),
-                  const _DrawerSectionLabel('Помощь'),
+                  _DrawerSectionLabel(l10n.passengerDrawerHelpSection),
                   _DrawerItem(
                     icon: Icons.headset_mic_outlined,
-                    label: 'Поддержка',
+                    label: l10n.support,
                     active: active == PassengerTab.support,
                     onTap: () => onSelect(PassengerTab.support),
                   ),
                   _DrawerItem(
                     icon: Icons.help_outline_rounded,
-                    label: 'FAQ',
+                    label: l10n.passengerDrawerFaq,
                     active: active == PassengerTab.faq,
                     onTap: () => onSelect(PassengerTab.faq),
                   ),
-                  const _DrawerSectionLabel('О сервисе'),
+                  _DrawerSectionLabel(l10n.passengerDrawerAboutSection),
                   _DrawerItem(
                     icon: Icons.info_outline_rounded,
-                    label: 'О нас',
+                    label: l10n.passengerDrawerAboutUs,
                     active: active == PassengerTab.about,
                     onTap: () => onSelect(PassengerTab.about),
                   ),
                   _DrawerItem(
                     icon: Icons.tune_rounded,
-                    label: 'Настройки',
+                    label: l10n.settings,
                     active: active == PassengerTab.settings,
                     onTap: () => onSelect(PassengerTab.settings),
                   ),
                   _DrawerItem(
                     icon: Icons.shield_outlined,
-                    label: 'Правовая информация',
+                    label: l10n.passengerSettingsLegalTitle,
                     active: active == PassengerTab.legalHub ||
                         active == PassengerTab.legalTerms ||
                         active == PassengerTab.legalPrivacy ||
@@ -14559,7 +14566,7 @@ class _SmartDrawer extends StatelessWidget {
             ),
             _DrawerItem(
               icon: Icons.logout_rounded,
-              label: 'Выйти',
+              label: l10n.logOut,
               active: false,
               danger: true,
               onTap: onLogout,

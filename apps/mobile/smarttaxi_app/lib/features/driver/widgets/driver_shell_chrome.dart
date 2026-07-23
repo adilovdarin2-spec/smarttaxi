@@ -19,6 +19,7 @@ class DriverHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 62,
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -37,7 +38,7 @@ class DriverHeader extends StatelessWidget {
           IconButton(
               onPressed: onMenu,
               icon: Icon(Icons.menu_rounded, color: context.palette.text),
-              tooltip: 'Меню'),
+              tooltip: l10n.driverDrawerMenuTooltip),
           const SizedBox(width: 4),
           const BrandLogo(),
           const Spacer(),
@@ -92,7 +93,7 @@ class DriverDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final name = accountLabel.isEmpty ? 'Водитель SmartTaxi' : accountLabel;
+    final name = accountLabel.isEmpty ? l10n.driverDrawerNameFallback : accountLabel;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'S';
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.84,
@@ -173,8 +174,8 @@ class DriverDrawer extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 online
-                                    ? (regionName ?? 'На линии')
-                                    : (regionName ?? 'Не на линии'),
+                                    ? (regionName ?? l10n.driverStatusOnline)
+                                    : (regionName ?? l10n.driverStatusOffline),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -194,31 +195,31 @@ class DriverDrawer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            const DrawerSectionLabel('Работа'),
+            DrawerSectionLabel(l10n.driverDrawerWorkSection),
             DrawerItem(
-                label: 'Линия',
+                label: l10n.driverTabLine,
                 icon: Icons.power_settings_new_rounded,
                 active: activeTab == 0,
                 onTap: () => onTab(0)),
             DrawerItem(
-                label: 'Заказы',
+                label: l10n.driverTabOrders,
                 icon: Icons.receipt_long_rounded,
                 active: activeTab == 1,
                 onTap: () => onTab(1)),
             DrawerItem(
-                label: 'Поездка',
+                label: l10n.driverTabTrip,
                 icon: Icons.route_rounded,
                 active: activeTab == 2,
                 onTap: () => onTab(2)),
             DrawerItem(
-                label: 'Smart Navigator',
+                label: l10n.driverDrawerNavigatorBrand,
                 icon: Icons.explore_rounded,
                 active: activeTab == 3,
                 onTap: () => onTab(3)),
             const Divider(height: 20, indent: 24, endIndent: 24),
-            const DrawerSectionLabel('Аккаунт'),
+            DrawerSectionLabel(l10n.passengerSettingsAccountGroup),
             DrawerItem(
-                label: 'Профиль',
+                label: l10n.profile,
                 icon: Icons.person_rounded,
                 active: false,
                 onTap: onProfile),
@@ -233,52 +234,52 @@ class DriverDrawer extends StatelessWidget {
                 active: false,
                 onTap: onRating),
             const Divider(height: 20, indent: 24, endIndent: 24),
-            const DrawerSectionLabel('Сервис'),
+            DrawerSectionLabel(l10n.driverDrawerServiceSection),
             DrawerItem(
                 label: l10n.driverDrawerNotifications,
                 icon: Icons.notifications_rounded,
                 active: false,
                 onTap: onNotifications),
             DrawerItem(
-                label: 'Дорожные события',
+                label: l10n.driverDrawerRoadAlerts,
                 icon: Icons.shield_rounded,
                 active: false,
                 onTap: onRoadAlerts),
             DrawerItem(
-                label: 'Регулярные поездки',
+                label: l10n.passengerDrawerRecurringBookings,
                 icon: Icons.event_repeat_rounded,
                 active: false,
                 onTap: onRecurringBookings),
             const Divider(height: 20, indent: 24, endIndent: 24),
-            const DrawerSectionLabel('Помощь'),
+            DrawerSectionLabel(l10n.passengerDrawerHelpSection),
             DrawerItem(
-                label: 'Поддержка',
+                label: l10n.support,
                 icon: Icons.support_agent_rounded,
                 active: false,
                 onTap: onSupport),
             DrawerItem(
-                label: 'FAQ',
+                label: l10n.driverFaqTitle,
                 icon: Icons.help_rounded,
                 active: false,
                 onTap: onFaq),
             DrawerItem(
-                label: 'О нас',
+                label: l10n.passengerDrawerAboutUs,
                 icon: Icons.info_rounded,
                 active: false,
                 onTap: onAbout),
             DrawerItem(
-                label: 'Настройки',
+                label: l10n.settings,
                 icon: Icons.settings_rounded,
                 active: false,
                 onTap: onSettings),
             const Divider(height: 20, indent: 24, endIndent: 24),
             DrawerItem(
-                label: 'Режим пассажира',
+                label: l10n.driverDrawerPassengerMode,
                 icon: Icons.swap_horiz_rounded,
                 active: false,
                 onTap: onPassenger),
             DrawerItem(
-                label: 'Выйти',
+                label: l10n.logOut,
                 icon: Icons.logout_rounded,
                 active: false,
                 danger: true,

@@ -372,15 +372,17 @@ void main() {
     expect(passenger, contains('PassengerTab.about'));
     expect(passenger, contains('PassengerTab.settings'));
     expect(passenger, contains('_SmartDrawer'));
-    expect(passenger, contains("label: 'Главная'"));
-    expect(passenger, contains("label: 'Мои поездки'"));
-    expect(passenger, contains("label: 'Профиль'"));
-    expect(passenger, contains("driverLabel: 'Стать водителем'"));
-    expect(passenger, contains("label: 'Поддержка'"));
-    expect(passenger, contains("label: 'FAQ'"));
-    expect(passenger, contains("label: 'О нас'"));
-    expect(passenger, contains("label: 'Настройки'"));
-    expect(passenger, contains("label: 'Выйти'"));
+    // Drawer labels now go through AppLocalizations (l10n.home,
+    // passengerDrawerTrips, etc.) instead of raw Russian literals.
+    expect(passenger, contains('label: l10n.home'));
+    expect(passenger, contains('label: l10n.passengerDrawerTrips'));
+    expect(passenger, contains('label: l10n.profile'));
+    expect(passenger, contains('passengerDrawerBecomeDriver'));
+    expect(passenger, contains('label: l10n.support'));
+    expect(passenger, contains('label: l10n.passengerDrawerFaq'));
+    expect(passenger, contains('label: l10n.passengerDrawerAboutUs'));
+    expect(passenger, contains('label: l10n.settings'));
+    expect(passenger, contains('label: l10n.logOut'));
     expect(passenger, contains('drawerWidth'));
     // _DrawerDivider (a plain line separator) was replaced by labeled
     // _DrawerSectionLabel headers (Аккаунт/Помощь/О сервисе) grouping the
@@ -390,7 +392,7 @@ void main() {
     expect(passenger, contains('Icons.home_rounded'));
     expect(passenger, contains('Icons.support_agent_rounded'));
     expect(passenger, contains('Icons.tune_rounded'));
-    expect(passenger, contains('Региональное такси'));
+    expect(passenger, contains('passengerDrawerRegionalBadge'));
     expect(passenger, isNot(contains('NavigationBar(')));
     expect(passenger, isNot(contains('NavigationDestination(')));
     expect(passenger, isNot(contains('class _FloatingNav')));
@@ -491,18 +493,20 @@ void main() {
     expect(driver, contains('DriverDrawer'));
     expect(driver, contains('drawer: DriverDrawer('));
     expect(driver, contains('_RoadAlertsSheet'));
-    expect(chrome, contains("label: 'Линия'"));
-    expect(chrome, contains("label: 'Заказы'"));
-    expect(chrome, contains("label: 'Поездка'"));
-    expect(chrome, contains("label: 'Smart Navigator'"));
-    expect(chrome, contains("label: 'Профиль'"));
-    expect(chrome, contains("label: 'Дорожные события'"));
-    expect(chrome, contains("label: 'Поддержка'"));
-    expect(chrome, contains("label: 'FAQ'"));
-    expect(chrome, contains("label: 'О нас'"));
-    expect(chrome, contains("label: 'Настройки'"));
-    expect(chrome, contains("label: 'Режим пассажира'"));
-    expect(chrome, contains("label: 'Выйти'"));
+    // Drawer labels now go through AppLocalizations instead of raw
+    // Russian literals (see l10n/app_ru.arb + app_kk.arb).
+    expect(chrome, contains('label: l10n.driverTabLine'));
+    expect(chrome, contains('label: l10n.driverTabOrders'));
+    expect(chrome, contains('label: l10n.driverTabTrip'));
+    expect(chrome, contains('label: l10n.driverDrawerNavigatorBrand'));
+    expect(chrome, contains('label: l10n.profile'));
+    expect(chrome, contains('label: l10n.driverDrawerRoadAlerts'));
+    expect(chrome, contains('label: l10n.support'));
+    expect(chrome, contains('label: l10n.driverFaqTitle'));
+    expect(chrome, contains('label: l10n.passengerDrawerAboutUs'));
+    expect(chrome, contains('label: l10n.settings'));
+    expect(chrome, contains('label: l10n.driverDrawerPassengerMode'));
+    expect(chrome, contains('label: l10n.logOut'));
   });
 
   test('route fields use pickup/destination icon markers without A/B letters',
