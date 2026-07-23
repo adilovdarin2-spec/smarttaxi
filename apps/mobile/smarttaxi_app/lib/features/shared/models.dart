@@ -77,14 +77,16 @@ class RecurringBooking {
       driverId: '${json['driver_id'] ?? json['driverId']}',
       driverName: (json['driver_name'] ?? json['driverName'])?.toString(),
       clientName: (json['client_name'] ?? json['clientName'])?.toString(),
-      pickupText:
+      pickupText: _sanitizeAddressText(
           '${json['pickup_text'] ?? json['pickupText'] ?? 'Точка посадки'}',
+          'Точка посадки'),
       pickupCoordinate: Coordinate(
         lat: _toDouble(json['pickup_lat'] ?? json['pickupLat']),
         lng: _toDouble(json['pickup_lng'] ?? json['pickupLng']),
       ),
-      dropoffText:
+      dropoffText: _sanitizeAddressText(
           '${json['dropoff_text'] ?? json['dropoffText'] ?? 'Точка назначения'}',
+          'Точка назначения'),
       dropoffCoordinate: Coordinate(
         lat: _toDouble(json['dropoff_lat'] ?? json['dropoffLat']),
         lng: _toDouble(json['dropoff_lng'] ?? json['dropoffLng']),
@@ -825,10 +827,12 @@ class OrderSummary {
     return OrderSummary(
       id: '${json['id']}',
       status: '${json['status'] ?? json['public_status'] ?? 'NEW'}',
-      pickup:
+      pickup: _sanitizeAddressText(
           '${json['pickup_text'] ?? json['pickupText'] ?? json['pickup'] ?? 'Точка посадки'}',
-      dropoff:
+          'Точка посадки'),
+      dropoff: _sanitizeAddressText(
           '${json['dropoff_text'] ?? json['dropoffText'] ?? json['dropoff'] ?? 'Точка назначения'}',
+          'Точка назначения'),
       // orders.price (or a "своя цена" bid) is the actual/final amount —
       // prefer it over the frozen pricing_snapshot.estimatedPrice, which
       // stays fixed at whatever was calculated when the order was created
@@ -1311,6 +1315,17 @@ List<Coordinate> _boundaryFromJson(dynamic boundary) {
 double _toDouble(dynamic value) {
   if (value is num) return value.toDouble();
   return double.tryParse('$value') ?? 0;
+}
+
+// A handful of historical orders have pickup/dropoff text that was
+// corrupted server-side before this was fixed (multi-byte Cyrillic split
+// across a TCP chunk boundary landed as literal U+FFFD replacement
+// characters, and that's what got stored — the original bytes are gone,
+// not just misencoded, so there's nothing to recover). Showing a row of
+// "�" boxes in trip history reads as broken; a plain, honest label reads
+// as intentional.
+String _sanitizeAddressText(String value, String fallback) {
+  return value.contains('�') ? fallback : value;
 }
 
 double? _nullableDouble(dynamic value) {
