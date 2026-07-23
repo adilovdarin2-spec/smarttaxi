@@ -1179,6 +1179,42 @@ abstract class AppLocalizations {
   /// **'Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.'**
   String get passengerPromoHowToApplyText;
 
+  /// No description provided for @passengerHomeWhereToTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Куда едем?'**
+  String get passengerHomeWhereToTitle;
+
+  /// No description provided for @passengerHomeWhereToSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите точку подачи и адрес назначения'**
+  String get passengerHomeWhereToSubtitle;
+
+  /// No description provided for @passengerHomeSetDestination.
+  ///
+  /// In ru, this message translates to:
+  /// **'Указать куда'**
+  String get passengerHomeSetDestination;
+
+  /// No description provided for @passengerHomeRouteIssueTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уточните маршрут'**
+  String get passengerHomeRouteIssueTitle;
+
+  /// No description provided for @passengerHomeRouteIssueText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось построить маршрут. Измените адрес или выберите точку на карте.'**
+  String get passengerHomeRouteIssueText;
+
+  /// No description provided for @passengerHomePickupQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откуда?'**
+  String get passengerHomePickupQuestion;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

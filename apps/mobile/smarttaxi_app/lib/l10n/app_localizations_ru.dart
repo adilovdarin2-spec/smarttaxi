@@ -608,6 +608,26 @@ class AppLocalizationsRu extends AppLocalizations {
       'Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.';
 
   @override
+  String get passengerHomeWhereToTitle => 'Куда едем?';
+
+  @override
+  String get passengerHomeWhereToSubtitle =>
+      'Выберите точку подачи и адрес назначения';
+
+  @override
+  String get passengerHomeSetDestination => 'Указать куда';
+
+  @override
+  String get passengerHomeRouteIssueTitle => 'Уточните маршрут';
+
+  @override
+  String get passengerHomeRouteIssueText =>
+      'Не удалось построить маршрут. Измените адрес или выберите точку на карте.';
+
+  @override
+  String get passengerHomePickupQuestion => 'Откуда?';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

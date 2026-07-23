@@ -199,6 +199,13 @@
   "passengerPromoHowToApplyTitle": "Жеңілдікті қалай қолдану керек",
   "passengerPromoHowToApplyText": "Осы тексеруден өткен промокодты тариф таңдау қадамында тағы да енгізу керек болады — сонда жеңілдік нақты сапарыңыздың соңғы бағасын бірден қайта есептейді.",
 
+  "passengerHomeWhereToTitle": "Қайда барамыз?",
+  "passengerHomeWhereToSubtitle": "Алу нүктесі мен межелі мекенжайды таңдаңыз",
+  "passengerHomeSetDestination": "Қайда екенін көрсету",
+  "passengerHomeRouteIssueTitle": "Маршрутты нақтылаңыз",
+  "passengerHomeRouteIssueText": "Маршрутты құру мүмкін болмады. Мекенжайды өзгертіңіз немесе картадан нүктені таңдаңыз.",
+  "passengerHomePickupQuestion": "Қайдан?",
+
   "authWelcomeTitle": "Кіру және тіркелу",
   "authWelcomeSubtitle": "Жалғастыру үшін телефон нөмірін енгізіңіз",
   "phoneNumberLabel": "Телефон нөмірі",

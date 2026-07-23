@@ -186,7 +186,7 @@ void main() {
       expect(passenger, contains('Ничего не найдено'));
       expect(passenger, contains('Выбрать точку на карте'));
       expect(passenger, contains('Выбрать адрес назначения'));
-      expect(passenger, contains('Куда едем?'));
+      expect(passenger, contains('l10n.passengerHomeWhereToTitle'));
       expect(passenger, contains('Выберите пункт назначения'));
       expect(
         passenger,

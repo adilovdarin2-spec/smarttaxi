@@ -614,6 +614,26 @@ class AppLocalizationsKk extends AppLocalizations {
       'Осы тексеруден өткен промокодты тариф таңдау қадамында тағы да енгізу керек болады — сонда жеңілдік нақты сапарыңыздың соңғы бағасын бірден қайта есептейді.';
 
   @override
+  String get passengerHomeWhereToTitle => 'Қайда барамыз?';
+
+  @override
+  String get passengerHomeWhereToSubtitle =>
+      'Алу нүктесі мен межелі мекенжайды таңдаңыз';
+
+  @override
+  String get passengerHomeSetDestination => 'Қайда екенін көрсету';
+
+  @override
+  String get passengerHomeRouteIssueTitle => 'Маршрутты нақтылаңыз';
+
+  @override
+  String get passengerHomeRouteIssueText =>
+      'Маршрутты құру мүмкін болмады. Мекенжайды өзгертіңіз немесе картадан нүктені таңдаңыз.';
+
+  @override
+  String get passengerHomePickupQuestion => 'Қайдан?';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

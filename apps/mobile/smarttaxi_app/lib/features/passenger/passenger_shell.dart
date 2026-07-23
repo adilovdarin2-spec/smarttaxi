@@ -6722,6 +6722,7 @@ class _OrderSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final routeError =
         error != null && error!.toLowerCase().contains('маршрут');
@@ -6846,9 +6847,9 @@ class _OrderSheet extends StatelessWidget {
               children: [
                 _SheetHandle(dark: isDark),
                 if (!routeSelected) ...[
-                  const _OrderSheetHeading(
-                    title: 'Куда едем?',
-                    text: 'Выберите точку подачи и адрес назначения',
+                  _OrderSheetHeading(
+                    title: l10n.passengerHomeWhereToTitle,
+                    text: l10n.passengerHomeWhereToSubtitle,
                   ),
                   const SizedBox(height: 12),
                   _SheetAddressEntryCard(
@@ -6867,7 +6868,7 @@ class _OrderSheet extends StatelessWidget {
                   _GoldCtaButton(
                     enabled: true,
                     loading: false,
-                    text: 'Указать куда',
+                    text: l10n.passengerHomeSetDestination,
                     onTap: onDropoffTap,
                   ),
                   const SizedBox(height: 10),
@@ -6875,9 +6876,8 @@ class _OrderSheet extends StatelessWidget {
                 ] else if (routeSelected && routeError)
                   _CompactNotice(
                     icon: Icons.route_outlined,
-                    title: 'Уточните маршрут',
-                    text:
-                        'Не удалось построить маршрут. Измените адрес или выберите точку на карте.',
+                    title: l10n.passengerHomeRouteIssueTitle,
+                    text: l10n.passengerHomeRouteIssueText,
                     dark: isDark,
                   ),
               ],
@@ -6907,6 +6907,7 @@ class _MapPointPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isPickup = target == PointTarget.pickup;
     return _HomeOrderPanel(
       child: TweenAnimationBuilder<double>(
@@ -6929,7 +6930,9 @@ class _MapPointPickerSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      isPickup ? 'Откуда?' : 'Куда едем?',
+                      isPickup
+                          ? l10n.passengerHomePickupQuestion
+                          : l10n.passengerHomeWhereToTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -6952,9 +6955,9 @@ class _MapPointPickerSheet extends StatelessWidget {
                       minimumSize: const Size(0, 0),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      'Отмена',
-                      style: TextStyle(fontWeight: FontWeight.w900),
+                    child: Text(
+                      l10n.cancel,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
                   ),
                 ],

@@ -200,6 +200,13 @@
   "passengerPromoHowToApplyTitle": "Как применить скидку",
   "passengerPromoHowToApplyText": "Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.",
 
+  "passengerHomeWhereToTitle": "Куда едем?",
+  "passengerHomeWhereToSubtitle": "Выберите точку подачи и адрес назначения",
+  "passengerHomeSetDestination": "Указать куда",
+  "passengerHomeRouteIssueTitle": "Уточните маршрут",
+  "passengerHomeRouteIssueText": "Не удалось построить маршрут. Измените адрес или выберите точку на карте.",
+  "passengerHomePickupQuestion": "Откуда?",
+
   "authWelcomeTitle": "Вход и регистрация",
   "authWelcomeSubtitle": "Введите номер телефона, чтобы продолжить",
   "phoneNumberLabel": "Номер телефона",
