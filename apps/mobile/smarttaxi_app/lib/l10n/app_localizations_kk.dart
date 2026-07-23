@@ -634,6 +634,20 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerHomePickupQuestion => 'Қайдан?';
 
   @override
+  String get passengerAddressSearchError =>
+      'Мекенжайды іздеу уақытша қолжетімсіз. Картадан нүктені таңдаңыз.';
+
+  @override
+  String get passengerAddressNoResultsText =>
+      'Көшені, ауданды немесе орын атауын нақтылаңыз.';
+
+  @override
+  String get passengerAddressPickOnMapTitle => 'Картадан көрсету';
+
+  @override
+  String get passengerAddressPickOnMapSubtitle => 'Картадан нүктені таңдаңыз';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

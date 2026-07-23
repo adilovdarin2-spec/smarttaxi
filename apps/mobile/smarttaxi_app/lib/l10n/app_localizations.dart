@@ -1215,6 +1215,30 @@ abstract class AppLocalizations {
   /// **'Откуда?'**
   String get passengerHomePickupQuestion;
 
+  /// No description provided for @passengerAddressSearchError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск адреса временно недоступен. Выберите точку на карте.'**
+  String get passengerAddressSearchError;
+
+  /// No description provided for @passengerAddressNoResultsText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уточните улицу, район или название места.'**
+  String get passengerAddressNoResultsText;
+
+  /// No description provided for @passengerAddressPickOnMapTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Указать на карте'**
+  String get passengerAddressPickOnMapTitle;
+
+  /// No description provided for @passengerAddressPickOnMapSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите точку на карте'**
+  String get passengerAddressPickOnMapSubtitle;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

@@ -628,6 +628,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerHomePickupQuestion => 'Откуда?';
 
   @override
+  String get passengerAddressSearchError =>
+      'Поиск адреса временно недоступен. Выберите точку на карте.';
+
+  @override
+  String get passengerAddressNoResultsText =>
+      'Уточните улицу, район или название места.';
+
+  @override
+  String get passengerAddressPickOnMapTitle => 'Указать на карте';
+
+  @override
+  String get passengerAddressPickOnMapSubtitle => 'Выберите точку на карте';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

@@ -206,6 +206,11 @@
   "passengerHomeRouteIssueText": "Маршрутты құру мүмкін болмады. Мекенжайды өзгертіңіз немесе картадан нүктені таңдаңыз.",
   "passengerHomePickupQuestion": "Қайдан?",
 
+  "passengerAddressSearchError": "Мекенжайды іздеу уақытша қолжетімсіз. Картадан нүктені таңдаңыз.",
+  "passengerAddressNoResultsText": "Көшені, ауданды немесе орын атауын нақтылаңыз.",
+  "passengerAddressPickOnMapTitle": "Картадан көрсету",
+  "passengerAddressPickOnMapSubtitle": "Картадан нүктені таңдаңыз",
+
   "authWelcomeTitle": "Кіру және тіркелу",
   "authWelcomeSubtitle": "Жалғастыру үшін телефон нөмірін енгізіңіз",
   "phoneNumberLabel": "Телефон нөмірі",

@@ -207,6 +207,11 @@
   "passengerHomeRouteIssueText": "Не удалось построить маршрут. Измените адрес или выберите точку на карте.",
   "passengerHomePickupQuestion": "Откуда?",
 
+  "passengerAddressSearchError": "Поиск адреса временно недоступен. Выберите точку на карте.",
+  "passengerAddressNoResultsText": "Уточните улицу, район или название места.",
+  "passengerAddressPickOnMapTitle": "Указать на карте",
+  "passengerAddressPickOnMapSubtitle": "Выберите точку на карте",
+
   "authWelcomeTitle": "Вход и регистрация",
   "authWelcomeSubtitle": "Введите номер телефона, чтобы продолжить",
   "phoneNumberLabel": "Номер телефона",

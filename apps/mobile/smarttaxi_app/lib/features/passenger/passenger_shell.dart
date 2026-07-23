@@ -12183,7 +12183,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
       if (!mounted) return;
       setState(() {
         _results = const [];
-        _error = 'Поиск адреса временно недоступен. Выберите точку на карте.';
+        _error = AppLocalizations.of(context).passengerAddressSearchError;
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -12200,6 +12200,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -12241,9 +12242,9 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                         style: TextButton.styleFrom(
                           foregroundColor: palette.goldDeep,
                         ),
-                        child: const Text(
-                          'Отмена',
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                        child: Text(
+                          l10n.cancel,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
                         ),
                       ),
                     ],
@@ -12369,9 +12370,9 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                   else if (_query.text.trim().length < 2)
                     const _AddressEmptyHint()
                   else if (!_loading && _results.isEmpty && _error == null)
-                    const _AddressEmptyHint(
-                      title: 'Ничего не найдено',
-                      text: 'Уточните улицу, район или название места.',
+                    _AddressEmptyHint(
+                      title: l10n.passengerFaqNoResultsTitle,
+                      text: l10n.passengerAddressNoResultsText,
                     )
                   else
                     ..._results.map(
@@ -12400,6 +12401,7 @@ class _MapPointChoiceButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
@@ -12435,7 +12437,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Указать на карте',
+                      l10n.passengerAddressPickOnMapTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -12447,7 +12449,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Выберите точку на карте',
+                      l10n.passengerAddressPickOnMapSubtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
