@@ -1353,6 +1353,270 @@ abstract class AppLocalizations {
   /// **'В пути'**
   String get passengerTripInTransitLabel;
 
+  /// No description provided for @passengerCtaCreatingOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Создаём заказ...'**
+  String get passengerCtaCreatingOrder;
+
+  /// No description provided for @passengerCtaPickPickup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать точку подачи'**
+  String get passengerCtaPickPickup;
+
+  /// No description provided for @passengerCtaPickDropoff.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать адрес назначения'**
+  String get passengerCtaPickDropoff;
+
+  /// No description provided for @passengerCtaCalculate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рассчитать'**
+  String get passengerCtaCalculate;
+
+  /// No description provided for @passengerCtaOrderDelivery.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оформить доставку'**
+  String get passengerCtaOrderDelivery;
+
+  /// No description provided for @passengerCtaOrderWithLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказать {label}'**
+  String passengerCtaOrderWithLabel(String label);
+
+  /// No description provided for @passengerCtaOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказать'**
+  String get passengerCtaOrder;
+
+  /// No description provided for @passengerTripsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активный заказ, статус поездки и детали маршрута'**
+  String get passengerTripsSubtitle;
+
+  /// No description provided for @passengerTripsLoadErrorTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить историю'**
+  String get passengerTripsLoadErrorTitle;
+
+  /// No description provided for @passengerTripsEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активной поездки нет'**
+  String get passengerTripsEmptyTitle;
+
+  /// No description provided for @passengerTripsLoadErrorText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте связь и потяните экран вниз, чтобы попробовать снова.'**
+  String get passengerTripsLoadErrorText;
+
+  /// No description provided for @passengerTripsEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Создайте заказ, и SmartTaxi откроет статус поездки здесь.'**
+  String get passengerTripsEmptyText;
+
+  /// No description provided for @passengerGoHomeAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'На главную'**
+  String get passengerGoHomeAction;
+
+  /// No description provided for @passengerDriverSearchingLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ищем водителя'**
+  String get passengerDriverSearchingLabel;
+
+  /// No description provided for @passengerDriverWaitingLocationLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем геолокацию водителя'**
+  String get passengerDriverWaitingLocationLabel;
+
+  /// No description provided for @passengerDriverConnectedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель на связи'**
+  String get passengerDriverConnectedLabel;
+
+  /// No description provided for @passengerTripDetailTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка'**
+  String get passengerTripDetailTitle;
+
+  /// No description provided for @passengerTripShareTooltip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделиться чеком'**
+  String get passengerTripShareTooltip;
+
+  /// No description provided for @passengerTripDistanceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Расстояние'**
+  String get passengerTripDistanceLabel;
+
+  /// No description provided for @passengerTripTotalLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Итого'**
+  String get passengerTripTotalLabel;
+
+  /// No description provided for @passengerTripDriverGroupLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель'**
+  String get passengerTripDriverGroupLabel;
+
+  /// No description provided for @passengerTripContactSupportButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Написать в поддержку по этой поездке'**
+  String get passengerTripContactSupportButton;
+
+  /// No description provided for @passengerTripDateUnknown.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дата неизвестна'**
+  String get passengerTripDateUnknown;
+
+  /// No description provided for @passengerTripDateToday.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get passengerTripDateToday;
+
+  /// No description provided for @passengerTripDateYesterday.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вчера'**
+  String get passengerTripDateYesterday;
+
+  /// No description provided for @passengerTripShareTextPrefix.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка SmartTaxi'**
+  String get passengerTripShareTextPrefix;
+
+  /// No description provided for @passengerSectionUnavailableTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Раздел недоступен'**
+  String get passengerSectionUnavailableTitle;
+
+  /// No description provided for @passengerSectionUnavailableText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернитесь на главный экран и попробуйте открыть раздел ещё раз.'**
+  String get passengerSectionUnavailableText;
+
+  /// No description provided for @passengerMonthJan.
+  ///
+  /// In ru, this message translates to:
+  /// **'янв'**
+  String get passengerMonthJan;
+
+  /// No description provided for @passengerMonthFeb.
+  ///
+  /// In ru, this message translates to:
+  /// **'фев'**
+  String get passengerMonthFeb;
+
+  /// No description provided for @passengerMonthMar.
+  ///
+  /// In ru, this message translates to:
+  /// **'мар'**
+  String get passengerMonthMar;
+
+  /// No description provided for @passengerMonthApr.
+  ///
+  /// In ru, this message translates to:
+  /// **'апр'**
+  String get passengerMonthApr;
+
+  /// No description provided for @passengerMonthMay.
+  ///
+  /// In ru, this message translates to:
+  /// **'мая'**
+  String get passengerMonthMay;
+
+  /// No description provided for @passengerMonthJun.
+  ///
+  /// In ru, this message translates to:
+  /// **'июн'**
+  String get passengerMonthJun;
+
+  /// No description provided for @passengerMonthJul.
+  ///
+  /// In ru, this message translates to:
+  /// **'июл'**
+  String get passengerMonthJul;
+
+  /// No description provided for @passengerMonthAug.
+  ///
+  /// In ru, this message translates to:
+  /// **'авг'**
+  String get passengerMonthAug;
+
+  /// No description provided for @passengerMonthSep.
+  ///
+  /// In ru, this message translates to:
+  /// **'сен'**
+  String get passengerMonthSep;
+
+  /// No description provided for @passengerMonthOct.
+  ///
+  /// In ru, this message translates to:
+  /// **'окт'**
+  String get passengerMonthOct;
+
+  /// No description provided for @passengerMonthNov.
+  ///
+  /// In ru, this message translates to:
+  /// **'ноя'**
+  String get passengerMonthNov;
+
+  /// No description provided for @passengerMonthDec.
+  ///
+  /// In ru, this message translates to:
+  /// **'дек'**
+  String get passengerMonthDec;
+
+  /// No description provided for @passengerNoTripsForLostItem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет доступных поездок, к которым можно привязать эту заявку. Опишите поездку в сообщении ниже, мы найдём водителя вручную.'**
+  String get passengerNoTripsForLostItem;
+
+  /// No description provided for @passengerWhichTripLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какая поездка?'**
+  String get passengerWhichTripLabel;
+
+  /// No description provided for @passengerWhichTripText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужна для того, чтобы уведомить водителя'**
+  String get passengerWhichTripText;
+
+  /// No description provided for @passengerChooseTripHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите поездку'**
+  String get passengerChooseTripHint;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

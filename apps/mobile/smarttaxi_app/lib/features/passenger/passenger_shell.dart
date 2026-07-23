@@ -2170,13 +2170,14 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _unknownPassengerSection() {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: EmptyState(
         icon: Icons.apps_rounded,
-        title: 'Раздел недоступен',
-        text: 'Вернитесь на главный экран и попробуйте открыть раздел ещё раз.',
-        action: 'На главную',
+        title: l10n.passengerSectionUnavailableTitle,
+        text: l10n.passengerSectionUnavailableText,
+        action: l10n.passengerGoHomeAction,
         onAction: () => setState(() => _tab = PassengerTab.home),
       ),
     );
@@ -2492,12 +2493,13 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   String _ctaText() {
-    if (_loading) return 'Создаём заказ...';
-    if (_pickup == null) return 'Выбрать точку подачи';
-    if (_dropoff == null) return 'Выбрать адрес назначения';
-    if (_tariffId == null) return 'Выберите тариф';
+    final l10n = AppLocalizations.of(context);
+    if (_loading) return l10n.passengerCtaCreatingOrder;
+    if (_pickup == null) return l10n.passengerCtaPickPickup;
+    if (_dropoff == null) return l10n.passengerCtaPickDropoff;
+    if (_tariffId == null) return l10n.passengerTariffSectionTitle;
     if (_preview == null || _preview!.estimatedPrice == null) {
-      return 'Рассчитать';
+      return l10n.passengerCtaCalculate;
     }
     TariffOption? selectedTariff;
     for (final tariff in _tariffs) {
@@ -2507,20 +2509,24 @@ class _PassengerShellState extends State<PassengerShell>
       }
     }
     final name = (selectedTariff?.name ?? '').toLowerCase();
+    final isDelivery = name.contains('delivery') || name.contains('достав');
     final label = name.contains('comfort') || name.contains('комфорт')
-        ? 'Комфорт'
-        : name.contains('delivery') || name.contains('достав')
-            ? 'Доставка'
+        ? l10n.tariffComfortTitle
+        : isDelivery
+            ? l10n.tariffDeliveryTitle
             : name.contains('econom') || name.contains('экон')
-                ? 'Эконом'
+                ? l10n.tariffEconomyTitle
                 : selectedTariff?.name;
-    if (label == 'Доставка') return 'Оформить доставку';
-    return label == null ? 'Заказать' : 'Заказать $label';
+    if (isDelivery) return l10n.passengerCtaOrderDelivery;
+    return label == null
+        ? l10n.passengerCtaOrder
+        : l10n.passengerCtaOrderWithLabel(label);
   }
 
   Widget _tripsScreen() {
+    final l10n = AppLocalizations.of(context);
     if (_order == null) {
-      final groups = _groupTripsByDay(_tripHistory);
+      final groups = _groupTripsByDay(l10n, _tripHistory);
       return RefreshIndicator(
         color: context.palette.goldDeep,
         onRefresh: _loadTripHistory,
@@ -2530,9 +2536,9 @@ class _PassengerShellState extends State<PassengerShell>
             parent: BouncingScrollPhysics(),
           ),
           children: [
-            const _TitleBlock(
-              title: 'Мои поездки',
-              text: 'Активный заказ, статус поездки и детали маршрута',
+            _TitleBlock(
+              title: l10n.passengerDrawerTrips,
+              text: l10n.passengerTripsSubtitle,
             ),
             const SizedBox(height: 16),
             if (_tripHistory.isEmpty && _tripHistoryLoading) ...[
@@ -2543,12 +2549,12 @@ class _PassengerShellState extends State<PassengerShell>
                     ? Icons.wifi_off_rounded
                     : Icons.route_rounded,
                 title: _tripHistoryError
-                    ? 'Не удалось загрузить историю'
-                    : 'Активной поездки нет',
+                    ? l10n.passengerTripsLoadErrorTitle
+                    : l10n.passengerTripsEmptyTitle,
                 text: _tripHistoryError
-                    ? 'Проверьте связь и потяните экран вниз, чтобы попробовать снова.'
-                    : 'Создайте заказ, и SmartTaxi откроет статус поездки здесь.',
-                action: _tripHistoryError ? null : 'На главную',
+                    ? l10n.passengerTripsLoadErrorText
+                    : l10n.passengerTripsEmptyText,
+                action: _tripHistoryError ? null : l10n.passengerGoHomeAction,
                 onAction: _tripHistoryError
                     ? null
                     : () => setState(() => _tab = PassengerTab.home),
@@ -2573,10 +2579,10 @@ class _PassengerShellState extends State<PassengerShell>
     }
     final order = _order!;
     final driverText = _order!.driverId == null
-        ? 'Ищем водителя'
+        ? l10n.passengerDriverSearchingLabel
         : _driverLocation == null
-            ? 'Ожидаем геолокацию водителя'
-            : 'Водитель на связи';
+            ? l10n.passengerDriverWaitingLocationLabel
+            : l10n.passengerDriverConnectedLabel;
     final driverRouteText = _driverPickupRoute == null
         ? null
         : _driverPickupMeta(_driverPickupRoute!);
@@ -4679,6 +4685,7 @@ class _LostItemOrderPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final options = <OrderSummary>[
       if (activeOrder != null) activeOrder!,
       ...tripHistory.where((trip) =>
@@ -4688,9 +4695,7 @@ class _LostItemOrderPicker extends StatelessWidget {
 
     if (options.isEmpty) {
       return _InlineMessage(
-        text:
-            'Нет доступных поездок, к которым можно привязать эту заявку. '
-            'Опишите поездку в сообщении ниже, мы найдём водителя вручную.',
+        text: l10n.passengerNoTripsForLostItem,
         dark: Theme.of(context).brightness == Brightness.dark,
       );
     }
@@ -4699,8 +4704,8 @@ class _LostItemOrderPicker extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionLabel(
-          title: 'Какая поездка?',
-          text: 'Нужна для того, чтобы уведомить водителя',
+          title: l10n.passengerWhichTripLabel,
+          text: l10n.passengerWhichTripText,
         ),
         const SizedBox(height: 8),
         Container(
@@ -4713,13 +4718,13 @@ class _LostItemOrderPicker extends StatelessWidget {
             child: DropdownButton<String>(
               isExpanded: true,
               value: selectedOrderId,
-              hint: const Text('Выберите поездку'),
+              hint: Text(l10n.passengerChooseTripHint),
               items: options
                   .map(
                     (trip) => DropdownMenuItem(
                       value: trip.id,
                       child: Text(
-                        '${_formatTripDate(trip.createdAt)} · ${trip.pickup} → ${trip.dropoff}',
+                        '${_formatTripDate(l10n, trip.createdAt)} · ${trip.pickup} → ${trip.dropoff}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -7099,6 +7104,7 @@ class _TripHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final card = _PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -7107,7 +7113,7 @@ class _TripHistoryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  _formatTripDate(trip.createdAt),
+                  _formatTripDate(l10n, trip.createdAt),
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
@@ -7204,22 +7210,24 @@ class _TripHistoryCard extends StatelessWidget {
   }
 }
 
-String _formatTripDate(DateTime? date) {
-  if (date == null) return 'Дата неизвестна';
-  const months = [
-    'янв',
-    'фев',
-    'мар',
-    'апр',
-    'мая',
-    'июн',
-    'июл',
-    'авг',
-    'сен',
-    'окт',
-    'ноя',
-    'дек',
-  ];
+List<String> _monthShortList(AppLocalizations l10n) => [
+      l10n.passengerMonthJan,
+      l10n.passengerMonthFeb,
+      l10n.passengerMonthMar,
+      l10n.passengerMonthApr,
+      l10n.passengerMonthMay,
+      l10n.passengerMonthJun,
+      l10n.passengerMonthJul,
+      l10n.passengerMonthAug,
+      l10n.passengerMonthSep,
+      l10n.passengerMonthOct,
+      l10n.passengerMonthNov,
+      l10n.passengerMonthDec,
+    ];
+
+String _formatTripDate(AppLocalizations l10n, DateTime? date) {
+  if (date == null) return l10n.passengerTripDateUnknown;
+  final months = _monthShortList(l10n);
   final local = date.toLocal();
   final day = local.day.toString().padLeft(2, '0');
   final month = months[local.month - 1];
@@ -7235,21 +7243,9 @@ class _TripDayGroup {
   final List<OrderSummary> trips;
 }
 
-List<_TripDayGroup> _groupTripsByDay(List<OrderSummary> trips) {
-  const months = [
-    'янв',
-    'фев',
-    'мар',
-    'апр',
-    'мая',
-    'июн',
-    'июл',
-    'авг',
-    'сен',
-    'окт',
-    'ноя',
-    'дек',
-  ];
+List<_TripDayGroup> _groupTripsByDay(
+    AppLocalizations l10n, List<OrderSummary> trips) {
+  final months = _monthShortList(l10n);
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final yesterday = today.subtract(const Duration(days: 1));
@@ -7258,13 +7254,13 @@ List<_TripDayGroup> _groupTripsByDay(List<OrderSummary> trips) {
     final date = trip.createdAt?.toLocal();
     final String label;
     if (date == null) {
-      label = 'Дата неизвестна';
+      label = l10n.passengerTripDateUnknown;
     } else {
       final day = DateTime(date.year, date.month, date.day);
       if (day == today) {
-        label = 'Сегодня';
+        label = l10n.passengerTripDateToday;
       } else if (day == yesterday) {
-        label = 'Вчера';
+        label = l10n.passengerTripDateYesterday;
       } else {
         label = '${day.day} ${months[day.month - 1]} ${day.year}';
       }
@@ -7276,9 +7272,9 @@ List<_TripDayGroup> _groupTripsByDay(List<OrderSummary> trips) {
   ];
 }
 
-String _tripShareText(OrderSummary trip) {
+String _tripShareText(AppLocalizations l10n, OrderSummary trip) {
   final priceText = trip.price == null ? '' : ' · ${_formatTenge(trip.price!)}';
-  return 'Поездка SmartTaxi ${_formatTripDate(trip.createdAt)}\n'
+  return '${l10n.passengerTripShareTextPrefix} ${_formatTripDate(l10n, trip.createdAt)}\n'
       '${trip.pickup} → ${trip.dropoff}$priceText';
 }
 
@@ -7312,12 +7308,13 @@ class _TripDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: palette.appBackground,
       appBar: AppBar(
-        title: const Text('Поездка'),
+        title: Text(l10n.passengerTripDetailTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.ios_share_rounded),
-            tooltip: 'Поделиться чеком',
-            onPressed: () => unawaited(Share.share(_tripShareText(trip))),
+            tooltip: l10n.passengerTripShareTooltip,
+            onPressed: () =>
+                unawaited(Share.share(_tripShareText(l10n, trip))),
           ),
         ],
       ),
@@ -7329,7 +7326,7 @@ class _TripDetailScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    _formatTripDate(trip.createdAt),
+                    _formatTripDate(l10n, trip.createdAt),
                     style: TextStyle(
                       color: palette.textSecondary,
                       fontSize: 13,
@@ -7350,14 +7347,14 @@ class _TripDetailScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'Расстояние',
+                    label: l10n.passengerTripDistanceLabel,
                     value: _distanceLabel(trip.distanceKm),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'В пути',
+                    label: l10n.passengerTripInTransitLabel,
                     value: _durationLabel(trip.durationMin),
                   ),
                 ),
@@ -7385,13 +7382,13 @@ class _TripDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _TripInfoPill(
-              label: 'Итого',
+              label: l10n.passengerTripTotalLabel,
               value: trip.price == null ? '—' : _formatTenge(trip.price!),
               emphasis: true,
             ),
             if (hasDriver) ...[
               const SizedBox(height: 20),
-              const _ProfileGroupLabel('Водитель'),
+              _ProfileGroupLabel(l10n.passengerTripDriverGroupLabel),
               const SizedBox(height: 8),
               _PremiumCard(
                 child: Row(
@@ -7455,7 +7452,7 @@ class _TripDetailScreen extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onContactSupport,
               icon: const Icon(Icons.headset_mic_outlined, size: 18),
-              label: const Text('Написать в поддержку по этой поездке'),
+              label: Text(l10n.passengerTripContactSupportButton),
             ),
             const SizedBox(height: 12),
           ],

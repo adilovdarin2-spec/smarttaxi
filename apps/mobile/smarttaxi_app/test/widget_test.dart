@@ -185,7 +185,7 @@ void main() {
       expect(passenger, contains('Улица, дом или место'));
       expect(passenger, contains('Ничего не найдено'));
       expect(passenger, contains('Выбрать точку на карте'));
-      expect(passenger, contains('Выбрать адрес назначения'));
+      expect(passenger, contains('l10n.passengerCtaPickDropoff'));
       expect(passenger, contains('l10n.passengerHomeWhereToTitle'));
       expect(passenger, contains('Выберите пункт назначения'));
       expect(
@@ -283,13 +283,14 @@ void main() {
   test('passenger stage 2 polish keeps one clear CTA and animated states', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
-    expect(passenger, contains('Выбрать точку подачи'));
-    expect(passenger, contains('Выбрать адрес назначения'));
-    expect(passenger, contains("return 'Рассчитать'"));
-    expect(passenger, contains("return 'Оформить доставку'"));
+    expect(passenger, contains('l10n.passengerCtaPickPickup'));
+    expect(passenger, contains('l10n.passengerCtaPickDropoff'));
+    expect(passenger, contains('return l10n.passengerCtaCalculate'));
+    expect(passenger, contains('return l10n.passengerCtaOrderDelivery'));
     expect(
       passenger,
-      contains(r"return label == null ? 'Заказать' : 'Заказать $label'"),
+      contains(
+          'return label == null\n        ? l10n.passengerCtaOrder\n        : l10n.passengerCtaOrderWithLabel(label)'),
     );
     expect(passenger, contains('AnimatedSwitcher'));
     expect(passenger, contains('AnimatedSize'));
@@ -457,7 +458,7 @@ void main() {
     // exists as its own group.
     expect(passenger, contains("const _ProfileGroupLabel('Быстрые действия')"));
     expect(passenger, contains("const _ProfileGroupLabel('Аккаунт')"));
-    expect(passenger, contains("action: 'На главную'"));
+    expect(passenger, contains('action: l10n.passengerGoHomeAction'));
   });
 
   test('driver entry is not a public top role switch', () {

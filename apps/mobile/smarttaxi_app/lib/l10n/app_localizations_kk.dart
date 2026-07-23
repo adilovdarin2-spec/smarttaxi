@@ -708,6 +708,147 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerTripInTransitLabel => 'Жолда';
 
   @override
+  String get passengerCtaCreatingOrder => 'Тапсырыс жасалуда...';
+
+  @override
+  String get passengerCtaPickPickup => 'Қону нүктесін таңдаңыз';
+
+  @override
+  String get passengerCtaPickDropoff => 'Межелі мекенжайды таңдаңыз';
+
+  @override
+  String get passengerCtaCalculate => 'Есептеу';
+
+  @override
+  String get passengerCtaOrderDelivery => 'Жеткізуге тапсырыс беру';
+
+  @override
+  String passengerCtaOrderWithLabel(String label) {
+    return '$label тапсырыс беру';
+  }
+
+  @override
+  String get passengerCtaOrder => 'Тапсырыс беру';
+
+  @override
+  String get passengerTripsSubtitle =>
+      'Белсенді тапсырыс, сапар мәртебесі және маршрут мәліметтері';
+
+  @override
+  String get passengerTripsLoadErrorTitle => 'Тарихты жүктеу мүмкін болмады';
+
+  @override
+  String get passengerTripsEmptyTitle => 'Белсенді сапар жоқ';
+
+  @override
+  String get passengerTripsLoadErrorText =>
+      'Байланысты тексеріп, қайталап көру үшін экранды төмен тартыңыз.';
+
+  @override
+  String get passengerTripsEmptyText =>
+      'Тапсырыс жасаңыз, SmartTaxi сапар мәртебесін осында көрсетеді.';
+
+  @override
+  String get passengerGoHomeAction => 'Басты бетке';
+
+  @override
+  String get passengerDriverSearchingLabel => 'Жүргізуші іздеудеміз';
+
+  @override
+  String get passengerDriverWaitingLocationLabel =>
+      'Жүргізушінің геолокациясын күтудеміз';
+
+  @override
+  String get passengerDriverConnectedLabel => 'Жүргізуші байланыста';
+
+  @override
+  String get passengerTripDetailTitle => 'Сапар';
+
+  @override
+  String get passengerTripShareTooltip => 'Түбіртекпен бөлісу';
+
+  @override
+  String get passengerTripDistanceLabel => 'Қашықтық';
+
+  @override
+  String get passengerTripTotalLabel => 'Барлығы';
+
+  @override
+  String get passengerTripDriverGroupLabel => 'Жүргізуші';
+
+  @override
+  String get passengerTripContactSupportButton =>
+      'Осы сапар туралы қолдау қызметіне жазу';
+
+  @override
+  String get passengerTripDateUnknown => 'Күні белгісіз';
+
+  @override
+  String get passengerTripDateToday => 'Бүгін';
+
+  @override
+  String get passengerTripDateYesterday => 'Кеше';
+
+  @override
+  String get passengerTripShareTextPrefix => 'SmartTaxi сапары';
+
+  @override
+  String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
+
+  @override
+  String get passengerSectionUnavailableText =>
+      'Басты экранға оралып, бөлімді қайта ашып көріңіз.';
+
+  @override
+  String get passengerMonthJan => 'қаң';
+
+  @override
+  String get passengerMonthFeb => 'ақп';
+
+  @override
+  String get passengerMonthMar => 'нау';
+
+  @override
+  String get passengerMonthApr => 'сәу';
+
+  @override
+  String get passengerMonthMay => 'мам';
+
+  @override
+  String get passengerMonthJun => 'мау';
+
+  @override
+  String get passengerMonthJul => 'шіл';
+
+  @override
+  String get passengerMonthAug => 'там';
+
+  @override
+  String get passengerMonthSep => 'қыр';
+
+  @override
+  String get passengerMonthOct => 'қаз';
+
+  @override
+  String get passengerMonthNov => 'қар';
+
+  @override
+  String get passengerMonthDec => 'жел';
+
+  @override
+  String get passengerNoTripsForLostItem =>
+      'Бұл өтінішке байлайтын қолжетімді сапар жоқ. Хабарламада сапарды сипаттаңыз, жүргізушіні қолмен табамыз.';
+
+  @override
+  String get passengerWhichTripLabel => 'Қай сапар?';
+
+  @override
+  String get passengerWhichTripText => 'Жүргізушіні хабардар ету үшін қажет';
+
+  @override
+  String get passengerChooseTripHint => 'Сапарды таңдаңыз';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

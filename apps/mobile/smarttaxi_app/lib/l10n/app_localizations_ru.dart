@@ -702,6 +702,148 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerTripInTransitLabel => 'В пути';
 
   @override
+  String get passengerCtaCreatingOrder => 'Создаём заказ...';
+
+  @override
+  String get passengerCtaPickPickup => 'Выбрать точку подачи';
+
+  @override
+  String get passengerCtaPickDropoff => 'Выбрать адрес назначения';
+
+  @override
+  String get passengerCtaCalculate => 'Рассчитать';
+
+  @override
+  String get passengerCtaOrderDelivery => 'Оформить доставку';
+
+  @override
+  String passengerCtaOrderWithLabel(String label) {
+    return 'Заказать $label';
+  }
+
+  @override
+  String get passengerCtaOrder => 'Заказать';
+
+  @override
+  String get passengerTripsSubtitle =>
+      'Активный заказ, статус поездки и детали маршрута';
+
+  @override
+  String get passengerTripsLoadErrorTitle => 'Не удалось загрузить историю';
+
+  @override
+  String get passengerTripsEmptyTitle => 'Активной поездки нет';
+
+  @override
+  String get passengerTripsLoadErrorText =>
+      'Проверьте связь и потяните экран вниз, чтобы попробовать снова.';
+
+  @override
+  String get passengerTripsEmptyText =>
+      'Создайте заказ, и SmartTaxi откроет статус поездки здесь.';
+
+  @override
+  String get passengerGoHomeAction => 'На главную';
+
+  @override
+  String get passengerDriverSearchingLabel => 'Ищем водителя';
+
+  @override
+  String get passengerDriverWaitingLocationLabel =>
+      'Ожидаем геолокацию водителя';
+
+  @override
+  String get passengerDriverConnectedLabel => 'Водитель на связи';
+
+  @override
+  String get passengerTripDetailTitle => 'Поездка';
+
+  @override
+  String get passengerTripShareTooltip => 'Поделиться чеком';
+
+  @override
+  String get passengerTripDistanceLabel => 'Расстояние';
+
+  @override
+  String get passengerTripTotalLabel => 'Итого';
+
+  @override
+  String get passengerTripDriverGroupLabel => 'Водитель';
+
+  @override
+  String get passengerTripContactSupportButton =>
+      'Написать в поддержку по этой поездке';
+
+  @override
+  String get passengerTripDateUnknown => 'Дата неизвестна';
+
+  @override
+  String get passengerTripDateToday => 'Сегодня';
+
+  @override
+  String get passengerTripDateYesterday => 'Вчера';
+
+  @override
+  String get passengerTripShareTextPrefix => 'Поездка SmartTaxi';
+
+  @override
+  String get passengerSectionUnavailableTitle => 'Раздел недоступен';
+
+  @override
+  String get passengerSectionUnavailableText =>
+      'Вернитесь на главный экран и попробуйте открыть раздел ещё раз.';
+
+  @override
+  String get passengerMonthJan => 'янв';
+
+  @override
+  String get passengerMonthFeb => 'фев';
+
+  @override
+  String get passengerMonthMar => 'мар';
+
+  @override
+  String get passengerMonthApr => 'апр';
+
+  @override
+  String get passengerMonthMay => 'мая';
+
+  @override
+  String get passengerMonthJun => 'июн';
+
+  @override
+  String get passengerMonthJul => 'июл';
+
+  @override
+  String get passengerMonthAug => 'авг';
+
+  @override
+  String get passengerMonthSep => 'сен';
+
+  @override
+  String get passengerMonthOct => 'окт';
+
+  @override
+  String get passengerMonthNov => 'ноя';
+
+  @override
+  String get passengerMonthDec => 'дек';
+
+  @override
+  String get passengerNoTripsForLostItem =>
+      'Нет доступных поездок, к которым можно привязать эту заявку. Опишите поездку в сообщении ниже, мы найдём водителя вручную.';
+
+  @override
+  String get passengerWhichTripLabel => 'Какая поездка?';
+
+  @override
+  String get passengerWhichTripText =>
+      'Нужна для того, чтобы уведомить водителя';
+
+  @override
+  String get passengerChooseTripHint => 'Выберите поездку';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override
