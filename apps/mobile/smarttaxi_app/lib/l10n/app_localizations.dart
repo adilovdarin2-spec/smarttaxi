@@ -3003,6 +3003,24 @@ abstract class AppLocalizations {
   /// **'Выберите, как расплатиться за поездку'**
   String get passengerChoosePaymentText;
 
+  /// No description provided for @passengerMyLocationLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Моё местоположение'**
+  String get passengerMyLocationLabel;
+
+  /// No description provided for @passengerChooseDropoffLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите пункт назначения'**
+  String get passengerChooseDropoffLabel;
+
+  /// No description provided for @passengerAddressOutsideServiceZoneError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот адрес вне зоны обслуживания. Выберите другой.'**
+  String get passengerAddressOutsideServiceZoneError;
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:

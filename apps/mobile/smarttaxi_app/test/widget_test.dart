@@ -186,7 +186,7 @@ void main() {
       expect(passenger, contains('l10n.passengerPickPointOnMapButton'));
       expect(passenger, contains('l10n.passengerCtaPickDropoff'));
       expect(passenger, contains('l10n.passengerHomeWhereToTitle'));
-      expect(passenger, contains('Выберите пункт назначения'));
+      expect(passenger, contains('l10n.passengerChooseDropoffLabel'));
       expect(
         passenger,
         contains('_SheetAddressEntryCard'),

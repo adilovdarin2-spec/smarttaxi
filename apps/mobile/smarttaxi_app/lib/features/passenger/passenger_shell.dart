@@ -1565,6 +1565,7 @@ class _PassengerShellState extends State<PassengerShell>
     String label,
     PointSource source,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final selectedRegion = _selectedRegion;
     // Blocked here, before the point is ever applied to _pickup/_dropoff,
     // rather than letting a bad point through to _refreshPreview() and
@@ -1577,7 +1578,7 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       AppToast.showError(
         context,
-        'Этот адрес вне зоны обслуживания. Выберите другой.',
+        l10n.passengerAddressOutsideServiceZoneError,
       );
       return;
     }
@@ -1593,7 +1594,7 @@ class _PassengerShellState extends State<PassengerShell>
     setState(() {
       if (inferredPickup != null) {
         _pickup = inferredPickup;
-        _pickupLabel = 'Моё местоположение';
+        _pickupLabel = l10n.passengerMyLocationLabel;
         _pickupSource = PointSource.map;
       }
       if (target == PointTarget.pickup) {
@@ -2195,6 +2196,7 @@ class _PassengerShellState extends State<PassengerShell>
         onPickManually: () => setState(() => _locationBlockDismissed = true),
       );
     }
+    final l10n = AppLocalizations.of(context);
     final screen = MediaQuery.sizeOf(context);
     final compact = screen.height < 720 || screen.width < 390;
     final geolocationNotice = _geolocationNotice;
@@ -2283,10 +2285,10 @@ class _PassengerShellState extends State<PassengerShell>
                     pickupSource: _pickupSource,
                     dropoffSource: _dropoffSource,
                     pickupLabel: _pickupSource == PointSource.none
-                        ? 'Моё местоположение'
+                        ? l10n.passengerMyLocationLabel
                         : _pickupLabel,
                     dropoffLabel: _dropoffSource == PointSource.none
-                        ? 'Выберите пункт назначения'
+                        ? l10n.passengerChooseDropoffLabel
                         : _dropoffLabel,
                     pickupActive: _target == PointTarget.pickup,
                     dropoffActive: _target == PointTarget.dropoff,
@@ -6354,7 +6356,7 @@ class _CurrentLocationButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Tooltip(
-      message: 'Моё местоположение',
+      message: AppLocalizations.of(context).passengerMyLocationLabel,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: loading ? null : onTap,

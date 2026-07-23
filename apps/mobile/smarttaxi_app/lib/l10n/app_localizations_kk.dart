@@ -1635,6 +1635,16 @@ class AppLocalizationsKk extends AppLocalizations {
       'Сапар үшін қалай төлейтініңізді таңдаңыз';
 
   @override
+  String get passengerMyLocationLabel => 'Менің орналасқан жерім';
+
+  @override
+  String get passengerChooseDropoffLabel => 'Межені таңдаңыз';
+
+  @override
+  String get passengerAddressOutsideServiceZoneError =>
+      'Бұл мекенжай қызмет көрсету аймағынан тыс. Басқасын таңдаңыз.';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
 

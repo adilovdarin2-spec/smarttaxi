@@ -1621,6 +1621,16 @@ class AppLocalizationsRu extends AppLocalizations {
       'Выберите, как расплатиться за поездку';
 
   @override
+  String get passengerMyLocationLabel => 'Моё местоположение';
+
+  @override
+  String get passengerChooseDropoffLabel => 'Выберите пункт назначения';
+
+  @override
+  String get passengerAddressOutsideServiceZoneError =>
+      'Этот адрес вне зоны обслуживания. Выберите другой.';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 
