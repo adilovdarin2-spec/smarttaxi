@@ -4176,7 +4176,7 @@ class _DriverFullScreenNavigatorState
               children: [
                 _NavCircleButton(
                   icon: Icons.arrow_back_rounded,
-                  semanticLabel: 'Назад',
+                  semanticLabel: l10n.back,
                   onTap: () => Navigator.of(context).pop(),
                 ),
                 const Spacer(),
@@ -4185,14 +4185,14 @@ class _DriverFullScreenNavigatorState
                       ? Icons.volume_up_rounded
                       : Icons.volume_off_rounded,
                   semanticLabel: shell._voiceEnabled
-                      ? 'Выключить голосовые подсказки'
-                      : 'Включить голосовые подсказки',
+                      ? l10n.driverDisableVoiceHints
+                      : l10n.driverEnableVoiceHints,
                   onTap: shell._toggleVoice,
                 ),
                 const SizedBox(width: 8),
                 _NavCircleButton(
                   icon: Icons.add_location_alt_rounded,
-                  semanticLabel: 'Сообщить о дорожном событии',
+                  semanticLabel: l10n.driverReportRoadEventSemanticLabel,
                   badge: alerts.isEmpty ? null : alerts.length,
                   loading: shell._roadAlertsLoading,
                   onTap: () => unawaited(shell._openRoadAlerts()),
@@ -4253,7 +4253,7 @@ class _DriverFullScreenNavigatorState
               bottom: bottomInset + 190,
               child: _NavCircleButton(
                 icon: Icons.my_location_rounded,
-                semanticLabel: 'Вернуться к текущей позиции',
+                semanticLabel: l10n.driverRecenterSemanticLabel,
                 onTap: _recenter,
                 filled: true,
               ),
@@ -4278,7 +4278,7 @@ class _DriverFullScreenNavigatorState
                     Expanded(
                       flex: 3,
                       child: _NavigatorMetric(
-                        title: 'Скорость',
+                        title: l10n.driverSpeedLabel,
                         value: speedKmh == null ? '--' : '$speedKmh',
                         suffix: 'км/ч',
                         emphasize: true,
@@ -4296,7 +4296,7 @@ class _DriverFullScreenNavigatorState
                       Expanded(
                         flex: 2,
                         child: _NavigatorMetric(
-                          title: 'Лимит',
+                          title: l10n.driverLimitLabel,
                           value: '$speedLimit',
                           suffix: 'км/ч',
                         ),
@@ -4465,10 +4465,10 @@ class _GpsSearchingBanner extends StatelessWidget {
                 CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Ищу сигнал GPS…',
-              style: TextStyle(
+              AppLocalizations.of(context).driverSearchingGpsSignal,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
@@ -4667,8 +4667,8 @@ class _TripMapState extends State<_TripMap> {
               top: 12,
               child: _DriverMapBadge(
                 text: widget.route.isEmpty
-                    ? 'Маршрут появится после расчёта'
-                    : 'Маршрут до точки посадки',
+                    ? AppLocalizations.of(context).driverRouteWillAppearAfterCalc
+                    : AppLocalizations.of(context).driverRouteToPickupPoint,
               ),
             ),
           ],
@@ -4782,33 +4782,35 @@ class _DriverQuickMessageSheet extends StatefulWidget {
 }
 
 class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
-  static const _messages = {
-    'I_ARRIVED': 'Я приехал',
-    'WAITING_AT_ENTRANCE': 'Жду у входа',
-    'RUNNING_LATE_2MIN': 'Опаздываю на 2 минуты',
-    'PLEASE_COME_OUT': 'Пожалуйста, выходите',
-    'ON_MY_WAY': 'Уже еду к вам',
-  };
+  Map<String, String> _messages(AppLocalizations l10n) => {
+        'I_ARRIVED': l10n.driverQuickMessageArrived,
+        'WAITING_AT_ENTRANCE': l10n.driverQuickMessageWaitingAtEntrance,
+        'RUNNING_LATE_2MIN': l10n.driverQuickMessageRunningLate2Min,
+        'PLEASE_COME_OUT': l10n.driverQuickMessagePleaseComeOut,
+        'ON_MY_WAY': l10n.driverQuickMessageOnMyWay,
+      };
 
   String? _sending;
 
   Future<void> _send(String key, String text) async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _sending = key);
     try {
       await widget.api
           .sendQuickMessage(orderId: widget.orderId, messageKey: key);
       if (!mounted) return;
       Navigator.of(context).pop();
-      AppToast.showSuccess(context, 'Отправлено: $text');
+      AppToast.showSuccess(context, l10n.driverQuickMessageSentToast(text));
     } catch (error) {
       if (!mounted) return;
       setState(() => _sending = null);
-      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      AppToast.showError(context, readableError(l10n, error));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -4830,7 +4832,7 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Быстрое сообщение',
+              l10n.driverQuickMessageSheetTitle,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
@@ -4838,7 +4840,7 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            ..._messages.entries.map(
+            ..._messages(l10n).entries.map(
               (entry) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: SizedBox(
@@ -4891,7 +4893,8 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
   void _submit() {
     final value = int.tryParse(_controller.text.trim());
     if (value == null || value < 200 || value > 1000000) {
-      setState(() => _error = 'Введите цену от 200 до 1 000 000 ₸');
+      setState(() =>
+          _error = AppLocalizations.of(context).driverPriceOfferRangeError);
       return;
     }
     Navigator.of(context).pop(value);
@@ -4899,6 +4902,7 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.viewInsetsOf(context).bottom,
@@ -4924,15 +4928,16 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
                 ),
               ),
             ),
-            const Text(
-              'Предложить свою цену',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+            Text(
+              l10n.driverPriceOfferSheetTitle,
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
               widget.currentPrice == null
-                  ? 'Клиент увидит вашу цену и сможет согласиться или отказаться'
-                  : 'Текущая цена заказа: ${formatDriverMoney(widget.currentPrice!.round())}',
+                  ? l10n.driverPriceOfferSheetSubtitle
+                  : l10n.driverCurrentOrderPriceLabel(
+                      formatDriverMoney(widget.currentPrice!.round())),
               style: TextStyle(
                 color: context.palette.textSecondary,
                 fontSize: 13,
@@ -4949,7 +4954,7 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
               },
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                labelText: 'Цена, ₸',
+                labelText: l10n.driverPriceFieldLabel,
                 errorText: _error,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -4958,7 +4963,7 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
             ),
             const SizedBox(height: 16),
             DriverGradientButton(
-              text: 'Отправить предложение',
+              text: l10n.driverSendOfferButton,
               onTap: _submit,
             ),
           ],

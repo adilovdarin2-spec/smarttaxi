@@ -3417,4 +3417,76 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverYourCarSemanticLabel => 'Ваш автомобиль';
+
+  @override
+  String get driverDisableVoiceHints => 'Выключить голосовые подсказки';
+
+  @override
+  String get driverEnableVoiceHints => 'Включить голосовые подсказки';
+
+  @override
+  String get driverReportRoadEventSemanticLabel =>
+      'Сообщить о дорожном событии';
+
+  @override
+  String get driverRecenterSemanticLabel => 'Вернуться к текущей позиции';
+
+  @override
+  String get driverSpeedLabel => 'Скорость';
+
+  @override
+  String get driverLimitLabel => 'Лимит';
+
+  @override
+  String get driverSearchingGpsSignal => 'Ищу сигнал GPS…';
+
+  @override
+  String get driverRouteWillAppearAfterCalc => 'Маршрут появится после расчёта';
+
+  @override
+  String get driverRouteToPickupPoint => 'Маршрут до точки посадки';
+
+  @override
+  String get driverQuickMessageArrived => 'Я приехал';
+
+  @override
+  String get driverQuickMessageWaitingAtEntrance => 'Жду у входа';
+
+  @override
+  String get driverQuickMessageRunningLate2Min => 'Опаздываю на 2 минуты';
+
+  @override
+  String get driverQuickMessagePleaseComeOut => 'Пожалуйста, выходите';
+
+  @override
+  String get driverQuickMessageOnMyWay => 'Уже еду к вам';
+
+  @override
+  String driverQuickMessageSentToast(String text) {
+    return 'Отправлено: $text';
+  }
+
+  @override
+  String get driverQuickMessageSheetTitle => 'Быстрое сообщение';
+
+  @override
+  String get driverPriceOfferRangeError => 'Введите цену от 200 до 1 000 000 ₸';
+
+  @override
+  String get driverPriceOfferSheetTitle => 'Предложить свою цену';
+
+  @override
+  String get driverPriceOfferSheetSubtitle =>
+      'Клиент увидит вашу цену и сможет согласиться или отказаться';
+
+  @override
+  String driverCurrentOrderPriceLabel(String price) {
+    return 'Текущая цена заказа: $price';
+  }
+
+  @override
+  String get driverPriceFieldLabel => 'Цена, ₸';
+
+  @override
+  String get driverSendOfferButton => 'Отправить предложение';
 }

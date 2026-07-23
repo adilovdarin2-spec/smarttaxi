@@ -3422,4 +3422,78 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverYourCarSemanticLabel => 'Сіздің көлігіңіз';
+
+  @override
+  String get driverDisableVoiceHints => 'Дауыстық кеңестерді өшіру';
+
+  @override
+  String get driverEnableVoiceHints => 'Дауыстық кеңестерді қосу';
+
+  @override
+  String get driverReportRoadEventSemanticLabel =>
+      'Жол оқиғасы туралы хабарлау';
+
+  @override
+  String get driverRecenterSemanticLabel => 'Ағымдағы позицияға оралу';
+
+  @override
+  String get driverSpeedLabel => 'Жылдамдық';
+
+  @override
+  String get driverLimitLabel => 'Шектеу';
+
+  @override
+  String get driverSearchingGpsSignal => 'GPS сигналын іздеп жатырмыз…';
+
+  @override
+  String get driverRouteWillAppearAfterCalc =>
+      'Бағыт есептелгеннен кейін пайда болады';
+
+  @override
+  String get driverRouteToPickupPoint => 'Қону нүктесіне дейінгі бағыт';
+
+  @override
+  String get driverQuickMessageArrived => 'Мен келдім';
+
+  @override
+  String get driverQuickMessageWaitingAtEntrance => 'Кіреберісте күтудемін';
+
+  @override
+  String get driverQuickMessageRunningLate2Min => '2 минутқа кешігемін';
+
+  @override
+  String get driverQuickMessagePleaseComeOut => 'Шығыңызшы';
+
+  @override
+  String get driverQuickMessageOnMyWay => 'Сізге жолдамын';
+
+  @override
+  String driverQuickMessageSentToast(String text) {
+    return 'Жіберілді: $text';
+  }
+
+  @override
+  String get driverQuickMessageSheetTitle => 'Жылдам хабарлама';
+
+  @override
+  String get driverPriceOfferRangeError =>
+      '200-ден 1 000 000 ₸ дейінгі бағаны енгізіңіз';
+
+  @override
+  String get driverPriceOfferSheetTitle => 'Өз бағаңызды ұсыныңыз';
+
+  @override
+  String get driverPriceOfferSheetSubtitle =>
+      'Клиент бағаңызды көріп, келісе алады немесе бас тарта алады';
+
+  @override
+  String driverCurrentOrderPriceLabel(String price) {
+    return 'Тапсырыстың ағымдағы бағасы: $price';
+  }
+
+  @override
+  String get driverPriceFieldLabel => 'Баға, ₸';
+
+  @override
+  String get driverSendOfferButton => 'Ұсынысты жіберу';
 }

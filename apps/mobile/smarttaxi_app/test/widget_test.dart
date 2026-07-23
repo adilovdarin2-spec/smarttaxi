@@ -636,7 +636,7 @@ void main() {
     expect(driver, isNot(contains('Yandex')));
     expect(driver, isNot(contains('Google')));
     expect(driver, contains('CameraFit.coordinates'));
-    expect(driver, contains('Маршрут до точки посадки'));
+    expect(driver, contains('driverRouteToPickupPoint'));
     expect(helpers, contains('errorRouteUnavailable'));
     expect(driver, contains("status == 'DRIVER_FOUND'"));
     expect(driver, contains("status == 'DRIVER_GOING_TO_CLIENT'"));

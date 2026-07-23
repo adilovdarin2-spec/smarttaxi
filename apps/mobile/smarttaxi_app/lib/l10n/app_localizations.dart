@@ -6182,6 +6182,138 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Ваш автомобиль'**
   String get driverYourCarSemanticLabel;
+
+  /// No description provided for @driverDisableVoiceHints.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выключить голосовые подсказки'**
+  String get driverDisableVoiceHints;
+
+  /// No description provided for @driverEnableVoiceHints.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включить голосовые подсказки'**
+  String get driverEnableVoiceHints;
+
+  /// No description provided for @driverReportRoadEventSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщить о дорожном событии'**
+  String get driverReportRoadEventSemanticLabel;
+
+  /// No description provided for @driverRecenterSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернуться к текущей позиции'**
+  String get driverRecenterSemanticLabel;
+
+  /// No description provided for @driverSpeedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скорость'**
+  String get driverSpeedLabel;
+
+  /// No description provided for @driverLimitLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лимит'**
+  String get driverLimitLabel;
+
+  /// No description provided for @driverSearchingGpsSignal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ищу сигнал GPS…'**
+  String get driverSearchingGpsSignal;
+
+  /// No description provided for @driverRouteWillAppearAfterCalc.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут появится после расчёта'**
+  String get driverRouteWillAppearAfterCalc;
+
+  /// No description provided for @driverRouteToPickupPoint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут до точки посадки'**
+  String get driverRouteToPickupPoint;
+
+  /// No description provided for @driverQuickMessageArrived.
+  ///
+  /// In ru, this message translates to:
+  /// **'Я приехал'**
+  String get driverQuickMessageArrived;
+
+  /// No description provided for @driverQuickMessageWaitingAtEntrance.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жду у входа'**
+  String get driverQuickMessageWaitingAtEntrance;
+
+  /// No description provided for @driverQuickMessageRunningLate2Min.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опаздываю на 2 минуты'**
+  String get driverQuickMessageRunningLate2Min;
+
+  /// No description provided for @driverQuickMessagePleaseComeOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пожалуйста, выходите'**
+  String get driverQuickMessagePleaseComeOut;
+
+  /// No description provided for @driverQuickMessageOnMyWay.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уже еду к вам'**
+  String get driverQuickMessageOnMyWay;
+
+  /// No description provided for @driverQuickMessageSentToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправлено: {text}'**
+  String driverQuickMessageSentToast(String text);
+
+  /// No description provided for @driverQuickMessageSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрое сообщение'**
+  String get driverQuickMessageSheetTitle;
+
+  /// No description provided for @driverPriceOfferRangeError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите цену от 200 до 1 000 000 ₸'**
+  String get driverPriceOfferRangeError;
+
+  /// No description provided for @driverPriceOfferSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предложить свою цену'**
+  String get driverPriceOfferSheetTitle;
+
+  /// No description provided for @driverPriceOfferSheetSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент увидит вашу цену и сможет согласиться или отказаться'**
+  String get driverPriceOfferSheetSubtitle;
+
+  /// No description provided for @driverCurrentOrderPriceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущая цена заказа: {price}'**
+  String driverCurrentOrderPriceLabel(String price);
+
+  /// No description provided for @driverPriceFieldLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена, ₸'**
+  String get driverPriceFieldLabel;
+
+  /// No description provided for @driverSendOfferButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить предложение'**
+  String get driverSendOfferButton;
 }
 
 class _AppLocalizationsDelegate
