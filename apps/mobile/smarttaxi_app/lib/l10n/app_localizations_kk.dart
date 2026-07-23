@@ -439,6 +439,77 @@ class AppLocalizationsKk extends AppLocalizations {
       'Үйді, жұмысты немесе жиі баратын кез келген орынды қосыңыз — олар осында жылдам қолжетімді болады.';
 
   @override
+  String get passengerDriverAppSubtitle =>
+      'Өз көлігіңізде ыңғайлы кестемен табыс табыңыз';
+
+  @override
+  String get passengerDriverStep1Title => 'Өтінішті толтырыңыз';
+
+  @override
+  String get passengerDriverStep1Text =>
+      'Аты-жөні, телефон және көлік деректері — бір минут алады';
+
+  @override
+  String get passengerDriverStep2Title => 'Тексеруді күтіңіз';
+
+  @override
+  String get passengerDriverStep2Text =>
+      'Әкімші өтініштерді әдетте 1–2 күнде қарайды';
+
+  @override
+  String get passengerDriverStep3Title => 'Желіге шығыңыз';
+
+  @override
+  String get passengerDriverStep3Text =>
+      'Мақұлдаудан кейін аймағыңызда тапсырыстар бірден қолжетімді болады';
+
+  @override
+  String get passengerDriverAppSubmittedTitle => 'Өтініш жіберілді';
+
+  @override
+  String get passengerDriverAppQuestionBanner =>
+      'Өтінішке қатысты сұрағыңыз бар ма — қолдау қызметіне жазыңыз.';
+
+  @override
+  String get passengerDriverPersonalDataGroup => 'Жеке деректер';
+
+  @override
+  String get passengerDriverFullNameLabel => 'Аты-жөні';
+
+  @override
+  String get phoneLabel => 'Телефон';
+
+  @override
+  String get passengerDriverCarGroup => 'Автомобиль';
+
+  @override
+  String get passengerDriverCarModelLabel => 'Көліктің маркасы мен үлгісі';
+
+  @override
+  String get passengerDriverCarColorLabel => 'Көлік түсі';
+
+  @override
+  String get passengerDriverPlateLabel => 'Мемлекеттік нөмір';
+
+  @override
+  String get passengerDriverYearLabel => 'Шығарылған жылы';
+
+  @override
+  String get passengerDriverCommentLabel => 'Пікір (міндетті емес)';
+
+  @override
+  String get passengerDriverAgreePrefix => 'Мен келісемін';
+
+  @override
+  String get passengerDriverTermsLink => 'Пайдалану шарттарымен';
+
+  @override
+  String get passengerDriverSafetyRulesLink => 'Қауіпсіздік ережелерімен';
+
+  @override
+  String get passengerDriverSubmitButton => 'Өтінішті жіберу';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

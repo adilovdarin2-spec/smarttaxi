@@ -433,6 +433,77 @@ class AppLocalizationsRu extends AppLocalizations {
       'Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.';
 
   @override
+  String get passengerDriverAppSubtitle =>
+      'Зарабатывайте на своём авто в удобном графике';
+
+  @override
+  String get passengerDriverStep1Title => 'Заполните заявку';
+
+  @override
+  String get passengerDriverStep1Text =>
+      'Имя, телефон и данные автомобиля — это займёт минуту';
+
+  @override
+  String get passengerDriverStep2Title => 'Дождитесь проверки';
+
+  @override
+  String get passengerDriverStep2Text =>
+      'Администратор рассматривает заявки обычно за 1–2 дня';
+
+  @override
+  String get passengerDriverStep3Title => 'Выходите на линию';
+
+  @override
+  String get passengerDriverStep3Text =>
+      'После одобрения сразу доступны заказы в вашем регионе';
+
+  @override
+  String get passengerDriverAppSubmittedTitle => 'Заявка отправлена';
+
+  @override
+  String get passengerDriverAppQuestionBanner =>
+      'Есть вопрос по заявке — напишите в поддержку.';
+
+  @override
+  String get passengerDriverPersonalDataGroup => 'Личные данные';
+
+  @override
+  String get passengerDriverFullNameLabel => 'Имя и фамилия';
+
+  @override
+  String get phoneLabel => 'Телефон';
+
+  @override
+  String get passengerDriverCarGroup => 'Автомобиль';
+
+  @override
+  String get passengerDriverCarModelLabel => 'Марка и модель авто';
+
+  @override
+  String get passengerDriverCarColorLabel => 'Цвет авто';
+
+  @override
+  String get passengerDriverPlateLabel => 'Госномер';
+
+  @override
+  String get passengerDriverYearLabel => 'Год выпуска';
+
+  @override
+  String get passengerDriverCommentLabel => 'Комментарий (необязательно)';
+
+  @override
+  String get passengerDriverAgreePrefix => 'Я согласен с ';
+
+  @override
+  String get passengerDriverTermsLink => 'Условиями использования';
+
+  @override
+  String get passengerDriverSafetyRulesLink => 'Правилами безопасности';
+
+  @override
+  String get passengerDriverSubmitButton => 'Отправить заявку';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

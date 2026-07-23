@@ -485,7 +485,7 @@ void main() {
     );
     expect(main, isNot(contains(publicSwitchA)));
     expect(main, isNot(contains(publicSwitchB)));
-    expect(passenger, contains('Стать водителем'));
+    expect(passenger, contains('passengerDrawerBecomeDriver'));
     expect(passenger, contains('onOpenDriverMode'));
     expect(passenger, contains('_SmartDrawer'));
   });
@@ -779,7 +779,7 @@ void main() {
       final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
       expect(api, contains("'/api/admin/driver-applications'"));
-      expect(passenger, contains('Отправить заявку'));
+      expect(passenger, contains('l10n.passengerDriverSubmitButton'));
       expect(
         passenger,
         contains('Заявка отправлена. Администратор проверит данные.'),

@@ -3266,35 +3266,36 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _driverApplicationScreen() {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final submitted = _driverApplicationMessage != null;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(
-          title: 'Стать водителем',
-          text: 'Зарабатывайте на своём авто в удобном графике',
+        _TitleBlock(
+          title: l10n.passengerDrawerBecomeDriver,
+          text: l10n.passengerDriverAppSubtitle,
         ),
         const SizedBox(height: 16),
         _PremiumCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               _DriverStepRow(
                 number: '1',
-                title: 'Заполните заявку',
-                text: 'Имя, телефон и данные автомобиля — это займёт минуту',
+                title: l10n.passengerDriverStep1Title,
+                text: l10n.passengerDriverStep1Text,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               _DriverStepRow(
                 number: '2',
-                title: 'Дождитесь проверки',
-                text: 'Администратор рассматривает заявки обычно за 1–2 дня',
+                title: l10n.passengerDriverStep2Title,
+                text: l10n.passengerDriverStep2Text,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               _DriverStepRow(
                 number: '3',
-                title: 'Выходите на линию',
-                text: 'После одобрения сразу доступны заказы в вашем регионе',
+                title: l10n.passengerDriverStep3Title,
+                text: l10n.passengerDriverStep3Text,
               ),
             ],
           ),
@@ -3317,9 +3318,10 @@ class _PassengerShellState extends State<PassengerShell>
                       color: palette.success, size: 30),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  'Заявка отправлена',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                Text(
+                  l10n.passengerDriverAppSubmittedTitle,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -3347,7 +3349,7 @@ class _PassengerShellState extends State<PassengerShell>
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Есть вопрос по заявке — напишите в поддержку.',
+                          l10n.passengerDriverAppQuestionBanner,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -3362,19 +3364,19 @@ class _PassengerShellState extends State<PassengerShell>
             ),
           ),
         ] else ...[
-          const _ProfileGroupLabel('Личные данные'),
+          _ProfileGroupLabel(l10n.passengerDriverPersonalDataGroup),
           const SizedBox(height: 8),
           _PremiumCard(
             child: Column(
               children: [
                 _ApplicationField(
-                  label: 'Имя и фамилия',
+                  label: l10n.passengerDriverFullNameLabel,
                   icon: Icons.badge_outlined,
                   onChanged: (value) => _driverFullName = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
-                  label: 'Телефон',
+                  label: l10n.phoneLabel,
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   initialValue: _driverPhone.isEmpty
@@ -3386,38 +3388,38 @@ class _PassengerShellState extends State<PassengerShell>
             ),
           ),
           const SizedBox(height: 14),
-          const _ProfileGroupLabel('Автомобиль'),
+          _ProfileGroupLabel(l10n.passengerDriverCarGroup),
           const SizedBox(height: 8),
           _PremiumCard(
             child: Column(
               children: [
                 _ApplicationField(
-                  label: 'Марка и модель авто',
+                  label: l10n.passengerDriverCarModelLabel,
                   icon: Icons.directions_car_outlined,
                   onChanged: (value) => _driverCarModel = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
-                  label: 'Цвет авто',
+                  label: l10n.passengerDriverCarColorLabel,
                   icon: Icons.palette_outlined,
                   onChanged: (value) => _driverCarColor = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
-                  label: 'Госномер',
+                  label: l10n.passengerDriverPlateLabel,
                   icon: Icons.pin_outlined,
                   onChanged: (value) => _driverPlate = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
-                  label: 'Год выпуска',
+                  label: l10n.passengerDriverYearLabel,
                   icon: Icons.event_outlined,
                   keyboardType: TextInputType.number,
                   onChanged: (value) => _driverYear = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
-                  label: 'Комментарий (необязательно)',
+                  label: l10n.passengerDriverCommentLabel,
                   icon: Icons.edit_note_rounded,
                   onChanged: (value) => _driverComment = value,
                 ),
@@ -3452,9 +3454,9 @@ class _PassengerShellState extends State<PassengerShell>
                             fontWeight: FontWeight.w600,
                           ),
                           children: [
-                            const TextSpan(text: 'Я согласен с '),
+                            TextSpan(text: l10n.passengerDriverAgreePrefix),
                             TextSpan(
-                              text: 'Условиями использования',
+                              text: l10n.passengerDriverTermsLink,
                               style: TextStyle(
                                 color: palette.goldDeep,
                                 fontWeight: FontWeight.w800,
@@ -3464,9 +3466,9 @@ class _PassengerShellState extends State<PassengerShell>
                                       () => _tab = PassengerTab.legalTerms,
                                     ),
                             ),
-                            const TextSpan(text: ' и '),
+                            TextSpan(text: ' ${l10n.authLegalConsentJoiner} '),
                             TextSpan(
-                              text: 'Правилами безопасности',
+                              text: l10n.passengerDriverSafetyRulesLink,
                               style: TextStyle(
                                 color: palette.goldDeep,
                                 fontWeight: FontWeight.w800,
@@ -3498,8 +3500,8 @@ class _PassengerShellState extends State<PassengerShell>
           _GoldCtaButton(
             enabled: !_loading,
             loading: _loading,
-            text: 'Отправить заявку',
-            loadingText: 'Отправляем...',
+            text: l10n.passengerDriverSubmitButton,
+            loadingText: l10n.sendingButton,
             onTap: _submitDriverApplication,
           ),
         ],

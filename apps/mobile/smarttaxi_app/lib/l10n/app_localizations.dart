@@ -872,6 +872,138 @@ abstract class AppLocalizations {
   /// **'Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.'**
   String get passengerFavoritesEmptyText;
 
+  /// No description provided for @passengerDriverAppSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зарабатывайте на своём авто в удобном графике'**
+  String get passengerDriverAppSubtitle;
+
+  /// No description provided for @passengerDriverStep1Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заполните заявку'**
+  String get passengerDriverStep1Title;
+
+  /// No description provided for @passengerDriverStep1Text.
+  ///
+  /// In ru, this message translates to:
+  /// **'Имя, телефон и данные автомобиля — это займёт минуту'**
+  String get passengerDriverStep1Text;
+
+  /// No description provided for @passengerDriverStep2Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дождитесь проверки'**
+  String get passengerDriverStep2Title;
+
+  /// No description provided for @passengerDriverStep2Text.
+  ///
+  /// In ru, this message translates to:
+  /// **'Администратор рассматривает заявки обычно за 1–2 дня'**
+  String get passengerDriverStep2Text;
+
+  /// No description provided for @passengerDriverStep3Title.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выходите на линию'**
+  String get passengerDriverStep3Title;
+
+  /// No description provided for @passengerDriverStep3Text.
+  ///
+  /// In ru, this message translates to:
+  /// **'После одобрения сразу доступны заказы в вашем регионе'**
+  String get passengerDriverStep3Text;
+
+  /// No description provided for @passengerDriverAppSubmittedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка отправлена'**
+  String get passengerDriverAppSubmittedTitle;
+
+  /// No description provided for @passengerDriverAppQuestionBanner.
+  ///
+  /// In ru, this message translates to:
+  /// **'Есть вопрос по заявке — напишите в поддержку.'**
+  String get passengerDriverAppQuestionBanner;
+
+  /// No description provided for @passengerDriverPersonalDataGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Личные данные'**
+  String get passengerDriverPersonalDataGroup;
+
+  /// No description provided for @passengerDriverFullNameLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Имя и фамилия'**
+  String get passengerDriverFullNameLabel;
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Телефон'**
+  String get phoneLabel;
+
+  /// No description provided for @passengerDriverCarGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Автомобиль'**
+  String get passengerDriverCarGroup;
+
+  /// No description provided for @passengerDriverCarModelLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Марка и модель авто'**
+  String get passengerDriverCarModelLabel;
+
+  /// No description provided for @passengerDriverCarColorLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цвет авто'**
+  String get passengerDriverCarColorLabel;
+
+  /// No description provided for @passengerDriverPlateLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Госномер'**
+  String get passengerDriverPlateLabel;
+
+  /// No description provided for @passengerDriverYearLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Год выпуска'**
+  String get passengerDriverYearLabel;
+
+  /// No description provided for @passengerDriverCommentLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комментарий (необязательно)'**
+  String get passengerDriverCommentLabel;
+
+  /// No description provided for @passengerDriverAgreePrefix.
+  ///
+  /// In ru, this message translates to:
+  /// **'Я согласен с '**
+  String get passengerDriverAgreePrefix;
+
+  /// No description provided for @passengerDriverTermsLink.
+  ///
+  /// In ru, this message translates to:
+  /// **'Условиями использования'**
+  String get passengerDriverTermsLink;
+
+  /// No description provided for @passengerDriverSafetyRulesLink.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правилами безопасности'**
+  String get passengerDriverSafetyRulesLink;
+
+  /// No description provided for @passengerDriverSubmitButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить заявку'**
+  String get passengerDriverSubmitButton;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:
