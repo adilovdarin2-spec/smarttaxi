@@ -1551,6 +1551,90 @@ class AppLocalizationsKk extends AppLocalizations {
       'SmartTaxi аккаунты, сапарлары және баптаулары';
 
   @override
+  String get passengerAddressEmptyHintTitle => 'Мекенжайды енгізе бастаңыз';
+
+  @override
+  String get passengerAddressEmptyHintText =>
+      'Көше, аудан немесе орын атауын жазыңыз.';
+
+  @override
+  String get passengerEnableLocationTitle => 'Геолокацияны қосыңыз';
+
+  @override
+  String get passengerNoLocationAccessTitle => 'Геолокацияға қолжетімсіз';
+
+  @override
+  String get passengerEnableLocationText =>
+      'Жақын жүргізушілерді табу және қону орнын дәл анықтау үшін телефондағы GPS-ті қосыңыз.';
+
+  @override
+  String get passengerNoLocationAccessText =>
+      'SmartTaxi-ге жақын жүргізушілерді табу үшін геолокацияға қолжетімділік қажет. Телефон баптауларынан рұқсат беріңіз.';
+
+  @override
+  String get passengerOpenSettingsButton => 'Баптауларды ашу';
+
+  @override
+  String get passengerPickPointOnMapManualButton =>
+      'Нүктені картадан қолмен таңдау';
+
+  @override
+  String get passengerLocationSheetTitle => 'Қону үшін геолокация';
+
+  @override
+  String get passengerLocationSheetText =>
+      'Орналасқан жеріңізді тек қону нүктесі мен маршрутты есептеу үшін қолданамыз. Нүктені картадан қолмен таңдай аласыз.';
+
+  @override
+  String get passengerAllowLocationButton => 'Геолокацияға рұқсат беру';
+
+  @override
+  String get passengerPickPointOnMapButton => 'Нүктені картадан таңдау';
+
+  @override
+  String get passengerPriceHintFaster => 'Жүргізушіні тезірек табамыз';
+
+  @override
+  String get passengerPriceHintSlower => 'Көбірек уақыт кетуі мүмкін';
+
+  @override
+  String get passengerPriceHintNormal => 'Қалыпты қону жылдамдығы';
+
+  @override
+  String passengerYourRegionQuestion(String region) {
+    return 'Сіздің аймағыңыз: $region?';
+  }
+
+  @override
+  String get passengerRegionDetectedText =>
+      'Аймақты геолокация бойынша анықтадық. Тапсырыстардың дұрыс жұмыс істеуі үшін тексеріңіз.';
+
+  @override
+  String get passengerChangeButton => 'Өзгерту';
+
+  @override
+  String get passengerYesCorrectButton => 'Иә, дұрыс';
+
+  @override
+  String get passengerFindCityHint => 'Қаланы немесе ауданды табу';
+
+  @override
+  String get passengerNoRegionFoundText =>
+      'Аймақ немесе елді мекен атауын нақтылаңыз.';
+
+  @override
+  String get passengerPaymentCashDescription =>
+      'Сапардан кейін жүргізушіге төлем';
+
+  @override
+  String get passengerPaymentCardDescription =>
+      'Kaspi Pay арқылы картамен төлем';
+
+  @override
+  String get passengerChoosePaymentText =>
+      'Сапар үшін қалай төлейтініңізді таңдаңыз';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
 

@@ -1539,6 +1539,88 @@ class AppLocalizationsRu extends AppLocalizations {
       'Аккаунт, поездки и настройки SmartTaxi';
 
   @override
+  String get passengerAddressEmptyHintTitle => 'Начните вводить адрес';
+
+  @override
+  String get passengerAddressEmptyHintText =>
+      'Напишите улицу, район или название места.';
+
+  @override
+  String get passengerEnableLocationTitle => 'Включите геолокацию';
+
+  @override
+  String get passengerNoLocationAccessTitle => 'Нет доступа к геолокации';
+
+  @override
+  String get passengerEnableLocationText =>
+      'Чтобы находить ближайших водителей и точно определять место подачи, включите GPS на телефоне.';
+
+  @override
+  String get passengerNoLocationAccessText =>
+      'SmartTaxi нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.';
+
+  @override
+  String get passengerOpenSettingsButton => 'Открыть настройки';
+
+  @override
+  String get passengerPickPointOnMapManualButton =>
+      'Выбрать точку на карте вручную';
+
+  @override
+  String get passengerLocationSheetTitle => 'Геолокация для подачи';
+
+  @override
+  String get passengerLocationSheetText =>
+      'Используем ваше местоположение только для точки подачи и расчёта маршрута. Можно выбрать точку на карте вручную.';
+
+  @override
+  String get passengerAllowLocationButton => 'Разрешить геолокацию';
+
+  @override
+  String get passengerPickPointOnMapButton => 'Выбрать точку на карте';
+
+  @override
+  String get passengerPriceHintFaster => 'Быстрее найдём водителя';
+
+  @override
+  String get passengerPriceHintSlower => 'Может занять больше времени';
+
+  @override
+  String get passengerPriceHintNormal => 'Обычная скорость подачи';
+
+  @override
+  String passengerYourRegionQuestion(String region) {
+    return 'Ваш регион: $region?';
+  }
+
+  @override
+  String get passengerRegionDetectedText =>
+      'Мы определили регион по геолокации. Проверьте, чтобы заказы работали правильно.';
+
+  @override
+  String get passengerChangeButton => 'Изменить';
+
+  @override
+  String get passengerYesCorrectButton => 'Да, верно';
+
+  @override
+  String get passengerFindCityHint => 'Найти город или район';
+
+  @override
+  String get passengerNoRegionFoundText =>
+      'Уточните название региона или посёлка.';
+
+  @override
+  String get passengerPaymentCashDescription => 'Оплата водителю после поездки';
+
+  @override
+  String get passengerPaymentCardDescription => 'Оплата картой через Kaspi Pay';
+
+  @override
+  String get passengerChoosePaymentText =>
+      'Выберите, как расплатиться за поездку';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 

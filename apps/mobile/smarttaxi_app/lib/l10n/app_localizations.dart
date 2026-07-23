@@ -2859,6 +2859,150 @@ abstract class AppLocalizations {
   /// **'Аккаунт, поездки и настройки SmartTaxi'**
   String get passengerProfileSubtitle;
 
+  /// No description provided for @passengerAddressEmptyHintTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начните вводить адрес'**
+  String get passengerAddressEmptyHintTitle;
+
+  /// No description provided for @passengerAddressEmptyHintText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напишите улицу, район или название места.'**
+  String get passengerAddressEmptyHintText;
+
+  /// No description provided for @passengerEnableLocationTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включите геолокацию'**
+  String get passengerEnableLocationTitle;
+
+  /// No description provided for @passengerNoLocationAccessTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет доступа к геолокации'**
+  String get passengerNoLocationAccessTitle;
+
+  /// No description provided for @passengerEnableLocationText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чтобы находить ближайших водителей и точно определять место подачи, включите GPS на телефоне.'**
+  String get passengerEnableLocationText;
+
+  /// No description provided for @passengerNoLocationAccessText.
+  ///
+  /// In ru, this message translates to:
+  /// **'SmartTaxi нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.'**
+  String get passengerNoLocationAccessText;
+
+  /// No description provided for @passengerOpenSettingsButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть настройки'**
+  String get passengerOpenSettingsButton;
+
+  /// No description provided for @passengerPickPointOnMapManualButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать точку на карте вручную'**
+  String get passengerPickPointOnMapManualButton;
+
+  /// No description provided for @passengerLocationSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация для подачи'**
+  String get passengerLocationSheetTitle;
+
+  /// No description provided for @passengerLocationSheetText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Используем ваше местоположение только для точки подачи и расчёта маршрута. Можно выбрать точку на карте вручную.'**
+  String get passengerLocationSheetText;
+
+  /// No description provided for @passengerAllowLocationButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешить геолокацию'**
+  String get passengerAllowLocationButton;
+
+  /// No description provided for @passengerPickPointOnMapButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать точку на карте'**
+  String get passengerPickPointOnMapButton;
+
+  /// No description provided for @passengerPriceHintFaster.
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрее найдём водителя'**
+  String get passengerPriceHintFaster;
+
+  /// No description provided for @passengerPriceHintSlower.
+  ///
+  /// In ru, this message translates to:
+  /// **'Может занять больше времени'**
+  String get passengerPriceHintSlower;
+
+  /// No description provided for @passengerPriceHintNormal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обычная скорость подачи'**
+  String get passengerPriceHintNormal;
+
+  /// No description provided for @passengerYourRegionQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш регион: {region}?'**
+  String passengerYourRegionQuestion(String region);
+
+  /// No description provided for @passengerRegionDetectedText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы определили регион по геолокации. Проверьте, чтобы заказы работали правильно.'**
+  String get passengerRegionDetectedText;
+
+  /// No description provided for @passengerChangeButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить'**
+  String get passengerChangeButton;
+
+  /// No description provided for @passengerYesCorrectButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да, верно'**
+  String get passengerYesCorrectButton;
+
+  /// No description provided for @passengerFindCityHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Найти город или район'**
+  String get passengerFindCityHint;
+
+  /// No description provided for @passengerNoRegionFoundText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уточните название региона или посёлка.'**
+  String get passengerNoRegionFoundText;
+
+  /// No description provided for @passengerPaymentCashDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата водителю после поездки'**
+  String get passengerPaymentCashDescription;
+
+  /// No description provided for @passengerPaymentCardDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата картой через Kaspi Pay'**
+  String get passengerPaymentCardDescription;
+
+  /// No description provided for @passengerChoosePaymentText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите, как расплатиться за поездку'**
+  String get passengerChoosePaymentText;
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:

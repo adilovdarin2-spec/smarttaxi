@@ -12742,16 +12742,19 @@ class _AddressResultTile extends StatelessWidget {
 
 class _AddressEmptyHint extends StatelessWidget {
   const _AddressEmptyHint({
-    this.title = 'Начните вводить адрес',
-    this.text = 'Напишите улицу, район или название места.',
+    this.title,
+    this.text,
   });
 
-  final String title;
-  final String text;
+  final String? title;
+  final String? text;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final resolvedTitle = title ?? l10n.passengerAddressEmptyHintTitle;
+    final resolvedText = text ?? l10n.passengerAddressEmptyHintText;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
@@ -12782,7 +12785,7 @@ class _AddressEmptyHint extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  title,
+                  resolvedTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -12794,7 +12797,7 @@ class _AddressEmptyHint extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  text,
+                  resolvedText,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -12827,6 +12830,7 @@ class _LocationRequiredScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: palette.appBackground,
       body: SafeArea(
@@ -12855,8 +12859,8 @@ class _LocationRequiredScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   serviceDisabled
-                      ? 'Включите геолокацию'
-                      : 'Нет доступа к геолокации',
+                      ? l10n.passengerEnableLocationTitle
+                      : l10n.passengerNoLocationAccessTitle,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: palette.text,
@@ -12867,8 +12871,8 @@ class _LocationRequiredScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   serviceDisabled
-                      ? 'Чтобы находить ближайших водителей и точно определять место подачи, включите GPS на телефоне.'
-                      : 'SmartTaxi нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.',
+                      ? l10n.passengerEnableLocationText
+                      : l10n.passengerNoLocationAccessText,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: palette.textSecondary,
@@ -12883,15 +12887,15 @@ class _LocationRequiredScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onOpenSettings,
                     icon: const Icon(Icons.settings_rounded),
-                    label: const Text('Открыть настройки'),
+                    label: Text(l10n.passengerOpenSettingsButton),
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextButton(
                   onPressed: onPickManually,
-                  child: const Text(
-                    'Выбрать точку на карте вручную',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                  child: Text(
+                    l10n.passengerPickPointOnMapManualButton,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ],
@@ -12909,6 +12913,7 @@ class _LocationPermissionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -12955,7 +12960,7 @@ class _LocationPermissionSheet extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Геолокация для подачи',
+                    l10n.passengerLocationSheetTitle,
                     style: TextStyle(
                       color: palette.text,
                       fontSize: 21,
@@ -12968,7 +12973,7 @@ class _LocationPermissionSheet extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Используем ваше местоположение только для точки подачи и расчёта маршрута. Можно выбрать точку на карте вручную.',
+              l10n.passengerLocationSheetText,
               style: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 13.2,
@@ -12980,7 +12985,7 @@ class _LocationPermissionSheet extends StatelessWidget {
             _GoldCtaButton(
               enabled: true,
               loading: false,
-              text: 'Разрешить геолокацию',
+              text: l10n.passengerAllowLocationButton,
               onTap: () => Navigator.pop(context, true),
             ),
             const SizedBox(height: 6),
@@ -12990,9 +12995,9 @@ class _LocationPermissionSheet extends StatelessWidget {
                 foregroundColor: palette.textSecondary,
                 minimumSize: const Size.fromHeight(42),
               ),
-              child: const Text(
-                'Выбрать точку на карте',
-                style: TextStyle(fontWeight: FontWeight.w800),
+              child: Text(
+                l10n.passengerPickPointOnMapButton,
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -13540,13 +13545,14 @@ class _TariffSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            'Выберите тариф',
+            l10n.passengerTariffSectionTitle,
             style: TextStyle(
               color: palette.text,
               fontSize: 14.2,
@@ -13620,11 +13626,12 @@ class _PriceAdjuster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final hint = currentPrice > basePrice
-        ? 'Быстрее найдём водителя'
+        ? l10n.passengerPriceHintFaster
         : currentPrice < basePrice
-            ? 'Может занять больше времени'
-            : 'Обычная скорость подачи';
+            ? l10n.passengerPriceHintSlower
+            : l10n.passengerPriceHintNormal;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
       decoration: BoxDecoration(
@@ -13645,7 +13652,7 @@ class _PriceAdjuster extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ваша цена',
+                  l10n.passengerYourPriceLabel,
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 12.5,
@@ -13747,6 +13754,7 @@ class _PaymentMethodRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 180),
       opacity: enabled ? 1 : 0.56,
@@ -13774,7 +13782,7 @@ class _PaymentMethodRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Способ оплаты',
+                      l10n.paymentMethodFullLabel,
                       style: TextStyle(
                         color: palette.textSecondary,
                         fontSize: 10.8,
@@ -13842,6 +13850,7 @@ class _RegionConfirmSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -13891,7 +13900,7 @@ class _RegionConfirmSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Ваш регион: ${region.name}?',
+                        l10n.passengerYourRegionQuestion(region.name),
                         style: TextStyle(
                           color: palette.text,
                           fontSize: 22,
@@ -13901,7 +13910,7 @@ class _RegionConfirmSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Мы определили регион по геолокации. Проверьте, чтобы заказы работали правильно.',
+                        l10n.passengerRegionDetectedText,
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 14,
@@ -13921,7 +13930,7 @@ class _RegionConfirmSheet extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () =>
                         Navigator.pop(context, _RegionConfirmAction.change),
-                    child: const Text('Изменить'),
+                    child: Text(l10n.passengerChangeButton),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -13933,7 +13942,7 @@ class _RegionConfirmSheet extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () =>
                         Navigator.pop(context, _RegionConfirmAction.accept),
-                    child: const Text('Да, верно'),
+                    child: Text(l10n.passengerYesCorrectButton),
                   ),
                 ),
               ],
@@ -13974,6 +13983,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final query = _search.text.trim().toLowerCase();
     final regions = query.isEmpty
         ? widget.regions
@@ -14032,16 +14042,16 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
             TextField(
               controller: _search,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                hintText: 'Найти город или район',
-                prefixIcon: Icon(Icons.search_rounded),
+              decoration: InputDecoration(
+                hintText: l10n.passengerFindCityHint,
+                prefixIcon: const Icon(Icons.search_rounded),
               ),
             ),
             const SizedBox(height: 14),
             if (regions.isEmpty)
-              const _AddressEmptyHint(
-                title: 'Ничего не найдено',
-                text: 'Уточните название региона или посёлка.',
+              _AddressEmptyHint(
+                title: l10n.passengerFaqNoResultsTitle,
+                text: l10n.passengerNoRegionFoundText,
               ),
             if (regions.isNotEmpty)
             Flexible(
@@ -14138,10 +14148,11 @@ class _PaymentMethodSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const items = [
-      ('CASH', 'Наличные', 'Оплата водителю после поездки'),
-      ('CARD', 'Картой', 'Оплата картой через Kaspi Pay'),
+    final items = [
+      ('CASH', l10n.paymentCash, l10n.passengerPaymentCashDescription),
+      ('CARD', l10n.paymentCard, l10n.passengerPaymentCardDescription),
     ];
     return SafeArea(
       child: Container(
@@ -14165,7 +14176,7 @@ class _PaymentMethodSheet extends StatelessWidget {
             Center(child: _SheetHandle(dark: isDark)),
             const SizedBox(height: 4),
             Text(
-              'Способ оплаты',
+              l10n.paymentMethodFullLabel,
               style: TextStyle(
                 color: palette.text,
                 fontSize: 22,
@@ -14174,7 +14185,7 @@ class _PaymentMethodSheet extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             Text(
-              'Выберите, как расплатиться за поездку',
+              l10n.passengerChoosePaymentText,
               style: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 13,

@@ -171,7 +171,7 @@ void main() {
       expect(passenger, isNot(contains('_FloatingAddressCard')));
       expect(passenger, contains('_MapPermissionCard'));
       expect(passenger, contains('_MapRouteState'));
-      expect(passenger, contains('Выбрать точку на карте'));
+      expect(passenger, contains('l10n.passengerPickPointOnMapButton'));
       expect(
         passenger,
         contains('l10n.passengerGpsOrMapHintText'),
@@ -182,8 +182,8 @@ void main() {
       expect(passenger, contains('Введите адрес назначения'));
       expect(passenger, contains('_AddressSearchSheet'));
       expect(passenger, contains('l10n.passengerAddressSearchHint'));
-      expect(passenger, contains('Ничего не найдено'));
-      expect(passenger, contains('Выбрать точку на карте'));
+      expect(passenger, contains('l10n.passengerFaqNoResultsTitle'));
+      expect(passenger, contains('l10n.passengerPickPointOnMapButton'));
       expect(passenger, contains('l10n.passengerCtaPickDropoff'));
       expect(passenger, contains('l10n.passengerHomeWhereToTitle'));
       expect(passenger, contains('Выберите пункт назначения'));
@@ -204,7 +204,7 @@ void main() {
       expect(passenger, isNot(contains('_OrderRouteCompact')));
       expect(passenger, isNot(contains('_OrderRouteButton')));
       expect(passenger, contains('_PaymentMethodRow'));
-      expect(passenger, contains('Наличные'));
+      expect(passenger, contains('l10n.paymentCash'));
       expect(passenger, isNot(contains('Широта')));
       expect(passenger, isNot(contains('Долгота')));
       expect(passenger, isNot(contains('Координаты выбраны')));
@@ -325,7 +325,7 @@ void main() {
     expect(passenger, contains('PointSource.manual'));
     expect(passenger, contains('PointSource.none'));
     expect(passenger, contains('Точка на карте'));
-    expect(passenger, contains('Геолокация для подачи'));
+    expect(passenger, contains('l10n.passengerLocationSheetTitle'));
     expect(passenger, contains('initialCameraFit'));
     expect(passenger, contains('CameraFit.coordinates'));
     expect(passenger, contains('if (route.isNotEmpty)'));
@@ -434,7 +434,7 @@ void main() {
     // real OS-permission-backed row (FirebaseMessaging.getNotificationSettings).
     expect(passenger, contains('l10n.passengerSettingsPushLabel'));
     expect(ruArb, contains('"passengerSettingsPushLabel": "Push-уведомления"'));
-    expect(passenger, contains('Геолокация'));
+    expect(passenger, contains('l10n.passengerEnableLocationTitle'));
     expect(passenger, contains('l10n.passengerSettingsAboutGroup'));
     expect(ruArb, contains('"passengerSettingsAboutGroup": "О приложении"'));
     expect(passenger, isNot(contains('Скоро')));
