@@ -4524,12 +4524,13 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _legalHubScreen() {
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(
-          title: 'Правовая информация',
-          text: 'Официальные документы SmartTaxi, редакция от 6 июля 2026 года',
+        _TitleBlock(
+          title: l10n.passengerLegalHubTitle,
+          text: l10n.passengerLegalHubSubtitle,
         ),
         const SizedBox(height: 16),
         for (final doc in legalDocuments) ...[
@@ -4579,7 +4580,7 @@ class _PassengerShellState extends State<PassengerShell>
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Все документы',
+                    AppLocalizations.of(context).passengerAllDocumentsButton,
                     style: TextStyle(
                       color: context.palette.goldDeep,
                       fontSize: 13,
@@ -4614,6 +4615,7 @@ class _SupportHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return _PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4630,7 +4632,9 @@ class _SupportHistoryCard extends StatelessWidget {
                 ),
               ),
               StatusPill(
-                label: item.isResolved ? 'Отвечено' : 'В обработке',
+                label: item.isResolved
+                    ? l10n.passengerSupportStatusResolved
+                    : l10n.passengerSupportStatusPending,
                 tone: item.isResolved
                     ? StatusTone.success
                     : StatusTone.neutral,
@@ -4662,7 +4666,7 @@ class _SupportHistoryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Ответ поддержки',
+                    l10n.passengerSupportResponseLabel,
                     style: TextStyle(
                       color: palette.goldDeep,
                       fontSize: 11,
@@ -4989,6 +4993,7 @@ class _MapCanvasState extends State<_MapCanvas> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final center = widget.center;
     final pickup = widget.pickup;
@@ -5092,7 +5097,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                                     ),
                                     _assetMarkerContent(
                                       asset: _userLocationMarkerAsset,
-                                      semanticLabel: 'Точка подачи',
+                                      semanticLabel: l10n.passengerPickupPointSemanticLabel,
                                       size: 14,
                                       fallbackIcon: Icons
                                           .radio_button_checked_rounded,
@@ -5103,7 +5108,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                             : _assetMarker(
                                 point: pickup.toLatLng(),
                                 asset: _userLocationMarkerAsset,
-                                semanticLabel: 'Точка подачи',
+                                semanticLabel: l10n.passengerPickupPointSemanticLabel,
                                 size: 14,
                                 fallbackIcon:
                                     Icons.radio_button_checked_rounded,
@@ -5112,7 +5117,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                         _assetMarker(
                           point: dropoff.toLatLng(),
                           asset: _destinationMarkerAsset,
-                          semanticLabel: 'Точка назначения',
+                          semanticLabel: l10n.passengerDropoffPointSemanticLabel,
                           size: 16,
                           fallbackIcon: Icons.location_on_rounded,
                         ),
@@ -5121,8 +5126,8 @@ class _MapCanvasState extends State<_MapCanvas> {
                           _assetMarker(
                             point: nearby.toLatLng(),
                             asset: _driverCarMarkerAsset,
-                            semanticLabel:
-                                'Свободный водитель рядом, ${nearby.etaMin} мин',
+                            semanticLabel: l10n
+                                .passengerNearbyFreeDriverSemanticLabel(nearby.etaMin),
                             size: 38,
                             rotationRadians:
                                 (nearby.bearing ?? 0) * math.pi / 180,
@@ -5400,6 +5405,7 @@ class _AnimatedDriverMarkerLayerState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -5411,7 +5417,7 @@ class _AnimatedDriverMarkerLayerState
               height: 76,
               child: _assetMarkerContent(
                 asset: _driverCarMarkerAsset,
-                semanticLabel: 'Автомобиль водителя',
+                semanticLabel: l10n.passengerDriverCarSemanticLabel,
                 fallbackIcon: Icons.local_taxi_rounded,
                 size: 58,
                 rotationRadians: _currentAngle,
@@ -5467,16 +5473,6 @@ bool _pointsWithinPadding(
 String _pointKey(LatLng point) =>
     '${point.latitude.toStringAsFixed(5)},${point.longitude.toStringAsFixed(5)}';
 
-String _pluralCars(int n) {
-  final mod10 = n % 10;
-  final mod100 = n % 100;
-  if (mod10 == 1 && mod100 != 11) return 'машина';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-    return 'машины';
-  }
-  return 'машин';
-}
-
 class _NearbyDriversPill extends StatelessWidget {
   const _NearbyDriversPill({required this.count});
 
@@ -5485,7 +5481,7 @@ class _NearbyDriversPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final label = '$count ${_pluralCars(count)} рядом';
+    final label = AppLocalizations.of(context).passengerNearbyCarsCount(count);
     return Semantics(
       label: label,
       child: Container(
@@ -5750,6 +5746,7 @@ class _MapFallbackSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(
@@ -5771,7 +5768,7 @@ class _MapFallbackSurface extends StatelessWidget {
               Icon(Icons.map_outlined, color: palette.gold, size: 38),
               const SizedBox(height: 12),
               Text(
-                'Карта загружается',
+                l10n.passengerMapLoadingTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: palette.text,
@@ -5781,7 +5778,7 @@ class _MapFallbackSurface extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Подключаем карту города',
+                l10n.passengerMapLoadingSubtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     color: palette.textSecondary,
@@ -5803,6 +5800,7 @@ class _MapUnavailableCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -5831,7 +5829,7 @@ class _MapUnavailableCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Карта временно недоступна',
+                  l10n.passengerMapUnavailableTitle,
                   style: TextStyle(
                     color: palette.text,
                     fontWeight: FontWeight.w900,
@@ -5841,7 +5839,7 @@ class _MapUnavailableCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Маршрут и заказ можно выбрать вручную. Карта восстановится после подключения.',
+                  l10n.passengerMapUnavailableText,
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -5856,7 +5854,7 @@ class _MapUnavailableCard extends StatelessWidget {
             onPressed: onRetry,
             style:
                 TextButton.styleFrom(foregroundColor: palette.goldDeep),
-            child: const Text('Повторить'),
+            child: Text(l10n.retry),
           ),
         ],
       ),
@@ -5920,7 +5918,7 @@ class _MapPermissionCard extends StatelessWidget {
           ),
           IconButton(
             onPressed: onUseLocation,
-            tooltip: 'Разрешить геолокацию',
+            tooltip: AppLocalizations.of(context).passengerAllowGeolocationTooltip,
             icon: Icon(Icons.my_location_rounded,
                 color: palette.gold),
           ),
@@ -5947,7 +5945,9 @@ class _MapRouteState extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final palette = context.palette;
-    final text = loading ? 'Считаем маршрут...' : error ?? 'Маршрут готов';
+    final l10n = AppLocalizations.of(context);
+    final text =
+        loading ? l10n.passengerCalculatingRouteText : error ?? l10n.passengerRouteReadyText;
     final icon = loading
         ? null
         : error == null
@@ -6144,7 +6144,7 @@ class _TrustRow extends StatelessWidget {
         ),
         const SizedBox(width: 7),
         Text(
-          'Проверенные водители · Безопасные поездки',
+          AppLocalizations.of(context).passengerVerifiedDriversSubtitle,
           style: TextStyle(
             color: palette.textSecondary,
             fontSize: 11.5,
@@ -6184,6 +6184,7 @@ class _SheetAddressEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(15, 14, 12, 14),
       decoration: BoxDecoration(
@@ -6210,7 +6211,7 @@ class _SheetAddressEntryCard extends StatelessWidget {
                 child: Column(
                   children: [
                     _SheetAddressRow(
-                      title: 'Откуда',
+                      title: l10n.passengerFromLabel,
                       label: pickupLabel,
                       active: pickupActive,
                       onTap: onPickupTap,
@@ -6221,7 +6222,7 @@ class _SheetAddressEntryCard extends StatelessWidget {
                     ),
                     Divider(height: 16, color: palette.border),
                     _SheetAddressRow(
-                      title: 'Куда',
+                      title: l10n.passengerToLabel,
                       label: dropoffLabel,
                       active: dropoffActive,
                       onTap: onDropoffTap,
@@ -6524,6 +6525,7 @@ class _RouteSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 10, 9, 10),
       decoration: BoxDecoration(
@@ -6542,9 +6544,9 @@ class _RouteSummaryCard extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                _RouteSummaryLine(title: 'Откуда', value: pickupLabel),
+                _RouteSummaryLine(title: l10n.passengerFromLabel, value: pickupLabel),
                 Divider(height: 9, color: palette.border),
-                _RouteSummaryLine(title: 'Куда', value: dropoffLabel),
+                _RouteSummaryLine(title: l10n.passengerToLabel, value: dropoffLabel),
               ],
             ),
           ),
@@ -6562,9 +6564,9 @@ class _RouteSummaryCard extends StatelessWidget {
                 side: BorderSide(color: palette.border),
               ),
             ),
-            child: const Text(
-              'Изменить',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+            child: Text(
+              l10n.passengerChangeButton,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -6665,7 +6667,10 @@ class _OrderNoteRow extends StatelessWidget {
               const SizedBox(width: 9),
               Expanded(
                 child: Text(
-                  hasNote ? note! : 'Описать место (дверь, подъезд, этаж)',
+                  hasNote
+                      ? note!
+                      : AppLocalizations.of(context)
+                          .passengerAddressNotePlaceholder,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -6756,8 +6761,11 @@ class _OrderSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final routeError =
-        error != null && error!.toLowerCase().contains('маршрут');
+    final routeError = error != null &&
+        (error == l10n.errorRouteUnavailable ||
+            error == l10n.errorPickupRegionInactive ||
+            error == l10n.errorDropoffRegionInactive ||
+            error == l10n.errorIntercityNotSupported);
     final routeSelected =
         pickupSource != PointSource.none && dropoffSource != PointSource.none;
     final canSubmit = !loading && !previewLoading;
@@ -6996,7 +7004,7 @@ class _MapPointPickerSheet extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               Text(
-                'Подвиньте карту так, чтобы маркер стоял над нужным входом.',
+                l10n.passengerMapMarkerDragHint,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -14359,6 +14367,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final hasInitialNote = (widget.initialNote ?? '').isNotEmpty;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -14382,13 +14391,13 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _SheetHandle(),
-              const Text(
-                'Описать место',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              Text(
+                l10n.passengerOrderNoteSheetTitle,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 4),
               Text(
-                'Например: домофон 45, второй подъезд, встретить у шлагбаума',
+                l10n.passengerOrderNoteSheetSubtitle,
                 style: TextStyle(
                   color: palette.textSecondary,
                   fontSize: 12.5,
@@ -14402,9 +14411,9 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
                 minLines: 3,
                 maxLines: 5,
                 maxLength: 500,
-                decoration: const InputDecoration(
-                  labelText: 'Комментарий для водителя',
-                  hintText: 'Где вас найти или куда ехать...',
+                decoration: InputDecoration(
+                  labelText: l10n.passengerOrderNoteFieldLabel,
+                  hintText: l10n.passengerOrderNoteFieldHint,
                   alignLabelWithHint: true,
                 ),
               ),
@@ -14412,7 +14421,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
               _GoldCtaButton(
                 enabled: true,
                 loading: false,
-                text: 'Сохранить',
+                text: l10n.save,
                 onTap: () =>
                     Navigator.pop(context, _controller.text.trim()),
               ),
@@ -14425,9 +14434,9 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
                     style: TextButton.styleFrom(
                       foregroundColor: palette.danger,
                     ),
-                    child: const Text(
-                      'Удалить комментарий',
-                      style: TextStyle(fontWeight: FontWeight.w800),
+                    child: Text(
+                      l10n.passengerDeleteNoteButton,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),

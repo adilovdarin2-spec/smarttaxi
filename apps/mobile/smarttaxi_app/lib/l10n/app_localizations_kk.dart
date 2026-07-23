@@ -1156,6 +1156,16 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String passengerNearbyCarsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'көлік',
+    );
+    return 'Жанында $count $_temp0';
+  }
+
+  @override
   String get passengerTimeAgoJustNow => 'жаңа ғана';
 
   @override
@@ -1659,6 +1669,57 @@ class AppLocalizationsKk extends AppLocalizations {
       'Бұл нүкте таңдалған аймақтан тыс. Аймақты ауыстырыңыз немесе SmartTaxi аймағының ішінен нүкте таңдаңыз.';
 
   @override
+  String get passengerMapLoadingTitle => 'Карта жүктелуде';
+
+  @override
+  String get passengerMapLoadingSubtitle => 'Қала картасын қосуда';
+
+  @override
+  String get passengerMapUnavailableTitle => 'Карта уақытша қолжетімсіз';
+
+  @override
+  String get passengerMapUnavailableText =>
+      'Бағыт пен тапсырысты қолмен таңдауға болады. Карта қосылғаннан кейін қалпына келеді.';
+
+  @override
+  String get passengerAllowGeolocationTooltip => 'Геолокацияға рұқсат беру';
+
+  @override
+  String get passengerCalculatingRouteText => 'Бағыт есептелуде...';
+
+  @override
+  String get passengerRouteReadyText => 'Бағыт дайын';
+
+  @override
+  String get passengerVerifiedDriversSubtitle =>
+      'Тексерілген жүргізушілер · Қауіпсіз сапарлар';
+
+  @override
+  String get passengerAddressNotePlaceholder =>
+      'Орынды сипаттаңыз (есік, кіреберіс, қабат)';
+
+  @override
+  String get passengerMapMarkerDragHint =>
+      'Маркер керекті кіреберістің үстінде тұратындай картаны жылжытыңыз.';
+
+  @override
+  String get passengerOrderNoteSheetTitle => 'Орынды сипаттаңыз';
+
+  @override
+  String get passengerOrderNoteSheetSubtitle =>
+      'Мысалы: домофон 45, екінші кіреберіс, шлагбаум жанында күту';
+
+  @override
+  String get passengerOrderNoteFieldLabel => 'Жүргізушіге түсініктеме';
+
+  @override
+  String get passengerOrderNoteFieldHint =>
+      'Сізді қайдан табу керек немесе қайда бару керек...';
+
+  @override
+  String get passengerDeleteNoteButton => 'Түсініктемені жою';
+
+  @override
   String get passengerDriverAppSubmittedMessage =>
       'Өтінім жіберілді. Әкімші деректерді тексереді.';
 
@@ -1735,6 +1796,39 @@ class AppLocalizationsKk extends AppLocalizations {
   String passengerCounterOfferSentToast(String amount) {
     return 'Сіздің ұсынысыңыз жүргізушіге жіберілді: $amount';
   }
+
+  @override
+  String get passengerLegalHubTitle => 'Құқықтық ақпарат';
+
+  @override
+  String get passengerLegalHubSubtitle =>
+      'SmartTaxi ресми құжаттары, 2026 жылғы 6 шілдедегі редакция';
+
+  @override
+  String get passengerAllDocumentsButton => 'Барлық құжаттар';
+
+  @override
+  String get passengerSupportStatusResolved => 'Жауап берілді';
+
+  @override
+  String get passengerSupportStatusPending => 'Өңделуде';
+
+  @override
+  String get passengerSupportResponseLabel => 'Қолдау қызметінің жауабы';
+
+  @override
+  String get passengerPickupPointSemanticLabel => 'Қону нүктесі';
+
+  @override
+  String get passengerDropoffPointSemanticLabel => 'Межелі нүкте';
+
+  @override
+  String passengerNearbyFreeDriverSemanticLabel(int eta) {
+    return 'Жақын жерде бос жүргізуші, $eta мин';
+  }
+
+  @override
+  String get passengerDriverCarSemanticLabel => 'Жүргізушінің көлігі';
 
   @override
   String get passengerLocationServiceDisabledError =>

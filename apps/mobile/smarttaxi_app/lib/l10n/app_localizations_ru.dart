@@ -1148,6 +1148,19 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String passengerNearbyCarsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'машин',
+      many: 'машин',
+      few: 'машины',
+      one: 'машина',
+    );
+    return '$count $_temp0 рядом';
+  }
+
+  @override
   String get passengerTimeAgoJustNow => 'только что';
 
   @override
@@ -1645,6 +1658,56 @@ class AppLocalizationsRu extends AppLocalizations {
       'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.';
 
   @override
+  String get passengerMapLoadingTitle => 'Карта загружается';
+
+  @override
+  String get passengerMapLoadingSubtitle => 'Подключаем карту города';
+
+  @override
+  String get passengerMapUnavailableTitle => 'Карта временно недоступна';
+
+  @override
+  String get passengerMapUnavailableText =>
+      'Маршрут и заказ можно выбрать вручную. Карта восстановится после подключения.';
+
+  @override
+  String get passengerAllowGeolocationTooltip => 'Разрешить геолокацию';
+
+  @override
+  String get passengerCalculatingRouteText => 'Считаем маршрут...';
+
+  @override
+  String get passengerRouteReadyText => 'Маршрут готов';
+
+  @override
+  String get passengerVerifiedDriversSubtitle =>
+      'Проверенные водители · Безопасные поездки';
+
+  @override
+  String get passengerAddressNotePlaceholder =>
+      'Описать место (дверь, подъезд, этаж)';
+
+  @override
+  String get passengerMapMarkerDragHint =>
+      'Подвиньте карту так, чтобы маркер стоял над нужным входом.';
+
+  @override
+  String get passengerOrderNoteSheetTitle => 'Описать место';
+
+  @override
+  String get passengerOrderNoteSheetSubtitle =>
+      'Например: домофон 45, второй подъезд, встретить у шлагбаума';
+
+  @override
+  String get passengerOrderNoteFieldLabel => 'Комментарий для водителя';
+
+  @override
+  String get passengerOrderNoteFieldHint => 'Где вас найти или куда ехать...';
+
+  @override
+  String get passengerDeleteNoteButton => 'Удалить комментарий';
+
+  @override
   String get passengerDriverAppSubmittedMessage =>
       'Заявка отправлена. Администратор проверит данные.';
 
@@ -1722,6 +1785,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String passengerCounterOfferSentToast(String amount) {
     return 'Ваше предложение отправлено водителю: $amount';
   }
+
+  @override
+  String get passengerLegalHubTitle => 'Правовая информация';
+
+  @override
+  String get passengerLegalHubSubtitle =>
+      'Официальные документы SmartTaxi, редакция от 6 июля 2026 года';
+
+  @override
+  String get passengerAllDocumentsButton => 'Все документы';
+
+  @override
+  String get passengerSupportStatusResolved => 'Отвечено';
+
+  @override
+  String get passengerSupportStatusPending => 'В обработке';
+
+  @override
+  String get passengerSupportResponseLabel => 'Ответ поддержки';
+
+  @override
+  String get passengerPickupPointSemanticLabel => 'Точка подачи';
+
+  @override
+  String get passengerDropoffPointSemanticLabel => 'Точка назначения';
+
+  @override
+  String passengerNearbyFreeDriverSemanticLabel(int eta) {
+    return 'Свободный водитель рядом, $eta мин';
+  }
+
+  @override
+  String get passengerDriverCarSemanticLabel => 'Автомобиль водителя';
 
   @override
   String get passengerLocationServiceDisabledError =>

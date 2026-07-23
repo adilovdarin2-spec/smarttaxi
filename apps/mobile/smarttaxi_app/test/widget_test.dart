@@ -233,7 +233,7 @@ void main() {
       expect(passenger, contains('_PaymentMethodRow'));
       expect(passenger, contains('цена'));
       expect(passenger, contains('l10n.errorRouteUnavailable'));
-      expect(passenger, contains('Считаем маршрут...'));
+      expect(passenger, contains('passengerCalculatingRouteText'));
       expect(passenger, contains('Map<String, RoutePreview> _tariffEstimates'));
       expect(passenger, contains('_TariffCard'));
       expect(passenger, contains('_formatTenge'));

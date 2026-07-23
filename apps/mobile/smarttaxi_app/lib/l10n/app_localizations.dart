@@ -2139,6 +2139,12 @@ abstract class AppLocalizations {
   /// **'Хватит ещё на {count} {count, plural, one{поездку} few{поездки} many{поездок} other{поездок}}'**
   String passengerBonusRidesLeft(int count);
 
+  /// No description provided for @passengerNearbyCarsCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} {count, plural, one{машина} few{машины} many{машин} other{машин}} рядом'**
+  String passengerNearbyCarsCount(int count);
+
   /// No description provided for @passengerTimeAgoJustNow.
   ///
   /// In ru, this message translates to:
@@ -3045,6 +3051,96 @@ abstract class AppLocalizations {
   /// **'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.'**
   String get passengerPointOutsideRegionError;
 
+  /// No description provided for @passengerMapLoadingTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта загружается'**
+  String get passengerMapLoadingTitle;
+
+  /// No description provided for @passengerMapLoadingSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подключаем карту города'**
+  String get passengerMapLoadingSubtitle;
+
+  /// No description provided for @passengerMapUnavailableTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта временно недоступна'**
+  String get passengerMapUnavailableTitle;
+
+  /// No description provided for @passengerMapUnavailableText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут и заказ можно выбрать вручную. Карта восстановится после подключения.'**
+  String get passengerMapUnavailableText;
+
+  /// No description provided for @passengerAllowGeolocationTooltip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешить геолокацию'**
+  String get passengerAllowGeolocationTooltip;
+
+  /// No description provided for @passengerCalculatingRouteText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Считаем маршрут...'**
+  String get passengerCalculatingRouteText;
+
+  /// No description provided for @passengerRouteReadyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут готов'**
+  String get passengerRouteReadyText;
+
+  /// No description provided for @passengerVerifiedDriversSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверенные водители · Безопасные поездки'**
+  String get passengerVerifiedDriversSubtitle;
+
+  /// No description provided for @passengerAddressNotePlaceholder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Описать место (дверь, подъезд, этаж)'**
+  String get passengerAddressNotePlaceholder;
+
+  /// No description provided for @passengerMapMarkerDragHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подвиньте карту так, чтобы маркер стоял над нужным входом.'**
+  String get passengerMapMarkerDragHint;
+
+  /// No description provided for @passengerOrderNoteSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Описать место'**
+  String get passengerOrderNoteSheetTitle;
+
+  /// No description provided for @passengerOrderNoteSheetSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например: домофон 45, второй подъезд, встретить у шлагбаума'**
+  String get passengerOrderNoteSheetSubtitle;
+
+  /// No description provided for @passengerOrderNoteFieldLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комментарий для водителя'**
+  String get passengerOrderNoteFieldLabel;
+
+  /// No description provided for @passengerOrderNoteFieldHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Где вас найти или куда ехать...'**
+  String get passengerOrderNoteFieldHint;
+
+  /// No description provided for @passengerDeleteNoteButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить комментарий'**
+  String get passengerDeleteNoteButton;
+
   /// No description provided for @passengerDriverAppSubmittedMessage.
   ///
   /// In ru, this message translates to:
@@ -3164,6 +3260,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Ваше предложение отправлено водителю: {amount}'**
   String passengerCounterOfferSentToast(String amount);
+
+  /// No description provided for @passengerLegalHubTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Правовая информация'**
+  String get passengerLegalHubTitle;
+
+  /// No description provided for @passengerLegalHubSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Официальные документы SmartTaxi, редакция от 6 июля 2026 года'**
+  String get passengerLegalHubSubtitle;
+
+  /// No description provided for @passengerAllDocumentsButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все документы'**
+  String get passengerAllDocumentsButton;
+
+  /// No description provided for @passengerSupportStatusResolved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отвечено'**
+  String get passengerSupportStatusResolved;
+
+  /// No description provided for @passengerSupportStatusPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'В обработке'**
+  String get passengerSupportStatusPending;
+
+  /// No description provided for @passengerSupportResponseLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ поддержки'**
+  String get passengerSupportResponseLabel;
+
+  /// No description provided for @passengerPickupPointSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка подачи'**
+  String get passengerPickupPointSemanticLabel;
+
+  /// No description provided for @passengerDropoffPointSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка назначения'**
+  String get passengerDropoffPointSemanticLabel;
+
+  /// No description provided for @passengerNearbyFreeDriverSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свободный водитель рядом, {eta} мин'**
+  String passengerNearbyFreeDriverSemanticLabel(int eta);
+
+  /// No description provided for @passengerDriverCarSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Автомобиль водителя'**
+  String get passengerDriverCarSemanticLabel;
 
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
