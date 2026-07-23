@@ -368,17 +368,22 @@ class _DriverShellState extends State<DriverShell> {
     if (isMyOffer &&
         previousOfferStatus == 'PENDING' &&
         order.driverOfferStatus == 'ACCEPTED') {
-      AppToast.showSuccess(context,
-          'Клиент принял вашу цену: ${formatDriverMoney(order.driverOfferPriceKzt ?? 0)}');
+      AppToast.showSuccess(
+          context,
+          AppLocalizations.of(context).driverClientAcceptedPriceToast(
+              formatDriverMoney(order.driverOfferPriceKzt ?? 0)));
     } else if (isMyOffer &&
         previousOfferStatus == 'PENDING' &&
         order.driverOfferStatus == 'DECLINED') {
-      AppToast.showError(context, 'Клиент отклонил ваше предложение цены');
+      AppToast.showError(context,
+          AppLocalizations.of(context).driverClientDeclinedOfferToast);
     } else if (isMyOffer &&
         previousProposedBy != 'CLIENT' &&
         order.isClientCounterAwaitingDriver) {
-      AppToast.showSuccess(context,
-          'Клиент предложил свою цену: ${formatDriverMoney(order.driverOfferPriceKzt ?? 0)}');
+      AppToast.showSuccess(
+          context,
+          AppLocalizations.of(context).driverClientCounterOfferToast(
+              formatDriverMoney(order.driverOfferPriceKzt ?? 0)));
     }
     if (!hasRouteDetails) unawaited(_loadOrders());
     if (!order.isActive) unawaited(_loadTripHistory());
@@ -878,7 +883,7 @@ class _DriverShellState extends State<DriverShell> {
   void _announceSpeedLimitChange(int? previous, int? next) {
     if (next == null || previous == null || previous == next) return;
     unawaited(_voice.announce(
-      'Ограничение скорости $next',
+      AppLocalizations.of(context).driverSpeedLimitAnnouncement(next),
       dedupeKey: 'speed-limit-change',
       cooldown: const Duration(seconds: 15),
     ));
@@ -1143,6 +1148,7 @@ class _DriverShellState extends State<DriverShell> {
   // stages (never re-announce a stage already given), and its stage resets
   // once it clears resetAtMeters so a later approach warns again from 0.
   void _checkCameraProximity(Position position) {
+    final l10n = AppLocalizations.of(context);
     const warnAtMeters = 500.0;
     const nearAtMeters = 200.0;
     const passAtMeters = 60.0;
@@ -1166,23 +1172,24 @@ class _DriverShellState extends State<DriverShell> {
       if (stage < 1 && distance <= warnAtMeters) {
         _cameraStage[alert.id] = 1;
         unawaited(HapticFeedback.mediumImpact());
-        unawaited(_voice.announce('Через 500 метров камера',
+        unawaited(_voice.announce(l10n.driverCameraIn500mVoice,
             dedupeKey: 'cam-${alert.id}-500'));
-        _showNavigatorBanner(
-            'Камера через 500 м$headingSuffix', const Duration(seconds: 10));
+        _showNavigatorBanner(l10n.driverCameraIn500mBanner(headingSuffix),
+            const Duration(seconds: 10));
       } else if (stage < 2 && distance <= nearAtMeters) {
         _cameraStage[alert.id] = 2;
         unawaited(HapticFeedback.heavyImpact());
-        unawaited(_voice.announce('Через 200 метров камера',
+        unawaited(_voice.announce(l10n.driverCameraIn200mVoice,
             dedupeKey: 'cam-${alert.id}-200'));
-        _showNavigatorBanner(
-            'Камера через 200 м$headingSuffix', const Duration(seconds: 10));
+        _showNavigatorBanner(l10n.driverCameraIn200mBanner(headingSuffix),
+            const Duration(seconds: 10));
       } else if (stage < 3 && distance <= passAtMeters) {
         _cameraStage[alert.id] = 3;
         unawaited(HapticFeedback.heavyImpact());
-        unawaited(_voice.announce('Камера', dedupeKey: 'cam-${alert.id}-pass'));
+        unawaited(_voice.announce(l10n.driverCameraNowVoice,
+            dedupeKey: 'cam-${alert.id}-pass'));
         _showNavigatorBanner(
-            'Камера$headingSuffix', const Duration(seconds: 6));
+            l10n.driverCameraNowBanner(headingSuffix), const Duration(seconds: 6));
       }
     }
   }
@@ -1225,7 +1232,8 @@ class _DriverShellState extends State<DriverShell> {
     ));
     if (mounted) {
       setState(() {
-        _navigatorBannerText = 'Знак: ${candidate!.label}$limitSuffix';
+        _navigatorBannerText = AppLocalizations.of(context)
+            .driverSignBannerLabel('${candidate!.label}$limitSuffix');
         _navigatorBannerUntil = DateTime.now().add(const Duration(seconds: 8));
       });
       Timer(const Duration(seconds: 8), () {
@@ -1244,7 +1252,7 @@ class _DriverShellState extends State<DriverShell> {
     final speedKmh = (speed * 3.6).round();
     if (speedKmh <= limit + 5) return;
     unawaited(_voice.announce(
-      'Превышение скорости',
+      AppLocalizations.of(context).driverSpeedingVoiceWarning,
       dedupeKey: 'speeding',
       cooldown: const Duration(seconds: 25),
     ));
@@ -1272,13 +1280,16 @@ class _DriverShellState extends State<DriverShell> {
       _announcedManeuverStage = 0;
     }
     if (_announcedManeuverStage >= 2) return;
-    final streetSuffix =
-        maneuver.streetName == null ? '' : ' на ${maneuver.streetName}';
+    final l10n = AppLocalizations.of(context);
+    final streetSuffix = maneuver.streetName == null
+        ? ''
+        : l10n.driverStreetSuffix(maneuver.streetName!);
     if (_announcedManeuverStage < 1 &&
         maneuver.distanceMeters <= prepareAtMeters) {
       _announcedManeuverStage = 1;
       unawaited(_voice.announce(
-        'Через 200 метров ${maneuver.label.toLowerCase()}$streetSuffix',
+        l10n.driverManeuverIn200mVoice(
+            maneuver.label.toLowerCase(), streetSuffix),
         dedupeKey: 'maneuver-$key-prepare',
       ));
     } else if (_announcedManeuverStage < 2 &&
@@ -1323,30 +1334,33 @@ class _DriverShellState extends State<DriverShell> {
     final mode = await showModalBottomSheet<ThemeMode>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: RadioGroup<ThemeMode>(
-          groupValue: current,
-          onChanged: (value) => Navigator.pop(sheetContext, value),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<ThemeMode>(
-                value: ThemeMode.light,
-                title: Text('Светлая'),
-              ),
-              RadioListTile<ThemeMode>(
-                value: ThemeMode.dark,
-                title: Text('Тёмная'),
-              ),
-              RadioListTile<ThemeMode>(
-                value: ThemeMode.system,
-                title: Text('Как в системе'),
-              ),
-              SizedBox(height: 8),
-            ],
+      builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext);
+        return SafeArea(
+          child: RadioGroup<ThemeMode>(
+            groupValue: current,
+            onChanged: (value) => Navigator.pop(sheetContext, value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.light,
+                  title: Text(l10n.passengerThemeLight),
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.dark,
+                  title: Text(l10n.passengerThemeDark),
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.system,
+                  title: Text(l10n.passengerThemeSystem),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
     if (mode == null || mode == current) return;
     widget.onChangeThemeMode?.call(mode);
@@ -1480,7 +1494,8 @@ class _DriverShellState extends State<DriverShell> {
       );
       if (!mounted) return;
       setState(() => _orders = mergeOrder(_orders, updated));
-      AppToast.showSuccess(context, 'Предложение цены отправлено клиенту');
+      AppToast.showSuccess(context,
+          AppLocalizations.of(context).driverPriceOfferSentToast);
     } catch (error) {
       if (!mounted) return;
       AppToast.showError(context, readableError(AppLocalizations.of(context), error));
@@ -1513,12 +1528,14 @@ class _DriverShellState extends State<DriverShell> {
           _tab = 2;
           _online = true;
         });
-        AppToast.showSuccess(context, 'Вы приняли цену клиента — заказ ваш');
+        AppToast.showSuccess(context,
+            AppLocalizations.of(context).driverAcceptedClientPriceToast);
         await _loadDriverRoute(updated.id);
         await _loadDriverStats();
       } else {
         setState(() => _orders = mergeOrder(_orders, updated));
-        AppToast.showInfo(context, 'Вы отклонили предложение клиента');
+        AppToast.showInfo(context,
+            AppLocalizations.of(context).driverDeclinedClientOfferToast);
       }
     } catch (error) {
       if (!mounted) return;
@@ -2071,7 +2088,7 @@ class _DriverShellState extends State<DriverShell> {
         ),
         const SizedBox(height: 14),
         DriverSettingsGroup(
-          title: 'Выплаты',
+          title: l10n.driverSettingsPayoutsGroup,
           children: [
             PayoutMethodSettingsRow(api: widget.api),
           ],
@@ -2088,11 +2105,11 @@ class _DriverShellState extends State<DriverShell> {
               onTap: _chooseLanguage,
             ),
             DriverSettingsRow(
-              title: 'Тема',
+              title: l10n.passengerSettingsThemeLabel,
               text: switch (widget.themeMode ?? ThemeMode.light) {
-                ThemeMode.dark => 'Тёмная',
-                ThemeMode.system => 'Как в системе',
-                ThemeMode.light => 'Светлая',
+                ThemeMode.dark => l10n.passengerThemeDark,
+                ThemeMode.system => l10n.passengerThemeSystem,
+                ThemeMode.light => l10n.passengerThemeLight,
               },
               onTap: _chooseTheme,
             ),
@@ -2247,12 +2264,12 @@ class _DriverShellState extends State<DriverShell> {
           onRecurringBookings: () =>
               _showDriverFullSheet(_driverRecurringBookingsContent),
           onLogout: () async {
+            final l10n = AppLocalizations.of(context);
             Navigator.pop(context);
             final confirmed = await _confirmDriverAction(
-              title: 'Выйти из аккаунта?',
-              message:
-                  'Придётся снова войти по номеру телефона, чтобы продолжить работу в SmartTaxi.',
-              confirmLabel: 'Выйти',
+              title: l10n.passengerLogoutConfirmTitle,
+              message: l10n.driverLogoutConfirmText,
+              confirmLabel: l10n.logOut,
             );
             if (confirmed) widget.onLogout();
           },
@@ -2330,6 +2347,7 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   Widget _lineTab() {
+    final l10n = AppLocalizations.of(context);
     final disabledReason = _disabledReason();
     final availabilityIssue = _availabilityIssue();
     final busy = _activeOrder?.isActive == true;
@@ -2404,7 +2422,7 @@ class _DriverShellState extends State<DriverShell> {
                 right: 14,
                 child: _MapChipButton(
                   icon: Icons.add_location_alt_rounded,
-                  semanticLabel: 'Дорожные события',
+                  semanticLabel: l10n.driverDrawerRoadAlerts,
                   badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
                   onTap: () => unawaited(_openRoadAlerts()),
                 ),
@@ -2457,7 +2475,7 @@ class _DriverShellState extends State<DriverShell> {
                 SectionLabel(
                   title: l10n.driverLineRegionSectionTitle,
                   text: _online
-                      ? 'Чтобы сменить регион, сначала уйдите с линии'
+                      ? l10n.driverMustGoOfflineToChangeRegion
                       : l10n.driverLineRegionSectionText,
                 ),
                 const SizedBox(height: 14),
@@ -2625,7 +2643,7 @@ class _DriverShellState extends State<DriverShell> {
                                   scheme: 'tel',
                                   path: _activeOrder!.riderPhone)),
                               icon: const Icon(Icons.call_rounded, size: 16),
-                              label: const Text('Позвонить'),
+                              label: Text(l10n.callButton),
                             ),
                           ),
                         ],
@@ -2725,7 +2743,7 @@ class _DriverShellState extends State<DriverShell> {
                         ),
                         icon: const Icon(Icons.chat_bubble_outline_rounded,
                             size: 18),
-                        label: const Text('Быстрое сообщение клиенту'),
+                        label: Text(l10n.driverQuickMessageToClientButton),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -2753,10 +2771,9 @@ class _DriverShellState extends State<DriverShell> {
                                 : () async {
                                     final confirmed =
                                         await _confirmDriverAction(
-                                      title: 'Клиент не вышел?',
-                                      message:
-                                          'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.',
-                                      confirmLabel: 'Подтвердить неявку',
+                                      title: l10n.driverNoShowConfirmTitle,
+                                      message: l10n.driverNoShowConfirmText,
+                                      confirmLabel: l10n.driverNoShowConfirmButton,
                                     );
                                     if (confirmed) {
                                       _tripAction(l10n.driverTripNoShowButton,
@@ -2774,10 +2791,9 @@ class _DriverShellState extends State<DriverShell> {
                               ? null
                               : () async {
                                   final confirmed = await _confirmDriverAction(
-                                    title: 'Отменить поездку?',
-                                    message:
-                                        'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.',
-                                    confirmLabel: 'Отменить поездку',
+                                    title: l10n.driverCancelTripConfirmTitle,
+                                    message: l10n.driverCancelTripConfirmText,
+                                    confirmLabel: l10n.driverTripCancelButton,
                                   );
                                   if (confirmed) {
                                     _tripAction(l10n.driverTripCancelButton,

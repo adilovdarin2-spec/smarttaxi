@@ -5876,6 +5876,162 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{tag} · {count}'**
   String driverTopTagLabel(String tag, int count);
+
+  /// No description provided for @driverClientAcceptedPriceToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент принял вашу цену: {price}'**
+  String driverClientAcceptedPriceToast(String price);
+
+  /// No description provided for @driverClientDeclinedOfferToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент отклонил ваше предложение цены'**
+  String get driverClientDeclinedOfferToast;
+
+  /// No description provided for @driverClientCounterOfferToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент предложил свою цену: {price}'**
+  String driverClientCounterOfferToast(String price);
+
+  /// No description provided for @driverSpeedLimitAnnouncement.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ограничение скорости {limit}'**
+  String driverSpeedLimitAnnouncement(int limit);
+
+  /// No description provided for @driverCameraIn500mVoice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Через 500 метров камера'**
+  String get driverCameraIn500mVoice;
+
+  /// No description provided for @driverCameraIn500mBanner.
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера через 500 м{heading}'**
+  String driverCameraIn500mBanner(String heading);
+
+  /// No description provided for @driverCameraIn200mVoice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Через 200 метров камера'**
+  String get driverCameraIn200mVoice;
+
+  /// No description provided for @driverCameraIn200mBanner.
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера через 200 м{heading}'**
+  String driverCameraIn200mBanner(String heading);
+
+  /// No description provided for @driverCameraNowVoice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера'**
+  String get driverCameraNowVoice;
+
+  /// No description provided for @driverCameraNowBanner.
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера{heading}'**
+  String driverCameraNowBanner(String heading);
+
+  /// No description provided for @driverSignBannerLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Знак: {sign}'**
+  String driverSignBannerLabel(String sign);
+
+  /// No description provided for @driverSpeedingVoiceWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Превышение скорости'**
+  String get driverSpeedingVoiceWarning;
+
+  /// No description provided for @driverManeuverIn200mVoice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Через 200 метров {maneuver}{street}'**
+  String driverManeuverIn200mVoice(String maneuver, String street);
+
+  /// No description provided for @driverStreetSuffix.
+  ///
+  /// In ru, this message translates to:
+  /// **' на {street}'**
+  String driverStreetSuffix(String street);
+
+  /// No description provided for @driverPriceOfferSentToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предложение цены отправлено клиенту'**
+  String get driverPriceOfferSentToast;
+
+  /// No description provided for @driverAcceptedClientPriceToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы приняли цену клиента — заказ ваш'**
+  String get driverAcceptedClientPriceToast;
+
+  /// No description provided for @driverDeclinedClientOfferToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы отклонили предложение клиента'**
+  String get driverDeclinedClientOfferToast;
+
+  /// No description provided for @driverSettingsPayoutsGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выплаты'**
+  String get driverSettingsPayoutsGroup;
+
+  /// No description provided for @driverLogoutConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Придётся снова войти по номеру телефона, чтобы продолжить работу в SmartTaxi.'**
+  String get driverLogoutConfirmText;
+
+  /// No description provided for @driverMustGoOfflineToChangeRegion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чтобы сменить регион, сначала уйдите с линии'**
+  String get driverMustGoOfflineToChangeRegion;
+
+  /// No description provided for @driverQuickMessageToClientButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрое сообщение клиенту'**
+  String get driverQuickMessageToClientButton;
+
+  /// No description provided for @driverNoShowConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент не вышел?'**
+  String get driverNoShowConfirmTitle;
+
+  /// No description provided for @driverNoShowConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.'**
+  String get driverNoShowConfirmText;
+
+  /// No description provided for @driverNoShowConfirmButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердить неявку'**
+  String get driverNoShowConfirmButton;
+
+  /// No description provided for @driverCancelTripConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поездку?'**
+  String get driverCancelTripConfirmTitle;
+
+  /// No description provided for @driverCancelTripConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.'**
+  String get driverCancelTripConfirmText;
 }
 
 class _AppLocalizationsDelegate

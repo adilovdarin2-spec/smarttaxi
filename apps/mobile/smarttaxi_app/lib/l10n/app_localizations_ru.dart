@@ -3229,4 +3229,107 @@ class AppLocalizationsRu extends AppLocalizations {
   String driverTopTagLabel(String tag, int count) {
     return '$tag · $count';
   }
+
+  @override
+  String driverClientAcceptedPriceToast(String price) {
+    return 'Клиент принял вашу цену: $price';
+  }
+
+  @override
+  String get driverClientDeclinedOfferToast =>
+      'Клиент отклонил ваше предложение цены';
+
+  @override
+  String driverClientCounterOfferToast(String price) {
+    return 'Клиент предложил свою цену: $price';
+  }
+
+  @override
+  String driverSpeedLimitAnnouncement(int limit) {
+    return 'Ограничение скорости $limit';
+  }
+
+  @override
+  String get driverCameraIn500mVoice => 'Через 500 метров камера';
+
+  @override
+  String driverCameraIn500mBanner(String heading) {
+    return 'Камера через 500 м$heading';
+  }
+
+  @override
+  String get driverCameraIn200mVoice => 'Через 200 метров камера';
+
+  @override
+  String driverCameraIn200mBanner(String heading) {
+    return 'Камера через 200 м$heading';
+  }
+
+  @override
+  String get driverCameraNowVoice => 'Камера';
+
+  @override
+  String driverCameraNowBanner(String heading) {
+    return 'Камера$heading';
+  }
+
+  @override
+  String driverSignBannerLabel(String sign) {
+    return 'Знак: $sign';
+  }
+
+  @override
+  String get driverSpeedingVoiceWarning => 'Превышение скорости';
+
+  @override
+  String driverManeuverIn200mVoice(String maneuver, String street) {
+    return 'Через 200 метров $maneuver$street';
+  }
+
+  @override
+  String driverStreetSuffix(String street) {
+    return ' на $street';
+  }
+
+  @override
+  String get driverPriceOfferSentToast => 'Предложение цены отправлено клиенту';
+
+  @override
+  String get driverAcceptedClientPriceToast =>
+      'Вы приняли цену клиента — заказ ваш';
+
+  @override
+  String get driverDeclinedClientOfferToast =>
+      'Вы отклонили предложение клиента';
+
+  @override
+  String get driverSettingsPayoutsGroup => 'Выплаты';
+
+  @override
+  String get driverLogoutConfirmText =>
+      'Придётся снова войти по номеру телефона, чтобы продолжить работу в SmartTaxi.';
+
+  @override
+  String get driverMustGoOfflineToChangeRegion =>
+      'Чтобы сменить регион, сначала уйдите с линии';
+
+  @override
+  String get driverQuickMessageToClientButton => 'Быстрое сообщение клиенту';
+
+  @override
+  String get driverNoShowConfirmTitle => 'Клиент не вышел?';
+
+  @override
+  String get driverNoShowConfirmText =>
+      'Поездка будет отмечена как неявка клиента — убедитесь, что вы дождались бесплатное время ожидания.';
+
+  @override
+  String get driverNoShowConfirmButton => 'Подтвердить неявку';
+
+  @override
+  String get driverCancelTripConfirmTitle => 'Отменить поездку?';
+
+  @override
+  String get driverCancelTripConfirmText =>
+      'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.';
 }

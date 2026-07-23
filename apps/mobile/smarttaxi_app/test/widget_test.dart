@@ -617,7 +617,7 @@ void main() {
     expect(driver, contains('Принимаем...'));
     expect(orderWidgets, contains('driverSkippingButton'));
     expect(orderWidgets, contains('driverSkipButton'));
-    expect(driver, contains('Клиент не вышел'));
+    expect(driver, contains('driverNoShowConfirmTitle'));
     expect(helpers, contains('driverGoOnlineRequiredError'));
     expect(helpers, contains('driverErrorOrderAlreadyAccepted'));
     expect(helpers, contains('driverErrorHasActiveOrder'));
