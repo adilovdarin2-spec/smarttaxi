@@ -1708,6 +1708,48 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerDeleteNoteButton => 'Удалить комментарий';
 
   @override
+  String get passengerConfirmAddressButton => 'Подтвердить адрес';
+
+  @override
+  String get passengerRecurringStatusActive => 'Активна';
+
+  @override
+  String get passengerRecurringStatusPaused => 'На паузе';
+
+  @override
+  String get passengerRecurringStatusCancelled => 'Отменена';
+
+  @override
+  String get passengerRecurringStatusAwaitingDriver => 'Ждём водителя';
+
+  @override
+  String get passengerRecurringPauseButton => 'Пауза';
+
+  @override
+  String get passengerRecurringResumeButton => 'Возобновить';
+
+  @override
+  String get passengerRecurringAwaitingDriverConfirmationText =>
+      'Ждём подтверждения от водителя';
+
+  @override
+  String get passengerRecurringCancelButton => 'Отменить';
+
+  @override
+  String get passengerDriverArrivedWaitingBanner =>
+      'Водитель приехал и ждёт вас';
+
+  @override
+  String passengerCopiedValueToast(String value) {
+    return 'Скопировано: $value';
+  }
+
+  @override
+  String passengerCopyLabelSemantics(String label) {
+    return 'Скопировать $label';
+  }
+
+  @override
   String get passengerDriverAppSubmittedMessage =>
       'Заявка отправлена. Администратор проверит данные.';
 

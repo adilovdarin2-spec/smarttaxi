@@ -3141,6 +3141,78 @@ abstract class AppLocalizations {
   /// **'Удалить комментарий'**
   String get passengerDeleteNoteButton;
 
+  /// No description provided for @passengerConfirmAddressButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердить адрес'**
+  String get passengerConfirmAddressButton;
+
+  /// No description provided for @passengerRecurringStatusActive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активна'**
+  String get passengerRecurringStatusActive;
+
+  /// No description provided for @passengerRecurringStatusPaused.
+  ///
+  /// In ru, this message translates to:
+  /// **'На паузе'**
+  String get passengerRecurringStatusPaused;
+
+  /// No description provided for @passengerRecurringStatusCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменена'**
+  String get passengerRecurringStatusCancelled;
+
+  /// No description provided for @passengerRecurringStatusAwaitingDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём водителя'**
+  String get passengerRecurringStatusAwaitingDriver;
+
+  /// No description provided for @passengerRecurringPauseButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пауза'**
+  String get passengerRecurringPauseButton;
+
+  /// No description provided for @passengerRecurringResumeButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Возобновить'**
+  String get passengerRecurringResumeButton;
+
+  /// No description provided for @passengerRecurringAwaitingDriverConfirmationText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём подтверждения от водителя'**
+  String get passengerRecurringAwaitingDriverConfirmationText;
+
+  /// No description provided for @passengerRecurringCancelButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить'**
+  String get passengerRecurringCancelButton;
+
+  /// No description provided for @passengerDriverArrivedWaitingBanner.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель приехал и ждёт вас'**
+  String get passengerDriverArrivedWaitingBanner;
+
+  /// No description provided for @passengerCopiedValueToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировано: {value}'**
+  String passengerCopiedValueToast(String value);
+
+  /// No description provided for @passengerCopyLabelSemantics.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать {label}'**
+  String passengerCopyLabelSemantics(String label);
+
   /// No description provided for @passengerDriverAppSubmittedMessage.
   ///
   /// In ru, this message translates to:

@@ -1720,6 +1720,48 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerDeleteNoteButton => 'Түсініктемені жою';
 
   @override
+  String get passengerConfirmAddressButton => 'Мекенжайды растау';
+
+  @override
+  String get passengerRecurringStatusActive => 'Белсенді';
+
+  @override
+  String get passengerRecurringStatusPaused => 'Тоқтатылған';
+
+  @override
+  String get passengerRecurringStatusCancelled => 'Бас тартылған';
+
+  @override
+  String get passengerRecurringStatusAwaitingDriver => 'Жүргізушіні күтудеміз';
+
+  @override
+  String get passengerRecurringPauseButton => 'Тоқтату';
+
+  @override
+  String get passengerRecurringResumeButton => 'Жалғастыру';
+
+  @override
+  String get passengerRecurringAwaitingDriverConfirmationText =>
+      'Жүргізушінің растауын күтудеміз';
+
+  @override
+  String get passengerRecurringCancelButton => 'Бас тарту';
+
+  @override
+  String get passengerDriverArrivedWaitingBanner =>
+      'Жүргізуші келді және сізді күтуде';
+
+  @override
+  String passengerCopiedValueToast(String value) {
+    return 'Көшірілді: $value';
+  }
+
+  @override
+  String passengerCopyLabelSemantics(String label) {
+    return '$label көшіру';
+  }
+
+  @override
   String get passengerDriverAppSubmittedMessage =>
       'Өтінім жіберілді. Әкімші деректерді тексереді.';
 

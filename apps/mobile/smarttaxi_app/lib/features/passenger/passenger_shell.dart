@@ -7058,7 +7058,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Точка на карте',
+                            l10n.passengerMapPointLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -7071,7 +7071,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             addressLoading
-                                ? 'Определяем адрес...'
+                                ? l10n.passengerResolvingAddressLabel
                                 : addressLabel,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -7098,7 +7098,7 @@ class _MapPointPickerSheet extends StatelessWidget {
               _GoldCtaButton(
                 enabled: true,
                 loading: false,
-                text: 'Подтвердить адрес',
+                text: l10n.passengerConfirmAddressButton,
                 onTap: onConfirm,
               ),
             ],
@@ -9411,7 +9411,7 @@ class _ConfirmSheet extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Отмена'),
+                child: Text(AppLocalizations.of(context).cancel),
               ),
             ),
           ],
@@ -9436,23 +9436,24 @@ class _RecurringBookingCard extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onCancel;
 
-  (StatusTone, String) get _statusMeta {
+  (StatusTone, String) _statusMeta(AppLocalizations l10n) {
     switch (booking.status) {
       case 'ACTIVE':
-        return (StatusTone.success, 'Активна');
+        return (StatusTone.success, l10n.passengerRecurringStatusActive);
       case 'PAUSED':
-        return (StatusTone.neutral, 'На паузе');
+        return (StatusTone.neutral, l10n.passengerRecurringStatusPaused);
       case 'CANCELLED':
-        return (StatusTone.neutral, 'Отменена');
+        return (StatusTone.neutral, l10n.passengerRecurringStatusCancelled);
       default:
-        return (StatusTone.neutral, 'Ждём водителя');
+        return (StatusTone.neutral, l10n.passengerRecurringStatusAwaitingDriver);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final (tone, label) = _statusMeta;
+    final l10n = AppLocalizations.of(context);
+    final (tone, label) = _statusMeta(l10n);
     return Opacity(
       opacity: booking.isCancelled ? 0.6 : 1,
       child: _PremiumCard(
@@ -9520,20 +9521,20 @@ class _RecurringBookingCard extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: updating ? null : onPause,
-                        child: const Text('Пауза'),
+                        child: Text(l10n.passengerRecurringPauseButton),
                       ),
                     )
                   else if (booking.isPaused)
                     Expanded(
                       child: OutlinedButton(
                         onPressed: updating ? null : onResume,
-                        child: const Text('Возобновить'),
+                        child: Text(l10n.passengerRecurringResumeButton),
                       ),
                     )
                   else
                     Expanded(
                       child: Text(
-                        'Ждём подтверждения от водителя',
+                        l10n.passengerRecurringAwaitingDriverConfirmationText,
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 12.5,
@@ -9547,7 +9548,7 @@ class _RecurringBookingCard extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: palette.danger,
                     ),
-                    child: const Text('Отменить'),
+                    child: Text(l10n.passengerRecurringCancelButton),
                   ),
                 ],
               ),
@@ -9603,21 +9604,22 @@ class _FavoriteAddressCard extends StatelessWidget {
   final bool deleting;
   final VoidCallback onDelete;
 
-  (IconData, String) get _labelMeta {
+  (IconData, String) _labelMeta(AppLocalizations l10n) {
     switch (address.label) {
       case 'HOME':
-        return (Icons.home_rounded, 'Дом');
+        return (Icons.home_rounded, l10n.passengerFavoriteLabelHome);
       case 'WORK':
-        return (Icons.work_rounded, 'Работа');
+        return (Icons.work_rounded, l10n.passengerFavoriteLabelWork);
       default:
-        return (Icons.place_rounded, 'Другое');
+        return (Icons.place_rounded, l10n.passengerFavoriteLabelOther);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final (icon, labelText) = _labelMeta;
+    final l10n = AppLocalizations.of(context);
+    final (icon, labelText) = _labelMeta(l10n);
     return _PremiumCard(
       child: Row(
         children: [
@@ -9680,7 +9682,7 @@ class _FavoriteAddressCard extends StatelessWidget {
                 )
               : IconButton(
                   onPressed: onDelete,
-                  tooltip: 'Удалить',
+                  tooltip: l10n.deleteButton,
                   icon: Icon(
                     Icons.delete_outline_rounded,
                     color: palette.danger,
@@ -10693,6 +10695,7 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     // Isolated in its own RepaintBoundary: this is the one continuously
     // animating widget in an otherwise static panel, so its repaints must
     // not force the whole sheet (or the opaque panel background) to redraw
@@ -10733,7 +10736,7 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
             const SizedBox(width: 7),
             Flexible(
               child: Text(
-                'Водитель приехал и ждёт вас',
+                l10n.passengerDriverArrivedWaitingBanner,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -15051,6 +15054,7 @@ class _MapOverlayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final summary = routeSummaryLabel;
     if (summary != null) {
       return SizedBox(
@@ -15079,7 +15083,7 @@ class _MapOverlayHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: _MapChromeButton(
               iconAsset: _iconMenu,
-              label: 'Меню',
+              label: l10n.driverDrawerMenuTooltip,
               onTap: onMenu,
             ),
           ),
@@ -16051,7 +16055,7 @@ class _GoldCtaButton extends StatelessWidget {
     required this.text,
     required this.onTap,
     this.trailingText,
-    this.loadingText = 'Создаём заказ...',
+    this.loadingText,
   });
 
   final bool enabled;
@@ -16059,10 +16063,12 @@ class _GoldCtaButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
   final String? trailingText;
-  final String loadingText;
+  final String? loadingText;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedLoadingText =
+        loadingText ?? AppLocalizations.of(context).passengerCtaCreatingOrder;
     return _PressScale(
       enabled: enabled && !loading,
       child: Opacity(
@@ -16099,7 +16105,7 @@ class _GoldCtaButton extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: loading
-                    ? Center(child: _ButtonSpinner(text: loadingText))
+                    ? Center(child: _ButtonSpinner(text: resolvedLoadingText))
                     : Stack(
                         alignment: Alignment.center,
                         children: [
@@ -16656,14 +16662,16 @@ class _ProfileRow extends StatelessWidget {
   final bool copyable;
 
   Future<void> _copy(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     await Clipboard.setData(ClipboardData(text: value));
     if (!context.mounted) return;
-    AppToast.showSuccess(context, 'Скопировано: $value');
+    AppToast.showSuccess(context, l10n.passengerCopiedValueToast(value));
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final valueRow = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -16697,7 +16705,7 @@ class _ProfileRow extends StatelessWidget {
           child: copyable
               ? Semantics(
                   button: true,
-                  label: 'Скопировать $label',
+                  label: l10n.passengerCopyLabelSemantics(label),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
                     onTap: () => _copy(context),
