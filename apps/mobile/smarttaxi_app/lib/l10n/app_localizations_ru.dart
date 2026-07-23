@@ -3489,4 +3489,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverSendOfferButton => 'Отправить предложение';
+
+  @override
+  String get driverRouteAcceptedToast => 'Маршрут принят';
+
+  @override
+  String get driverRouteDeclinedToast => 'Маршрут отклонён';
+
+  @override
+  String get driverRecurringTitle => 'Регулярные поездки';
+
+  @override
+  String get driverRecurringSubtitle =>
+      'Входящие заявки и ваши активные маршруты';
+
+  @override
+  String get driverRecurringEmptyTitle => 'Пока нет заявок';
+
+  @override
+  String get driverRecurringEmptyText =>
+      'Клиенты смогут предложить вам регулярный маршрут после совместной поездки.';
+
+  @override
+  String get driverRecurringNewRequestsTitle => 'Новые заявки';
+
+  @override
+  String get driverRecurringNewRequestsText =>
+      'Примите, если готовы возить по расписанию';
+
+  @override
+  String get driverRecurringYourRoutesTitle => 'Ваши маршруты';
+
+  @override
+  String get driverRecurringNewRequestLabel => 'Новая заявка';
+
+  @override
+  String get driverRejectButton => 'Отклонить';
 }

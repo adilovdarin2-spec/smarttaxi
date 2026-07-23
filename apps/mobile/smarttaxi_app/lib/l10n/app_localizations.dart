@@ -6314,6 +6314,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отправить предложение'**
   String get driverSendOfferButton;
+
+  /// No description provided for @driverRouteAcceptedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут принят'**
+  String get driverRouteAcceptedToast;
+
+  /// No description provided for @driverRouteDeclinedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут отклонён'**
+  String get driverRouteDeclinedToast;
+
+  /// No description provided for @driverRecurringTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулярные поездки'**
+  String get driverRecurringTitle;
+
+  /// No description provided for @driverRecurringSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Входящие заявки и ваши активные маршруты'**
+  String get driverRecurringSubtitle;
+
+  /// No description provided for @driverRecurringEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет заявок'**
+  String get driverRecurringEmptyTitle;
+
+  /// No description provided for @driverRecurringEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиенты смогут предложить вам регулярный маршрут после совместной поездки.'**
+  String get driverRecurringEmptyText;
+
+  /// No description provided for @driverRecurringNewRequestsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новые заявки'**
+  String get driverRecurringNewRequestsTitle;
+
+  /// No description provided for @driverRecurringNewRequestsText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Примите, если готовы возить по расписанию'**
+  String get driverRecurringNewRequestsText;
+
+  /// No description provided for @driverRecurringYourRoutesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваши маршруты'**
+  String get driverRecurringYourRoutesTitle;
+
+  /// No description provided for @driverRecurringNewRequestLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая заявка'**
+  String get driverRecurringNewRequestLabel;
+
+  /// No description provided for @driverRejectButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отклонить'**
+  String get driverRejectButton;
 }
 
 class _AppLocalizationsDelegate

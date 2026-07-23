@@ -3496,4 +3496,40 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverSendOfferButton => 'Ұсынысты жіберу';
+
+  @override
+  String get driverRouteAcceptedToast => 'Бағыт қабылданды';
+
+  @override
+  String get driverRouteDeclinedToast => 'Бағыт қабылданбады';
+
+  @override
+  String get driverRecurringTitle => 'Тұрақты сапарлар';
+
+  @override
+  String get driverRecurringSubtitle =>
+      'Келіп түскен өтінімдер мен белсенді бағыттарыңыз';
+
+  @override
+  String get driverRecurringEmptyTitle => 'Әзірге өтінімдер жоқ';
+
+  @override
+  String get driverRecurringEmptyText =>
+      'Клиенттер бірлескен сапардан кейін сізге тұрақты бағыт ұсына алады.';
+
+  @override
+  String get driverRecurringNewRequestsTitle => 'Жаңа өтінімдер';
+
+  @override
+  String get driverRecurringNewRequestsText =>
+      'Кестемен жүргізуге дайын болсаңыз, қабылдаңыз';
+
+  @override
+  String get driverRecurringYourRoutesTitle => 'Сіздің бағыттарыңыз';
+
+  @override
+  String get driverRecurringNewRequestLabel => 'Жаңа өтінім';
+
+  @override
+  String get driverRejectButton => 'Қабылдамау';
 }

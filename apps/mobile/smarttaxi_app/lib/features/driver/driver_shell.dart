@@ -5034,9 +5034,10 @@ class _DriverRecurringBookingsScreenState
             _bookings.map((b) => b.id == updated.id ? updated : b).toList();
       });
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         AppToast.showSuccess(
           context,
-          accept ? 'Маршрут принят' : 'Маршрут отклонён',
+          accept ? l10n.driverRouteAcceptedToast : l10n.driverRouteDeclinedToast,
         );
       }
     } catch (error) {
@@ -5070,6 +5071,7 @@ class _DriverRecurringBookingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final pending =
         _bookings.where((b) => b.isPendingDriver).toList(growable: false);
     final others =
@@ -5082,9 +5084,9 @@ class _DriverRecurringBookingsScreenState
           parent: BouncingScrollPhysics(),
         ),
         children: [
-          const TitleBlock(
-            title: 'Регулярные поездки',
-            text: 'Входящие заявки и ваши активные маршруты',
+          TitleBlock(
+            title: l10n.driverRecurringTitle,
+            text: l10n.driverRecurringSubtitle,
           ),
           const SizedBox(height: 16),
           if (_loading && _bookings.isEmpty)
@@ -5097,23 +5099,22 @@ class _DriverRecurringBookingsScreenState
           else if (_error && _bookings.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Не удалось загрузить',
-              text: 'Потяните экран вниз, чтобы попробовать снова.',
-              action: 'Повторить',
+              title: l10n.loadFailedTitle,
+              text: l10n.pullToRetry,
+              action: l10n.retry,
               onAction: () => unawaited(_load()),
             )
           else if (_bookings.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.event_repeat_rounded,
-              title: 'Пока нет заявок',
-              text:
-                  'Клиенты смогут предложить вам регулярный маршрут после совместной поездки.',
+              title: l10n.driverRecurringEmptyTitle,
+              text: l10n.driverRecurringEmptyText,
             )
           else ...[
             if (pending.isNotEmpty) ...[
-              const SectionLabel(
-                title: 'Новые заявки',
-                text: 'Примите, если готовы возить по расписанию',
+              SectionLabel(
+                title: l10n.driverRecurringNewRequestsTitle,
+                text: l10n.driverRecurringNewRequestsText,
               ),
               const SizedBox(height: 8),
               ...pending.map(
@@ -5130,7 +5131,7 @@ class _DriverRecurringBookingsScreenState
               const SizedBox(height: 12),
             ],
             if (others.isNotEmpty) ...[
-              const SectionLabel(title: 'Ваши маршруты', text: ''),
+              SectionLabel(title: l10n.driverRecurringYourRoutesTitle, text: ''),
               const SizedBox(height: 8),
               ...others.map(
                 (booking) => Padding(
@@ -5177,22 +5178,23 @@ class _DriverRecurringBookingCard extends StatelessWidget {
   final VoidCallback? onResume;
   final VoidCallback? onCancel;
 
-  (StatusTone, String) get _statusMeta {
+  (StatusTone, String) _statusMeta(AppLocalizations l10n) {
     switch (booking.status) {
       case 'ACTIVE':
-        return (StatusTone.success, 'Активна');
+        return (StatusTone.success, l10n.passengerRecurringStatusActive);
       case 'PAUSED':
-        return (StatusTone.neutral, 'На паузе');
+        return (StatusTone.neutral, l10n.passengerRecurringStatusPaused);
       case 'CANCELLED':
-        return (StatusTone.neutral, 'Отменена');
+        return (StatusTone.neutral, l10n.passengerRecurringStatusCancelled);
       default:
-        return (StatusTone.neutral, 'Новая заявка');
+        return (StatusTone.neutral, l10n.driverRecurringNewRequestLabel);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final (tone, label) = _statusMeta;
+    final l10n = AppLocalizations.of(context);
+    final (tone, label) = _statusMeta(l10n);
     return Opacity(
       opacity: booking.isCancelled ? 0.6 : 1,
       child: PremiumCard(
@@ -5248,7 +5250,7 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: updating ? null : onDecline,
-                      child: const Text('Отклонить'),
+                      child: Text(l10n.driverRejectButton),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -5257,8 +5259,8 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: updating ? null : onAccept,
                       child: updating
-                          ? const ButtonSpinner(text: 'Принимаем...')
-                          : const Text('Принять'),
+                          ? ButtonSpinner(text: l10n.driverAcceptingButton)
+                          : Text(l10n.driverAcceptButton),
                     ),
                   ),
                 ],
@@ -5273,14 +5275,14 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: updating ? null : onPause,
-                        child: const Text('Пауза'),
+                        child: Text(l10n.passengerRecurringPauseButton),
                       ),
                     )
                   else if (onResume != null)
                     Expanded(
                       child: OutlinedButton(
                         onPressed: updating ? null : onResume,
-                        child: const Text('Возобновить'),
+                        child: Text(l10n.passengerRecurringResumeButton),
                       ),
                     ),
                   if (onCancel != null) ...[
@@ -5290,7 +5292,7 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                       style: TextButton.styleFrom(
                         foregroundColor: context.palette.danger,
                       ),
-                      child: const Text('Отменить'),
+                      child: Text(l10n.passengerRecurringCancelButton),
                     ),
                   ],
                 ],

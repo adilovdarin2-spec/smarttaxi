@@ -1138,5 +1138,16 @@
   "driverCurrentOrderPriceLabel": "Текущая цена заказа: {price}",
   "@driverCurrentOrderPriceLabel": {"placeholders": {"price": {"type": "String"}}},
   "driverPriceFieldLabel": "Цена, ₸",
-  "driverSendOfferButton": "Отправить предложение"
+  "driverSendOfferButton": "Отправить предложение",
+  "driverRouteAcceptedToast": "Маршрут принят",
+  "driverRouteDeclinedToast": "Маршрут отклонён",
+  "driverRecurringTitle": "Регулярные поездки",
+  "driverRecurringSubtitle": "Входящие заявки и ваши активные маршруты",
+  "driverRecurringEmptyTitle": "Пока нет заявок",
+  "driverRecurringEmptyText": "Клиенты смогут предложить вам регулярный маршрут после совместной поездки.",
+  "driverRecurringNewRequestsTitle": "Новые заявки",
+  "driverRecurringNewRequestsText": "Примите, если готовы возить по расписанию",
+  "driverRecurringYourRoutesTitle": "Ваши маршруты",
+  "driverRecurringNewRequestLabel": "Новая заявка",
+  "driverRejectButton": "Отклонить"
 }

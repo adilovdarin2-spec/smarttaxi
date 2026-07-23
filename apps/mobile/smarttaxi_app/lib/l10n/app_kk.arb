@@ -1137,5 +1137,16 @@
   "driverCurrentOrderPriceLabel": "Тапсырыстың ағымдағы бағасы: {price}",
   "@driverCurrentOrderPriceLabel": {"placeholders": {"price": {"type": "String"}}},
   "driverPriceFieldLabel": "Баға, ₸",
-  "driverSendOfferButton": "Ұсынысты жіберу"
+  "driverSendOfferButton": "Ұсынысты жіберу",
+  "driverRouteAcceptedToast": "Бағыт қабылданды",
+  "driverRouteDeclinedToast": "Бағыт қабылданбады",
+  "driverRecurringTitle": "Тұрақты сапарлар",
+  "driverRecurringSubtitle": "Келіп түскен өтінімдер мен белсенді бағыттарыңыз",
+  "driverRecurringEmptyTitle": "Әзірге өтінімдер жоқ",
+  "driverRecurringEmptyText": "Клиенттер бірлескен сапардан кейін сізге тұрақты бағыт ұсына алады.",
+  "driverRecurringNewRequestsTitle": "Жаңа өтінімдер",
+  "driverRecurringNewRequestsText": "Кестемен жүргізуге дайын болсаңыз, қабылдаңыз",
+  "driverRecurringYourRoutesTitle": "Сіздің бағыттарыңыз",
+  "driverRecurringNewRequestLabel": "Жаңа өтінім",
+  "driverRejectButton": "Қабылдамау"
 }

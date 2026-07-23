@@ -613,7 +613,7 @@ void main() {
     );
     expect(driver, contains('_acceptingOrderId'));
     expect(driver, contains('_rejectingOrderId'));
-    expect(driver, contains('Принимаем...'));
+    expect(driver, contains('driverAcceptingButton'));
     expect(orderWidgets, contains('driverSkippingButton'));
     expect(orderWidgets, contains('driverSkipButton'));
     expect(driver, contains('driverNoShowConfirmTitle'));
