@@ -484,7 +484,7 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _creatingRecurringBooking = false);
     }
@@ -517,7 +517,7 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) {
         setState(() => _recurringBookingStatusUpdating.remove(booking.id));
@@ -565,7 +565,7 @@ class _PassengerShellState extends State<PassengerShell>
       AppToast.showSuccess(context, 'Адрес добавлен в избранное');
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _creatingFavoriteAddress = false);
     }
@@ -582,7 +582,7 @@ class _PassengerShellState extends State<PassengerShell>
       AppToast.showSuccess(context, 'Адрес удалён из избранного');
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) {
         setState(() => _favoriteAddressDeleting.remove(address.id));
@@ -634,7 +634,7 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _settingDriverPreference = false);
     }
@@ -652,7 +652,7 @@ class _PassengerShellState extends State<PassengerShell>
       AppToast.showSuccess(context, 'Запись удалена');
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) {
         setState(
@@ -1702,7 +1702,7 @@ class _PassengerShellState extends State<PassengerShell>
         _tariffEstimates = estimates;
       });
     } catch (error) {
-      setState(() => _error = _readableError(error));
+      setState(() => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _previewLoading = false);
     }
@@ -1780,7 +1780,7 @@ class _PassengerShellState extends State<PassengerShell>
       // the sheet once a tariff+price are showing — appending it there can
       // land off-screen with nothing visibly changing on tap. A toast
       // always surfaces regardless of scroll position.
-      final message = _readableError(error);
+      final message = _readableError(AppLocalizations.of(context), error);
       setState(() => _error = message);
       AppToast.showError(context, message);
     } finally {
@@ -1815,7 +1815,7 @@ class _PassengerShellState extends State<PassengerShell>
       );
       _startNewPassengerTrip();
     } catch (error) {
-      setState(() => _error = _readableError(error));
+      setState(() => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1844,7 +1844,7 @@ class _PassengerShellState extends State<PassengerShell>
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _respondingToPriceOffer = false);
     }
@@ -1867,7 +1867,7 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(error));
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _respondingToPriceOffer = false);
     }
@@ -1926,7 +1926,8 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       setState(() {
         _driverPickupRoute = null;
-        _driverRouteError = _readableDriverRouteError(error);
+        _driverRouteError =
+            _readableDriverRouteError(AppLocalizations.of(context), error);
       });
     }
   }
@@ -1997,7 +1998,7 @@ class _PassengerShellState extends State<PassengerShell>
         );
       }
     } catch (error) {
-      if (mounted) setState(() => _error = _readableError(error));
+      if (mounted) setState(() => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -2584,7 +2585,7 @@ class _PassengerShellState extends State<PassengerShell>
             : l10n.passengerDriverConnectedLabel;
     final driverRouteText = _driverPickupRoute == null
         ? null
-        : _driverPickupMeta(_driverPickupRoute!);
+        : _driverPickupMeta(l10n, _driverPickupRoute!);
     final route = _order!.driverId == null
         ? (_preview?.geometry ?? const <LatLng>[])
         : (_driverPickupRoute?.geometry ??
@@ -2657,7 +2658,7 @@ class _PassengerShellState extends State<PassengerShell>
               key: ValueKey('trip-status-${order.status}'),
               api: widget.api,
               order: order,
-              statusText: _statusLabel(order.status),
+              statusText: _statusLabel(l10n, order.status),
               statusTone: _statusTone(order.status),
               driverText: driverText,
               driverRouteText: routeMeta,
@@ -2783,7 +2784,7 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       setState(() {
         _ratingSubmitting = false;
-        _error = _readableError(error);
+        _error = _readableError(AppLocalizations.of(context), error);
       });
     }
   }
@@ -3099,7 +3100,7 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() => _promoCheckResult = result);
     } catch (error) {
       if (!mounted) return;
-      setState(() => _promoCheckError = _readableError(error));
+      setState(() => _promoCheckError = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _promoCheckLoading = false);
     }
@@ -3766,7 +3767,7 @@ class _PassengerShellState extends State<PassengerShell>
                                 if (!mounted) return;
                                 setState(() {
                                   _supportMessageDanger = true;
-                                  _supportMessage = _readableError(error);
+                                  _supportMessage = _readableError(AppLocalizations.of(context), error);
                                 });
                               } finally {
                                 if (mounted) {
@@ -7121,7 +7122,7 @@ class _TripHistoryCard extends StatelessWidget {
                 ),
               ),
               StatusPill(
-                label: _statusLabel(trip.status),
+                label: _statusLabel(l10n, trip.status),
                 tone: _statusTone(trip.status),
               ),
             ],
@@ -7334,7 +7335,7 @@ class _TripDetailScreen extends StatelessWidget {
                   ),
                 ),
                 StatusPill(
-                  label: _statusLabel(trip.status),
+                  label: _statusLabel(l10n, trip.status),
                   tone: _statusTone(trip.status),
                 ),
               ],
@@ -14899,6 +14900,7 @@ class _ActiveOrderBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Material(
@@ -14943,7 +14945,7 @@ class _ActiveOrderBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _statusLabel(order.status),
+                        _statusLabel(l10n, order.status),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -17135,6 +17137,7 @@ class _StatusStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     // Terminal statuses (completed in any form, cancelled in any form) never
     // actually reach this widget — _TripStatusPanel returns a different
     // panel for all of them before a _StatusStepper is ever built, so a
@@ -17146,7 +17149,12 @@ class _StatusStepper extends StatelessWidget {
       {'DRIVER_ARRIVED', 'WAITING_CLIENT'},
       {'TRIP_STARTED', 'IN_PROGRESS'},
     ];
-    const labels = ['Поиск', 'Едет', 'Ждёт', 'В пути'];
+    final labels = [
+      l10n.statusStepSearching,
+      l10n.statusStepGoing,
+      l10n.statusStepWaiting,
+      l10n.statusStepInTransit,
+    ];
     final normalizedStatus = status.toUpperCase();
     final rawIndex =
         steps.indexWhere((group) => group.contains(normalizedStatus));
@@ -17223,29 +17231,29 @@ class _StatusStepper extends StatelessWidget {
   }
 }
 
-String _statusLabel(String status) {
-  return const {
-        'NEW': 'Ищем водителя',
-        'SEARCHING_DRIVER': 'Ищем водителя',
-        'DRIVER_ASSIGNED': 'Водитель найден',
-        'DRIVER_FOUND': 'Водитель найден',
-        'DRIVER_GOING_TO_CLIENT': 'Водитель едет к вам',
-        'DRIVER_ARRIVED': 'Водитель прибыл',
-        'WAITING_CLIENT': 'Ожидание клиента',
-        'IN_PROGRESS': 'В пути',
-        'TRIP_STARTED': 'В пути',
-        'COMPLETED': 'Поездка завершена',
-        'TRIP_COMPLETED': 'Поездка завершена',
-        'PAYMENT_PENDING': 'Ожидает оплату',
-        'PAID': 'Оплачено',
-        'RATED': 'Спасибо за оценку',
-        'CANCELLED': 'Отменён',
-        'CANCELLED_BY_CLIENT': 'Отменён',
-        'CANCELLED_BY_DRIVER': 'Отменён водителем',
-        'CANCELLED_BY_OPERATOR': 'Отменён оператором',
-        'NO_SHOW': 'Клиент не вышел',
+String _statusLabel(AppLocalizations l10n, String status) {
+  return {
+        'NEW': l10n.statusLabelSearching,
+        'SEARCHING_DRIVER': l10n.statusLabelSearching,
+        'DRIVER_ASSIGNED': l10n.statusLabelDriverFound,
+        'DRIVER_FOUND': l10n.statusLabelDriverFound,
+        'DRIVER_GOING_TO_CLIENT': l10n.statusLabelDriverGoingToClient,
+        'DRIVER_ARRIVED': l10n.statusLabelDriverArrived,
+        'WAITING_CLIENT': l10n.statusLabelWaitingClient,
+        'IN_PROGRESS': l10n.passengerTripInTransitLabel,
+        'TRIP_STARTED': l10n.passengerTripInTransitLabel,
+        'COMPLETED': l10n.passengerTripCompletedTitle,
+        'TRIP_COMPLETED': l10n.passengerTripCompletedTitle,
+        'PAYMENT_PENDING': l10n.statusLabelPaymentPending,
+        'PAID': l10n.statusLabelPaid,
+        'RATED': l10n.statusLabelRated,
+        'CANCELLED': l10n.statusLabelCancelled,
+        'CANCELLED_BY_CLIENT': l10n.statusLabelCancelled,
+        'CANCELLED_BY_DRIVER': l10n.statusLabelCancelledByDriver,
+        'CANCELLED_BY_OPERATOR': l10n.statusLabelCancelledByOperator,
+        'NO_SHOW': l10n.statusLabelNoShow,
       }[status] ??
-      'Статус обновляется';
+      l10n.statusLabelUpdating;
 }
 
 StatusTone _statusTone(String status) {
@@ -17325,49 +17333,49 @@ List<AddressSuggestion> _mergeRecentAddress(
   return updated;
 }
 
-String _driverPickupMeta(RoutePreview route) {
+String _driverPickupMeta(AppLocalizations l10n, RoutePreview route) {
   final distance = (route.distanceMeters / 1000).toStringAsFixed(1);
   final minutes = (route.durationSeconds / 60).round();
-  final label = route.isToDropoff ? 'До места назначения' : 'До точки посадки';
-  return '$label: $distance км · $minutes мин';
+  final label = route.isToDropoff
+      ? l10n.driverPickupMetaToDropoff
+      : l10n.driverPickupMetaToPickup;
+  return l10n.driverPickupMetaText(label, distance, minutes);
 }
 
-String _readableDriverRouteError(Object error) {
+String _readableDriverRouteError(AppLocalizations l10n, Object error) {
   final message = error.toString();
   if (message.contains('DRIVER_LOCATION_UNAVAILABLE')) {
-    return 'Ожидаем геолокацию водителя.';
+    return l10n.routeErrorWaitingLocation;
   }
   if (message.contains('ROUTE_UNAVAILABLE')) {
-    return 'Маршрут водителя временно недоступен.';
+    return l10n.routeErrorDriverRouteUnavailable;
   }
-  return 'Маршрут водителя временно недоступен.';
+  return l10n.routeErrorDriverRouteUnavailable;
 }
 
-String _readableError(Object error) {
+String _readableError(AppLocalizations l10n, Object error) {
   final apiCode = _apiErrorCode(error);
   if (apiCode != null) {
-    const apiMap = {
-      'CLIENT_HAS_ACTIVE_ORDER':
-          'У вас уже есть активный заказ. Откройте поездку или отмените её.',
-      'VALIDATION_ERROR': 'Проверьте адреса и попробуйте ещё раз.',
-      'UNAUTHORIZED': 'Сессия устарела. Войдите в аккаунт ещё раз.',
-      'FORBIDDEN': 'Недостаточно прав для этого действия.',
-      'RATE_LIMITED': 'Слишком много запросов. Попробуйте чуть позже.',
-      'PICKUP_REGION_INACTIVE': 'В этом месте сервис пока недоступен',
-      'DROPOFF_REGION_INACTIVE': 'Точка назначения вне активного региона',
-      'INTERCITY_NOT_SUPPORTED': 'Межгород пока не поддерживается',
-      'TARIFF_INACTIVE': 'Этот тариф временно недоступен',
-      'TARIFF_REGION_MISMATCH': 'Тариф недоступен для выбранного региона',
-      'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен.',
-      'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
-      'PROMO_CODE_REQUIRED': 'Введите промокод.',
-      'PROMO_NOT_FOUND': 'Такой промокод не найден. Проверьте код.',
-      'PROMO_NOT_STARTED': 'Этот промокод ещё не начал действовать.',
-      'PROMO_EXPIRED': 'Срок действия промокода истёк.',
-      'PROMO_MIN_ORDER_NOT_MET':
-          'Сумма заказа меньше минимальной для этого промокода.',
-      'PROMO_LIMIT_REACHED': 'Лимит использования этого промокода исчерпан.',
-      'PROMO_ALREADY_USED': 'Вы уже использовали этот промокод.',
+    final apiMap = {
+      'CLIENT_HAS_ACTIVE_ORDER': l10n.errorClientHasActiveOrder,
+      'VALIDATION_ERROR': l10n.errorValidation,
+      'UNAUTHORIZED': l10n.errorUnauthorized,
+      'FORBIDDEN': l10n.errorForbidden,
+      'RATE_LIMITED': l10n.errorRateLimited,
+      'PICKUP_REGION_INACTIVE': l10n.errorPickupRegionInactive,
+      'DROPOFF_REGION_INACTIVE': l10n.errorDropoffRegionInactive,
+      'INTERCITY_NOT_SUPPORTED': l10n.errorIntercityNotSupported,
+      'TARIFF_INACTIVE': l10n.errorTariffInactive,
+      'TARIFF_REGION_MISMATCH': l10n.errorTariffRegionMismatch,
+      'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,
+      'DRIVER_LOCATION_UNAVAILABLE': l10n.passengerDriverWaitingLocationLabel,
+      'PROMO_CODE_REQUIRED': l10n.errorPromoCodeRequired,
+      'PROMO_NOT_FOUND': l10n.errorPromoNotFound,
+      'PROMO_NOT_STARTED': l10n.errorPromoNotStarted,
+      'PROMO_EXPIRED': l10n.errorPromoExpired,
+      'PROMO_MIN_ORDER_NOT_MET': l10n.errorPromoMinOrderNotMet,
+      'PROMO_LIMIT_REACHED': l10n.errorPromoLimitReached,
+      'PROMO_ALREADY_USED': l10n.errorPromoAlreadyUsed,
     };
     final mapped = apiMap[apiCode];
     if (mapped != null) return mapped;
@@ -17377,30 +17385,30 @@ String _readableError(Object error) {
       message.contains('Connection') ||
       message.contains('connection') ||
       message.contains('timed out')) {
-    return 'Сервер недоступен. Проверьте подключение.';
+    return l10n.errorServerUnavailable;
   }
-  if (message.contains('DRIVER_NAME_REQUIRED')) return 'Введите имя и фамилию';
-  if (message.contains('DRIVER_PHONE_REQUIRED')) return 'Введите телефон';
+  if (message.contains('DRIVER_NAME_REQUIRED')) return l10n.errorDriverNameRequired;
+  if (message.contains('DRIVER_PHONE_REQUIRED')) return l10n.errorDriverPhoneRequired;
   if (message.contains('DRIVER_CAR_REQUIRED')) {
-    return 'Введите марку и модель авто';
+    return l10n.errorDriverCarRequired;
   }
-  if (message.contains('DRIVER_PLATE_REQUIRED')) return 'Введите госномер';
+  if (message.contains('DRIVER_PLATE_REQUIRED')) return l10n.errorDriverPlateRequired;
   if (message.contains('DRIVER_TERMS_REQUIRED')) {
-    return 'Подтвердите согласие с условиями, чтобы отправить заявку';
+    return l10n.errorDriverTermsRequired;
   }
-  const map = {
-    'PICKUP_REGION_INACTIVE': 'В этом месте сервис пока недоступен',
-    'DROPOFF_REGION_INACTIVE': 'Точка назначения вне активного региона',
-    'INTERCITY_NOT_SUPPORTED': 'Межгород пока не поддерживается',
-    'TARIFF_INACTIVE': 'Этот тариф временно недоступен',
-    'TARIFF_REGION_MISMATCH': 'Тариф недоступен для выбранного региона',
-    'ROUTE_UNAVAILABLE': 'Маршрут временно недоступен.',
-    'DRIVER_LOCATION_UNAVAILABLE': 'Ожидаем геолокацию водителя',
+  final map = {
+    'PICKUP_REGION_INACTIVE': l10n.errorPickupRegionInactive,
+    'DROPOFF_REGION_INACTIVE': l10n.errorDropoffRegionInactive,
+    'INTERCITY_NOT_SUPPORTED': l10n.errorIntercityNotSupported,
+    'TARIFF_INACTIVE': l10n.errorTariffInactive,
+    'TARIFF_REGION_MISMATCH': l10n.errorTariffRegionMismatch,
+    'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,
+    'DRIVER_LOCATION_UNAVAILABLE': l10n.passengerDriverWaitingLocationLabel,
   };
   for (final entry in map.entries) {
     if (message.contains(entry.key)) return entry.value;
   }
-  return 'Не удалось выполнить запрос';
+  return l10n.errorGenericRequestFailed;
 }
 
 String? _apiErrorCode(Object error) {

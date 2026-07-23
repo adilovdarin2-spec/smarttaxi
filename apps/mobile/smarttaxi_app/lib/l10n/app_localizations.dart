@@ -2421,6 +2421,288 @@ abstract class AppLocalizations {
   /// **'Не удалось получить геолокацию. Выберите точку подачи на карте.'**
   String get passengerLocationFailedPickManuallyError;
 
+  /// No description provided for @statusStepSearching.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск'**
+  String get statusStepSearching;
+
+  /// No description provided for @statusStepGoing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Едет'**
+  String get statusStepGoing;
+
+  /// No description provided for @statusStepWaiting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждёт'**
+  String get statusStepWaiting;
+
+  /// No description provided for @statusStepInTransit.
+  ///
+  /// In ru, this message translates to:
+  /// **'В пути'**
+  String get statusStepInTransit;
+
+  /// No description provided for @statusLabelSearching.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ищем водителя'**
+  String get statusLabelSearching;
+
+  /// No description provided for @statusLabelDriverFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель найден'**
+  String get statusLabelDriverFound;
+
+  /// No description provided for @statusLabelDriverGoingToClient.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель едет к вам'**
+  String get statusLabelDriverGoingToClient;
+
+  /// No description provided for @statusLabelDriverArrived.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель прибыл'**
+  String get statusLabelDriverArrived;
+
+  /// No description provided for @statusLabelWaitingClient.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидание клиента'**
+  String get statusLabelWaitingClient;
+
+  /// No description provided for @statusLabelPaymentPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидает оплату'**
+  String get statusLabelPaymentPending;
+
+  /// No description provided for @statusLabelPaid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплачено'**
+  String get statusLabelPaid;
+
+  /// No description provided for @statusLabelRated.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спасибо за оценку'**
+  String get statusLabelRated;
+
+  /// No description provided for @statusLabelCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён'**
+  String get statusLabelCancelled;
+
+  /// No description provided for @statusLabelCancelledByDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён водителем'**
+  String get statusLabelCancelledByDriver;
+
+  /// No description provided for @statusLabelCancelledByOperator.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён оператором'**
+  String get statusLabelCancelledByOperator;
+
+  /// No description provided for @statusLabelNoShow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент не вышел'**
+  String get statusLabelNoShow;
+
+  /// No description provided for @statusLabelUpdating.
+  ///
+  /// In ru, this message translates to:
+  /// **'Статус обновляется'**
+  String get statusLabelUpdating;
+
+  /// No description provided for @driverPickupMetaToDropoff.
+  ///
+  /// In ru, this message translates to:
+  /// **'До места назначения'**
+  String get driverPickupMetaToDropoff;
+
+  /// No description provided for @driverPickupMetaToPickup.
+  ///
+  /// In ru, this message translates to:
+  /// **'До точки посадки'**
+  String get driverPickupMetaToPickup;
+
+  /// No description provided for @driverPickupMetaText.
+  ///
+  /// In ru, this message translates to:
+  /// **'{label}: {distance} км · {minutes} мин'**
+  String driverPickupMetaText(String label, String distance, int minutes);
+
+  /// No description provided for @routeErrorWaitingLocation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем геолокацию водителя.'**
+  String get routeErrorWaitingLocation;
+
+  /// No description provided for @routeErrorDriverRouteUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут водителя временно недоступен.'**
+  String get routeErrorDriverRouteUnavailable;
+
+  /// No description provided for @errorClientHasActiveOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас уже есть активный заказ. Откройте поездку или отмените её.'**
+  String get errorClientHasActiveOrder;
+
+  /// No description provided for @errorValidation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте адреса и попробуйте ещё раз.'**
+  String get errorValidation;
+
+  /// No description provided for @errorUnauthorized.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сессия устарела. Войдите в аккаунт ещё раз.'**
+  String get errorUnauthorized;
+
+  /// No description provided for @errorForbidden.
+  ///
+  /// In ru, this message translates to:
+  /// **'Недостаточно прав для этого действия.'**
+  String get errorForbidden;
+
+  /// No description provided for @errorRateLimited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком много запросов. Попробуйте чуть позже.'**
+  String get errorRateLimited;
+
+  /// No description provided for @errorPickupRegionInactive.
+  ///
+  /// In ru, this message translates to:
+  /// **'В этом месте сервис пока недоступен'**
+  String get errorPickupRegionInactive;
+
+  /// No description provided for @errorDropoffRegionInactive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка назначения вне активного региона'**
+  String get errorDropoffRegionInactive;
+
+  /// No description provided for @errorIntercityNotSupported.
+  ///
+  /// In ru, this message translates to:
+  /// **'Межгород пока не поддерживается'**
+  String get errorIntercityNotSupported;
+
+  /// No description provided for @errorTariffInactive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот тариф временно недоступен'**
+  String get errorTariffInactive;
+
+  /// No description provided for @errorTariffRegionMismatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тариф недоступен для выбранного региона'**
+  String get errorTariffRegionMismatch;
+
+  /// No description provided for @errorRouteUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут временно недоступен.'**
+  String get errorRouteUnavailable;
+
+  /// No description provided for @errorPromoCodeRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите промокод.'**
+  String get errorPromoCodeRequired;
+
+  /// No description provided for @errorPromoNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Такой промокод не найден. Проверьте код.'**
+  String get errorPromoNotFound;
+
+  /// No description provided for @errorPromoNotStarted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот промокод ещё не начал действовать.'**
+  String get errorPromoNotStarted;
+
+  /// No description provided for @errorPromoExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок действия промокода истёк.'**
+  String get errorPromoExpired;
+
+  /// No description provided for @errorPromoMinOrderNotMet.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сумма заказа меньше минимальной для этого промокода.'**
+  String get errorPromoMinOrderNotMet;
+
+  /// No description provided for @errorPromoLimitReached.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лимит использования этого промокода исчерпан.'**
+  String get errorPromoLimitReached;
+
+  /// No description provided for @errorPromoAlreadyUsed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже использовали этот промокод.'**
+  String get errorPromoAlreadyUsed;
+
+  /// No description provided for @errorServerUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер недоступен. Проверьте подключение.'**
+  String get errorServerUnavailable;
+
+  /// No description provided for @errorDriverNameRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите имя и фамилию'**
+  String get errorDriverNameRequired;
+
+  /// No description provided for @errorDriverPhoneRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите телефон'**
+  String get errorDriverPhoneRequired;
+
+  /// No description provided for @errorDriverCarRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите марку и модель авто'**
+  String get errorDriverCarRequired;
+
+  /// No description provided for @errorDriverPlateRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите госномер'**
+  String get errorDriverPlateRequired;
+
+  /// No description provided for @errorDriverTermsRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердите согласие с условиями, чтобы отправить заявку'**
+  String get errorDriverTermsRequired;
+
+  /// No description provided for @errorGenericRequestFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось выполнить запрос'**
+  String get errorGenericRequestFailed;
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:

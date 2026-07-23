@@ -1302,6 +1302,158 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось получить геолокацию. Выберите точку подачи на карте.';
 
   @override
+  String get statusStepSearching => 'Поиск';
+
+  @override
+  String get statusStepGoing => 'Едет';
+
+  @override
+  String get statusStepWaiting => 'Ждёт';
+
+  @override
+  String get statusStepInTransit => 'В пути';
+
+  @override
+  String get statusLabelSearching => 'Ищем водителя';
+
+  @override
+  String get statusLabelDriverFound => 'Водитель найден';
+
+  @override
+  String get statusLabelDriverGoingToClient => 'Водитель едет к вам';
+
+  @override
+  String get statusLabelDriverArrived => 'Водитель прибыл';
+
+  @override
+  String get statusLabelWaitingClient => 'Ожидание клиента';
+
+  @override
+  String get statusLabelPaymentPending => 'Ожидает оплату';
+
+  @override
+  String get statusLabelPaid => 'Оплачено';
+
+  @override
+  String get statusLabelRated => 'Спасибо за оценку';
+
+  @override
+  String get statusLabelCancelled => 'Отменён';
+
+  @override
+  String get statusLabelCancelledByDriver => 'Отменён водителем';
+
+  @override
+  String get statusLabelCancelledByOperator => 'Отменён оператором';
+
+  @override
+  String get statusLabelNoShow => 'Клиент не вышел';
+
+  @override
+  String get statusLabelUpdating => 'Статус обновляется';
+
+  @override
+  String get driverPickupMetaToDropoff => 'До места назначения';
+
+  @override
+  String get driverPickupMetaToPickup => 'До точки посадки';
+
+  @override
+  String driverPickupMetaText(String label, String distance, int minutes) {
+    return '$label: $distance км · $minutes мин';
+  }
+
+  @override
+  String get routeErrorWaitingLocation => 'Ожидаем геолокацию водителя.';
+
+  @override
+  String get routeErrorDriverRouteUnavailable =>
+      'Маршрут водителя временно недоступен.';
+
+  @override
+  String get errorClientHasActiveOrder =>
+      'У вас уже есть активный заказ. Откройте поездку или отмените её.';
+
+  @override
+  String get errorValidation => 'Проверьте адреса и попробуйте ещё раз.';
+
+  @override
+  String get errorUnauthorized => 'Сессия устарела. Войдите в аккаунт ещё раз.';
+
+  @override
+  String get errorForbidden => 'Недостаточно прав для этого действия.';
+
+  @override
+  String get errorRateLimited =>
+      'Слишком много запросов. Попробуйте чуть позже.';
+
+  @override
+  String get errorPickupRegionInactive => 'В этом месте сервис пока недоступен';
+
+  @override
+  String get errorDropoffRegionInactive =>
+      'Точка назначения вне активного региона';
+
+  @override
+  String get errorIntercityNotSupported => 'Межгород пока не поддерживается';
+
+  @override
+  String get errorTariffInactive => 'Этот тариф временно недоступен';
+
+  @override
+  String get errorTariffRegionMismatch =>
+      'Тариф недоступен для выбранного региона';
+
+  @override
+  String get errorRouteUnavailable => 'Маршрут временно недоступен.';
+
+  @override
+  String get errorPromoCodeRequired => 'Введите промокод.';
+
+  @override
+  String get errorPromoNotFound => 'Такой промокод не найден. Проверьте код.';
+
+  @override
+  String get errorPromoNotStarted => 'Этот промокод ещё не начал действовать.';
+
+  @override
+  String get errorPromoExpired => 'Срок действия промокода истёк.';
+
+  @override
+  String get errorPromoMinOrderNotMet =>
+      'Сумма заказа меньше минимальной для этого промокода.';
+
+  @override
+  String get errorPromoLimitReached =>
+      'Лимит использования этого промокода исчерпан.';
+
+  @override
+  String get errorPromoAlreadyUsed => 'Вы уже использовали этот промокод.';
+
+  @override
+  String get errorServerUnavailable =>
+      'Сервер недоступен. Проверьте подключение.';
+
+  @override
+  String get errorDriverNameRequired => 'Введите имя и фамилию';
+
+  @override
+  String get errorDriverPhoneRequired => 'Введите телефон';
+
+  @override
+  String get errorDriverCarRequired => 'Введите марку и модель авто';
+
+  @override
+  String get errorDriverPlateRequired => 'Введите госномер';
+
+  @override
+  String get errorDriverTermsRequired =>
+      'Подтвердите согласие с условиями, чтобы отправить заявку';
+
+  @override
+  String get errorGenericRequestFailed => 'Не удалось выполнить запрос';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 

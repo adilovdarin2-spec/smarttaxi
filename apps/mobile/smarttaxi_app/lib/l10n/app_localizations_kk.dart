@@ -1310,6 +1310,161 @@ class AppLocalizationsKk extends AppLocalizations {
       'Геолокацияны алу мүмкін болмады. Қону нүктесін картадан таңдаңыз.';
 
   @override
+  String get statusStepSearching => 'Іздеу';
+
+  @override
+  String get statusStepGoing => 'Келеді';
+
+  @override
+  String get statusStepWaiting => 'Күтуде';
+
+  @override
+  String get statusStepInTransit => 'Жолда';
+
+  @override
+  String get statusLabelSearching => 'Жүргізуші іздеудеміз';
+
+  @override
+  String get statusLabelDriverFound => 'Жүргізуші табылды';
+
+  @override
+  String get statusLabelDriverGoingToClient =>
+      'Жүргізуші сізге қарай келе жатыр';
+
+  @override
+  String get statusLabelDriverArrived => 'Жүргізуші келді';
+
+  @override
+  String get statusLabelWaitingClient => 'Клиентті күту';
+
+  @override
+  String get statusLabelPaymentPending => 'Төлемді күтуде';
+
+  @override
+  String get statusLabelPaid => 'Төленді';
+
+  @override
+  String get statusLabelRated => 'Бағалауыңыз үшін рахмет';
+
+  @override
+  String get statusLabelCancelled => 'Болдырылмады';
+
+  @override
+  String get statusLabelCancelledByDriver => 'Жүргізуші болдырмады';
+
+  @override
+  String get statusLabelCancelledByOperator => 'Оператор болдырмады';
+
+  @override
+  String get statusLabelNoShow => 'Клиент шықпады';
+
+  @override
+  String get statusLabelUpdating => 'Мәртебе жаңартылуда';
+
+  @override
+  String get driverPickupMetaToDropoff => 'Межеге дейін';
+
+  @override
+  String get driverPickupMetaToPickup => 'Қону нүктесіне дейін';
+
+  @override
+  String driverPickupMetaText(String label, String distance, int minutes) {
+    return '$label: $distance км · $minutes мин';
+  }
+
+  @override
+  String get routeErrorWaitingLocation =>
+      'Жүргізушінің геолокациясын күтудеміз.';
+
+  @override
+  String get routeErrorDriverRouteUnavailable =>
+      'Жүргізуші маршруты уақытша қолжетімсіз.';
+
+  @override
+  String get errorClientHasActiveOrder =>
+      'Сізде белсенді тапсырыс бар. Сапарды ашыңыз немесе оны болдырмаңыз.';
+
+  @override
+  String get errorValidation => 'Мекенжайларды тексеріп, қайталап көріңіз.';
+
+  @override
+  String get errorUnauthorized =>
+      'Сеанс мерзімі өтті. Аккаунтқа қайта кіріңіз.';
+
+  @override
+  String get errorForbidden => 'Бұл әрекет үшін құқық жеткіліксіз.';
+
+  @override
+  String get errorRateLimited => 'Тым көп сұраныс. Сәл кейінірек көріңіз.';
+
+  @override
+  String get errorPickupRegionInactive => 'Бұл жерде қызмет әзірге қолжетімсіз';
+
+  @override
+  String get errorDropoffRegionInactive => 'Межелі нүкте белсенді аймақтан тыс';
+
+  @override
+  String get errorIntercityNotSupported =>
+      'Қалааралық сапарлар әзірге қолдау көрсетілмейді';
+
+  @override
+  String get errorTariffInactive => 'Бұл тариф уақытша қолжетімсіз';
+
+  @override
+  String get errorTariffRegionMismatch =>
+      'Тариф таңдалған аймақ үшін қолжетімсіз';
+
+  @override
+  String get errorRouteUnavailable => 'Маршрут уақытша қолжетімсіз.';
+
+  @override
+  String get errorPromoCodeRequired => 'Промокодты енгізіңіз.';
+
+  @override
+  String get errorPromoNotFound =>
+      'Мұндай промокод табылмады. Кодты тексеріңіз.';
+
+  @override
+  String get errorPromoNotStarted => 'Бұл промокод әлі қолданысқа енген жоқ.';
+
+  @override
+  String get errorPromoExpired => 'Промокодтың қолданылу мерзімі аяқталды.';
+
+  @override
+  String get errorPromoMinOrderNotMet =>
+      'Тапсырыс сомасы бұл промокод үшін минимумнан аз.';
+
+  @override
+  String get errorPromoLimitReached =>
+      'Бұл промокодты қолдану лимиті таусылды.';
+
+  @override
+  String get errorPromoAlreadyUsed => 'Сіз бұл промокодты бұрын қолдандыңыз.';
+
+  @override
+  String get errorServerUnavailable =>
+      'Сервер қолжетімсіз. Байланысты тексеріңіз.';
+
+  @override
+  String get errorDriverNameRequired => 'Атыңыз бен тегіңізді енгізіңіз';
+
+  @override
+  String get errorDriverPhoneRequired => 'Телефон нөмірін енгізіңіз';
+
+  @override
+  String get errorDriverCarRequired => 'Авто маркасы мен моделін енгізіңіз';
+
+  @override
+  String get errorDriverPlateRequired => 'Мемлекеттік нөмірді енгізіңіз';
+
+  @override
+  String get errorDriverTermsRequired =>
+      'Өтінішті жіберу үшін шарттармен келісіміңізді растаңыз';
+
+  @override
+  String get errorGenericRequestFailed => 'Сұранысты орындау мүмкін болмады';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
 

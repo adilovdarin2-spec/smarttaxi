@@ -209,7 +209,7 @@ void main() {
       expect(passenger, isNot(contains('Широта')));
       expect(passenger, isNot(contains('Долгота')));
       expect(passenger, isNot(contains('Координаты выбраны')));
-      expect(passenger, contains('Тариф'));
+      expect(passenger, contains('l10n.tariffLabel'));
       expect(passenger, contains('_TariffSection'));
       // Tariff class titles were localized (tariff*Title arb keys) instead
       // of hardcoded Russian literals matched against the backend name.
@@ -233,7 +233,7 @@ void main() {
       expect(passenger, contains('passengerTariffNotConfiguredTitle'));
       expect(passenger, contains('_PaymentMethodRow'));
       expect(passenger, contains('цена'));
-      expect(passenger, contains('Маршрут временно недоступен.'));
+      expect(passenger, contains('l10n.errorRouteUnavailable'));
       expect(passenger, contains('Считаем маршрут...'));
       expect(passenger, contains('Map<String, RoutePreview> _tariffEstimates'));
       expect(passenger, contains('_TariffCard'));
@@ -340,10 +340,10 @@ void main() {
     // already covered elsewhere in this file).
     expect(passenger, contains('_driverPickupRoute'));
     expect(passenger, contains('_driverRouteError'));
-    expect(passenger, contains('Маршрут водителя временно недоступен.'));
+    expect(passenger, contains('l10n.routeErrorDriverRouteUnavailable'));
     expect(
       passenger,
-      contains('\$label: \$distance км · \$minutes мин'),
+      contains('l10n.driverPickupMetaText(label, distance, minutes)'),
     );
     expect(
       passenger,
