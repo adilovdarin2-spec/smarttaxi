@@ -904,6 +904,101 @@ class AppLocalizationsRu extends AppLocalizations {
   String get ratingTagDirtyCar => 'Грязно в машине';
 
   @override
+  String get passengerNoDriversTitle => 'Водителей рядом нет';
+
+  @override
+  String get passengerNoDriversText =>
+      'Сейчас нет свободных водителей поблизости. Попробуйте повторить поиск через минуту или отмените заказ.';
+
+  @override
+  String get passengerRetrySearchButton => 'Повторить поиск';
+
+  @override
+  String get passengerRetryingSearchButton => 'Ищем снова...';
+
+  @override
+  String get passengerCancelOrderButton => 'Отменить заказ';
+
+  @override
+  String get passengerYourPriceLabel => 'Ваша цена';
+
+  @override
+  String get passengerDriverPriceLabel => 'Цена водителя';
+
+  @override
+  String get passengerAcceptOfferButton => 'Согласиться';
+
+  @override
+  String get passengerSendingResponseButton => 'Отправляем ответ...';
+
+  @override
+  String get passengerCounterOfferPrompt => 'Или предложите свою цену';
+
+  @override
+  String get passengerSubmitOfferButton => 'Отправить предложение';
+
+  @override
+  String get passengerDeclineOfferButton => 'Отказаться';
+
+  @override
+  String get passengerWaitingDriverResponseTitle => 'Ждём ответа водителя';
+
+  @override
+  String get passengerOfferSentText => 'Ваше предложение отправлено';
+
+  @override
+  String passengerYouOfferedText(String amount) {
+    return 'Вы предложили $amount';
+  }
+
+  @override
+  String get passengerCancelledByDriverTitle => 'Водитель отменил поездку';
+
+  @override
+  String get passengerCancelledByDriverText =>
+      'Найдём вам другого водителя за пару секунд';
+
+  @override
+  String get passengerCancelledByOperatorTitle => 'Поездка отменена оператором';
+
+  @override
+  String get passengerCancelledByOperatorText =>
+      'Если это ошибка — напишите в поддержку';
+
+  @override
+  String get passengerNoShowTitle => 'Поездка не состоялась';
+
+  @override
+  String get passengerNoShowText => 'Водитель не дождался вас на месте посадки';
+
+  @override
+  String get passengerCancelledGenericTitle => 'Поездка отменена';
+
+  @override
+  String get passengerCancelledGenericText =>
+      'Вы можете заказать новую поездку в любой момент';
+
+  @override
+  String get passengerCancelTripConfirmTitle => 'Отменить поездку?';
+
+  @override
+  String get passengerCancelSearchConfirmTitle => 'Отменить поиск водителя?';
+
+  @override
+  String get passengerCancelTripConfirmText =>
+      'Водитель уже направляется к вам. При частой отмене после назначения водителя может взиматься небольшая плата.';
+
+  @override
+  String get passengerCancelSearchConfirmText =>
+      'Мы прекратим поиск, и заказ будет снят.';
+
+  @override
+  String get passengerCancelConfirmYesButton => 'Да, отменить';
+
+  @override
+  String get passengerCancelConfirmNoButton => 'Нет, продолжить';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Раздел недоступен';
 
   @override

@@ -8627,6 +8627,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HomeOrderPanel(
       child: Column(
@@ -8651,7 +8652,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Водителей рядом нет',
+            l10n.passengerNoDriversTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.text,
@@ -8661,7 +8662,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Сейчас нет свободных водителей поблизости. Попробуйте повторить поиск через минуту или отмените заказ.',
+            l10n.passengerNoDriversText,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.textSecondary,
@@ -8678,15 +8679,15 @@ class _NoDriversFoundPanel extends StatelessWidget {
           _GoldCtaButton(
             enabled: !loading,
             loading: loading,
-            text: 'Повторить поиск',
-            loadingText: 'Ищем снова...',
+            text: l10n.passengerRetrySearchButton,
+            loadingText: l10n.passengerRetryingSearchButton,
             onTap: onRetry,
           ),
           const SizedBox(height: 6),
           TextButton(
             onPressed: loading ? null : onCancel,
             child: Text(
-              'Отменить заказ',
+              l10n.passengerCancelOrderButton,
               style: TextStyle(
                 color: palette.danger,
                 fontWeight: FontWeight.w800,
@@ -8759,13 +8760,14 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final order = widget.order;
     final responding = widget.responding;
     final offered = order.driverOfferPriceKzt;
     final current = order.price;
     final driverName = (order.offerDriverName ?? '').trim().isEmpty
-        ? 'Водитель'
+        ? l10n.driverProfileNameFallback
         : order.offerDriverName!.trim();
     return _HomeOrderPanel(
       // This panel's content (avatar, name, rating, both prices, accept
@@ -8825,7 +8827,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
             children: [
               Expanded(
                 child: _PriceCompareTile(
-                  label: 'Ваша цена',
+                  label: l10n.passengerYourPriceLabel,
                   value: current == null ? '—' : _formatTenge(current),
                   palette: palette,
                 ),
@@ -8833,7 +8835,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
               const SizedBox(width: 10),
               Expanded(
                 child: _PriceCompareTile(
-                  label: 'Цена водителя',
+                  label: l10n.passengerDriverPriceLabel,
                   value: offered == null ? '—' : _formatTenge(offered.toDouble()),
                   palette: palette,
                   emphasize: true,
@@ -8845,15 +8847,15 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
           _GoldCtaButton(
             enabled: !responding,
             loading: responding,
-            text: 'Согласиться',
-            loadingText: 'Отправляем ответ...',
+            text: l10n.passengerAcceptOfferButton,
+            loadingText: l10n.passengerSendingResponseButton,
             trailingText:
                 offered == null ? null : _formatTenge(offered.toDouble()),
             onTap: () => widget.onRespond(true),
           ),
           const SizedBox(height: 14),
           Text(
-            'Или предложите свою цену',
+            l10n.passengerCounterOfferPrompt,
             style: TextStyle(
               color: palette.textSecondary,
               fontSize: 12.5,
@@ -8905,9 +8907,9 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text(
-                'Отправить предложение',
-                style: TextStyle(fontWeight: FontWeight.w800),
+              child: Text(
+                l10n.passengerSubmitOfferButton,
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
           ),
@@ -8915,7 +8917,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
           TextButton(
             onPressed: responding ? null : () => widget.onRespond(false),
             child: Text(
-              'Отказаться',
+              l10n.passengerDeclineOfferButton,
               style: TextStyle(
                 color: palette.textSecondary,
                 fontWeight: FontWeight.w800,
@@ -9025,9 +9027,10 @@ class _ClientCounterPendingPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final driverName = (order.offerDriverName ?? '').trim().isEmpty
-        ? 'Водитель'
+        ? l10n.driverProfileNameFallback
         : order.offerDriverName!.trim();
     final myOffer = order.driverOfferPriceKzt;
     return _HomeOrderPanel(
@@ -9045,7 +9048,7 @@ class _ClientCounterPendingPanel extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Ждём ответа водителя',
+            l10n.passengerWaitingDriverResponseTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.text,
@@ -9056,8 +9059,8 @@ class _ClientCounterPendingPanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             myOffer == null
-                ? 'Ваше предложение отправлено'
-                : 'Вы предложили ${_formatTenge(myOffer.toDouble())}',
+                ? l10n.passengerOfferSentText
+                : l10n.passengerYouOfferedText(_formatTenge(myOffer.toDouble())),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.textSecondary,
@@ -9084,31 +9087,31 @@ class _TripCancelledPanel extends StatelessWidget {
   final String status;
   final VoidCallback onNewTrip;
 
-  ({IconData icon, String title, String subtitle}) get _copy {
+  ({IconData icon, String title, String subtitle}) _copy(AppLocalizations l10n) {
     switch (status) {
       case 'CANCELLED_BY_DRIVER':
         return (
           icon: Icons.person_off_rounded,
-          title: 'Водитель отменил поездку',
-          subtitle: 'Найдём вам другого водителя за пару секунд',
+          title: l10n.passengerCancelledByDriverTitle,
+          subtitle: l10n.passengerCancelledByDriverText,
         );
       case 'CANCELLED_BY_OPERATOR':
         return (
           icon: Icons.support_agent_rounded,
-          title: 'Поездка отменена оператором',
-          subtitle: 'Если это ошибка — напишите в поддержку',
+          title: l10n.passengerCancelledByOperatorTitle,
+          subtitle: l10n.passengerCancelledByOperatorText,
         );
       case 'NO_SHOW':
         return (
           icon: Icons.hourglass_disabled_rounded,
-          title: 'Поездка не состоялась',
-          subtitle: 'Водитель не дождался вас на месте посадки',
+          title: l10n.passengerNoShowTitle,
+          subtitle: l10n.passengerNoShowText,
         );
       default:
         return (
           icon: Icons.close_rounded,
-          title: 'Поездка отменена',
-          subtitle: 'Вы можете заказать новую поездку в любой момент',
+          title: l10n.passengerCancelledGenericTitle,
+          subtitle: l10n.passengerCancelledGenericText,
         );
     }
   }
@@ -9116,8 +9119,9 @@ class _TripCancelledPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final copy = _copy;
+    final copy = _copy(l10n);
     return _HomeOrderPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -9164,7 +9168,7 @@ class _TripCancelledPanel extends StatelessWidget {
           _GoldCtaButton(
             enabled: true,
             loading: false,
-            text: 'Заказать снова',
+            text: l10n.passengerOrderAgainButton,
             onTap: onNewTrip,
           ),
         ],
@@ -9181,11 +9185,13 @@ class _CancelConfirmSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final title =
-        driverAssigned ? 'Отменить поездку?' : 'Отменить поиск водителя?';
+    final l10n = AppLocalizations.of(context);
+    final title = driverAssigned
+        ? l10n.passengerCancelTripConfirmTitle
+        : l10n.passengerCancelSearchConfirmTitle;
     final subtitle = driverAssigned
-        ? 'Водитель уже направляется к вам. При частой отмене после назначения водителя может взиматься небольшая плата.'
-        : 'Мы прекратим поиск, и заказ будет снят.';
+        ? l10n.passengerCancelTripConfirmText
+        : l10n.passengerCancelSearchConfirmText;
     return SafeArea(
       top: false,
       child: Container(
@@ -9255,7 +9261,7 @@ class _CancelConfirmSheet extends StatelessWidget {
                   disabledBackgroundColor: palette.danger,
                   minimumSize: const Size.fromHeight(52),
                 ),
-                child: const Text('Да, отменить'),
+                child: Text(l10n.passengerCancelConfirmYesButton),
               ),
             ),
             const SizedBox(height: 10),
@@ -9263,7 +9269,7 @@ class _CancelConfirmSheet extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Нет, продолжить'),
+                child: Text(l10n.passengerCancelConfirmNoButton),
               ),
             ),
           ],

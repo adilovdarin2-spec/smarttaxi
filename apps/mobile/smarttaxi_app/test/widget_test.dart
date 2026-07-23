@@ -238,7 +238,7 @@ void main() {
       expect(passenger, contains('Map<String, RoutePreview> _tariffEstimates'));
       expect(passenger, contains('_TariffCard'));
       expect(passenger, contains('_formatTenge'));
-      expect(passenger, contains('Заказать'));
+      expect(passenger, contains('l10n.passengerCtaOrder'));
     },
   );
 

@@ -909,6 +909,104 @@ class AppLocalizationsKk extends AppLocalizations {
   String get ratingTagDirtyCar => 'Көлікте лас';
 
   @override
+  String get passengerNoDriversTitle => 'Жақын жерде жүргізуші жоқ';
+
+  @override
+  String get passengerNoDriversText =>
+      'Қазір жақын маңда бос жүргізуші жоқ. Бір минуттан кейін іздеуді қайталап көріңіз немесе тапсырысты болдырмаңыз.';
+
+  @override
+  String get passengerRetrySearchButton => 'Іздеуді қайталау';
+
+  @override
+  String get passengerRetryingSearchButton => 'Қайта іздеудеміз...';
+
+  @override
+  String get passengerCancelOrderButton => 'Тапсырысты болдырмау';
+
+  @override
+  String get passengerYourPriceLabel => 'Сіздің бағаңыз';
+
+  @override
+  String get passengerDriverPriceLabel => 'Жүргізушінің бағасы';
+
+  @override
+  String get passengerAcceptOfferButton => 'Келісу';
+
+  @override
+  String get passengerSendingResponseButton => 'Жауап жіберілуде...';
+
+  @override
+  String get passengerCounterOfferPrompt => 'Немесе өз бағаңызды ұсыныңыз';
+
+  @override
+  String get passengerSubmitOfferButton => 'Ұсынысты жіберу';
+
+  @override
+  String get passengerDeclineOfferButton => 'Бас тарту';
+
+  @override
+  String get passengerWaitingDriverResponseTitle =>
+      'Жүргізушінің жауабын күтудеміз';
+
+  @override
+  String get passengerOfferSentText => 'Сіздің ұсынысыңыз жіберілді';
+
+  @override
+  String passengerYouOfferedText(String amount) {
+    return 'Сіз $amount ұсындыңыз';
+  }
+
+  @override
+  String get passengerCancelledByDriverTitle => 'Жүргізуші сапарды болдырмады';
+
+  @override
+  String get passengerCancelledByDriverText =>
+      'Бірнеше секундта басқа жүргізуші табамыз';
+
+  @override
+  String get passengerCancelledByOperatorTitle =>
+      'Сапар оператормен болдырылмады';
+
+  @override
+  String get passengerCancelledByOperatorText =>
+      'Бұл қате болса — қолдау қызметіне жазыңыз';
+
+  @override
+  String get passengerNoShowTitle => 'Сапар өтпеді';
+
+  @override
+  String get passengerNoShowText => 'Жүргізуші сізді отырғызу орнында күтпеді';
+
+  @override
+  String get passengerCancelledGenericTitle => 'Сапар болдырылмады';
+
+  @override
+  String get passengerCancelledGenericText =>
+      'Кез келген уақытта жаңа сапарға тапсырыс бере аласыз';
+
+  @override
+  String get passengerCancelTripConfirmTitle => 'Сапарды болдырмау керек пе?';
+
+  @override
+  String get passengerCancelSearchConfirmTitle =>
+      'Жүргізушіні іздеуді тоқтату керек пе?';
+
+  @override
+  String get passengerCancelTripConfirmText =>
+      'Жүргізуші сізге қарай келе жатыр. Жүргізуші тағайындалғаннан кейін жиі болдырмау шағын ақы алынуы мүмкін.';
+
+  @override
+  String get passengerCancelSearchConfirmText =>
+      'Іздеуді тоқтатамыз, тапсырыс жойылады.';
+
+  @override
+  String get passengerCancelConfirmYesButton => 'Иә, болдырмау';
+
+  @override
+  String get passengerCancelConfirmNoButton => 'Жоқ, жалғастыру';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
 
   @override

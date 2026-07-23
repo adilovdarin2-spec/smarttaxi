@@ -1719,6 +1719,180 @@ abstract class AppLocalizations {
   /// **'Грязно в машине'**
   String get ratingTagDirtyCar;
 
+  /// No description provided for @passengerNoDriversTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водителей рядом нет'**
+  String get passengerNoDriversTitle;
+
+  /// No description provided for @passengerNoDriversText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас нет свободных водителей поблизости. Попробуйте повторить поиск через минуту или отмените заказ.'**
+  String get passengerNoDriversText;
+
+  /// No description provided for @passengerRetrySearchButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить поиск'**
+  String get passengerRetrySearchButton;
+
+  /// No description provided for @passengerRetryingSearchButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ищем снова...'**
+  String get passengerRetryingSearchButton;
+
+  /// No description provided for @passengerCancelOrderButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить заказ'**
+  String get passengerCancelOrderButton;
+
+  /// No description provided for @passengerYourPriceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваша цена'**
+  String get passengerYourPriceLabel;
+
+  /// No description provided for @passengerDriverPriceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена водителя'**
+  String get passengerDriverPriceLabel;
+
+  /// No description provided for @passengerAcceptOfferButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Согласиться'**
+  String get passengerAcceptOfferButton;
+
+  /// No description provided for @passengerSendingResponseButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправляем ответ...'**
+  String get passengerSendingResponseButton;
+
+  /// No description provided for @passengerCounterOfferPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Или предложите свою цену'**
+  String get passengerCounterOfferPrompt;
+
+  /// No description provided for @passengerSubmitOfferButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить предложение'**
+  String get passengerSubmitOfferButton;
+
+  /// No description provided for @passengerDeclineOfferButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отказаться'**
+  String get passengerDeclineOfferButton;
+
+  /// No description provided for @passengerWaitingDriverResponseTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём ответа водителя'**
+  String get passengerWaitingDriverResponseTitle;
+
+  /// No description provided for @passengerOfferSentText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше предложение отправлено'**
+  String get passengerOfferSentText;
+
+  /// No description provided for @passengerYouOfferedText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы предложили {amount}'**
+  String passengerYouOfferedText(String amount);
+
+  /// No description provided for @passengerCancelledByDriverTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель отменил поездку'**
+  String get passengerCancelledByDriverTitle;
+
+  /// No description provided for @passengerCancelledByDriverText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Найдём вам другого водителя за пару секунд'**
+  String get passengerCancelledByDriverText;
+
+  /// No description provided for @passengerCancelledByOperatorTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка отменена оператором'**
+  String get passengerCancelledByOperatorTitle;
+
+  /// No description provided for @passengerCancelledByOperatorText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если это ошибка — напишите в поддержку'**
+  String get passengerCancelledByOperatorText;
+
+  /// No description provided for @passengerNoShowTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка не состоялась'**
+  String get passengerNoShowTitle;
+
+  /// No description provided for @passengerNoShowText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель не дождался вас на месте посадки'**
+  String get passengerNoShowText;
+
+  /// No description provided for @passengerCancelledGenericTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка отменена'**
+  String get passengerCancelledGenericTitle;
+
+  /// No description provided for @passengerCancelledGenericText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы можете заказать новую поездку в любой момент'**
+  String get passengerCancelledGenericText;
+
+  /// No description provided for @passengerCancelTripConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поездку?'**
+  String get passengerCancelTripConfirmTitle;
+
+  /// No description provided for @passengerCancelSearchConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поиск водителя?'**
+  String get passengerCancelSearchConfirmTitle;
+
+  /// No description provided for @passengerCancelTripConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель уже направляется к вам. При частой отмене после назначения водителя может взиматься небольшая плата.'**
+  String get passengerCancelTripConfirmText;
+
+  /// No description provided for @passengerCancelSearchConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы прекратим поиск, и заказ будет снят.'**
+  String get passengerCancelSearchConfirmText;
+
+  /// No description provided for @passengerCancelConfirmYesButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Да, отменить'**
+  String get passengerCancelConfirmYesButton;
+
+  /// No description provided for @passengerCancelConfirmNoButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет, продолжить'**
+  String get passengerCancelConfirmNoButton;
+
   /// No description provided for @passengerSectionUnavailableTitle.
   ///
   /// In ru, this message translates to:
