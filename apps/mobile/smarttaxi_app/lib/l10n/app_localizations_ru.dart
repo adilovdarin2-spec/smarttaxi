@@ -566,6 +566,48 @@ class AppLocalizationsRu extends AppLocalizations {
       'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.';
 
   @override
+  String get passengerPromoSubtitle =>
+      'Проверьте промокод и узнайте размер скидки';
+
+  @override
+  String get passengerPromoHaveCode => 'Есть промокод?';
+
+  @override
+  String get passengerPromoHint =>
+      'Введите его, чтобы проверить, действует ли он в вашем регионе, и увидеть размер скидки.';
+
+  @override
+  String get passengerPromoFieldHint => 'Например, SMART500';
+
+  @override
+  String get checkButton => 'Проверить';
+
+  @override
+  String get checkingButton => 'Проверяем...';
+
+  @override
+  String get passengerPromoNoRegionError =>
+      'Сначала выберите регион на главном экране';
+
+  @override
+  String passengerPromoActiveTitle(String code) {
+    return 'Промокод «$code» действует';
+  }
+
+  @override
+  String passengerPromoDiscountSummary(
+      String discount, String previewPrice, String finalPrice) {
+    return 'Скидка $discount · например, на поездке за $previewPrice вы заплатите $finalPrice';
+  }
+
+  @override
+  String get passengerPromoHowToApplyTitle => 'Как применить скидку';
+
+  @override
+  String get passengerPromoHowToApplyText =>
+      'Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

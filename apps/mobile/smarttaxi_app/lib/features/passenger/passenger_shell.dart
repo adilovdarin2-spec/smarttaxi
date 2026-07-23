@@ -3073,7 +3073,8 @@ class _PassengerShellState extends State<PassengerShell>
     if (code.isEmpty) return;
     if (region == null) {
       setState(() {
-        _promoCheckError = 'Сначала выберите регион на главном экране';
+        _promoCheckError =
+            AppLocalizations.of(context).passengerPromoNoRegionError;
         _promoCheckResult = null;
       });
       return;
@@ -3101,13 +3102,14 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _promoCodesScreen() {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final result = _promoCheckResult;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(
-          title: 'Промокоды',
-          text: 'Проверьте промокод и узнайте размер скидки',
+        _TitleBlock(
+          title: l10n.passengerDrawerPromoCodes,
+          text: l10n.passengerPromoSubtitle,
         ),
         const SizedBox(height: 16),
         _PremiumCard(
@@ -3131,18 +3133,18 @@ class _PassengerShellState extends State<PassengerShell>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Есть промокод?',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                      l10n.passengerPromoHaveCode,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w900),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
               Text(
-                'Введите его, чтобы проверить, действует ли он в вашем регионе, и увидеть размер скидки.',
+                l10n.passengerPromoHint,
                 style: TextStyle(
                   color: palette.textSecondary,
                   fontSize: 12.5,
@@ -3160,9 +3162,9 @@ class _PassengerShellState extends State<PassengerShell>
               TextField(
                 controller: _promoCheckController,
                 textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  hintText: 'Например, SMART500',
-                  prefixIcon: Icon(Icons.local_offer_outlined),
+                decoration: InputDecoration(
+                  hintText: l10n.passengerPromoFieldHint,
+                  prefixIcon: const Icon(Icons.local_offer_outlined),
                 ),
                 onSubmitted: (_) => unawaited(_checkPromoCode()),
               ),
@@ -3170,8 +3172,8 @@ class _PassengerShellState extends State<PassengerShell>
               _GoldCtaButton(
                 enabled: !_promoCheckLoading,
                 loading: _promoCheckLoading,
-                text: 'Проверить',
-                loadingText: 'Проверяем...',
+                text: l10n.checkButton,
+                loadingText: l10n.checkingButton,
                 onTap: () => unawaited(_checkPromoCode()),
               ),
               if (_promoCheckError != null) ...[
@@ -3213,7 +3215,7 @@ class _PassengerShellState extends State<PassengerShell>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Промокод «${result.code}» действует',
+                              l10n.passengerPromoActiveTitle(result.code),
                               style: const TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w900,
@@ -3221,7 +3223,11 @@ class _PassengerShellState extends State<PassengerShell>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Скидка ${_formatTenge(result.discountAmountKzt)} · например, на поездке за ${_formatTenge(_promoPreviewPriceKzt)} вы заплатите ${_formatTenge(result.finalPriceKzt)}',
+                              l10n.passengerPromoDiscountSummary(
+                                _formatTenge(result.discountAmountKzt),
+                                _formatTenge(_promoPreviewPriceKzt),
+                                _formatTenge(result.finalPriceKzt),
+                              ),
                               style: TextStyle(
                                 color: palette.textSecondary,
                                 fontSize: 12,
@@ -3243,9 +3249,8 @@ class _PassengerShellState extends State<PassengerShell>
         _PremiumCard(
           child: _CompactNotice(
             icon: Icons.info_outline_rounded,
-            title: 'Как применить скидку',
-            text:
-                'Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.',
+            title: l10n.passengerPromoHowToApplyTitle,
+            text: l10n.passengerPromoHowToApplyText,
             dark: Theme.of(context).brightness == Brightness.dark,
           ),
         ),

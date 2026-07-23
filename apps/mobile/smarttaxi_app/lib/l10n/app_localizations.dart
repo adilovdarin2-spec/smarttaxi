@@ -1112,6 +1112,73 @@ abstract class AppLocalizations {
   /// **'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.'**
   String get passengerReferralsHowItWorksText;
 
+  /// No description provided for @passengerPromoSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте промокод и узнайте размер скидки'**
+  String get passengerPromoSubtitle;
+
+  /// No description provided for @passengerPromoHaveCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Есть промокод?'**
+  String get passengerPromoHaveCode;
+
+  /// No description provided for @passengerPromoHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите его, чтобы проверить, действует ли он в вашем регионе, и увидеть размер скидки.'**
+  String get passengerPromoHint;
+
+  /// No description provided for @passengerPromoFieldHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например, SMART500'**
+  String get passengerPromoFieldHint;
+
+  /// No description provided for @checkButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверить'**
+  String get checkButton;
+
+  /// No description provided for @checkingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверяем...'**
+  String get checkingButton;
+
+  /// No description provided for @passengerPromoNoRegionError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сначала выберите регион на главном экране'**
+  String get passengerPromoNoRegionError;
+
+  /// No description provided for @passengerPromoActiveTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Промокод «{code}» действует'**
+  String passengerPromoActiveTitle(String code);
+
+  /// No description provided for @passengerPromoDiscountSummary.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скидка {discount} · например, на поездке за {previewPrice} вы заплатите {finalPrice}'**
+  String passengerPromoDiscountSummary(
+      String discount, String previewPrice, String finalPrice);
+
+  /// No description provided for @passengerPromoHowToApplyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как применить скидку'**
+  String get passengerPromoHowToApplyTitle;
+
+  /// No description provided for @passengerPromoHowToApplyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.'**
+  String get passengerPromoHowToApplyText;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

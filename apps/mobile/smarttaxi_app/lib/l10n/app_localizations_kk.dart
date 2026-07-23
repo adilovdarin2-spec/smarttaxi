@@ -572,6 +572,48 @@ class AppLocalizationsKk extends AppLocalizations {
       'Дос тіркелу кезінде сіздің кодыңызды енгізеді. Оның алғашқы сапарынан кейін сіздің балансыңызға бонус есептеледі.';
 
   @override
+  String get passengerPromoSubtitle =>
+      'Промокодты тексеріп, жеңілдік мөлшерін біліңіз';
+
+  @override
+  String get passengerPromoHaveCode => 'Промокодыңыз бар ма?';
+
+  @override
+  String get passengerPromoHint =>
+      'Аймағыңызда жарамды екенін тексеру және жеңілдік мөлшерін көру үшін оны енгізіңіз.';
+
+  @override
+  String get passengerPromoFieldHint => 'Мысалы, SMART500';
+
+  @override
+  String get checkButton => 'Тексеру';
+
+  @override
+  String get checkingButton => 'Тексерілуде...';
+
+  @override
+  String get passengerPromoNoRegionError =>
+      'Алдымен басты экранда аймақты таңдаңыз';
+
+  @override
+  String passengerPromoActiveTitle(String code) {
+    return '«$code» промокоды жарамды';
+  }
+
+  @override
+  String passengerPromoDiscountSummary(
+      String discount, String previewPrice, String finalPrice) {
+    return 'Жеңілдік $discount · мысалы, $previewPrice тұратын сапарда сіз $finalPrice төлейсіз';
+  }
+
+  @override
+  String get passengerPromoHowToApplyTitle => 'Жеңілдікті қалай қолдану керек';
+
+  @override
+  String get passengerPromoHowToApplyText =>
+      'Осы тексеруден өткен промокодты тариф таңдау қадамында тағы да енгізу керек болады — сонда жеңілдік нақты сапарыңыздың соңғы бағасын бірден қайта есептейді.';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override
