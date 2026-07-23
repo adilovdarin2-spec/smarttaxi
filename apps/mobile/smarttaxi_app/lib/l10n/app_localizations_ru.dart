@@ -1454,6 +1454,91 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorGenericRequestFailed => 'Не удалось выполнить запрос';
 
   @override
+  String get passengerGpsOrMapHintText =>
+      'Можно включить GPS для точной подачи или выбрать точку на карте.';
+
+  @override
+  String get passengerThemeLight => 'Светлая';
+
+  @override
+  String get passengerThemeDark => 'Тёмная';
+
+  @override
+  String get passengerThemeSystem => 'Как в системе';
+
+  @override
+  String get passengerLogoutConfirmTitle => 'Выйти из аккаунта?';
+
+  @override
+  String get passengerLogoutConfirmText =>
+      'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться SmartTaxi.';
+
+  @override
+  String get passengerCancelButton => 'Отмена';
+
+  @override
+  String get passengerLogoutButton => 'Выйти';
+
+  @override
+  String get passengerAccountLabelFallback => 'Пользователь';
+
+  @override
+  String get passengerClientOfSmartTaxi => 'Клиент SmartTaxi';
+
+  @override
+  String get passengerStatTripsLabel => 'Поездок';
+
+  @override
+  String get passengerStatSpentLabel => 'Потрачено';
+
+  @override
+  String get passengerStatRatedLabel => 'С оценкой';
+
+  @override
+  String get passengerAccountNumberLabel => '№ аккаунта';
+
+  @override
+  String get passengerPhoneLabel => 'Телефон';
+
+  @override
+  String get passengerQuickActionsGroup => 'Быстрые действия';
+
+  @override
+  String get passengerMyTripsMenuSubtitle => 'История и статус текущей поездки';
+
+  @override
+  String get passengerPromoMenuSubtitle => 'Проверить и применить скидку';
+
+  @override
+  String get passengerNotificationsMenuSubtitle =>
+      'Статусы поездок и сообщения';
+
+  @override
+  String get passengerSupportMenuSubtitle => 'Напишите нам, если нужна помощь';
+
+  @override
+  String get passengerFavoriteAddressesSubtitle =>
+      'Дом, работа и другие частые точки';
+
+  @override
+  String get passengerDriversMenuSubtitle =>
+      'Избранные и заблокированные водители';
+
+  @override
+  String get passengerReferralsMenuSubtitle =>
+      'Ваш код и бонусы за приглашения';
+
+  @override
+  String get passengerSettingsMenuSubtitle => 'Язык, разрешения, аккаунт';
+
+  @override
+  String get passengerAccountGroup => 'Аккаунт';
+
+  @override
+  String get passengerProfileSubtitle =>
+      'Аккаунт, поездки и настройки SmartTaxi';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 

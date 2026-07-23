@@ -174,8 +174,7 @@ void main() {
       expect(passenger, contains('Выбрать точку на карте'));
       expect(
         passenger,
-        contains(
-            'Можно включить GPS для точной подачи или выбрать точку на карте.'),
+        contains('l10n.passengerGpsOrMapHintText'),
       );
       expect(passenger, contains('Выберите точку подачи'));
       expect(passenger, contains('Моё местоположение'));
@@ -424,7 +423,7 @@ void main() {
           '"passengerSupportMessageSent": "Обращение отправлено. Мы ответим здесь и, если нужно, позвоним."'),
     );
     expect(passenger, contains('_settingsScreen'));
-    expect(passenger, contains('Аккаунт'));
+    expect(passenger, contains('l10n.passengerAccountGroup'));
     // Settings screen group/row labels were localized (passengerSettings*
     // arb keys) instead of hardcoded Russian literals, so the copy itself
     // now lives in app_ru.arb rather than passenger_shell.dart's source.
@@ -456,8 +455,8 @@ void main() {
     // Profile screen groups were consolidated from 3 (Основное/Приложение/
     // Аккаунт) down to 2 in the later redesign -- "Приложение" no longer
     // exists as its own group.
-    expect(passenger, contains("const _ProfileGroupLabel('Быстрые действия')"));
-    expect(passenger, contains("const _ProfileGroupLabel('Аккаунт')"));
+    expect(passenger, contains('_ProfileGroupLabel(l10n.passengerQuickActionsGroup)'));
+    expect(passenger, contains('_ProfileGroupLabel(l10n.passengerAccountGroup)'));
     expect(passenger, contains('action: l10n.passengerGoHomeAction'));
   });
 

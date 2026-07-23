@@ -2409,6 +2409,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _chooseTheme() async {
     final current = widget.themeMode;
+    final l10n = AppLocalizations.of(context);
     final mode = await showModalBottomSheet<ThemeMode>(
       context: context,
       showDragHandle: true,
@@ -2416,22 +2417,22 @@ class _PassengerShellState extends State<PassengerShell>
         child: RadioGroup<ThemeMode>(
           groupValue: current,
           onChanged: (value) => Navigator.pop(sheetContext, value),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               RadioListTile<ThemeMode>(
                 value: ThemeMode.light,
-                title: Text('Светлая'),
+                title: Text(l10n.passengerThemeLight),
               ),
               RadioListTile<ThemeMode>(
                 value: ThemeMode.dark,
-                title: Text('Тёмная'),
+                title: Text(l10n.passengerThemeDark),
               ),
               RadioListTile<ThemeMode>(
                 value: ThemeMode.system,
-                title: Text('Как в системе'),
+                title: Text(l10n.passengerThemeSystem),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -2443,17 +2444,18 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _confirmAndLogout() async {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: palette.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text(
-          'Выйти из аккаунта?',
-          style: TextStyle(fontWeight: FontWeight.w900),
+        title: Text(
+          l10n.passengerLogoutConfirmTitle,
+          style: const TextStyle(fontWeight: FontWeight.w900),
         ),
         content: Text(
-          'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться SmartTaxi.',
+          l10n.passengerLogoutConfirmText,
           style: TextStyle(
             color: palette.textSecondary,
             fontWeight: FontWeight.w600,
@@ -2463,12 +2465,13 @@ class _PassengerShellState extends State<PassengerShell>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(l10n.passengerCancelButton),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(foregroundColor: palette.danger),
-            child: const Text('Выйти', style: TextStyle(fontWeight: FontWeight.w900)),
+            child: Text(l10n.passengerLogoutButton,
+                style: const TextStyle(fontWeight: FontWeight.w900)),
           ),
         ],
       ),
@@ -2479,17 +2482,22 @@ class _PassengerShellState extends State<PassengerShell>
   String? get _geolocationNotice {
     final error = _error;
     if (error == null) return null;
-    if (!error.toLowerCase().contains('геолокац')) return null;
-    return 'Можно включить GPS для точной подачи или выбрать точку на карте.';
+    final l10n = AppLocalizations.of(context);
+    final isLocationError = error == l10n.passengerLocationServiceDisabledError ||
+        error == l10n.passengerLocationDeniedManualPickError ||
+        error == l10n.passengerLocationFailedPickManuallyError;
+    if (!isLocationError) return null;
+    return l10n.passengerGpsOrMapHintText;
   }
 
   bool get _routePreviewError {
     final error = _error;
     if (error == null) return false;
-    return error.toLowerCase().contains('маршрут') ||
-        error.contains('В этом месте сервис пока недоступен') ||
-        error.contains('Точка назначения вне активного региона') ||
-        error.contains('Межгород пока не поддерживается');
+    final l10n = AppLocalizations.of(context);
+    return error == l10n.errorRouteUnavailable ||
+        error == l10n.errorPickupRegionInactive ||
+        error == l10n.errorDropoffRegionInactive ||
+        error == l10n.errorIntercityNotSupported;
   }
 
   String _ctaText() {
@@ -2838,8 +2846,10 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _profileScreen() {
     final palette = context.palette;
-    final label =
-        widget.accountLabel.isEmpty ? 'Пользователь' : widget.accountLabel;
+    final l10n = AppLocalizations.of(context);
+    final label = widget.accountLabel.isEmpty
+        ? l10n.passengerAccountLabelFallback
+        : widget.accountLabel;
     final completedTrips = _tripHistory
         .where((trip) => _profileCompletedStatuses.contains(trip.status))
         .toList(growable: false);
@@ -2853,9 +2863,9 @@ class _PassengerShellState extends State<PassengerShell>
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(
-          title: 'Профиль',
-          text: 'Аккаунт, поездки и настройки SmartTaxi',
+        _TitleBlock(
+          title: l10n.profile,
+          text: l10n.passengerProfileSubtitle,
         ),
         const SizedBox(height: 16),
         _PremiumCard(
@@ -2911,7 +2921,7 @@ class _PassengerShellState extends State<PassengerShell>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Клиент SmartTaxi',
+                          l10n.passengerClientOfSmartTaxi,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 13,
@@ -2930,7 +2940,7 @@ class _PassengerShellState extends State<PassengerShell>
                     child: _ProfileStatTile(
                       icon: Icons.route_rounded,
                       value: '${completedTrips.length}',
-                      label: 'Поездок',
+                      label: l10n.passengerStatTripsLabel,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -2938,7 +2948,7 @@ class _PassengerShellState extends State<PassengerShell>
                     child: _ProfileStatTile(
                       icon: Icons.payments_rounded,
                       value: _formatTenge(totalSpent),
-                      label: 'Потрачено',
+                      label: l10n.passengerStatSpentLabel,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -2946,7 +2956,7 @@ class _PassengerShellState extends State<PassengerShell>
                     child: _ProfileStatTile(
                       icon: Icons.star_rounded,
                       value: ratedTrips.isEmpty ? '—' : '${ratedTrips.length}',
-                      label: 'С оценкой',
+                      label: l10n.passengerStatRatedLabel,
                     ),
                   ),
                 ],
@@ -2954,7 +2964,7 @@ class _PassengerShellState extends State<PassengerShell>
               const SizedBox(height: 18),
               if (widget.accountId.trim().isNotEmpty) ...[
                 _ProfileRow(
-                  label: '№ аккаунта',
+                  label: l10n.passengerAccountNumberLabel,
                   value: widget.accountId,
                   copyable: true,
                 ),
@@ -2962,7 +2972,7 @@ class _PassengerShellState extends State<PassengerShell>
               ],
               if (widget.accountPhone.trim().isNotEmpty)
                 _ProfileRow(
-                  label: 'Телефон',
+                  label: l10n.passengerPhoneLabel,
                   value: widget.accountPhone,
                   copyable: true,
                 ),
@@ -2970,15 +2980,15 @@ class _PassengerShellState extends State<PassengerShell>
           ),
         ),
         const SizedBox(height: 14),
-        const _ProfileGroupLabel('Быстрые действия'),
+        _ProfileGroupLabel(l10n.passengerQuickActionsGroup),
         const SizedBox(height: 8),
         _PremiumCard(
           child: Column(
             children: [
               _MenuLine(
                 icon: Icons.history_rounded,
-                title: 'Мои поездки',
-                subtitle: 'История и статус текущей поездки',
+                title: l10n.passengerDrawerTrips,
+                subtitle: l10n.passengerMyTripsMenuSubtitle,
                 badge: completedTrips.isEmpty
                     ? null
                     : '${completedTrips.length}',
@@ -2987,30 +2997,30 @@ class _PassengerShellState extends State<PassengerShell>
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.local_offer_outlined,
-                title: 'Промокоды',
-                subtitle: 'Проверить и применить скидку',
+                title: l10n.passengerDrawerPromoCodes,
+                subtitle: l10n.passengerPromoMenuSubtitle,
                 onTap: () => setState(() => _tab = PassengerTab.promoCodes),
               ),
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.notifications_outlined,
-                title: 'Уведомления',
-                subtitle: 'Статусы поездок и сообщения',
+                title: l10n.notifications,
+                subtitle: l10n.passengerNotificationsMenuSubtitle,
                 onTap: () =>
                     setState(() => _tab = PassengerTab.notifications),
               ),
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.headset_mic_outlined,
-                title: 'Поддержка',
-                subtitle: 'Напишите нам, если нужна помощь',
+                title: l10n.support,
+                subtitle: l10n.passengerSupportMenuSubtitle,
                 onTap: () => setState(() => _tab = PassengerTab.support),
               ),
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.event_repeat_rounded,
-                title: 'Регулярные поездки',
-                subtitle: 'Школьный маршрут и другие поездки по расписанию',
+                title: l10n.passengerDrawerRecurringBookings,
+                subtitle: l10n.passengerRecurringSubtitle,
                 onTap: () {
                   setState(() => _tab = PassengerTab.recurringBookings);
                   unawaited(_loadRecurringBookings());
@@ -3019,8 +3029,8 @@ class _PassengerShellState extends State<PassengerShell>
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.star_outline_rounded,
-                title: 'Избранные адреса',
-                subtitle: 'Дом, работа и другие частые точки',
+                title: l10n.passengerDrawerFavoriteAddresses,
+                subtitle: l10n.passengerFavoriteAddressesSubtitle,
                 onTap: () {
                   setState(() => _tab = PassengerTab.favoriteAddresses);
                   unawaited(_loadFavoriteAddresses());
@@ -3029,8 +3039,8 @@ class _PassengerShellState extends State<PassengerShell>
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.people_alt_outlined,
-                title: 'Водители',
-                subtitle: 'Избранные и заблокированные водители',
+                title: l10n.passengerDrawerDrivers,
+                subtitle: l10n.passengerDriversMenuSubtitle,
                 onTap: () {
                   setState(() => _tab = PassengerTab.driverPreferences);
                   unawaited(_loadDriverPreferences());
@@ -3039,8 +3049,8 @@ class _PassengerShellState extends State<PassengerShell>
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.card_giftcard_rounded,
-                title: 'Пригласить друзей',
-                subtitle: 'Ваш код и бонусы за приглашения',
+                title: l10n.passengerDrawerReferrals,
+                subtitle: l10n.passengerReferralsMenuSubtitle,
                 onTap: () {
                   setState(() => _tab = PassengerTab.referrals);
                   unawaited(_loadReferralSummary());
@@ -3049,20 +3059,20 @@ class _PassengerShellState extends State<PassengerShell>
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.tune_rounded,
-                title: 'Настройки',
-                subtitle: 'Язык, разрешения, аккаунт',
+                title: l10n.settings,
+                subtitle: l10n.passengerSettingsMenuSubtitle,
                 onTap: () => setState(() => _tab = PassengerTab.settings),
               ),
             ],
           ),
         ),
         const SizedBox(height: 14),
-        const _ProfileGroupLabel('Аккаунт'),
+        _ProfileGroupLabel(l10n.passengerAccountGroup),
         const SizedBox(height: 8),
         _PremiumCard(
           child: _MenuLine(
             icon: Icons.logout_rounded,
-            title: 'Выйти',
+            title: l10n.passengerLogoutButton,
             danger: true,
             onTap: () => unawaited(_confirmAndLogout()),
           ),

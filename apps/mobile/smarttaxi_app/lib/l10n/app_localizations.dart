@@ -2703,6 +2703,162 @@ abstract class AppLocalizations {
   /// **'Не удалось выполнить запрос'**
   String get errorGenericRequestFailed;
 
+  /// No description provided for @passengerGpsOrMapHintText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно включить GPS для точной подачи или выбрать точку на карте.'**
+  String get passengerGpsOrMapHintText;
+
+  /// No description provided for @passengerThemeLight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Светлая'**
+  String get passengerThemeLight;
+
+  /// No description provided for @passengerThemeDark.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тёмная'**
+  String get passengerThemeDark;
+
+  /// No description provided for @passengerThemeSystem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как в системе'**
+  String get passengerThemeSystem;
+
+  /// No description provided for @passengerLogoutConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти из аккаунта?'**
+  String get passengerLogoutConfirmTitle;
+
+  /// No description provided for @passengerLogoutConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться SmartTaxi.'**
+  String get passengerLogoutConfirmText;
+
+  /// No description provided for @passengerCancelButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена'**
+  String get passengerCancelButton;
+
+  /// No description provided for @passengerLogoutButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти'**
+  String get passengerLogoutButton;
+
+  /// No description provided for @passengerAccountLabelFallback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пользователь'**
+  String get passengerAccountLabelFallback;
+
+  /// No description provided for @passengerClientOfSmartTaxi.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент SmartTaxi'**
+  String get passengerClientOfSmartTaxi;
+
+  /// No description provided for @passengerStatTripsLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездок'**
+  String get passengerStatTripsLabel;
+
+  /// No description provided for @passengerStatSpentLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Потрачено'**
+  String get passengerStatSpentLabel;
+
+  /// No description provided for @passengerStatRatedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'С оценкой'**
+  String get passengerStatRatedLabel;
+
+  /// No description provided for @passengerAccountNumberLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'№ аккаунта'**
+  String get passengerAccountNumberLabel;
+
+  /// No description provided for @passengerPhoneLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Телефон'**
+  String get passengerPhoneLabel;
+
+  /// No description provided for @passengerQuickActionsGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрые действия'**
+  String get passengerQuickActionsGroup;
+
+  /// No description provided for @passengerMyTripsMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'История и статус текущей поездки'**
+  String get passengerMyTripsMenuSubtitle;
+
+  /// No description provided for @passengerPromoMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверить и применить скидку'**
+  String get passengerPromoMenuSubtitle;
+
+  /// No description provided for @passengerNotificationsMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Статусы поездок и сообщения'**
+  String get passengerNotificationsMenuSubtitle;
+
+  /// No description provided for @passengerSupportMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напишите нам, если нужна помощь'**
+  String get passengerSupportMenuSubtitle;
+
+  /// No description provided for @passengerFavoriteAddressesSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дом, работа и другие частые точки'**
+  String get passengerFavoriteAddressesSubtitle;
+
+  /// No description provided for @passengerDriversMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранные и заблокированные водители'**
+  String get passengerDriversMenuSubtitle;
+
+  /// No description provided for @passengerReferralsMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш код и бонусы за приглашения'**
+  String get passengerReferralsMenuSubtitle;
+
+  /// No description provided for @passengerSettingsMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык, разрешения, аккаунт'**
+  String get passengerSettingsMenuSubtitle;
+
+  /// No description provided for @passengerAccountGroup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт'**
+  String get passengerAccountGroup;
+
+  /// No description provided for @passengerProfileSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт, поездки и настройки SmartTaxi'**
+  String get passengerProfileSubtitle;
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:
