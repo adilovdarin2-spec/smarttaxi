@@ -36,6 +36,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get loading => 'Жүктелуде...';
 
   @override
+  String get pullToRetry => 'Қайталап көру үшін экранды төмен қарай тартыңыз.';
+
+  @override
   String get settings => 'Баптаулар';
 
   @override
@@ -193,6 +196,157 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerDrawerRegionalBadge => 'Аймақтық такси';
+
+  @override
+  String get passengerFaqSubtitle => 'Жиі қойылатын сұрақтарға жауаптар';
+
+  @override
+  String get passengerFaqSearchHint => 'Сұрақтар бойынша іздеу';
+
+  @override
+  String get passengerFaqClearSearch => 'Іздеуді тазалау';
+
+  @override
+  String get passengerFaqNoResultsTitle => 'Ештеңе табылмады';
+
+  @override
+  String get passengerFaqNoResultsText =>
+      'Сұранысты өзгертіп көріңіз немесе қолдау қызметіне жазыңыз.';
+
+  @override
+  String get passengerFaqQ1 => 'Сапарды қалай тапсырыс беруге болады?';
+
+  @override
+  String get passengerFaqA1 =>
+      'Картадан алу нүктесі мен межелі мекенжайды таңдаңыз, тарифті таңдаңыз, есептеуді күтіңіз және «Тапсырыс беру» түймесін басыңыз.';
+
+  @override
+  String get passengerFaqQ2 =>
+      'Неге қызмет тек таңдалған аймақта жұмыс істейді?';
+
+  @override
+  String get passengerFaqA2 =>
+      'SmartTaxi әкімші қосқан аймақтарда іске қосылады. Осылайша сапарлар бақыланатын және әділ болып қалады.';
+
+  @override
+  String get passengerFaqQ3 => 'Баға қалай есептеледі?';
+
+  @override
+  String get passengerFaqA3 =>
+      'Баға сервер тарапынан маршрут, тариф, қашықтық және сапар уақыты бойынша есептеледі.';
+
+  @override
+  String get passengerFaqQ4 => 'Жүргізуші қалай болуға болады?';
+
+  @override
+  String get passengerFaqA4 =>
+      '«Жүргізуші болу» бөлімін ашып, көлік деректерін толтырыңыз және әкімшінің тексеруін күтіңіз.';
+
+  @override
+  String get passengerFaqQ5 => 'Жүргізуші келмесе не істеу керек?';
+
+  @override
+  String get passengerFaqA5 =>
+      'Қолдау қызметін ашып, «Жүргізуші келмеді» тақырыбын таңдаңыз.';
+
+  @override
+  String get passengerFaqQ6 => 'Тапсырысты қалай бас тартуға болады?';
+
+  @override
+  String get passengerFaqA6 =>
+      'Егер тапсырысты әлі бас тартуға болатын болса, «Менің сапарларым» бөлімін ашып, «Сапарды бас тарту» түймесін басыңыз.';
+
+  @override
+  String get passengerFaqQ7 => 'Неге геолокация қажет?';
+
+  @override
+  String get passengerFaqA7 =>
+      'Геолокация алу нүктесін таңдауға және дәл маршрут құруға көмектеседі.';
+
+  @override
+  String get passengerFaqQ8 => 'Қолдау қызметімен қалай байланысуға болады?';
+
+  @override
+  String get passengerFaqA8 =>
+      'Мәзірден «Қолдау» бөлімін ашып, хабарлама жазыңыз.';
+
+  @override
+  String get passengerSupportSubtitle =>
+      'Мәселені сипаттаңыз, біз көмектесеміз';
+
+  @override
+  String get passengerSupportUrgentTitle => 'Шұғыл сұрақ па?';
+
+  @override
+  String passengerSupportCallDirectly(String phone) {
+    return 'Тікелей қоңырау шалыңыз: $phone';
+  }
+
+  @override
+  String get callButton => 'Қоңырау шалу';
+
+  @override
+  String get passengerSupportTopicSectionTitle => 'Өтініш тақырыбы';
+
+  @override
+  String get passengerSupportTopicSectionText =>
+      'Қандай көмек керек екенін таңдаңыз';
+
+  @override
+  String get passengerSupportTopicTripIssue => 'Сапар мәселесі';
+
+  @override
+  String get passengerSupportTopicNoShow => 'Жүргізуші келмеді';
+
+  @override
+  String get passengerSupportTopicLostItem => 'Затымды ұмытып кеттім';
+
+  @override
+  String get passengerSupportTopicPayment => 'Төлем';
+
+  @override
+  String get passengerSupportTopicOther => 'Басқа';
+
+  @override
+  String get passengerSupportChooseTopicFirst =>
+      'Жалғастыру үшін жоғарыдан тақырыпты таңдаңыз.';
+
+  @override
+  String get messageLabel => 'Хабарлама';
+
+  @override
+  String get passengerSupportMessageHint => 'Хабарлама жазыңыз…';
+
+  @override
+  String get passengerSupportMessageTooShort =>
+      'Мәселені толығырақ сипаттаңыз: кемінде 8 таңба.';
+
+  @override
+  String get passengerSupportLostItemNeedsTrip =>
+      'Затты қалдырған сапарды көрсетіңіз — олай болмаса жүргізушіге хабарлау мүмкін болмайды.';
+
+  @override
+  String get sendButton => 'Жіберу';
+
+  @override
+  String get sendingButton => 'Жіберілуде...';
+
+  @override
+  String get passengerSupportLostItemSent =>
+      'Өтініш жіберілді, жүргізушіге хабарланды.';
+
+  @override
+  String get passengerSupportMessageSent =>
+      'Өтініш жіберілді. Осы жерде жауап береміз, қажет болса қоңырау шаламыз.';
+
+  @override
+  String get passengerSupportDialFailed => 'Нөмірді теру мүмкін болмады';
+
+  @override
+  String get passengerSupportYourRequests => 'Сіздің өтініштеріңіз';
+
+  @override
+  String get passengerSupportLoadError => 'Өтініштерді жүктеу мүмкін болмады';
 
   @override
   String get authWelcomeTitle => 'Кіру және тіркелу';

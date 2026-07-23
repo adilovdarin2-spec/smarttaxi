@@ -3508,24 +3508,39 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _callSupportPhone(String phone) async {
+    final dialFailedText =
+        AppLocalizations.of(context).passengerSupportDialFailed;
     try {
       final launched = await launchUrl(Uri(scheme: 'tel', path: phone));
       if (launched || !mounted) return;
-      AppToast.showError(context, 'Не удалось открыть набор номера');
+      AppToast.showError(context, dialFailedText);
     } catch (_) {
       if (!mounted) return;
-      AppToast.showError(context, 'Не удалось открыть набор номера');
+      AppToast.showError(context, dialFailedText);
     }
   }
 
   Widget _supportScreen() {
-    const topics = [
-      'Проблема с поездкой',
-      'Водитель не приехал',
-      'Забыл вещь',
-      'Оплата',
-      'Другое',
-    ];
+    final l10n = AppLocalizations.of(context);
+    const topics = ['trip_issue', 'no_show', 'lost_item', 'payment', 'other'];
+    String topicLabel(String key) => switch (key) {
+          'trip_issue' => l10n.passengerSupportTopicTripIssue,
+          'no_show' => l10n.passengerSupportTopicNoShow,
+          'lost_item' => l10n.passengerSupportTopicLostItem,
+          'payment' => l10n.passengerSupportTopicPayment,
+          _ => l10n.passengerSupportTopicOther,
+        };
+    // Support staff read the admin panel in Russian regardless of the
+    // client's interface language, so the free-text topic sent to the
+    // backend stays Russian; only the lost-item case has its own stable
+    // code ('LOST_ITEM', below) that backend logic actually matches on.
+    String topicRuLabel(String key) => switch (key) {
+          'trip_issue' => 'Проблема с поездкой',
+          'no_show' => 'Водитель не приехал',
+          'lost_item' => 'Забыл вещь',
+          'payment' => 'Оплата',
+          _ => 'Другое',
+        };
     // Regions don't carry their own support number today, so the
     // service-wide one from /api/regions/service-settings is the primary
     // source — a per-region override still wins if one is ever added.
@@ -3541,9 +3556,9 @@ class _PassengerShellState extends State<PassengerShell>
         parent: BouncingScrollPhysics(),
       ),
       children: [
-        const _TitleBlock(
-          title: 'Поддержка',
-          text: 'Опишите проблему, мы поможем',
+        _TitleBlock(
+          title: l10n.support,
+          text: l10n.passengerSupportSubtitle,
         ),
         const SizedBox(height: 16),
         if (supportPhone.isNotEmpty) ...[
@@ -3569,13 +3584,13 @@ class _PassengerShellState extends State<PassengerShell>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Срочный вопрос?',
-                        style: TextStyle(fontWeight: FontWeight.w900),
+                      Text(
+                        l10n.passengerSupportUrgentTitle,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Позвоните напрямую: $supportPhone',
+                        l10n.passengerSupportCallDirectly(supportPhone),
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 12.5,
@@ -3595,7 +3610,7 @@ class _PassengerShellState extends State<PassengerShell>
                     minimumSize: const Size(0, 44),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
-                  child: const Text('Позвонить'),
+                  child: Text(l10n.callButton),
                 ),
               ],
             ),
@@ -3607,8 +3622,8 @@ class _PassengerShellState extends State<PassengerShell>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _SectionLabel(
-                title: 'Тема обращения',
-                text: 'Выберите, с чем нужна помощь',
+                title: l10n.passengerSupportTopicSectionTitle,
+                text: l10n.passengerSupportTopicSectionText,
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -3617,7 +3632,7 @@ class _PassengerShellState extends State<PassengerShell>
                 children: topics
                     .map(
                       (topic) => _SupportTopicChip(
-                        label: topic,
+                        label: topicLabel(topic),
                         selected: _supportTopic == topic,
                         onTap: () => setState(() {
                           _supportTopic = topic;
@@ -3642,7 +3657,7 @@ class _PassengerShellState extends State<PassengerShell>
                     ? Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: Text(
-                          'Выберите тему выше, чтобы продолжить.',
+                          l10n.passengerSupportChooseTopicFirst,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 12.5,
@@ -3654,7 +3669,7 @@ class _PassengerShellState extends State<PassengerShell>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_supportTopic == 'Забыл вещь') ...[
+                          if (_supportTopic == 'lost_item') ...[
                             const SizedBox(height: 14),
                             _LostItemOrderPicker(
                               activeOrder: _order,
@@ -3669,9 +3684,9 @@ class _PassengerShellState extends State<PassengerShell>
                             controller: _supportController,
                             minLines: 5,
                             maxLines: 7,
-                            decoration: const InputDecoration(
-                              labelText: 'Сообщение',
-                              hintText: 'Напишите сообщение…',
+                            decoration: InputDecoration(
+                              labelText: l10n.messageLabel,
+                              hintText: l10n.passengerSupportMessageHint,
                               alignLabelWithHint: true,
                             ),
                           ),
@@ -3688,8 +3703,8 @@ class _PassengerShellState extends State<PassengerShell>
                           _GoldCtaButton(
                             enabled: !_supportSending,
                             loading: _supportSending,
-                            text: 'Отправить',
-                            loadingText: 'Отправляем...',
+                            text: l10n.sendButton,
+                            loadingText: l10n.sendingButton,
                             onTap: () async {
                               final topic = _supportTopic;
                               if (topic == null) return;
@@ -3698,16 +3713,16 @@ class _PassengerShellState extends State<PassengerShell>
                                 setState(() {
                                   _supportMessageDanger = true;
                                   _supportMessage =
-                                      'Опишите проблему подробнее: минимум 8 символов.';
+                                      l10n.passengerSupportMessageTooShort;
                                 });
                                 return;
                               }
-                              final isLostItem = topic == 'Забыл вещь';
+                              final isLostItem = topic == 'lost_item';
                               if (isLostItem && _lostItemOrderId == null) {
                                 setState(() {
                                   _supportMessageDanger = true;
                                   _supportMessage =
-                                      'Укажите поездку, в которой оставили вещь — иначе водителя не получится уведомить.';
+                                      l10n.passengerSupportLostItemNeedsTrip;
                                 });
                                 return;
                               }
@@ -3718,7 +3733,9 @@ class _PassengerShellState extends State<PassengerShell>
                                   // (not the Russian label) to trigger a
                                   // push straight to the trip's driver —
                                   // see support.routes.js.
-                                  topic: isLostItem ? 'LOST_ITEM' : topic,
+                                  topic: isLostItem
+                                      ? 'LOST_ITEM'
+                                      : topicRuLabel(topic),
                                   message: text,
                                   orderId:
                                       isLostItem ? _lostItemOrderId : _order?.id,
@@ -3729,8 +3746,8 @@ class _PassengerShellState extends State<PassengerShell>
                                   _supportMessageDanger = false;
                                   _lostItemOrderId = null;
                                   _supportMessage = isLostItem
-                                      ? 'Обращение отправлено, водитель уведомлён.'
-                                      : 'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.';
+                                      ? l10n.passengerSupportLostItemSent
+                                      : l10n.passengerSupportMessageSent;
                                 });
                                 unawaited(_loadMySupportMessages());
                               } catch (error) {
@@ -3754,7 +3771,7 @@ class _PassengerShellState extends State<PassengerShell>
         ),
         if (_mySupportMessages.isNotEmpty) ...[
           const SizedBox(height: 14),
-          const _ProfileGroupLabel('Ваши обращения'),
+          _ProfileGroupLabel(l10n.passengerSupportYourRequests),
           const SizedBox(height: 8),
           for (final item in _mySupportMessages) ...[
             _SupportHistoryCard(item: item),
@@ -3773,8 +3790,8 @@ class _PassengerShellState extends State<PassengerShell>
           _PremiumCard(
             child: _CompactNotice(
               icon: Icons.wifi_off_rounded,
-              title: 'Не удалось загрузить обращения',
-              text: 'Потяните экран вниз, чтобы попробовать снова.',
+              title: l10n.passengerSupportLoadError,
+              text: l10n.pullToRetry,
               dark: Theme.of(context).brightness == Brightness.dark,
             ),
           ),
@@ -16023,40 +16040,16 @@ class _GoldCtaButton extends StatelessWidget {
   }
 }
 
-const _faqItems = <(String, String)>[
-  (
-    'Как заказать поездку?',
-    'Выберите точку подачи и адрес назначения на карте, выберите тариф, дождитесь расчёта и нажмите «Заказать».'
-  ),
-  (
-    'Почему сервис работает только в выбранном регионе?',
-    'SmartTaxi запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.'
-  ),
-  (
-    'Как считается цена?',
-    'Цена рассчитывается сервером по маршруту, тарифу, расстоянию и времени поездки.'
-  ),
-  (
-    'Как стать водителем?',
-    'Откройте раздел «Стать водителем», заполните данные автомобиля и дождитесь проверки администратора.'
-  ),
-  (
-    'Что делать, если водитель не приехал?',
-    'Откройте поддержку и выберите тему «Водитель не приехал».'
-  ),
-  (
-    'Как отменить заказ?',
-    'Откройте «Мои поездки» и нажмите «Отменить поездку», если заказ ещё можно отменить.'
-  ),
-  (
-    'Почему нужна геолокация?',
-    'Геолокация помогает выбрать точку посадки и строить честный маршрут.'
-  ),
-  (
-    'Как связаться с поддержкой?',
-    'Откройте раздел «Поддержка» в меню и напишите сообщение.'
-  ),
-];
+List<(String, String)> _faqItems(AppLocalizations l10n) => [
+      (l10n.passengerFaqQ1, l10n.passengerFaqA1),
+      (l10n.passengerFaqQ2, l10n.passengerFaqA2),
+      (l10n.passengerFaqQ3, l10n.passengerFaqA3),
+      (l10n.passengerFaqQ4, l10n.passengerFaqA4),
+      (l10n.passengerFaqQ5, l10n.passengerFaqA5),
+      (l10n.passengerFaqQ6, l10n.passengerFaqA6),
+      (l10n.passengerFaqQ7, l10n.passengerFaqA7),
+      (l10n.passengerFaqQ8, l10n.passengerFaqA8),
+    ];
 
 class _FaqScreen extends StatefulWidget {
   const _FaqScreen();
@@ -16077,10 +16070,12 @@ class _FaqScreenState extends State<_FaqScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final items = _faqItems(l10n);
     final query = _query.trim().toLowerCase();
     final filtered = query.isEmpty
-        ? _faqItems
-        : _faqItems
+        ? items
+        : items
             .where(
               (item) =>
                   item.$1.toLowerCase().contains(query) ||
@@ -16090,22 +16085,22 @@ class _FaqScreenState extends State<_FaqScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const _TitleBlock(
-          title: 'FAQ',
-          text: 'Ответы на частые вопросы',
+        _TitleBlock(
+          title: l10n.passengerDrawerFaq,
+          text: l10n.passengerFaqSubtitle,
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _searchController,
           onChanged: (value) => setState(() => _query = value),
           decoration: InputDecoration(
-            hintText: 'Поиск по вопросам',
+            hintText: l10n.passengerFaqSearchHint,
             prefixIcon: const Icon(Icons.search_rounded),
             suffixIcon: _query.isEmpty
                 ? null
                 : IconButton(
                     icon: const Icon(Icons.close_rounded),
-                    tooltip: 'Очистить поиск',
+                    tooltip: l10n.passengerFaqClearSearch,
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _query = '');
@@ -16115,10 +16110,10 @@ class _FaqScreenState extends State<_FaqScreen> {
         ),
         const SizedBox(height: 16),
         if (filtered.isEmpty)
-          const EmptyState(
+          EmptyState(
             icon: Icons.search_off_rounded,
-            title: 'Ничего не найдено',
-            text: 'Попробуйте изменить запрос или напишите нам в поддержку.',
+            title: l10n.passengerFaqNoResultsTitle,
+            text: l10n.passengerFaqNoResultsText,
           )
         else
           ...filtered.map(

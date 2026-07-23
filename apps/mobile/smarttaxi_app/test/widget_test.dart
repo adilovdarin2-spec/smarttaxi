@@ -400,29 +400,30 @@ void main() {
 
   test('passenger menu screens are useful and production-oriented', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final ruArb = _read('lib/l10n/app_ru.arb');
 
     expect(passenger, contains('_supportScreen'));
     expect(passenger, contains('_SupportTopicChip'));
     expect(passenger, isNot(contains('ChoiceChip(')));
     expect(passenger, contains('Проблема с поездкой'));
     expect(passenger, contains('Водитель не приехал'));
-    expect(passenger, contains('Сообщение'));
-    expect(passenger, contains('Напишите сообщение'));
+    expect(passenger, contains('l10n.messageLabel'));
+    expect(passenger, contains('passengerSupportMessageHint'));
     // The support form used to just copy the text to the clipboard for the
     // user to paste elsewhere ("Текст скопирован..."); it now actually
     // submits via widget.api.submitSupportMessage and shows a real
-    // confirmation.
+    // confirmation. Copy itself now lives in app_ru.arb (passengerSupport*).
+    expect(passenger, contains('l10n.passengerSupportMessageSent'));
     expect(
-      passenger,
+      ruArb,
       contains(
-          'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.'),
+          '"passengerSupportMessageSent": "Обращение отправлено. Мы ответим здесь и, если нужно, позвоним."'),
     );
     expect(passenger, contains('_settingsScreen'));
     expect(passenger, contains('Аккаунт'));
     // Settings screen group/row labels were localized (passengerSettings*
     // arb keys) instead of hardcoded Russian literals, so the copy itself
     // now lives in app_ru.arb rather than passenger_shell.dart's source.
-    final ruArb = _read('lib/l10n/app_ru.arb');
     expect(passenger, contains('l10n.passengerSettingsInterfaceGroup'));
     expect(ruArb, contains('"passengerSettingsInterfaceGroup": "Интерфейс"'));
     expect(passenger, contains('Поездки'));
@@ -437,9 +438,12 @@ void main() {
     expect(passenger, isNot(contains('будут добавлены')));
     expect(passenger, contains('_faqScreen'));
     expect(passenger, contains('_FaqTile'));
-    expect(passenger, contains('Как заказать поездку?'));
-    expect(passenger, contains('Как считается цена?'));
-    expect(passenger, contains('Как стать водителем?'));
+    // FAQ questions/answers were localized (passengerFaqQ*/A* arb keys)
+    // instead of a hardcoded const list.
+    expect(passenger, contains('_faqItems(AppLocalizations l10n)'));
+    expect(ruArb, contains('"passengerFaqQ1": "Как заказать поездку?"'));
+    expect(ruArb, contains('"passengerFaqQ3": "Как считается цена?"'));
+    expect(ruArb, contains('"passengerFaqQ4": "Как стать водителем?"'));
     expect(passenger, contains('_aboutScreen'));
     expect(passenger, contains('SmartTaxi'));
     expect(passenger, contains('региональный сервис такси'));

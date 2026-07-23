@@ -36,6 +36,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get loading => 'Загрузка...';
 
   @override
+  String get pullToRetry => 'Потяните экран вниз, чтобы попробовать снова.';
+
+  @override
   String get settings => 'Настройки';
 
   @override
@@ -193,6 +196,155 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerDrawerRegionalBadge => 'Региональное такси';
+
+  @override
+  String get passengerFaqSubtitle => 'Ответы на частые вопросы';
+
+  @override
+  String get passengerFaqSearchHint => 'Поиск по вопросам';
+
+  @override
+  String get passengerFaqClearSearch => 'Очистить поиск';
+
+  @override
+  String get passengerFaqNoResultsTitle => 'Ничего не найдено';
+
+  @override
+  String get passengerFaqNoResultsText =>
+      'Попробуйте изменить запрос или напишите нам в поддержку.';
+
+  @override
+  String get passengerFaqQ1 => 'Как заказать поездку?';
+
+  @override
+  String get passengerFaqA1 =>
+      'Выберите точку подачи и адрес назначения на карте, выберите тариф, дождитесь расчёта и нажмите «Заказать».';
+
+  @override
+  String get passengerFaqQ2 =>
+      'Почему сервис работает только в выбранном регионе?';
+
+  @override
+  String get passengerFaqA2 =>
+      'SmartTaxi запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.';
+
+  @override
+  String get passengerFaqQ3 => 'Как считается цена?';
+
+  @override
+  String get passengerFaqA3 =>
+      'Цена рассчитывается сервером по маршруту, тарифу, расстоянию и времени поездки.';
+
+  @override
+  String get passengerFaqQ4 => 'Как стать водителем?';
+
+  @override
+  String get passengerFaqA4 =>
+      'Откройте раздел «Стать водителем», заполните данные автомобиля и дождитесь проверки администратора.';
+
+  @override
+  String get passengerFaqQ5 => 'Что делать, если водитель не приехал?';
+
+  @override
+  String get passengerFaqA5 =>
+      'Откройте поддержку и выберите тему «Водитель не приехал».';
+
+  @override
+  String get passengerFaqQ6 => 'Как отменить заказ?';
+
+  @override
+  String get passengerFaqA6 =>
+      'Откройте «Мои поездки» и нажмите «Отменить поездку», если заказ ещё можно отменить.';
+
+  @override
+  String get passengerFaqQ7 => 'Почему нужна геолокация?';
+
+  @override
+  String get passengerFaqA7 =>
+      'Геолокация помогает выбрать точку посадки и строить честный маршрут.';
+
+  @override
+  String get passengerFaqQ8 => 'Как связаться с поддержкой?';
+
+  @override
+  String get passengerFaqA8 =>
+      'Откройте раздел «Поддержка» в меню и напишите сообщение.';
+
+  @override
+  String get passengerSupportSubtitle => 'Опишите проблему, мы поможем';
+
+  @override
+  String get passengerSupportUrgentTitle => 'Срочный вопрос?';
+
+  @override
+  String passengerSupportCallDirectly(String phone) {
+    return 'Позвоните напрямую: $phone';
+  }
+
+  @override
+  String get callButton => 'Позвонить';
+
+  @override
+  String get passengerSupportTopicSectionTitle => 'Тема обращения';
+
+  @override
+  String get passengerSupportTopicSectionText => 'Выберите, с чем нужна помощь';
+
+  @override
+  String get passengerSupportTopicTripIssue => 'Проблема с поездкой';
+
+  @override
+  String get passengerSupportTopicNoShow => 'Водитель не приехал';
+
+  @override
+  String get passengerSupportTopicLostItem => 'Забыл вещь';
+
+  @override
+  String get passengerSupportTopicPayment => 'Оплата';
+
+  @override
+  String get passengerSupportTopicOther => 'Другое';
+
+  @override
+  String get passengerSupportChooseTopicFirst =>
+      'Выберите тему выше, чтобы продолжить.';
+
+  @override
+  String get messageLabel => 'Сообщение';
+
+  @override
+  String get passengerSupportMessageHint => 'Напишите сообщение…';
+
+  @override
+  String get passengerSupportMessageTooShort =>
+      'Опишите проблему подробнее: минимум 8 символов.';
+
+  @override
+  String get passengerSupportLostItemNeedsTrip =>
+      'Укажите поездку, в которой оставили вещь — иначе водителя не получится уведомить.';
+
+  @override
+  String get sendButton => 'Отправить';
+
+  @override
+  String get sendingButton => 'Отправляем...';
+
+  @override
+  String get passengerSupportLostItemSent =>
+      'Обращение отправлено, водитель уведомлён.';
+
+  @override
+  String get passengerSupportMessageSent =>
+      'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.';
+
+  @override
+  String get passengerSupportDialFailed => 'Не удалось открыть набор номера';
+
+  @override
+  String get passengerSupportYourRequests => 'Ваши обращения';
+
+  @override
+  String get passengerSupportLoadError => 'Не удалось загрузить обращения';
 
   @override
   String get authWelcomeTitle => 'Вход и регистрация';

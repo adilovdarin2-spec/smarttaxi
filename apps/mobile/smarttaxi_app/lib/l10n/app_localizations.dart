@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Загрузка...'**
   String get loading;
 
+  /// No description provided for @pullToRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Потяните экран вниз, чтобы попробовать снова.'**
+  String get pullToRetry;
+
   /// No description provided for @settings.
   ///
   /// In ru, this message translates to:
@@ -457,6 +463,270 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Региональное такси'**
   String get passengerDrawerRegionalBadge;
+
+  /// No description provided for @passengerFaqSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответы на частые вопросы'**
+  String get passengerFaqSubtitle;
+
+  /// No description provided for @passengerFaqSearchHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск по вопросам'**
+  String get passengerFaqSearchHint;
+
+  /// No description provided for @passengerFaqClearSearch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очистить поиск'**
+  String get passengerFaqClearSearch;
+
+  /// No description provided for @passengerFaqNoResultsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ничего не найдено'**
+  String get passengerFaqNoResultsTitle;
+
+  /// No description provided for @passengerFaqNoResultsText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробуйте изменить запрос или напишите нам в поддержку.'**
+  String get passengerFaqNoResultsText;
+
+  /// No description provided for @passengerFaqQ1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как заказать поездку?'**
+  String get passengerFaqQ1;
+
+  /// No description provided for @passengerFaqA1.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите точку подачи и адрес назначения на карте, выберите тариф, дождитесь расчёта и нажмите «Заказать».'**
+  String get passengerFaqA1;
+
+  /// No description provided for @passengerFaqQ2.
+  ///
+  /// In ru, this message translates to:
+  /// **'Почему сервис работает только в выбранном регионе?'**
+  String get passengerFaqQ2;
+
+  /// No description provided for @passengerFaqA2.
+  ///
+  /// In ru, this message translates to:
+  /// **'SmartTaxi запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.'**
+  String get passengerFaqA2;
+
+  /// No description provided for @passengerFaqQ3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как считается цена?'**
+  String get passengerFaqQ3;
+
+  /// No description provided for @passengerFaqA3.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена рассчитывается сервером по маршруту, тарифу, расстоянию и времени поездки.'**
+  String get passengerFaqA3;
+
+  /// No description provided for @passengerFaqQ4.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как стать водителем?'**
+  String get passengerFaqQ4;
+
+  /// No description provided for @passengerFaqA4.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте раздел «Стать водителем», заполните данные автомобиля и дождитесь проверки администратора.'**
+  String get passengerFaqA4;
+
+  /// No description provided for @passengerFaqQ5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Что делать, если водитель не приехал?'**
+  String get passengerFaqQ5;
+
+  /// No description provided for @passengerFaqA5.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте поддержку и выберите тему «Водитель не приехал».'**
+  String get passengerFaqA5;
+
+  /// No description provided for @passengerFaqQ6.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как отменить заказ?'**
+  String get passengerFaqQ6;
+
+  /// No description provided for @passengerFaqA6.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте «Мои поездки» и нажмите «Отменить поездку», если заказ ещё можно отменить.'**
+  String get passengerFaqA6;
+
+  /// No description provided for @passengerFaqQ7.
+  ///
+  /// In ru, this message translates to:
+  /// **'Почему нужна геолокация?'**
+  String get passengerFaqQ7;
+
+  /// No description provided for @passengerFaqA7.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация помогает выбрать точку посадки и строить честный маршрут.'**
+  String get passengerFaqA7;
+
+  /// No description provided for @passengerFaqQ8.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как связаться с поддержкой?'**
+  String get passengerFaqQ8;
+
+  /// No description provided for @passengerFaqA8.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте раздел «Поддержка» в меню и напишите сообщение.'**
+  String get passengerFaqA8;
+
+  /// No description provided for @passengerSupportSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите проблему, мы поможем'**
+  String get passengerSupportSubtitle;
+
+  /// No description provided for @passengerSupportUrgentTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Срочный вопрос?'**
+  String get passengerSupportUrgentTitle;
+
+  /// No description provided for @passengerSupportCallDirectly.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвоните напрямую: {phone}'**
+  String passengerSupportCallDirectly(String phone);
+
+  /// No description provided for @callButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить'**
+  String get callButton;
+
+  /// No description provided for @passengerSupportTopicSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема обращения'**
+  String get passengerSupportTopicSectionTitle;
+
+  /// No description provided for @passengerSupportTopicSectionText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите, с чем нужна помощь'**
+  String get passengerSupportTopicSectionText;
+
+  /// No description provided for @passengerSupportTopicTripIssue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проблема с поездкой'**
+  String get passengerSupportTopicTripIssue;
+
+  /// No description provided for @passengerSupportTopicNoShow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель не приехал'**
+  String get passengerSupportTopicNoShow;
+
+  /// No description provided for @passengerSupportTopicLostItem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Забыл вещь'**
+  String get passengerSupportTopicLostItem;
+
+  /// No description provided for @passengerSupportTopicPayment.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата'**
+  String get passengerSupportTopicPayment;
+
+  /// No description provided for @passengerSupportTopicOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'Другое'**
+  String get passengerSupportTopicOther;
+
+  /// No description provided for @passengerSupportChooseTopicFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите тему выше, чтобы продолжить.'**
+  String get passengerSupportChooseTopicFirst;
+
+  /// No description provided for @messageLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщение'**
+  String get messageLabel;
+
+  /// No description provided for @passengerSupportMessageHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напишите сообщение…'**
+  String get passengerSupportMessageHint;
+
+  /// No description provided for @passengerSupportMessageTooShort.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите проблему подробнее: минимум 8 символов.'**
+  String get passengerSupportMessageTooShort;
+
+  /// No description provided for @passengerSupportLostItemNeedsTrip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите поездку, в которой оставили вещь — иначе водителя не получится уведомить.'**
+  String get passengerSupportLostItemNeedsTrip;
+
+  /// No description provided for @sendButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить'**
+  String get sendButton;
+
+  /// No description provided for @sendingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправляем...'**
+  String get sendingButton;
+
+  /// No description provided for @passengerSupportLostItemSent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращение отправлено, водитель уведомлён.'**
+  String get passengerSupportLostItemSent;
+
+  /// No description provided for @passengerSupportMessageSent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращение отправлено. Мы ответим здесь и, если нужно, позвоним.'**
+  String get passengerSupportMessageSent;
+
+  /// No description provided for @passengerSupportDialFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть набор номера'**
+  String get passengerSupportDialFailed;
+
+  /// No description provided for @passengerSupportYourRequests.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваши обращения'**
+  String get passengerSupportYourRequests;
+
+  /// No description provided for @passengerSupportLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить обращения'**
+  String get passengerSupportLoadError;
 
   /// No description provided for @authWelcomeTitle.
   ///
