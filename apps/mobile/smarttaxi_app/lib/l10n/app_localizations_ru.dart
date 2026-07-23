@@ -3704,4 +3704,46 @@ class AppLocalizationsRu extends AppLocalizations {
   String driverInDistanceLabel(String distance) {
     return 'Через $distance';
   }
+
+  @override
+  String get roadAlertShortAccident => 'ДТП';
+
+  @override
+  String get roadAlertShortRoadWork => 'Р';
+
+  @override
+  String get roadAlertShortSpeedCamera => 'К';
+
+  @override
+  String get roadAlertShortPolice => 'КД';
+
+  @override
+  String get roadAlertShortTrafficJam => 'П';
+
+  @override
+  String get roadAlertShortBadRoad => 'БД';
+
+  @override
+  String get roadAlertShortPothole => 'Я';
+
+  @override
+  String get roadAlertShortSpeedBump => 'ЛП';
+
+  @override
+  String get roadAlertShortIcyRoad => 'Л';
+
+  @override
+  String get roadAlertShortSchoolZone => 'Ш';
+
+  @override
+  String get roadAlertShortTemporarySpeedLimit => 'ЛИМ';
+
+  @override
+  String get roadAlertShortDangerousTurn => 'ПВ';
+
+  @override
+  String get roadAlertShortRailroadCrossing => 'ЖД';
+
+  @override
+  String get roadAlertShortPedestrianCrossing => 'ПЕШ';
 }

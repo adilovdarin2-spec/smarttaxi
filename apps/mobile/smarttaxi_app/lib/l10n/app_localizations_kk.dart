@@ -3711,4 +3711,46 @@ class AppLocalizationsKk extends AppLocalizations {
   String driverInDistanceLabel(String distance) {
     return '$distance қалды';
   }
+
+  @override
+  String get roadAlertShortAccident => 'ЖКО';
+
+  @override
+  String get roadAlertShortRoadWork => 'Ж';
+
+  @override
+  String get roadAlertShortSpeedCamera => 'К';
+
+  @override
+  String get roadAlertShortPolice => 'Б';
+
+  @override
+  String get roadAlertShortTrafficJam => 'ТК';
+
+  @override
+  String get roadAlertShortBadRoad => 'НЖ';
+
+  @override
+  String get roadAlertShortPothole => 'Ш';
+
+  @override
+  String get roadAlertShortSpeedBump => 'ЖБ';
+
+  @override
+  String get roadAlertShortIcyRoad => 'Т';
+
+  @override
+  String get roadAlertShortSchoolZone => 'М';
+
+  @override
+  String get roadAlertShortTemporarySpeedLimit => 'ШЕК';
+
+  @override
+  String get roadAlertShortDangerousTurn => 'ҚБ';
+
+  @override
+  String get roadAlertShortRailroadCrossing => 'ТЖ';
+
+  @override
+  String get roadAlertShortPedestrianCrossing => 'ЖЖ';
 }

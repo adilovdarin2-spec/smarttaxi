@@ -3513,7 +3513,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                           width: 44,
                           height: 44,
                           child: _RoadAlertPin(
-                            label: _alertShortLabel(alert.type),
+                            label: _alertShortLabel(l10n, alert.type),
                             color: _alertColor(alert.type),
                             heading: alert.heading,
                           ),
@@ -4148,7 +4148,7 @@ class _DriverFullScreenNavigatorState
                               width: 44,
                               height: 44,
                               child: _RoadAlertPin(
-                                label: _alertShortLabel(alert.type),
+                                label: _alertShortLabel(l10n, alert.type),
                                 color: _alertColor(alert.type),
                                 heading: alert.heading,
                               ),
@@ -5751,7 +5751,7 @@ class _RoadAlertMap extends StatelessWidget {
                   ),
                   MarkerLayer(
                     markers: [
-                      for (final alert in alerts) _alertMarker(alert),
+                      for (final alert in alerts) _alertMarker(l10n, alert),
                       if (selectedPoint != null)
                         Marker(
                           point: selectedPoint!.toLatLng(),
@@ -5803,13 +5803,13 @@ class _RoadAlertMap extends StatelessWidget {
     );
   }
 
-  Marker _alertMarker(RoadAlert alert) {
+  Marker _alertMarker(AppLocalizations l10n, RoadAlert alert) {
     return Marker(
       point: alert.toLatLng(),
       width: 46,
       height: 46,
       child: _RoadAlertPin(
-        label: _alertShortLabel(alert.type),
+        label: _alertShortLabel(l10n, alert.type),
         color: _alertColor(alert.type),
         heading: alert.heading,
       ),
@@ -5945,7 +5945,7 @@ class _RoadAlertRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _RoadAlertPin(
-              label: _alertShortLabel(alert.type),
+              label: _alertShortLabel(l10n, alert.type),
               color: _alertColor(alert.type)),
           const SizedBox(width: 12),
           Expanded(
@@ -6033,24 +6033,24 @@ class _RoadAlertRow extends StatelessWidget {
   }
 }
 
-String _alertShortLabel(String type) {
-  return const {
+String _alertShortLabel(AppLocalizations l10n, String type) {
+  return {
         'ROAD_HAZARD': '!',
-        'ACCIDENT': 'ДТП',
-        'ROAD_WORK': 'Р',
-        'SPEED_CAMERA': 'К',
-        'POLICE': 'КД',
-        'TRAFFIC_JAM': 'П',
+        'ACCIDENT': l10n.roadAlertShortAccident,
+        'ROAD_WORK': l10n.roadAlertShortRoadWork,
+        'SPEED_CAMERA': l10n.roadAlertShortSpeedCamera,
+        'POLICE': l10n.roadAlertShortPolice,
+        'TRAFFIC_JAM': l10n.roadAlertShortTrafficJam,
         'ROAD_CLOSED': 'X',
-        'BAD_ROAD': 'БД',
-        'POTHOLE': 'Я',
-        'SPEED_BUMP': 'ЛП',
-        'ICY_ROAD': 'Л',
-        'SCHOOL_ZONE': 'Ш',
-        'TEMPORARY_SPEED_LIMIT': 'ЛИМ',
-        'DANGEROUS_TURN': 'ПВ',
-        'RAILROAD_CROSSING': 'ЖД',
-        'PEDESTRIAN_CROSSING': 'ПЕШ',
+        'BAD_ROAD': l10n.roadAlertShortBadRoad,
+        'POTHOLE': l10n.roadAlertShortPothole,
+        'SPEED_BUMP': l10n.roadAlertShortSpeedBump,
+        'ICY_ROAD': l10n.roadAlertShortIcyRoad,
+        'SCHOOL_ZONE': l10n.roadAlertShortSchoolZone,
+        'TEMPORARY_SPEED_LIMIT': l10n.roadAlertShortTemporarySpeedLimit,
+        'DANGEROUS_TURN': l10n.roadAlertShortDangerousTurn,
+        'RAILROAD_CROSSING': l10n.roadAlertShortRailroadCrossing,
+        'PEDESTRIAN_CROSSING': l10n.roadAlertShortPedestrianCrossing,
         'OTHER': '?',
       }[type] ??
       '?';

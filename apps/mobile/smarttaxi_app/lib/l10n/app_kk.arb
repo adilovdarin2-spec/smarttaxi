@@ -1205,5 +1205,19 @@
   "driverConfirmAlertButton": "Орында",
   "noButton": "Жоқ",
   "driverInDistanceLabel": "{distance} қалды",
-  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}}
+  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}},
+  "roadAlertShortAccident": "ЖКО",
+  "roadAlertShortRoadWork": "Ж",
+  "roadAlertShortSpeedCamera": "К",
+  "roadAlertShortPolice": "Б",
+  "roadAlertShortTrafficJam": "ТК",
+  "roadAlertShortBadRoad": "НЖ",
+  "roadAlertShortPothole": "Ш",
+  "roadAlertShortSpeedBump": "ЖБ",
+  "roadAlertShortIcyRoad": "Т",
+  "roadAlertShortSchoolZone": "М",
+  "roadAlertShortTemporarySpeedLimit": "ШЕК",
+  "roadAlertShortDangerousTurn": "ҚБ",
+  "roadAlertShortRailroadCrossing": "ТЖ",
+  "roadAlertShortPedestrianCrossing": "ЖЖ"
 }

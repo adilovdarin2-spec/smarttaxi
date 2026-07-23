@@ -1206,5 +1206,19 @@
   "driverConfirmAlertButton": "На месте",
   "noButton": "Нет",
   "driverInDistanceLabel": "Через {distance}",
-  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}}
+  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}},
+  "roadAlertShortAccident": "ДТП",
+  "roadAlertShortRoadWork": "Р",
+  "roadAlertShortSpeedCamera": "К",
+  "roadAlertShortPolice": "КД",
+  "roadAlertShortTrafficJam": "П",
+  "roadAlertShortBadRoad": "БД",
+  "roadAlertShortPothole": "Я",
+  "roadAlertShortSpeedBump": "ЛП",
+  "roadAlertShortIcyRoad": "Л",
+  "roadAlertShortSchoolZone": "Ш",
+  "roadAlertShortTemporarySpeedLimit": "ЛИМ",
+  "roadAlertShortDangerousTurn": "ПВ",
+  "roadAlertShortRailroadCrossing": "ЖД",
+  "roadAlertShortPedestrianCrossing": "ПЕШ"
 }

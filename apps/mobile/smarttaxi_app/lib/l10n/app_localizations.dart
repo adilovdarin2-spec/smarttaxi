@@ -6692,6 +6692,90 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Через {distance}'**
   String driverInDistanceLabel(String distance);
+
+  /// No description provided for @roadAlertShortAccident.
+  ///
+  /// In ru, this message translates to:
+  /// **'ДТП'**
+  String get roadAlertShortAccident;
+
+  /// No description provided for @roadAlertShortRoadWork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Р'**
+  String get roadAlertShortRoadWork;
+
+  /// No description provided for @roadAlertShortSpeedCamera.
+  ///
+  /// In ru, this message translates to:
+  /// **'К'**
+  String get roadAlertShortSpeedCamera;
+
+  /// No description provided for @roadAlertShortPolice.
+  ///
+  /// In ru, this message translates to:
+  /// **'КД'**
+  String get roadAlertShortPolice;
+
+  /// No description provided for @roadAlertShortTrafficJam.
+  ///
+  /// In ru, this message translates to:
+  /// **'П'**
+  String get roadAlertShortTrafficJam;
+
+  /// No description provided for @roadAlertShortBadRoad.
+  ///
+  /// In ru, this message translates to:
+  /// **'БД'**
+  String get roadAlertShortBadRoad;
+
+  /// No description provided for @roadAlertShortPothole.
+  ///
+  /// In ru, this message translates to:
+  /// **'Я'**
+  String get roadAlertShortPothole;
+
+  /// No description provided for @roadAlertShortSpeedBump.
+  ///
+  /// In ru, this message translates to:
+  /// **'ЛП'**
+  String get roadAlertShortSpeedBump;
+
+  /// No description provided for @roadAlertShortIcyRoad.
+  ///
+  /// In ru, this message translates to:
+  /// **'Л'**
+  String get roadAlertShortIcyRoad;
+
+  /// No description provided for @roadAlertShortSchoolZone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ш'**
+  String get roadAlertShortSchoolZone;
+
+  /// No description provided for @roadAlertShortTemporarySpeedLimit.
+  ///
+  /// In ru, this message translates to:
+  /// **'ЛИМ'**
+  String get roadAlertShortTemporarySpeedLimit;
+
+  /// No description provided for @roadAlertShortDangerousTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'ПВ'**
+  String get roadAlertShortDangerousTurn;
+
+  /// No description provided for @roadAlertShortRailroadCrossing.
+  ///
+  /// In ru, this message translates to:
+  /// **'ЖД'**
+  String get roadAlertShortRailroadCrossing;
+
+  /// No description provided for @roadAlertShortPedestrianCrossing.
+  ///
+  /// In ru, this message translates to:
+  /// **'ПЕШ'**
+  String get roadAlertShortPedestrianCrossing;
 }
 
 class _AppLocalizationsDelegate
