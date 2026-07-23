@@ -648,6 +648,45 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerAddressPickOnMapSubtitle => 'Картадан нүктені таңдаңыз';
 
   @override
+  String get tariffEconomyTitle => 'Эконом';
+
+  @override
+  String get tariffComfortTitle => 'Комфорт';
+
+  @override
+  String get tariffBusinessTitle => 'Бизнес';
+
+  @override
+  String get tariffDeliveryTitle => 'Жеткізу';
+
+  @override
+  String get passengerTariffSectionTitle => 'Тарифті таңдаңыз';
+
+  @override
+  String get passengerTariffSectionText =>
+      'Бағдар үшін тұрақты баға, уақыт және қашықтық көрсетілген';
+
+  @override
+  String get passengerTariffFixedPriceBadge => 'Тұрақты баға';
+
+  @override
+  String get passengerTariffNotConfiguredTitle => 'Тарифтер әлі бапталмаған';
+
+  @override
+  String get passengerTariffNotConfiguredText =>
+      'Әкімші белсенді аймақ үшін тариф қосуы керек.';
+
+  @override
+  String get passengerTariffUnavailableTitle => 'Тарифтер қолжетімсіз';
+
+  @override
+  String get passengerTariffUnavailableText =>
+      'Бұл аймақ үшін Үнемді немесе Жеткізу тарифі қажет.';
+
+  @override
+  String get passengerTariffBestValueBadge => 'Тиімді';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

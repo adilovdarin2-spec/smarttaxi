@@ -1239,6 +1239,78 @@ abstract class AppLocalizations {
   /// **'Выберите точку на карте'**
   String get passengerAddressPickOnMapSubtitle;
 
+  /// No description provided for @tariffEconomyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эконом'**
+  String get tariffEconomyTitle;
+
+  /// No description provided for @tariffComfortTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комфорт'**
+  String get tariffComfortTitle;
+
+  /// No description provided for @tariffBusinessTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бизнес'**
+  String get tariffBusinessTitle;
+
+  /// No description provided for @tariffDeliveryTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доставка'**
+  String get tariffDeliveryTitle;
+
+  /// No description provided for @passengerTariffSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите тариф'**
+  String get passengerTariffSectionTitle;
+
+  /// No description provided for @passengerTariffSectionText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Фиксированная цена, время и расстояние показаны для ориентира'**
+  String get passengerTariffSectionText;
+
+  /// No description provided for @passengerTariffFixedPriceBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Фикс. цена'**
+  String get passengerTariffFixedPriceBadge;
+
+  /// No description provided for @passengerTariffNotConfiguredTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тарифы пока не настроены'**
+  String get passengerTariffNotConfiguredTitle;
+
+  /// No description provided for @passengerTariffNotConfiguredText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Администратор должен добавить тариф для активного региона.'**
+  String get passengerTariffNotConfiguredText;
+
+  /// No description provided for @passengerTariffUnavailableTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тарифы недоступны'**
+  String get passengerTariffUnavailableTitle;
+
+  /// No description provided for @passengerTariffUnavailableText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для этого региона нужен тариф Эконом или Доставка.'**
+  String get passengerTariffUnavailableText;
+
+  /// No description provided for @passengerTariffBestValueBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выгодно'**
+  String get passengerTariffBestValueBadge;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

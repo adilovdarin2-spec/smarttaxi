@@ -12943,33 +12943,40 @@ class _LocationPermissionSheet extends StatelessWidget {
   }
 }
 
+// The tariff's Russian/English name comes from the backend (admin-configured
+// per region) and is only ever used here to classify it into one of four
+// known visual presentations -- title/description shown to the rider must
+// come from AppLocalizations (via tariffTitleFor/tariffDescriptionFor below),
+// never from this enum or the matched `tariff.name` itself.
+enum _TariffVisualClass { economy, comfort, business, delivery }
+
 class _PassengerTariffVisual {
   const _PassengerTariffVisual({
     required this.tariff,
-    required this.title,
-    required this.description,
+    required this.classId,
     required this.asset,
   });
 
   final TariffOption tariff;
-  final String title;
-  final String description;
+  final _TariffVisualClass classId;
   final String asset;
 }
 
 List<_PassengerTariffVisual> _passengerTariffVisuals(
   List<TariffOption> tariffs,
 ) {
-  final byClass = <String, _PassengerTariffVisual>{};
+  final byClass = <_TariffVisualClass, _PassengerTariffVisual>{};
   for (final tariff in tariffs) {
     final visual = _passengerTariffVisual(tariff);
     if (visual != null) {
-      byClass.putIfAbsent(visual.title, () => visual);
+      byClass.putIfAbsent(visual.classId, () => visual);
     }
   }
   return [
-    if (byClass['Эконом'] != null) byClass['Эконом']!,
-    if (byClass['Доставка'] != null) byClass['Доставка']!,
+    if (byClass[_TariffVisualClass.economy] != null)
+      byClass[_TariffVisualClass.economy]!,
+    if (byClass[_TariffVisualClass.delivery] != null)
+      byClass[_TariffVisualClass.delivery]!,
   ];
 }
 
@@ -12978,24 +12985,21 @@ _PassengerTariffVisual? _passengerTariffVisual(TariffOption tariff) {
   if (normalized.contains('econom') || normalized.contains('эконом')) {
     return _PassengerTariffVisual(
       tariff: tariff,
-      title: 'Эконом',
-      description: 'Автомобиль · 4 места',
+      classId: _TariffVisualClass.economy,
       asset: _tariffEconomyAsset,
     );
   }
   if (normalized.contains('comfort') || normalized.contains('комфорт')) {
     return _PassengerTariffVisual(
       tariff: tariff,
-      title: 'Комфорт',
-      description: 'Просторный салон',
+      classId: _TariffVisualClass.comfort,
       asset: _tariffComfortAsset,
     );
   }
   if (normalized.contains('business') || normalized.contains('бизнес')) {
     return _PassengerTariffVisual(
       tariff: tariff,
-      title: 'Бизнес',
-      description: 'Премиальная поездка',
+      classId: _TariffVisualClass.business,
       asset: _tariffBusinessAsset,
     );
   }
@@ -13004,12 +13008,24 @@ _PassengerTariffVisual? _passengerTariffVisual(TariffOption tariff) {
       normalized.contains('parcel')) {
     return _PassengerTariffVisual(
       tariff: tariff,
-      title: 'Доставка',
-      description: 'Посылки · до 15 кг',
+      classId: _TariffVisualClass.delivery,
       asset: _tariffDeliveryAsset,
     );
   }
   return null;
+}
+
+String _tariffTitleFor(AppLocalizations l10n, _TariffVisualClass classId) {
+  switch (classId) {
+    case _TariffVisualClass.economy:
+      return l10n.tariffEconomyTitle;
+    case _TariffVisualClass.comfort:
+      return l10n.tariffComfortTitle;
+    case _TariffVisualClass.business:
+      return l10n.tariffBusinessTitle;
+    case _TariffVisualClass.delivery:
+      return l10n.tariffDeliveryTitle;
+  }
 }
 
 String _formatTenge(num value) {
@@ -13065,9 +13081,11 @@ class _TariffSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading) return _TariffSkeleton(dark: dark);
+    final l10n = AppLocalizations.of(context);
     final visibleTariffs = _passengerTariffVisuals(tariffs);
-    final rideTariffs =
-        visibleTariffs.where((v) => v.title != 'Доставка').toList();
+    final rideTariffs = visibleTariffs
+        .where((v) => v.classId != _TariffVisualClass.delivery)
+        .toList();
     int priceOf(_PassengerTariffVisual item) =>
         (estimates[item.tariff.id]?.estimatedPrice ?? (1 << 30).toDouble())
             .round();
@@ -13082,9 +13100,8 @@ class _TariffSection extends StatelessWidget {
       children: [
         if (showHeader) ...[
           _SectionLabel(
-            title: 'Выберите тариф',
-            text:
-                'Фиксированная цена, время и расстояние показаны для ориентира',
+            title: l10n.passengerTariffSectionTitle,
+            text: l10n.passengerTariffSectionText,
           ),
           const SizedBox(height: 10),
         ] else ...[
@@ -13094,7 +13111,7 @@ class _TariffSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Выберите тариф',
+                    l10n.passengerTariffSectionTitle,
                     style: TextStyle(
                       color: context.palette.text,
                       fontSize: 15.4,
@@ -13112,7 +13129,7 @@ class _TariffSection extends StatelessWidget {
                     border: Border.all(color: context.palette.gold),
                   ),
                   child: Text(
-                    'Фикс. цена',
+                    l10n.passengerTariffFixedPriceBadge,
                     style: TextStyle(
                       color: context.palette.goldDeep,
                       fontSize: 10.5,
@@ -13128,15 +13145,15 @@ class _TariffSection extends StatelessWidget {
         if (tariffs.isEmpty)
           _CompactNotice(
             icon: Icons.local_taxi_outlined,
-            title: 'Тарифы пока не настроены',
-            text: 'Администратор должен добавить тариф для активного региона.',
+            title: l10n.passengerTariffNotConfiguredTitle,
+            text: l10n.passengerTariffNotConfiguredText,
             dark: dark,
           )
         else if (visibleTariffs.isEmpty)
           _CompactNotice(
             icon: Icons.local_taxi_outlined,
-            title: 'Тарифы недоступны',
-            text: 'Для этого региона нужен тариф Эконом или Доставка.',
+            title: l10n.passengerTariffUnavailableTitle,
+            text: l10n.passengerTariffUnavailableText,
             dark: dark,
           )
         else
@@ -13235,6 +13252,8 @@ class _TariffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final isDelivery = item.classId == _TariffVisualClass.delivery;
     final price = estimate?.estimatedPrice;
     final iconBox = Container(
       height: stretch ? 52 : 48,
@@ -13275,7 +13294,7 @@ class _TariffCard extends StatelessWidget {
         ],
       ),
       child: item.asset.isEmpty
-          ? (item.title == 'Доставка'
+          ? (isDelivery
               // Full-color illustration, not tinted through _SvgIcon — a
               // flat single-color glyph looked cheap next to the real photo
               // renders on the other cards. This has its own shading, so it
@@ -13301,14 +13320,14 @@ class _TariffCard extends StatelessWidget {
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
               errorBuilder: (_, __, ___) => _SvgIcon(
-                item.title == 'Доставка' ? _iconDelivery : _iconCar,
+                isDelivery ? _iconDelivery : _iconCar,
                 size: 24,
                 color: palette.goldDeep,
               ),
             ),
     );
     final titleText = Text(
-      item.title,
+      _tariffTitleFor(l10n, item.classId),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
@@ -13339,7 +13358,7 @@ class _TariffCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              'Выгодно',
+              l10n.passengerTariffBestValueBadge,
               style: TextStyle(
                 color: palette.success,
                 fontSize: 9.5,

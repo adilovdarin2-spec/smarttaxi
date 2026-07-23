@@ -642,6 +642,45 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerAddressPickOnMapSubtitle => 'Выберите точку на карте';
 
   @override
+  String get tariffEconomyTitle => 'Эконом';
+
+  @override
+  String get tariffComfortTitle => 'Комфорт';
+
+  @override
+  String get tariffBusinessTitle => 'Бизнес';
+
+  @override
+  String get tariffDeliveryTitle => 'Доставка';
+
+  @override
+  String get passengerTariffSectionTitle => 'Выберите тариф';
+
+  @override
+  String get passengerTariffSectionText =>
+      'Фиксированная цена, время и расстояние показаны для ориентира';
+
+  @override
+  String get passengerTariffFixedPriceBadge => 'Фикс. цена';
+
+  @override
+  String get passengerTariffNotConfiguredTitle => 'Тарифы пока не настроены';
+
+  @override
+  String get passengerTariffNotConfiguredText =>
+      'Администратор должен добавить тариф для активного региона.';
+
+  @override
+  String get passengerTariffUnavailableTitle => 'Тарифы недоступны';
+
+  @override
+  String get passengerTariffUnavailableText =>
+      'Для этого региона нужен тариф Эконом или Доставка.';
+
+  @override
+  String get passengerTariffBestValueBadge => 'Выгодно';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

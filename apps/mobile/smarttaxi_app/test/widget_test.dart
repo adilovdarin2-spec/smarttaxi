@@ -211,10 +211,13 @@ void main() {
       expect(passenger, isNot(contains('Координаты выбраны')));
       expect(passenger, contains('Тариф'));
       expect(passenger, contains('_TariffSection'));
-      expect(passenger, contains('Эконом'));
-      expect(passenger, contains('Комфорт'));
-      expect(passenger, contains('Бизнес'));
-      expect(passenger, contains('Доставка'));
+      // Tariff class titles were localized (tariff*Title arb keys) instead
+      // of hardcoded Russian literals matched against the backend name.
+      expect(passenger, contains('_TariffVisualClass'));
+      expect(passenger, contains('tariffEconomyTitle'));
+      expect(passenger, contains('tariffComfortTitle'));
+      expect(passenger, contains('tariffBusinessTitle'));
+      expect(passenger, contains('tariffDeliveryTitle'));
       expect(
         passenger,
         contains('assets/cars/tariff_v11_economy.png'),
@@ -227,7 +230,7 @@ void main() {
         passenger,
         contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
       );
-      expect(passenger, contains('Тарифы пока не настроены'));
+      expect(passenger, contains('passengerTariffNotConfiguredTitle'));
       expect(passenger, contains('_PaymentMethodRow'));
       expect(passenger, contains('цена'));
       expect(passenger, contains('Маршрут временно недоступен.'));
