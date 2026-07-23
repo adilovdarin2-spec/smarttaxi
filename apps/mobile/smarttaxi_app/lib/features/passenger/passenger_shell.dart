@@ -8127,26 +8127,29 @@ class _RateDriverPanel extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onSkip;
 
-  static const _positiveTags = [
-    'Вежливый водитель',
-    'Чисто в машине',
-    'Ехал безопасно',
-    'Приехал вовремя',
-  ];
+  static List<(String key, String label)> _positiveTags(AppLocalizations l10n) => [
+        ('polite_driver', l10n.ratingTagPoliteDriver),
+        ('clean_car', l10n.ratingTagCleanCar),
+        ('safe_driving', l10n.ratingTagSafeDriving),
+        ('on_time', l10n.ratingTagOnTime),
+      ];
 
-  static const _negativeTags = [
-    'Опоздал',
-    'Грубое общение',
-    'Небезопасная езда',
-    'Грязно в машине',
-  ];
+  static List<(String key, String label)> _negativeTags(AppLocalizations l10n) => [
+        ('late', l10n.ratingTagLate),
+        ('rude', l10n.ratingTagRude),
+        ('unsafe_driving', l10n.ratingTagUnsafeDriving),
+        ('dirty_car', l10n.ratingTagDirtyCar),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final name = driverName.trim().isEmpty ? 'водителем' : driverName.trim();
-    final tagOptions = stars >= 4 ? _positiveTags : _negativeTags;
+    final name = driverName.trim().isEmpty
+        ? l10n.passengerRateDriverFallbackName
+        : driverName.trim();
+    final tagOptions = stars >= 4 ? _positiveTags(l10n) : _negativeTags(l10n);
     return _HomeOrderPanel(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -8163,7 +8166,7 @@ class _RateDriverPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Как прошла поездка с $name?',
+              l10n.passengerRateDriverQuestion(name),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: palette.text,
@@ -8183,9 +8186,9 @@ class _RateDriverPanel extends StatelessWidget {
                 children: tagOptions
                     .map(
                       (tag) => _SupportTopicChip(
-                        label: tag,
-                        selected: tags.contains(tag),
-                        onTap: () => onTagToggle(tag),
+                        label: tag.$2,
+                        selected: tags.contains(tag.$1),
+                        onTap: () => onTagToggle(tag.$1),
                       ),
                     )
                     .toList(),
@@ -8198,7 +8201,7 @@ class _RateDriverPanel extends StatelessWidget {
                 textAlign: TextAlign.left,
                 style: TextStyle(color: palette.text),
                 decoration: InputDecoration(
-                  hintText: 'Комментарий (необязательно)',
+                  hintText: l10n.passengerDriverCommentLabel,
                   hintStyle: TextStyle(color: palette.textMuted),
                   filled: true,
                   fillColor: palette.card,
@@ -8225,15 +8228,15 @@ class _RateDriverPanel extends StatelessWidget {
             _GoldCtaButton(
               enabled: stars > 0 && !submitting,
               loading: submitting,
-              text: 'Отправить оценку',
-              loadingText: 'Отправляем...',
+              text: l10n.passengerSubmitRatingButton,
+              loadingText: l10n.passengerSubmittingRatingButton,
               onTap: onSubmit,
             ),
             const SizedBox(height: 6),
             TextButton(
               onPressed: submitting ? null : onSkip,
               child: Text(
-                'Пропустить',
+                l10n.passengerSkipButton,
                 style: TextStyle(
                   color: palette.textSecondary,
                   fontWeight: FontWeight.w800,
@@ -8255,6 +8258,7 @@ class _RatedThankYouPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HomeOrderPanel(
       child: Column(
@@ -8279,7 +8283,7 @@ class _RatedThankYouPanel extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Спасибо за оценку!',
+            l10n.passengerRatedThankYouTitle,
             style: TextStyle(
               color: palette.text,
               fontSize: 17,
@@ -8288,7 +8292,7 @@ class _RatedThankYouPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Ваш отзыв помогает нам поддерживать качество поездок',
+            l10n.passengerRatedThankYouText,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.textSecondary,
@@ -8301,7 +8305,7 @@ class _RatedThankYouPanel extends StatelessWidget {
           _GoldCtaButton(
             enabled: true,
             loading: false,
-            text: 'Заказать снова',
+            text: l10n.passengerOrderAgainButton,
             onTap: onNewTrip,
           ),
         ],
@@ -8403,7 +8407,7 @@ class _TripReceiptPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Поездка завершена',
+                        l10n.passengerTripCompletedTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -8415,7 +8419,7 @@ class _TripReceiptPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Чек поездки',
+                        l10n.passengerTripReceiptSubtitle,
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 12.5,
@@ -8434,7 +8438,7 @@ class _TripReceiptPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'Расстояние',
+                    label: l10n.passengerTripDistanceLabel,
                     value: _distanceLabel(order.distanceKm),
                   ),
                 ),
@@ -8468,19 +8472,19 @@ class _TripReceiptPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            _buildPaymentState(palette),
+            _buildPaymentState(palette, l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPaymentState(SmartTaxiPalette palette) {
+  Widget _buildPaymentState(SmartTaxiPalette palette, AppLocalizations l10n) {
     if (paid) {
       return _GoldCtaButton(
         enabled: true,
         loading: false,
-        text: 'Оценить поездку',
+        text: l10n.passengerRateTripButton,
         onTap: onContinue,
       );
     }
@@ -8507,7 +8511,7 @@ class _TripReceiptPanel extends StatelessWidget {
                   child: Text(
                     payment!.failureReason?.trim().isNotEmpty == true
                         ? payment!.failureReason!
-                        : 'Не удалось провести оплату картой',
+                        : l10n.passengerCardPaymentFailedText,
                     style: TextStyle(
                       color: palette.danger,
                       fontSize: 12.5,
@@ -8522,7 +8526,7 @@ class _TripReceiptPanel extends StatelessWidget {
           _GoldCtaButton(
             enabled: !retryingPayment,
             loading: retryingPayment,
-            text: 'Повторить оплату',
+            text: l10n.passengerRetryPaymentButton,
             onTap: onRetryPayment,
           ),
         ],
@@ -8550,7 +8554,7 @@ class _TripReceiptPanel extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Оплата занимает больше времени, чем обычно',
+                    l10n.passengerPaymentSlowText,
                     style: TextStyle(
                       color: palette.goldDeep,
                       fontSize: 12.5,
@@ -8565,7 +8569,7 @@ class _TripReceiptPanel extends StatelessWidget {
           _GoldCtaButton(
             enabled: !retryingPayment,
             loading: retryingPayment,
-            text: 'Повторить оплату',
+            text: l10n.passengerRetryPaymentButton,
             onTap: onRetryPayment,
           ),
         ],
@@ -8592,8 +8596,8 @@ class _TripReceiptPanel extends StatelessWidget {
           Expanded(
             child: Text(
               processing
-                  ? 'Обрабатываем оплату картой...'
-                  : 'Ожидаем подтверждение оплаты',
+                  ? l10n.passengerPaymentProcessingText
+                  : l10n.passengerPaymentAwaitingText,
               style: TextStyle(
                 color: palette.goldDeep,
                 fontSize: 13,

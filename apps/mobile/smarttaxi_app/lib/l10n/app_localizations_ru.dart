@@ -827,6 +827,83 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerCancelTripButton => 'Отменить поездку';
 
   @override
+  String get passengerRateDriverFallbackName => 'водителем';
+
+  @override
+  String passengerRateDriverQuestion(String name) {
+    return 'Как прошла поездка с $name?';
+  }
+
+  @override
+  String get passengerSubmitRatingButton => 'Отправить оценку';
+
+  @override
+  String get passengerSubmittingRatingButton => 'Отправляем...';
+
+  @override
+  String get passengerSkipButton => 'Пропустить';
+
+  @override
+  String get passengerRatedThankYouTitle => 'Спасибо за оценку!';
+
+  @override
+  String get passengerRatedThankYouText =>
+      'Ваш отзыв помогает нам поддерживать качество поездок';
+
+  @override
+  String get passengerOrderAgainButton => 'Заказать снова';
+
+  @override
+  String get passengerTripCompletedTitle => 'Поездка завершена';
+
+  @override
+  String get passengerTripReceiptSubtitle => 'Чек поездки';
+
+  @override
+  String get passengerRateTripButton => 'Оценить поездку';
+
+  @override
+  String get passengerCardPaymentFailedText =>
+      'Не удалось провести оплату картой';
+
+  @override
+  String get passengerRetryPaymentButton => 'Повторить оплату';
+
+  @override
+  String get passengerPaymentSlowText =>
+      'Оплата занимает больше времени, чем обычно';
+
+  @override
+  String get passengerPaymentProcessingText => 'Обрабатываем оплату картой...';
+
+  @override
+  String get passengerPaymentAwaitingText => 'Ожидаем подтверждение оплаты';
+
+  @override
+  String get ratingTagPoliteDriver => 'Вежливый водитель';
+
+  @override
+  String get ratingTagCleanCar => 'Чисто в машине';
+
+  @override
+  String get ratingTagSafeDriving => 'Ехал безопасно';
+
+  @override
+  String get ratingTagOnTime => 'Приехал вовремя';
+
+  @override
+  String get ratingTagLate => 'Опоздал';
+
+  @override
+  String get ratingTagRude => 'Грубое общение';
+
+  @override
+  String get ratingTagUnsafeDriving => 'Небезопасная езда';
+
+  @override
+  String get ratingTagDirtyCar => 'Грязно в машине';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Раздел недоступен';
 
   @override

@@ -833,6 +833,82 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerCancelTripButton => 'Сапарды болдырмау';
 
   @override
+  String get passengerRateDriverFallbackName => 'жүргізушімен';
+
+  @override
+  String passengerRateDriverQuestion(String name) {
+    return '$name сапар қалай өтті?';
+  }
+
+  @override
+  String get passengerSubmitRatingButton => 'Бағалауды жіберу';
+
+  @override
+  String get passengerSubmittingRatingButton => 'Жіберілуде...';
+
+  @override
+  String get passengerSkipButton => 'Өткізіп жіберу';
+
+  @override
+  String get passengerRatedThankYouTitle => 'Бағалауыңыз үшін рахмет!';
+
+  @override
+  String get passengerRatedThankYouText =>
+      'Сіздің пікіріңіз сапар сапасын арттыруға көмектеседі';
+
+  @override
+  String get passengerOrderAgainButton => 'Қайта тапсырыс беру';
+
+  @override
+  String get passengerTripCompletedTitle => 'Сапар аяқталды';
+
+  @override
+  String get passengerTripReceiptSubtitle => 'Сапар түбіртегі';
+
+  @override
+  String get passengerRateTripButton => 'Сапарды бағалау';
+
+  @override
+  String get passengerCardPaymentFailedText => 'Картамен төлем өтпеді';
+
+  @override
+  String get passengerRetryPaymentButton => 'Төлемді қайталау';
+
+  @override
+  String get passengerPaymentSlowText =>
+      'Төлем әдеттегіден ұзағырақ уақыт алуда';
+
+  @override
+  String get passengerPaymentProcessingText => 'Картамен төлем өңделуде...';
+
+  @override
+  String get passengerPaymentAwaitingText => 'Төлемнің расталуын күтудеміз';
+
+  @override
+  String get ratingTagPoliteDriver => 'Сыпайы жүргізуші';
+
+  @override
+  String get ratingTagCleanCar => 'Көлікте таза';
+
+  @override
+  String get ratingTagSafeDriving => 'Қауіпсіз жүрді';
+
+  @override
+  String get ratingTagOnTime => 'Уақытында келді';
+
+  @override
+  String get ratingTagLate => 'Кешікті';
+
+  @override
+  String get ratingTagRude => 'Дөрекі қарым-қатынас';
+
+  @override
+  String get ratingTagUnsafeDriving => 'Қауіпсіз емес жүріс';
+
+  @override
+  String get ratingTagDirtyCar => 'Көлікте лас';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
 
   @override

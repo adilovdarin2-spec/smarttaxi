@@ -1575,6 +1575,150 @@ abstract class AppLocalizations {
   /// **'Отменить поездку'**
   String get passengerCancelTripButton;
 
+  /// No description provided for @passengerRateDriverFallbackName.
+  ///
+  /// In ru, this message translates to:
+  /// **'водителем'**
+  String get passengerRateDriverFallbackName;
+
+  /// No description provided for @passengerRateDriverQuestion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как прошла поездка с {name}?'**
+  String passengerRateDriverQuestion(String name);
+
+  /// No description provided for @passengerSubmitRatingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить оценку'**
+  String get passengerSubmitRatingButton;
+
+  /// No description provided for @passengerSubmittingRatingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправляем...'**
+  String get passengerSubmittingRatingButton;
+
+  /// No description provided for @passengerSkipButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропустить'**
+  String get passengerSkipButton;
+
+  /// No description provided for @passengerRatedThankYouTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спасибо за оценку!'**
+  String get passengerRatedThankYouTitle;
+
+  /// No description provided for @passengerRatedThankYouText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш отзыв помогает нам поддерживать качество поездок'**
+  String get passengerRatedThankYouText;
+
+  /// No description provided for @passengerOrderAgainButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказать снова'**
+  String get passengerOrderAgainButton;
+
+  /// No description provided for @passengerTripCompletedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка завершена'**
+  String get passengerTripCompletedTitle;
+
+  /// No description provided for @passengerTripReceiptSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чек поездки'**
+  String get passengerTripReceiptSubtitle;
+
+  /// No description provided for @passengerRateTripButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оценить поездку'**
+  String get passengerRateTripButton;
+
+  /// No description provided for @passengerCardPaymentFailedText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось провести оплату картой'**
+  String get passengerCardPaymentFailedText;
+
+  /// No description provided for @passengerRetryPaymentButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить оплату'**
+  String get passengerRetryPaymentButton;
+
+  /// No description provided for @passengerPaymentSlowText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата занимает больше времени, чем обычно'**
+  String get passengerPaymentSlowText;
+
+  /// No description provided for @passengerPaymentProcessingText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обрабатываем оплату картой...'**
+  String get passengerPaymentProcessingText;
+
+  /// No description provided for @passengerPaymentAwaitingText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем подтверждение оплаты'**
+  String get passengerPaymentAwaitingText;
+
+  /// No description provided for @ratingTagPoliteDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вежливый водитель'**
+  String get ratingTagPoliteDriver;
+
+  /// No description provided for @ratingTagCleanCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чисто в машине'**
+  String get ratingTagCleanCar;
+
+  /// No description provided for @ratingTagSafeDriving.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ехал безопасно'**
+  String get ratingTagSafeDriving;
+
+  /// No description provided for @ratingTagOnTime.
+  ///
+  /// In ru, this message translates to:
+  /// **'Приехал вовремя'**
+  String get ratingTagOnTime;
+
+  /// No description provided for @ratingTagLate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опоздал'**
+  String get ratingTagLate;
+
+  /// No description provided for @ratingTagRude.
+  ///
+  /// In ru, this message translates to:
+  /// **'Грубое общение'**
+  String get ratingTagRude;
+
+  /// No description provided for @ratingTagUnsafeDriving.
+  ///
+  /// In ru, this message translates to:
+  /// **'Небезопасная езда'**
+  String get ratingTagUnsafeDriving;
+
+  /// No description provided for @ratingTagDirtyCar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Грязно в машине'**
+  String get ratingTagDirtyCar;
+
   /// No description provided for @passengerSectionUnavailableTitle.
   ///
   /// In ru, this message translates to:
