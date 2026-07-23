@@ -1509,6 +1509,72 @@ abstract class AppLocalizations {
   /// **'Поездка SmartTaxi'**
   String get passengerTripShareTextPrefix;
 
+  /// No description provided for @passengerSearchingSubtitleWithCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показываем {count} ближайших свободных водителей'**
+  String passengerSearchingSubtitleWithCount(int count);
+
+  /// No description provided for @passengerSearchingSubtitleGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверяем свободных водителей рядом'**
+  String get passengerSearchingSubtitleGeneric;
+
+  /// No description provided for @passengerDriverOfferDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предлагаем заказ ближайшим водителям.'**
+  String get passengerDriverOfferDescription;
+
+  /// No description provided for @passengerDriverRouteDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показываем статус поездки и маршрут в реальном времени.'**
+  String get passengerDriverRouteDescription;
+
+  /// No description provided for @passengerTripInProgressTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка в пути'**
+  String get passengerTripInProgressTitle;
+
+  /// No description provided for @passengerCancellingLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменяем...'**
+  String get passengerCancellingLabel;
+
+  /// No description provided for @passengerCancelSearchButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поиск'**
+  String get passengerCancelSearchButton;
+
+  /// No description provided for @passengerTripWithIdTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка {id}'**
+  String passengerTripWithIdTitle(String id);
+
+  /// No description provided for @passengerDriverFoundTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель найден'**
+  String get passengerDriverFoundTitle;
+
+  /// No description provided for @passengerNewTripButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая поездка'**
+  String get passengerNewTripButton;
+
+  /// No description provided for @passengerCancelTripButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поездку'**
+  String get passengerCancelTripButton;
+
   /// No description provided for @passengerSectionUnavailableTitle.
   ///
   /// In ru, this message translates to:

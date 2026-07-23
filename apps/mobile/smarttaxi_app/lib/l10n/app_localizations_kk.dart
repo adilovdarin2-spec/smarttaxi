@@ -793,6 +793,46 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerTripShareTextPrefix => 'SmartTaxi сапары';
 
   @override
+  String passengerSearchingSubtitleWithCount(int count) {
+    return 'Ең жақын $count бос жүргізушіні көрсетудеміз';
+  }
+
+  @override
+  String get passengerSearchingSubtitleGeneric =>
+      'Жақын маңдағы бос жүргізушілерді тексерудеміз';
+
+  @override
+  String get passengerDriverOfferDescription =>
+      'Тапсырысты ең жақын жүргізушілерге ұсынудамыз.';
+
+  @override
+  String get passengerDriverRouteDescription =>
+      'Сапар мәртебесі мен маршрутты нақты уақытта көрсетудеміз.';
+
+  @override
+  String get passengerTripInProgressTitle => 'Сапар жүріп жатыр';
+
+  @override
+  String get passengerCancellingLabel => 'Болдырылмауда...';
+
+  @override
+  String get passengerCancelSearchButton => 'Іздеуді тоқтату';
+
+  @override
+  String passengerTripWithIdTitle(String id) {
+    return 'Сапар $id';
+  }
+
+  @override
+  String get passengerDriverFoundTitle => 'Жүргізуші табылды';
+
+  @override
+  String get passengerNewTripButton => 'Жаңа сапар';
+
+  @override
+  String get passengerCancelTripButton => 'Сапарды болдырмау';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
 
   @override

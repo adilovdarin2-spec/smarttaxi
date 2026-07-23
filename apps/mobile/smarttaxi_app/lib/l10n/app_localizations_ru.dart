@@ -787,6 +787,46 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerTripShareTextPrefix => 'Поездка SmartTaxi';
 
   @override
+  String passengerSearchingSubtitleWithCount(int count) {
+    return 'Показываем $count ближайших свободных водителей';
+  }
+
+  @override
+  String get passengerSearchingSubtitleGeneric =>
+      'Проверяем свободных водителей рядом';
+
+  @override
+  String get passengerDriverOfferDescription =>
+      'Предлагаем заказ ближайшим водителям.';
+
+  @override
+  String get passengerDriverRouteDescription =>
+      'Показываем статус поездки и маршрут в реальном времени.';
+
+  @override
+  String get passengerTripInProgressTitle => 'Поездка в пути';
+
+  @override
+  String get passengerCancellingLabel => 'Отменяем...';
+
+  @override
+  String get passengerCancelSearchButton => 'Отменить поиск';
+
+  @override
+  String passengerTripWithIdTitle(String id) {
+    return 'Поездка $id';
+  }
+
+  @override
+  String get passengerDriverFoundTitle => 'Водитель найден';
+
+  @override
+  String get passengerNewTripButton => 'Новая поездка';
+
+  @override
+  String get passengerCancelTripButton => 'Отменить поездку';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Раздел недоступен';
 
   @override

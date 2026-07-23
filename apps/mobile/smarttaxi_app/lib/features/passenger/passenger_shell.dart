@@ -7654,12 +7654,11 @@ class _TripStatusPanel extends StatelessWidget {
       );
     }
     final searchingSubtitle = nearbyDriverCount > 0
-        ? 'Показываем $nearbyDriverCount ближайших свободных водителей'
-        : 'Проверяем свободных водителей рядом';
+        ? l10n.passengerSearchingSubtitleWithCount(nearbyDriverCount)
+        : l10n.passengerSearchingSubtitleGeneric;
     final driverDescription = order.driverId == null
-        ? 'Предлагаем заказ ближайшим водителям.'
-        : driverRouteText ??
-            'Показываем статус поездки и маршрут в реальном времени.';
+        ? l10n.passengerDriverOfferDescription
+        : driverRouteText ?? l10n.passengerDriverRouteDescription;
     final tripInProgress =
         const {'TRIP_STARTED', 'IN_PROGRESS'}.contains(order.status);
     const arrivedStatuses = {'DRIVER_ARRIVED', 'WAITING_CLIENT'};
@@ -7679,7 +7678,7 @@ class _TripStatusPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Поездка в пути',
+                        l10n.passengerTripInProgressTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -7756,7 +7755,7 @@ class _TripStatusPanel extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _TripInfoPill(
-                          label: 'Итого',
+                          label: l10n.passengerTripTotalLabel,
                           value: _formatTenge(order.price!),
                           emphasis: true,
                         ),
@@ -7788,7 +7787,7 @@ class _TripStatusPanel extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Ищем водителя',
+                            l10n.passengerDriverSearchingLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -7853,7 +7852,7 @@ class _TripStatusPanel extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _TripInfoPill(
-                          label: 'Итого',
+                          label: l10n.passengerTripTotalLabel,
                           value: _formatTenge(order.price!),
                           emphasis: true,
                         ),
@@ -7878,7 +7877,9 @@ class _TripStatusPanel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(17),
                       ),
                     ),
-                    child: Text(loading ? 'Отменяем...' : 'Отменить поиск'),
+                    child: Text(loading
+                        ? l10n.passengerCancellingLabel
+                        : l10n.passengerCancelSearchButton),
                   ),
                 ],
               ],
@@ -7905,8 +7906,8 @@ class _TripStatusPanel extends StatelessWidget {
                       children: [
                         Text(
                           order.driverId == null
-                              ? 'Поездка $orderShortId'
-                              : 'Водитель найден',
+                              ? l10n.passengerTripWithIdTitle(orderShortId)
+                              : l10n.passengerDriverFoundTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -8017,7 +8018,7 @@ class _TripStatusPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _TripInfoPill(
-                        label: 'Итого',
+                        label: l10n.passengerTripTotalLabel,
                         value: _formatTenge(order.price!),
                         emphasis: true,
                       ),
@@ -8035,7 +8036,7 @@ class _TripStatusPanel extends StatelessWidget {
                   _GoldCtaButton(
                     enabled: true,
                     loading: false,
-                    text: 'Новая поездка',
+                    text: l10n.passengerNewTripButton,
                     onTap: onNewTrip,
                   )
                 else
@@ -8050,7 +8051,9 @@ class _TripStatusPanel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(17),
                       ),
                     ),
-                    child: Text(loading ? 'Отменяем...' : 'Отменить поездку'),
+                    child: Text(loading
+                        ? l10n.passengerCancellingLabel
+                        : l10n.passengerCancelTripButton),
                   ),
               ],
             ],
@@ -8456,7 +8459,7 @@ class _TripReceiptPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'Итого',
+                    label: l10n.passengerTripTotalLabel,
                     value:
                         order.price == null ? '—' : _formatTenge(order.price!),
                     emphasis: true,

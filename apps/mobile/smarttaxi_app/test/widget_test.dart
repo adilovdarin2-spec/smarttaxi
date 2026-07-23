@@ -299,11 +299,11 @@ void main() {
     expect(passenger, contains('_CompactNotice'));
     expect(
       passenger,
-      contains('Предлагаем заказ ближайшим водителям.'),
+      contains('l10n.passengerDriverOfferDescription'),
     );
     expect(
       passenger,
-      contains('Показываем статус поездки и маршрут в реальном времени.'),
+      contains('l10n.passengerDriverRouteDescription'),
     );
     expect(passenger, contains('_TripStatusPanel'));
     expect(passenger, contains('_StatusStepper'));
