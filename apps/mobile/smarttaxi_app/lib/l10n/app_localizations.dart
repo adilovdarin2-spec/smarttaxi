@@ -6380,6 +6380,180 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отклонить'**
   String get driverRejectButton;
+
+  /// No description provided for @driverEnableLocationOrPickOnMap.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включите геолокацию или выберите точку на карте.'**
+  String get driverEnableLocationOrPickOnMap;
+
+  /// No description provided for @driverAllowLocationOrPickOnMap.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешите геолокацию или выберите точку на карте.'**
+  String get driverAllowLocationOrPickOnMap;
+
+  /// No description provided for @driverCoordinatesFromGps.
+  ///
+  /// In ru, this message translates to:
+  /// **'Координаты выбраны из GPS.'**
+  String get driverCoordinatesFromGps;
+
+  /// No description provided for @driverFailedToGetLocation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить геолокацию.'**
+  String get driverFailedToGetLocation;
+
+  /// No description provided for @driverChooseAlertPointOnMapOrGps.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите точку события на карте или через GPS.'**
+  String get driverChooseAlertPointOnMapOrGps;
+
+  /// No description provided for @driverEnterSpeedLimitNumber.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите ограничение скорости числом.'**
+  String get driverEnterSpeedLimitNumber;
+
+  /// No description provided for @driverAlertSubmittedForSafety.
+  ///
+  /// In ru, this message translates to:
+  /// **'Событие отправлено для безопасности движения.'**
+  String get driverAlertSubmittedForSafety;
+
+  /// No description provided for @driverAlertConfirmedThanks.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спасибо. Подтверждение поможет другим водителям.'**
+  String get driverAlertConfirmedThanks;
+
+  /// No description provided for @driverAlertHiddenFromList.
+  ///
+  /// In ru, this message translates to:
+  /// **'Событие скрыто из активного списка.'**
+  String get driverAlertHiddenFromList;
+
+  /// No description provided for @driverRoadAlertsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дорожные события'**
+  String get driverRoadAlertsTitle;
+
+  /// No description provided for @driverRoadAlertsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщения нужны для безопасности движения и соблюдения правил.'**
+  String get driverRoadAlertsSubtitle;
+
+  /// No description provided for @refreshButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get refreshButton;
+
+  /// No description provided for @driverPointSelectedOnMap.
+  ///
+  /// In ru, this message translates to:
+  /// **'Координаты выбраны на карте.'**
+  String get driverPointSelectedOnMap;
+
+  /// No description provided for @driverNewAlertSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое событие'**
+  String get driverNewAlertSectionTitle;
+
+  /// No description provided for @driverNewAlertSectionText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите тип и точку. Сообщение увидят водители в регионе.'**
+  String get driverNewAlertSectionText;
+
+  /// No description provided for @driverAlertCommentLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комментарий'**
+  String get driverAlertCommentLabel;
+
+  /// No description provided for @driverAlertCommentHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например: правая полоса закрыта'**
+  String get driverAlertCommentHint;
+
+  /// No description provided for @driverAlertSpeedLimitLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ограничение, км/ч'**
+  String get driverAlertSpeedLimitLabel;
+
+  /// No description provided for @driverAlertSpeedLimitHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Только если указано знаком'**
+  String get driverAlertSpeedLimitHint;
+
+  /// No description provided for @driverPointSelectedCoordinates.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка выбрана: {lat}, {lng}'**
+  String driverPointSelectedCoordinates(String lat, String lng);
+
+  /// No description provided for @driverNearbyAlertsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'События рядом'**
+  String get driverNearbyAlertsTitle;
+
+  /// No description provided for @driverNearbyAlertsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Показываем только сохранённые активные сообщения.'**
+  String get driverNearbyAlertsSubtitle;
+
+  /// No description provided for @driverLoadingAlerts.
+  ///
+  /// In ru, this message translates to:
+  /// **'Загружаем события...'**
+  String get driverLoadingAlerts;
+
+  /// No description provided for @driverAlertsLoadFailedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить события'**
+  String get driverAlertsLoadFailedTitle;
+
+  /// No description provided for @driverCheckConnectionRetry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте связь и попробуйте ещё раз.'**
+  String get driverCheckConnectionRetry;
+
+  /// No description provided for @driverNoNearbyAlertsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет дорожных событий рядом'**
+  String get driverNoNearbyAlertsTitle;
+
+  /// No description provided for @driverNoNearbyAlertsText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Когда водитель отправит сообщение, оно появится здесь.'**
+  String get driverNoNearbyAlertsText;
+
+  /// No description provided for @driverTapMapToSelectAlertPoint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите на карту, чтобы выбрать точку события'**
+  String get driverTapMapToSelectAlertPoint;
+
+  /// No description provided for @driverMapUnavailableUseGps.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта временно недоступна. Выберите точку через GPS или повторите позже.'**
+  String get driverMapUnavailableUseGps;
 }
 
 class _AppLocalizationsDelegate

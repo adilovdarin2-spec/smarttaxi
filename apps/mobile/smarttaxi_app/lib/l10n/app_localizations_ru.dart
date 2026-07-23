@@ -3525,4 +3525,106 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverRejectButton => 'Отклонить';
+
+  @override
+  String get driverEnableLocationOrPickOnMap =>
+      'Включите геолокацию или выберите точку на карте.';
+
+  @override
+  String get driverAllowLocationOrPickOnMap =>
+      'Разрешите геолокацию или выберите точку на карте.';
+
+  @override
+  String get driverCoordinatesFromGps => 'Координаты выбраны из GPS.';
+
+  @override
+  String get driverFailedToGetLocation => 'Не удалось получить геолокацию.';
+
+  @override
+  String get driverChooseAlertPointOnMapOrGps =>
+      'Выберите точку события на карте или через GPS.';
+
+  @override
+  String get driverEnterSpeedLimitNumber =>
+      'Укажите ограничение скорости числом.';
+
+  @override
+  String get driverAlertSubmittedForSafety =>
+      'Событие отправлено для безопасности движения.';
+
+  @override
+  String get driverAlertConfirmedThanks =>
+      'Спасибо. Подтверждение поможет другим водителям.';
+
+  @override
+  String get driverAlertHiddenFromList => 'Событие скрыто из активного списка.';
+
+  @override
+  String get driverRoadAlertsTitle => 'Дорожные события';
+
+  @override
+  String get driverRoadAlertsSubtitle =>
+      'Сообщения нужны для безопасности движения и соблюдения правил.';
+
+  @override
+  String get refreshButton => 'Обновить';
+
+  @override
+  String get driverPointSelectedOnMap => 'Координаты выбраны на карте.';
+
+  @override
+  String get driverNewAlertSectionTitle => 'Новое событие';
+
+  @override
+  String get driverNewAlertSectionText =>
+      'Выберите тип и точку. Сообщение увидят водители в регионе.';
+
+  @override
+  String get driverAlertCommentLabel => 'Комментарий';
+
+  @override
+  String get driverAlertCommentHint => 'Например: правая полоса закрыта';
+
+  @override
+  String get driverAlertSpeedLimitLabel => 'Ограничение, км/ч';
+
+  @override
+  String get driverAlertSpeedLimitHint => 'Только если указано знаком';
+
+  @override
+  String driverPointSelectedCoordinates(String lat, String lng) {
+    return 'Точка выбрана: $lat, $lng';
+  }
+
+  @override
+  String get driverNearbyAlertsTitle => 'События рядом';
+
+  @override
+  String get driverNearbyAlertsSubtitle =>
+      'Показываем только сохранённые активные сообщения.';
+
+  @override
+  String get driverLoadingAlerts => 'Загружаем события...';
+
+  @override
+  String get driverAlertsLoadFailedTitle => 'Не удалось загрузить события';
+
+  @override
+  String get driverCheckConnectionRetry =>
+      'Проверьте связь и попробуйте ещё раз.';
+
+  @override
+  String get driverNoNearbyAlertsTitle => 'Пока нет дорожных событий рядом';
+
+  @override
+  String get driverNoNearbyAlertsText =>
+      'Когда водитель отправит сообщение, оно появится здесь.';
+
+  @override
+  String get driverTapMapToSelectAlertPoint =>
+      'Нажмите на карту, чтобы выбрать точку события';
+
+  @override
+  String get driverMapUnavailableUseGps =>
+      'Карта временно недоступна. Выберите точку через GPS или повторите позже.';
 }

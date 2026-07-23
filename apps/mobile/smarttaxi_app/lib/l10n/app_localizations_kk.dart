@@ -3532,4 +3532,106 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverRejectButton => 'Қабылдамау';
+
+  @override
+  String get driverEnableLocationOrPickOnMap =>
+      'Геолокацияны қосыңыз немесе картадан нүкте таңдаңыз.';
+
+  @override
+  String get driverAllowLocationOrPickOnMap =>
+      'Геолокацияға рұқсат беріңіз немесе картадан нүкте таңдаңыз.';
+
+  @override
+  String get driverCoordinatesFromGps => 'Координаттар GPS-тен таңдалды.';
+
+  @override
+  String get driverFailedToGetLocation => 'Геолокацияны алу мүмкін болмады.';
+
+  @override
+  String get driverChooseAlertPointOnMapOrGps =>
+      'Оқиға нүктесін картадан немесе GPS арқылы таңдаңыз.';
+
+  @override
+  String get driverEnterSpeedLimitNumber =>
+      'Жылдамдық шектеуін санмен көрсетіңіз.';
+
+  @override
+  String get driverAlertSubmittedForSafety =>
+      'Оқиға қозғалыс қауіпсіздігі үшін жіберілді.';
+
+  @override
+  String get driverAlertConfirmedThanks =>
+      'Рақмет. Растау басқа жүргізушілерге көмектеседі.';
+
+  @override
+  String get driverAlertHiddenFromList => 'Оқиға белсенді тізімнен жасырылды.';
+
+  @override
+  String get driverRoadAlertsTitle => 'Жол оқиғалары';
+
+  @override
+  String get driverRoadAlertsSubtitle =>
+      'Хабарламалар қозғалыс қауіпсіздігі мен ережелерді сақтау үшін қажет.';
+
+  @override
+  String get refreshButton => 'Жаңарту';
+
+  @override
+  String get driverPointSelectedOnMap => 'Координаттар картадан таңдалды.';
+
+  @override
+  String get driverNewAlertSectionTitle => 'Жаңа оқиға';
+
+  @override
+  String get driverNewAlertSectionText =>
+      'Түрі мен нүктені таңдаңыз. Хабарламаны аймақтағы жүргізушілер көреді.';
+
+  @override
+  String get driverAlertCommentLabel => 'Түсініктеме';
+
+  @override
+  String get driverAlertCommentHint => 'Мысалы: оң жол жолағы жабық';
+
+  @override
+  String get driverAlertSpeedLimitLabel => 'Шектеу, км/сағ';
+
+  @override
+  String get driverAlertSpeedLimitHint => 'Тек белгімен көрсетілген болса';
+
+  @override
+  String driverPointSelectedCoordinates(String lat, String lng) {
+    return 'Нүкте таңдалды: $lat, $lng';
+  }
+
+  @override
+  String get driverNearbyAlertsTitle => 'Жақындағы оқиғалар';
+
+  @override
+  String get driverNearbyAlertsSubtitle =>
+      'Тек сақталған белсенді хабарламаларды көрсетеміз.';
+
+  @override
+  String get driverLoadingAlerts => 'Оқиғаларды жүктеп жатырмыз...';
+
+  @override
+  String get driverAlertsLoadFailedTitle => 'Оқиғаларды жүктеу мүмкін болмады';
+
+  @override
+  String get driverCheckConnectionRetry =>
+      'Байланысты тексеріп, қайта көріңіз.';
+
+  @override
+  String get driverNoNearbyAlertsTitle => 'Жақында жол оқиғалары әзірге жоқ';
+
+  @override
+  String get driverNoNearbyAlertsText =>
+      'Жүргізуші хабарлама жіберген кезде ол осында пайда болады.';
+
+  @override
+  String get driverTapMapToSelectAlertPoint =>
+      'Оқиға нүктесін таңдау үшін картаны басыңыз';
+
+  @override
+  String get driverMapUnavailableUseGps =>
+      'Карта уақытша қолжетімсіз. GPS арқылы нүкте таңдаңыз немесе кейінірек көріңіз.';
 }

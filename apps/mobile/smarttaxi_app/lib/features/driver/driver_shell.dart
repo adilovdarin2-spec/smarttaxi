@@ -5374,11 +5374,11 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
   }
 
   Future<void> _useGps() async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _message = null);
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
-      setState(
-          () => _message = 'Включите геолокацию или выберите точку на карте.');
+      setState(() => _message = l10n.driverEnableLocationOrPickOnMap);
       return;
     }
     var permission = await Geolocator.checkPermission();
@@ -5387,8 +5387,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
     }
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      setState(
-          () => _message = 'Разрешите геолокацию или выберите точку на карте.');
+      setState(() => _message = l10n.driverAllowLocationOrPickOnMap);
       return;
     }
     try {
@@ -5401,20 +5400,20 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
         // which direction a SPEED_CAMERA faces, since drivers can't measure
         // that directly. Null (not 0.0) when the device reports no heading.
         _selectedHeading = position.heading.isFinite ? position.heading : null;
-        _message = 'Координаты выбраны из GPS.';
+        _message = l10n.driverCoordinatesFromGps;
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _message = 'Не удалось получить геолокацию.');
+        setState(() => _message = l10n.driverFailedToGetLocation);
       }
     }
   }
 
   Future<void> _submitAlert() async {
+    final l10n = AppLocalizations.of(context);
     final point = _selectedPoint;
     if (point == null) {
-      setState(
-          () => _message = 'Выберите точку события на карте или через GPS.');
+      setState(() => _message = l10n.driverChooseAlertPointOnMapOrGps);
       return;
     }
     setState(() {
@@ -5427,7 +5426,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       if (speedText.isNotEmpty && speedLimit == null) {
         setState(() {
           _saving = false;
-          _message = 'Укажите ограничение скорости числом.';
+          _message = l10n.driverEnterSpeedLimitNumber;
         });
         return;
       }
@@ -5446,17 +5445,18 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
         _alerts = [alert, ..._alerts];
         _selectedPoint = null;
         _selectedHeading = null;
-        _message = 'Событие отправлено для безопасности движения.';
+        _message = l10n.driverAlertSubmittedForSafety;
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(AppLocalizations.of(context), error));
+      setState(() => _message = readableError(l10n, error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _confirmAlert(RoadAlert alert) async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _updatingAlertId = alert.id;
       _message = null;
@@ -5466,17 +5466,18 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       if (!mounted) return;
       setState(() {
         _alerts = _replaceAlert(_alerts, updated);
-        _message = 'Спасибо. Подтверждение поможет другим водителям.';
+        _message = l10n.driverAlertConfirmedThanks;
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(AppLocalizations.of(context), error));
+      setState(() => _message = readableError(l10n, error));
     } finally {
       if (mounted) setState(() => _updatingAlertId = null);
     }
   }
 
   Future<void> _dismissAlert(RoadAlert alert) async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _updatingAlertId = alert.id;
       _message = null;
@@ -5486,11 +5487,11 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       if (!mounted) return;
       setState(() {
         _alerts = _alerts.where((item) => item.id != alert.id).toList();
-        _message = 'Событие скрыто из активного списка.';
+        _message = l10n.driverAlertHiddenFromList;
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(AppLocalizations.of(context), error));
+      setState(() => _message = readableError(l10n, error));
     } finally {
       if (mounted) setState(() => _updatingAlertId = null);
     }
@@ -5498,6 +5499,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bottomPadding = MediaQuery.viewInsetsOf(context).bottom;
     return DraggableScrollableSheet(
       initialChildSize: 0.88,
@@ -5516,22 +5518,21 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
             const SizedBox(height: 16),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: TitleBlock(
-                    title: 'Дорожные события',
-                    text:
-                        'Сообщения нужны для безопасности движения и соблюдения правил.',
+                    title: l10n.driverRoadAlertsTitle,
+                    text: l10n.driverRoadAlertsSubtitle,
                   ),
                 ),
                 IconButton.filledTonal(
                   onPressed: _loadAlerts,
-                  tooltip: 'Обновить',
+                  tooltip: l10n.refreshButton,
                   icon: const Icon(Icons.refresh_rounded),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  tooltip: 'Закрыть',
+                  tooltip: l10n.close,
                   icon: Icon(Icons.close_rounded,
                       color: context.palette.textSecondary),
                 ),
@@ -5549,7 +5550,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                     Coordinate(lat: point.latitude, lng: point.longitude);
                 // A manually tapped point carries no GPS course of travel.
                 _selectedHeading = null;
-                _message = 'Координаты выбраны на карте.';
+                _message = l10n.driverPointSelectedOnMap;
               }),
             ),
             const SizedBox(height: 14),
@@ -5557,10 +5558,9 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SectionLabel(
-                    title: 'Новое событие',
-                    text:
-                        'Выберите тип и точку. Сообщение увидят водители в регионе.',
+                  SectionLabel(
+                    title: l10n.driverNewAlertSectionTitle,
+                    text: l10n.driverNewAlertSectionText,
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -5580,9 +5580,9 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                     controller: _commentController,
                     maxLines: 3,
                     maxLength: 300,
-                    decoration: const InputDecoration(
-                      labelText: 'Комментарий',
-                      hintText: 'Например: правая полоса закрыта',
+                    decoration: InputDecoration(
+                      labelText: l10n.driverAlertCommentLabel,
+                      hintText: l10n.driverAlertCommentHint,
                       counterText: '',
                     ),
                   ),
@@ -5590,9 +5590,9 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                   TextField(
                     controller: _speedLimitController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Ограничение, км/ч',
-                      hintText: 'Только если указано знаком',
+                    decoration: InputDecoration(
+                      labelText: l10n.driverAlertSpeedLimitLabel,
+                      hintText: l10n.driverAlertSpeedLimitHint,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -5622,7 +5622,9 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                           label: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              _saving ? 'Отправляем...' : 'Отправить',
+                              _saving
+                                  ? l10n.driverSupportSendingButton
+                                  : l10n.driverSupportSendButton,
                               maxLines: 1,
                             ),
                           ),
@@ -5633,8 +5635,9 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                   if (_selectedPoint != null) ...[
                     const SizedBox(height: 10),
                     InlineMessage(
-                      text:
-                          'Точка выбрана: ${_selectedPoint!.lat.toStringAsFixed(5)}, ${_selectedPoint!.lng.toStringAsFixed(5)}',
+                      text: l10n.driverPointSelectedCoordinates(
+                          _selectedPoint!.lat.toStringAsFixed(5),
+                          _selectedPoint!.lng.toStringAsFixed(5)),
                     ),
                   ],
                   if (_message != null) ...[
@@ -5649,27 +5652,25 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SectionLabel(
-                    title: 'События рядом',
-                    text: 'Показываем только сохранённые активные сообщения.',
+                  SectionLabel(
+                    title: l10n.driverNearbyAlertsTitle,
+                    text: l10n.driverNearbyAlertsSubtitle,
                   ),
                   const SizedBox(height: 12),
                   if (_loading)
-                    const LoadingStrip(text: 'Загружаем события...')
+                    LoadingStrip(text: l10n.driverLoadingAlerts)
                   else if (_alertsLoadFailed)
                     EmptyState(
-                      title: 'Не удалось загрузить события',
-                      text: _message ??
-                          'Проверьте связь и попробуйте ещё раз.',
+                      title: l10n.driverAlertsLoadFailedTitle,
+                      text: _message ?? l10n.driverCheckConnectionRetry,
                       icon: Icons.wifi_off_rounded,
-                      action: 'Повторить',
+                      action: l10n.retry,
                       onAction: _loadAlerts,
                     )
                   else if (_alerts.isEmpty)
-                    const EmptyState(
-                      title: 'Пока нет дорожных событий рядом',
-                      text:
-                          'Когда водитель отправит сообщение, оно появится здесь.',
+                    EmptyState(
+                      title: l10n.driverNoNearbyAlertsTitle,
+                      text: l10n.driverNoNearbyAlertsText,
                       icon: Icons.signpost_outlined,
                     )
                   else
@@ -5710,6 +5711,7 @@ class _RoadAlertMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Falls back to the driver's own region/GPS before the hardcoded
     // Shymkent coordinate — that default only fires if we somehow have
@@ -5776,15 +5778,15 @@ class _RoadAlertMap extends StatelessWidget {
                   border: Border.all(color: SmartTaxiColors.border),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.shield_outlined,
+                    const Icon(Icons.shield_outlined,
                         color: SmartTaxiColors.goldDeep, size: 18),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Нажмите на карту, чтобы выбрать точку события',
-                        style: TextStyle(
+                        l10n.driverTapMapToSelectAlertPoint,
+                        style: const TextStyle(
                           color: SmartTaxiColors.text,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
@@ -5831,14 +5833,14 @@ class _RoadAlertMapFallback extends StatelessWidget {
             border: Border.all(color: SmartTaxiColors.border),
             borderRadius: BorderRadius.circular(22),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.map_outlined, color: SmartTaxiColors.goldDeep),
-              SizedBox(width: 10),
+              const Icon(Icons.map_outlined, color: SmartTaxiColors.goldDeep),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Карта временно недоступна. Выберите точку через GPS или повторите позже.',
-                  style: TextStyle(
+                  AppLocalizations.of(context).driverMapUnavailableUseGps,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     color: SmartTaxiColors.text,
                   ),
