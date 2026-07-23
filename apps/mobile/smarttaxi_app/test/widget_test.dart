@@ -702,7 +702,7 @@ void main() {
     expect(driver, contains('FlutterMap'));
     expect(driver, contains('MarkerLayer'));
     expect(driver, contains("label: const Text('GPS')"));
-    expect(driver, contains('На месте'));
+    expect(driver, contains('driverConfirmAlertButton'));
     expect(driver, contains('driverAlertHiddenFromList'));
     expect(driver, isNot(contains('\u26d4')));
     final unsafeIntent = 'police ${'eva'}sion';

@@ -1,5 +1,7 @@
 import 'package:latlong2/latlong.dart';
 
+import '../../l10n/app_localizations.dart';
+
 class Coordinate {
   const Coordinate({required this.lat, required this.lng});
 
@@ -1130,7 +1132,7 @@ class RoadAlert {
       id: '${json['id']}',
       regionId: '${json['regionId'] ?? json['region_id'] ?? ''}',
       type: type,
-      label: roadAlertLabel(type),
+      label: _roadAlertLabelFallback(type),
       lat: _toDouble(json['lat']),
       lng: _toDouble(json['lng']),
       status: '${json['status'] ?? 'ACTIVE'}',
@@ -1268,7 +1270,34 @@ const roadAlertTypes = <String>[
   'OTHER',
 ];
 
-String roadAlertLabel(String type) {
+// Localized display label for a road-alert type. RoadAlert.label (below)
+// is a separate, permanently-Russian value baked in at JSON-parse time
+// (no BuildContext available there) — UI code should call this function
+// with the current locale's l10n instead of reading that stored field.
+String roadAlertLabel(AppLocalizations l10n, String type) {
+  return {
+        'ROAD_HAZARD': l10n.roadAlertHazard,
+        'ACCIDENT': l10n.roadAlertAccident,
+        'ROAD_WORK': l10n.roadAlertRoadWork,
+        'SPEED_CAMERA': l10n.roadAlertSpeedCamera,
+        'POLICE': l10n.roadAlertPolice,
+        'TRAFFIC_JAM': l10n.roadAlertTrafficJam,
+        'ROAD_CLOSED': l10n.roadAlertRoadClosed,
+        'BAD_ROAD': l10n.roadAlertBadRoad,
+        'POTHOLE': l10n.roadAlertPothole,
+        'SPEED_BUMP': l10n.roadAlertSpeedBump,
+        'ICY_ROAD': l10n.roadAlertIcyRoad,
+        'SCHOOL_ZONE': l10n.roadAlertSchoolZone,
+        'TEMPORARY_SPEED_LIMIT': l10n.roadAlertTemporarySpeedLimit,
+        'DANGEROUS_TURN': l10n.roadAlertDangerousTurn,
+        'RAILROAD_CROSSING': l10n.roadAlertRailroadCrossing,
+        'PEDESTRIAN_CROSSING': l10n.roadAlertPedestrianCrossing,
+        'OTHER': l10n.roadAlertOther,
+      }[type] ??
+      l10n.roadAlertOther;
+}
+
+String _roadAlertLabelFallback(String type) {
   return const {
         'ROAD_HAZARD': 'Дорожная опасность',
         'ACCIDENT': 'ДТП',

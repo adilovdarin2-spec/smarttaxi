@@ -3627,4 +3627,81 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get driverMapUnavailableUseGps =>
       'Карта временно недоступна. Выберите точку через GPS или повторите позже.';
+
+  @override
+  String get roadAlertHazard => 'Дорожная опасность';
+
+  @override
+  String get roadAlertAccident => 'ДТП';
+
+  @override
+  String get roadAlertRoadWork => 'Ремонт дороги';
+
+  @override
+  String get roadAlertSpeedCamera => 'Камера скорости';
+
+  @override
+  String get roadAlertPolice => 'Контроль движения';
+
+  @override
+  String get roadAlertTrafficJam => 'Пробка';
+
+  @override
+  String get roadAlertRoadClosed => 'Закрытая дорога';
+
+  @override
+  String get roadAlertBadRoad => 'Плохая дорога';
+
+  @override
+  String get roadAlertPothole => 'Яма';
+
+  @override
+  String get roadAlertSpeedBump => 'Лежачий полицейский';
+
+  @override
+  String get roadAlertIcyRoad => 'Скользкая дорога';
+
+  @override
+  String get roadAlertSchoolZone => 'Школьная зона';
+
+  @override
+  String get roadAlertTemporarySpeedLimit => 'Временное ограничение';
+
+  @override
+  String get roadAlertDangerousTurn => 'Опасный поворот';
+
+  @override
+  String get roadAlertRailroadCrossing => 'Ж/д переезд';
+
+  @override
+  String get roadAlertPedestrianCrossing => 'Пешеходный переход';
+
+  @override
+  String get roadAlertOther => 'Другое';
+
+  @override
+  String driverAlertConfidenceLabel(int score, int count) {
+    return 'Доверие: $score% · подтверждений: $count';
+  }
+
+  @override
+  String driverAlertSpeedLimitDetail(int limit) {
+    return 'Ограничение: $limit км/ч';
+  }
+
+  @override
+  String driverAlertHeadingDetail(String direction) {
+    return 'Смотрит: $direction';
+  }
+
+  @override
+  String get driverConfirmAlertButton => 'На месте';
+
+  @override
+  String get noButton => 'Нет';
+
+  @override
+  String driverInDistanceLabel(String distance) {
+    return 'Через $distance';
+  }
 }

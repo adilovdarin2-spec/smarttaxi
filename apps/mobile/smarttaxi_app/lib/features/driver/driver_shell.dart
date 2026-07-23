@@ -5569,7 +5569,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
                     children: [
                       for (final type in roadAlertTypes)
                         DriverSupportTopicChip(
-                          label: roadAlertLabel(type),
+                          label: roadAlertLabel(l10n, type),
                           selected: _selectedType == type,
                           onTap: () => setState(() => _selectedType = type),
                         ),
@@ -5932,6 +5932,7 @@ class _RoadAlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -5951,7 +5952,7 @@ class _RoadAlertRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(alert.label,
+                Text(roadAlertLabel(l10n, alert.type),
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w900)),
                 if (alert.comment.isNotEmpty) ...[
@@ -5966,7 +5967,8 @@ class _RoadAlertRow extends StatelessWidget {
                 ],
                 const SizedBox(height: 6),
                 Text(
-                  'Доверие: ${alert.confidenceScore}% · подтверждений: ${alert.confirmationsCount}',
+                  l10n.driverAlertConfidenceLabel(
+                      alert.confidenceScore, alert.confirmationsCount),
                   // textSecondary, not textMuted — textMuted's contrast
                   // against the background fails WCAG AA (~2.5:1).
                   style: TextStyle(
@@ -5978,7 +5980,7 @@ class _RoadAlertRow extends StatelessWidget {
                 if (alert.speedLimit != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Ограничение: ${alert.speedLimit} км/ч',
+                    l10n.driverAlertSpeedLimitDetail(alert.speedLimit!),
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12,
@@ -5989,7 +5991,8 @@ class _RoadAlertRow extends StatelessWidget {
                 if (alert.heading != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Смотрит: ${compassLabel(alert.heading!)}',
+                    l10n.driverAlertHeadingDetail(
+                        compassLabel(alert.heading!)),
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12,
@@ -6003,7 +6006,7 @@ class _RoadAlertRow extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: updating ? null : onConfirm,
-                        child: Text(updating ? '...' : 'На месте'),
+                        child: Text(updating ? '...' : l10n.driverConfirmAlertButton),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -6016,7 +6019,7 @@ class _RoadAlertRow extends StatelessWidget {
                       // in the same row.
                       child: OutlinedButton(
                         onPressed: updating ? null : onDismiss,
-                        child: const Text('Нет'),
+                        child: Text(l10n.noButton),
                       ),
                     ),
                   ],
@@ -6127,7 +6130,7 @@ class _NextManeuverBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Через $distanceLabel',
+                  AppLocalizations.of(context).driverInDistanceLabel(distanceLabel),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,

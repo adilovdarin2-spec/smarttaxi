@@ -3634,4 +3634,81 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get driverMapUnavailableUseGps =>
       'Карта уақытша қолжетімсіз. GPS арқылы нүкте таңдаңыз немесе кейінірек көріңіз.';
+
+  @override
+  String get roadAlertHazard => 'Жол қаупі';
+
+  @override
+  String get roadAlertAccident => 'ЖКО';
+
+  @override
+  String get roadAlertRoadWork => 'Жол жөндеу';
+
+  @override
+  String get roadAlertSpeedCamera => 'Жылдамдық камерасы';
+
+  @override
+  String get roadAlertPolice => 'Қозғалысты бақылау';
+
+  @override
+  String get roadAlertTrafficJam => 'Кептеліс';
+
+  @override
+  String get roadAlertRoadClosed => 'Жабық жол';
+
+  @override
+  String get roadAlertBadRoad => 'Нашар жол';
+
+  @override
+  String get roadAlertPothole => 'Шұңқыр';
+
+  @override
+  String get roadAlertSpeedBump => 'Жасанды бөгеу';
+
+  @override
+  String get roadAlertIcyRoad => 'Тайғақ жол';
+
+  @override
+  String get roadAlertSchoolZone => 'Мектеп аймағы';
+
+  @override
+  String get roadAlertTemporarySpeedLimit => 'Уақытша шектеу';
+
+  @override
+  String get roadAlertDangerousTurn => 'Қауіпті бұрылыс';
+
+  @override
+  String get roadAlertRailroadCrossing => 'Теміржол өткелі';
+
+  @override
+  String get roadAlertPedestrianCrossing => 'Жаяу жүргіншілер өткелі';
+
+  @override
+  String get roadAlertOther => 'Басқа';
+
+  @override
+  String driverAlertConfidenceLabel(int score, int count) {
+    return 'Сенім: $score% · растаулар: $count';
+  }
+
+  @override
+  String driverAlertSpeedLimitDetail(int limit) {
+    return 'Шектеу: $limit км/сағ';
+  }
+
+  @override
+  String driverAlertHeadingDetail(String direction) {
+    return 'Бағыты: $direction';
+  }
+
+  @override
+  String get driverConfirmAlertButton => 'Орында';
+
+  @override
+  String get noButton => 'Жоқ';
+
+  @override
+  String driverInDistanceLabel(String distance) {
+    return '$distance қалды';
+  }
 }

@@ -6554,6 +6554,144 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Карта временно недоступна. Выберите точку через GPS или повторите позже.'**
   String get driverMapUnavailableUseGps;
+
+  /// No description provided for @roadAlertHazard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дорожная опасность'**
+  String get roadAlertHazard;
+
+  /// No description provided for @roadAlertAccident.
+  ///
+  /// In ru, this message translates to:
+  /// **'ДТП'**
+  String get roadAlertAccident;
+
+  /// No description provided for @roadAlertRoadWork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ремонт дороги'**
+  String get roadAlertRoadWork;
+
+  /// No description provided for @roadAlertSpeedCamera.
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера скорости'**
+  String get roadAlertSpeedCamera;
+
+  /// No description provided for @roadAlertPolice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Контроль движения'**
+  String get roadAlertPolice;
+
+  /// No description provided for @roadAlertTrafficJam.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пробка'**
+  String get roadAlertTrafficJam;
+
+  /// No description provided for @roadAlertRoadClosed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрытая дорога'**
+  String get roadAlertRoadClosed;
+
+  /// No description provided for @roadAlertBadRoad.
+  ///
+  /// In ru, this message translates to:
+  /// **'Плохая дорога'**
+  String get roadAlertBadRoad;
+
+  /// No description provided for @roadAlertPothole.
+  ///
+  /// In ru, this message translates to:
+  /// **'Яма'**
+  String get roadAlertPothole;
+
+  /// No description provided for @roadAlertSpeedBump.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лежачий полицейский'**
+  String get roadAlertSpeedBump;
+
+  /// No description provided for @roadAlertIcyRoad.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скользкая дорога'**
+  String get roadAlertIcyRoad;
+
+  /// No description provided for @roadAlertSchoolZone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Школьная зона'**
+  String get roadAlertSchoolZone;
+
+  /// No description provided for @roadAlertTemporarySpeedLimit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Временное ограничение'**
+  String get roadAlertTemporarySpeedLimit;
+
+  /// No description provided for @roadAlertDangerousTurn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опасный поворот'**
+  String get roadAlertDangerousTurn;
+
+  /// No description provided for @roadAlertRailroadCrossing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ж/д переезд'**
+  String get roadAlertRailroadCrossing;
+
+  /// No description provided for @roadAlertPedestrianCrossing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пешеходный переход'**
+  String get roadAlertPedestrianCrossing;
+
+  /// No description provided for @roadAlertOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'Другое'**
+  String get roadAlertOther;
+
+  /// No description provided for @driverAlertConfidenceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доверие: {score}% · подтверждений: {count}'**
+  String driverAlertConfidenceLabel(int score, int count);
+
+  /// No description provided for @driverAlertSpeedLimitDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ограничение: {limit} км/ч'**
+  String driverAlertSpeedLimitDetail(int limit);
+
+  /// No description provided for @driverAlertHeadingDetail.
+  ///
+  /// In ru, this message translates to:
+  /// **'Смотрит: {direction}'**
+  String driverAlertHeadingDetail(String direction);
+
+  /// No description provided for @driverConfirmAlertButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'На месте'**
+  String get driverConfirmAlertButton;
+
+  /// No description provided for @noButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет'**
+  String get noButton;
+
+  /// No description provided for @driverInDistanceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Через {distance}'**
+  String driverInDistanceLabel(String distance);
 }
 
 class _AppLocalizationsDelegate
