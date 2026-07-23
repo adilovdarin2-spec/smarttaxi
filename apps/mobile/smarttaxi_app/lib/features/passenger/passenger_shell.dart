@@ -10770,6 +10770,7 @@ class _TripProgressCard extends StatelessWidget {
   final int? distanceTraveledM;
 
   static String _progressLabel(
+    AppLocalizations l10n,
     Duration elapsed,
     bool reliable,
     int? distanceTraveledM,
@@ -10780,11 +10781,17 @@ class _TripProgressCard extends StatelessWidget {
     // Seeded from an order that was already in progress when we first saw
     // it this session (app resumed mid-trip) — we don't actually know how
     // long it's been running, so don't claim it "just started".
-    if (!reliable) return kmText == null ? 'В пути' : '$kmText · в пути';
+    if (!reliable) {
+      return kmText == null
+          ? l10n.passengerTripInTransitLabel
+          : '$kmText · ${l10n.passengerEnRouteLowercase}';
+    }
     final minutes = elapsed.inMinutes;
-    final timeText = minutes <= 0 ? 'только начали' : '$minutes мин в пути';
+    final timeText = minutes <= 0
+        ? l10n.passengerJustStartedLowercase
+        : l10n.passengerMinutesEnRoute(minutes);
     if (kmText == null) {
-      return minutes <= 0 ? 'Только начали' : timeText;
+      return minutes <= 0 ? l10n.passengerJustStartedCapitalized : timeText;
     }
     return '$kmText · $timeText';
   }
@@ -10792,6 +10799,7 @@ class _TripProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
@@ -10819,7 +10827,7 @@ class _TripProgressCard extends StatelessWidget {
               const SizedBox(width: 7),
               Expanded(
                 child: Text(
-                  'Едем к месту назначения',
+                  l10n.passengerHeadingToDropoffTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -10843,7 +10851,7 @@ class _TripProgressCard extends StatelessWidget {
             child: ValueListenableBuilder<Duration>(
               valueListenable: elapsedListenable,
               builder: (context, elapsed, _) => Text(
-                _progressLabel(elapsed, elapsedReliable, distanceTraveledM),
+                _progressLabel(l10n, elapsed, elapsedReliable, distanceTraveledM),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -11021,12 +11029,13 @@ class _ShareTripButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final token = shareToken;
     final enabled = token != null;
     return Tooltip(
       message: enabled
-          ? 'Поделиться отслеживанием поездки'
-          : 'Ссылка появится, как только найдётся водитель',
+          ? l10n.passengerShareTripTooltipEnabled
+          : l10n.passengerShareTripTooltipDisabled,
       child: Material(
         color: palette.goldSurface,
         shape: const CircleBorder(),
@@ -11041,7 +11050,7 @@ class _ShareTripButton extends StatelessWidget {
                       .join(' → ');
                   final routeSuffix = route.isEmpty ? '' : ': $route';
                   unawaited(Share.share(
-                    'Слежу за поездкой SmartTaxi$routeSuffix. Статус: $link',
+                    l10n.passengerShareTripMessage(routeSuffix, link),
                   ));
                 },
           child: SizedBox(
@@ -11141,6 +11150,7 @@ class _SafetySheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
       top: false,
@@ -11182,7 +11192,7 @@ class _SafetySheet extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Безопасность поездки',
+                    l10n.passengerSafetyTitle,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
@@ -11194,8 +11204,8 @@ class _SafetySheet extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _SettingsRow(
-              title: 'Позвонить ${sosPhone ?? '112'}',
-              text: 'Экстренная линия SmartTaxi, если что-то пошло не так',
+              title: l10n.passengerCallPhoneLabel(sosPhone ?? '112'),
+              text: l10n.passengerSosEmergencyLineText,
               danger: true,
               onTap: () {
                 Navigator.pop(context);
@@ -11204,10 +11214,9 @@ class _SafetySheet extends StatelessWidget {
               },
             ),
             Divider(height: 18, color: palette.border),
-            const _SettingsRow(
-              title: 'Поддержка получит сигнал',
-              text:
-                  'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком',
+            _SettingsRow(
+              title: l10n.passengerSupportWillBeNotifiedTitle,
+              text: l10n.passengerSupportWillBeNotifiedText,
             ),
           ],
         ),
@@ -11237,13 +11246,13 @@ class _ChatEntry {
   final DateTime at;
 }
 
-const _quickMessages = {
-  'I_ARRIVED': 'Я приехал',
-  'WAITING_AT_ENTRANCE': 'Жду у входа',
-  'RUNNING_LATE_2MIN': 'Опаздываю на 2 минуты',
-  'PLEASE_COME_OUT': 'Пожалуйста, выходите',
-  'ON_MY_WAY': 'Уже еду к вам',
-};
+Map<String, String> _quickMessages(AppLocalizations l10n) => {
+      'I_ARRIVED': l10n.quickMessageArrived,
+      'WAITING_AT_ENTRANCE': l10n.quickMessageWaitingAtEntrance,
+      'RUNNING_LATE_2MIN': l10n.quickMessageRunningLate2Min,
+      'PLEASE_COME_OUT': l10n.quickMessagePleaseComeOut,
+      'ON_MY_WAY': l10n.quickMessageOnMyWay,
+    };
 
 class _ChatSheet extends StatefulWidget {
   const _ChatSheet({
@@ -11309,13 +11318,16 @@ class _ChatSheetState extends State<_ChatSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _sendingKey = null);
-      AppToast.showError(context, 'Не удалось отправить сообщение');
+      AppToast.showError(
+          context, AppLocalizations.of(context).passengerChatSendFailedError);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final quickMessages = _quickMessages(l10n);
     final thread = [..._sent, ..._received]
       ..sort((a, b) => a.at.compareTo(b.at));
     return SafeArea(
@@ -11343,12 +11355,14 @@ class _ChatSheetState extends State<_ChatSheet> {
                   dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 10),
             Text(
-              widget.peerName.trim().isEmpty ? 'Чат' : widget.peerName.trim(),
+              widget.peerName.trim().isEmpty
+                  ? l10n.passengerChatFallbackTitle
+                  : widget.peerName.trim(),
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 2),
             Text(
-              'Быстрые фразы — свободный текст пока недоступен',
+              l10n.passengerChatQuickPhrasesNotice,
               style: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 11.5,
@@ -11362,7 +11376,7 @@ class _ChatSheetState extends State<_ChatSheet> {
                   : thread.isEmpty
                       ? Center(
                           child: Text(
-                            'Сообщений пока нет',
+                            l10n.passengerChatEmptyText,
                             style: TextStyle(
                               color: palette.textSecondary,
                               fontSize: 13,
@@ -11383,7 +11397,7 @@ class _ChatSheetState extends State<_ChatSheet> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _quickMessages.entries.map((entry) {
+              children: quickMessages.entries.map((entry) {
                 final sending = _sendingKey == entry.key;
                 return OutlinedButton(
                   onPressed:
@@ -11512,7 +11526,9 @@ class _DriverContactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final displayName = name.trim().isEmpty ? 'Водитель' : name.trim();
+    final l10n = AppLocalizations.of(context);
+    final displayName =
+        name.trim().isEmpty ? l10n.driverProfileNameFallback : name.trim();
     final hasPhone = (phone ?? '').trim().isNotEmpty;
     if (compact) {
       return Container(
@@ -11712,8 +11728,8 @@ class _DriverContactCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => _openChat(context),
                     icon: const Icon(Icons.chat_bubble_rounded, size: 18),
-                    label: const Text(
-                      'Написать',
+                    label: Text(
+                      l10n.messageButton,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
@@ -11729,8 +11745,8 @@ class _DriverContactCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: _call,
                     icon: const Icon(Icons.call_rounded, size: 18),
-                    label: const Text(
-                      'Позвонить',
+                    label: Text(
+                      l10n.callButton,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
@@ -11868,17 +11884,18 @@ class _SearchingPulseState extends State<_SearchingPulse>
 class _SearchProgressRows extends StatefulWidget {
   const _SearchProgressRows();
 
-  static const _items = [
-    ('Проверяем водителей рядом', Icons.near_me_rounded),
-    ('Ждём подтверждение заказа', Icons.timer_outlined),
-    ('Закрепим первого принявшего', Icons.verified_rounded),
-  ];
+  static List<(String, IconData)> _items(AppLocalizations l10n) => [
+        (l10n.passengerSearchStepCheckingDrivers, Icons.near_me_rounded),
+        (l10n.passengerSearchStepWaitingConfirmation, Icons.timer_outlined),
+        (l10n.passengerSearchStepLockingFirst, Icons.verified_rounded),
+      ];
 
   @override
   State<_SearchProgressRows> createState() => _SearchProgressRowsState();
 }
 
 class _SearchProgressRowsState extends State<_SearchProgressRows> {
+  static const _stepCount = 3;
   int _activeIndex = 0;
   Timer? _timer;
 
@@ -11890,7 +11907,7 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
     // search doesn't look stuck on step one forever.
     _timer = Timer.periodic(const Duration(milliseconds: 3500), (timer) {
       if (!mounted) return;
-      if (_activeIndex >= _SearchProgressRows._items.length - 1) {
+      if (_activeIndex >= _stepCount - 1) {
         timer.cancel();
         return;
       }
@@ -11907,8 +11924,9 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final items = _SearchProgressRows._items;
+    final items = _SearchProgressRows._items(l10n);
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
@@ -11996,6 +12014,7 @@ class _TripRouteMiniCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
@@ -12011,9 +12030,9 @@ class _TripRouteMiniCard extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                _TripRouteMiniLine(label: 'Откуда', value: pickup),
+                _TripRouteMiniLine(label: l10n.passengerFromLabel, value: pickup),
                 Divider(height: 15, color: palette.border),
-                _TripRouteMiniLine(label: 'Куда', value: dropoff),
+                _TripRouteMiniLine(label: l10n.passengerToLabel, value: dropoff),
               ],
             ),
           ),

@@ -1893,6 +1893,174 @@ abstract class AppLocalizations {
   /// **'Нет, продолжить'**
   String get passengerCancelConfirmNoButton;
 
+  /// No description provided for @passengerHeadingToDropoffTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Едем к месту назначения'**
+  String get passengerHeadingToDropoffTitle;
+
+  /// No description provided for @passengerEnRouteLowercase.
+  ///
+  /// In ru, this message translates to:
+  /// **'в пути'**
+  String get passengerEnRouteLowercase;
+
+  /// No description provided for @passengerJustStartedLowercase.
+  ///
+  /// In ru, this message translates to:
+  /// **'только начали'**
+  String get passengerJustStartedLowercase;
+
+  /// No description provided for @passengerMinutesEnRoute.
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин в пути'**
+  String passengerMinutesEnRoute(int minutes);
+
+  /// No description provided for @passengerJustStartedCapitalized.
+  ///
+  /// In ru, this message translates to:
+  /// **'Только начали'**
+  String get passengerJustStartedCapitalized;
+
+  /// No description provided for @passengerShareTripTooltipEnabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделиться отслеживанием поездки'**
+  String get passengerShareTripTooltipEnabled;
+
+  /// No description provided for @passengerShareTripTooltipDisabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ссылка появится, как только найдётся водитель'**
+  String get passengerShareTripTooltipDisabled;
+
+  /// No description provided for @passengerShareTripMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слежу за поездкой SmartTaxi{routeSuffix}. Статус: {link}'**
+  String passengerShareTripMessage(String routeSuffix, String link);
+
+  /// No description provided for @passengerSafetyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Безопасность поездки'**
+  String get passengerSafetyTitle;
+
+  /// No description provided for @passengerCallPhoneLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить {phone}'**
+  String passengerCallPhoneLabel(String phone);
+
+  /// No description provided for @passengerSosEmergencyLineText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Экстренная линия SmartTaxi, если что-то пошло не так'**
+  String get passengerSosEmergencyLineText;
+
+  /// No description provided for @passengerSupportWillBeNotifiedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка получит сигнал'**
+  String get passengerSupportWillBeNotifiedTitle;
+
+  /// No description provided for @passengerSupportWillBeNotifiedText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком'**
+  String get passengerSupportWillBeNotifiedText;
+
+  /// No description provided for @quickMessageArrived.
+  ///
+  /// In ru, this message translates to:
+  /// **'Я приехал'**
+  String get quickMessageArrived;
+
+  /// No description provided for @quickMessageWaitingAtEntrance.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жду у входа'**
+  String get quickMessageWaitingAtEntrance;
+
+  /// No description provided for @quickMessageRunningLate2Min.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опаздываю на 2 минуты'**
+  String get quickMessageRunningLate2Min;
+
+  /// No description provided for @quickMessagePleaseComeOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пожалуйста, выходите'**
+  String get quickMessagePleaseComeOut;
+
+  /// No description provided for @quickMessageOnMyWay.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уже еду к вам'**
+  String get quickMessageOnMyWay;
+
+  /// No description provided for @passengerChatFallbackTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чат'**
+  String get passengerChatFallbackTitle;
+
+  /// No description provided for @passengerChatQuickPhrasesNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрые фразы — свободный текст пока недоступен'**
+  String get passengerChatQuickPhrasesNotice;
+
+  /// No description provided for @passengerChatEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщений пока нет'**
+  String get passengerChatEmptyText;
+
+  /// No description provided for @passengerChatSendFailedError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить сообщение'**
+  String get passengerChatSendFailedError;
+
+  /// No description provided for @messageButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Написать'**
+  String get messageButton;
+
+  /// No description provided for @passengerSearchStepCheckingDrivers.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверяем водителей рядом'**
+  String get passengerSearchStepCheckingDrivers;
+
+  /// No description provided for @passengerSearchStepWaitingConfirmation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём подтверждение заказа'**
+  String get passengerSearchStepWaitingConfirmation;
+
+  /// No description provided for @passengerSearchStepLockingFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрепим первого принявшего'**
+  String get passengerSearchStepLockingFirst;
+
+  /// No description provided for @passengerFromLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откуда'**
+  String get passengerFromLabel;
+
+  /// No description provided for @passengerToLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Куда'**
+  String get passengerToLabel;
+
   /// No description provided for @passengerSectionUnavailableTitle.
   ///
   /// In ru, this message translates to:

@@ -1007,6 +1007,105 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerCancelConfirmNoButton => 'Жоқ, жалғастыру';
 
   @override
+  String get passengerHeadingToDropoffTitle => 'Межеге бара жатырмыз';
+
+  @override
+  String get passengerEnRouteLowercase => 'жолда';
+
+  @override
+  String get passengerJustStartedLowercase => 'жаңа бастады';
+
+  @override
+  String passengerMinutesEnRoute(int minutes) {
+    return '$minutes мин жолда';
+  }
+
+  @override
+  String get passengerJustStartedCapitalized => 'Жаңа бастады';
+
+  @override
+  String get passengerShareTripTooltipEnabled => 'Сапарды бақылаумен бөлісу';
+
+  @override
+  String get passengerShareTripTooltipDisabled =>
+      'Сілтеме жүргізуші табылған соң пайда болады';
+
+  @override
+  String passengerShareTripMessage(String routeSuffix, String link) {
+    return 'SmartTaxi сапарын бақылап отырмын$routeSuffix. Мәртебе: $link';
+  }
+
+  @override
+  String get passengerSafetyTitle => 'Сапар қауіпсіздігі';
+
+  @override
+  String passengerCallPhoneLabel(String phone) {
+    return '$phone қоңырау шалу';
+  }
+
+  @override
+  String get passengerSosEmergencyLineText =>
+      'Бірдеңе дұрыс болмаса — SmartTaxi шұғыл желісі';
+
+  @override
+  String get passengerSupportWillBeNotifiedTitle =>
+      'Қолдау қызметіне сигнал жіберіледі';
+
+  @override
+  String get passengerSupportWillBeNotifiedText =>
+      'Сапар нөмірі мен координаттарыңыз бар өтінім қоңыраумен бірге қолдау қызметіне жіберіледі';
+
+  @override
+  String get quickMessageArrived => 'Мен келдім';
+
+  @override
+  String get quickMessageWaitingAtEntrance => 'Кіреберісте күтудемін';
+
+  @override
+  String get quickMessageRunningLate2Min => '2 минутқа кешігемін';
+
+  @override
+  String get quickMessagePleaseComeOut => 'Шығыңызшы';
+
+  @override
+  String get quickMessageOnMyWay => 'Сізге қарай келе жатырмын';
+
+  @override
+  String get passengerChatFallbackTitle => 'Чат';
+
+  @override
+  String get passengerChatQuickPhrasesNotice =>
+      'Дайын фразалар — еркін мәтін әзірге қолжетімсіз';
+
+  @override
+  String get passengerChatEmptyText => 'Әзірге хабарлама жоқ';
+
+  @override
+  String get passengerChatSendFailedError =>
+      'Хабарламаны жіберу мүмкін болмады';
+
+  @override
+  String get messageButton => 'Жазу';
+
+  @override
+  String get passengerSearchStepCheckingDrivers =>
+      'Жақын жүргізушілерді тексерудеміз';
+
+  @override
+  String get passengerSearchStepWaitingConfirmation =>
+      'Тапсырыстың расталуын күтудеміз';
+
+  @override
+  String get passengerSearchStepLockingFirst =>
+      'Бірінші қабылдағанды бекітеміз';
+
+  @override
+  String get passengerFromLabel => 'Қайдан';
+
+  @override
+  String get passengerToLabel => 'Қайда';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
 
   @override

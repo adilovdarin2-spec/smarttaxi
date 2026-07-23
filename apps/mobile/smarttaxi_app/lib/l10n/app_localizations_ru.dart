@@ -999,6 +999,102 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerCancelConfirmNoButton => 'Нет, продолжить';
 
   @override
+  String get passengerHeadingToDropoffTitle => 'Едем к месту назначения';
+
+  @override
+  String get passengerEnRouteLowercase => 'в пути';
+
+  @override
+  String get passengerJustStartedLowercase => 'только начали';
+
+  @override
+  String passengerMinutesEnRoute(int minutes) {
+    return '$minutes мин в пути';
+  }
+
+  @override
+  String get passengerJustStartedCapitalized => 'Только начали';
+
+  @override
+  String get passengerShareTripTooltipEnabled =>
+      'Поделиться отслеживанием поездки';
+
+  @override
+  String get passengerShareTripTooltipDisabled =>
+      'Ссылка появится, как только найдётся водитель';
+
+  @override
+  String passengerShareTripMessage(String routeSuffix, String link) {
+    return 'Слежу за поездкой SmartTaxi$routeSuffix. Статус: $link';
+  }
+
+  @override
+  String get passengerSafetyTitle => 'Безопасность поездки';
+
+  @override
+  String passengerCallPhoneLabel(String phone) {
+    return 'Позвонить $phone';
+  }
+
+  @override
+  String get passengerSosEmergencyLineText =>
+      'Экстренная линия SmartTaxi, если что-то пошло не так';
+
+  @override
+  String get passengerSupportWillBeNotifiedTitle => 'Поддержка получит сигнал';
+
+  @override
+  String get passengerSupportWillBeNotifiedText =>
+      'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком';
+
+  @override
+  String get quickMessageArrived => 'Я приехал';
+
+  @override
+  String get quickMessageWaitingAtEntrance => 'Жду у входа';
+
+  @override
+  String get quickMessageRunningLate2Min => 'Опаздываю на 2 минуты';
+
+  @override
+  String get quickMessagePleaseComeOut => 'Пожалуйста, выходите';
+
+  @override
+  String get quickMessageOnMyWay => 'Уже еду к вам';
+
+  @override
+  String get passengerChatFallbackTitle => 'Чат';
+
+  @override
+  String get passengerChatQuickPhrasesNotice =>
+      'Быстрые фразы — свободный текст пока недоступен';
+
+  @override
+  String get passengerChatEmptyText => 'Сообщений пока нет';
+
+  @override
+  String get passengerChatSendFailedError => 'Не удалось отправить сообщение';
+
+  @override
+  String get messageButton => 'Написать';
+
+  @override
+  String get passengerSearchStepCheckingDrivers => 'Проверяем водителей рядом';
+
+  @override
+  String get passengerSearchStepWaitingConfirmation =>
+      'Ждём подтверждение заказа';
+
+  @override
+  String get passengerSearchStepLockingFirst => 'Закрепим первого принявшего';
+
+  @override
+  String get passengerFromLabel => 'Откуда';
+
+  @override
+  String get passengerToLabel => 'Куда';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Раздел недоступен';
 
   @override
