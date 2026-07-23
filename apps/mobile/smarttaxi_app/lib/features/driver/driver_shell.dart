@@ -2875,14 +2875,15 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   String? _disabledReason() {
+    final l10n = AppLocalizations.of(context);
     final region = _selectedRegion;
-    if (_regions.isEmpty) return 'Нет одобренных регионов';
-    if (_regionId == null) return 'Выберите рабочий регион';
-    if (region?.isActive == false) return 'Регион временно отключён';
+    if (_regions.isEmpty) return l10n.driverNoApprovedRegionsTitle;
+    if (_regionId == null) return l10n.driverChooseWorkingRegionTitle;
+    if (region?.isActive == false) return l10n.driverRegionTemporarilyDisabledTitle;
     if (region?.status == 'BLOCKED') {
-      return 'Работа в этом регионе заблокирована';
+      return l10n.driverRegionWorkBlockedTitle;
     }
-    if (region?.status != 'APPROVED') return 'Вы не одобрены для этого региона';
+    if (region?.status != 'APPROVED') return l10n.driverRegionNotApprovedTitle;
     return null;
   }
 
@@ -2893,34 +2894,35 @@ class _DriverShellState extends State<DriverShell> {
   // gate and the header status label, and touching those tonight isn't
   // worth the risk for what's purely a rendering upgrade.
   _DriverAvailabilityIssue? _availabilityIssue() {
+    final l10n = AppLocalizations.of(context);
     final region = _selectedRegion;
     if (_regions.isEmpty) {
       return _DriverAvailabilityIssue(
         icon: Icons.map_outlined,
-        title: 'Нет одобренных регионов',
-        message:
-            'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку, чтобы вам открыли доступ к региону.',
-        actionLabel: 'Написать в поддержку',
+        title: l10n.driverNoApprovedRegionsTitle,
+        message: l10n.driverNoRegionsMessage,
+        actionLabel: l10n.driverContactSupportAction,
         onAction: () => _showDriverFullSheet(_driverSupportContent),
       );
     }
     if (_regionId == null) {
       return _DriverAvailabilityIssue(
         icon: Icons.place_outlined,
-        title: 'Выберите рабочий регион',
-        message:
-            'У вас есть одобренные регионы — выберите один, чтобы начать принимать заказы.',
-        actionLabel: 'Выбрать регион',
+        title: l10n.driverChooseWorkingRegionTitle,
+        message: l10n.driverChooseRegionMessage,
+        actionLabel: l10n.driverChooseRegionButton,
         onAction: () => unawaited(_showRegionPicker()),
       );
     }
     if (region?.isActive == false) {
       return _DriverAvailabilityIssue(
         icon: Icons.pause_circle_outline_rounded,
-        title: 'Регион временно отключён',
-        message: 'Работа в регионе «${region!.name}» сейчас приостановлена. '
-            '${_regions.length > 1 ? 'Попробуйте позже или выберите другой регион.' : 'Попробуйте позже.'}',
-        actionLabel: _regions.length > 1 ? 'Сменить регион' : null,
+        title: l10n.driverRegionTemporarilyDisabledTitle,
+        message: l10n.driverRegionPausedMessage(region!.name) +
+            (_regions.length > 1
+                ? l10n.driverTryLaterOrChangeRegion
+                : l10n.driverTryLater),
+        actionLabel: _regions.length > 1 ? l10n.driverChangeRegionAction : null,
         onAction:
             _regions.length > 1 ? () => unawaited(_showRegionPicker()) : null,
       );
@@ -2928,20 +2930,19 @@ class _DriverShellState extends State<DriverShell> {
     if (region?.status == 'BLOCKED') {
       return _DriverAvailabilityIssue(
         icon: Icons.block_rounded,
-        title: 'Доступ заблокирован',
+        title: l10n.driverAccessBlockedTitle,
         message: region!.blockReason.trim().isEmpty
-            ? 'Работа в регионе «${region.name}» заблокирована администратором.'
+            ? l10n.driverRegionBlockedByAdminMessage(region.name)
             : region.blockReason,
-        actionLabel: 'Написать в поддержку',
+        actionLabel: l10n.driverContactSupportAction,
         onAction: () => _showDriverFullSheet(_driverSupportContent),
       );
     }
     if (region?.status != 'APPROVED') {
       return _DriverAvailabilityIssue(
         icon: Icons.hourglass_top_rounded,
-        title: 'Заявка на рассмотрении',
-        message:
-            'Мы проверяем ваш доступ к региону «${region?.name}». Обычно это занимает немного времени.',
+        title: l10n.driverApplicationUnderReviewTitle,
+        message: l10n.driverApplicationUnderReviewMessage(region?.name ?? ''),
       );
     }
     return null;
@@ -2978,7 +2979,7 @@ class _DriverShellState extends State<DriverShell> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Назад'),
+            child: Text(AppLocalizations.of(dialogContext).back),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
@@ -3048,7 +3049,7 @@ class _DriverShellState extends State<DriverShell> {
   String _driverStatusLabel() {
     final l10n = AppLocalizations.of(context);
     if (_activeOrder?.isActive == true) return l10n.driverStatusBusy;
-    if (!_online && _disabledReason() != null) return 'Недоступен по региону';
+    if (!_online && _disabledReason() != null) return l10n.driverStatusUnavailableByRegion;
     return _online ? l10n.driverStatusOnline : l10n.driverStatusOffline;
   }
 
@@ -3245,6 +3246,7 @@ class _RegionPickerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(18),
@@ -3282,12 +3284,12 @@ class _RegionPickerRow extends StatelessWidget {
             // correct if that contract ever loosens.
             StatusPill(
               label: !region.isActive
-                  ? 'Отключён'
+                  ? l10n.driverRegionStatusDisabled
                   : region.status == 'BLOCKED'
-                      ? 'Заблокирован'
+                      ? l10n.driverRegionStatusBlocked
                       : region.status == 'APPROVED'
-                          ? 'Одобрен'
-                          : 'На рассмотрении',
+                          ? l10n.driverRegionStatusApproved
+                          : l10n.driverRegionStatusUnderReview,
               tone: !region.isActive || region.status == 'BLOCKED'
                   ? StatusTone.danger
                   : region.status == 'APPROVED'
@@ -3405,6 +3407,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenHeight = MediaQuery.sizeOf(context).height;
     final mapHeight = widget.height ?? (screenHeight < 850 ? 330.0 : 420.0);
@@ -3538,8 +3541,8 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
               // overlays this same top-right corner.
               child: _DriverMapBadge(
                 text: widget.activeOrder == null
-                    ? 'Свободный режим'
-                    : 'Активный заказ',
+                    ? l10n.driverFreeModeLabel
+                    : l10n.driverActiveOrderLabel,
               ),
             ),
           ],
@@ -3584,7 +3587,8 @@ class _NavigatorCurrentMarker extends StatelessWidget {
 
 const _driverSelfCarAsset = 'assets/map/driver_car_topview_white.png';
 
-Widget _driverSelfMarkerContent({
+Widget _driverSelfMarkerContent(
+  BuildContext context, {
   double size = 46,
   double rotationRadians = 0,
 }) {
@@ -3598,7 +3602,7 @@ Widget _driverSelfMarkerContent({
   // work to get there.
   final cachePixels = (size * 3).round();
   return Semantics(
-    label: 'Ваш автомобиль',
+    label: AppLocalizations.of(context).driverYourCarSemanticLabel,
     image: true,
     child: Transform.rotate(
       angle: rotationRadians,
@@ -3739,7 +3743,8 @@ class _AnimatedSelfMarkerLayerState extends State<_AnimatedSelfMarkerLayer>
               point: _currentPoint,
               width: 64,
               height: 64,
-              child: _driverSelfMarkerContent(rotationRadians: _currentAngle),
+              child: _driverSelfMarkerContent(context,
+                  rotationRadians: _currentAngle),
             ),
           ],
         );

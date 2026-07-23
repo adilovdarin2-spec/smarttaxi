@@ -3332,4 +3332,89 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get driverCancelTripConfirmText =>
       'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.';
+
+  @override
+  String get back => 'Назад';
+
+  @override
+  String get driverNoApprovedRegionsTitle => 'Нет одобренных регионов';
+
+  @override
+  String get driverChooseWorkingRegionTitle => 'Выберите рабочий регион';
+
+  @override
+  String get driverRegionTemporarilyDisabledTitle => 'Регион временно отключён';
+
+  @override
+  String get driverRegionWorkBlockedTitle =>
+      'Работа в этом регионе заблокирована';
+
+  @override
+  String get driverRegionNotApprovedTitle => 'Вы не одобрены для этого региона';
+
+  @override
+  String get driverNoRegionsMessage =>
+      'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку, чтобы вам открыли доступ к региону.';
+
+  @override
+  String get driverContactSupportAction => 'Написать в поддержку';
+
+  @override
+  String get driverChooseRegionMessage =>
+      'У вас есть одобренные регионы — выберите один, чтобы начать принимать заказы.';
+
+  @override
+  String driverRegionPausedMessage(String region) {
+    return 'Работа в регионе «$region» сейчас приостановлена. ';
+  }
+
+  @override
+  String get driverTryLaterOrChangeRegion =>
+      'Попробуйте позже или выберите другой регион.';
+
+  @override
+  String get driverTryLater => 'Попробуйте позже.';
+
+  @override
+  String get driverChangeRegionAction => 'Сменить регион';
+
+  @override
+  String get driverAccessBlockedTitle => 'Доступ заблокирован';
+
+  @override
+  String driverRegionBlockedByAdminMessage(String region) {
+    return 'Работа в регионе «$region» заблокирована администратором.';
+  }
+
+  @override
+  String get driverApplicationUnderReviewTitle => 'Заявка на рассмотрении';
+
+  @override
+  String driverApplicationUnderReviewMessage(String region) {
+    return 'Мы проверяем ваш доступ к региону «$region». Обычно это занимает немного времени.';
+  }
+
+  @override
+  String get driverStatusUnavailableByRegion => 'Недоступен по региону';
+
+  @override
+  String get driverRegionStatusDisabled => 'Отключён';
+
+  @override
+  String get driverRegionStatusBlocked => 'Заблокирован';
+
+  @override
+  String get driverRegionStatusApproved => 'Одобрен';
+
+  @override
+  String get driverRegionStatusUnderReview => 'На рассмотрении';
+
+  @override
+  String get driverFreeModeLabel => 'Свободный режим';
+
+  @override
+  String get driverActiveOrderLabel => 'Активный заказ';
+
+  @override
+  String get driverYourCarSemanticLabel => 'Ваш автомобиль';
 }

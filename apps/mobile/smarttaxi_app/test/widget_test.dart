@@ -596,14 +596,13 @@ void main() {
       contains(
           '"driverLocationSendFailed": "Не удалось отправить геолокацию. Попробуйте снова."'),
     );
-    expect(driver, contains('Нет одобренных регионов'));
+    expect(driver, contains('driverNoApprovedRegionsTitle'));
     // Copy rewritten by the "stop requiring driver documents" change (round
     // 4, docs/status/mobile-driver-overnight-2026-07-15.md) to point at
     // support instead of an admin-approval/documents message.
     expect(
       driver,
-      contains(
-          'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку'),
+      contains('driverNoRegionsMessage'),
     );
     expect(arb,
         contains('"driverOrdersGoOnlineText": "После выхода на линию заказы появятся здесь."'));
@@ -630,7 +629,7 @@ void main() {
     expect(driver, contains('_DriverFullScreenNavigator'));
     expect(driver, contains('_SmartNavigatorMap'));
     expect(driver, contains('_NavigatorMetric'));
-    expect(driver, contains('Свободный режим'));
+    expect(driver, contains('driverFreeModeLabel'));
     // 2GIS/Yandex/Google external-navigator buttons were removed by explicit
     // request — guard against them silently coming back.
     expect(driver, isNot(contains('2GIS')));

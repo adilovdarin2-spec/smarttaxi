@@ -3337,4 +3337,89 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get driverCancelTripConfirmText =>
       'Тапсырыс басқа жүргізушілерге іздеуге қайтады. Жиі бас тартулар рейтингіңізге әсер етуі мүмкін.';
+
+  @override
+  String get back => 'Артқа';
+
+  @override
+  String get driverNoApprovedRegionsTitle => 'Мақұлданған аймақтар жоқ';
+
+  @override
+  String get driverChooseWorkingRegionTitle => 'Жұмыс аймағын таңдаңыз';
+
+  @override
+  String get driverRegionTemporarilyDisabledTitle =>
+      'Аймақ уақытша сөндірілген';
+
+  @override
+  String get driverRegionWorkBlockedTitle => 'Бұл аймақта жұмыс бұғатталған';
+
+  @override
+  String get driverRegionNotApprovedTitle => 'Сіз бұл аймаққа мақұлданбағансыз';
+
+  @override
+  String get driverNoRegionsMessage =>
+      'Желіге шығу үшін кемінде бір мақұлданған аймақ керек. Аймаққа қолжетімділік ашу үшін қолдау қызметіне жазыңыз.';
+
+  @override
+  String get driverContactSupportAction => 'Қолдау қызметіне жазу';
+
+  @override
+  String get driverChooseRegionMessage =>
+      'Сізде мақұлданған аймақтар бар — тапсырыс қабылдауды бастау үшін біреуін таңдаңыз.';
+
+  @override
+  String driverRegionPausedMessage(String region) {
+    return '«$region» аймағында жұмыс қазір тоқтатылған. ';
+  }
+
+  @override
+  String get driverTryLaterOrChangeRegion =>
+      'Кейінірек көріңіз немесе басқа аймақты таңдаңыз.';
+
+  @override
+  String get driverTryLater => 'Кейінірек көріңіз.';
+
+  @override
+  String get driverChangeRegionAction => 'Аймақты ауыстыру';
+
+  @override
+  String get driverAccessBlockedTitle => 'Қолжетімділік бұғатталған';
+
+  @override
+  String driverRegionBlockedByAdminMessage(String region) {
+    return '«$region» аймағында жұмыс әкімші тарапынан бұғатталған.';
+  }
+
+  @override
+  String get driverApplicationUnderReviewTitle => 'Өтінім қаралуда';
+
+  @override
+  String driverApplicationUnderReviewMessage(String region) {
+    return 'Біз сіздің «$region» аймағына қолжетімділігіңізді тексеріп жатырмыз. Әдетте бұл біраз уақыт алады.';
+  }
+
+  @override
+  String get driverStatusUnavailableByRegion => 'Аймақ бойынша қолжетімсіз';
+
+  @override
+  String get driverRegionStatusDisabled => 'Сөндірілген';
+
+  @override
+  String get driverRegionStatusBlocked => 'Бұғатталған';
+
+  @override
+  String get driverRegionStatusApproved => 'Мақұлданған';
+
+  @override
+  String get driverRegionStatusUnderReview => 'Қаралуда';
+
+  @override
+  String get driverFreeModeLabel => 'Еркін режим';
+
+  @override
+  String get driverActiveOrderLabel => 'Белсенді тапсырыс';
+
+  @override
+  String get driverYourCarSemanticLabel => 'Сіздің көлігіңіз';
 }

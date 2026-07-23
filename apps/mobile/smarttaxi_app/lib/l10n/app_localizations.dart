@@ -6032,6 +6032,156 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.'**
   String get driverCancelTripConfirmText;
+
+  /// No description provided for @back.
+  ///
+  /// In ru, this message translates to:
+  /// **'Назад'**
+  String get back;
+
+  /// No description provided for @driverNoApprovedRegionsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет одобренных регионов'**
+  String get driverNoApprovedRegionsTitle;
+
+  /// No description provided for @driverChooseWorkingRegionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите рабочий регион'**
+  String get driverChooseWorkingRegionTitle;
+
+  /// No description provided for @driverRegionTemporarilyDisabledTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регион временно отключён'**
+  String get driverRegionTemporarilyDisabledTitle;
+
+  /// No description provided for @driverRegionWorkBlockedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа в этом регионе заблокирована'**
+  String get driverRegionWorkBlockedTitle;
+
+  /// No description provided for @driverRegionNotApprovedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не одобрены для этого региона'**
+  String get driverRegionNotApprovedTitle;
+
+  /// No description provided for @driverNoRegionsMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чтобы выйти на линию, нужен хотя бы один одобренный регион. Напишите в поддержку, чтобы вам открыли доступ к региону.'**
+  String get driverNoRegionsMessage;
+
+  /// No description provided for @driverContactSupportAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Написать в поддержку'**
+  String get driverContactSupportAction;
+
+  /// No description provided for @driverChooseRegionMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас есть одобренные регионы — выберите один, чтобы начать принимать заказы.'**
+  String get driverChooseRegionMessage;
+
+  /// No description provided for @driverRegionPausedMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа в регионе «{region}» сейчас приостановлена. '**
+  String driverRegionPausedMessage(String region);
+
+  /// No description provided for @driverTryLaterOrChangeRegion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробуйте позже или выберите другой регион.'**
+  String get driverTryLaterOrChangeRegion;
+
+  /// No description provided for @driverTryLater.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробуйте позже.'**
+  String get driverTryLater;
+
+  /// No description provided for @driverChangeRegionAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить регион'**
+  String get driverChangeRegionAction;
+
+  /// No description provided for @driverAccessBlockedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступ заблокирован'**
+  String get driverAccessBlockedTitle;
+
+  /// No description provided for @driverRegionBlockedByAdminMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа в регионе «{region}» заблокирована администратором.'**
+  String driverRegionBlockedByAdminMessage(String region);
+
+  /// No description provided for @driverApplicationUnderReviewTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка на рассмотрении'**
+  String get driverApplicationUnderReviewTitle;
+
+  /// No description provided for @driverApplicationUnderReviewMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы проверяем ваш доступ к региону «{region}». Обычно это занимает немного времени.'**
+  String driverApplicationUnderReviewMessage(String region);
+
+  /// No description provided for @driverStatusUnavailableByRegion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Недоступен по региону'**
+  String get driverStatusUnavailableByRegion;
+
+  /// No description provided for @driverRegionStatusDisabled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отключён'**
+  String get driverRegionStatusDisabled;
+
+  /// No description provided for @driverRegionStatusBlocked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заблокирован'**
+  String get driverRegionStatusBlocked;
+
+  /// No description provided for @driverRegionStatusApproved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Одобрен'**
+  String get driverRegionStatusApproved;
+
+  /// No description provided for @driverRegionStatusUnderReview.
+  ///
+  /// In ru, this message translates to:
+  /// **'На рассмотрении'**
+  String get driverRegionStatusUnderReview;
+
+  /// No description provided for @driverFreeModeLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свободный режим'**
+  String get driverFreeModeLabel;
+
+  /// No description provided for @driverActiveOrderLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активный заказ'**
+  String get driverActiveOrderLabel;
+
+  /// No description provided for @driverYourCarSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш автомобиль'**
+  String get driverYourCarSemanticLabel;
 }
 
 class _AppLocalizationsDelegate
