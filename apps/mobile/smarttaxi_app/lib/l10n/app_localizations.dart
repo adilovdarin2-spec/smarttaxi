@@ -5852,6 +5852,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось сохранить. Проверьте данные и попробуйте снова.'**
   String get driverErrorSaveFailedGeneric;
+
+  /// No description provided for @driverPayoutMethodNotSetShort.
+  ///
+  /// In ru, this message translates to:
+  /// **'Способ выплаты не указан'**
+  String get driverPayoutMethodNotSetShort;
+
+  /// No description provided for @addButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить'**
+  String get addButton;
+
+  /// No description provided for @driverReviewsCountLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} {count, plural, one{отзыв} few{отзыва} many{отзывов} other{отзывов}}'**
+  String driverReviewsCountLabel(int count);
+
+  /// No description provided for @driverTopTagLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'{tag} · {count}'**
+  String driverTopTagLabel(String tag, int count);
 }
 
 class _AppLocalizationsDelegate

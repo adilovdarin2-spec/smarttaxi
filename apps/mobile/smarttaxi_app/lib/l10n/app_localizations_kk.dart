@@ -3213,4 +3213,25 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get driverErrorSaveFailedGeneric =>
       'Сақтау мүмкін болмады. Деректерді тексеріп, қайта көріңіз.';
+
+  @override
+  String get driverPayoutMethodNotSetShort => 'Төлем әдісі көрсетілмеген';
+
+  @override
+  String get addButton => 'Қосу';
+
+  @override
+  String driverReviewsCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'пікір',
+    );
+    return '$count $_temp0';
+  }
+
+  @override
+  String driverTopTagLabel(String tag, int count) {
+    return '$tag · $count';
+  }
 }

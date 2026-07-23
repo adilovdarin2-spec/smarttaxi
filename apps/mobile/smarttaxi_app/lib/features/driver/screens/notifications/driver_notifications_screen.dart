@@ -15,7 +15,8 @@ class _NotificationDayGroup {
   final List<AppNotification> items;
 }
 
-List<_NotificationDayGroup> _groupByDay(List<AppNotification> items) {
+List<_NotificationDayGroup> _groupByDay(
+    AppLocalizations l10n, List<AppNotification> items) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final yesterday = today.subtract(const Duration(days: 1));
@@ -24,9 +25,9 @@ List<_NotificationDayGroup> _groupByDay(List<AppNotification> items) {
     final date = item.createdAt.toLocal();
     final day = DateTime(date.year, date.month, date.day);
     final label = day == today
-        ? 'Сегодня'
+        ? l10n.passengerTripDateToday
         : day == yesterday
-            ? 'Вчера'
+            ? l10n.passengerTripDateYesterday
             : '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}.${day.year}';
     ordered.putIfAbsent(label, () => []).add(item);
   }
@@ -48,12 +49,12 @@ IconData _iconFor(String type) {
   }
 }
 
-String _timeAgo(DateTime dateTime) {
+String _timeAgo(AppLocalizations l10n, DateTime dateTime) {
   final diff = DateTime.now().difference(dateTime);
-  if (diff.inMinutes < 1) return 'только что';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} мин назад';
-  if (diff.inHours < 24) return '${diff.inHours} ч назад';
-  return '${diff.inDays} дн назад';
+  if (diff.inMinutes < 1) return l10n.passengerTimeAgoJustNow;
+  if (diff.inMinutes < 60) return l10n.passengerTimeAgoMinutes(diff.inMinutes);
+  if (diff.inHours < 24) return l10n.passengerTimeAgoHours(diff.inHours);
+  return l10n.passengerTimeAgoDays(diff.inDays);
 }
 
 class DriverNotificationsScreen extends StatefulWidget {
@@ -143,7 +144,7 @@ class _DriverNotificationsScreenState
               icon: Icons.notifications_none_rounded,
             )
           else
-            for (final group in _groupByDay(_items)) ...[
+            for (final group in _groupByDay(l10n, _items)) ...[
               Text(group.label,
                   style: SmartTaxiTextStyles.caption
                       .copyWith(color: palette.textSecondary)),
@@ -168,6 +169,7 @@ class _DriverNotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -239,7 +241,7 @@ class _DriverNotificationTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _timeAgo(notification.createdAt),
+                  _timeAgo(l10n, notification.createdAt),
                   // textSecondary, not textMuted — textMuted's contrast
                   // against the background fails WCAG AA (~2.5:1).
                   style: TextStyle(

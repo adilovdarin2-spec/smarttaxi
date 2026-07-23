@@ -1044,5 +1044,11 @@
   "driverErrorInvalidCardNumber": "Дұрыс карта нөмірін енгізіңіз",
   "driverErrorPhoneRequiredGeneric": "Телефон нөмірін енгізіңіз",
   "driverErrorCardTypo": "Карта нөмірінде қате бар сияқты — тексеріп, қайта көріңіз",
-  "driverErrorSaveFailedGeneric": "Сақтау мүмкін болмады. Деректерді тексеріп, қайта көріңіз."
+  "driverErrorSaveFailedGeneric": "Сақтау мүмкін болмады. Деректерді тексеріп, қайта көріңіз.",
+  "driverPayoutMethodNotSetShort": "Төлем әдісі көрсетілмеген",
+  "addButton": "Қосу",
+  "driverReviewsCountLabel": "{count} {count, plural, other{пікір}}",
+  "@driverReviewsCountLabel": {"placeholders": {"count": {"type": "int"}}},
+  "driverTopTagLabel": "{tag} · {count}",
+  "@driverTopTagLabel": {"placeholders": {"tag": {"type": "String"}, "count": {"type": "int"}}}
 }

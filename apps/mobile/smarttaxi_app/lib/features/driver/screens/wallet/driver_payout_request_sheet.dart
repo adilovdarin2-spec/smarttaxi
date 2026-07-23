@@ -72,17 +72,17 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
     if (saved == true) unawaited(_loadDetails());
   }
 
-  String _payoutDestinationText() {
+  String _payoutDestinationText(AppLocalizations l10n) {
     final details = _details;
     if (details?.cardNumber != null && details!.cardNumber!.isNotEmpty) {
       final card = details.cardNumber!;
       final last4 = card.length >= 4 ? card.substring(card.length - 4) : card;
-      return 'Карта •• •• •• $last4';
+      return l10n.driverPayoutCardSummary(last4);
     }
     if (details?.phone != null && details!.phone!.isNotEmpty) {
-      return 'Kaspi-перевод: ${details.phone}';
+      return l10n.driverPayoutKaspiSummary(details.phone!);
     }
-    return 'Способ выплаты не указан';
+    return l10n.driverPayoutMethodNotSetShort;
   }
 
   Future<void> _submit() async {
@@ -198,8 +198,8 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
                     Expanded(
                       child: Text(
                         _loadingDetails
-                            ? 'Загрузка...'
-                            : _payoutDestinationText(),
+                            ? l10n.loading
+                            : _payoutDestinationText(l10n),
                         style: TextStyle(
                           color: palette.text,
                           fontSize: 13.5,
@@ -208,7 +208,7 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
                       ),
                     ),
                     Text(
-                      hasDestination ? 'Изменить' : 'Добавить',
+                      hasDestination ? l10n.passengerChangeButton : l10n.addButton,
                       style: TextStyle(
                         color: palette.goldDeep,
                         fontSize: 12.5,
@@ -228,7 +228,7 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
           DriverGradientButton(
             text: l10n.driverPayoutSubmitButton,
             loading: _submitting,
-            loadingText: 'Отправляем...',
+            loadingText: l10n.driverSupportSendingButton,
             onTap: _submit,
           ),
         ],

@@ -1045,5 +1045,11 @@
   "driverErrorInvalidCardNumber": "Введите корректный номер карты",
   "driverErrorPhoneRequiredGeneric": "Введите номер телефона",
   "driverErrorCardTypo": "Похоже, в номере карты опечатка — проверьте и попробуйте снова",
-  "driverErrorSaveFailedGeneric": "Не удалось сохранить. Проверьте данные и попробуйте снова."
+  "driverErrorSaveFailedGeneric": "Не удалось сохранить. Проверьте данные и попробуйте снова.",
+  "driverPayoutMethodNotSetShort": "Способ выплаты не указан",
+  "addButton": "Добавить",
+  "driverReviewsCountLabel": "{count} {count, plural, one{отзыв} few{отзыва} many{отзывов} other{отзывов}}",
+  "@driverReviewsCountLabel": {"placeholders": {"count": {"type": "int"}}},
+  "driverTopTagLabel": "{tag} · {count}",
+  "@driverTopTagLabel": {"placeholders": {"tag": {"type": "String"}, "count": {"type": "int"}}}
 }

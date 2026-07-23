@@ -103,7 +103,8 @@ class _DriverRatingScreenState extends State<DriverRatingScreen> {
                 children: [
                   for (final tag in _summary!.topTags)
                     Chip(
-                      label: Text('${tag.tag} · ${tag.count}'),
+                      label: Text(l10n.driverTopTagLabel(
+                          _ratingTagLabel(l10n, tag.tag), tag.count)),
                       backgroundColor: palette.goldSurface,
                       side: BorderSide.none,
                     ),
@@ -134,6 +135,7 @@ class _RatingHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final maxCount = summary.maxBreakdownCount == 0 ? 1 : summary.maxBreakdownCount;
     return Container(
       width: double.infinity,
@@ -161,7 +163,7 @@ class _RatingHeroCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  '${summary.reviewCount} ${_reviewsWord(summary.reviewCount)}',
+                  l10n.driverReviewsCountLabel(summary.reviewCount),
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontWeight: FontWeight.w700,
@@ -186,18 +188,23 @@ class _RatingHeroCard extends StatelessWidget {
   }
 }
 
-// Russian-only plural grammar, not yet localized: Kazakh's plural rules
-// differ enough (and gen-l10n's ICU `plural` support for `kk` wasn't
-// verifiable without running `flutter gen-l10n` in this environment) that
-// guessing at the correct Kazakh forms here risked shipping wrong grammar
-// instead of just an untranslated string. Revisit once that can be checked.
-String _reviewsWord(int count) {
-  final mod100 = count % 100;
-  final mod10 = count % 10;
-  if (mod100 >= 11 && mod100 <= 14) return 'отзывов';
-  if (mod10 == 1) return 'отзыв';
-  if (mod10 >= 2 && mod10 <= 4) return 'отзыва';
-  return 'отзывов';
+// Maps the stable English keys the driver rating tags are now stored as
+// (see DriverTripCompletionCard._positiveTags/_negativeTags in
+// driver_order_widgets.dart) back to a localized display label. Falls back
+// to the raw tag for older reviews rated before that refactor, whose tags
+// are still free-text Russian in the database.
+String _ratingTagLabel(AppLocalizations l10n, String tag) {
+  return {
+        'polite_passenger': l10n.driverRatingTagPolitePassenger,
+        'waited_at_pickup': l10n.driverRatingTagWaitedAtPickup,
+        'exact_address': l10n.driverRatingTagExactAddress,
+        'on_time_exit': l10n.driverRatingTagOnTimeExit,
+        'long_no_show': l10n.driverRatingTagLongNoShow,
+        'rude_communication': l10n.driverRatingTagRudeCommunication,
+        'wrong_address': l10n.driverRatingTagWrongAddress,
+        'dirty_interior': l10n.driverRatingTagDirtyInterior,
+      }[tag] ??
+      tag;
 }
 
 class _BreakdownBar extends StatelessWidget {

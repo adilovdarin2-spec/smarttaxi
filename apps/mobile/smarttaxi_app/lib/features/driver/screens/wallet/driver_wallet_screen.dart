@@ -19,12 +19,12 @@ String _money(int value) {
   return '${value < 0 ? '-' : ''}$text ₸';
 }
 
-String _timeAgo(DateTime dateTime) {
+String _timeAgo(AppLocalizations l10n, DateTime dateTime) {
   final diff = DateTime.now().difference(dateTime);
-  if (diff.inMinutes < 1) return 'только что';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} мин назад';
-  if (diff.inHours < 24) return '${diff.inHours} ч назад';
-  return '${diff.inDays} дн назад';
+  if (diff.inMinutes < 1) return l10n.passengerTimeAgoJustNow;
+  if (diff.inMinutes < 60) return l10n.passengerTimeAgoMinutes(diff.inMinutes);
+  if (diff.inHours < 24) return l10n.passengerTimeAgoHours(diff.inHours);
+  return l10n.passengerTimeAgoDays(diff.inDays);
 }
 
 StatusTone _payoutTone(PayoutRequest request) {
@@ -358,7 +358,7 @@ class _PayoutRequestRow extends StatelessWidget {
                         fontSize: 15,
                         color: palette.text)),
                 const SizedBox(height: 2),
-                Text(_timeAgo(request.createdAt),
+                Text(_timeAgo(l10n, request.createdAt),
                     style:
                         TextStyle(color: palette.textMuted, fontSize: 11.5)),
                 if (request.isRejected && request.rejectionReason != null) ...[
@@ -440,8 +440,8 @@ class _WalletTransactionRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   transaction.orderShortId != null
-                      ? '№ ${transaction.orderShortId} · ${_timeAgo(transaction.createdAt)}'
-                      : _timeAgo(transaction.createdAt),
+                      ? '№ ${transaction.orderShortId} · ${_timeAgo(l10n, transaction.createdAt)}'
+                      : _timeAgo(l10n, transaction.createdAt),
                   style:
                       TextStyle(color: palette.textSecondary, fontSize: 11.5),
                 ),

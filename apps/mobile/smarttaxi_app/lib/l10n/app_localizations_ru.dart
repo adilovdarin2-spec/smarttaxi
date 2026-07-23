@@ -3205,4 +3205,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get driverErrorSaveFailedGeneric =>
       'Не удалось сохранить. Проверьте данные и попробуйте снова.';
+
+  @override
+  String get driverPayoutMethodNotSetShort => 'Способ выплаты не указан';
+
+  @override
+  String get addButton => 'Добавить';
+
+  @override
+  String driverReviewsCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'отзывов',
+      many: 'отзывов',
+      few: 'отзыва',
+      one: 'отзыв',
+    );
+    return '$count $_temp0';
+  }
+
+  @override
+  String driverTopTagLabel(String tag, int count) {
+    return '$tag · $count';
+  }
 }
