@@ -1645,6 +1645,28 @@ class AppLocalizationsKk extends AppLocalizations {
       'Бұл мекенжай қызмет көрсету аймағынан тыс. Басқасын таңдаңыз.';
 
   @override
+  String get passengerMapPointLabel => 'Картадағы нүкте';
+
+  @override
+  String get passengerResolvingAddressLabel => 'Мекенжай анықталуда...';
+
+  @override
+  String get passengerRegionNotServedYetLabel =>
+      'Бұл аймақта әзірге қызмет көрсетілмейді';
+
+  @override
+  String get passengerPointOutsideRegionError =>
+      'Бұл нүкте таңдалған аймақтан тыс. Аймақты ауыстырыңыз немесе SmartTaxi аймағының ішінен нүкте таңдаңыз.';
+
+  @override
+  String get passengerDriverAppSubmittedMessage =>
+      'Өтінім жіберілді. Әкімші деректерді тексереді.';
+
+  @override
+  String get passengerServerUnavailableError =>
+      'Сервер уақытша қолжетімсіз. Байланыс қалпына келгенде маршрутты таңдай аласыз.';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
 

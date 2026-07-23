@@ -304,7 +304,7 @@ class _PassengerShellState extends State<PassengerShell>
     if (!submitted || !mounted) return;
     setState(
       () => _driverApplicationMessage ??=
-          'Заявка отправлена. Администратор проверит данные.',
+          AppLocalizations.of(context).passengerDriverAppSubmittedMessage,
     );
   }
 
@@ -363,8 +363,7 @@ class _PassengerShellState extends State<PassengerShell>
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error =
-              'Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.';
+          _error = AppLocalizations.of(context).passengerServerUnavailableError;
         });
       }
     }
@@ -1410,7 +1409,7 @@ class _PassengerShellState extends State<PassengerShell>
         _target = target;
         _mapPointPickerActive = true;
         _mapCenter = center;
-        _mapPickerAddressLabel = 'Определяем адрес...';
+        _mapPickerAddressLabel = l10n.passengerResolvingAddressLabel;
         _mapPickerAddressLoading = true;
         _error = null;
       });
@@ -1482,12 +1481,13 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _resolveMapPickerAddress(LatLng point) async {
+    final l10n = AppLocalizations.of(context);
     final requestId = ++_mapPickerReverseRequest;
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
-    var label = 'Точка на карте';
+    var label = l10n.passengerMapPointLabel;
     final selectedRegion = _selectedRegion;
     if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
-      label = 'Пока не работаем в этом районе';
+      label = l10n.passengerRegionNotServedYetLabel;
     } else {
       try {
         final address = await widget.api.reverseAddress(coordinate);
@@ -1508,21 +1508,21 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _applyMapTap(LatLng point, {String? preferredLabel}) async {
+    final l10n = AppLocalizations.of(context);
     final target = _target;
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
     final selectedRegion = _selectedRegion;
     if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
       setState(() {
-        _error =
-            'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.';
+        _error = l10n.passengerPointOutsideRegionError;
       });
       return;
     }
     var resolvedLabel = preferredLabel?.trim();
     if (resolvedLabel == null ||
         resolvedLabel.isEmpty ||
-        resolvedLabel == 'Определяем адрес...') {
-      resolvedLabel = 'Точка на карте';
+        resolvedLabel == l10n.passengerResolvingAddressLabel) {
+      resolvedLabel = l10n.passengerMapPointLabel;
       try {
         final address = await widget.api.reverseAddress(coordinate);
         if (address != null && address.label.trim().isNotEmpty) {
@@ -1530,7 +1530,7 @@ class _PassengerShellState extends State<PassengerShell>
         }
       } catch (_) {}
     }
-    final label = resolvedLabel ?? 'Точка на карте';
+    final label = resolvedLabel ?? l10n.passengerMapPointLabel;
     await _applyPoint(
       target,
       coordinate,
@@ -1983,7 +1983,7 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       setState(
         () => _driverApplicationMessage =
-            'Заявка отправлена. Администратор проверит данные.',
+            AppLocalizations.of(context).passengerDriverAppSubmittedMessage,
       );
       unawaited(widget.authStore.saveDriverApplicationSubmitted());
       if (applicationId.isNotEmpty) {

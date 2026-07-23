@@ -1631,6 +1631,28 @@ class AppLocalizationsRu extends AppLocalizations {
       'Этот адрес вне зоны обслуживания. Выберите другой.';
 
   @override
+  String get passengerMapPointLabel => 'Точка на карте';
+
+  @override
+  String get passengerResolvingAddressLabel => 'Определяем адрес...';
+
+  @override
+  String get passengerRegionNotServedYetLabel =>
+      'Пока не работаем в этом районе';
+
+  @override
+  String get passengerPointOutsideRegionError =>
+      'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.';
+
+  @override
+  String get passengerDriverAppSubmittedMessage =>
+      'Заявка отправлена. Администратор проверит данные.';
+
+  @override
+  String get passengerServerUnavailableError =>
+      'Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 

@@ -3021,6 +3021,42 @@ abstract class AppLocalizations {
   /// **'Этот адрес вне зоны обслуживания. Выберите другой.'**
   String get passengerAddressOutsideServiceZoneError;
 
+  /// No description provided for @passengerMapPointLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка на карте'**
+  String get passengerMapPointLabel;
+
+  /// No description provided for @passengerResolvingAddressLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Определяем адрес...'**
+  String get passengerResolvingAddressLabel;
+
+  /// No description provided for @passengerRegionNotServedYetLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока не работаем в этом районе'**
+  String get passengerRegionNotServedYetLabel;
+
+  /// No description provided for @passengerPointOutsideRegionError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.'**
+  String get passengerPointOutsideRegionError;
+
+  /// No description provided for @passengerDriverAppSubmittedMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка отправлена. Администратор проверит данные.'**
+  String get passengerDriverAppSubmittedMessage;
+
+  /// No description provided for @passengerServerUnavailableError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.'**
+  String get passengerServerUnavailableError;
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:

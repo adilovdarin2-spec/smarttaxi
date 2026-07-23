@@ -785,7 +785,7 @@ void main() {
       expect(passenger, contains('l10n.passengerDriverSubmitButton'));
       expect(
         passenger,
-        contains('Заявка отправлена. Администратор проверит данные.'),
+        contains('passengerDriverAppSubmittedMessage'),
       );
     },
   );
