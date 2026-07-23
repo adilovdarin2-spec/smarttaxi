@@ -1653,6 +1653,43 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.';
 
   @override
+  String get passengerRecurringSentToDriverToast =>
+      'Заявка отправлена водителю, ждём подтверждения';
+
+  @override
+  String get passengerRecurringCancelledToast => 'Регулярная поездка отменена';
+
+  @override
+  String get passengerRecurringPausedToast =>
+      'Регулярная поездка приостановлена';
+
+  @override
+  String get passengerRecurringResumedToast =>
+      'Регулярная поездка возобновлена';
+
+  @override
+  String get passengerAddressAddedToFavoritesToast =>
+      'Адрес добавлен в избранное';
+
+  @override
+  String get passengerAddressRemovedFromFavoritesToast =>
+      'Адрес удалён из избранного';
+
+  @override
+  String get passengerDriverBlockedToast => 'Водитель заблокирован';
+
+  @override
+  String get passengerDriverAddedToFavoritesToast =>
+      'Водитель добавлен в избранное';
+
+  @override
+  String get passengerEntryDeletedToast => 'Запись удалена';
+
+  @override
+  String get passengerActiveRegionsNotLoadedError =>
+      'Активные регионы пока не загружены';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
 

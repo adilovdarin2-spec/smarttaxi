@@ -479,7 +479,7 @@ class _PassengerShellState extends State<PassengerShell>
       if (mounted) Navigator.of(context).pop();
       AppToast.showSuccess(
         context,
-        'Заявка отправлена водителю, ждём подтверждения',
+        AppLocalizations.of(context).passengerRecurringSentToDriverToast,
       );
     } catch (error) {
       if (!mounted) return;
@@ -506,13 +506,14 @@ class _PassengerShellState extends State<PassengerShell>
             .map((item) => item.id == updated.id ? updated : item)
             .toList();
       });
+      final l10n = AppLocalizations.of(context);
       AppToast.showSuccess(
         context,
         status == 'CANCELLED'
-            ? 'Регулярная поездка отменена'
+            ? l10n.passengerRecurringCancelledToast
             : status == 'PAUSED'
-                ? 'Регулярная поездка приостановлена'
-                : 'Регулярная поездка возобновлена',
+                ? l10n.passengerRecurringPausedToast
+                : l10n.passengerRecurringResumedToast,
       );
     } catch (error) {
       if (!mounted) return;
@@ -561,7 +562,8 @@ class _PassengerShellState extends State<PassengerShell>
       setState(
           () => _favoriteAddresses = [address, ..._favoriteAddresses]);
       if (mounted) Navigator.of(context).pop();
-      AppToast.showSuccess(context, 'Адрес добавлен в избранное');
+      AppToast.showSuccess(
+          context, AppLocalizations.of(context).passengerAddressAddedToFavoritesToast);
     } catch (error) {
       if (!mounted) return;
       AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
@@ -578,7 +580,8 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       setState(() => _favoriteAddresses =
           _favoriteAddresses.where((item) => item.id != address.id).toList());
-      AppToast.showSuccess(context, 'Адрес удалён из избранного');
+      AppToast.showSuccess(
+          context, AppLocalizations.of(context).passengerAddressRemovedFromFavoritesToast);
     } catch (error) {
       if (!mounted) return;
       AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
@@ -625,11 +628,12 @@ class _PassengerShellState extends State<PassengerShell>
         ];
       });
       if (mounted) Navigator.of(context).pop();
+      final l10n = AppLocalizations.of(context);
       AppToast.showSuccess(
         context,
         type == 'BLOCKED'
-            ? 'Водитель заблокирован'
-            : 'Водитель добавлен в избранное',
+            ? l10n.passengerDriverBlockedToast
+            : l10n.passengerDriverAddedToFavoritesToast,
       );
     } catch (error) {
       if (!mounted) return;
@@ -648,7 +652,8 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() => _driverPreferences = _driverPreferences
           .where((item) => item.driverId != preference.driverId)
           .toList());
-      AppToast.showSuccess(context, 'Запись удалена');
+      AppToast.showSuccess(
+          context, AppLocalizations.of(context).passengerEntryDeletedToast);
     } catch (error) {
       if (!mounted) return;
       AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
@@ -830,12 +835,15 @@ class _PassengerShellState extends State<PassengerShell>
   Future<RegionOption?> _chooseRegion({
     bool askLocationAfter = false,
     bool resetRoute = true,
-    String title = 'Выберите регион',
-    String subtitle = 'Выберите регион, где хотите заказать такси.',
+    String? title,
+    String? subtitle,
   }) async {
+    final l10n = AppLocalizations.of(context);
+    final resolvedTitle = title ?? l10n.passengerChooseRegionTitle;
+    final resolvedSubtitle = subtitle ?? l10n.passengerChooseRegionSubtitle;
     if (_regions.isEmpty) {
       if (!mounted) return null;
-      AppToast.showError(context, 'Активные регионы пока не загружены');
+      AppToast.showError(context, l10n.passengerActiveRegionsNotLoadedError);
       return null;
     }
     RegionOption? selected;
@@ -850,8 +858,8 @@ class _PassengerShellState extends State<PassengerShell>
         builder: (_) => _RegionSelectSheet(
           regions: _regions,
           selectedId: _selectedRegion?.id,
-          title: title,
-          subtitle: subtitle,
+          title: resolvedTitle,
+          subtitle: resolvedSubtitle,
         ),
       );
     }

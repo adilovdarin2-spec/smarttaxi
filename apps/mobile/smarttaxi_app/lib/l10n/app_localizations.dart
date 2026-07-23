@@ -3057,6 +3057,66 @@ abstract class AppLocalizations {
   /// **'Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.'**
   String get passengerServerUnavailableError;
 
+  /// No description provided for @passengerRecurringSentToDriverToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка отправлена водителю, ждём подтверждения'**
+  String get passengerRecurringSentToDriverToast;
+
+  /// No description provided for @passengerRecurringCancelledToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулярная поездка отменена'**
+  String get passengerRecurringCancelledToast;
+
+  /// No description provided for @passengerRecurringPausedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулярная поездка приостановлена'**
+  String get passengerRecurringPausedToast;
+
+  /// No description provided for @passengerRecurringResumedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулярная поездка возобновлена'**
+  String get passengerRecurringResumedToast;
+
+  /// No description provided for @passengerAddressAddedToFavoritesToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Адрес добавлен в избранное'**
+  String get passengerAddressAddedToFavoritesToast;
+
+  /// No description provided for @passengerAddressRemovedFromFavoritesToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Адрес удалён из избранного'**
+  String get passengerAddressRemovedFromFavoritesToast;
+
+  /// No description provided for @passengerDriverBlockedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель заблокирован'**
+  String get passengerDriverBlockedToast;
+
+  /// No description provided for @passengerDriverAddedToFavoritesToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель добавлен в избранное'**
+  String get passengerDriverAddedToFavoritesToast;
+
+  /// No description provided for @passengerEntryDeletedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запись удалена'**
+  String get passengerEntryDeletedToast;
+
+  /// No description provided for @passengerActiveRegionsNotLoadedError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активные регионы пока не загружены'**
+  String get passengerActiveRegionsNotLoadedError;
+
   /// No description provided for @passengerLocationServiceDisabledError.
   ///
   /// In ru, this message translates to:

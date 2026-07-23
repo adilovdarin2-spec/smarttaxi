@@ -1667,6 +1667,42 @@ class AppLocalizationsKk extends AppLocalizations {
       'Сервер уақытша қолжетімсіз. Байланыс қалпына келгенде маршрутты таңдай аласыз.';
 
   @override
+  String get passengerRecurringSentToDriverToast =>
+      'Өтінім жүргізушіге жіберілді, растауды күтудеміз';
+
+  @override
+  String get passengerRecurringCancelledToast => 'Тұрақты сапар болдырылмады';
+
+  @override
+  String get passengerRecurringPausedToast => 'Тұрақты сапар аялдатылды';
+
+  @override
+  String get passengerRecurringResumedToast =>
+      'Тұрақты сапар қайта жалғастырылды';
+
+  @override
+  String get passengerAddressAddedToFavoritesToast =>
+      'Мекенжай таңдаулыға қосылды';
+
+  @override
+  String get passengerAddressRemovedFromFavoritesToast =>
+      'Мекенжай таңдаулыдан алынды';
+
+  @override
+  String get passengerDriverBlockedToast => 'Жүргізуші бұғатталды';
+
+  @override
+  String get passengerDriverAddedToFavoritesToast =>
+      'Жүргізуші таңдаулыға қосылды';
+
+  @override
+  String get passengerEntryDeletedToast => 'Жазба жойылды';
+
+  @override
+  String get passengerActiveRegionsNotLoadedError =>
+      'Белсенді аймақтар әлі жүктелген жоқ';
+
+  @override
   String get passengerLocationServiceDisabledError =>
       'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
 
