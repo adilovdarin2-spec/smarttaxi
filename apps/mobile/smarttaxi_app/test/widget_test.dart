@@ -693,20 +693,17 @@ void main() {
     expect(models, contains("'POTHOLE'"));
     expect(models, contains("'SCHOOL_ZONE'"));
     expect(models, contains('confidenceScore'));
-    expect(driver, contains('Дорожные события'));
-    expect(
-        driver,
-        contains(
-            'Сообщения нужны для безопасности движения и соблюдения правил.'));
-    expect(driver, contains('Пока нет дорожных событий рядом'));
-    expect(driver, contains('Нажмите на карту, чтобы выбрать точку события'));
+    expect(driver, contains('driverRoadAlertsTitle'));
+    expect(driver, contains('driverRoadAlertsSubtitle'));
+    expect(driver, contains('driverNoNearbyAlertsTitle'));
+    expect(driver, contains('driverTapMapToSelectAlertPoint'));
     expect(models, contains('Камера скорости'));
     expect(driver, contains('_RoadAlertMap'));
     expect(driver, contains('FlutterMap'));
     expect(driver, contains('MarkerLayer'));
     expect(driver, contains("label: const Text('GPS')"));
     expect(driver, contains('На месте'));
-    expect(driver, contains('Событие скрыто из активного списка.'));
+    expect(driver, contains('driverAlertHiddenFromList'));
     expect(driver, isNot(contains('\u26d4')));
     final unsafeIntent = 'police ${'eva'}sion';
     final unsafeRouting = 'avoid ${'pol'}ice';
