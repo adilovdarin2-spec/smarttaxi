@@ -4040,6 +4040,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _driverPreferencesScreen() {
+    final l10n = AppLocalizations.of(context);
     final favorites =
         _driverPreferences.where((p) => p.isFavorite).toList(growable: false);
     final blocked =
@@ -4053,15 +4054,15 @@ class _PassengerShellState extends State<PassengerShell>
           parent: BouncingScrollPhysics(),
         ),
         children: [
-          const _TitleBlock(
-            title: 'Водители',
-            text: 'Отмечайте любимых водителей и блокируйте нежелательных',
+          _TitleBlock(
+            title: l10n.passengerDrawerDrivers,
+            text: l10n.passengerDriverPrefsSubtitle,
           ),
           const SizedBox(height: 16),
           _GoldCtaButton(
             enabled: !_settingDriverPreference,
             loading: false,
-            text: 'Добавить из истории поездок',
+            text: l10n.passengerDriverPrefsAddButton,
             onTap: _openAddDriverPreferenceSheet,
           ),
           const SizedBox(height: 16),
@@ -4070,23 +4071,22 @@ class _PassengerShellState extends State<PassengerShell>
           else if (_driverPreferencesError && _driverPreferences.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Не удалось загрузить',
-              text: 'Потяните экран вниз, чтобы попробовать снова.',
-              action: 'Повторить',
+              title: l10n.loadFailedTitle,
+              text: l10n.pullToRetry,
+              action: l10n.retry,
               onAction: () => unawaited(_loadDriverPreferences()),
             )
           else if (_driverPreferences.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.people_alt_outlined,
-              title: 'Пока нет отметок',
-              text:
-                  'Отметьте водителя из истории поездок как избранного или заблокируйте нежелательного.',
+              title: l10n.passengerDriverPrefsEmptyTitle,
+              text: l10n.passengerDriverPrefsEmptyText,
             )
           else ...[
             if (favorites.isNotEmpty) ...[
               _SectionLabel(
-                title: 'Избранные',
-                text: 'Регулярные поездки предложат их в первую очередь',
+                title: l10n.passengerDriverPrefsFavoritesTitle,
+                text: l10n.passengerDriverPrefsFavoritesText,
               ),
               const SizedBox(height: 10),
               ...favorites.map(
@@ -4104,8 +4104,8 @@ class _PassengerShellState extends State<PassengerShell>
             ],
             if (blocked.isNotEmpty) ...[
               _SectionLabel(
-                title: 'Заблокированные',
-                text: 'Не будут предложены на регулярные поездки',
+                title: l10n.passengerDriverPrefsBlockedTitle,
+                text: l10n.passengerDriverPrefsBlockedText,
               ),
               const SizedBox(height: 10),
               ...blocked.map(
@@ -4128,6 +4128,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _referralsScreen() {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final summary = _referralSummary;
     return RefreshIndicator(
       color: context.palette.goldDeep,
@@ -4138,9 +4139,9 @@ class _PassengerShellState extends State<PassengerShell>
           parent: BouncingScrollPhysics(),
         ),
         children: [
-          const _TitleBlock(
-            title: 'Пригласить друзей',
-            text: 'Делитесь кодом и получайте бонусы за каждого друга',
+          _TitleBlock(
+            title: l10n.passengerDrawerReferrals,
+            text: l10n.passengerReferralsSubtitle,
           ),
           const SizedBox(height: 16),
           if (_referralSummaryLoading && summary == null)
@@ -4153,9 +4154,9 @@ class _PassengerShellState extends State<PassengerShell>
           else if (_referralSummaryError && summary == null)
             EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Не удалось загрузить',
-              text: 'Потяните экран вниз, чтобы попробовать снова.',
-              action: 'Повторить',
+              title: l10n.loadFailedTitle,
+              text: l10n.pullToRetry,
+              action: l10n.retry,
               onAction: () => unawaited(_loadReferralSummary()),
             )
           else if (summary != null) ...[
@@ -4164,7 +4165,7 @@ class _PassengerShellState extends State<PassengerShell>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Ваш код',
+                    l10n.passengerReferralsYourCode,
                     style: TextStyle(
                       color: palette.textSecondary,
                       fontSize: 12,
@@ -4185,12 +4186,13 @@ class _PassengerShellState extends State<PassengerShell>
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Скопировать',
+                        tooltip: l10n.copyButton,
                         onPressed: () async {
                           await Clipboard.setData(
                               ClipboardData(text: summary.code));
                           if (!mounted) return;
-                          AppToast.showSuccess(context, 'Код скопирован');
+                          AppToast.showSuccess(
+                              context, l10n.passengerReferralsCodeCopied);
                         },
                         icon: const Icon(Icons.copy_rounded),
                       ),
@@ -4202,9 +4204,9 @@ class _PassengerShellState extends State<PassengerShell>
                     child: _GoldCtaButton(
                       enabled: true,
                       loading: false,
-                      text: 'Поделиться кодом',
+                      text: l10n.passengerReferralsShareCode,
                       onTap: () => unawaited(Share.share(
-                        'Заказывай такси в SmartTaxi по моему коду ${summary.code} и получи бонус на первую поездку!',
+                        l10n.passengerReferralsShareMessage(summary.code),
                       )),
                     ),
                   ),
@@ -4220,7 +4222,7 @@ class _PassengerShellState extends State<PassengerShell>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Приглашено',
+                          l10n.passengerReferralsInvited,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 12,
@@ -4246,7 +4248,7 @@ class _PassengerShellState extends State<PassengerShell>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Заработано',
+                          l10n.passengerReferralsEarned,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 12,
@@ -4270,9 +4272,8 @@ class _PassengerShellState extends State<PassengerShell>
             const SizedBox(height: 14),
             _CompactNotice(
               icon: Icons.info_outline_rounded,
-              title: 'Как это работает',
-              text:
-                  'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.',
+              title: l10n.passengerReferralsHowItWorksTitle,
+              text: l10n.passengerReferralsHowItWorksText,
               dark: Theme.of(context).brightness == Brightness.dark,
             ),
           ],

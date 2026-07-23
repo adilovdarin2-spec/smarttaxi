@@ -504,6 +504,68 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerDriverSubmitButton => 'Отправить заявку';
 
   @override
+  String get passengerDriverPrefsSubtitle =>
+      'Отмечайте любимых водителей и блокируйте нежелательных';
+
+  @override
+  String get passengerDriverPrefsAddButton => 'Добавить из истории поездок';
+
+  @override
+  String get passengerDriverPrefsEmptyTitle => 'Пока нет отметок';
+
+  @override
+  String get passengerDriverPrefsEmptyText =>
+      'Отметьте водителя из истории поездок как избранного или заблокируйте нежелательного.';
+
+  @override
+  String get passengerDriverPrefsFavoritesTitle => 'Избранные';
+
+  @override
+  String get passengerDriverPrefsFavoritesText =>
+      'Регулярные поездки предложат их в первую очередь';
+
+  @override
+  String get passengerDriverPrefsBlockedTitle => 'Заблокированные';
+
+  @override
+  String get passengerDriverPrefsBlockedText =>
+      'Не будут предложены на регулярные поездки';
+
+  @override
+  String get passengerReferralsSubtitle =>
+      'Делитесь кодом и получайте бонусы за каждого друга';
+
+  @override
+  String get passengerReferralsYourCode => 'Ваш код';
+
+  @override
+  String get copyButton => 'Скопировать';
+
+  @override
+  String get passengerReferralsCodeCopied => 'Код скопирован';
+
+  @override
+  String get passengerReferralsShareCode => 'Поделиться кодом';
+
+  @override
+  String passengerReferralsShareMessage(String code) {
+    return 'Заказывай такси в SmartTaxi по моему коду $code и получи бонус на первую поездку!';
+  }
+
+  @override
+  String get passengerReferralsInvited => 'Приглашено';
+
+  @override
+  String get passengerReferralsEarned => 'Заработано';
+
+  @override
+  String get passengerReferralsHowItWorksTitle => 'Как это работает';
+
+  @override
+  String get passengerReferralsHowItWorksText =>
+      'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

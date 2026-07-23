@@ -1004,6 +1004,114 @@ abstract class AppLocalizations {
   /// **'Отправить заявку'**
   String get passengerDriverSubmitButton;
 
+  /// No description provided for @passengerDriverPrefsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмечайте любимых водителей и блокируйте нежелательных'**
+  String get passengerDriverPrefsSubtitle;
+
+  /// No description provided for @passengerDriverPrefsAddButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить из истории поездок'**
+  String get passengerDriverPrefsAddButton;
+
+  /// No description provided for @passengerDriverPrefsEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет отметок'**
+  String get passengerDriverPrefsEmptyTitle;
+
+  /// No description provided for @passengerDriverPrefsEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отметьте водителя из истории поездок как избранного или заблокируйте нежелательного.'**
+  String get passengerDriverPrefsEmptyText;
+
+  /// No description provided for @passengerDriverPrefsFavoritesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранные'**
+  String get passengerDriverPrefsFavoritesTitle;
+
+  /// No description provided for @passengerDriverPrefsFavoritesText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регулярные поездки предложат их в первую очередь'**
+  String get passengerDriverPrefsFavoritesText;
+
+  /// No description provided for @passengerDriverPrefsBlockedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заблокированные'**
+  String get passengerDriverPrefsBlockedTitle;
+
+  /// No description provided for @passengerDriverPrefsBlockedText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не будут предложены на регулярные поездки'**
+  String get passengerDriverPrefsBlockedText;
+
+  /// No description provided for @passengerReferralsSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Делитесь кодом и получайте бонусы за каждого друга'**
+  String get passengerReferralsSubtitle;
+
+  /// No description provided for @passengerReferralsYourCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш код'**
+  String get passengerReferralsYourCode;
+
+  /// No description provided for @copyButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать'**
+  String get copyButton;
+
+  /// No description provided for @passengerReferralsCodeCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код скопирован'**
+  String get passengerReferralsCodeCopied;
+
+  /// No description provided for @passengerReferralsShareCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поделиться кодом'**
+  String get passengerReferralsShareCode;
+
+  /// No description provided for @passengerReferralsShareMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказывай такси в SmartTaxi по моему коду {code} и получи бонус на первую поездку!'**
+  String passengerReferralsShareMessage(String code);
+
+  /// No description provided for @passengerReferralsInvited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Приглашено'**
+  String get passengerReferralsInvited;
+
+  /// No description provided for @passengerReferralsEarned.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заработано'**
+  String get passengerReferralsEarned;
+
+  /// No description provided for @passengerReferralsHowItWorksTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как это работает'**
+  String get passengerReferralsHowItWorksTitle;
+
+  /// No description provided for @passengerReferralsHowItWorksText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.'**
+  String get passengerReferralsHowItWorksText;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

@@ -510,6 +510,68 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerDriverSubmitButton => 'Өтінішті жіберу';
 
   @override
+  String get passengerDriverPrefsSubtitle =>
+      'Ұнаған жүргізушілерді белгілеп, қаламайтындарды бұғаттаңыз';
+
+  @override
+  String get passengerDriverPrefsAddButton => 'Сапарлар тарихынан қосу';
+
+  @override
+  String get passengerDriverPrefsEmptyTitle => 'Әлі белгілер жоқ';
+
+  @override
+  String get passengerDriverPrefsEmptyText =>
+      'Сапарлар тарихынан жүргізушіні таңдаулыға белгілеңіз немесе қаламасаңыз бұғаттаңыз.';
+
+  @override
+  String get passengerDriverPrefsFavoritesTitle => 'Таңдаулылар';
+
+  @override
+  String get passengerDriverPrefsFavoritesText =>
+      'Тұрақты сапарларда алдымен солар ұсынылады';
+
+  @override
+  String get passengerDriverPrefsBlockedTitle => 'Бұғатталғандар';
+
+  @override
+  String get passengerDriverPrefsBlockedText =>
+      'Тұрақты сапарларға ұсынылмайды';
+
+  @override
+  String get passengerReferralsSubtitle =>
+      'Кодпен бөлісіп, әр дос үшін бонус алыңыз';
+
+  @override
+  String get passengerReferralsYourCode => 'Сіздің кодыңыз';
+
+  @override
+  String get copyButton => 'Көшіру';
+
+  @override
+  String get passengerReferralsCodeCopied => 'Код көшірілді';
+
+  @override
+  String get passengerReferralsShareCode => 'Кодпен бөлісу';
+
+  @override
+  String passengerReferralsShareMessage(String code) {
+    return 'SmartTaxi-де менің $code кодым бойынша такси шақыр және алғашқы сапарыңа бонус ал!';
+  }
+
+  @override
+  String get passengerReferralsInvited => 'Шақырылды';
+
+  @override
+  String get passengerReferralsEarned => 'Табылды';
+
+  @override
+  String get passengerReferralsHowItWorksTitle => 'Бұл қалай жұмыс істейді';
+
+  @override
+  String get passengerReferralsHowItWorksText =>
+      'Дос тіркелу кезінде сіздің кодыңызды енгізеді. Оның алғашқы сапарынан кейін сіздің балансыңызға бонус есептеледі.';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override
