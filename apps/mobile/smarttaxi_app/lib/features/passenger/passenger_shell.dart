@@ -15262,7 +15262,7 @@ class _NotificationButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Tooltip(
-      message: 'Уведомления',
+      message: AppLocalizations.of(context).notifications,
       child: _MapGlassChrome(
         child: Material(
           color: Colors.transparent,
@@ -15314,7 +15314,7 @@ class _HeaderProfileButton extends StatelessWidget {
     return IconButton(
       onPressed: onTap,
       icon: const Icon(Icons.person_outline_rounded),
-      tooltip: 'Профиль',
+      tooltip: AppLocalizations.of(context).profile,
     );
   }
 }
@@ -15337,12 +15337,14 @@ class _NotificationsScreen extends StatefulWidget {
   State<_NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-const _notificationCategories = [
-  (NotificationCategory.orders, 'Заказы'),
-  (NotificationCategory.support, 'Поддержка'),
-  (NotificationCategory.service, 'Сервис'),
-  (NotificationCategory.bonus, 'Бонусы'),
-];
+List<(NotificationCategory, String)> _notificationCategories(
+        AppLocalizations l10n) =>
+    [
+      (NotificationCategory.orders, l10n.passengerNotifCategoryOrders),
+      (NotificationCategory.support, l10n.support),
+      (NotificationCategory.service, l10n.passengerNotifCategoryService),
+      (NotificationCategory.bonus, l10n.passengerNotifCategoryBonus),
+    ];
 
 class _NotificationsScreenState extends State<_NotificationsScreen> {
   bool _loading = true;
@@ -15382,7 +15384,7 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Не удалось загрузить уведомления';
+        _error = AppLocalizations.of(context).passengerNotifLoadError;
         _loading = false;
       });
     }
@@ -15416,6 +15418,7 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final filtered =
         _items.where((item) => item.category == _category).toList();
     return RefreshIndicator(
@@ -15426,16 +15429,16 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
           parent: BouncingScrollPhysics(),
         ),
         children: [
-          const _TitleBlock(
-            title: 'Уведомления',
-            text: 'Статусы поездок и важные сообщения SmartTaxi',
+          _TitleBlock(
+            title: l10n.notifications,
+            text: l10n.passengerNotifSubtitle,
           ),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final entry in _notificationCategories)
+              for (final entry in _notificationCategories(l10n))
                 _SupportTopicChip(
                   label: entry.$2,
                   selected: _category == entry.$1,
@@ -15458,7 +15461,7 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
             _PremiumCard(
               child: _CompactNotice(
                 icon: Icons.error_outline_rounded,
-                title: 'Не удалось загрузить',
+                title: l10n.passengerNotifLoadErrorTitle,
                 text: _error!,
                 dark: Theme.of(context).brightness == Brightness.dark,
               ),
@@ -15468,16 +15471,16 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
               child: _CompactNotice(
                 icon: Icons.notifications_none_rounded,
                 title: _items.isEmpty
-                    ? 'Новых уведомлений нет'
-                    : 'Здесь пока пусто',
+                    ? l10n.passengerNotifEmptyTitle
+                    : l10n.passengerNotifEmptyCategoryTitle,
                 text: _items.isEmpty
-                    ? 'Когда водитель примет заказ или поездка изменит статус, мы покажем это здесь и в статусе поездки.'
-                    : 'В этой категории пока нет уведомлений.',
+                    ? l10n.passengerNotifEmptyText
+                    : l10n.passengerNotifEmptyCategoryText,
                 dark: Theme.of(context).brightness == Brightness.dark,
               ),
             )
           else
-            for (final group in _groupNotificationsByDay(filtered)) ...[
+            for (final group in _groupNotificationsByDay(l10n, filtered)) ...[
               _ProfileGroupLabel(group.label),
               const SizedBox(height: 8),
               for (final item in group.items) ...[
@@ -15504,6 +15507,7 @@ class _BonusBalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final balance = balanceKzt ?? 0;
     final price = cheapestTariffPriceKzt;
     final rides = (price != null && price > 0) ? (balance / price).floor() : null;
@@ -15540,10 +15544,10 @@ class _BonusBalanceCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   rides == null
-                      ? 'Баланс кешбэка и бонусов'
+                      ? l10n.passengerBonusBalanceLabel
                       : rides > 0
-                          ? 'Хватит ещё на $rides ${_rideWord(rides)}'
-                          : 'Пока не хватит на поездку по минимальному тарифу',
+                          ? l10n.passengerBonusRidesLeft(rides)
+                          : l10n.passengerBonusNotEnoughText,
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 12.5,
@@ -15557,15 +15561,6 @@ class _BonusBalanceCard extends StatelessWidget {
       ),
     );
   }
-
-  static String _rideWord(int count) {
-    final mod100 = count % 100;
-    final mod10 = count % 10;
-    if (mod100 >= 11 && mod100 <= 14) return 'поездок';
-    if (mod10 == 1) return 'поездку';
-    if (mod10 >= 2 && mod10 <= 4) return 'поездки';
-    return 'поездок';
-  }
 }
 
 class _NotificationDayGroup {
@@ -15576,6 +15571,7 @@ class _NotificationDayGroup {
 }
 
 List<_NotificationDayGroup> _groupNotificationsByDay(
+  AppLocalizations l10n,
   List<AppNotification> items,
 ) {
   final now = DateTime.now();
@@ -15586,9 +15582,9 @@ List<_NotificationDayGroup> _groupNotificationsByDay(
     final date = item.createdAt.toLocal();
     final day = DateTime(date.year, date.month, date.day);
     final label = day == today
-        ? 'Сегодня'
+        ? l10n.passengerTripDateToday
         : day == yesterday
-            ? 'Вчера'
+            ? l10n.passengerTripDateYesterday
             : '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}.${day.year}';
     ordered.putIfAbsent(label, () => []).add(item);
   }
@@ -15626,17 +15622,18 @@ class _NotificationTile extends StatelessWidget {
     }
   }
 
-  static String _timeAgo(DateTime dateTime) {
+  static String _timeAgo(AppLocalizations l10n, DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
-    if (diff.inMinutes < 1) return 'только что';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} мин назад';
-    if (diff.inHours < 24) return '${diff.inHours} ч назад';
-    return '${diff.inDays} дн назад';
+    if (diff.inMinutes < 1) return l10n.passengerTimeAgoJustNow;
+    if (diff.inMinutes < 60) return l10n.passengerTimeAgoMinutes(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.passengerTimeAgoHours(diff.inHours);
+    return l10n.passengerTimeAgoDays(diff.inDays);
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -15710,7 +15707,7 @@ class _NotificationTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _timeAgo(notification.createdAt),
+                  _timeAgo(l10n, notification.createdAt),
                   style: TextStyle(
                     color: palette.textMuted,
                     fontSize: 11,

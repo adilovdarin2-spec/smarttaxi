@@ -1106,6 +1106,74 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerToLabel => 'Қайда';
 
   @override
+  String get passengerNotifLoadError => 'Хабарламаларды жүктеу мүмкін болмады';
+
+  @override
+  String get passengerNotifSubtitle =>
+      'Сапар мәртебелері және SmartTaxi-дің маңызды хабарламалары';
+
+  @override
+  String get passengerNotifCategoryOrders => 'Тапсырыстар';
+
+  @override
+  String get passengerNotifCategoryService => 'Қызмет';
+
+  @override
+  String get passengerNotifCategoryBonus => 'Бонустар';
+
+  @override
+  String get passengerNotifLoadErrorTitle => 'Жүктеу мүмкін болмады';
+
+  @override
+  String get passengerNotifEmptyTitle => 'Жаңа хабарлама жоқ';
+
+  @override
+  String get passengerNotifEmptyCategoryTitle => 'Мұнда әзірге бос';
+
+  @override
+  String get passengerNotifEmptyText =>
+      'Жүргізуші тапсырысты қабылдағанда немесе сапар мәртебесі өзгергенде, мұны осында және сапар мәртебесінде көрсетеміз.';
+
+  @override
+  String get passengerNotifEmptyCategoryText =>
+      'Бұл санатта әзірге хабарлама жоқ.';
+
+  @override
+  String get passengerBonusBalanceLabel => 'Кешбэк және бонус балансы';
+
+  @override
+  String get passengerBonusNotEnoughText =>
+      'Минималды тариф бойынша сапарға әзірге жетпейді';
+
+  @override
+  String passengerBonusRidesLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'сапарға',
+    );
+    return 'Тағы $count $_temp0 жетеді';
+  }
+
+  @override
+  String get passengerTimeAgoJustNow => 'жаңа ғана';
+
+  @override
+  String passengerTimeAgoMinutes(int minutes) {
+    return '$minutes мин бұрын';
+  }
+
+  @override
+  String passengerTimeAgoHours(int hours) {
+    return '$hours сағ бұрын';
+  }
+
+  @override
+  String passengerTimeAgoDays(int days) {
+    return '$days күн бұрын';
+  }
+
+  @override
   String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
 
   @override

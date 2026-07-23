@@ -1095,6 +1095,77 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerToLabel => 'Куда';
 
   @override
+  String get passengerNotifLoadError => 'Не удалось загрузить уведомления';
+
+  @override
+  String get passengerNotifSubtitle =>
+      'Статусы поездок и важные сообщения SmartTaxi';
+
+  @override
+  String get passengerNotifCategoryOrders => 'Заказы';
+
+  @override
+  String get passengerNotifCategoryService => 'Сервис';
+
+  @override
+  String get passengerNotifCategoryBonus => 'Бонусы';
+
+  @override
+  String get passengerNotifLoadErrorTitle => 'Не удалось загрузить';
+
+  @override
+  String get passengerNotifEmptyTitle => 'Новых уведомлений нет';
+
+  @override
+  String get passengerNotifEmptyCategoryTitle => 'Здесь пока пусто';
+
+  @override
+  String get passengerNotifEmptyText =>
+      'Когда водитель примет заказ или поездка изменит статус, мы покажем это здесь и в статусе поездки.';
+
+  @override
+  String get passengerNotifEmptyCategoryText =>
+      'В этой категории пока нет уведомлений.';
+
+  @override
+  String get passengerBonusBalanceLabel => 'Баланс кешбэка и бонусов';
+
+  @override
+  String get passengerBonusNotEnoughText =>
+      'Пока не хватит на поездку по минимальному тарифу';
+
+  @override
+  String passengerBonusRidesLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'поездок',
+      many: 'поездок',
+      few: 'поездки',
+      one: 'поездку',
+    );
+    return 'Хватит ещё на $count $_temp0';
+  }
+
+  @override
+  String get passengerTimeAgoJustNow => 'только что';
+
+  @override
+  String passengerTimeAgoMinutes(int minutes) {
+    return '$minutes мин назад';
+  }
+
+  @override
+  String passengerTimeAgoHours(int hours) {
+    return '$hours ч назад';
+  }
+
+  @override
+  String passengerTimeAgoDays(int days) {
+    return '$days дн назад';
+  }
+
+  @override
   String get passengerSectionUnavailableTitle => 'Раздел недоступен';
 
   @override

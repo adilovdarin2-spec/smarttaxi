@@ -2061,6 +2061,108 @@ abstract class AppLocalizations {
   /// **'Куда'**
   String get passengerToLabel;
 
+  /// No description provided for @passengerNotifLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить уведомления'**
+  String get passengerNotifLoadError;
+
+  /// No description provided for @passengerNotifSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Статусы поездок и важные сообщения SmartTaxi'**
+  String get passengerNotifSubtitle;
+
+  /// No description provided for @passengerNotifCategoryOrders.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказы'**
+  String get passengerNotifCategoryOrders;
+
+  /// No description provided for @passengerNotifCategoryService.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервис'**
+  String get passengerNotifCategoryService;
+
+  /// No description provided for @passengerNotifCategoryBonus.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бонусы'**
+  String get passengerNotifCategoryBonus;
+
+  /// No description provided for @passengerNotifLoadErrorTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить'**
+  String get passengerNotifLoadErrorTitle;
+
+  /// No description provided for @passengerNotifEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новых уведомлений нет'**
+  String get passengerNotifEmptyTitle;
+
+  /// No description provided for @passengerNotifEmptyCategoryTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь пока пусто'**
+  String get passengerNotifEmptyCategoryTitle;
+
+  /// No description provided for @passengerNotifEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Когда водитель примет заказ или поездка изменит статус, мы покажем это здесь и в статусе поездки.'**
+  String get passengerNotifEmptyText;
+
+  /// No description provided for @passengerNotifEmptyCategoryText.
+  ///
+  /// In ru, this message translates to:
+  /// **'В этой категории пока нет уведомлений.'**
+  String get passengerNotifEmptyCategoryText;
+
+  /// No description provided for @passengerBonusBalanceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Баланс кешбэка и бонусов'**
+  String get passengerBonusBalanceLabel;
+
+  /// No description provided for @passengerBonusNotEnoughText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока не хватит на поездку по минимальному тарифу'**
+  String get passengerBonusNotEnoughText;
+
+  /// No description provided for @passengerBonusRidesLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Хватит ещё на {count} {count, plural, one{поездку} few{поездки} many{поездок} other{поездок}}'**
+  String passengerBonusRidesLeft(int count);
+
+  /// No description provided for @passengerTimeAgoJustNow.
+  ///
+  /// In ru, this message translates to:
+  /// **'только что'**
+  String get passengerTimeAgoJustNow;
+
+  /// No description provided for @passengerTimeAgoMinutes.
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин назад'**
+  String passengerTimeAgoMinutes(int minutes);
+
+  /// No description provided for @passengerTimeAgoHours.
+  ///
+  /// In ru, this message translates to:
+  /// **'{hours} ч назад'**
+  String passengerTimeAgoHours(int hours);
+
+  /// No description provided for @passengerTimeAgoDays.
+  ///
+  /// In ru, this message translates to:
+  /// **'{days} дн назад'**
+  String passengerTimeAgoDays(int days);
+
   /// No description provided for @passengerSectionUnavailableTitle.
   ///
   /// In ru, this message translates to:
