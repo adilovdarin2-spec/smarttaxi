@@ -5072,6 +5072,594 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Связь с сервером обновлений временно недоступна. Экран продолжит работать через API.'**
   String get driverUpdatesUnavailableNote;
+
+  /// No description provided for @driverManeuverTurnLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот налево'**
+  String get driverManeuverTurnLeft;
+
+  /// No description provided for @driverManeuverTurnRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поворот направо'**
+  String get driverManeuverTurnRight;
+
+  /// No description provided for @driverManeuverSlightLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Держитесь левее'**
+  String get driverManeuverSlightLeft;
+
+  /// No description provided for @driverManeuverSlightRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Держитесь правее'**
+  String get driverManeuverSlightRight;
+
+  /// No description provided for @driverManeuverSharpLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Крутой поворот налево'**
+  String get driverManeuverSharpLeft;
+
+  /// No description provided for @driverManeuverSharpRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Крутой поворот направо'**
+  String get driverManeuverSharpRight;
+
+  /// No description provided for @driverManeuverUturn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разворот'**
+  String get driverManeuverUturn;
+
+  /// No description provided for @driverManeuverStraight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Двигайтесь прямо'**
+  String get driverManeuverStraight;
+
+  /// No description provided for @driverManeuverMergeLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перестройтесь влево'**
+  String get driverManeuverMergeLeft;
+
+  /// No description provided for @driverManeuverMergeRight.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перестройтесь вправо'**
+  String get driverManeuverMergeRight;
+
+  /// No description provided for @driverManeuverOnRamp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Съезд на трассу'**
+  String get driverManeuverOnRamp;
+
+  /// No description provided for @driverManeuverOffRamp.
+  ///
+  /// In ru, this message translates to:
+  /// **'Съезд с трассы'**
+  String get driverManeuverOffRamp;
+
+  /// No description provided for @driverManeuverRoundaboutWithExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Круговое движение, {exit}-й съезд'**
+  String driverManeuverRoundaboutWithExit(int exit);
+
+  /// No description provided for @driverManeuverRoundabout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Круговое движение'**
+  String get driverManeuverRoundabout;
+
+  /// No description provided for @driverManeuverExitRoundabout.
+  ///
+  /// In ru, this message translates to:
+  /// **'Съезд с кругового движения'**
+  String get driverManeuverExitRoundabout;
+
+  /// No description provided for @driverManeuverArrive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы почти на месте'**
+  String get driverManeuverArrive;
+
+  /// No description provided for @driverManeuverFollowRoute.
+  ///
+  /// In ru, this message translates to:
+  /// **'Двигайтесь по маршруту'**
+  String get driverManeuverFollowRoute;
+
+  /// No description provided for @driverPaymentCashback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бонусы'**
+  String get driverPaymentCashback;
+
+  /// No description provided for @driverPaymentMixed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Смешанная'**
+  String get driverPaymentMixed;
+
+  /// No description provided for @driverRouteMetaLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут: {details}'**
+  String driverRouteMetaLabel(String details);
+
+  /// No description provided for @driverOrderStatusNew.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый'**
+  String get driverOrderStatusNew;
+
+  /// No description provided for @driverOrderStatusAccepted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Принят'**
+  String get driverOrderStatusAccepted;
+
+  /// No description provided for @driverOrderStatusGoingToClient.
+  ///
+  /// In ru, this message translates to:
+  /// **'Едет к клиенту'**
+  String get driverOrderStatusGoingToClient;
+
+  /// No description provided for @driverOrderStatusWaiting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидание'**
+  String get driverOrderStatusWaiting;
+
+  /// No description provided for @driverOrderStatusCompleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершено'**
+  String get driverOrderStatusCompleted;
+
+  /// No description provided for @driverOrderStatusPaymentPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидает оплату'**
+  String get driverOrderStatusPaymentPending;
+
+  /// No description provided for @driverOrderStatusRated.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оценено'**
+  String get driverOrderStatusRated;
+
+  /// No description provided for @driverOrderStatusCancelledByDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён водителем'**
+  String get driverOrderStatusCancelledByDriver;
+
+  /// No description provided for @driverOrderStatusCancelledByClient.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён клиентом'**
+  String get driverOrderStatusCancelledByClient;
+
+  /// No description provided for @driverOrderStatusCancelledByOperator.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён оператором'**
+  String get driverOrderStatusCancelledByOperator;
+
+  /// No description provided for @driverOrderStatusCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменён'**
+  String get driverOrderStatusCancelled;
+
+  /// No description provided for @driverErrorRegionNotSelected.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите рабочий регион'**
+  String get driverErrorRegionNotSelected;
+
+  /// No description provided for @driverErrorRegionInactive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Регион временно отключён'**
+  String get driverErrorRegionInactive;
+
+  /// No description provided for @driverErrorRegionNotApproved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не одобрены для этого региона'**
+  String get driverErrorRegionNotApproved;
+
+  /// No description provided for @driverErrorRegionBlocked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа в этом регионе заблокирована'**
+  String get driverErrorRegionBlocked;
+
+  /// No description provided for @driverErrorDriverBlocked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель заблокирован'**
+  String get driverErrorDriverBlocked;
+
+  /// No description provided for @driverErrorDocumentsNotApproved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер ещё требует проверку документов — обратитесь в поддержку'**
+  String get driverErrorDocumentsNotApproved;
+
+  /// No description provided for @driverErrorHasActiveOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас уже есть активный заказ'**
+  String get driverErrorHasActiveOrder;
+
+  /// No description provided for @driverErrorOrderAlreadyAccepted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказ уже принят другим водителем'**
+  String get driverErrorOrderAlreadyAccepted;
+
+  /// No description provided for @driverErrorInvalidStatusTransition.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот шаг уже недоступен для заказа'**
+  String get driverErrorInvalidStatusTransition;
+
+  /// No description provided for @driverErrorForbiddenOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот заказ назначен другому водителю'**
+  String get driverErrorForbiddenOrder;
+
+  /// No description provided for @driverErrorOrderRegionMismatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказ вне вашего рабочего региона'**
+  String get driverErrorOrderRegionMismatch;
+
+  /// No description provided for @driverErrorOrderNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказ не найден'**
+  String get driverErrorOrderNotFound;
+
+  /// No description provided for @driverErrorDebtLimit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Превышен лимит долга. Свяжитесь с оператором'**
+  String get driverErrorDebtLimit;
+
+  /// No description provided for @driverErrorLocationOutsideRegion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация вне рабочего региона'**
+  String get driverErrorLocationOutsideRegion;
+
+  /// No description provided for @driverErrorLocationUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем геолокацию водителя'**
+  String get driverErrorLocationUnavailable;
+
+  /// No description provided for @driverErrorOrderNotCompleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата поездки ещё не подтверждена оператором.'**
+  String get driverErrorOrderNotCompleted;
+
+  /// No description provided for @driverErrorOrderAlreadyRated.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже оценили этого пассажира'**
+  String get driverErrorOrderAlreadyRated;
+
+  /// No description provided for @driverPassengerFallback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пассажир'**
+  String get driverPassengerFallback;
+
+  /// No description provided for @driverStepperAccepted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Принят'**
+  String get driverStepperAccepted;
+
+  /// No description provided for @driverStepperGoing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Едет'**
+  String get driverStepperGoing;
+
+  /// No description provided for @driverStepperArrived.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прибыл'**
+  String get driverStepperArrived;
+
+  /// No description provided for @driverStepperWaiting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём'**
+  String get driverStepperWaiting;
+
+  /// No description provided for @driverStepperInTransit.
+  ///
+  /// In ru, this message translates to:
+  /// **'В пути'**
+  String get driverStepperInTransit;
+
+  /// No description provided for @driverStepperFinish.
+  ///
+  /// In ru, this message translates to:
+  /// **'Финиш'**
+  String get driverStepperFinish;
+
+  /// No description provided for @driverNewOrderTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый заказ'**
+  String get driverNewOrderTitle;
+
+  /// No description provided for @driverWorkingRegionLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рабочий регион'**
+  String get driverWorkingRegionLabel;
+
+  /// No description provided for @driverTariffLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тариф {tariff}'**
+  String driverTariffLabel(String tariff);
+
+  /// No description provided for @driverPriceAfterCalculation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена после расчёта'**
+  String get driverPriceAfterCalculation;
+
+  /// No description provided for @driverCustomPriceBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Своя цена'**
+  String get driverCustomPriceBadge;
+
+  /// No description provided for @driverSkippingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропускаем...'**
+  String get driverSkippingButton;
+
+  /// No description provided for @driverSkipButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропустить'**
+  String get driverSkipButton;
+
+  /// No description provided for @driverAcceptingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Принимаем...'**
+  String get driverAcceptingButton;
+
+  /// No description provided for @driverAcceptButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Принять'**
+  String get driverAcceptButton;
+
+  /// No description provided for @driverDeclineButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отказаться'**
+  String get driverDeclineButton;
+
+  /// No description provided for @driverRespondingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отвечаем...'**
+  String get driverRespondingButton;
+
+  /// No description provided for @driverClientOfferedCustomPrice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент предложил {price}'**
+  String driverClientOfferedCustomPrice(String price);
+
+  /// No description provided for @driverClientOfferedCustomPriceGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'свою цену'**
+  String get driverClientOfferedCustomPriceGeneric;
+
+  /// No description provided for @driverAwaitingClientResponse.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем ответа клиента'**
+  String get driverAwaitingClientResponse;
+
+  /// No description provided for @driverAwaitingClientResponseWithPrice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидаем ответа: {price}'**
+  String driverAwaitingClientResponseWithPrice(String price);
+
+  /// No description provided for @driverOfferCustomPriceButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предложить свою цену'**
+  String get driverOfferCustomPriceButton;
+
+  /// No description provided for @driverPaidWaitingLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Платное ожидание'**
+  String get driverPaidWaitingLabel;
+
+  /// No description provided for @driverFreeWaitingLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесплатное ожидание'**
+  String get driverFreeWaitingLabel;
+
+  /// No description provided for @driverTripDistanceCoveredLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пройдено в этой поездке'**
+  String get driverTripDistanceCoveredLabel;
+
+  /// No description provided for @driverTripCompletedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка завершена'**
+  String get driverTripCompletedTitle;
+
+  /// No description provided for @driverTripCostLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоимость поездки'**
+  String get driverTripCostLabel;
+
+  /// No description provided for @driverServiceCommissionLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комиссия сервиса'**
+  String get driverServiceCommissionLabel;
+
+  /// No description provided for @driverYouReceiveLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы получите'**
+  String get driverYouReceiveLabel;
+
+  /// No description provided for @driverRatePassengerTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оцените пассажира'**
+  String get driverRatePassengerTitle;
+
+  /// No description provided for @driverRatingTagPolitePassenger.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вежливый пассажир'**
+  String get driverRatingTagPolitePassenger;
+
+  /// No description provided for @driverRatingTagWaitedAtPickup.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждал в точке посадки'**
+  String get driverRatingTagWaitedAtPickup;
+
+  /// No description provided for @driverRatingTagExactAddress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точный адрес'**
+  String get driverRatingTagExactAddress;
+
+  /// No description provided for @driverRatingTagOnTimeExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вышел вовремя'**
+  String get driverRatingTagOnTimeExit;
+
+  /// No description provided for @driverRatingTagLongNoShow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Долго не выходил'**
+  String get driverRatingTagLongNoShow;
+
+  /// No description provided for @driverRatingTagRudeCommunication.
+  ///
+  /// In ru, this message translates to:
+  /// **'Грубое общение'**
+  String get driverRatingTagRudeCommunication;
+
+  /// No description provided for @driverRatingTagWrongAddress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неточный адрес'**
+  String get driverRatingTagWrongAddress;
+
+  /// No description provided for @driverRatingTagDirtyInterior.
+  ///
+  /// In ru, this message translates to:
+  /// **'Испачкал салон'**
+  String get driverRatingTagDirtyInterior;
+
+  /// No description provided for @driverCommentOptionalHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комментарий (необязательно)'**
+  String get driverCommentOptionalHint;
+
+  /// No description provided for @driverSendingRatingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправляем...'**
+  String get driverSendingRatingButton;
+
+  /// No description provided for @driverSubmitRatingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить оценку'**
+  String get driverSubmitRatingButton;
+
+  /// No description provided for @driverRatingThanksMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спасибо, оценка отправлена'**
+  String get driverRatingThanksMessage;
+
+  /// No description provided for @driverRatingSkippedMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оценка пропущена'**
+  String get driverRatingSkippedMessage;
+
+  /// No description provided for @driverFavoriteAddedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'В избранном'**
+  String get driverFavoriteAddedLabel;
+
+  /// No description provided for @driverFavoriteAddButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'В избранные'**
+  String get driverFavoriteAddButton;
+
+  /// No description provided for @driverBlockedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заблокирован'**
+  String get driverBlockedLabel;
+
+  /// No description provided for @driverBlockButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не принимать'**
+  String get driverBlockButton;
+
+  /// No description provided for @doneButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готово'**
+  String get doneButton;
+
+  /// No description provided for @driverStarRatingSemanticLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оценка: {count} {count, plural, one{звезда} few{звезды} many{звёзд} other{звёзд}}'**
+  String driverStarRatingSemanticLabel(int count);
 }
 
 class _AppLocalizationsDelegate

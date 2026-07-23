@@ -467,7 +467,7 @@ class _DriverShellState extends State<DriverShell> {
       }
       unawaited(_loadDemandHint());
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _regionsLoading = false);
     }
@@ -545,7 +545,7 @@ class _DriverShellState extends State<DriverShell> {
       await _loadRoadAlerts();
       unawaited(_loadDemandHint());
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -649,11 +649,11 @@ class _DriverShellState extends State<DriverShell> {
           nextOnline && approvalCodes.contains(apiErrorCode(error));
       if (isApprovalBlock) {
         if (mounted) {
-          AppToast.showError(context, readableError(error));
+          AppToast.showError(context, readableError(AppLocalizations.of(context), error));
           _showDriverFullSheet(_driverSupportContent);
         }
       } else if (mounted) {
-        setState(() => _error = readableError(error));
+        setState(() => _error = readableError(AppLocalizations.of(context), error));
       }
       if (nextOnline && mounted) setState(() => _locationMessage = null);
     } finally {
@@ -718,7 +718,7 @@ class _DriverShellState extends State<DriverShell> {
         // will never succeed until the driver is actually back in the
         // region.
         if (mounted) {
-          setState(() => _locationMessage = readableError(error));
+          setState(() => _locationMessage = readableError(AppLocalizations.of(context), error));
         }
       }
     }, onError: (_) {
@@ -760,7 +760,7 @@ class _DriverShellState extends State<DriverShell> {
       // readableError, not a hardcoded generic string — same reasoning as
       // the position-stream catch above.
       if (mounted) {
-        setState(() => _error = readableError(error));
+        setState(() => _error = readableError(AppLocalizations.of(context), error));
       }
       return false;
     }
@@ -800,7 +800,7 @@ class _DriverShellState extends State<DriverShell> {
       // fetched explicitly since nothing else has triggered it yet.
       if (needsRoute) unawaited(_loadDriverRoute(restoredActive.id));
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _ordersLoading = false);
     }
@@ -817,7 +817,7 @@ class _DriverShellState extends State<DriverShell> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _navigatorMessage = readableError(error));
+      setState(() => _navigatorMessage = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _roadAlertsLoading = false);
     }
@@ -1020,8 +1020,9 @@ class _DriverShellState extends State<DriverShell> {
         }
       }
       if (stepIndex < nearestIndex) continue; // already passed
-      final (label, icon) =
-          maneuverLabelAndIcon(step.type, step.modifier, exit: step.exit);
+      final (label, icon) = maneuverLabelAndIcon(
+          AppLocalizations.of(context), step.type, step.modifier,
+          exit: step.exit);
       return (
         label: label,
         icon: icon,
@@ -1063,11 +1064,12 @@ class _DriverShellState extends State<DriverShell> {
       final segmentBearing = _bearingBetween(route[i], route[i + 1]);
       final delta = _bearingDelta(baseBearing, segmentBearing);
       if (delta.abs() >= turnThresholdDegrees) {
+        final l10n = AppLocalizations.of(context);
         final (label, icon) = delta.abs() >= 150
-            ? ('Разворот', Icons.u_turn_left_rounded)
+            ? (l10n.driverManeuverUturn, Icons.u_turn_left_rounded)
             : delta > 0
-                ? ('Поворот направо', Icons.turn_right_rounded)
-                : ('Поворот налево', Icons.turn_left_rounded);
+                ? (l10n.driverManeuverTurnRight, Icons.turn_right_rounded)
+                : (l10n.driverManeuverTurnLeft, Icons.turn_left_rounded);
         return (
           label: label,
           icon: icon,
@@ -1430,7 +1432,7 @@ class _DriverShellState extends State<DriverShell> {
       await _loadDriverRoute(accepted.id);
       await _loadDriverStats();
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _acceptingOrderId = null);
     }
@@ -1454,7 +1456,7 @@ class _DriverShellState extends State<DriverShell> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = readableError(error));
+      setState(() => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _rejectingOrderId = null);
     }
@@ -1481,7 +1483,7 @@ class _DriverShellState extends State<DriverShell> {
       AppToast.showSuccess(context, 'Предложение цены отправлено клиенту');
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(error));
+      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _offeringPriceOrderId = null);
     }
@@ -1520,7 +1522,7 @@ class _DriverShellState extends State<DriverShell> {
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(error));
+      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _respondingToCounterOrderId = null);
     }
@@ -1547,7 +1549,7 @@ class _DriverShellState extends State<DriverShell> {
       });
       await _loadDriverStats();
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(error));
+      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _tripActionLabel = null);
     }
@@ -1577,7 +1579,7 @@ class _DriverShellState extends State<DriverShell> {
       if (mounted) {
         setState(() {
           _driverRoute = null;
-          _error = readableError(error);
+          _error = readableError(AppLocalizations.of(context), error);
         });
       }
     }
@@ -1946,7 +1948,7 @@ class _DriverShellState extends State<DriverShell> {
                             } catch (error) {
                               setSheetState(() {
                                 _supportMessageDanger = true;
-                                _supportMessage = readableError(error);
+                                _supportMessage = readableError(AppLocalizations.of(context), error);
                               });
                             } finally {
                               setSheetState(() => _supportSending = false);
@@ -2586,7 +2588,7 @@ class _DriverShellState extends State<DriverShell> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StatusPill(
-                        label: statusLabel(_activeOrder!.status),
+                        label: statusLabel(l10n, _activeOrder!.status),
                         tone: StatusTone.warning),
                     const SizedBox(height: 16),
                     DriverStatusStepper(status: _activeOrder!.status),
@@ -2598,7 +2600,7 @@ class _DriverShellState extends State<DriverShell> {
                             child: Text(
                               (_activeOrder!.riderName ?? '').trim().isNotEmpty
                                   ? _activeOrder!.riderName!.trim()
-                                  : 'Пассажир',
+                                  : l10n.driverPassengerFallback,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -2698,13 +2700,13 @@ class _DriverShellState extends State<DriverShell> {
                           style:
                               TextStyle(color: context.palette.textSecondary)),
                     ],
-                    if ((liveRouteMeta(_driverRoute) ??
-                            routeMeta(_activeOrder!)) !=
+                    if ((liveRouteMeta(l10n, _driverRoute) ??
+                            routeMeta(l10n, _activeOrder!)) !=
                         null) ...[
                       const SizedBox(height: 8),
                       Text(
-                          liveRouteMeta(_driverRoute) ??
-                              routeMeta(_activeOrder!)!,
+                          liveRouteMeta(l10n, _driverRoute) ??
+                              routeMeta(l10n, _activeOrder!)!,
                           style:
                               TextStyle(color: context.palette.textSecondary)),
                     ],
@@ -4008,6 +4010,7 @@ class _DriverFullScreenNavigatorState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final shell = widget.shell;
     final current = shell._currentCoordinate;
     final heading = shell._currentHeading;
@@ -4026,7 +4029,7 @@ class _DriverFullScreenNavigatorState
         speedKmh != null && speedLimit != null && speedKmh > speedLimit;
     final route = shell._driverRoute?.geometry ?? const <LatLng>[];
     final alerts = shell._allNavigatorAlerts;
-    final targetMeta = liveRouteMeta(shell._driverRoute);
+    final targetMeta = liveRouteMeta(l10n, shell._driverRoute);
     final showVoiceBanner = shell._navigatorBannerText != null &&
         shell._navigatorBannerUntil != null &&
         DateTime.now().isBefore(shell._navigatorBannerUntil!);
@@ -4779,7 +4782,7 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _sending = null);
-      AppToast.showError(context, readableError(error));
+      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     }
   }
 
@@ -5012,7 +5015,7 @@ class _DriverRecurringBookingsScreenState
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(error));
+      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _updating.remove(booking.id));
     }
@@ -5033,7 +5036,7 @@ class _DriverRecurringBookingsScreenState
       });
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(error));
+      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _updating.remove(booking.id));
     }
@@ -5334,7 +5337,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _message = readableError(error);
+        _message = readableError(AppLocalizations.of(context), error);
         _alertsLoadFailed = true;
       });
     } finally {
@@ -5419,7 +5422,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(error));
+      setState(() => _message = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -5439,7 +5442,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(error));
+      setState(() => _message = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _updatingAlertId = null);
     }
@@ -5459,7 +5462,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _message = readableError(error));
+      setState(() => _message = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _updatingAlertId = null);
     }

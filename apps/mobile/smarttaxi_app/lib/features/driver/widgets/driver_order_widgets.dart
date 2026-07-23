@@ -6,6 +6,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 import '../models/driver_shell_helpers.dart';
 import 'driver_common_widgets.dart';
@@ -17,6 +18,7 @@ class DriverStatusStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     const steps = [
       'DRIVER_FOUND',
       'DRIVER_GOING_TO_CLIENT',
@@ -25,13 +27,13 @@ class DriverStatusStepper extends StatelessWidget {
       'TRIP_STARTED',
       'TRIP_COMPLETED',
     ];
-    const labels = [
-      'Принят',
-      'Едет',
-      'Прибыл',
-      'Ждём',
-      'В пути',
-      'Финиш',
+    final labels = [
+      l10n.driverStepperAccepted,
+      l10n.driverStepperGoing,
+      l10n.driverStepperArrived,
+      l10n.driverStepperWaiting,
+      l10n.driverStepperInTransit,
+      l10n.driverStepperFinish,
     ];
     const aliases = {
       'DRIVER_ASSIGNED': 'DRIVER_FOUND',
@@ -121,11 +123,12 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final priceLabel = order.price == null
-        ? 'Цена после расчёта'
+        ? l10n.driverPriceAfterCalculation
         : formatDriverMoney(order.price!.round());
-    final meta = routeMeta(order);
-    final payment = driverPaymentLabel(order.paymentMethod);
+    final meta = routeMeta(l10n, order);
+    final payment = driverPaymentLabel(l10n, order.paymentMethod);
     final phone = (order.riderPhone ?? '').trim();
     final riderName = (order.riderName ?? '').trim();
     final isMyOffer =
@@ -154,14 +157,15 @@ class OrderCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: SectionLabel(
-                  title: 'Новый заказ',
+                  title: l10n.driverNewOrderTitle,
                   text: order.tariff == null || order.tariff!.isEmpty
-                      ? 'Рабочий регион'
-                      : 'Тариф ${order.tariff}',
+                      ? l10n.driverWorkingRegionLabel
+                      : l10n.driverTariffLabel(order.tariff!),
                 ),
               ),
               StatusPill(
-                  label: statusLabel(order.status), tone: StatusTone.neutral),
+                  label: statusLabel(l10n, order.status),
+                  tone: StatusTone.neutral),
             ],
           ),
           const SizedBox(height: 10),
@@ -207,9 +211,9 @@ class OrderCard extends StatelessWidget {
                                 color: context.palette.success,
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: const Text(
-                                'Своя цена',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.driverCustomPriceBadge,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.w900,
@@ -303,10 +307,10 @@ class OrderCard extends StatelessWidget {
                       ? null
                       : onReject,
                   child: rejecting
-                      ? const ButtonSpinner(text: 'Пропускаем...')
-                      : const FittedBox(
+                      ? ButtonSpinner(text: l10n.driverSkippingButton)
+                      : FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Text('Пропустить', maxLines: 1),
+                          child: Text(l10n.driverSkipButton, maxLines: 1),
                         ),
                 ),
               ),
@@ -318,8 +322,8 @@ class OrderCard extends StatelessWidget {
                       ? null
                       : onAccept,
                   child: accepting
-                      ? const ButtonSpinner(text: 'Принимаем...')
-                      : const Text('Принять'),
+                      ? ButtonSpinner(text: l10n.driverAcceptingButton)
+                      : Text(l10n.driverAcceptButton),
                 ),
               ),
             ],
@@ -345,7 +349,10 @@ class OrderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Клиент предложил ${order.driverOfferPriceKzt == null ? 'свою цену' : formatDriverMoney(order.driverOfferPriceKzt!)}',
+                      l10n.driverClientOfferedCustomPrice(order.driverOfferPriceKzt ==
+                              null
+                          ? l10n.driverClientOfferedCustomPriceGeneric
+                          : formatDriverMoney(order.driverOfferPriceKzt!)),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: context.palette.text,
@@ -361,9 +368,9 @@ class OrderCard extends StatelessWidget {
                             onPressed: respondingToCounter
                                 ? null
                                 : () => onRespondToCounter!(false),
-                            child: const FittedBox(
+                            child: FittedBox(
                               fit: BoxFit.scaleDown,
-                              child: Text('Отказаться', maxLines: 1),
+                              child: Text(l10n.driverDeclineButton, maxLines: 1),
                             ),
                           ),
                         ),
@@ -375,8 +382,8 @@ class OrderCard extends StatelessWidget {
                                 ? null
                                 : () => onRespondToCounter!(true),
                             child: respondingToCounter
-                                ? const ButtonSpinner(text: 'Отвечаем...')
-                                : const Text('Принять'),
+                                ? ButtonSpinner(text: l10n.driverRespondingButton)
+                                : Text(l10n.driverAcceptButton),
                           ),
                         ),
                       ],
@@ -393,8 +400,9 @@ class OrderCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     order.driverOfferPriceKzt == null
-                        ? 'Ожидаем ответа клиента'
-                        : 'Ожидаем ответа: ${formatDriverMoney(order.driverOfferPriceKzt!)}',
+                        ? l10n.driverAwaitingClientResponse
+                        : l10n.driverAwaitingClientResponseWithPrice(
+                            formatDriverMoney(order.driverOfferPriceKzt!)),
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12.5,
@@ -409,7 +417,7 @@ class OrderCard extends StatelessWidget {
                 child: TextButton.icon(
                   onPressed: accepting || rejecting ? null : onOfferPrice,
                   icon: const Icon(Icons.local_offer_outlined, size: 17),
-                  label: const Text('Предложить свою цену'),
+                  label: Text(l10n.driverOfferCustomPriceButton),
                   style: TextButton.styleFrom(
                     foregroundColor: context.palette.goldDeep,
                   ),
@@ -552,6 +560,7 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final freeUntil = widget.freeWaitingUntil ?? widget.waitingStartedAt;
     final isPaid = _now.isAfter(freeUntil);
     final billableMinutes =
@@ -579,7 +588,7 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isPaid ? 'Платное ожидание' : 'Бесплатное ожидание',
+                  isPaid ? l10n.driverPaidWaitingLabel : l10n.driverFreeWaitingLabel,
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
@@ -631,6 +640,7 @@ class DriverTripDistanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -645,7 +655,7 @@ class DriverTripDistanceCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Пройдено в этой поездке',
+              l10n.driverTripDistanceCoveredLabel,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w800,
@@ -704,18 +714,18 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
   String? _preferenceType;
   bool _preferenceSaving = false;
 
-  static const _positiveTags = [
-    'Вежливый пассажир',
-    'Ждал в точке посадки',
-    'Точный адрес',
-    'Вышел вовремя',
-  ];
-  static const _negativeTags = [
-    'Долго не выходил',
-    'Грубое общение',
-    'Неточный адрес',
-    'Испачкал салон',
-  ];
+  static List<(String key, String label)> _positiveTags(AppLocalizations l10n) => [
+        ('polite_passenger', l10n.driverRatingTagPolitePassenger),
+        ('waited_at_pickup', l10n.driverRatingTagWaitedAtPickup),
+        ('exact_address', l10n.driverRatingTagExactAddress),
+        ('on_time_exit', l10n.driverRatingTagOnTimeExit),
+      ];
+  static List<(String key, String label)> _negativeTags(AppLocalizations l10n) => [
+        ('long_no_show', l10n.driverRatingTagLongNoShow),
+        ('rude_communication', l10n.driverRatingTagRudeCommunication),
+        ('wrong_address', l10n.driverRatingTagWrongAddress),
+        ('dirty_interior', l10n.driverRatingTagDirtyInterior),
+      ];
 
   @override
   void dispose() {
@@ -739,7 +749,7 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
       // for a request that didn't actually go through) — the driver can
       // retry immediately, or move on via the always-present "Готово"
       // button regardless.
-      if (mounted) AppToast.showError(context, readableError(error));
+      if (mounted) AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -760,7 +770,7 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
     } catch (error) {
       // Don't optimistically flip the star/block icon for a request that
       // didn't actually save — same reasoning as _submitRating above.
-      if (mounted) AppToast.showError(context, readableError(error));
+      if (mounted) AppToast.showError(context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _preferenceSaving = false);
     }
@@ -768,38 +778,39 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final order = widget.order;
     final price = order.price ?? 0;
     final commission = order.serviceCommission ?? 0;
     final payout = price - commission < 0 ? 0.0 : price - commission;
-    final tagOptions = _stars >= 4 ? _positiveTags : _negativeTags;
+    final tagOptions = _stars >= 4 ? _positiveTags(l10n) : _negativeTags(l10n);
 
     return PremiumCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Поездка завершена',
+          Text(l10n.driverTripCompletedTitle,
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: context.palette.text)),
           const SizedBox(height: 14),
-          _SummaryRow(label: 'Стоимость поездки', value: '${price.round()} ₸'),
+          _SummaryRow(label: l10n.driverTripCostLabel, value: '${price.round()} ₸'),
           if (commission > 0) ...[
             const SizedBox(height: 8),
             _SummaryRow(
-                label: 'Комиссия сервиса',
+                label: l10n.driverServiceCommissionLabel,
                 value: '-${commission.round()} ₸',
                 danger: true),
           ],
           const Divider(height: 24),
           _SummaryRow(
-              label: 'Вы получите',
+              label: l10n.driverYouReceiveLabel,
               value: '${payout.round()} ₸',
               emphasized: true),
           const SizedBox(height: 20),
           if (!_rated) ...[
-            Text('Оцените пассажира',
+            Text(l10n.driverRatePassengerTitle,
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -814,10 +825,10 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                 runSpacing: 8,
                 children: tagOptions
                     .map((tag) => _DriverTagChip(
-                          label: tag,
-                          selected: _tags.contains(tag),
+                          label: tag.$2,
+                          selected: _tags.contains(tag.$1),
                           onTap: () => setState(() {
-                            if (!_tags.remove(tag)) _tags.add(tag);
+                            if (!_tags.remove(tag.$1)) _tags.add(tag.$1);
                           }),
                         ))
                     .toList(),
@@ -827,8 +838,8 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                 controller: _commentController,
                 minLines: 2,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                    hintText: 'Комментарий (необязательно)'),
+                decoration: InputDecoration(
+                    hintText: l10n.driverCommentOptionalHint),
               ),
             ],
             const SizedBox(height: 14),
@@ -839,10 +850,10 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                     onPressed:
                         _stars == 0 || _submitting ? null : _submitRating,
                     child: _submitting
-                        ? const ButtonSpinner(text: 'Отправляем...')
-                        : const FittedBox(
+                        ? ButtonSpinner(text: l10n.driverSendingRatingButton)
+                        : FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text('Отправить оценку', maxLines: 1),
+                            child: Text(l10n.driverSubmitRatingButton, maxLines: 1),
                           ),
                   ),
                 ),
@@ -851,15 +862,15 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                   onPressed: _submitting
                       ? null
                       : () => setState(() => _rated = true),
-                  child: const Text('Пропустить'),
+                  child: Text(l10n.driverSkipButton),
                 ),
               ],
             ),
           ] else
             InlineMessage(
                 text: _stars > 0
-                    ? 'Спасибо, оценка отправлена'
-                    : 'Оценка пропущена'),
+                    ? l10n.driverRatingThanksMessage
+                    : l10n.driverRatingSkippedMessage),
           if (order.clientId != null) ...[
             const SizedBox(height: 16),
             Row(
@@ -878,8 +889,8 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                       fit: BoxFit.scaleDown,
                       child: Text(
                         _preferenceType == 'FAVORITE'
-                            ? 'В избранном'
-                            : 'В избранные',
+                            ? l10n.driverFavoriteAddedLabel
+                            : l10n.driverFavoriteAddButton,
                         maxLines: 1,
                       ),
                     ),
@@ -907,8 +918,8 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                       fit: BoxFit.scaleDown,
                       child: Text(
                         _preferenceType == 'BLOCKED'
-                            ? 'Заблокирован'
-                            : 'Не принимать',
+                            ? l10n.driverBlockedLabel
+                            : l10n.driverBlockButton,
                         maxLines: 1,
                       ),
                     ),
@@ -918,7 +929,7 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
             ),
           ],
           const SizedBox(height: 18),
-          DriverGradientButton(text: 'Готово', onTap: widget.onDone),
+          DriverGradientButton(text: l10n.doneButton, onTap: widget.onDone),
         ],
       ),
     );
@@ -966,23 +977,17 @@ class _DriverStarSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     // Icon-only tap targets with no visible text sibling — without an
     // explicit label a screen reader announces 5 identical unlabeled
     // buttons, giving no way to tell which star (or the current rating)
     // each one represents.
-    const starWordByCount = {
-      1: '1 звезда',
-      2: '2 звезды',
-      3: '3 звезды',
-      4: '4 звезды',
-      5: '5 звёзд',
-    };
     return Row(
       children: List.generate(5, (index) {
         final star = index + 1;
         return Semantics(
           button: true,
-          label: 'Оценка: ${starWordByCount[star]}',
+          label: l10n.driverStarRatingSemanticLabel(star),
           selected: star <= value,
           child: InkWell(
             onTap: () => onChanged(star),

@@ -2774,4 +2774,326 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get driverUpdatesUnavailableNote =>
       'Связь с сервером обновлений временно недоступна. Экран продолжит работать через API.';
+
+  @override
+  String get driverManeuverTurnLeft => 'Поворот налево';
+
+  @override
+  String get driverManeuverTurnRight => 'Поворот направо';
+
+  @override
+  String get driverManeuverSlightLeft => 'Держитесь левее';
+
+  @override
+  String get driverManeuverSlightRight => 'Держитесь правее';
+
+  @override
+  String get driverManeuverSharpLeft => 'Крутой поворот налево';
+
+  @override
+  String get driverManeuverSharpRight => 'Крутой поворот направо';
+
+  @override
+  String get driverManeuverUturn => 'Разворот';
+
+  @override
+  String get driverManeuverStraight => 'Двигайтесь прямо';
+
+  @override
+  String get driverManeuverMergeLeft => 'Перестройтесь влево';
+
+  @override
+  String get driverManeuverMergeRight => 'Перестройтесь вправо';
+
+  @override
+  String get driverManeuverOnRamp => 'Съезд на трассу';
+
+  @override
+  String get driverManeuverOffRamp => 'Съезд с трассы';
+
+  @override
+  String driverManeuverRoundaboutWithExit(int exit) {
+    return 'Круговое движение, $exit-й съезд';
+  }
+
+  @override
+  String get driverManeuverRoundabout => 'Круговое движение';
+
+  @override
+  String get driverManeuverExitRoundabout => 'Съезд с кругового движения';
+
+  @override
+  String get driverManeuverArrive => 'Вы почти на месте';
+
+  @override
+  String get driverManeuverFollowRoute => 'Двигайтесь по маршруту';
+
+  @override
+  String get driverPaymentCashback => 'Бонусы';
+
+  @override
+  String get driverPaymentMixed => 'Смешанная';
+
+  @override
+  String driverRouteMetaLabel(String details) {
+    return 'Маршрут: $details';
+  }
+
+  @override
+  String get driverOrderStatusNew => 'Новый';
+
+  @override
+  String get driverOrderStatusAccepted => 'Принят';
+
+  @override
+  String get driverOrderStatusGoingToClient => 'Едет к клиенту';
+
+  @override
+  String get driverOrderStatusWaiting => 'Ожидание';
+
+  @override
+  String get driverOrderStatusCompleted => 'Завершено';
+
+  @override
+  String get driverOrderStatusPaymentPending => 'Ожидает оплату';
+
+  @override
+  String get driverOrderStatusRated => 'Оценено';
+
+  @override
+  String get driverOrderStatusCancelledByDriver => 'Отменён водителем';
+
+  @override
+  String get driverOrderStatusCancelledByClient => 'Отменён клиентом';
+
+  @override
+  String get driverOrderStatusCancelledByOperator => 'Отменён оператором';
+
+  @override
+  String get driverOrderStatusCancelled => 'Отменён';
+
+  @override
+  String get driverErrorRegionNotSelected => 'Выберите рабочий регион';
+
+  @override
+  String get driverErrorRegionInactive => 'Регион временно отключён';
+
+  @override
+  String get driverErrorRegionNotApproved => 'Вы не одобрены для этого региона';
+
+  @override
+  String get driverErrorRegionBlocked => 'Работа в этом регионе заблокирована';
+
+  @override
+  String get driverErrorDriverBlocked => 'Водитель заблокирован';
+
+  @override
+  String get driverErrorDocumentsNotApproved =>
+      'Сервер ещё требует проверку документов — обратитесь в поддержку';
+
+  @override
+  String get driverErrorHasActiveOrder => 'У вас уже есть активный заказ';
+
+  @override
+  String get driverErrorOrderAlreadyAccepted =>
+      'Заказ уже принят другим водителем';
+
+  @override
+  String get driverErrorInvalidStatusTransition =>
+      'Этот шаг уже недоступен для заказа';
+
+  @override
+  String get driverErrorForbiddenOrder =>
+      'Этот заказ назначен другому водителю';
+
+  @override
+  String get driverErrorOrderRegionMismatch =>
+      'Заказ вне вашего рабочего региона';
+
+  @override
+  String get driverErrorOrderNotFound => 'Заказ не найден';
+
+  @override
+  String get driverErrorDebtLimit =>
+      'Превышен лимит долга. Свяжитесь с оператором';
+
+  @override
+  String get driverErrorLocationOutsideRegion =>
+      'Геолокация вне рабочего региона';
+
+  @override
+  String get driverErrorLocationUnavailable => 'Ожидаем геолокацию водителя';
+
+  @override
+  String get driverErrorOrderNotCompleted =>
+      'Оплата поездки ещё не подтверждена оператором.';
+
+  @override
+  String get driverErrorOrderAlreadyRated => 'Вы уже оценили этого пассажира';
+
+  @override
+  String get driverPassengerFallback => 'Пассажир';
+
+  @override
+  String get driverStepperAccepted => 'Принят';
+
+  @override
+  String get driverStepperGoing => 'Едет';
+
+  @override
+  String get driverStepperArrived => 'Прибыл';
+
+  @override
+  String get driverStepperWaiting => 'Ждём';
+
+  @override
+  String get driverStepperInTransit => 'В пути';
+
+  @override
+  String get driverStepperFinish => 'Финиш';
+
+  @override
+  String get driverNewOrderTitle => 'Новый заказ';
+
+  @override
+  String get driverWorkingRegionLabel => 'Рабочий регион';
+
+  @override
+  String driverTariffLabel(String tariff) {
+    return 'Тариф $tariff';
+  }
+
+  @override
+  String get driverPriceAfterCalculation => 'Цена после расчёта';
+
+  @override
+  String get driverCustomPriceBadge => 'Своя цена';
+
+  @override
+  String get driverSkippingButton => 'Пропускаем...';
+
+  @override
+  String get driverSkipButton => 'Пропустить';
+
+  @override
+  String get driverAcceptingButton => 'Принимаем...';
+
+  @override
+  String get driverAcceptButton => 'Принять';
+
+  @override
+  String get driverDeclineButton => 'Отказаться';
+
+  @override
+  String get driverRespondingButton => 'Отвечаем...';
+
+  @override
+  String driverClientOfferedCustomPrice(String price) {
+    return 'Клиент предложил $price';
+  }
+
+  @override
+  String get driverClientOfferedCustomPriceGeneric => 'свою цену';
+
+  @override
+  String get driverAwaitingClientResponse => 'Ожидаем ответа клиента';
+
+  @override
+  String driverAwaitingClientResponseWithPrice(String price) {
+    return 'Ожидаем ответа: $price';
+  }
+
+  @override
+  String get driverOfferCustomPriceButton => 'Предложить свою цену';
+
+  @override
+  String get driverPaidWaitingLabel => 'Платное ожидание';
+
+  @override
+  String get driverFreeWaitingLabel => 'Бесплатное ожидание';
+
+  @override
+  String get driverTripDistanceCoveredLabel => 'Пройдено в этой поездке';
+
+  @override
+  String get driverTripCompletedTitle => 'Поездка завершена';
+
+  @override
+  String get driverTripCostLabel => 'Стоимость поездки';
+
+  @override
+  String get driverServiceCommissionLabel => 'Комиссия сервиса';
+
+  @override
+  String get driverYouReceiveLabel => 'Вы получите';
+
+  @override
+  String get driverRatePassengerTitle => 'Оцените пассажира';
+
+  @override
+  String get driverRatingTagPolitePassenger => 'Вежливый пассажир';
+
+  @override
+  String get driverRatingTagWaitedAtPickup => 'Ждал в точке посадки';
+
+  @override
+  String get driverRatingTagExactAddress => 'Точный адрес';
+
+  @override
+  String get driverRatingTagOnTimeExit => 'Вышел вовремя';
+
+  @override
+  String get driverRatingTagLongNoShow => 'Долго не выходил';
+
+  @override
+  String get driverRatingTagRudeCommunication => 'Грубое общение';
+
+  @override
+  String get driverRatingTagWrongAddress => 'Неточный адрес';
+
+  @override
+  String get driverRatingTagDirtyInterior => 'Испачкал салон';
+
+  @override
+  String get driverCommentOptionalHint => 'Комментарий (необязательно)';
+
+  @override
+  String get driverSendingRatingButton => 'Отправляем...';
+
+  @override
+  String get driverSubmitRatingButton => 'Отправить оценку';
+
+  @override
+  String get driverRatingThanksMessage => 'Спасибо, оценка отправлена';
+
+  @override
+  String get driverRatingSkippedMessage => 'Оценка пропущена';
+
+  @override
+  String get driverFavoriteAddedLabel => 'В избранном';
+
+  @override
+  String get driverFavoriteAddButton => 'В избранные';
+
+  @override
+  String get driverBlockedLabel => 'Заблокирован';
+
+  @override
+  String get driverBlockButton => 'Не принимать';
+
+  @override
+  String get doneButton => 'Готово';
+
+  @override
+  String driverStarRatingSemanticLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'звёзд',
+      many: 'звёзд',
+      few: 'звезды',
+      one: 'звезда',
+    );
+    return 'Оценка: $count $_temp0';
+  }
 }

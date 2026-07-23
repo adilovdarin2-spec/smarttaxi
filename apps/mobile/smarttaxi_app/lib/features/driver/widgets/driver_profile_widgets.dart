@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 import '../models/driver_shell_helpers.dart';
 import 'driver_common_widgets.dart';
@@ -68,6 +69,7 @@ class DriverTripHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return PremiumCard(
       child: Row(
         children: [
@@ -76,7 +78,7 @@ class DriverTripHistoryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  formatTripHistoryDate(trip.createdAt),
+                  formatTripHistoryDate(l10n, trip.createdAt),
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
@@ -94,7 +96,7 @@ class DriverTripHistoryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                StatusPill(label: statusLabel(trip.status), tone: _tone),
+                StatusPill(label: statusLabel(l10n, trip.status), tone: _tone),
               ],
             ),
           ),

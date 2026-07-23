@@ -2784,4 +2784,324 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get driverUpdatesUnavailableNote =>
       'Жаңарту серверімен байланыс уақытша қолжетімсіз. Экран API арқылы жұмысын жалғастырады.';
+
+  @override
+  String get driverManeuverTurnLeft => 'Солға бұрылыс';
+
+  @override
+  String get driverManeuverTurnRight => 'Оңға бұрылыс';
+
+  @override
+  String get driverManeuverSlightLeft => 'Сәл солға қарай';
+
+  @override
+  String get driverManeuverSlightRight => 'Сәл оңға қарай';
+
+  @override
+  String get driverManeuverSharpLeft => 'Күрт солға бұрылыс';
+
+  @override
+  String get driverManeuverSharpRight => 'Күрт оңға бұрылыс';
+
+  @override
+  String get driverManeuverUturn => 'Кері бұрылу';
+
+  @override
+  String get driverManeuverStraight => 'Тік жүріңіз';
+
+  @override
+  String get driverManeuverMergeLeft => 'Солға жол ауыстырыңыз';
+
+  @override
+  String get driverManeuverMergeRight => 'Оңға жол ауыстырыңыз';
+
+  @override
+  String get driverManeuverOnRamp => 'Трассаға шығу';
+
+  @override
+  String get driverManeuverOffRamp => 'Трассадан шығу';
+
+  @override
+  String driverManeuverRoundaboutWithExit(int exit) {
+    return 'Шеңберлі қозғалыс, $exit-шығу';
+  }
+
+  @override
+  String get driverManeuverRoundabout => 'Шеңберлі қозғалыс';
+
+  @override
+  String get driverManeuverExitRoundabout => 'Шеңберлі қозғалыстан шығу';
+
+  @override
+  String get driverManeuverArrive => 'Сіз мақсатқа жақынсыз';
+
+  @override
+  String get driverManeuverFollowRoute => 'Бағыт бойынша жүріңіз';
+
+  @override
+  String get driverPaymentCashback => 'Бонустар';
+
+  @override
+  String get driverPaymentMixed => 'Аралас';
+
+  @override
+  String driverRouteMetaLabel(String details) {
+    return 'Бағыт: $details';
+  }
+
+  @override
+  String get driverOrderStatusNew => 'Жаңа';
+
+  @override
+  String get driverOrderStatusAccepted => 'Қабылданды';
+
+  @override
+  String get driverOrderStatusGoingToClient => 'Клиентке келе жатыр';
+
+  @override
+  String get driverOrderStatusWaiting => 'Күту';
+
+  @override
+  String get driverOrderStatusCompleted => 'Аяқталды';
+
+  @override
+  String get driverOrderStatusPaymentPending => 'Төлемді күтуде';
+
+  @override
+  String get driverOrderStatusRated => 'Бағаланды';
+
+  @override
+  String get driverOrderStatusCancelledByDriver => 'Жүргізуші бас тартты';
+
+  @override
+  String get driverOrderStatusCancelledByClient => 'Клиент бас тартты';
+
+  @override
+  String get driverOrderStatusCancelledByOperator => 'Оператор бас тартты';
+
+  @override
+  String get driverOrderStatusCancelled => 'Бас тартылды';
+
+  @override
+  String get driverErrorRegionNotSelected => 'Жұмыс аймағын таңдаңыз';
+
+  @override
+  String get driverErrorRegionInactive => 'Аймақ уақытша сөндірілген';
+
+  @override
+  String get driverErrorRegionNotApproved => 'Сіз бұл аймаққа мақұлданбағансыз';
+
+  @override
+  String get driverErrorRegionBlocked => 'Бұл аймақта жұмыс бұғатталған';
+
+  @override
+  String get driverErrorDriverBlocked => 'Жүргізуші бұғатталған';
+
+  @override
+  String get driverErrorDocumentsNotApproved =>
+      'Сервер құжаттарды тексеруді әлі талап етеді — қолдау қызметіне хабарласыңыз';
+
+  @override
+  String get driverErrorHasActiveOrder => 'Сізде белсенді тапсырыс бар';
+
+  @override
+  String get driverErrorOrderAlreadyAccepted =>
+      'Тапсырысты басқа жүргізуші қабылдап қойды';
+
+  @override
+  String get driverErrorInvalidStatusTransition =>
+      'Бұл қадам тапсырыс үшін енді қолжетімсіз';
+
+  @override
+  String get driverErrorForbiddenOrder =>
+      'Бұл тапсырыс басқа жүргізушіге тағайындалған';
+
+  @override
+  String get driverErrorOrderRegionMismatch =>
+      'Тапсырыс жұмыс аймағыңыздан тыс';
+
+  @override
+  String get driverErrorOrderNotFound => 'Тапсырыс табылмады';
+
+  @override
+  String get driverErrorDebtLimit =>
+      'Борыш лимиті асып кетті. Оператормен байланысыңыз';
+
+  @override
+  String get driverErrorLocationOutsideRegion =>
+      'Геолокация жұмыс аймағынан тыс';
+
+  @override
+  String get driverErrorLocationUnavailable =>
+      'Жүргізушінің геолокациясын күтудеміз';
+
+  @override
+  String get driverErrorOrderNotCompleted =>
+      'Сапар төлемі әлі оператормен расталған жоқ.';
+
+  @override
+  String get driverErrorOrderAlreadyRated => 'Сіз бұл жолаушыны бағаладыңыз';
+
+  @override
+  String get driverPassengerFallback => 'Жолаушы';
+
+  @override
+  String get driverStepperAccepted => 'Қабылданды';
+
+  @override
+  String get driverStepperGoing => 'Келе жатыр';
+
+  @override
+  String get driverStepperArrived => 'Келді';
+
+  @override
+  String get driverStepperWaiting => 'Күту';
+
+  @override
+  String get driverStepperInTransit => 'Жолда';
+
+  @override
+  String get driverStepperFinish => 'Финиш';
+
+  @override
+  String get driverNewOrderTitle => 'Жаңа тапсырыс';
+
+  @override
+  String get driverWorkingRegionLabel => 'Жұмыс аймағы';
+
+  @override
+  String driverTariffLabel(String tariff) {
+    return 'Тариф $tariff';
+  }
+
+  @override
+  String get driverPriceAfterCalculation => 'Есептеуден кейінгі баға';
+
+  @override
+  String get driverCustomPriceBadge => 'Өз бағасы';
+
+  @override
+  String get driverSkippingButton => 'Өткізіп жатырмыз...';
+
+  @override
+  String get driverSkipButton => 'Өткізіп жіберу';
+
+  @override
+  String get driverAcceptingButton => 'Қабылдап жатырмыз...';
+
+  @override
+  String get driverAcceptButton => 'Қабылдау';
+
+  @override
+  String get driverDeclineButton => 'Бас тарту';
+
+  @override
+  String get driverRespondingButton => 'Жауап беріп жатырмыз...';
+
+  @override
+  String driverClientOfferedCustomPrice(String price) {
+    return 'Клиент $price ұсынды';
+  }
+
+  @override
+  String get driverClientOfferedCustomPriceGeneric => 'өз бағасын';
+
+  @override
+  String get driverAwaitingClientResponse => 'Клиенттің жауабын күтудеміз';
+
+  @override
+  String driverAwaitingClientResponseWithPrice(String price) {
+    return 'Жауапты күтудеміз: $price';
+  }
+
+  @override
+  String get driverOfferCustomPriceButton => 'Өз бағаңызды ұсыныңыз';
+
+  @override
+  String get driverPaidWaitingLabel => 'Ақылы күту';
+
+  @override
+  String get driverFreeWaitingLabel => 'Тегін күту';
+
+  @override
+  String get driverTripDistanceCoveredLabel => 'Осы сапарда жүрілді';
+
+  @override
+  String get driverTripCompletedTitle => 'Сапар аяқталды';
+
+  @override
+  String get driverTripCostLabel => 'Сапар құны';
+
+  @override
+  String get driverServiceCommissionLabel => 'Сервис комиссиясы';
+
+  @override
+  String get driverYouReceiveLabel => 'Сіз аласыз';
+
+  @override
+  String get driverRatePassengerTitle => 'Жолаушыны бағалаңыз';
+
+  @override
+  String get driverRatingTagPolitePassenger => 'Сыпайы жолаушы';
+
+  @override
+  String get driverRatingTagWaitedAtPickup => 'Қону нүктесінде күтті';
+
+  @override
+  String get driverRatingTagExactAddress => 'Дәл мекенжай';
+
+  @override
+  String get driverRatingTagOnTimeExit => 'Уақтылы шықты';
+
+  @override
+  String get driverRatingTagLongNoShow => 'Ұзақ шықпады';
+
+  @override
+  String get driverRatingTagRudeCommunication => 'Дөрекі қарым-қатынас';
+
+  @override
+  String get driverRatingTagWrongAddress => 'Қате мекенжай';
+
+  @override
+  String get driverRatingTagDirtyInterior => 'Салонды ластады';
+
+  @override
+  String get driverCommentOptionalHint => 'Түсініктеме (міндетті емес)';
+
+  @override
+  String get driverSendingRatingButton => 'Жіберіп жатырмыз...';
+
+  @override
+  String get driverSubmitRatingButton => 'Бағаны жіберу';
+
+  @override
+  String get driverRatingThanksMessage => 'Рақмет, баға жіберілді';
+
+  @override
+  String get driverRatingSkippedMessage => 'Баға өткізіп жіберілді';
+
+  @override
+  String get driverFavoriteAddedLabel => 'Таңдаулыда';
+
+  @override
+  String get driverFavoriteAddButton => 'Таңдаулыға қосу';
+
+  @override
+  String get driverBlockedLabel => 'Бұғатталған';
+
+  @override
+  String get driverBlockButton => 'Қабылдамау';
+
+  @override
+  String get doneButton => 'Дайын';
+
+  @override
+  String driverStarRatingSemanticLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'жұлдыз',
+    );
+    return 'Баға: $count $_temp0';
+  }
 }

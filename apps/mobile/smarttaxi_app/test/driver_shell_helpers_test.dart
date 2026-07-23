@@ -1,7 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttaxi_app/features/driver/models/driver_shell_helpers.dart';
 import 'package:smarttaxi_app/features/shared/models.dart';
+import 'package:smarttaxi_app/l10n/app_localizations.dart';
+
+final _l10n = lookupAppLocalizations(const Locale('ru'));
 
 DioException _badResponse(String code, {int status = 400}) {
   final options = RequestOptions(path: '/api/drivers/me/location');
@@ -25,18 +29,18 @@ void main() {
       // never matches a real backend rejection — every mapped message in
       // readableError() silently fell through to the generic fallback.
       expect(
-        readableError(_badResponse('DRIVER_LOCATION_OUTSIDE_REGION')),
+        readableError(_l10n, _badResponse('DRIVER_LOCATION_OUTSIDE_REGION')),
         'Геолокация вне рабочего региона',
       );
       expect(
-        readableError(_badResponse('DRIVER_REGION_NOT_APPROVED')),
+        readableError(_l10n, _badResponse('DRIVER_REGION_NOT_APPROVED')),
         'Вы не одобрены для этого региона',
       );
     });
 
     test('falls back to the generic message for an unmapped code', () {
       expect(
-        readableError(_badResponse('SOME_NEW_BACKEND_CODE')),
+        readableError(_l10n, _badResponse('SOME_NEW_BACKEND_CODE')),
         'Не удалось выполнить запрос',
       );
     });
@@ -49,13 +53,13 @@ void main() {
         error: 'SocketException: Failed host lookup',
       );
       expect(
-        readableError(error),
+        readableError(_l10n, error),
         'Сервер недоступен. Проверьте подключение.',
       );
     });
 
     test('handles a non-Dio error without throwing', () {
-      expect(readableError(Exception('boom')), 'Не удалось выполнить запрос');
+      expect(readableError(_l10n, Exception('boom')), 'Не удалось выполнить запрос');
     });
   });
 
@@ -83,28 +87,31 @@ void main() {
       // Real values OSRM actually sends (routing.service.js's steps=true,
       // confirmed live against router.project-osrm.org near Мырзакент) —
       // not a hypothetical vocabulary.
-      expect(maneuverLabelAndIcon('turn', 'left').$1, 'Поворот налево');
-      expect(maneuverLabelAndIcon('turn', 'right').$1, 'Поворот направо');
-      expect(
-          maneuverLabelAndIcon('turn', 'slight left').$1, 'Держитесь левее');
-      expect(maneuverLabelAndIcon('roundabout', 'right').$1,
+      expect(maneuverLabelAndIcon(_l10n, 'turn', 'left').$1, 'Поворот налево');
+      expect(maneuverLabelAndIcon(_l10n, 'turn', 'right').$1, 'Поворот направо');
+      expect(maneuverLabelAndIcon(_l10n, 'turn', 'slight left').$1,
+          'Держитесь левее');
+      expect(maneuverLabelAndIcon(_l10n, 'roundabout', 'right').$1,
           'Круговое движение');
-      expect(maneuverLabelAndIcon('arrive', null).$1, 'Вы почти на месте');
+      expect(
+          maneuverLabelAndIcon(_l10n, 'arrive', null).$1, 'Вы почти на месте');
       // OSRM's 'continue' type (confirmed live: a Shymkent route returned
       // "continue"/"right" for a bend that keeps the same street name) used
       // to silently fall through to the generic default, dropping the
       // direction it actually carries.
-      expect(maneuverLabelAndIcon('continue', 'right').$1, 'Поворот направо');
+      expect(maneuverLabelAndIcon(_l10n, 'continue', 'right').$1,
+          'Поворот направо');
     });
 
     test('includes the roundabout exit number when OSRM provides one', () {
-      expect(maneuverLabelAndIcon('roundabout', null, exit: 2).$1,
+      expect(maneuverLabelAndIcon(_l10n, 'roundabout', null, exit: 2).$1,
           'Круговое движение, 2-й съезд');
-      expect(maneuverLabelAndIcon('roundabout', null).$1, 'Круговое движение');
+      expect(maneuverLabelAndIcon(_l10n, 'roundabout', null).$1,
+          'Круговое движение');
     });
 
     test('falls back to a generic label for an unrecognized type', () {
-      expect(maneuverLabelAndIcon('notification', null).$1,
+      expect(maneuverLabelAndIcon(_l10n, 'notification', null).$1,
           'Двигайтесь по маршруту');
     });
   });

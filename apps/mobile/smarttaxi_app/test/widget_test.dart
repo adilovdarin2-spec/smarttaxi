@@ -615,12 +615,12 @@ void main() {
     expect(driver, contains('_acceptingOrderId'));
     expect(driver, contains('_rejectingOrderId'));
     expect(driver, contains('Принимаем...'));
-    expect(orderWidgets, contains('Пропускаем...'));
-    expect(orderWidgets, contains('Пропустить'));
+    expect(orderWidgets, contains('driverSkippingButton'));
+    expect(orderWidgets, contains('driverSkipButton'));
     expect(driver, contains('Клиент не вышел'));
-    expect(helpers, contains('Выйдите на линию, чтобы принимать заказы.'));
-    expect(helpers, contains('Заказ уже принят другим водителем'));
-    expect(helpers, contains('У вас уже есть активный заказ'));
+    expect(helpers, contains('driverGoOnlineRequiredError'));
+    expect(helpers, contains('driverErrorOrderAlreadyAccepted'));
+    expect(helpers, contains('driverErrorHasActiveOrder'));
     expect(driver, contains('_TripMap'));
     // Navigator became a dedicated pushed full-screen route instead of a
     // 4th IndexedStack tab (P2 rework) — _navigatorTab/_NavigatorCockpit no
@@ -638,7 +638,7 @@ void main() {
     expect(driver, isNot(contains('Google')));
     expect(driver, contains('CameraFit.coordinates'));
     expect(driver, contains('Маршрут до точки посадки'));
-    expect(helpers, contains('Маршрут временно недоступен'));
+    expect(helpers, contains('errorRouteUnavailable'));
     expect(driver, contains("status == 'DRIVER_FOUND'"));
     expect(driver, contains("status == 'DRIVER_GOING_TO_CLIENT'"));
     expect(driver, contains("status == 'DRIVER_ARRIVED'"));
