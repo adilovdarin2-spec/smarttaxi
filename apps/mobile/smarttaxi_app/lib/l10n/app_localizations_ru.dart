@@ -1166,6 +1166,168 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get passengerMarkDriverTitle => 'Отметить водителя';
+
+  @override
+  String get passengerNoTripDriversText =>
+      'Нет водителей из истории поездок, которых ещё можно отметить.';
+
+  @override
+  String get passengerChooseDriverHint => 'Выберите водителя';
+
+  @override
+  String get passengerAddToFavoritesChip => 'В избранное';
+
+  @override
+  String get passengerBlockDriverChip => 'Заблокировать';
+
+  @override
+  String get passengerAddToFavoritesTitle => 'Добавить в избранное';
+
+  @override
+  String get passengerFavoriteLabelHome => 'Дом';
+
+  @override
+  String get passengerFavoriteLabelWork => 'Работа';
+
+  @override
+  String get passengerFavoriteLabelOther => 'Другое';
+
+  @override
+  String get passengerFavoriteNameLabel => 'Название';
+
+  @override
+  String get passengerFavoriteNameHint => 'Например, «Дача» или «Спортзал»';
+
+  @override
+  String get passengerAddressSearchNotFoundError => 'Не удалось найти адрес';
+
+  @override
+  String get passengerAddressSearchHint => 'Улица, дом или место';
+
+  @override
+  String get passengerClearAction => 'Очистить';
+
+  @override
+  String get passengerSearchErrorTitle => 'Ошибка поиска';
+
+  @override
+  String get passengerEnterAddressTitle => 'Введите адрес';
+
+  @override
+  String get passengerStartTypingStreetText =>
+      'Начните вводить название улицы или места';
+
+  @override
+  String get passengerTryDifferentQueryText => 'Попробуйте изменить запрос';
+
+  @override
+  String get passengerNewRecurringRouteTitle => 'Новый регулярный маршрут';
+
+  @override
+  String get passengerRecurringRouteExampleText =>
+      'Например, отвозить ребёнка в школу по будням';
+
+  @override
+  String get passengerNoAvailableDriversTitle => 'Нет доступных водителей';
+
+  @override
+  String get passengerNoAvailableDriversText =>
+      'Водителя можно выбрать только из тех, с кем у вас уже была поездка. Совершите хотя бы одну поездку, чтобы предложить регулярный маршрут.';
+
+  @override
+  String get passengerDayMon => 'Пн';
+
+  @override
+  String get passengerDayTue => 'Вт';
+
+  @override
+  String get passengerDayWed => 'Ср';
+
+  @override
+  String get passengerDayThu => 'Чт';
+
+  @override
+  String get passengerDayFri => 'Пт';
+
+  @override
+  String get passengerDaysOfWeekLabel => 'Дни недели';
+
+  @override
+  String get passengerPickupTimeLabel => 'Время подачи';
+
+  @override
+  String get passengerChooseTimeButton => 'Выбрать время';
+
+  @override
+  String get passengerPriceLabelTenge => 'Цена, ₸';
+
+  @override
+  String get passengerRecurringErrorChooseDriver => 'Выберите водителя';
+
+  @override
+  String get passengerRecurringErrorAddresses =>
+      'Укажите точки посадки и назначения';
+
+  @override
+  String get passengerRecurringErrorDays => 'Выберите хотя бы один день недели';
+
+  @override
+  String get passengerRecurringErrorTime => 'Укажите время подачи';
+
+  @override
+  String get passengerRecurringErrorPrice =>
+      'Укажите цену от 200 до 1 000 000 ₸';
+
+  @override
+  String get passengerSendToDriverButton => 'Отправить водителю';
+
+  @override
+  String get passengerSendingButton => 'Отправляем...';
+
+  @override
+  String get passengerPickupPointTitle => 'Точка посадки';
+
+  @override
+  String get passengerDropoffPointTitle => 'Точка назначения';
+
+  @override
+  String get passengerChooseAddressText => 'Выбрать адрес';
+
+  @override
+  String get passengerRecentAddressesTitle => 'Недавние адреса';
+
+  @override
+  String get passengerLocationFailedPickManuallyError =>
+      'Не удалось получить геолокацию. Выберите точку подачи на карте.';
+
+  @override
+  String get passengerLocationServiceDisabledError =>
+      'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
+
+  @override
+  String get passengerChooseRegionTitle => 'Выберите регион';
+
+  @override
+  String get passengerChooseRegionSubtitle =>
+      'Выберите регион, где хотите заказать такси.';
+
+  @override
+  String get passengerLocationSkippedManualPickText =>
+      'Можно выбрать точку подачи на карте без доступа к геолокации.';
+
+  @override
+  String get passengerLocationDeniedManualPickError =>
+      'Геолокация не включена. Выберите точку подачи на карте вручную.';
+
+  @override
+  String get passengerLocationOutsideRegionError =>
+      'Ваше местоположение вне выбранного региона. Выберите точку подачи на карте или смените регион.';
+
+  @override
+  String get passengerCurrentLocationLabel => 'Текущее местоположение';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Раздел недоступен';
 
   @override

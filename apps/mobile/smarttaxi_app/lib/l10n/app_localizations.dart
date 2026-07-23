@@ -2163,6 +2163,306 @@ abstract class AppLocalizations {
   /// **'{days} дн назад'**
   String passengerTimeAgoDays(int days);
 
+  /// No description provided for @passengerMarkDriverTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отметить водителя'**
+  String get passengerMarkDriverTitle;
+
+  /// No description provided for @passengerNoTripDriversText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет водителей из истории поездок, которых ещё можно отметить.'**
+  String get passengerNoTripDriversText;
+
+  /// No description provided for @passengerChooseDriverHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите водителя'**
+  String get passengerChooseDriverHint;
+
+  /// No description provided for @passengerAddToFavoritesChip.
+  ///
+  /// In ru, this message translates to:
+  /// **'В избранное'**
+  String get passengerAddToFavoritesChip;
+
+  /// No description provided for @passengerBlockDriverChip.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заблокировать'**
+  String get passengerBlockDriverChip;
+
+  /// No description provided for @passengerAddToFavoritesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить в избранное'**
+  String get passengerAddToFavoritesTitle;
+
+  /// No description provided for @passengerFavoriteLabelHome.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дом'**
+  String get passengerFavoriteLabelHome;
+
+  /// No description provided for @passengerFavoriteLabelWork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа'**
+  String get passengerFavoriteLabelWork;
+
+  /// No description provided for @passengerFavoriteLabelOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'Другое'**
+  String get passengerFavoriteLabelOther;
+
+  /// No description provided for @passengerFavoriteNameLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Название'**
+  String get passengerFavoriteNameLabel;
+
+  /// No description provided for @passengerFavoriteNameHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например, «Дача» или «Спортзал»'**
+  String get passengerFavoriteNameHint;
+
+  /// No description provided for @passengerAddressSearchNotFoundError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось найти адрес'**
+  String get passengerAddressSearchNotFoundError;
+
+  /// No description provided for @passengerAddressSearchHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Улица, дом или место'**
+  String get passengerAddressSearchHint;
+
+  /// No description provided for @passengerClearAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очистить'**
+  String get passengerClearAction;
+
+  /// No description provided for @passengerSearchErrorTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ошибка поиска'**
+  String get passengerSearchErrorTitle;
+
+  /// No description provided for @passengerEnterAddressTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите адрес'**
+  String get passengerEnterAddressTitle;
+
+  /// No description provided for @passengerStartTypingStreetText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Начните вводить название улицы или места'**
+  String get passengerStartTypingStreetText;
+
+  /// No description provided for @passengerTryDifferentQueryText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробуйте изменить запрос'**
+  String get passengerTryDifferentQueryText;
+
+  /// No description provided for @passengerNewRecurringRouteTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый регулярный маршрут'**
+  String get passengerNewRecurringRouteTitle;
+
+  /// No description provided for @passengerRecurringRouteExampleText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например, отвозить ребёнка в школу по будням'**
+  String get passengerRecurringRouteExampleText;
+
+  /// No description provided for @passengerNoAvailableDriversTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет доступных водителей'**
+  String get passengerNoAvailableDriversTitle;
+
+  /// No description provided for @passengerNoAvailableDriversText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водителя можно выбрать только из тех, с кем у вас уже была поездка. Совершите хотя бы одну поездку, чтобы предложить регулярный маршрут.'**
+  String get passengerNoAvailableDriversText;
+
+  /// No description provided for @passengerDayMon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пн'**
+  String get passengerDayMon;
+
+  /// No description provided for @passengerDayTue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вт'**
+  String get passengerDayTue;
+
+  /// No description provided for @passengerDayWed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ср'**
+  String get passengerDayWed;
+
+  /// No description provided for @passengerDayThu.
+  ///
+  /// In ru, this message translates to:
+  /// **'Чт'**
+  String get passengerDayThu;
+
+  /// No description provided for @passengerDayFri.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пт'**
+  String get passengerDayFri;
+
+  /// No description provided for @passengerDaysOfWeekLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дни недели'**
+  String get passengerDaysOfWeekLabel;
+
+  /// No description provided for @passengerPickupTimeLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время подачи'**
+  String get passengerPickupTimeLabel;
+
+  /// No description provided for @passengerChooseTimeButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать время'**
+  String get passengerChooseTimeButton;
+
+  /// No description provided for @passengerPriceLabelTenge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена, ₸'**
+  String get passengerPriceLabelTenge;
+
+  /// No description provided for @passengerRecurringErrorChooseDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите водителя'**
+  String get passengerRecurringErrorChooseDriver;
+
+  /// No description provided for @passengerRecurringErrorAddresses.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите точки посадки и назначения'**
+  String get passengerRecurringErrorAddresses;
+
+  /// No description provided for @passengerRecurringErrorDays.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите хотя бы один день недели'**
+  String get passengerRecurringErrorDays;
+
+  /// No description provided for @passengerRecurringErrorTime.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите время подачи'**
+  String get passengerRecurringErrorTime;
+
+  /// No description provided for @passengerRecurringErrorPrice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите цену от 200 до 1 000 000 ₸'**
+  String get passengerRecurringErrorPrice;
+
+  /// No description provided for @passengerSendToDriverButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить водителю'**
+  String get passengerSendToDriverButton;
+
+  /// No description provided for @passengerSendingButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправляем...'**
+  String get passengerSendingButton;
+
+  /// No description provided for @passengerPickupPointTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка посадки'**
+  String get passengerPickupPointTitle;
+
+  /// No description provided for @passengerDropoffPointTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка назначения'**
+  String get passengerDropoffPointTitle;
+
+  /// No description provided for @passengerChooseAddressText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать адрес'**
+  String get passengerChooseAddressText;
+
+  /// No description provided for @passengerRecentAddressesTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Недавние адреса'**
+  String get passengerRecentAddressesTitle;
+
+  /// No description provided for @passengerLocationFailedPickManuallyError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить геолокацию. Выберите точку подачи на карте.'**
+  String get passengerLocationFailedPickManuallyError;
+
+  /// No description provided for @passengerLocationServiceDisabledError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация выключена. Включите её в настройках или выберите точку на карте.'**
+  String get passengerLocationServiceDisabledError;
+
+  /// No description provided for @passengerChooseRegionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите регион'**
+  String get passengerChooseRegionTitle;
+
+  /// No description provided for @passengerChooseRegionSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите регион, где хотите заказать такси.'**
+  String get passengerChooseRegionSubtitle;
+
+  /// No description provided for @passengerLocationSkippedManualPickText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно выбрать точку подачи на карте без доступа к геолокации.'**
+  String get passengerLocationSkippedManualPickText;
+
+  /// No description provided for @passengerLocationDeniedManualPickError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Геолокация не включена. Выберите точку подачи на карте вручную.'**
+  String get passengerLocationDeniedManualPickError;
+
+  /// No description provided for @passengerLocationOutsideRegionError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше местоположение вне выбранного региона. Выберите точку подачи на карте или смените регион.'**
+  String get passengerLocationOutsideRegionError;
+
+  /// No description provided for @passengerCurrentLocationLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Текущее местоположение'**
+  String get passengerCurrentLocationLabel;
+
   /// No description provided for @passengerSectionUnavailableTitle.
   ///
   /// In ru, this message translates to:

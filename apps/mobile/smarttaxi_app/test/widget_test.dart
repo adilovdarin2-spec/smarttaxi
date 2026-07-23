@@ -182,7 +182,7 @@ void main() {
       expect(passenger, contains('Введите адрес назначения'));
       expect(passenger, contains('Введите адрес назначения'));
       expect(passenger, contains('_AddressSearchSheet'));
-      expect(passenger, contains('Улица, дом или место'));
+      expect(passenger, contains('l10n.passengerAddressSearchHint'));
       expect(passenger, contains('Ничего не найдено'));
       expect(passenger, contains('Выбрать точку на карте'));
       expect(passenger, contains('l10n.passengerCtaPickDropoff'));

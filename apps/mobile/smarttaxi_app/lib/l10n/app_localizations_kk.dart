@@ -1174,6 +1174,168 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
+  String get passengerMarkDriverTitle => 'Жүргізушіні белгілеу';
+
+  @override
+  String get passengerNoTripDriversText =>
+      'Сапар тарихынан белгілей алатын жүргізуші жоқ.';
+
+  @override
+  String get passengerChooseDriverHint => 'Жүргізушіні таңдаңыз';
+
+  @override
+  String get passengerAddToFavoritesChip => 'Таңдаулыға';
+
+  @override
+  String get passengerBlockDriverChip => 'Бұғаттау';
+
+  @override
+  String get passengerAddToFavoritesTitle => 'Таңдаулыға қосу';
+
+  @override
+  String get passengerFavoriteLabelHome => 'Үй';
+
+  @override
+  String get passengerFavoriteLabelWork => 'Жұмыс';
+
+  @override
+  String get passengerFavoriteLabelOther => 'Басқа';
+
+  @override
+  String get passengerFavoriteNameLabel => 'Атауы';
+
+  @override
+  String get passengerFavoriteNameHint => 'Мысалы, «Саяжай» немесе «Спортзал»';
+
+  @override
+  String get passengerAddressSearchNotFoundError => 'Мекенжай табылмады';
+
+  @override
+  String get passengerAddressSearchHint => 'Көше, үй немесе орын';
+
+  @override
+  String get passengerClearAction => 'Тазалау';
+
+  @override
+  String get passengerSearchErrorTitle => 'Іздеу қатесі';
+
+  @override
+  String get passengerEnterAddressTitle => 'Мекенжайды енгізіңіз';
+
+  @override
+  String get passengerStartTypingStreetText =>
+      'Көше немесе орын атауын теруді бастаңыз';
+
+  @override
+  String get passengerTryDifferentQueryText => 'Сұранысты өзгертіп көріңіз';
+
+  @override
+  String get passengerNewRecurringRouteTitle => 'Жаңа тұрақты бағыт';
+
+  @override
+  String get passengerRecurringRouteExampleText =>
+      'Мысалы, баланы мектепке апта сайын апару';
+
+  @override
+  String get passengerNoAvailableDriversTitle => 'Қолжетімді жүргізуші жоқ';
+
+  @override
+  String get passengerNoAvailableDriversText =>
+      'Жүргізушіні тек бұрын бірге сапар жасаған адамдардан таңдай аласыз. Тұрақты бағыт ұсыну үшін кемінде бір сапар жасаңыз.';
+
+  @override
+  String get passengerDayMon => 'Дс';
+
+  @override
+  String get passengerDayTue => 'Сс';
+
+  @override
+  String get passengerDayWed => 'Ср';
+
+  @override
+  String get passengerDayThu => 'Бс';
+
+  @override
+  String get passengerDayFri => 'Жм';
+
+  @override
+  String get passengerDaysOfWeekLabel => 'Апта күндері';
+
+  @override
+  String get passengerPickupTimeLabel => 'Қону уақыты';
+
+  @override
+  String get passengerChooseTimeButton => 'Уақытты таңдау';
+
+  @override
+  String get passengerPriceLabelTenge => 'Баға, ₸';
+
+  @override
+  String get passengerRecurringErrorChooseDriver => 'Жүргізушіні таңдаңыз';
+
+  @override
+  String get passengerRecurringErrorAddresses =>
+      'Қону және межелі мекенжайларды көрсетіңіз';
+
+  @override
+  String get passengerRecurringErrorDays => 'Кемінде бір апта күнін таңдаңыз';
+
+  @override
+  String get passengerRecurringErrorTime => 'Қону уақытын көрсетіңіз';
+
+  @override
+  String get passengerRecurringErrorPrice =>
+      '200-ден 1 000 000 ₸ дейінгі баға көрсетіңіз';
+
+  @override
+  String get passengerSendToDriverButton => 'Жүргізушіге жіберу';
+
+  @override
+  String get passengerSendingButton => 'Жіберілуде...';
+
+  @override
+  String get passengerPickupPointTitle => 'Қону нүктесі';
+
+  @override
+  String get passengerDropoffPointTitle => 'Межелі нүкте';
+
+  @override
+  String get passengerChooseAddressText => 'Мекенжайды таңдау';
+
+  @override
+  String get passengerRecentAddressesTitle => 'Соңғы мекенжайлар';
+
+  @override
+  String get passengerLocationFailedPickManuallyError =>
+      'Геолокацияны алу мүмкін болмады. Қону нүктесін картадан таңдаңыз.';
+
+  @override
+  String get passengerLocationServiceDisabledError =>
+      'Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.';
+
+  @override
+  String get passengerChooseRegionTitle => 'Аймақты таңдаңыз';
+
+  @override
+  String get passengerChooseRegionSubtitle =>
+      'Такси шақырғыңыз келетін аймақты таңдаңыз.';
+
+  @override
+  String get passengerLocationSkippedManualPickText =>
+      'Геолокацияға қолжетімсіз болса да, қону нүктесін картадан таңдай аласыз.';
+
+  @override
+  String get passengerLocationDeniedManualPickError =>
+      'Геолокация қосылмаған. Қону нүктесін картадан қолмен таңдаңыз.';
+
+  @override
+  String get passengerLocationOutsideRegionError =>
+      'Сіздің орналасқан жеріңіз таңдалған аймақтан тыс. Қону нүктесін картадан таңдаңыз немесе аймақты ауыстырыңыз.';
+
+  @override
+  String get passengerCurrentLocationLabel => 'Ағымдағы орналасқан жер';
+
+  @override
   String get passengerSectionUnavailableTitle => 'Бөлім қолжетімсіз';
 
   @override

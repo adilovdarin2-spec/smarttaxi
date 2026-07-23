@@ -1210,6 +1210,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _usePhoneLocation() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _error = null;
       _locationLoading = true;
@@ -1220,15 +1221,14 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       if (!serviceEnabled) {
         setState(() {
-          _error =
-              'Геолокация выключена. Включите её в настройках или выберите точку на карте.';
+          _error = l10n.passengerLocationServiceDisabledError;
           _locationServiceDisabled = true;
           _locationBlockDismissed = false;
         });
         if (_selectedRegion == null) {
           await _chooseRegion(
-            title: 'Выберите регион',
-            subtitle: 'Выберите регион, где хотите заказать такси.',
+            title: l10n.passengerChooseRegionTitle,
+            subtitle: l10n.passengerChooseRegionSubtitle,
           );
         }
         return;
@@ -1247,13 +1247,12 @@ class _PassengerShellState extends State<PassengerShell>
         if (!mounted) return;
         if (approved != true) {
           setState(
-            () => _error =
-                'Можно выбрать точку подачи на карте без доступа к геолокации.',
+            () => _error = l10n.passengerLocationSkippedManualPickText,
           );
           if (_selectedRegion == null) {
             await _chooseRegion(
-              title: 'Выберите регион',
-              subtitle: 'Выберите регион, где хотите заказать такси.',
+              title: l10n.passengerChooseRegionTitle,
+              subtitle: l10n.passengerChooseRegionSubtitle,
             );
           }
           return;
@@ -1264,8 +1263,7 @@ class _PassengerShellState extends State<PassengerShell>
           permission == LocationPermission.deniedForever) {
         if (!mounted) return;
         setState(() {
-          _error =
-              'Геолокация не включена. Выберите точку подачи на карте вручную.';
+          _error = l10n.passengerLocationDeniedManualPickError;
           _locationPermissionDeniedForever =
               permission == LocationPermission.deniedForever;
           if (permission == LocationPermission.deniedForever) {
@@ -1274,8 +1272,8 @@ class _PassengerShellState extends State<PassengerShell>
         });
         if (_selectedRegion == null) {
           await _chooseRegion(
-            title: 'Выберите регион',
-            subtitle: 'Выберите регион, где хотите заказать такси.',
+            title: l10n.passengerChooseRegionTitle,
+            subtitle: l10n.passengerChooseRegionSubtitle,
           );
         }
         return;
@@ -1295,8 +1293,8 @@ class _PassengerShellState extends State<PassengerShell>
         if (action == _RegionConfirmAction.change) {
           final manualRegion = await _chooseRegion(
             resetRoute: true,
-            title: 'Выберите регион',
-            subtitle: 'Выберите регион, где хотите заказать такси.',
+            title: l10n.passengerChooseRegionTitle,
+            subtitle: l10n.passengerChooseRegionSubtitle,
           );
           if (!mounted) return;
           if (manualRegion == null || !manualRegion.contains(point)) {
@@ -1329,8 +1327,7 @@ class _PassengerShellState extends State<PassengerShell>
         } else {
           setState(() {
             _locationLoading = false;
-            _error =
-                'Ваше местоположение вне выбранного региона. Выберите точку подачи на карте или смените регион.';
+            _error = l10n.passengerLocationOutsideRegionError;
             if (selectedRegion.center != null) {
               _mapCenter = selectedRegion.center!.toLatLng();
             }
@@ -1338,7 +1335,7 @@ class _PassengerShellState extends State<PassengerShell>
           return;
         }
       }
-      var label = 'Текущее местоположение';
+      var label = l10n.passengerCurrentLocationLabel;
       try {
         final address = await widget.api.reverseAddress(point);
         if (address != null && address.label.trim().isNotEmpty) {
@@ -1358,8 +1355,7 @@ class _PassengerShellState extends State<PassengerShell>
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error =
-              'Не удалось получить геолокацию. Выберите точку подачи на карте.',
+          () => _error = l10n.passengerLocationFailedPickManuallyError,
         );
       }
     } finally {
@@ -1377,9 +1373,10 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _selectPoint({required PointTarget target}) async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _target = target);
     final sheetAddresses = _recentAddresses;
-    const sheetAddressTitle = 'Недавние адреса';
+    final sheetAddressTitle = l10n.passengerRecentAddressesTitle;
     // Near-opaque barrier so the map fades almost entirely to the app
     // background behind this sheet (a much softer look than the default
     // dark scrim) — needs its own dark-mode color or the light cream tint
@@ -1397,8 +1394,10 @@ class _PassengerShellState extends State<PassengerShell>
         suggestedAddresses: sheetAddresses,
         suggestionTitle: sheetAddressTitle,
         mapCenter: _mapCenter ?? _selectedRegion?.center?.toLatLng(),
-        title: target == PointTarget.pickup ? 'Откуда' : 'Куда',
-        hint: 'Улица, дом или место',
+        title: target == PointTarget.pickup
+            ? l10n.passengerFromLabel
+            : l10n.passengerToLabel,
+        hint: l10n.passengerAddressSearchHint,
       ),
     );
     if (selected == null) return;
@@ -9671,6 +9670,7 @@ class _DriverPreferenceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final blocked = preference.isBlocked;
     final meta = [preference.driverCarModel, preference.driverPlate]
         .where((value) => (value ?? '').trim().isNotEmpty)
@@ -9699,7 +9699,7 @@ class _DriverPreferenceCard extends StatelessWidget {
               children: [
                 Text(
                   (preference.driverName ?? '').isEmpty
-                      ? 'Водитель'
+                      ? l10n.driverProfileNameFallback
                       : preference.driverName!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -9730,7 +9730,7 @@ class _DriverPreferenceCard extends StatelessWidget {
                 )
               : IconButton(
                   onPressed: onRemove,
-                  tooltip: 'Удалить',
+                  tooltip: l10n.deleteButton,
                   icon: Icon(
                     Icons.close_rounded,
                     color: palette.textSecondary,
@@ -9766,6 +9766,7 @@ class _AddDriverPreferenceSheetState
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -9790,15 +9791,14 @@ class _AddDriverPreferenceSheetState
               child: _SheetHandle(
                   dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
-            const Text(
-              'Отметить водителя',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            Text(
+              l10n.passengerMarkDriverTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 14),
             if (widget.candidates.isEmpty)
               _InlineMessage(
-                text:
-                    'Нет водителей из истории поездок, которых ещё можно отметить.',
+                text: l10n.passengerNoTripDriversText,
                 dark: Theme.of(context).brightness == Brightness.dark,
               )
             else ...[
@@ -9812,7 +9812,7 @@ class _AddDriverPreferenceSheetState
                   child: DropdownButton<String>(
                     isExpanded: true,
                     value: _driverId,
-                    hint: const Text('Выберите водителя'),
+                    hint: Text(l10n.passengerChooseDriverHint),
                     items: widget.candidates
                         .map((driver) => DropdownMenuItem(
                               value: driver.$1,
@@ -9829,12 +9829,12 @@ class _AddDriverPreferenceSheetState
                 spacing: 8,
                 children: [
                   _SupportTopicChip(
-                    label: 'В избранное',
+                    label: l10n.passengerAddToFavoritesChip,
                     selected: _type == 'FAVORITE',
                     onTap: () => setState(() => _type = 'FAVORITE'),
                   ),
                   _SupportTopicChip(
-                    label: 'Заблокировать',
+                    label: l10n.passengerBlockDriverChip,
                     selected: _type == 'BLOCKED',
                     onTap: () => setState(() => _type = 'BLOCKED'),
                   ),
@@ -9844,8 +9844,8 @@ class _AddDriverPreferenceSheetState
               _GoldCtaButton(
                 enabled: !widget.submitting && _driverId != null,
                 loading: widget.submitting,
-                text: 'Сохранить',
-                loadingText: 'Сохраняем...',
+                text: l10n.save,
+                loadingText: l10n.savingLabel,
                 onTap: () => widget.onSubmit(_driverId!, _type),
               ),
             ],
@@ -9875,15 +9875,15 @@ class _CreateFavoriteAddressSheet extends StatefulWidget {
 class _CreateFavoriteAddressSheetState
     extends State<_CreateFavoriteAddressSheet> {
   String _label = 'HOME';
-  late final _titleController =
-      TextEditingController(text: _defaultTitleFor('HOME'));
+  late final _titleController = TextEditingController(
+      text: _defaultTitleFor(AppLocalizations.of(context), 'HOME'));
 
-  String _defaultTitleFor(String label) {
+  String _defaultTitleFor(AppLocalizations l10n, String label) {
     switch (label) {
       case 'HOME':
-        return 'Дом';
+        return l10n.passengerFavoriteLabelHome;
       case 'WORK':
-        return 'Работа';
+        return l10n.passengerFavoriteLabelWork;
       default:
         return '';
     }
@@ -9898,6 +9898,7 @@ class _CreateFavoriteAddressSheetState
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -9922,9 +9923,9 @@ class _CreateFavoriteAddressSheetState
               child: _SheetHandle(
                   dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
-            const Text(
-              'Добавить в избранное',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            Text(
+              l10n.passengerAddToFavoritesTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 4),
             Text(
@@ -9942,27 +9943,27 @@ class _CreateFavoriteAddressSheetState
               spacing: 8,
               children: [
                 _SupportTopicChip(
-                  label: 'Дом',
+                  label: l10n.passengerFavoriteLabelHome,
                   selected: _label == 'HOME',
                   onTap: () => setState(() {
                     _label = 'HOME';
-                    _titleController.text = _defaultTitleFor('HOME');
+                    _titleController.text = _defaultTitleFor(l10n, 'HOME');
                   }),
                 ),
                 _SupportTopicChip(
-                  label: 'Работа',
+                  label: l10n.passengerFavoriteLabelWork,
                   selected: _label == 'WORK',
                   onTap: () => setState(() {
                     _label = 'WORK';
-                    _titleController.text = _defaultTitleFor('WORK');
+                    _titleController.text = _defaultTitleFor(l10n, 'WORK');
                   }),
                 ),
                 _SupportTopicChip(
-                  label: 'Другое',
+                  label: l10n.passengerFavoriteLabelOther,
                   selected: _label == 'OTHER',
                   onTap: () => setState(() {
                     _label = 'OTHER';
-                    _titleController.text = _defaultTitleFor('OTHER');
+                    _titleController.text = _defaultTitleFor(l10n, 'OTHER');
                   }),
                 ),
               ],
@@ -9971,9 +9972,9 @@ class _CreateFavoriteAddressSheetState
             TextField(
               controller: _titleController,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Название',
-                hintText: 'Например, «Дача» или «Спортзал»',
+              decoration: InputDecoration(
+                labelText: l10n.passengerFavoriteNameLabel,
+                hintText: l10n.passengerFavoriteNameHint,
               ),
             ),
             const SizedBox(height: 16),
@@ -9981,8 +9982,8 @@ class _CreateFavoriteAddressSheetState
               enabled: !widget.submitting &&
                   _titleController.text.trim().isNotEmpty,
               loading: widget.submitting,
-              text: 'Сохранить',
-              loadingText: 'Сохраняем...',
+              text: l10n.save,
+              loadingText: l10n.savingLabel,
               onTap: () =>
                   widget.onSubmit(_label, _titleController.text.trim()),
             ),
@@ -10052,7 +10053,8 @@ class _SimpleAddressSearchSheetState
       setState(() => _results = results);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'Не удалось найти адрес');
+      setState(() => _error =
+          AppLocalizations.of(context).passengerAddressSearchNotFoundError);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -10061,6 +10063,7 @@ class _SimpleAddressSearchSheetState
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
       minChildSize: 0.5,
@@ -10091,13 +10094,13 @@ class _SimpleAddressSearchSheetState
                 autofocus: true,
                 onChanged: _onChanged,
                 decoration: InputDecoration(
-                  hintText: 'Улица, дом или место',
+                  hintText: l10n.passengerAddressSearchHint,
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _query.text.isEmpty
                       ? null
                       : IconButton(
                           icon: const Icon(Icons.close_rounded),
-                          tooltip: 'Очистить',
+                          tooltip: l10n.passengerClearAction,
                           onPressed: () {
                             _query.clear();
                             _onChanged('');
@@ -10117,18 +10120,18 @@ class _SimpleAddressSearchSheetState
                     : _error != null
                         ? EmptyState(
                             icon: Icons.wifi_off_rounded,
-                            title: 'Ошибка поиска',
+                            title: l10n.passengerSearchErrorTitle,
                             text: _error!,
                           )
                         : _results.isEmpty
                             ? EmptyState(
                                 icon: Icons.location_searching_rounded,
                                 title: _query.text.trim().length < 2
-                                    ? 'Введите адрес'
-                                    : 'Ничего не найдено',
+                                    ? l10n.passengerEnterAddressTitle
+                                    : l10n.passengerFaqNoResultsTitle,
                                 text: _query.text.trim().length < 2
-                                    ? 'Начните вводить название улицы или места'
-                                    : 'Попробуйте изменить запрос',
+                                    ? l10n.passengerStartTypingStreetText
+                                    : l10n.passengerTryDifferentQueryText,
                               )
                             : ListView.builder(
                                 controller: scrollController,
@@ -10196,7 +10199,13 @@ class _CreateRecurringBookingSheet extends StatefulWidget {
 
 class _CreateRecurringBookingSheetState
     extends State<_CreateRecurringBookingSheet> {
-  static const _dayLabels = {1: 'Пн', 2: 'Вт', 3: 'Ср', 4: 'Чт', 5: 'Пт'};
+  static Map<int, String> _dayLabels(AppLocalizations l10n) => {
+        1: l10n.passengerDayMon,
+        2: l10n.passengerDayTue,
+        3: l10n.passengerDayWed,
+        4: l10n.passengerDayThu,
+        5: l10n.passengerDayFri,
+      };
 
   String? _driverId;
   AddressSuggestion? _pickup;
@@ -10215,13 +10224,16 @@ class _CreateRecurringBookingSheetState
   }
 
   Future<void> _pickAddress({required bool pickup}) async {
+    final l10n = AppLocalizations.of(context);
     final result = await showModalBottomSheet<AddressSuggestion>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _SimpleAddressSearchSheet(
         api: widget.api,
-        title: pickup ? 'Точка посадки' : 'Точка назначения',
+        title: pickup
+            ? l10n.passengerPickupPointTitle
+            : l10n.passengerDropoffPointTitle,
       ),
     );
     if (result == null || !mounted) return;
@@ -10243,29 +10255,30 @@ class _CreateRecurringBookingSheetState
   }
 
   void _submit() {
+    final l10n = AppLocalizations.of(context);
     final driverId = _driverId;
     final pickup = _pickup;
     final dropoff = _dropoff;
     final time = _time;
     final price = int.tryParse(_priceController.text.trim());
     if (driverId == null) {
-      setState(() => _error = 'Выберите водителя');
+      setState(() => _error = l10n.passengerRecurringErrorChooseDriver);
       return;
     }
     if (pickup == null || dropoff == null) {
-      setState(() => _error = 'Укажите точки посадки и назначения');
+      setState(() => _error = l10n.passengerRecurringErrorAddresses);
       return;
     }
     if (_days.isEmpty) {
-      setState(() => _error = 'Выберите хотя бы один день недели');
+      setState(() => _error = l10n.passengerRecurringErrorDays);
       return;
     }
     if (time == null) {
-      setState(() => _error = 'Укажите время подачи');
+      setState(() => _error = l10n.passengerRecurringErrorTime);
       return;
     }
     if (price == null || price < 200 || price > 1000000) {
-      setState(() => _error = 'Укажите цену от 200 до 1 000 000 ₸');
+      setState(() => _error = l10n.passengerRecurringErrorPrice);
       return;
     }
     setState(() => _error = null);
@@ -10297,6 +10310,7 @@ class _CreateRecurringBookingSheetState
         expand: false,
         builder: (context, scrollController) {
           final palette = context.palette;
+          final l10n = AppLocalizations.of(context);
           return Container(
             decoration: BoxDecoration(
               color: palette.card,
@@ -10324,13 +10338,13 @@ class _CreateRecurringBookingSheetState
                     ),
                   ],
                 ),
-                const Text(
-                  'Новый регулярный маршрут',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                Text(
+                  l10n.passengerNewRecurringRouteTitle,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Например, отвозить ребёнка в школу по будням',
+                  l10n.passengerRecurringRouteExampleText,
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 12.5,
@@ -10338,15 +10352,14 @@ class _CreateRecurringBookingSheetState
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('Водитель',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                Text(l10n.driverProfileNameFallback,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 if (widget.knownDrivers.isEmpty)
                   _CompactNotice(
                     icon: Icons.info_outline_rounded,
-                    title: 'Нет доступных водителей',
-                    text:
-                        'Водителя можно выбрать только из тех, с кем у вас уже была поездка. Совершите хотя бы одну поездку, чтобы предложить регулярный маршрут.',
+                    title: l10n.passengerNoAvailableDriversTitle,
+                    text: l10n.passengerNoAvailableDriversText,
                     dark: Theme.of(context).brightness == Brightness.dark,
                   )
                 else
@@ -10356,7 +10369,7 @@ class _CreateRecurringBookingSheetState
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      hintText: 'Выберите водителя',
+                      hintText: l10n.passengerChooseDriverHint,
                     ),
                     items: widget.knownDrivers
                         .map((driver) => DropdownMenuItem(
@@ -10368,23 +10381,23 @@ class _CreateRecurringBookingSheetState
                   ),
                 const SizedBox(height: 14),
                 _RecurringAddressField(
-                  label: 'Откуда',
+                  label: l10n.passengerFromLabel,
                   value: _pickup?.label,
                   onTap: () => _pickAddress(pickup: true),
                 ),
                 const SizedBox(height: 10),
                 _RecurringAddressField(
-                  label: 'Куда',
+                  label: l10n.passengerToLabel,
                   value: _dropoff?.label,
                   onTap: () => _pickAddress(pickup: false),
                 ),
                 const SizedBox(height: 14),
-                const Text('Дни недели',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                Text(l10n.passengerDaysOfWeekLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: _dayLabels.entries.map((entry) {
+                  children: _dayLabels(l10n).entries.map((entry) {
                     final selected = _days.contains(entry.key);
                     return _SupportTopicChip(
                       label: entry.value,
@@ -10400,15 +10413,15 @@ class _CreateRecurringBookingSheetState
                   }).toList(),
                 ),
                 const SizedBox(height: 14),
-                const Text('Время подачи',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                Text(l10n.passengerPickupTimeLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _pickTime,
                   icon: const Icon(Icons.schedule_rounded),
                   label: Text(
                     _time == null
-                        ? 'Выбрать время'
+                        ? l10n.passengerChooseTimeButton
                         : '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
                   ),
                 ),
@@ -10417,7 +10430,7 @@ class _CreateRecurringBookingSheetState
                   controller: _priceController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Цена, ₸',
+                    labelText: l10n.passengerPriceLabelTenge,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -10428,7 +10441,7 @@ class _CreateRecurringBookingSheetState
                   controller: _notesController,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: 'Комментарий (необязательно)',
+                    labelText: l10n.passengerDriverCommentLabel,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -10446,8 +10459,8 @@ class _CreateRecurringBookingSheetState
                 _GoldCtaButton(
                   enabled: !widget.submitting && widget.knownDrivers.isNotEmpty,
                   loading: widget.submitting,
-                  text: 'Отправить водителю',
-                  loadingText: 'Отправляем...',
+                  text: l10n.passengerSendToDriverButton,
+                  loadingText: l10n.passengerSendingButton,
                   onTap: _submit,
                 ),
               ],
@@ -10473,6 +10486,7 @@ class _RecurringAddressField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -10502,7 +10516,7 @@ class _RecurringAddressField extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      value ?? 'Выбрать адрес',
+                      value ?? l10n.passengerChooseAddressText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
