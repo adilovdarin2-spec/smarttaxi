@@ -426,7 +426,7 @@ void main() {
     // now lives in app_ru.arb rather than passenger_shell.dart's source.
     expect(passenger, contains('l10n.passengerSettingsInterfaceGroup'));
     expect(ruArb, contains('"passengerSettingsInterfaceGroup": "Интерфейс"'));
-    expect(passenger, contains('Поездки'));
+    expect(ruArb, contains('"passengerDrawerRecurringBookings": "Регулярные поездки"'));
     // The old standalone "Уведомления о статусе" toggle was replaced by a
     // real OS-permission-backed row (FirebaseMessaging.getNotificationSettings).
     expect(passenger, contains('l10n.passengerSettingsPushLabel'));
@@ -446,7 +446,8 @@ void main() {
     expect(ruArb, contains('"passengerFaqQ4": "Как стать водителем?"'));
     expect(passenger, contains('_aboutScreen'));
     expect(passenger, contains('SmartTaxi'));
-    expect(passenger, contains('региональный сервис такси'));
+    expect(passenger, contains('l10n.passengerAboutDescription'));
+    expect(ruArb, contains('региональный сервис такси'));
     expect(passenger, contains('_ProfileGroupLabel'));
     // Profile screen groups were consolidated from 3 (Основное/Приложение/
     // Аккаунт) down to 2 in the later redesign -- "Приложение" no longer

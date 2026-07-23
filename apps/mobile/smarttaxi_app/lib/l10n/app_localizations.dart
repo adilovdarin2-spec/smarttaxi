@@ -728,6 +728,150 @@ abstract class AppLocalizations {
   /// **'Не удалось загрузить обращения'**
   String get passengerSupportLoadError;
 
+  /// No description provided for @passengerAboutDescription.
+  ///
+  /// In ru, this message translates to:
+  /// **'SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.'**
+  String get passengerAboutDescription;
+
+  /// No description provided for @passengerAboutRegionalModelTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Региональная модель'**
+  String get passengerAboutRegionalModelTitle;
+
+  /// No description provided for @passengerAboutRegionalModelText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.'**
+  String get passengerAboutRegionalModelText;
+
+  /// No description provided for @passengerAboutContactTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Связь'**
+  String get passengerAboutContactTitle;
+
+  /// No description provided for @passengerAboutContactText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если нужна помощь, откройте поддержку в левом меню.'**
+  String get passengerAboutContactText;
+
+  /// No description provided for @passengerAboutSupportSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Есть вопрос? Мы ответим'**
+  String get passengerAboutSupportSubtitle;
+
+  /// No description provided for @passengerAboutLegalSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Условия, оплата, отмена, безопасность'**
+  String get passengerAboutLegalSubtitle;
+
+  /// No description provided for @passengerAboutVersionLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'SmartTaxi · версия {version}'**
+  String passengerAboutVersionLabel(String version);
+
+  /// No description provided for @loadFailedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить'**
+  String get loadFailedTitle;
+
+  /// No description provided for @passengerRecurringSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Школьный маршрут и другие поездки по расписанию'**
+  String get passengerRecurringSubtitle;
+
+  /// No description provided for @passengerRecurringNewRoute.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый маршрут'**
+  String get passengerRecurringNewRoute;
+
+  /// No description provided for @passengerRecurringEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет регулярных поездок'**
+  String get passengerRecurringEmptyTitle;
+
+  /// No description provided for @passengerRecurringEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Создайте маршрут — например, отвозить ребёнка в школу — и водитель будет приезжать по расписанию в выбранные дни.'**
+  String get passengerRecurringEmptyText;
+
+  /// No description provided for @passengerRecurringCancelTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить регулярную поездку?'**
+  String get passengerRecurringCancelTitle;
+
+  /// No description provided for @passengerRecurringCancelText.
+  ///
+  /// In ru, this message translates to:
+  /// **'{route}, {days} в {time}. Это действие нельзя отменить.'**
+  String passengerRecurringCancelText(String route, String days, String time);
+
+  /// No description provided for @passengerRecurringCancelConfirm.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поездку'**
+  String get passengerRecurringCancelConfirm;
+
+  /// No description provided for @passengerFavoritesAddAddressTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Какой адрес добавить?'**
+  String get passengerFavoritesAddAddressTitle;
+
+  /// No description provided for @passengerFavoritesDeleteTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить адрес из избранного?'**
+  String get passengerFavoritesDeleteTitle;
+
+  /// No description provided for @passengerFavoritesDeleteText.
+  ///
+  /// In ru, this message translates to:
+  /// **'{title} — {address}.'**
+  String passengerFavoritesDeleteText(String title, String address);
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get deleteButton;
+
+  /// No description provided for @passengerFavoritesSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дом, работа и другие частые точки — быстрее вводить заказ'**
+  String get passengerFavoritesSubtitle;
+
+  /// No description provided for @passengerFavoritesAddButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить адрес'**
+  String get passengerFavoritesAddButton;
+
+  /// No description provided for @passengerFavoritesEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет избранных адресов'**
+  String get passengerFavoritesEmptyTitle;
+
+  /// No description provided for @passengerFavoritesEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.'**
+  String get passengerFavoritesEmptyText;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

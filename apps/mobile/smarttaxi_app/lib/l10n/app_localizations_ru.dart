@@ -347,6 +347,92 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerSupportLoadError => 'Не удалось загрузить обращения';
 
   @override
+  String get passengerAboutDescription =>
+      'SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.';
+
+  @override
+  String get passengerAboutRegionalModelTitle => 'Региональная модель';
+
+  @override
+  String get passengerAboutRegionalModelText =>
+      'Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.';
+
+  @override
+  String get passengerAboutContactTitle => 'Связь';
+
+  @override
+  String get passengerAboutContactText =>
+      'Если нужна помощь, откройте поддержку в левом меню.';
+
+  @override
+  String get passengerAboutSupportSubtitle => 'Есть вопрос? Мы ответим';
+
+  @override
+  String get passengerAboutLegalSubtitle =>
+      'Условия, оплата, отмена, безопасность';
+
+  @override
+  String passengerAboutVersionLabel(String version) {
+    return 'SmartTaxi · версия $version';
+  }
+
+  @override
+  String get loadFailedTitle => 'Не удалось загрузить';
+
+  @override
+  String get passengerRecurringSubtitle =>
+      'Школьный маршрут и другие поездки по расписанию';
+
+  @override
+  String get passengerRecurringNewRoute => 'Новый маршрут';
+
+  @override
+  String get passengerRecurringEmptyTitle => 'Пока нет регулярных поездок';
+
+  @override
+  String get passengerRecurringEmptyText =>
+      'Создайте маршрут — например, отвозить ребёнка в школу — и водитель будет приезжать по расписанию в выбранные дни.';
+
+  @override
+  String get passengerRecurringCancelTitle => 'Отменить регулярную поездку?';
+
+  @override
+  String passengerRecurringCancelText(String route, String days, String time) {
+    return '$route, $days в $time. Это действие нельзя отменить.';
+  }
+
+  @override
+  String get passengerRecurringCancelConfirm => 'Отменить поездку';
+
+  @override
+  String get passengerFavoritesAddAddressTitle => 'Какой адрес добавить?';
+
+  @override
+  String get passengerFavoritesDeleteTitle => 'Удалить адрес из избранного?';
+
+  @override
+  String passengerFavoritesDeleteText(String title, String address) {
+    return '$title — $address.';
+  }
+
+  @override
+  String get deleteButton => 'Удалить';
+
+  @override
+  String get passengerFavoritesSubtitle =>
+      'Дом, работа и другие частые точки — быстрее вводить заказ';
+
+  @override
+  String get passengerFavoritesAddButton => 'Добавить адрес';
+
+  @override
+  String get passengerFavoritesEmptyTitle => 'Пока нет избранных адресов';
+
+  @override
+  String get passengerFavoritesEmptyText =>
+      'Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override

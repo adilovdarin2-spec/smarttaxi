@@ -349,6 +349,96 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerSupportLoadError => 'Өтініштерді жүктеу мүмкін болмады';
 
   @override
+  String get passengerAboutDescription =>
+      'SmartTaxi — белсенді аймақтарда жылдам, түсінікті және әділ сапарлар үшін аймақтық такси қызметі.';
+
+  @override
+  String get passengerAboutRegionalModelTitle => 'Аймақтық модель';
+
+  @override
+  String get passengerAboutRegionalModelText =>
+      'Сапарлар тек әкімші қосқан аймақтарда қолжетімді. Қалааралық сапарларға қолдау көрсетілмейді.';
+
+  @override
+  String get passengerAboutContactTitle => 'Байланыс';
+
+  @override
+  String get passengerAboutContactText =>
+      'Көмек керек болса, сол жақ мәзірден қолдау қызметін ашыңыз.';
+
+  @override
+  String get passengerAboutSupportSubtitle =>
+      'Сұрағыңыз бар ма? Біз жауап береміз';
+
+  @override
+  String get passengerAboutLegalSubtitle =>
+      'Шарттар, төлем, бас тарту, қауіпсіздік';
+
+  @override
+  String passengerAboutVersionLabel(String version) {
+    return 'SmartTaxi · $version нұсқасы';
+  }
+
+  @override
+  String get loadFailedTitle => 'Жүктеу мүмкін болмады';
+
+  @override
+  String get passengerRecurringSubtitle =>
+      'Мектеп маршруты және кесте бойынша басқа сапарлар';
+
+  @override
+  String get passengerRecurringNewRoute => 'Жаңа маршрут';
+
+  @override
+  String get passengerRecurringEmptyTitle => 'Тұрақты сапарлар әлі жоқ';
+
+  @override
+  String get passengerRecurringEmptyText =>
+      'Маршрут жасаңыз — мысалы, баланы мектепке апару — және жүргізуші таңдалған күндері кесте бойынша келеді.';
+
+  @override
+  String get passengerRecurringCancelTitle =>
+      'Тұрақты сапарды бас тартасыз ба?';
+
+  @override
+  String passengerRecurringCancelText(String route, String days, String time) {
+    return '$route, $days сағат $time. Бұл әрекетті болдырмау мүмкін емес.';
+  }
+
+  @override
+  String get passengerRecurringCancelConfirm => 'Сапарды бас тарту';
+
+  @override
+  String get passengerFavoritesAddAddressTitle =>
+      'Қандай мекенжайды қосу керек?';
+
+  @override
+  String get passengerFavoritesDeleteTitle =>
+      'Мекенжайды таңдаулылардан өшіресіз бе?';
+
+  @override
+  String passengerFavoritesDeleteText(String title, String address) {
+    return '$title — $address.';
+  }
+
+  @override
+  String get deleteButton => 'Өшіру';
+
+  @override
+  String get passengerFavoritesSubtitle =>
+      'Үй, жұмыс және басқа жиі мекенжайлар — тапсырысты жылдам енгізу үшін';
+
+  @override
+  String get passengerFavoritesAddButton => 'Мекенжай қосу';
+
+  @override
+  String get passengerFavoritesEmptyTitle => 'Таңдаулы мекенжайлар әлі жоқ';
+
+  @override
+  String get passengerFavoritesEmptyText =>
+      'Үйді, жұмысты немесе жиі баратын кез келген орынды қосыңыз — олар осында жылдам қолжетімді болады.';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

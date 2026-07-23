@@ -3831,6 +3831,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _recurringBookingsScreen() {
+    final l10n = AppLocalizations.of(context);
     return RefreshIndicator(
       color: context.palette.goldDeep,
       onRefresh: _loadRecurringBookings,
@@ -3840,15 +3841,15 @@ class _PassengerShellState extends State<PassengerShell>
           parent: BouncingScrollPhysics(),
         ),
         children: [
-          const _TitleBlock(
-            title: 'Регулярные поездки',
-            text: 'Школьный маршрут и другие поездки по расписанию',
+          _TitleBlock(
+            title: l10n.passengerDrawerRecurringBookings,
+            text: l10n.passengerRecurringSubtitle,
           ),
           const SizedBox(height: 16),
           _GoldCtaButton(
             enabled: !_creatingRecurringBooking,
             loading: false,
-            text: 'Новый маршрут',
+            text: l10n.passengerRecurringNewRoute,
             onTap: _openCreateRecurringBookingSheet,
           ),
           const SizedBox(height: 16),
@@ -3857,17 +3858,16 @@ class _PassengerShellState extends State<PassengerShell>
           else if (_recurringBookingsError && _recurringBookings.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Не удалось загрузить',
-              text: 'Потяните экран вниз, чтобы попробовать снова.',
-              action: 'Повторить',
+              title: l10n.loadFailedTitle,
+              text: l10n.pullToRetry,
+              action: l10n.retry,
               onAction: () => unawaited(_loadRecurringBookings()),
             )
           else if (_recurringBookings.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.event_repeat_rounded,
-              title: 'Пока нет регулярных поездок',
-              text:
-                  'Создайте маршрут — например, отвозить ребёнка в школу — и водитель будет приезжать по расписанию в выбранные дни.',
+              title: l10n.passengerRecurringEmptyTitle,
+              text: l10n.passengerRecurringEmptyText,
             )
           else
             ..._recurringBookings.map(
@@ -3891,15 +3891,19 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _confirmCancelRecurringBooking(RecurringBooking booking) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ConfirmSheet(
-        title: 'Отменить регулярную поездку?',
-        text:
-            '${booking.pickupText} → ${booking.dropoffText}, ${booking.daysLabel} в ${booking.timeOfDay}. Это действие нельзя отменить.',
-        confirmLabel: 'Отменить поездку',
+        title: l10n.passengerRecurringCancelTitle,
+        text: l10n.passengerRecurringCancelText(
+          '${booking.pickupText} → ${booking.dropoffText}',
+          booking.daysLabel,
+          booking.timeOfDay,
+        ),
+        confirmLabel: l10n.passengerRecurringCancelConfirm,
         danger: true,
       ),
     );
@@ -3915,7 +3919,7 @@ class _PassengerShellState extends State<PassengerShell>
       backgroundColor: Colors.transparent,
       builder: (_) => _SimpleAddressSearchSheet(
         api: widget.api,
-        title: 'Какой адрес добавить?',
+        title: AppLocalizations.of(context).passengerFavoritesAddAddressTitle,
       ),
     );
     if (picked == null || !mounted) return;
@@ -3937,14 +3941,18 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _confirmDeleteFavoriteAddress(FavoriteAddress address) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ConfirmSheet(
-        title: 'Удалить адрес из избранного?',
-        text: '${address.title} — ${address.addressText}.',
-        confirmLabel: 'Удалить',
+        title: l10n.passengerFavoritesDeleteTitle,
+        text: l10n.passengerFavoritesDeleteText(
+          address.title,
+          address.addressText,
+        ),
+        confirmLabel: l10n.deleteButton,
         danger: true,
       ),
     );
@@ -3954,6 +3962,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Widget _favoriteAddressesScreen() {
+    final l10n = AppLocalizations.of(context);
     return RefreshIndicator(
       color: context.palette.goldDeep,
       onRefresh: _loadFavoriteAddresses,
@@ -3963,15 +3972,15 @@ class _PassengerShellState extends State<PassengerShell>
           parent: BouncingScrollPhysics(),
         ),
         children: [
-          const _TitleBlock(
-            title: 'Избранные адреса',
-            text: 'Дом, работа и другие частые точки — быстрее вводить заказ',
+          _TitleBlock(
+            title: l10n.passengerDrawerFavoriteAddresses,
+            text: l10n.passengerFavoritesSubtitle,
           ),
           const SizedBox(height: 16),
           _GoldCtaButton(
             enabled: !_creatingFavoriteAddress,
             loading: false,
-            text: 'Добавить адрес',
+            text: l10n.passengerFavoritesAddButton,
             onTap: _openAddFavoriteAddressSheet,
           ),
           const SizedBox(height: 16),
@@ -3980,17 +3989,16 @@ class _PassengerShellState extends State<PassengerShell>
           else if (_favoriteAddressesError && _favoriteAddresses.isEmpty)
             EmptyState(
               icon: Icons.wifi_off_rounded,
-              title: 'Не удалось загрузить',
-              text: 'Потяните экран вниз, чтобы попробовать снова.',
-              action: 'Повторить',
+              title: l10n.loadFailedTitle,
+              text: l10n.pullToRetry,
+              action: l10n.retry,
               onAction: () => unawaited(_loadFavoriteAddresses()),
             )
           else if (_favoriteAddresses.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.star_outline_rounded,
-              title: 'Пока нет избранных адресов',
-              text:
-                  'Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.',
+              title: l10n.passengerFavoritesEmptyTitle,
+              text: l10n.passengerFavoritesEmptyText,
             )
           else
             ..._favoriteAddresses.map(
@@ -4399,6 +4407,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _aboutScreen() {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -4414,7 +4423,7 @@ class _PassengerShellState extends State<PassengerShell>
               ),
               const SizedBox(height: 8),
               Text(
-                'SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.',
+                l10n.passengerAboutDescription,
                 style: TextStyle(
                   color: palette.textSecondary,
                   height: 1.45,
@@ -4424,16 +4433,15 @@ class _PassengerShellState extends State<PassengerShell>
               const SizedBox(height: 16),
               _CompactNotice(
                 icon: Icons.map_outlined,
-                title: 'Региональная модель',
-                text:
-                    'Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.',
+                title: l10n.passengerAboutRegionalModelTitle,
+                text: l10n.passengerAboutRegionalModelText,
                 dark: Theme.of(context).brightness == Brightness.dark,
               ),
               const SizedBox(height: 12),
               _CompactNotice(
                 icon: Icons.support_agent_rounded,
-                title: 'Связь',
-                text: 'Если нужна помощь, откройте поддержку в левом меню.',
+                title: l10n.passengerAboutContactTitle,
+                text: l10n.passengerAboutContactText,
                 dark: Theme.of(context).brightness == Brightness.dark,
               ),
             ],
@@ -4445,15 +4453,15 @@ class _PassengerShellState extends State<PassengerShell>
             children: [
               _MenuLine(
                 icon: Icons.headset_mic_outlined,
-                title: 'Поддержка',
-                subtitle: 'Есть вопрос? Мы ответим',
+                title: l10n.support,
+                subtitle: l10n.passengerAboutSupportSubtitle,
                 onTap: () => setState(() => _tab = PassengerTab.support),
               ),
               const Divider(height: 20),
               _MenuLine(
                 icon: Icons.shield_outlined,
-                title: 'Правовая информация',
-                subtitle: 'Условия, оплата, отмена, безопасность',
+                title: l10n.passengerSettingsLegalTitle,
+                subtitle: l10n.passengerAboutLegalSubtitle,
                 onTap: () => setState(() => _tab = PassengerTab.legalHub),
               ),
             ],
@@ -4462,7 +4470,7 @@ class _PassengerShellState extends State<PassengerShell>
         const SizedBox(height: 16),
         Center(
           child: Text(
-            'SmartTaxi · версия $_appVersion',
+            l10n.passengerAboutVersionLabel(_appVersion),
             style: TextStyle(
               color: palette.textMuted,
               fontSize: 12,
