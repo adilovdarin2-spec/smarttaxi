@@ -2343,7 +2343,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   String get _paymentMethodLabel {
-    return _paymentLabel(_paymentMethod);
+    return _paymentLabel(AppLocalizations.of(context), _paymentMethod);
   }
 
   Future<void> _choosePaymentMethod() async {
@@ -7301,6 +7301,7 @@ class _TripDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final driverName = (trip.driverName ?? '').trim();
     final hasDriver = driverName.isNotEmpty;
     final driverMeta = [
@@ -7367,17 +7368,17 @@ class _TripDetailScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'Тариф',
+                    label: l10n.tariffLabel,
                     value: (trip.tariff ?? '').trim().isEmpty
-                        ? 'Эконом'
+                        ? l10n.tariffEconomyTitle
                         : trip.tariff!,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'Оплата',
-                    value: _paymentLabel(trip.paymentMethod ?? 'CASH'),
+                    label: l10n.paymentMethodLabel,
+                    value: _paymentLabel(l10n, trip.paymentMethod ?? 'CASH'),
                   ),
                 ),
               ],
@@ -7545,6 +7546,7 @@ class _TripStatusPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cancelled = const {
       'CANCELLED',
@@ -7735,22 +7737,22 @@ class _TripStatusPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _TripInfoPill(
-                        label: 'Тариф',
+                        label: l10n.tariffLabel,
                         // (order.tariff ?? 'Эконом') meant the null case
                         // itself never produced an empty string to trigger
                         // the "use Эконом" branch — it fell through to the
                         // null-check operator below and crashed for any
                         // order with no tariff at all.
                         value: (order.tariff?.trim().isEmpty ?? true)
-                            ? 'Эконом'
+                            ? l10n.tariffEconomyTitle
                             : order.tariff!,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: _TripInfoPill(
-                        label: 'Оплата',
-                        value: _paymentLabel(order.paymentMethod ?? 'CASH'),
+                        label: l10n.paymentMethodLabel,
+                        value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
                       ),
                     ),
                     if (order.price != null) ...[
@@ -7832,22 +7834,22 @@ class _TripStatusPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _TripInfoPill(
-                        label: 'Тариф',
+                        label: l10n.tariffLabel,
                         // (order.tariff ?? 'Эконом') meant the null case
                         // itself never produced an empty string to trigger
                         // the "use Эконом" branch — it fell through to the
                         // null-check operator below and crashed for any
                         // order with no tariff at all.
                         value: (order.tariff?.trim().isEmpty ?? true)
-                            ? 'Эконом'
+                            ? l10n.tariffEconomyTitle
                             : order.tariff!,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: _TripInfoPill(
-                        label: 'Оплата',
-                        value: _paymentLabel(order.paymentMethod ?? 'CASH'),
+                        label: l10n.paymentMethodLabel,
+                        value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
                       ),
                     ),
                     if (order.price != null) ...[
@@ -7999,17 +8001,19 @@ class _TripStatusPanel extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _TripInfoPill(
-                      label: 'Тариф',
-                      value: (order.tariff ?? 'Эконом').trim().isEmpty
-                          ? 'Эконом'
+                      label: l10n.tariffLabel,
+                      value: (order.tariff ?? l10n.tariffEconomyTitle)
+                              .trim()
+                              .isEmpty
+                          ? l10n.tariffEconomyTitle
                           : order.tariff!,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _TripInfoPill(
-                      label: 'Оплата',
-                      value: _paymentLabel(order.paymentMethod ?? 'CASH'),
+                      label: l10n.paymentMethodLabel,
+                      value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
                     ),
                   ),
                   if (order.price != null) ...[
@@ -8338,6 +8342,7 @@ class _TripReceiptPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _HomeOrderPanel(
       child: SingleChildScrollView(
@@ -8436,7 +8441,7 @@ class _TripReceiptPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'В пути',
+                    label: l10n.passengerTripInTransitLabel,
                     value: _durationLabel(order.durationMin),
                   ),
                 ),
@@ -8447,8 +8452,8 @@ class _TripReceiptPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _TripInfoPill(
-                    label: 'Способ оплаты',
-                    value: _paymentLabel(order.paymentMethod ?? 'CASH'),
+                    label: l10n.paymentMethodFullLabel,
+                    value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -13037,13 +13042,13 @@ String _formatTenge(num value) {
   return '$spaced ₸';
 }
 
-String _paymentLabel(String method) {
-  return const {
-        'CASH': 'Наличные',
-        'KASPI': 'Kaspi',
-        'CARD': 'Картой',
+String _paymentLabel(AppLocalizations l10n, String method) {
+  return {
+        'CASH': l10n.paymentCash,
+        'KASPI': l10n.paymentKaspi,
+        'CARD': l10n.paymentCard,
       }[method.toUpperCase()] ??
-      'Наличные';
+      l10n.paymentCash;
 }
 
 String _formatMinutes(RoutePreview route) {

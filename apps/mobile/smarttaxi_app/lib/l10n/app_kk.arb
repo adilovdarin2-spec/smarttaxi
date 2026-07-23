@@ -223,6 +223,13 @@
   "passengerTariffUnavailableTitle": "Тарифтер қолжетімсіз",
   "passengerTariffUnavailableText": "Бұл аймақ үшін Үнемді немесе Жеткізу тарифі қажет.",
   "passengerTariffBestValueBadge": "Тиімді",
+  "paymentCash": "Қолма-қол ақша",
+  "paymentKaspi": "Kaspi",
+  "paymentCard": "Картамен",
+  "tariffLabel": "Тариф",
+  "paymentMethodLabel": "Төлем",
+  "paymentMethodFullLabel": "Төлем тәсілі",
+  "passengerTripInTransitLabel": "Жолда",
 
   "authWelcomeTitle": "Кіру және тіркелу",
   "authWelcomeSubtitle": "Жалғастыру үшін телефон нөмірін енгізіңіз",

@@ -224,6 +224,13 @@
   "passengerTariffUnavailableTitle": "Тарифы недоступны",
   "passengerTariffUnavailableText": "Для этого региона нужен тариф Эконом или Доставка.",
   "passengerTariffBestValueBadge": "Выгодно",
+  "paymentCash": "Наличные",
+  "paymentKaspi": "Kaspi",
+  "paymentCard": "Картой",
+  "tariffLabel": "Тариф",
+  "paymentMethodLabel": "Оплата",
+  "paymentMethodFullLabel": "Способ оплаты",
+  "passengerTripInTransitLabel": "В пути",
 
   "authWelcomeTitle": "Вход и регистрация",
   "authWelcomeSubtitle": "Введите номер телефона, чтобы продолжить",

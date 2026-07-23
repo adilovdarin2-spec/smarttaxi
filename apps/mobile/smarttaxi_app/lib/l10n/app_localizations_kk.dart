@@ -687,6 +687,27 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerTariffBestValueBadge => 'Тиімді';
 
   @override
+  String get paymentCash => 'Қолма-қол ақша';
+
+  @override
+  String get paymentKaspi => 'Kaspi';
+
+  @override
+  String get paymentCard => 'Картамен';
+
+  @override
+  String get tariffLabel => 'Тариф';
+
+  @override
+  String get paymentMethodLabel => 'Төлем';
+
+  @override
+  String get paymentMethodFullLabel => 'Төлем тәсілі';
+
+  @override
+  String get passengerTripInTransitLabel => 'Жолда';
+
+  @override
   String get authWelcomeTitle => 'Кіру және тіркелу';
 
   @override

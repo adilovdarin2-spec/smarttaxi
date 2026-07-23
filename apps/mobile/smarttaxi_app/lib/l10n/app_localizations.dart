@@ -1311,6 +1311,48 @@ abstract class AppLocalizations {
   /// **'Выгодно'**
   String get passengerTariffBestValueBadge;
 
+  /// No description provided for @paymentCash.
+  ///
+  /// In ru, this message translates to:
+  /// **'Наличные'**
+  String get paymentCash;
+
+  /// No description provided for @paymentKaspi.
+  ///
+  /// In ru, this message translates to:
+  /// **'Kaspi'**
+  String get paymentKaspi;
+
+  /// No description provided for @paymentCard.
+  ///
+  /// In ru, this message translates to:
+  /// **'Картой'**
+  String get paymentCard;
+
+  /// No description provided for @tariffLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Тариф'**
+  String get tariffLabel;
+
+  /// No description provided for @paymentMethodLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата'**
+  String get paymentMethodLabel;
+
+  /// No description provided for @paymentMethodFullLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Способ оплаты'**
+  String get paymentMethodFullLabel;
+
+  /// No description provided for @passengerTripInTransitLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'В пути'**
+  String get passengerTripInTransitLabel;
+
   /// No description provided for @authWelcomeTitle.
   ///
   /// In ru, this message translates to:

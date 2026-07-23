@@ -681,6 +681,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerTariffBestValueBadge => 'Выгодно';
 
   @override
+  String get paymentCash => 'Наличные';
+
+  @override
+  String get paymentKaspi => 'Kaspi';
+
+  @override
+  String get paymentCard => 'Картой';
+
+  @override
+  String get tariffLabel => 'Тариф';
+
+  @override
+  String get paymentMethodLabel => 'Оплата';
+
+  @override
+  String get paymentMethodFullLabel => 'Способ оплаты';
+
+  @override
+  String get passengerTripInTransitLabel => 'В пути';
+
+  @override
   String get authWelcomeTitle => 'Вход и регистрация';
 
   @override
