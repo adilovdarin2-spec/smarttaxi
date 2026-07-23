@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import MapView from "../map/MapView.jsx";
 import { api } from "../../lib/api.js";
+import { sanitizeAddressText } from "../../lib/text.js";
 
 const STATUS_LABELS = {
   SEARCHING_DRIVER: "Ищем водителя",
@@ -66,7 +67,11 @@ export default function TrackApp() {
       try {
         const data = await api(`/api/orders/track/${token}`);
         if (alive) {
-          setTrip(data.trip);
+          setTrip(data.trip && {
+            ...data.trip,
+            pickupText: sanitizeAddressText(data.trip.pickupText, "Точка посадки"),
+            dropoffText: sanitizeAddressText(data.trip.dropoffText, "Точка назначения")
+          });
           setError("");
           hasLoadedOnce = true;
         }

@@ -27,6 +27,7 @@ import {
   updateDriverLocation
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
+import { sanitizeAddressText } from "../../lib/text.js";
 
 const ACTIVE_STATUSES = [
   "DRIVER_FOUND",
@@ -113,7 +114,7 @@ function statusLabel(status) {
 function cleanAddress(value, fallback) {
   const text = String(value || "").trim();
   if (!text || /\bqa\b|test|mock|fake|demo/i.test(text)) return fallback;
-  return text;
+  return sanitizeAddressText(text, fallback);
 }
 
 function normalizeOrder(order) {

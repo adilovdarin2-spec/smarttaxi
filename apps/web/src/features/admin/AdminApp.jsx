@@ -62,6 +62,7 @@ import {
   updateAdminSettings,
   updateAdminTariff
 } from "../../lib/mvpApi.js";
+import { sanitizeAddressText } from "../../lib/text.js";
 
 const adminRoles = new Set(["OWNER", "FINANCE"]);
 
@@ -2473,7 +2474,7 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
     <div className="admin-order-block">
       <button type="button" className="admin-table-row orders admin-order-row-toggle" onClick={onToggle}>
         <strong>{order.short_id || order.id}</strong>
-        <span>{order.pickup_text} → {order.dropoff_text}</span>
+        <span>{sanitizeAddressText(order.pickup_text, "Точка посадки")} → {sanitizeAddressText(order.dropoff_text, "Точка назначения")}</span>
         <Badge tone={badgeTone(order.status)}>{statusLabel(order.status)}</Badge>
         <span>
           {formatMoney(order.price)}
@@ -2895,7 +2896,7 @@ function RecurringBookingsPage({ bookings, recurringBookingStatus, setRecurringB
                 </Badge>
               </header>
               <div className="admin-card-facts">
-                <InfoLine label="Маршрут" value={[booking.pickupText, booking.dropoffText].filter(Boolean).join(" → ") || "Маршрут не указан"} />
+                <InfoLine label="Маршрут" value={[sanitizeAddressText(booking.pickupText, ""), sanitizeAddressText(booking.dropoffText, "")].filter(Boolean).join(" → ") || "Маршрут не указан"} />
                 <InfoLine label="Дни" value={formatDaysOfWeek(booking.daysOfWeek)} />
                 <InfoLine label="Время" value={booking.timeOfDay || "Не указано"} />
                 <InfoLine label="Цена" value={formatMoney(booking.priceKzt)} />

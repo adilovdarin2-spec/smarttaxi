@@ -38,6 +38,7 @@ import {
   verifyAuthSms
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
+import { sanitizeAddressText } from "../../lib/text.js";
 
 // Statuses where a driver is assigned and actually moving toward the
 // passenger or the dropoff — mirrors the backend's TO_PICKUP/TO_DROPOFF
@@ -459,8 +460,8 @@ function normalizeOrder(order) {
   return {
     ...order,
     short_id: order.short_id || order.shortId || order.id,
-    pickup_text: order.pickup_text || order.pickupText || order.pickup || "Точка посадки",
-    dropoff_text: order.dropoff_text || order.dropoffText || order.dropoff || "Точка назначения",
+    pickup_text: sanitizeAddressText(order.pickup_text || order.pickupText || order.pickup || "Точка посадки", "Точка посадки"),
+    dropoff_text: sanitizeAddressText(order.dropoff_text || order.dropoffText || order.dropoff || "Точка назначения", "Точка назначения"),
     payment_method: order.payment_method || order.paymentMethod,
     public_status: publicStatus(order.public_status || order.publicStatus || order.status)
   };
