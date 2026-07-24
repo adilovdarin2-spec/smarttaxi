@@ -28,7 +28,7 @@ import {
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { buildActiveLegRoute } from "../routing/routing.service.js";
-import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleDriverDebtFromBalance } from "../finance/finance.service.js";
+import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleConfirmedOrderEarnings } from "../finance/finance.service.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
@@ -1081,28 +1081,45 @@ async function updateStatus(req, res, next, status) {
         const cashback = Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
         cashbackEarned = cashback;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
-        if (updated.client_id) {
-          const c = await client.query("UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance", [cashback, updated.client_id]);
-          await client.query("INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after) VALUES($1,$2,'EARN',$3,$4)", [updated.client_id, updated.id, cashback, c.rows[0].cashback_balance]);
-          referralBonusResult = await awardReferralBonusOnFirstCompletedOrder({ clientId: updated.client_id, orderId: updated.id, executor: client });
-        }
-        if (updated.driver_id) {
-          if (["CASH", "KASPI"].includes(updated.payment_method)) {
+        // Crediting the client's cashback and the driver's balance/debt here
+        // is only safe for CASH/KASPI — the driver already physically holds
+        // that money, so nothing about it can later fail. An electronic
+        // (CARD) payment is still PENDING/PROCESSING at this exact moment;
+        // crediting real, withdrawable balance/cashback for a charge that
+        // might yet come back FAILED (the mock gateway alone has a 10% forced
+        // failure rate) is exactly the bug settleConfirmedOrderEarnings()
+        // exists to avoid. See that function (finance.service.js) for where
+        // this gets credited instead, once the payment is actually confirmed.
+        if (["CASH", "KASPI"].includes(updated.payment_method)) {
+          if (updated.client_id) {
+            const c = await client.query("UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance", [cashback, updated.client_id]);
+            await client.query("INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after) VALUES($1,$2,'EARN',$3,$4)", [updated.client_id, updated.id, cashback, c.rows[0].cashback_balance]);
+            referralBonusResult = await awardReferralBonusOnFirstCompletedOrder({ clientId: updated.client_id, orderId: updated.id, executor: client });
+          }
+          if (updated.driver_id) {
             await client.query("UPDATE drivers SET debt=debt+$1,status='FREE' WHERE id=$2", [updated.service_commission, updated.driver_id]);
             await client.query("INSERT INTO driver_debts(driver_id,order_id,amount) VALUES($1,$2,$3)", [updated.driver_id, updated.id, updated.service_commission]);
-          } else {
-            await client.query("UPDATE drivers SET balance=balance+($1-$2),status='FREE' WHERE id=$3", [updated.price, updated.service_commission, updated.driver_id]);
-            // This is also "the next non-cash order" from the driver's
-            // perspective — any outstanding CASH/KASPI commission debt gets
-            // netted against the balance this trip just credited, instead
-            // of sitting untouched next to it until someone notices.
-            await settleDriverDebtFromBalance(updated.driver_id, client);
           }
+          // The ORDER_COMPLETED ledger row is posted immediately for
+          // CASH/KASPI, matching the debt/cashback it just posted above. For
+          // anything else (CARD), settleConfirmedOrderEarnings() posts this
+          // same row once the payment actually confirms — see that function
+          // for why crediting it now would be premature.
+          await createOrderCompletedTransaction(updated, req.user.id, client);
+        } else if (updated.driver_id) {
+          // Just free the driver up for new orders — no earnings yet.
+          await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
         }
-        await createOrderCompletedTransaction(updated, req.user.id, client);
       }
       if (status === "PAID") {
         await client.query("UPDATE payments SET status='PAID', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
+        // A no-op for CASH/KASPI (already settled at TRIP_COMPLETED) — for
+        // CARD this is the first point the payment is actually confirmed, so
+        // it's also the first point cashback/referral notifications below
+        // are honest to send.
+        const settlement = await settleConfirmedOrderEarnings(updated, client, req.user.id);
+        cashbackEarned = settlement.cashbackCredited;
+        referralBonusResult = settlement.referralBonusResult;
       }
       if (["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "NO_SHOW"].includes(status)) {
         if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
@@ -1139,30 +1156,35 @@ async function updateStatus(req, res, next, status) {
         body: order.price ? `Стоимость поездки: ${order.price} ₸` : "Спасибо, что выбрали SmartTaxi",
         type: "TRIP_COMPLETED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
-      // These two feed the mobile app's "Бонусы" notification category —
-      // until now cashback_balance and cashback_transactions changed
-      // silently with nothing surfaced in-app.
-      if (cashbackEarned > 0) {
-        notifyOrderClient(order, {
-          title: "Начислен кешбэк",
-          body: `+${cashbackEarned} ₸ за поездку — спишется на следующей оплате`,
-          type: "CASHBACK_EARNED"
-        }).catch((error) => console.error("[push] notifyOrderClient failed", error));
-      }
-      if (referralBonusResult?.referredUserId) {
-        notifyUser(referralBonusResult.referredUserId, {
-          title: "Бонус за приглашение",
-          body: `+${referralBonusResult.bonus} ₸ начислено на баланс`,
-          type: "REFERRAL_BONUS"
-        }).catch((error) => console.error("[push] notifyUser failed", error));
-      }
-      if (referralBonusResult?.referrerUserId) {
-        notifyUser(referralBonusResult.referrerUserId, {
-          title: "Бонус за приглашение",
-          body: `+${referralBonusResult.bonus} ₸ — приглашённый друг совершил первую поездку`,
-          type: "REFERRAL_BONUS"
-        }).catch((error) => console.error("[push] notifyUser failed", error));
-      }
+    }
+    // cashbackEarned/referralBonusResult are only ever populated by whichever
+    // branch inside the transaction actually credited real money: CASH/KASPI
+    // does it at TRIP_COMPLETED (collected immediately), CARD does it here at
+    // PAID instead (settleConfirmedOrderEarnings, once the electronic payment
+    // is actually confirmed — see that function for why crediting it earlier,
+    // at TRIP_COMPLETED, would be premature). Checking the values themselves
+    // rather than `status === ...` means this fires exactly once, at
+    // whichever status transition actually did the crediting.
+    if (cashbackEarned > 0) {
+      notifyOrderClient(order, {
+        title: "Начислен кешбэк",
+        body: `+${cashbackEarned} ₸ за поездку — спишется на следующей оплате`,
+        type: "CASHBACK_EARNED"
+      }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    }
+    if (referralBonusResult?.referredUserId) {
+      notifyUser(referralBonusResult.referredUserId, {
+        title: "Бонус за приглашение",
+        body: `+${referralBonusResult.bonus} ₸ начислено на баланс`,
+        type: "REFERRAL_BONUS"
+      }).catch((error) => console.error("[push] notifyUser failed", error));
+    }
+    if (referralBonusResult?.referrerUserId) {
+      notifyUser(referralBonusResult.referrerUserId, {
+        title: "Бонус за приглашение",
+        body: `+${referralBonusResult.bonus} ₸ — приглашённый друг совершил первую поездку`,
+        type: "REFERRAL_BONUS"
+      }).catch((error) => console.error("[push] notifyUser failed", error));
     }
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }

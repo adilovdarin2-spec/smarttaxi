@@ -9,6 +9,48 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
 const dispatchService = readFileSync(join(root, "modules", "orders", "order-dispatch.service.js"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
+const financeService = readFileSync(join(root, "modules", "finance", "finance.service.js"), "utf8");
+const paymentsRoutes = readFileSync(join(root, "modules", "payments", "payments.routes.js"), "utf8");
+
+// --- structural: CARD orders must not credit real money before the payment
+// is actually confirmed. A driver's withdrawable balance and a client's
+// spendable cashback both used to be credited unconditionally the instant a
+// trip reached TRIP_COMPLETED, even for CARD trips whose Kaspi Pay charge was
+// still PENDING/PROCESSING (and could yet come back FAILED — the mock
+// gateway alone has a 10% forced failure rate, with no clawback anywhere).
+// This locks in the fix: crediting is deferred to settleConfirmedOrderEarnings(),
+// called only once the order actually reaches PAID.
+{
+  const tripCompletedBlock = ordersRoutes.slice(
+    ordersRoutes.indexOf('if (status === "TRIP_COMPLETED") {'),
+    ordersRoutes.indexOf('if (status === "PAID") {')
+  );
+  assert.match(
+    tripCompletedBlock,
+    /if \(\["CASH", "KASPI"\]\.includes\(updated\.payment_method\)\)/,
+    "TRIP_COMPLETED must branch on CASH/KASPI before crediting anything"
+  );
+  assert.doesNotMatch(
+    tripCompletedBlock.slice(tripCompletedBlock.indexOf("} else")),
+    /balance=balance\+/,
+    "the non-CASH/KASPI (CARD) branch of TRIP_COMPLETED must not credit drivers.balance directly — only settleConfirmedOrderEarnings() may do that, once payment is confirmed"
+  );
+  assert.match(
+    financeService,
+    /export async function settleConfirmedOrderEarnings\(order, executor = defaultQuery, actorUserId = null\) \{\s*\n\s*if \(\["CASH", "KASPI"\]\.includes\(order\.payment_method\)\) return/,
+    "settleConfirmedOrderEarnings must no-op for CASH/KASPI (already settled as debt at TRIP_COMPLETED)"
+  );
+  assert.match(
+    ordersRoutes,
+    /if \(status === "PAID"\) \{[\s\S]*?settleConfirmedOrderEarnings\(updated, client, req\.user\.id\)/,
+    "the manual OWNER/FINANCE mark-paid path must run settleConfirmedOrderEarnings so a CARD order marked paid out-of-band still gets credited"
+  );
+  assert.match(
+    paymentsRoutes,
+    /settleConfirmedOrderEarnings\(updatedOrder, client, req\.user\?\.id \|\| null\)/,
+    "the automatic payment-confirmed path (webhook/poll) must run settleConfirmedOrderEarnings"
+  );
+}
 
 // --- structural: paid-waiting billing wiring exists ---
 assert.match(ordersRoutes, /paid_waiting_started_at=\$3, waiting_total=\$4/, "TRIP_STARTED must freeze waiting_total from paid_waiting_started_at");

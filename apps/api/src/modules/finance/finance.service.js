@@ -1,4 +1,5 @@
 import { refundKaspiPayment } from "../payments/payment-provider.js";
+import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -154,6 +155,66 @@ export async function createOrderCompletedTransaction(order, actorUserId = null,
 
   if (result.rows[0]) return transactionRow(result.rows[0]);
   return getPostedTransaction(order.id, "ORDER_COMPLETED", executor);
+}
+
+// CASH/KASPI trips credit the driver's debt (not balance) and the client's
+// cashback the moment the trip ends (orders.routes.js TRIP_COMPLETED) — safe,
+// because the driver already physically holds that money and nothing about
+// it can later fail. An electronic payment (CARD) can't make that same
+// promise: the rider's charge is still PENDING/PROCESSING at that point, and
+// the mock gateway alone has a 10% forced failure rate. TRIP_COMPLETED
+// therefore defers crediting for anything other than CASH/KASPI, and this is
+// the function that actually credits it — called once the order reaches
+// PAID for real, from either payments.routes.js's automatic
+// settleOrderIfPaymentConfirmed (gateway/webhook confirms the charge) or
+// orders.routes.js's manual OWNER/FINANCE mark-paid (admin confirms it
+// out-of-band). Safe to call unconditionally from both: an order can only
+// ever reach PAID once (assertStatusTransition has no PAID -> PAID edge), so
+// this never double-credits, and it's a no-op for CASH/KASPI since those
+// were already settled as debt at TRIP_COMPLETED.
+//
+// Also posts the ORDER_COMPLETED financial_transactions ledger row here
+// (rather than at TRIP_COMPLETED, where CASH/KASPI still posts it) so a
+// driver's wallet transaction history never shows an "EARNING" line before
+// drivers.balance actually reflects it — createOrderCompletedTransaction is
+// idempotent (ON CONFLICT DO NOTHING against a partial unique index), so
+// calling it here instead is safe.
+// Returns { cashbackCredited, referralBonusResult } — same shape the
+// TRIP_COMPLETED handler already collects for CASH/KASPI — so callers can
+// fire the same "Начислен кешбэк"/"Бонус за приглашение" push notifications
+// at the point money actually moved, instead of at TRIP_COMPLETED where it
+// would be premature for an unconfirmed electronic payment.
+export async function settleConfirmedOrderEarnings(order, executor = defaultQuery, actorUserId = null) {
+  if (["CASH", "KASPI"].includes(order.payment_method)) return { cashbackCredited: 0, referralBonusResult: null };
+
+  if (order.driver_id) {
+    await run(executor, "UPDATE drivers SET balance=balance+($1-$2) WHERE id=$3", [
+      roundMoney(order.price),
+      roundMoney(order.service_commission),
+      order.driver_id
+    ]);
+    await settleDriverDebtFromBalance(order.driver_id, executor);
+  }
+
+  let cashbackCredited = 0;
+  let referralBonusResult = null;
+  if (order.client_id) {
+    const cashback = roundMoney(order.cashback_earned);
+    if (cashback > 0) {
+      const updatedClient = await run(executor, `
+        UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance
+      `, [cashback, order.client_id]);
+      await run(executor, `
+        INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
+        VALUES($1,$2,'EARN',$3,$4)
+      `, [order.client_id, order.id, cashback, updatedClient.rows[0].cashback_balance]);
+      cashbackCredited = cashback;
+    }
+    referralBonusResult = await awardReferralBonusOnFirstCompletedOrder({ clientId: order.client_id, orderId: order.id, executor });
+  }
+
+  await createOrderCompletedTransaction(order, actorUserId, executor);
+  return { cashbackCredited, referralBonusResult };
 }
 
 export async function createOrderCancelledTransaction(order, actorUserId = null, executor = defaultQuery) {

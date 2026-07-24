@@ -6,6 +6,8 @@ import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { getPaymentProvider, providerNameForMethod, mapKaspiStatus, verifyKaspiWebhookSignature } from "./payment-provider.js";
 import { assertStatusTransition, emitOrderUpdated } from "../orders/order-dispatch.service.js";
+import { settleConfirmedOrderEarnings } from "../finance/finance.service.js";
+import { notifyOrderClient, notifyUser } from "../notifications/notification.service.js";
 
 const router = Router();
 const IdParam = z.object({ id: z.string().uuid() });
@@ -56,17 +58,21 @@ function publicPayment(payment, orderStatus) {
 // KASPI still go through an operator's mark-paid, but an electronically
 // confirmed payment (today: the Kaspi Pay mock) should unlock rating on its
 // own. Mirrors the relevant slice of updateStatus(..., "PAID") in
-// orders.routes.js without redoing the driver-earnings step, which already
-// ran when the order first reached TRIP_COMPLETED.
+// orders.routes.js, including crediting the driver's balance and the
+// client's cashback via settleConfirmedOrderEarnings() — TRIP_COMPLETED
+// deliberately defers that crediting for CARD orders until the payment is
+// actually confirmed (see finance.service.js for why), and this is the first
+// point where that's true.
 async function settleOrderIfPaymentConfirmed(order, payment, req) {
   if (payment.status !== "PAID" || !AWAITING_PAYMENT_STATUSES.includes(order.status)) {
     return order;
   }
-  return tx(async (client) => {
+  let settlement = null;
+  const updated = await tx(async (client) => {
     const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [order.id])).rows[0];
     if (!existing || !AWAITING_PAYMENT_STATUSES.includes(existing.status)) return existing || order;
     assertStatusTransition(existing, "PAID");
-    const updated = (await client.query(
+    const updatedOrder = (await client.query(
       "UPDATE orders SET status='PAID', payment_status='PAID' WHERE id=$1 RETURNING *",
       [existing.id]
     )).rows[0];
@@ -74,6 +80,7 @@ async function settleOrderIfPaymentConfirmed(order, payment, req) {
       "INSERT INTO order_status_history(order_id,status,message) VALUES($1,'PAID','Payment confirmed electronically')",
       [existing.id]
     );
+    settlement = await settleConfirmedOrderEarnings(updatedOrder, client, req.user?.id || null);
     await writeAudit(client, {
       action: "order_status_changed",
       entityType: "order",
@@ -81,9 +88,34 @@ async function settleOrderIfPaymentConfirmed(order, payment, req) {
       metadata: { from: existing.status, to: "PAID", source: "payment_provider" },
       req
     });
-    emitOrderUpdated(req.io, updated);
-    return updated;
+    emitOrderUpdated(req.io, updatedOrder);
+    return updatedOrder;
   });
+  // notifyOrderClient/notifyUser write through the plain pool, not the tx
+  // client above, so they fire after commit — same reason orders.routes.js's
+  // updateStatus() waits until its own tx() returns before notifying.
+  if (settlement?.cashbackCredited > 0) {
+    notifyOrderClient(updated, {
+      title: "Начислен кешбэк",
+      body: `+${settlement.cashbackCredited} ₸ за поездку — спишется на следующей оплате`,
+      type: "CASHBACK_EARNED"
+    }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+  }
+  if (settlement?.referralBonusResult?.referredUserId) {
+    notifyUser(settlement.referralBonusResult.referredUserId, {
+      title: "Бонус за приглашение",
+      body: `+${settlement.referralBonusResult.bonus} ₸ начислено на баланс`,
+      type: "REFERRAL_BONUS"
+    }).catch((error) => console.error("[push] notifyUser failed", error));
+  }
+  if (settlement?.referralBonusResult?.referrerUserId) {
+    notifyUser(settlement.referralBonusResult.referrerUserId, {
+      title: "Бонус за приглашение",
+      body: `+${settlement.referralBonusResult.bonus} ₸ — приглашённый друг совершил первую поездку`,
+      type: "REFERRAL_BONUS"
+    }).catch((error) => console.error("[push] notifyUser failed", error));
+  }
+  return updated;
 }
 
 // Starts (or retries) settlement for an order's payment. Safe to call again
