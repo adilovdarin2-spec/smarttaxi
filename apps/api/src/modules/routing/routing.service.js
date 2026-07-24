@@ -1119,7 +1119,12 @@ async function reverseAddressWithMapTiler({ lat, lng }, fetchImpl = fetch) {
   const url = new URL(`${env.MAPTILER_GEOCODING_URL.replace(/\/$/, "")}/${point.lng},${point.lat}.json`);
   url.searchParams.set("key", env.MAPTILER_API_KEY);
   url.searchParams.set("language", "ru");
-  url.searchParams.set("limit", "5");
+  // MapTiler's reverse endpoint rejects `limit` unless it's paired with a
+  // single `type` filter ("ERR_VALIDATION: Parameter limit must be combined
+  // with a single type parameter when reverse geocoding") — confirmed live.
+  // Forward search's `limit` (searchAddressesWithMapTiler above) has no such
+  // restriction; only reverse does. Only features[0] is ever used here
+  // anyway, so there's nothing to gain from limiting result count.
   const response = await getJson(url, { fetchImpl });
   if (!response.ok) {
     await cacheSetJson(`${cacheKey}:failure`, { failed: true, status: response.status }, 30);
