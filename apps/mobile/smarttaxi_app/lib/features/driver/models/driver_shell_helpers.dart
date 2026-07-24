@@ -169,7 +169,16 @@ String? liveRouteMeta(AppLocalizations l10n, RoutePreview? route) {
   final label = route.isToDropoff
       ? l10n.driverPickupMetaToDropoff
       : l10n.driverPickupMetaToPickup;
-  return l10n.driverPickupMetaText(label, distanceKm.toStringAsFixed(1), minutes);
+  final text =
+      l10n.driverPickupMetaText(label, distanceKm.toStringAsFixed(1), minutes);
+  // route.isFallback means OSRM was unreachable and the backend drew a
+  // straight line between the two points instead of a real road route
+  // (routing.service.js's straightLineRouteFallback) — distance/ETA are a
+  // rough guess, not what the road actually measures. This used to render
+  // identically to a real route with no way to tell the difference.
+  return route.isFallback
+      ? '$text · ${l10n.driverRouteFallbackNotice}'
+      : text;
 }
 
 String statusLabel(AppLocalizations l10n, String status) {

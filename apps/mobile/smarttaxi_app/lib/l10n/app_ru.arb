@@ -444,6 +444,7 @@
   "statusLabelUpdating": "Статус обновляется",
   "driverPickupMetaToDropoff": "До места назначения",
   "driverPickupMetaToPickup": "До точки посадки",
+  "driverRouteFallbackNotice": "приблизительно",
   "driverPickupMetaText": "{label}: {distance} км · {minutes} мин",
   "@driverPickupMetaText": {"placeholders": {"label": {"type": "String"}, "distance": {"type": "String"}, "minutes": {"type": "int"}}},
   "routeErrorWaitingLocation": "Ожидаем геолокацию водителя.",

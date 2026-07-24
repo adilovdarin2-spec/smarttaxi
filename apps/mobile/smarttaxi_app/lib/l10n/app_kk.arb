@@ -443,6 +443,7 @@
   "statusLabelUpdating": "Мәртебе жаңартылуда",
   "driverPickupMetaToDropoff": "Межеге дейін",
   "driverPickupMetaToPickup": "Қону нүктесіне дейін",
+  "driverRouteFallbackNotice": "шамамен",
   "driverPickupMetaText": "{label}: {distance} км · {minutes} мин",
   "@driverPickupMetaText": {"placeholders": {"label": {"type": "String"}, "distance": {"type": "String"}, "minutes": {"type": "int"}}},
   "routeErrorWaitingLocation": "Жүргізушінің геолокациясын күтудеміз.",

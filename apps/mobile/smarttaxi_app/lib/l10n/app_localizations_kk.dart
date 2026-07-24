@@ -1381,6 +1381,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverPickupMetaToPickup => 'Қону нүктесіне дейін';
 
   @override
+  String get driverRouteFallbackNotice => 'шамамен';
+
+  @override
   String driverPickupMetaText(String label, String distance, int minutes) {
     return '$label: $distance км · $minutes мин';
   }

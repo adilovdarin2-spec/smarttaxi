@@ -1375,6 +1375,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverPickupMetaToPickup => 'До точки посадки';
 
   @override
+  String get driverRouteFallbackNotice => 'приблизительно';
+
+  @override
   String driverPickupMetaText(String label, String distance, int minutes) {
     return '$label: $distance км · $minutes мин';
   }

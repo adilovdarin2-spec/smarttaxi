@@ -565,12 +565,20 @@ class RoutePreview {
     this.targetLng,
     this.driverLat,
     this.driverLng,
+    this.isFallback = false,
   });
 
   final String regionId;
   final double distanceMeters;
   final double durationSeconds;
   final List<LatLng> geometry;
+  // True when OSRM was unreachable and routing.service.js drew a straight
+  // line between the two points instead of a real road route
+  // (straightLineRouteFallback) — distance/duration are rough estimates,
+  // not what the road actually measures. Previously silent: the client had
+  // no way to tell a real route from this guess even though the backend
+  // already sent `fallback: true` on the response.
+  final bool isFallback;
   // Empty when the route came from the straight-line fallback (no real OSRM
   // answer to draw steps from) — callers fall back to a geometry-derived
   // heuristic in that case, same as before this field existed.
@@ -616,6 +624,7 @@ class RoutePreview {
       targetLng: _nullableDouble(json['targetLng']),
       driverLat: _nullableDouble(json['driverLat']),
       driverLng: _nullableDouble(json['driverLng']),
+      isFallback: json['fallback'] == true,
     );
   }
 }

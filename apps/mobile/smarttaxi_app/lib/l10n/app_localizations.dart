@@ -2547,6 +2547,12 @@ abstract class AppLocalizations {
   /// **'До точки посадки'**
   String get driverPickupMetaToPickup;
 
+  /// No description provided for @driverRouteFallbackNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'приблизительно'**
+  String get driverRouteFallbackNotice;
+
   /// No description provided for @driverPickupMetaText.
   ///
   /// In ru, this message translates to:
