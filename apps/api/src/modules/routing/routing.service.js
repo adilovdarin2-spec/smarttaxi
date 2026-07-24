@@ -44,7 +44,17 @@ function normalizedText(value) {
 
 function buildAddressSearchQuery(query, region) {
   const cleanQuery = compactText(query);
-  const cleanRegion = compactText(region || env.CITY);
+  // Only append a region the caller actually gave us -- do NOT fall back to
+  // env.CITY here. Callers that want that default already pass it in
+  // explicitly (see searchAddresses's `explicitRegion || env.CITY`). Baking
+  // env.CITY ("Atakent", a single tiny test town) into every search whose
+  // caller passed no region silently corrupted queries like "Magnum
+  // Shymkent" into "Magnum Shymkent Atakent Kazakhstan" -- self-contradictory
+  // text no real place matches, so Photon/Nominatim returned nothing and
+  // only MapTiler's generic guess survived (confirmed live). Without a real
+  // region, letting these providers search all of Kazakhstan unbiased is
+  // strictly better than forcing in the wrong town.
+  const cleanRegion = compactText(region);
   const lowerQuery = normalizedText(cleanQuery);
   const parts = [cleanQuery];
   if (cleanRegion && !lowerQuery.includes(normalizedText(cleanRegion))) {
