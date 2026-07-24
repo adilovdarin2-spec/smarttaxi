@@ -635,8 +635,17 @@ function searchLocalAddressHints(query, regionHint, limit = 8) {
     const itemCity = normalizedText(item.city || "");
     const regionMatches = !resolvedKey || itemCity === resolvedKey ||
       itemCity.includes(resolvedKey) || resolvedKey.includes(itemCity);
+    // Every word of a multi-word query must appear somewhere in the hint,
+    // not just one of them — with .some(), a business-name search like
+    // "Magnum Атакент" matched purely on the town-name word (present in
+    // every hint for that town via city/region/keywords), returning the
+    // town's akimat/market/center hints for a query about a shop that has
+    // nothing to do with any of them. This list is a curated fallback of
+    // town-level landmarks, not a business directory — it should only ever
+    // fire for queries that are actually about one of those landmarks.
+    const queryParts = normalizedQuery.split(/\s+/).filter(part => part.length >= 2);
     const queryMatches = haystack.includes(normalizedQuery) ||
-      normalizedQuery.split(/\s+/).some(part => part.length >= 2 && haystack.includes(part));
+      (queryParts.length > 0 && queryParts.every(part => haystack.includes(part)));
     return queryMatches && regionMatches;
   }).map(({ keywords, ...item }) => item);
 
@@ -1166,7 +1175,18 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
       query
     );
   }
-  if (localFallback.length > 0) return sortAddressSuggestions(localFallback, region, query);
+  // Deliberately does NOT return localFallback here even when it has
+  // matches: this list only covers a handful of curated town-level
+  // landmarks (a settlement's akimat/market/center), never real businesses.
+  // Returning early on any match meant a genuine business-name search whose
+  // query happened to also contain the town name (e.g. "Magnum Атакент")
+  // matched the town's landmark hints via searchLocalAddressHints and never
+  // reached Photon/Nominatim at all — the actual shop was never searched
+  // for. Every other branch below already merges localFallback alongside
+  // the real provider's results (dedupeAddressSuggestions([...localFallback,
+  // ...X])); this just lets execution reach one of those instead of
+  // stopping here. localFallback is still returned alone at the very end,
+  // but only once every real provider has genuinely come back empty.
   const photonFirst = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
   if (photonFirst.length > 0) {
     return filterRegionAddressSuggestions(
