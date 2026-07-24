@@ -12653,6 +12653,17 @@ IconData _addressIconFor(String label, {required bool recent}) {
   if (lower.contains('базар') || lower.contains('рынок')) {
     return Icons.storefront_rounded;
   }
+  if (lower.contains('аптек')) {
+    return Icons.local_pharmacy_rounded;
+  }
+  if (lower.contains('кафе') ||
+      lower.contains('ресторан') ||
+      lower.contains('столов')) {
+    return Icons.restaurant_rounded;
+  }
+  if (lower.contains('магазин') || lower.contains('супермаркет')) {
+    return Icons.local_grocery_store_rounded;
+  }
   if (lower.contains('автовокзал') ||
       lower.contains('вокзал') ||
       lower.contains('станци')) {
