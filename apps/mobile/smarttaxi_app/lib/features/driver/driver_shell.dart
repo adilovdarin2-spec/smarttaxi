@@ -2411,7 +2411,12 @@ class _DriverShellState extends State<DriverShell> {
                 heading: _currentHeading,
                 activeOrder: _activeOrder,
                 route: _driverRoute?.geometry ?? const [],
-                alerts: _roadAlerts,
+                // _allNavigatorAlerts (driver-submitted alerts + OSM speed
+                // cameras), not just _roadAlerts — this small map on the
+                // main "На линии" screen was the only one of the two navigator
+                // maps that dropped cameras; the full-screen navigator
+                // already merges both (line ~4090: shell._allNavigatorAlerts).
+                alerts: _allNavigatorAlerts,
                 signs: _osmSigns,
                 mapUnavailable: _navigatorMapUnavailable,
                 onTileError: _handleNavigatorTileError,
