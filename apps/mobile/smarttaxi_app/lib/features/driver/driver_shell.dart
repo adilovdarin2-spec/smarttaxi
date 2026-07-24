@@ -2412,6 +2412,7 @@ class _DriverShellState extends State<DriverShell> {
                 activeOrder: _activeOrder,
                 route: _driverRoute?.geometry ?? const [],
                 alerts: _roadAlerts,
+                signs: _osmSigns,
                 mapUnavailable: _navigatorMapUnavailable,
                 onTileError: _handleNavigatorTileError,
                 fallbackCenter: _selectedRegion?.center,
@@ -3315,6 +3316,7 @@ class _SmartNavigatorMap extends StatefulWidget {
     required this.alerts,
     required this.mapUnavailable,
     required this.onTileError,
+    this.signs = const [],
     this.heading,
     this.fallbackCenter,
     this.height,
@@ -3325,6 +3327,7 @@ class _SmartNavigatorMap extends StatefulWidget {
   final OrderSummary? activeOrder;
   final List<LatLng> route;
   final List<RoadAlert> alerts;
+  final List<OsmSign> signs;
   final bool mapUnavailable;
   final VoidCallback onTileError;
   final Coordinate? fallbackCenter;
@@ -3516,6 +3519,22 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                             label: _alertShortLabel(l10n, alert.type),
                             color: _alertColor(alert.type),
                             heading: alert.heading,
+                          ),
+                        ),
+                      // Mapped roadside signs (OSM traffic_sign nodes) were
+                      // fetched and voiced (_checkSignProximity) but never
+                      // actually shown on the map — a driver only heard
+                      // about one as they passed it, with no way to see it
+                      // coming the way camera/hazard pins already work.
+                      for (final sign in widget.signs.take(12))
+                        Marker(
+                          point: sign.toLatLng(),
+                          width: 40,
+                          height: 40,
+                          child: _RoadAlertPin(
+                            label: _signShortLabel(sign),
+                            color: _signPinColor,
+                            heading: sign.heading,
                           ),
                         ),
                     ],
@@ -4151,6 +4170,20 @@ class _DriverFullScreenNavigatorState
                                 label: _alertShortLabel(l10n, alert.type),
                                 color: _alertColor(alert.type),
                                 heading: alert.heading,
+                              ),
+                            ),
+                          // See _SmartNavigatorMap's identical addition —
+                          // shell._osmSigns was only ever used for the
+                          // voice/banner proximity callout, never rendered.
+                          for (final sign in shell._osmSigns.take(12))
+                            Marker(
+                              point: sign.toLatLng(),
+                              width: 40,
+                              height: 40,
+                              child: _RoadAlertPin(
+                                label: _signShortLabel(sign),
+                                color: _signPinColor,
+                                heading: sign.heading,
                               ),
                             ),
                         ],
@@ -6055,6 +6088,23 @@ String _alertShortLabel(AppLocalizations l10n, String type) {
       }[type] ??
       '?';
 }
+
+// A mapped speed-limit sign shows its actual limit, same as reading the
+// real sign — the single most useful thing a driver could see at a
+// glance. Anything else (pedestrian crossing, school zone, etc. — see
+// osm-navigation.service.js's SIGN_LABELS) falls back to a generic glyph:
+// there's no compact icon set for the full sign catalogue, and the sign's
+// full label is already announced by voice on proximity
+// (_checkSignProximity) so this pin is a "there's a sign here" marker,
+// not required to convey which one.
+String _signShortLabel(OsmSign sign) {
+  return sign.speedLimit != null ? '${sign.speedLimit}' : 'i';
+}
+
+// Deliberately not any color used by _alertColor — these are informational
+// landmarks (osm-navigation.service.js), not hazards/incidents, and
+// shouldn't visually read as one on the map.
+const Color _signPinColor = Color(0xff2563eb);
 
 Color _alertColor(String type) {
   return const {
