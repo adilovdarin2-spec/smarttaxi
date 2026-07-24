@@ -30,6 +30,7 @@ import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/models.dart';
+import 'screens/wallet/client_wallet_screen.dart';
 
 const _tariffEconomyAsset = 'assets/cars/tariff_v11_economy.png';
 const _tariffComfortAsset =
@@ -2181,6 +2182,7 @@ class _PassengerShellState extends State<PassengerShell>
       PassengerTab.favoriteAddresses: _favoriteAddressesScreen,
       PassengerTab.driverPreferences: _driverPreferencesScreen,
       PassengerTab.referrals: _referralsScreen,
+      PassengerTab.wallet: _walletScreen,
     };
     return (builders[_tab] ?? _unknownPassengerSection).call();
   }
@@ -3013,6 +3015,13 @@ class _PassengerShellState extends State<PassengerShell>
               ),
               const Divider(height: 20),
               _MenuLine(
+                icon: Icons.account_balance_wallet_outlined,
+                title: l10n.passengerDrawerWallet,
+                subtitle: l10n.passengerWalletMenuSubtitle,
+                onTap: () => setState(() => _tab = PassengerTab.wallet),
+              ),
+              const Divider(height: 20),
+              _MenuLine(
                 icon: Icons.local_offer_outlined,
                 title: l10n.passengerDrawerPromoCodes,
                 subtitle: l10n.passengerPromoMenuSubtitle,
@@ -3301,6 +3310,8 @@ class _PassengerShellState extends State<PassengerShell>
       },
     );
   }
+
+  Widget _walletScreen() => ClientWalletScreen(api: widget.api);
 
   Widget _driverApplicationScreen() {
     final palette = context.palette;
@@ -14645,6 +14656,12 @@ class _SmartDrawer extends StatelessWidget {
                   ),
                   _DrawerSectionLabel(l10n.passengerSettingsAccountGroup),
                   _DrawerItem(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: l10n.passengerDrawerWallet,
+                    active: active == PassengerTab.wallet,
+                    onTap: () => onSelect(PassengerTab.wallet),
+                  ),
+                  _DrawerItem(
                     icon: Icons.local_offer_outlined,
                     label: l10n.passengerDrawerPromoCodes,
                     active: active == PassengerTab.promoCodes,
@@ -17359,6 +17376,7 @@ enum PassengerTab {
   favoriteAddresses,
   driverPreferences,
   referrals,
+  wallet,
 }
 
 enum PointTarget { pickup, dropoff }

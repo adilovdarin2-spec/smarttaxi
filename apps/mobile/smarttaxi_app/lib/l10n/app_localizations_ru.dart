@@ -165,6 +165,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerDrawerTrips => 'Мои поездки';
 
   @override
+  String get passengerDrawerWallet => 'Кошелёк';
+
+  @override
   String get passengerDrawerPromoCodes => 'Промокоды';
 
   @override
@@ -1520,6 +1523,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerMyTripsMenuSubtitle => 'История и статус текущей поездки';
 
   @override
+  String get passengerWalletMenuSubtitle => 'Баланс и привязанные карты';
+
+  @override
   String get passengerPromoMenuSubtitle => 'Проверить и применить скидку';
 
   @override
@@ -1540,6 +1546,99 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get passengerReferralsMenuSubtitle =>
       'Ваш код и бонусы за приглашения';
+
+  @override
+  String get passengerWalletTitle => 'Кошелёк';
+
+  @override
+  String get passengerWalletSubtitle =>
+      'Баланс, пополнение и привязанные карты';
+
+  @override
+  String get passengerWalletBalanceLabel => 'Баланс';
+
+  @override
+  String get passengerWalletTopUpButton => 'Пополнить';
+
+  @override
+  String get passengerWalletLoadError => 'Не удалось загрузить кошелёк';
+
+  @override
+  String get passengerWalletTopUpRequestsTitle => 'Заявки на пополнение';
+
+  @override
+  String get passengerWalletCardsTitle => 'Привязанные карты';
+
+  @override
+  String get passengerWalletNoCards => 'Нет привязанных карт';
+
+  @override
+  String get passengerWalletAddCardButton => 'Добавить карту';
+
+  @override
+  String get passengerWalletAddCardSubtitle =>
+      'Карта сохраняется только для последующей оплаты — сейчас с неё ничего не списывается.';
+
+  @override
+  String get passengerWalletDefaultBadge => 'Основная';
+
+  @override
+  String get passengerWalletSetDefaultAction => 'Сделать основной';
+
+  @override
+  String get passengerWalletRemoveAction => 'Удалить';
+
+  @override
+  String get passengerWalletRemoveCardConfirmTitle => 'Удалить карту?';
+
+  @override
+  String passengerWalletRemoveCardConfirmText(String last4) {
+    return 'Карта $last4 будет удалена.';
+  }
+
+  @override
+  String get passengerCardNumberLabel => 'Номер карты';
+
+  @override
+  String get passengerCardHolderNameLabel => 'Имя владельца (необязательно)';
+
+  @override
+  String get passengerErrorInvalidCardNumber =>
+      'Введите корректный номер карты';
+
+  @override
+  String get passengerErrorCardTypo =>
+      'Похоже, в номере карты опечатка — проверьте и попробуйте снова';
+
+  @override
+  String get passengerWalletTopUpSheetTitle => 'Пополнение баланса';
+
+  @override
+  String get passengerWalletTopUpAmountLabel => 'Сумма пополнения';
+
+  @override
+  String passengerWalletTopUpMinNote(String amount) {
+    return 'Минимальная сумма — $amount';
+  }
+
+  @override
+  String get passengerWalletTopUpPendingNote =>
+      'Оплата через Kaspi Pay появится в приложении позже — заявка сохранена и будет обработана автоматически, как только это станет доступно.';
+
+  @override
+  String get passengerWalletTopUpSubmitButton => 'Создать заявку';
+
+  @override
+  String get passengerWalletTopupStatusPending => 'Ожидает';
+
+  @override
+  String get passengerWalletTopupStatusCompleted => 'Выполнено';
+
+  @override
+  String get passengerWalletTopupStatusFailed => 'Не удалось';
+
+  @override
+  String get passengerWalletTopupStatusCancelled => 'Отменено';
 
   @override
   String get passengerSettingsMenuSubtitle => 'Язык, разрешения, аккаунт';

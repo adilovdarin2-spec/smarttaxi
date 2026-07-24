@@ -165,6 +165,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerDrawerTrips => 'Менің сапарларым';
 
   @override
+  String get passengerDrawerWallet => 'Әмиян';
+
+  @override
   String get passengerDrawerPromoCodes => 'Промокодтар';
 
   @override
@@ -1529,6 +1532,9 @@ class AppLocalizationsKk extends AppLocalizations {
       'Ағымдағы сапар тарихы мен мәртебесі';
 
   @override
+  String get passengerWalletMenuSubtitle => 'Баланс және байланысқан карталар';
+
+  @override
   String get passengerPromoMenuSubtitle => 'Жеңілдікті тексеру және қолдану';
 
   @override
@@ -1549,6 +1555,98 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get passengerReferralsMenuSubtitle =>
       'Сіздің кодыңыз бен шақыру бонустары';
+
+  @override
+  String get passengerWalletTitle => 'Әмиян';
+
+  @override
+  String get passengerWalletSubtitle =>
+      'Баланс, толықтыру және байланысқан карталар';
+
+  @override
+  String get passengerWalletBalanceLabel => 'Баланс';
+
+  @override
+  String get passengerWalletTopUpButton => 'Толықтыру';
+
+  @override
+  String get passengerWalletLoadError => 'Әмиянды жүктеу мүмкін болмады';
+
+  @override
+  String get passengerWalletTopUpRequestsTitle => 'Толықтыру өтінімдері';
+
+  @override
+  String get passengerWalletCardsTitle => 'Байланысқан карталар';
+
+  @override
+  String get passengerWalletNoCards => 'Байланысқан карталар жоқ';
+
+  @override
+  String get passengerWalletAddCardButton => 'Карта қосу';
+
+  @override
+  String get passengerWalletAddCardSubtitle =>
+      'Карта тек кейін төлем жасау үшін сақталады — қазір одан ештеңе есептелмейді.';
+
+  @override
+  String get passengerWalletDefaultBadge => 'Негізгі';
+
+  @override
+  String get passengerWalletSetDefaultAction => 'Негізгі ету';
+
+  @override
+  String get passengerWalletRemoveAction => 'Жою';
+
+  @override
+  String get passengerWalletRemoveCardConfirmTitle => 'Картаны жою керек пе?';
+
+  @override
+  String passengerWalletRemoveCardConfirmText(String last4) {
+    return '$last4 картасы жойылады.';
+  }
+
+  @override
+  String get passengerCardNumberLabel => 'Карта нөмірі';
+
+  @override
+  String get passengerCardHolderNameLabel => 'Иесінің аты (міндетті емес)';
+
+  @override
+  String get passengerErrorInvalidCardNumber => 'Дұрыс карта нөмірін енгізіңіз';
+
+  @override
+  String get passengerErrorCardTypo =>
+      'Карта нөмірінде қате бар сияқты — тексеріп, қайта көріңіз';
+
+  @override
+  String get passengerWalletTopUpSheetTitle => 'Балансты толықтыру';
+
+  @override
+  String get passengerWalletTopUpAmountLabel => 'Толықтыру сомасы';
+
+  @override
+  String passengerWalletTopUpMinNote(String amount) {
+    return 'Ең аз сома — $amount';
+  }
+
+  @override
+  String get passengerWalletTopUpPendingNote =>
+      'Kaspi Pay арқылы төлеу мүмкіндігі кейінірек қосылады — өтінім сақталды және бұл мүмкіндік іске қосылған соң автоматты түрде өңделеді.';
+
+  @override
+  String get passengerWalletTopUpSubmitButton => 'Өтінім жасау';
+
+  @override
+  String get passengerWalletTopupStatusPending => 'Күтілуде';
+
+  @override
+  String get passengerWalletTopupStatusCompleted => 'Орындалды';
+
+  @override
+  String get passengerWalletTopupStatusFailed => 'Орындалмады';
+
+  @override
+  String get passengerWalletTopupStatusCancelled => 'Бас тартылды';
 
   @override
   String get passengerSettingsMenuSubtitle => 'Тіл, рұқсаттар, аккаунт';

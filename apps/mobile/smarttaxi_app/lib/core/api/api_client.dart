@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../features/driver/models/driver_document_models.dart';
 import '../../features/driver/models/driver_rating_models.dart';
 import '../../features/driver/models/driver_wallet_models.dart';
+import '../../features/passenger/models/client_wallet_models.dart';
 import '../../features/shared/models.dart';
 import '../auth/auth_store.dart';
 import '../config/app_config.dart';
@@ -841,6 +842,81 @@ class ApiClient {
     final response = await _dio.get<Map<String, dynamic>>('/api/clients/me');
     final data = response.data ?? {};
     return ClientBalance.fromJson(data);
+  }
+
+  // Client-facing wallet/card-binding scaffold (client-wallet.routes.js) —
+  // Kaspi Pay top-ups aren't wired to a real gateway yet, so createTopupRequest
+  // below only ever returns a PENDING request today.
+  Future<ClientWalletSummary> getClientWallet() async {
+    await _attachToken();
+    final response =
+        await _dio.get<Map<String, dynamic>>('/api/clients/me/wallet');
+    return ClientWalletSummary.fromJson(response.data ?? {});
+  }
+
+  Future<List<ClientCard>> getClientCards() async {
+    await _attachToken();
+    final response =
+        await _dio.get<Map<String, dynamic>>('/api/clients/me/wallet/cards');
+    final items = _extractList(response.data, 'cards');
+    return items.map((item) => ClientCard.fromJson(item)).toList(growable: false);
+  }
+
+  // Store-only, Luhn-checked, never charged/tokenized — see
+  // client-wallet.service.js's addClientCard for the trust model.
+  Future<ClientCard> addClientCard({
+    required String cardNumber,
+    String? holderName,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/clients/me/wallet/cards',
+      data: {
+        'cardNumber': cardNumber,
+        if (holderName != null && holderName.isNotEmpty) 'holderName': holderName,
+      },
+    );
+    final data = response.data ?? {};
+    return ClientCard.fromJson(Map<String, dynamic>.from(data['card'] ?? data));
+  }
+
+  Future<void> removeClientCard(String id) async {
+    await _attachToken();
+    await _dio.delete('/api/clients/me/wallet/cards/$id');
+  }
+
+  Future<List<ClientCard>> setDefaultClientCard(String id) async {
+    await _attachToken();
+    final response = await _dio
+        .put<Map<String, dynamic>>('/api/clients/me/wallet/cards/$id/default');
+    final items = _extractList(response.data, 'cards');
+    return items.map((item) => ClientCard.fromJson(item)).toList(growable: false);
+  }
+
+  Future<List<ClientTopupRequest>> getClientTopupRequests() async {
+    await _attachToken();
+    final response = await _dio
+        .get<Map<String, dynamic>>('/api/clients/me/wallet/topup-requests');
+    final items = _extractList(response.data, 'topupRequests');
+    return items
+        .map((item) => ClientTopupRequest.fromJson(item))
+        .toList(growable: false);
+  }
+
+  // Records top-up intent only — no real gateway call happens yet (see
+  // client-wallet.service.js's createTopupRequest). The request stays
+  // PENDING until real Kaspi Pay top-up integration is wired in.
+  Future<ClientTopupRequest> createClientTopupRequest({
+    required int amountKzt,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/clients/me/wallet/topup-requests',
+      data: {'amountKzt': amountKzt},
+    );
+    final data = response.data ?? {};
+    return ClientTopupRequest.fromJson(
+        Map<String, dynamic>.from(data['topupRequest'] ?? data));
   }
 
   Future<String> sendQuickMessage({

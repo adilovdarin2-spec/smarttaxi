@@ -398,6 +398,12 @@ abstract class AppLocalizations {
   /// **'Мои поездки'**
   String get passengerDrawerTrips;
 
+  /// No description provided for @passengerDrawerWallet.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кошелёк'**
+  String get passengerDrawerWallet;
+
   /// No description provided for @passengerDrawerPromoCodes.
   ///
   /// In ru, this message translates to:
@@ -2811,6 +2817,12 @@ abstract class AppLocalizations {
   /// **'История и статус текущей поездки'**
   String get passengerMyTripsMenuSubtitle;
 
+  /// No description provided for @passengerWalletMenuSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Баланс и привязанные карты'**
+  String get passengerWalletMenuSubtitle;
+
   /// No description provided for @passengerPromoMenuSubtitle.
   ///
   /// In ru, this message translates to:
@@ -2846,6 +2858,174 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Ваш код и бонусы за приглашения'**
   String get passengerReferralsMenuSubtitle;
+
+  /// No description provided for @passengerWalletTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кошелёк'**
+  String get passengerWalletTitle;
+
+  /// No description provided for @passengerWalletSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Баланс, пополнение и привязанные карты'**
+  String get passengerWalletSubtitle;
+
+  /// No description provided for @passengerWalletBalanceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Баланс'**
+  String get passengerWalletBalanceLabel;
+
+  /// No description provided for @passengerWalletTopUpButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пополнить'**
+  String get passengerWalletTopUpButton;
+
+  /// No description provided for @passengerWalletLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить кошелёк'**
+  String get passengerWalletLoadError;
+
+  /// No description provided for @passengerWalletTopUpRequestsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки на пополнение'**
+  String get passengerWalletTopUpRequestsTitle;
+
+  /// No description provided for @passengerWalletCardsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Привязанные карты'**
+  String get passengerWalletCardsTitle;
+
+  /// No description provided for @passengerWalletNoCards.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет привязанных карт'**
+  String get passengerWalletNoCards;
+
+  /// No description provided for @passengerWalletAddCardButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить карту'**
+  String get passengerWalletAddCardButton;
+
+  /// No description provided for @passengerWalletAddCardSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта сохраняется только для последующей оплаты — сейчас с неё ничего не списывается.'**
+  String get passengerWalletAddCardSubtitle;
+
+  /// No description provided for @passengerWalletDefaultBadge.
+  ///
+  /// In ru, this message translates to:
+  /// **'Основная'**
+  String get passengerWalletDefaultBadge;
+
+  /// No description provided for @passengerWalletSetDefaultAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сделать основной'**
+  String get passengerWalletSetDefaultAction;
+
+  /// No description provided for @passengerWalletRemoveAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get passengerWalletRemoveAction;
+
+  /// No description provided for @passengerWalletRemoveCardConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить карту?'**
+  String get passengerWalletRemoveCardConfirmTitle;
+
+  /// No description provided for @passengerWalletRemoveCardConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта {last4} будет удалена.'**
+  String passengerWalletRemoveCardConfirmText(String last4);
+
+  /// No description provided for @passengerCardNumberLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер карты'**
+  String get passengerCardNumberLabel;
+
+  /// No description provided for @passengerCardHolderNameLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Имя владельца (необязательно)'**
+  String get passengerCardHolderNameLabel;
+
+  /// No description provided for @passengerErrorInvalidCardNumber.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите корректный номер карты'**
+  String get passengerErrorInvalidCardNumber;
+
+  /// No description provided for @passengerErrorCardTypo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Похоже, в номере карты опечатка — проверьте и попробуйте снова'**
+  String get passengerErrorCardTypo;
+
+  /// No description provided for @passengerWalletTopUpSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пополнение баланса'**
+  String get passengerWalletTopUpSheetTitle;
+
+  /// No description provided for @passengerWalletTopUpAmountLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сумма пополнения'**
+  String get passengerWalletTopUpAmountLabel;
+
+  /// No description provided for @passengerWalletTopUpMinNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Минимальная сумма — {amount}'**
+  String passengerWalletTopUpMinNote(String amount);
+
+  /// No description provided for @passengerWalletTopUpPendingNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата через Kaspi Pay появится в приложении позже — заявка сохранена и будет обработана автоматически, как только это станет доступно.'**
+  String get passengerWalletTopUpPendingNote;
+
+  /// No description provided for @passengerWalletTopUpSubmitButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Создать заявку'**
+  String get passengerWalletTopUpSubmitButton;
+
+  /// No description provided for @passengerWalletTopupStatusPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидает'**
+  String get passengerWalletTopupStatusPending;
+
+  /// No description provided for @passengerWalletTopupStatusCompleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнено'**
+  String get passengerWalletTopupStatusCompleted;
+
+  /// No description provided for @passengerWalletTopupStatusFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось'**
+  String get passengerWalletTopupStatusFailed;
+
+  /// No description provided for @passengerWalletTopupStatusCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменено'**
+  String get passengerWalletTopupStatusCancelled;
 
   /// No description provided for @passengerSettingsMenuSubtitle.
   ///
