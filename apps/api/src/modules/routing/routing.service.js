@@ -1077,7 +1077,18 @@ function publicMapTilerAddressSuggestion(feature) {
   const contextText = context.map(item => item?.text || item?.text_ru || item?.text_en || "").filter(Boolean);
   const street = properties.street || properties.road || properties.address || properties.name || "";
   const houseNumber = properties.housenumber || properties.house_number || properties.houseNumber || "";
-  const locality = properties.city || properties.town || properties.village || properties.locality || contextText[0] || "";
+  // context isn't ordered by semantic type -- for a street/address feature
+  // contextText[0] is often the postal code entry (no place_designation of
+  // its own), not the city, so a bare positional fallback showed "050013,
+  // Казахстан" instead of "Алматы, Казахстан" (confirmed live against
+  // MapTiler's raw response for a real Алматы street). The actual
+  // city/town is the context entry explicitly tagged with a locality-level
+  // place_designation; only fall back to position 0 if none carries one.
+  const localityEntry = context.find(item =>
+    ["city", "town", "village", "municipality"].includes(item?.place_designation)
+  );
+  const localityText = localityEntry?.text || localityEntry?.text_ru || localityEntry?.text_en || "";
+  const locality = properties.city || properties.town || properties.village || properties.locality || localityText || contextText[0] || "";
   const region = properties.region || properties.state || contextText.find(item => /область|region|turkistan|түркістан/i.test(item)) || "";
   const name = feature.text_ru || feature.text || feature.place_name_ru || feature.place_name || properties.name || "";
   const title = readableAddressTitle({ name, street, houseNumber, locality });
