@@ -837,7 +837,39 @@ const statements = [
   // destination without submitting a real withdrawal first. wallet.routes.js
   // now checks this column before falling back to request history.
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS payout_method TEXT",
-  "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS payout_details JSONB NOT NULL DEFAULT '{}'::jsonb"
+  "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS payout_details JSONB NOT NULL DEFAULT '{}'::jsonb",
+
+  // --- Client-facing balance/card-binding scaffold. cashback_balance
+  // (already on `clients`) remains the only real spendable balance for now —
+  // client-wallet.routes.js exposes it through a wallet-shaped summary so the
+  // mobile app has one stable contract to build against. client_cards is
+  // store-only (Luhn-checked, never charged/tokenized), same trust model as
+  // driver_payout_requests.payout_details. client_topup_requests records
+  // top-up intent only and stays PENDING until real Kaspi Pay top-up
+  // integration (coming separately) can move it to COMPLETED/FAILED — see
+  // client-wallet.service.js for both.
+  `CREATE TABLE IF NOT EXISTS client_cards (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    card_number TEXT NOT NULL,
+    holder_name TEXT,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_client_cards_client_id ON client_cards(client_id)",
+
+  `CREATE TABLE IF NOT EXISTS client_topup_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    amount_kzt INTEGER NOT NULL CHECK (amount_kzt > 0),
+    method TEXT NOT NULL DEFAULT 'KASPI_PAY' CHECK (method IN ('KASPI_PAY')),
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','COMPLETED','FAILED','CANCELLED')),
+    provider_reference TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_client_topup_requests_client_id ON client_topup_requests(client_id)",
+  "CREATE INDEX IF NOT EXISTS idx_client_topup_requests_status ON client_topup_requests(status)"
 ];
 
 export async function runMigrations() {

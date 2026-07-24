@@ -352,6 +352,37 @@ CREATE TABLE IF NOT EXISTS driver_payout_requests (
 CREATE INDEX IF NOT EXISTS idx_driver_payout_requests_driver_id ON driver_payout_requests(driver_id);
 CREATE INDEX IF NOT EXISTS idx_driver_payout_requests_status ON driver_payout_requests(status);
 
+-- Store-only, same trust model as driver_payout_requests.payout_details:
+-- Luhn-checked to catch typos, never tokenized or charged automatically.
+-- Real Kaspi Pay top-ups (coming separately) can reuse a saved card once
+-- wired in without changing this table's shape.
+CREATE TABLE IF NOT EXISTS client_cards (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  card_number TEXT NOT NULL,
+  holder_name TEXT,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_client_cards_client_id ON client_cards(client_id);
+
+-- Records top-up intent only — there is no payment gateway wired to wallet
+-- top-ups yet (see client-wallet.service.js createTopupRequest). Stays
+-- PENDING until the real Kaspi Pay integration can move it to
+-- COMPLETED/FAILED and credit the client's balance.
+CREATE TABLE IF NOT EXISTS client_topup_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  amount_kzt INTEGER NOT NULL CHECK (amount_kzt > 0),
+  method TEXT NOT NULL DEFAULT 'KASPI_PAY' CHECK (method IN ('KASPI_PAY')),
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','COMPLETED','FAILED','CANCELLED')),
+  provider_reference TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_client_topup_requests_client_id ON client_topup_requests(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_topup_requests_status ON client_topup_requests(status);
+
 CREATE TABLE IF NOT EXISTS commission_overrides (
   driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
   percent NUMERIC(5,2) NOT NULL,
