@@ -799,14 +799,21 @@ function findRegionAliasEntry(regionHint) {
 }
 
 function regionAliases(regionHint) {
-  const hint = normalizedText(regionHint || env.CITY);
+  // No env.CITY fallback here (see buildAddressSearchQuery above for the
+  // same reasoning): a caller that passed no region has no regional intent
+  // to filter by, so this must return [] (no filtering) rather than
+  // silently narrowing every unscoped search to Atakent -- regionCenterRule
+  // below then also skips its hard "discard anything not near this point"
+  // filter, so real results (e.g. Photon's genuine Shymkent matches) aren't
+  // thrown away just because they're far from a region nobody asked for.
+  const hint = normalizedText(regionHint);
   if (!hint) return [];
   const direct = findRegionAliasEntry(regionHint);
   return [hint, ...(direct?.[1] || [])].map(normalizedText).filter(Boolean);
 }
 
 function regionCenterRule(regionHint) {
-  const hint = normalizedText(regionHint || env.CITY);
+  const hint = normalizedText(regionHint);
   if (!hint) return null;
   const direct = findRegionAliasEntry(regionHint);
   return (direct && REGION_SEARCH_CENTERS[direct[0]]) || null;

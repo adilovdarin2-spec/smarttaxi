@@ -66,9 +66,17 @@ function mockAddressFetch() {
 }
 
 const addressResults = await searchAddresses({ q: "Абая", limit: 3 }, mockAddressFetch());
-assert.equal(addressResults.length, 1, "address search returns real provider results");
-assert.equal(addressResults[0].label, "ул. Абая, Атакент", "address search prioritizes local launch catalog");
-assert.equal(addressResults[0].lat, 40.84803, "address search returns local launch latitude before provider fallback");
+// A bare query with no region hint must not discard a genuine provider
+// match just because it's in a different city than the local launch
+// catalog (Atakent) -- doing so was the root cause of a real regression
+// where "Magnum Shymkent" silently lost its real Shymkent result (see
+// regionAliases/regionCenterRule above). Both the curated local hint and
+// the real Nominatim result should come through when no region narrows it.
+assert.equal(addressResults.length, 2, "address search returns both local catalog and real provider results");
+assert.equal(addressResults[0].label, "ул. Абая, Атакент", "local launch catalog hint is still surfaced");
+assert.equal(addressResults[0].lat, 40.84803, "local launch catalog keeps its curated latitude");
+assert.equal(addressResults[1].label, "улица Абая, Шымкент", "genuine out-of-region provider result is not discarded");
+assert.equal(addressResults[1].lat, 42.316, "out-of-region provider result keeps its real latitude");
 const reversed = await reverseAddress({ lat: 42.316, lng: 69.596 }, mockAddressFetch());
 assert.equal(reversed.city, "Шымкент", "reverse address returns city");
 await assert.rejects(
