@@ -1171,15 +1171,17 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
   if (query.length < 2) return [];
   const explicitRegion = compactText(region);
   const localFallback = searchLocalAddressHints(query, explicitRegion || env.CITY, limit);
+  // MapTiler's forward search is a place/address geocoder, not a free-text
+  // POI/business-name search: given "аптека Атакент" or "Magnum Shymkent" it
+  // silently drops the business-name word and returns a generic town-level
+  // match instead of an empty result (confirmed live by querying MapTiler's
+  // API directly — it ignores "аптека"/"Magnum" entirely and matches only
+  // the town name, with mediocre relevance ~0.5-0.6). Treating that as a
+  // satisfying first hit would permanently shadow Photon/Nominatim below,
+  // which do match business names — so mapTilerFirst is never used to
+  // return early by itself, only merged into whichever provider's results
+  // end up being returned (same philosophy as localFallback below).
   const mapTilerFirst = await searchAddressesWithMapTiler({ q: query, region: explicitRegion || env.CITY, limit }, fetchImpl).catch(() => []);
-  if (mapTilerFirst.length > 0) {
-    return filterRegionAddressSuggestions(
-      dedupeAddressSuggestions([...localFallback, ...mapTilerFirst]),
-      region,
-      limit,
-      query
-    );
-  }
   // Deliberately does NOT return localFallback here even when it has
   // matches: this list only covers a handful of curated town-level
   // landmarks (a settlement's akimat/market/center), never real businesses.
@@ -1195,7 +1197,7 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
   const photonFirst = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
   if (photonFirst.length > 0) {
     return filterRegionAddressSuggestions(
-      dedupeAddressSuggestions([...localFallback, ...photonFirst]),
+      dedupeAddressSuggestions([...localFallback, ...mapTilerFirst, ...photonFirst]),
       region,
       limit,
       query
@@ -1212,20 +1214,41 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
     response = await getJson(url, { headers: nominatimHeaders(), fetchImpl });
   } catch {
     const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
-    if (fallback.length > 0) return fallback;
+    if (fallback.length > 0 || mapTilerFirst.length > 0) {
+      return filterRegionAddressSuggestions(
+        dedupeAddressSuggestions([...localFallback, ...mapTilerFirst, ...fallback]),
+        region,
+        limit,
+        query
+      );
+    }
     if (localFallback.length > 0) return localFallback;
     throw addressSearchUnavailable();
   }
   if (!response.ok) {
     const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
-    if (fallback.length > 0) return fallback;
+    if (fallback.length > 0 || mapTilerFirst.length > 0) {
+      return filterRegionAddressSuggestions(
+        dedupeAddressSuggestions([...localFallback, ...mapTilerFirst, ...fallback]),
+        region,
+        limit,
+        query
+      );
+    }
     if (localFallback.length > 0) return localFallback;
     throw addressSearchUnavailable();
   }
   const data = response.data;
   if (!Array.isArray(data)) {
     const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
-    if (fallback.length > 0) return fallback;
+    if (fallback.length > 0 || mapTilerFirst.length > 0) {
+      return filterRegionAddressSuggestions(
+        dedupeAddressSuggestions([...localFallback, ...mapTilerFirst, ...fallback]),
+        region,
+        limit,
+        query
+      );
+    }
     if (localFallback.length > 0) return localFallback;
     throw addressSearchUnavailable();
   }
@@ -1237,16 +1260,16 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
   );
   if (addresses.length > 0) {
     return filterRegionAddressSuggestions(
-      dedupeAddressSuggestions([...localFallback, ...addresses]),
+      dedupeAddressSuggestions([...localFallback, ...mapTilerFirst, ...addresses]),
       region,
       limit,
       query
     );
   }
   const fallback = await searchAddressesWithPhoton({ q: query, region, limit }, fetchImpl).catch(() => []);
-  if (fallback.length > 0) {
+  if (fallback.length > 0 || mapTilerFirst.length > 0) {
     return filterRegionAddressSuggestions(
-      dedupeAddressSuggestions([...localFallback, ...fallback]),
+      dedupeAddressSuggestions([...localFallback, ...mapTilerFirst, ...fallback]),
       region,
       limit,
       query
