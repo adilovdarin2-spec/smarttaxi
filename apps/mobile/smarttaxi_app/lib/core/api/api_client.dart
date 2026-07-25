@@ -956,9 +956,15 @@ class ApiClient {
 
   /// Live speed cameras + posted speed limit around [location], sourced
   /// from OpenStreetMap (see osm-navigation.service.js on the backend).
+  /// Uses the backend's own max (8000m, road-alerts.routes.js's
+  /// OsmNavigationQuery) rather than a smaller default: on real rural
+  /// highway corridors (confirmed live near Atakent -- real OSM cameras
+  /// starting ~13km out) a 3km radius meant a camera only appeared once
+  /// the driver was already ~2 minutes away at highway speed. 8km gives
+  /// roughly 5 minutes of advance warning instead.
   Future<OsmNavigationInfo> getOsmNavigation({
     required Coordinate location,
-    int radiusM = 3000,
+    int radiusM = 8000,
   }) async {
     await _attachToken();
     final response = await _dio.get<Map<String, dynamic>>(
