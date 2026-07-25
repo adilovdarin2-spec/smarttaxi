@@ -1194,7 +1194,7 @@
   "driverAlertConfirmedThanks": "Спасибо. Подтверждение поможет другим водителям.",
   "driverAlertHiddenFromList": "Событие скрыто из активного списка.",
   "driverRoadAlertsTitle": "Дорожные события",
-  "driverRoadAlertsSubtitle": "Сообщения нужны для безопасности движения и соблюдения правил.",
+  "driverRoadAlertsSubtitle": "Отмеченные камеры и опасные участки сразу видны другим водителям на навигаторе — это помогает всем на дороге.",
   "refreshButton": "Обновить",
   "driverPointSelectedOnMap": "Координаты выбраны на карте.",
   "driverNewAlertSectionTitle": "Новое событие",

@@ -1193,7 +1193,7 @@
   "driverAlertConfirmedThanks": "Рақмет. Растау басқа жүргізушілерге көмектеседі.",
   "driverAlertHiddenFromList": "Оқиға белсенді тізімнен жасырылды.",
   "driverRoadAlertsTitle": "Жол оқиғалары",
-  "driverRoadAlertsSubtitle": "Хабарламалар қозғалыс қауіпсіздігі мен ережелерді сақтау үшін қажет.",
+  "driverRoadAlertsSubtitle": "Белгіленген камералар мен қауіпті учаскелер басқа жүргізушілердің навигаторында бірден көрінеді — бұл жолда бәріне көмектеседі.",
   "refreshButton": "Жаңарту",
   "driverPointSelectedOnMap": "Координаттар картадан таңдалды.",
   "driverNewAlertSectionTitle": "Жаңа оқиға",
