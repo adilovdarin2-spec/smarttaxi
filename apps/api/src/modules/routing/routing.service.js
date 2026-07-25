@@ -1160,7 +1160,21 @@ async function reverseAddressWithMapTiler({ lat, lng }, fetchImpl = fetch) {
   }
   const features = Array.isArray(response.data?.features) ? response.data.features : [];
   const suggestion = features.map(publicMapTilerAddressSuggestion).filter(Boolean)[0] || null;
-  if (suggestion) await cacheSetJson(cacheKey, suggestion, 600);
+  // Reverse geocoding already knows the true location -- it's the point we
+  // asked about -- so the queried coordinates always win over whatever the
+  // matched feature itself carries. This matters because MapTiler's top
+  // match for a point can be a "road" kind feature representing an entire
+  // multi-country route relation (e.g. "Азиатский маршрут AH5", OSM
+  // r176922, spanning TM/UZ/CN/KG/TR/KZ) whose own `center` is that route's
+  // geometric centroid -- hundreds of km from the actual point queried
+  // (confirmed live: reverse-geocoding a point near the Uzbek border
+  // returned coordinates near Almaty). The label/name is still correct and
+  // useful ("you're on AH5"); only the coordinates need pinning back down.
+  if (suggestion) {
+    suggestion.lat = point.lat;
+    suggestion.lng = point.lng;
+    await cacheSetJson(cacheKey, suggestion, 600);
+  }
   return suggestion;
 }
 
