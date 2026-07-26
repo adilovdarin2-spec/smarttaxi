@@ -37,6 +37,7 @@ export default function DriversLiveMap({ drivers }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef(new Map());
+  const hasFittedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const style = useMemo(() => mapStyle(), []);
 
@@ -95,14 +96,26 @@ export default function DriversLiveMap({ drivers }) {
         markersRef.current.delete(id);
       }
     });
-    if (points.length > 1) {
-      const bounds = points.reduce(
-        (acc, point) => acc.extend([point.lng, point.lat]),
-        new maplibregl.LngLatBounds([points[0].lng, points[0].lat], [points[0].lng, points[0].lat])
-      );
-      map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 500 });
-    } else if (points.length === 1) {
-      map.easeTo({ center: [points[0].lng, points[0].lat], zoom: 13, duration: 400 });
+    // Only auto-fit the camera the first time real driver positions show
+    // up, not on every 15s poll -- `points` is a fresh array every render
+    // (recomputed from the `drivers` prop, itself a fresh array every
+    // poll tick), so this effect used to re-run fitBounds/easeTo on every
+    // single refresh regardless of whether anything moved. A dispatcher
+    // who manually pans/zooms to watch one area was getting forcibly
+    // re-centered/re-zoomed every 15 seconds, defeating the point of a
+    // dispatcher tool they can navigate themselves. Marker positions above
+    // still update live every poll either way.
+    if (!hasFittedRef.current && points.length > 0) {
+      hasFittedRef.current = true;
+      if (points.length > 1) {
+        const bounds = points.reduce(
+          (acc, point) => acc.extend([point.lng, point.lat]),
+          new maplibregl.LngLatBounds([points[0].lng, points[0].lat], [points[0].lng, points[0].lat])
+        );
+        map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 500 });
+      } else {
+        map.easeTo({ center: [points[0].lng, points[0].lat], zoom: 13, duration: 400 });
+      }
     }
   }, [mapReady, points]);
 
