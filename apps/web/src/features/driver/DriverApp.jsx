@@ -7,13 +7,17 @@ import {
   cancelDriverOrder,
   clearToken,
   completeTrip,
+  confirmDriverRoadAlert,
+  createDriverRoadAlert,
   driverToPickupRoute,
+  expireDriverRoadAlert,
   getDriverActiveOrder,
   getDriverDebt,
   getDriverEarningsToday,
   getDriverOrders,
   getDriverProfile,
   getDriverRegions,
+  getDriverRoadAlerts,
   getToken,
   loginUser,
   markDriverArrived,
@@ -54,8 +58,36 @@ const DRIVER_TABS = [
   ["line", "Линия"],
   ["orders", "Заказы"],
   ["active", "Поездка"],
+  ["road", "Дорога"],
   ["money", "Доход"]
 ];
+
+// Mirrors roadAlertLabel()'s fallback map in the mobile app
+// (features/shared/models.dart) -- same 17 types, same Russian labels,
+// kept in sync by hand since the web panel has no shared l10n system.
+const ROAD_ALERT_TYPE_LABELS = {
+  ROAD_HAZARD: "Дорожная опасность",
+  ACCIDENT: "ДТП",
+  ROAD_WORK: "Ремонт дороги",
+  SPEED_CAMERA: "Камера скорости",
+  POLICE: "Контроль движения",
+  TRAFFIC_JAM: "Пробка",
+  ROAD_CLOSED: "Закрытая дорога",
+  BAD_ROAD: "Плохая дорога",
+  POTHOLE: "Яма",
+  SPEED_BUMP: "Лежачий полицейский",
+  ICY_ROAD: "Скользкая дорога",
+  SCHOOL_ZONE: "Школьная зона",
+  TEMPORARY_SPEED_LIMIT: "Временное ограничение",
+  DANGEROUS_TURN: "Опасный поворот",
+  RAILROAD_CROSSING: "Ж/д переезд",
+  PEDESTRIAN_CROSSING: "Пешеходный переход",
+  OTHER: "Другое"
+};
+
+function roadAlertTypeLabel(type) {
+  return ROAD_ALERT_TYPE_LABELS[type] || ROAD_ALERT_TYPE_LABELS.OTHER;
+}
 
 const ERROR_MESSAGES = {
   INVALID_CREDENTIALS: "Неверный телефон или пароль",
@@ -419,6 +451,11 @@ export default function DriverApp() {
   const [tab, setTab] = useState("line");
   const [driverPosition, setDriverPosition] = useState(null);
   const [driverRoute, setDriverRoute] = useState(null);
+  const [roadAlerts, setRoadAlerts] = useState([]);
+  const [roadAlertsLoading, setRoadAlertsLoading] = useState(false);
+  const [roadAlertsError, setRoadAlertsError] = useState("");
+  const [roadAlertForm, setRoadAlertForm] = useState({ type: "ROAD_HAZARD", comment: "" });
+  const [roadAlertSubmitting, setRoadAlertSubmitting] = useState(false);
   const socketRef = useRef(null);
   const geoWatchIdRef = useRef(null);
   const lastLocationSentAtRef = useRef(0);
@@ -617,6 +654,70 @@ export default function DriverApp() {
     setActiveOrder(null);
   }
 
+  const loadRoadAlerts = useCallback(async () => {
+    if (!logged) return;
+    setRoadAlertsLoading(true);
+    setRoadAlertsError("");
+    try {
+      const items = await getDriverRoadAlerts({ regionId: selectedRegionId || undefined });
+      setRoadAlerts(items);
+    } catch (error) {
+      setRoadAlertsError(formatError(error));
+    } finally {
+      setRoadAlertsLoading(false);
+    }
+  }, [logged, selectedRegionId]);
+
+  // Only fetched while the tab is actually open -- unlike orders/earnings
+  // (shown on the home tab every session), road alerts are a secondary
+  // screen most shifts never open.
+  useEffect(() => {
+    if (tab === "road") loadRoadAlerts();
+  }, [tab, loadRoadAlerts]);
+
+  async function submitRoadAlert(event) {
+    event.preventDefault();
+    if (!driverPosition) {
+      setRoadAlertsError("Нет GPS-сигнала — выйдите на линию и подождите, пока определится местоположение.");
+      return;
+    }
+    setRoadAlertSubmitting(true);
+    setRoadAlertsError("");
+    try {
+      await createDriverRoadAlert({
+        type: roadAlertForm.type,
+        comment: roadAlertForm.comment.trim(),
+        lat: driverPosition.lat,
+        lng: driverPosition.lng,
+        regionId: selectedRegionId || undefined
+      });
+      setRoadAlertForm(current => ({ ...current, comment: "" }));
+      await loadRoadAlerts();
+    } catch (error) {
+      setRoadAlertsError(formatError(error));
+    } finally {
+      setRoadAlertSubmitting(false);
+    }
+  }
+
+  async function confirmRoadAlert(alertId) {
+    try {
+      await confirmDriverRoadAlert(alertId);
+      await loadRoadAlerts();
+    } catch (error) {
+      setRoadAlertsError(formatError(error));
+    }
+  }
+
+  async function dismissRoadAlert(alertId) {
+    try {
+      await expireDriverRoadAlert(alertId);
+      await loadRoadAlerts();
+    } catch (error) {
+      setRoadAlertsError(formatError(error));
+    }
+  }
+
   // Fires the instant any request comes back 401/SESSION_SUPERSEDED --
   // another device logged into this account and the backend invalidated
   // every token issued before that (see common/auth.js). Without this the
@@ -782,6 +883,62 @@ export default function DriverApp() {
               ) : (
                 <div className="driver-core-empty">Активной поездки нет.</div>
               )
+            )}
+
+            {tab === "road" && (
+              <section className="driver-core-road">
+                <form className="driver-core-road-form" onSubmit={submitRoadAlert}>
+                  <div className="driver-core-section-title">
+                    <strong>Сообщить о дороге</strong>
+                  </div>
+                  <select
+                    value={roadAlertForm.type}
+                    onChange={event => setRoadAlertForm(current => ({ ...current, type: event.target.value }))}
+                  >
+                    {Object.keys(ROAD_ALERT_TYPE_LABELS).map(type => (
+                      <option key={type} value={type}>{roadAlertTypeLabel(type)}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Комментарий (необязательно)"
+                    value={roadAlertForm.comment}
+                    onChange={event => setRoadAlertForm(current => ({ ...current, comment: event.target.value }))}
+                    maxLength={300}
+                  />
+                  <Button type="submit" disabled={roadAlertSubmitting || !driverPosition}>
+                    {roadAlertSubmitting ? "Отправляем..." : "Сообщить"}
+                  </Button>
+                  {!driverPosition && (
+                    <div className="driver-core-empty">Выйдите на линию, чтобы определить местоположение.</div>
+                  )}
+                </form>
+
+                {roadAlertsError && <div className="driver-core-error">{roadAlertsError}</div>}
+
+                <div className="driver-core-section-title">
+                  <strong>Активные события</strong>
+                  <span>{roadAlerts.length}</span>
+                </div>
+                {roadAlertsLoading ? (
+                  <div className="driver-core-loading">Загружаем события...</div>
+                ) : roadAlerts.length ? (
+                  roadAlerts.map(alert => (
+                    <div className="driver-core-road-card" key={alert.id}>
+                      <div>
+                        <strong>{roadAlertTypeLabel(alert.type)}</strong>
+                        {alert.comment && <p>{alert.comment}</p>}
+                      </div>
+                      <div className="driver-core-road-actions">
+                        <Button variant="secondary" onClick={() => confirmRoadAlert(alert.id)}>Подтвердить</Button>
+                        <Button variant="ghost" onClick={() => dismissRoadAlert(alert.id)}>Не актуально</Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="driver-core-empty">Активных событий в регионе нет.</div>
+                )}
+              </section>
             )}
 
             {tab === "money" && (

@@ -6197,7 +6197,39 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .driver-core-home,
 .driver-core-orders,
+.driver-core-road,
 .driver-core-money { display: grid; gap: 12px; }
+.driver-core-road-form {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+}
+.driver-core-road-form select,
+.driver-core-road-form input {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 14px;
+  padding: 0 12px;
+  color: #fff;
+  background: #171d25;
+}
+.driver-core-road-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+}
+.driver-core-road-card p { margin: 4px 0 0; color: rgba(248, 250, 252, .68); font-size: 13px; }
+.driver-core-road-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .driver-core-line-card { display: grid; gap: 14px; padding: 16px; border-radius: 22px; }
 .driver-core-line-card h1 { margin: 2px 0 6px; font-size: 24px; line-height: 1.05; letter-spacing: -.03em; }
 .driver-core-line-card p { margin: 0; color: rgba(248, 250, 252, .68); }
