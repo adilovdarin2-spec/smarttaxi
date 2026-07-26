@@ -75,7 +75,7 @@ export function searchAddresses({ q, region, limit = 10 }) {
   params.set("q", q);
   if (region) params.set("region", region);
   params.set("limit", String(limit));
-  return api(`/api/maps/search?${params.toString()}`);
+  return api(`/api/routes/addresses/search?${params.toString()}`);
 }
 
 export function reverseAddress({ lat, lng }) {
