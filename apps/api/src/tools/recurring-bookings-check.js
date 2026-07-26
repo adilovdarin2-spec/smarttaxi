@@ -110,4 +110,13 @@ assert(scheduler.includes('if (result.status === "already_triggered") return;'),
 
 assert(admin.includes('router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "FINANCE")'), "admin recurring-bookings overview must require OWNER/FINANCE");
 
+// publicAdminRecurringBooking() is a separate mapper from the client/driver
+// one above -- it had the same raw-HH:MM:SS bug independently, and never
+// exposed skippedToday/lastSkipReason at all, so an admin diagnosing a
+// recurring-booking complaint had no visibility into a skipped day either.
+assert(admin.includes("timeOfDay: String(row.time_of_day).slice(0, 5)"), "publicAdminRecurringBooking must format time_of_day back to HH:MM, matching the client/driver mapper's own fix");
+assert(admin.includes("skippedToday: Boolean(row.skipped_today)"), "publicAdminRecurringBooking must surface skippedToday to the admin panel");
+assert(admin.includes("lastSkipReason: row.last_skip_reason || undefined"), "publicAdminRecurringBooking must surface the specific skip reason for admin diagnosis");
+assert(admin.includes("(rb.last_skip_date = CURRENT_DATE) AS skipped_today"), "the admin recurring-bookings query must compute skipped_today off CURRENT_DATE, matching the client/driver endpoints");
+
 console.log("Recurring bookings (\"школьный маршрут\") checks ok");

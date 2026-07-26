@@ -1124,11 +1124,22 @@ function publicAdminRecurringBooking(row) {
     pickupText: row.pickup_text,
     dropoffText: row.dropoff_text,
     daysOfWeek: row.days_of_week,
-    timeOfDay: row.time_of_day,
+    // pg returns a TIME column as "HH:MM:SS" -- see the same fix and fuller
+    // explanation in recurring-bookings.routes.js's publicBooking(). This is
+    // a separate mapper for the admin view, so it had the same bug
+    // independently: the admin recurring-bookings table showed "08:00:00".
+    timeOfDay: String(row.time_of_day).slice(0, 5),
     priceKzt: row.price_kzt,
     status: row.status,
     notes: row.notes || "",
     lastTriggeredDate: row.last_triggered_date,
+    // Same fields recurring-bookings.routes.js's publicBooking() already
+    // exposes to the client/driver apps (see
+    // recurring-bookings-skip-visibility-2026-07-26.md) -- the admin view
+    // had no visibility into a skipped day at all, even though the raw
+    // columns were already flowing through via SELECT rb.* below.
+    skippedToday: Boolean(row.skipped_today),
+    lastSkipReason: row.last_skip_reason || undefined,
     createdAt: row.created_at
   };
 }
@@ -1139,7 +1150,8 @@ router.get("/recurring-bookings", requireAuth, requireRole("OWNER", "FINANCE"), 
       status: z.enum(["PENDING_DRIVER", "ACTIVE", "PAUSED", "CANCELLED"]).optional()
     }).parse(req.query);
     const rows = (await query(`
-      SELECT rb.*, c.name AS client_name, c.phone AS client_phone, d.name AS driver_name, d.phone AS driver_phone
+      SELECT rb.*, c.name AS client_name, c.phone AS client_phone, d.name AS driver_name, d.phone AS driver_phone,
+             (rb.last_skip_date = CURRENT_DATE) AS skipped_today
       FROM recurring_bookings rb
       JOIN clients c ON c.id=rb.client_id
       JOIN drivers d ON d.id=rb.driver_id
