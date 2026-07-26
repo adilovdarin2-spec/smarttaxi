@@ -31,6 +31,11 @@ function publicBooking(row) {
     status: row.status,
     notes: row.notes || "",
     lastTriggeredDate: row.last_triggered_date,
+    // skippedToday is computed in SQL against the same CURRENT_DATE the
+    // scheduler itself reasons about (see recurring-bookings.scheduler.js's
+    // recordSkip) rather than compared against JS's own clock/timezone here.
+    skippedToday: Boolean(row.skipped_today),
+    lastSkipReason: row.last_skip_reason || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -165,7 +170,7 @@ router.get("/mine", requireAuth, requireRole("CLIENT"), async (req, res, next) =
   try {
     const client = await loadClient(req.user.id);
     const rows = (await query(`
-      SELECT rb.*, d.name AS driver_name
+      SELECT rb.*, d.name AS driver_name, (rb.last_skip_date = CURRENT_DATE) AS skipped_today
       FROM recurring_bookings rb
       JOIN drivers d ON d.id=rb.driver_id
       WHERE rb.client_id=$1
@@ -179,7 +184,7 @@ router.get("/driver", requireAuth, requireRole("DRIVER"), async (req, res, next)
   try {
     const driver = await loadDriver(req.user.id);
     const rows = (await query(`
-      SELECT rb.*, c.name AS client_name
+      SELECT rb.*, c.name AS client_name, (rb.last_skip_date = CURRENT_DATE) AS skipped_today
       FROM recurring_bookings rb
       JOIN clients c ON c.id=rb.client_id
       WHERE rb.driver_id=$1
@@ -215,7 +220,7 @@ router.patch("/:id/status", requireAuth, requireRole("CLIENT", "DRIVER"), async 
         throw new AppError("Booking is already cancelled", 409, "RECURRING_BOOKING_CANCELLED");
       }
       const updated = (await client.query(
-        "UPDATE recurring_bookings SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
+        "UPDATE recurring_bookings SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *, (last_skip_date = CURRENT_DATE) AS skipped_today",
         [body.status, existing.id]
       )).rows[0];
       await writeAudit(client, {

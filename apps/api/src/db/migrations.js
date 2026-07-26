@@ -869,7 +869,24 @@ const statements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   "CREATE INDEX IF NOT EXISTS idx_client_topup_requests_client_id ON client_topup_requests(client_id)",
-  "CREATE INDEX IF NOT EXISTS idx_client_topup_requests_status ON client_topup_requests(status)"
+  "CREATE INDEX IF NOT EXISTS idx_client_topup_requests_status ON client_topup_requests(status)",
+
+  // --- Recurring bookings: surface a skipped day instead of silently
+  // swallowing it. The scheduler used to just console.warn and return when
+  // it couldn't dispatch today's ride (driver busy/out of region/not
+  // dispatch-ready/etc) -- the booking stayed ACTIVE with nothing to show
+  // the parent relying on it that today's ride didn't happen. last_skip_date
+  // mirrors last_triggered_date's own dedup pattern (compared against
+  // CURRENT_DATE) so a booking that fails every retry tick within one
+  // trigger window only records/notifies once, and is cleared back to NULL
+  // the moment the booking successfully dispatches again.
+  "ALTER TABLE recurring_bookings ADD COLUMN IF NOT EXISTS last_skip_date DATE",
+  "ALTER TABLE recurring_bookings ADD COLUMN IF NOT EXISTS last_skip_reason TEXT",
+  `DO $$
+  BEGIN
+    ALTER TABLE recurring_bookings ADD CONSTRAINT recurring_bookings_last_skip_reason_check CHECK (last_skip_reason IS NULL OR last_skip_reason IN ('CLIENT_MISSING','DRIVER_MISSING','ROUTE_UNAVAILABLE','DRIVER_OUT_OF_REGION','DRIVER_NOT_READY','DRIVER_BUSY'));
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`
 ];
 
 export async function runMigrations() {

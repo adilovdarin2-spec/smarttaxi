@@ -2,7 +2,7 @@ import { query, tx } from "../../db/pool.js";
 import { writeAudit } from "../../common/audit.js";
 import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
 import { emitOrderCreated } from "../orders/order-dispatch.service.js";
-import { notifyOrderClient, notifyOrderDriver } from "../notifications/notification.service.js";
+import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 
 // NOTE on time zones: this compares against the database server's own NOW()
@@ -15,6 +15,35 @@ const TRIGGER_WINDOW_MINUTES = 15;
 
 function shortId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+// Records that today's trigger window failed to dispatch and tells the
+// client, so "Активна" no longer means the same thing whether the ride
+// actually happened or not. The UPDATE's WHERE clause is the same
+// CURRENT_DATE dedup trick findDueBookings/the order-creation tx use for
+// last_triggered_date: a booking gets retried roughly once a minute for the
+// whole TRIGGER_WINDOW_MINUTES window, so without this guard a single bad
+// day would fire ~15 notifications instead of one. Returns silently (no
+// second notification) once today's skip has already been recorded.
+async function recordSkip(bookingId, reason) {
+  const updated = (await query(
+    `UPDATE recurring_bookings
+     SET last_skip_date=CURRENT_DATE, last_skip_reason=$2, updated_at=NOW()
+     WHERE id=$1 AND (last_skip_date IS NULL OR last_skip_date <> CURRENT_DATE)
+     RETURNING id, client_id`,
+    [bookingId, reason]
+  )).rows[0];
+  if (!updated) return;
+
+  const clientRow = (await query("SELECT user_id FROM clients WHERE id=$1", [updated.client_id])).rows[0];
+  if (clientRow?.user_id) {
+    notifyUser(clientRow.user_id, {
+      title: "Регулярная поездка сегодня не состоится",
+      body: "Не удалось найти свободного водителя по вашему регулярному маршруту. Мы попробуем снова в следующий раз по расписанию.",
+      type: "RECURRING_BOOKING_SKIPPED",
+      data: { recurringBookingId: bookingId, reason }
+    }).catch((error) => console.error("[push] notifyUser failed", error));
+  }
 }
 
 async function findDueBookings() {
@@ -32,11 +61,13 @@ async function createOrderForBooking(booking) {
   const client = (await query("SELECT * FROM clients WHERE id=$1", [booking.client_id])).rows[0];
   if (!client) {
     console.warn(`[recurring-bookings] client ${booking.client_id} missing for booking ${booking.id}, skipping`);
+    await recordSkip(booking.id, "CLIENT_MISSING");
     return;
   }
   const driver = (await query("SELECT * FROM drivers WHERE id=$1", [booking.driver_id])).rows[0];
   if (!driver) {
     console.warn(`[recurring-bookings] driver ${booking.driver_id} missing for booking ${booking.id}, skipping`);
+    await recordSkip(booking.id, "DRIVER_MISSING");
     return;
   }
 
@@ -50,21 +81,25 @@ async function createOrderForBooking(booking) {
     }));
   } catch (error) {
     console.warn(`[recurring-bookings] region resolution failed for booking ${booking.id}: ${error.message} — will retry next tick`);
+    await recordSkip(booking.id, "ROUTE_UNAVAILABLE");
     return;
   }
 
   if (driver.current_region_id !== region.id) {
     console.warn(`[recurring-bookings] driver ${driver.id} is outside booking ${booking.id}'s region right now, will retry next tick`);
+    await recordSkip(booking.id, "DRIVER_OUT_OF_REGION");
     return;
   }
   try {
     await assertDriverDispatchReady(driver, query);
   } catch (error) {
     console.warn(`[recurring-bookings] driver ${driver.id} not dispatch-ready for booking ${booking.id}: ${error.message}`);
+    await recordSkip(booking.id, "DRIVER_NOT_READY");
     return;
   }
   if (driver.status !== "FREE") {
     console.warn(`[recurring-bookings] driver ${driver.id} is not free for booking ${booking.id} (status=${driver.status}), will retry next tick`);
+    await recordSkip(booking.id, "DRIVER_BUSY");
     return;
   }
 
@@ -88,9 +123,13 @@ async function createOrderForBooking(booking) {
   const commissionPercent = Number(tariff?.service_commission_percent ?? 0);
   const serviceCommission = Math.round((booking.price_kzt * commissionPercent) / 100);
 
-  const order = await tx(async (dbClient) => {
+  const result = await tx(async (dbClient) => {
     const driverRow = (await dbClient.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [driver.id])).rows[0];
-    if (!driverRow || driverRow.status !== "FREE") return null;
+    // Driver passed the outer FREE check above but lost the race for the
+    // row lock (e.g. grabbed by another dispatch in between) -- distinct
+    // from the "already triggered today" case below, which isn't a failure
+    // at all and must never be recorded as a skip.
+    if (!driverRow || driverRow.status !== "FREE") return { status: "driver_busy" };
     // The "already triggered today" check runs in SQL (not compared against
     // a JS-side date string) since node-postgres returns DATE columns as
     // parsed Date objects — a string comparison here would silently never
@@ -101,7 +140,7 @@ async function createOrderForBooking(booking) {
        FOR UPDATE`,
       [booking.id]
     )).rows[0];
-    if (!bookingRow) return null;
+    if (!bookingRow) return { status: "already_triggered" };
 
     let created;
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -135,8 +174,12 @@ async function createOrderForBooking(booking) {
       "INSERT INTO order_status_history(order_id,status,message) VALUES($1,'DRIVER_FOUND','Auto-created from recurring booking')",
       [created.id]
     );
+    // A successful dispatch clears any earlier skip recorded this same day
+    // (e.g. driver was busy on the first few retry ticks, then freed up
+    // before the trigger window closed) -- the ride did happen today after
+    // all, so "skipped today" must not stick around next to it.
     await dbClient.query(
-      "UPDATE recurring_bookings SET last_triggered_date=CURRENT_DATE, updated_at=NOW() WHERE id=$1",
+      "UPDATE recurring_bookings SET last_triggered_date=CURRENT_DATE, last_skip_date=NULL, last_skip_reason=NULL, updated_at=NOW() WHERE id=$1",
       [booking.id]
     );
     await writeAudit(dbClient, {
@@ -145,10 +188,16 @@ async function createOrderForBooking(booking) {
       entityId: created.id,
       metadata: { recurringBookingId: booking.id, driverId: driver.id, priceKzt: booking.price_kzt }
     });
-    return created;
+    return { status: "created", order: created };
   });
 
-  if (!order) return;
+  if (result.status === "driver_busy") {
+    await recordSkip(booking.id, "DRIVER_BUSY");
+    return;
+  }
+  if (result.status === "already_triggered") return;
+
+  const order = result.order;
 
   const fullOrder = (await query(`
     SELECT o.*, d.name AS driver_name, d.phone AS driver_phone, d.car_model AS driver_car_model,

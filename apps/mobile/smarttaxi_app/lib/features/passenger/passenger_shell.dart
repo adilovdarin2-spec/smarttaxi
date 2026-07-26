@@ -9458,6 +9458,15 @@ class _RecurringBookingCard extends StatelessWidget {
   (StatusTone, String) _statusMeta(AppLocalizations l10n) {
     switch (booking.status) {
       case 'ACTIVE':
+        // Same lifecycle status either way -- skippedToday only means
+        // *today's* trigger didn't dispatch, so it gets its own badge
+        // instead of looking identical to a normal active booking.
+        if (booking.skippedToday) {
+          return (
+            StatusTone.warning,
+            l10n.passengerRecurringStatusSkippedToday
+          );
+        }
         return (StatusTone.success, l10n.passengerRecurringStatusActive);
       case 'PAUSED':
         return (StatusTone.neutral, l10n.passengerRecurringStatusPaused);
@@ -9529,6 +9538,37 @@ class _RecurringBookingCard extends StatelessWidget {
                   color: palette.textSecondary,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            if (booking.isActive && booking.skippedToday) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: palette.goldPale,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.borderStrong),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 16, color: palette.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.passengerRecurringSkippedTodayText,
+                        style: TextStyle(
+                          color: palette.text,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

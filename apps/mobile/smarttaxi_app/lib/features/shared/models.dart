@@ -37,6 +37,8 @@ class RecurringBooking {
     this.clientName,
     this.notes = '',
     this.lastTriggeredDate,
+    this.skippedToday = false,
+    this.lastSkipReason,
     this.createdAt,
     this.updatedAt,
   });
@@ -57,6 +59,14 @@ class RecurringBooking {
   final String status;
   final String notes;
   final String? lastTriggeredDate;
+  // True when today's scheduled trigger already failed to dispatch (driver
+  // busy/out of region/not dispatch-ready/etc) -- computed server-side off
+  // the same CURRENT_DATE the scheduler itself uses, see publicBooking() in
+  // recurring-bookings.routes.js. A booking can be `isActive` and
+  // `skippedToday` at the same time: the lifecycle status didn't change,
+  // only today's specific ride didn't happen.
+  final bool skippedToday;
+  final String? lastSkipReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -106,6 +116,9 @@ class RecurringBooking {
       lastTriggeredDate:
           (json['last_triggered_date'] ?? json['lastTriggeredDate'])
               ?.toString(),
+      skippedToday: (json['skipped_today'] ?? json['skippedToday']) == true,
+      lastSkipReason:
+          (json['last_skip_reason'] ?? json['lastSkipReason'])?.toString(),
       createdAt: DateTime.tryParse(
         '${json['created_at'] ?? json['createdAt'] ?? ''}',
       ),
@@ -1041,6 +1054,7 @@ NotificationCategory notificationCategoryForType(String type) {
     'RECURRING_BOOKING_REQUEST',
     'RECURRING_BOOKING_ACCEPTED',
     'RECURRING_BOOKING_DECLINED',
+    'RECURRING_BOOKING_SKIPPED',
   };
   const supportTypes = {'SOS_ALERT', 'LOST_ITEM', 'SUPPORT_REPLY'};
   const bonusTypes = {'CASHBACK_EARNED', 'REFERRAL_BONUS'};
