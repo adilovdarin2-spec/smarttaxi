@@ -39,6 +39,14 @@ const _tariffBusinessAsset =
     'assets/cars/tariff_business_white_premium_sedan_flutter.png';
 const _tariffDeliveryAsset = 'assets/cars/tariff_v11_delivery.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
+// One fixed size for the car icon everywhere it appears on this map --
+// nearby free drivers before a match, and the specific driver being
+// tracked once one is assigned. These used to be two different sizes (38
+// vs 58, the tracked one nearly 1.5x bigger for no functional reason),
+// which read as the icon randomly changing size the moment a driver got
+// assigned, on top of the assigned one simply being too large next to
+// everything else on the map.
+const _driverCarMarkerSize = 40.0;
 // One consistent marker family app-wide (client, driver, tracking, share
 // links, recurring bookings): a pulsing dot for "my location", one pin
 // style while actively choosing an address (pickup or dropoff — same
@@ -5168,7 +5176,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                             asset: _driverCarMarkerAsset,
                             semanticLabel: l10n
                                 .passengerNearbyFreeDriverSemanticLabel(nearby.etaMin),
-                            size: 38,
+                            size: _driverCarMarkerSize,
                             rotationRadians:
                                 (nearby.bearing ?? 0) * math.pi / 180,
                             fallbackIcon: Icons.local_taxi_rounded,
@@ -5453,13 +5461,13 @@ class _AnimatedDriverMarkerLayerState
           markers: [
             Marker(
               point: _currentPoint,
-              width: 76,
-              height: 76,
+              width: _driverCarMarkerSize + 18,
+              height: _driverCarMarkerSize + 18,
               child: _assetMarkerContent(
                 asset: _driverCarMarkerAsset,
                 semanticLabel: l10n.passengerDriverCarSemanticLabel,
                 fallbackIcon: Icons.local_taxi_rounded,
-                size: 58,
+                size: _driverCarMarkerSize,
                 rotationRadians: _currentAngle,
               ),
             ),
