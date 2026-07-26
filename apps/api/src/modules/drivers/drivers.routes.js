@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createHash } from "crypto";
 import { z } from "zod";
-import { query } from "../../db/pool.js";
+import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
@@ -294,23 +294,34 @@ router.patch("/:id/block", requireAuth, requireRole("OWNER"), async (req, res, n
       isBlocked: z.boolean(),
       reason: z.string().trim().max(300).optional().default("")
     }).parse(req.body);
-    const before = (await query("SELECT * FROM drivers WHERE id=$1", [params.id])).rows[0];
-    if (!before) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-    const result = await query(`
-      UPDATE drivers
-      SET is_blocked=$1, status=CASE WHEN $1=true THEN 'OFFLINE' ELSE status END
-      WHERE id=$2
-      RETURNING *
-    `, [body.isBlocked, params.id]);
-    await writeAudit(query, {
-      action: body.isBlocked ? "driver_blocked" : "driver_unblocked",
-      actorUserId: req.user.id,
-      entityType: "driver",
-      entityId: params.id,
-      metadata: { reason: body.reason },
-      req
+    // Mirrors admin.routes.js's own PATCH /admin/drivers/:id/block, the
+    // version actually used by the admin panel -- this one had drifted:
+    // no row lock (a concurrent request could race past the "not found"
+    // check) and never cleared current_region_id on block, unlike every
+    // other place in the app that blocks a driver.
+    const driver = await tx(async client => {
+      const before = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
+      if (!before) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+      const updated = (await client.query(`
+        UPDATE drivers
+        SET is_blocked=$1,
+            status=CASE WHEN $1=true THEN 'OFFLINE' ELSE status END,
+            current_region_id=CASE WHEN $1=true THEN NULL ELSE current_region_id END,
+            last_seen_at=NOW()
+        WHERE id=$2
+        RETURNING *
+      `, [body.isBlocked, params.id])).rows[0];
+      await writeAudit(client, {
+        action: body.isBlocked ? "driver_blocked" : "driver_unblocked",
+        actorUserId: req.user.id,
+        entityType: "driver",
+        entityId: params.id,
+        metadata: { before: { isBlocked: before.is_blocked, status: before.status, regionId: before.current_region_id }, reason: body.reason },
+        req
+      });
+      return updated;
     });
-    res.json({ driver: result.rows[0] });
+    res.json({ driver });
   } catch (e) { next(e); }
 });
 

@@ -179,4 +179,16 @@ blocked = await setDriverRegionApproval({
 }, executor);
 assert.equal(executor.state.approvals.filter(row => row.driver_id === driver.id && row.region_id === "region-active").length, 1, "blocking same region twice does not duplicate rows");
 
+// Two routes do the same whole-account block/unblock job -- the admin
+// panel only ever calls PATCH /admin/drivers/:id/block, but
+// PATCH /drivers/:id/block still exists (asserted by api-check.js) and
+// must not be allowed to drift back to an unlocked read + no region-clear,
+// which it had before this fix.
+const adminBlockBody = adminRoutes.match(/router\.patch\("\/drivers\/:id\/block",[\s\S]*?\n}\);/)?.[0] || "";
+const driverBlockBody = driverRoutes.match(/router\.patch\("\/:id\/block",[\s\S]*?\n}\);/)?.[0] || "";
+for (const [label, body] of [["admin.routes.js", adminBlockBody], ["drivers.routes.js", driverBlockBody]]) {
+  assert.match(body, /SELECT \* FROM drivers WHERE id=\$1 FOR UPDATE/, `${label}'s block endpoint must row-lock the driver to avoid racing a concurrent request`);
+  assert.match(body, /current_region_id=CASE WHEN \$1=true THEN NULL ELSE current_region_id END/, `${label}'s block endpoint must clear current_region_id when blocking, matching every other place a driver gets blocked`);
+}
+
 console.log("Driver region approval checks ok");
