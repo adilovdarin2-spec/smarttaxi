@@ -61,7 +61,16 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
 assert.match(ordersRoutes, /router\.post\("\/estimate"/, "estimate endpoint must exist");
 assert.match(tariffsRoutes, /router\.post\("\/estimate"/, "tariff estimate endpoint must exist");
 assert.match(ordersRoutes, /router\.post\("\/", requireAuth, requireRole\("CLIENT"\)/, "order creation endpoint must require client auth");
-assert.match(ordersRoutes, /prepareOrderPricing\(body, client\)/, "order creation must use backend pricing validation");
+// Pricing must be computed from a server-verified route, never trust the
+// client-submitted distanceKm/durationMin directly -- a modified client
+// could submit the real pickup/dropoff pair with a tiny fake distance to
+// get billed near the tariff minimum for a real, long trip. Both the
+// public /estimate endpoint and order creation must call requestRoute
+// (via the shared verifiedRouteForPricing helper) before pricing.
+assert.match(ordersRoutes, /async function verifiedRouteForPricing\(body\)/, "orders.routes.js must recompute the route server-side before pricing, not trust client-submitted distance/duration");
+assert.match(ordersRoutes, /requestRoute\(\{\s*from: \{ lat: body\.pickupLat, lng: body\.pickupLng \},\s*to: \{ lat: body\.dropoffLat, lng: body\.dropoffLng \}\s*\}\)/, "verifiedRouteForPricing must call the real routing engine with the submitted pickup/dropoff coordinates");
+assert.match(ordersRoutes, /prepareOrderPricing\(\{ \.\.\.body, \.\.\.verifiedRoute \}, client\)/, "order creation must price off the server-verified route, not the raw client body");
+assert.match(ordersRoutes, /prepareOrderPricing\(\{ \.\.\.body, \.\.\.verifiedRoute \}, query\)/, "the public /estimate endpoint must also price off the server-verified route, not the raw client body");
 assert.match(ordersRoutes, /INSERT INTO orders\(short_id, status, region_id,[\s\S]*pricing_snapshot/i, "order insert must store canonical status, region id and pricing snapshot");
 assert.match(ordersRoutes, /INSERT INTO payments\(order_id, method, status, amount, currency\)/i, "order creation must create payment row");
 assert.match(ordersRoutes, /CLIENT_ACTIVE_ORDER_STATUSES/, "order creation must define client active order states");

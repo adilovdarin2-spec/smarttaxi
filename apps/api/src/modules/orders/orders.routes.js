@@ -27,7 +27,7 @@ import {
   TRANSITION_RULES
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
-import { buildActiveLegRoute } from "../routing/routing.service.js";
+import { buildActiveLegRoute, requestRoute } from "../routing/routing.service.js";
 import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleConfirmedOrderEarnings } from "../finance/finance.service.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
@@ -117,6 +117,28 @@ export const EstimateOrder = CreateOrder.pick({
   durationMin: true
 });
 
+// distanceKm/durationMin arrive from the client alongside pickup/dropoff
+// coordinates, but pricing must never trust them as-is: a modified client
+// could submit the real pickup/dropoff pair with a tiny fake distance/
+// duration and get billed near the tariff minimum for a real, long trip.
+// Recomputing the route from the same coordinates the client just sent
+// (exactly like buildRoutePreview already does for the pre-ride quote)
+// makes the submitted numbers irrelevant to what's actually charged.
+// Deliberately uses requestRoute (not the straight-line-fallback variant)
+// -- per requestRoute's own contract, a trip's price must never be
+// silently computed from a guess; a routing outage must fail the request,
+// not quietly under/over-charge.
+async function verifiedRouteForPricing(body) {
+  const route = await requestRoute({
+    from: { lat: body.pickupLat, lng: body.pickupLng },
+    to: { lat: body.dropoffLat, lng: body.dropoffLng }
+  });
+  return {
+    distanceKm: Math.max(0.1, route.distanceMeters / 1000),
+    durationMin: Math.max(1, Math.ceil(route.durationSeconds / 60))
+  };
+}
+
 async function insertOrderWithShortId(client, params) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
@@ -150,7 +172,8 @@ function assertTransition(existing, nextStatus) {
 router.post("/estimate", rateLimit({ prefix: "orders-estimate", windowMs: 60_000, max: 60 }), async (req, res, next) => {
   try {
     const body = EstimateOrder.parse(req.body);
-    const pricing = await prepareOrderPricing(body, query);
+    const verifiedRoute = await verifiedRouteForPricing(body);
+    const pricing = await prepareOrderPricing({ ...body, ...verifiedRoute }, query);
     res.json({ estimate: pricing.publicEstimate });
   } catch (e) { next(e); }
 });
@@ -244,8 +267,11 @@ router.post("/promo/validate", requireAuth, requireRole("CLIENT"), rateLimit({ p
 router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-create", windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
     const body = CreateOrder.parse(req.body);
+    // Computed outside the transaction -- it's an external OSRM call, no
+    // reason to hold a DB connection/lock open while waiting on it.
+    const verifiedRoute = await verifiedRouteForPricing(body);
     const order = await tx(async (client) => {
-      const pricing = await prepareOrderPricing(body, client);
+      const pricing = await prepareOrderPricing({ ...body, ...verifiedRoute }, client);
 
       let finalPrice = pricing.estimatedPrice;
       let serviceCommission = pricing.serviceCommission;
