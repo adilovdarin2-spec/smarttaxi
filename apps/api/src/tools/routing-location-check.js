@@ -77,6 +77,40 @@ assert.equal(addressResults[0].label, "ул. Абая, Атакент", "local l
 assert.equal(addressResults[0].lat, 40.84803, "local launch catalog keeps its curated latitude");
 assert.equal(addressResults[1].label, "улица Абая, Шымкент", "genuine out-of-region provider result is not discarded");
 assert.equal(addressResults[1].lat, 42.316, "out-of-region provider result keeps its real latitude");
+
+// Real providers can return the exact same street twice a few hundred
+// metres apart (different providers' own coordinate for the same real
+// place), and can also surface an unrelated place whose name only
+// superficially resembles the query. Both were confirmed live in prod:
+// searching "абая" surfaced "улица Абая" twice ~190m apart from two
+// different providers, plus an unrelated village "Абай" that doesn't
+// actually contain the query text anywhere.
+const dedupResults = await searchAddresses({ q: "Абая", region: "Атакент", limit: 8 }, async () => ({
+  ok: true,
+  async json() {
+    return [
+      { lat: "40.8472", lon: "68.5038", display_name: "улица Абая, Казахстан", address: { road: "улица Абая" } },
+      // ~190m from the entry above -- same real street, a second
+      // provider's own slightly different coordinate for it.
+      { lat: "40.8455", lon: "68.5040", display_name: "улица Абая, Казахстан", address: { road: "улица Абая" } },
+      // An unrelated village -- shares no substring with the query "абая".
+      { lat: "40.751", lon: "68.598", display_name: "Абай, Казахстан", address: { village: "Абай" } }
+    ];
+  }
+}));
+assert.equal(
+  dedupResults.filter(item => item.label === "улица Абая").length,
+  1,
+  "two near-duplicate 'улица Абая' results ~190m apart from different providers must merge into one, not survive as separate entries"
+);
+assert.ok(
+  !dedupResults.some(item => item.label === "Абай"),
+  "an unrelated fuzzy match with no real query-text overlap must be dropped once real matches exist"
+);
+assert.ok(
+  dedupResults.some(item => item.label === "ул. Абая, Атакент"),
+  "the curated local hint for the same street is untouched by the near-duplicate merge (different label text, kept separately)"
+);
 const reversed = await reverseAddress({ lat: 42.316, lng: 69.596 }, mockAddressFetch());
 assert.equal(reversed.city, "Шымкент", "reverse address returns city");
 await assert.rejects(

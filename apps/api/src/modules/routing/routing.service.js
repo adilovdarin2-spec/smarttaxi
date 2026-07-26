@@ -692,7 +692,7 @@ function addressQueryScore(item, query) {
 
 function dedupeAddressSuggestions(addresses) {
   const seen = new Set();
-  return addresses.filter(item => {
+  const exact = addresses.filter(item => {
     const key = [
       normalizedText(item.label),
       Number(item.lat).toFixed(5),
@@ -702,6 +702,30 @@ function dedupeAddressSuggestions(addresses) {
     seen.add(key);
     return true;
   });
+  // Different providers often return the same real place with slightly
+  // different coordinates -- e.g. a real geocoder and MapTiler both
+  // matching "улица Абая, Атакент" a few hundred metres apart, which the
+  // exact-key pass above doesn't catch (it only merges literal duplicates).
+  // Merge same-label results that are genuinely close together too.
+  // Callers already build `addresses` with local hints and real-provider
+  // results listed before mapTilerFirst (see searchAddresses), so keeping
+  // whichever copy of a near-duplicate is seen first naturally keeps the
+  // higher-priority source without re-deriving it here. Left alone on
+  // purpose when two same-label results are km apart -- different towns
+  // can each have their own real street of the same name, and merging
+  // those would wrongly hide one instead of letting the subtitle
+  // disambiguate them.
+  const NEAR_DUPLICATE_KM = 0.6;
+  const merged = [];
+  exact.forEach(item => {
+    const label = normalizedText(item.label);
+    const isNearDuplicate = merged.some(other =>
+      normalizedText(other.label) === label &&
+      distanceKmBetween(item, other) <= NEAR_DUPLICATE_KM
+    );
+    if (!isNearDuplicate) merged.push(item);
+  });
+  return merged;
 }
 
 function sortAddressSuggestions(addresses, regionHint, query = "") {
@@ -844,11 +868,25 @@ function nearestLocalPlace(point, maxKm = 30) {
 
 function filterRegionAddressSuggestions(addresses, regionHint, limit = 8, query = "") {
   const sorted = sortAddressSuggestions(addresses, regionHint, query);
+  // A provider like MapTiler always returns its "closest guess" even when
+  // nothing it found actually matches the query text anywhere (label/
+  // subtitle/city/region) -- addressQueryScore's worst tier (20) marks
+  // exactly these. When at least one result genuinely contains the query,
+  // that guess is pure noise diluting the real matches (e.g. searching
+  // "абая" surfacing an unrelated village called "Абай"/"Абат" purely by
+  // string similarity, or three near-identical "улица Абая" copies from
+  // different providers crowding out everything else). If EVERY result is
+  // a 20, there's nothing better to show, so keep them rather than
+  // returning an empty list for a genuinely obscure query.
+  const hasRealMatch = Boolean(query) && sorted.some(item => addressQueryScore(item, query) < 20);
+  const relevant = hasRealMatch
+    ? sorted.filter(item => addressQueryScore(item, query) < 20)
+    : sorted;
   const aliases = regionAliases(regionHint);
   const centerRule = regionCenterRule(regionHint);
   const max = Math.min(Math.max(Number(limit) || 8, 1), 12);
-  if (!aliases.length) return sorted.slice(0, max);
-  const local = sorted.filter(item => {
+  if (!aliases.length) return relevant.slice(0, max);
+  const local = relevant.filter(item => {
     if (centerRule && distanceKmBetween(centerRule, item) <= centerRule.radiusKm) return true;
     const text = suggestionText(item);
     const textLooksLocal = aliases.some(alias => text.includes(alias));
@@ -859,7 +897,7 @@ function filterRegionAddressSuggestions(addresses, regionHint, limit = 8, query 
   // geocoder returned is actually near it — showing the unfiltered list
   // here would mean a search in Atakent surfacing a kindergarten in Almaty.
   // Better to come back empty than country-wide noise.
-  return centerRule ? [] : sorted.slice(0, max);
+  return centerRule ? [] : relevant.slice(0, max);
 }
 
 function shouldUseDevCertificateFallback(error) {
