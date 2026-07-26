@@ -8,6 +8,12 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
+  -- Embedded in every issued JWT and checked on every authenticated
+  -- request (see common/auth.js) so a real login/password-reset/logout
+  -- can invalidate every other token for this user immediately -- see
+  -- migrations.js's "Single active session per account" entry for the
+  -- full rationale.
+  session_version UUID NOT NULL DEFAULT uuid_generate_v4(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -886,7 +886,22 @@ const statements = [
   BEGIN
     ALTER TABLE recurring_bookings ADD CONSTRAINT recurring_bookings_last_skip_reason_check CHECK (last_skip_reason IS NULL OR last_skip_reason IN ('CLIENT_MISSING','DRIVER_MISSING','ROUTE_UNAVAILABLE','DRIVER_OUT_OF_REGION','DRIVER_NOT_READY','DRIVER_BUSY'));
   EXCEPTION WHEN duplicate_object THEN NULL;
-  END $$`
+  END $$`,
+
+  // --- Single active session per account ---
+  // JWTs are otherwise stateless: once issued, a token stays valid until
+  // its natural expiry with no server-side way to revoke it early. That
+  // meant two people could use the same account from two devices at once
+  // indefinitely, and /auth/logout did nothing but write an audit row --
+  // the token itself kept working. session_version is embedded in every
+  // newly-issued token (see common/auth.js's signToken/rotateSessionVersion)
+  // and checked on every request; rotating it (on real login, password
+  // reset, and logout -- NOT on /refresh, which continues the same
+  // session) invalidates every token issued before the rotation
+  // immediately. Existing rows getting a fresh random value here means
+  // every currently-logged-in session everywhere gets invalidated once —
+  // an expected, one-time side effect of shipping this, not a bug.
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version UUID NOT NULL DEFAULT uuid_generate_v4()"
 ];
 
 export async function runMigrations() {

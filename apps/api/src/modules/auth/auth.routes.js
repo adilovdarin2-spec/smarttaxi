@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { query } from "../../db/pool.js";
-import { signToken, requireAuth } from "../../common/auth.js";
+import { signToken, requireAuth, rotateSessionVersion } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit, publicUser } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
@@ -148,7 +148,8 @@ async function loginWithPhonePassword({ phone, password, req }) {
     req
   });
 
-  return { token: signToken(user), user: publicUser(user) };
+  const rotated = await rotateSessionVersion(user.id);
+  return { token: signToken(rotated), user: publicUser(rotated) };
 }
 
 router.post("/phone/check", rateLimit({ prefix: "auth-phone-check", windowMs: 60_000, max: 30 }), async (req, res, next) => {
@@ -322,7 +323,7 @@ router.post("/password/reset/confirm", rateLimit({ prefix: "auth-password-reset-
     const { user } = await findUserByPhone(normalized.phone);
     if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
     const passwordHash = await bcrypt.hash(body.password, 10);
-    const updated = (await query("UPDATE users SET password_hash=$1 WHERE id=$2 RETURNING *", [passwordHash, user.id])).rows[0];
+    const updated = (await query("UPDATE users SET password_hash=$1, session_version=uuid_generate_v4() WHERE id=$2 RETURNING *", [passwordHash, user.id])).rows[0];
     await writeAudit(query, {
       action: "password_reset",
       actorUserId: updated.id,
@@ -364,7 +365,8 @@ router.post("/login", rateLimit({ prefix: "auth-login", windowMs: 60_000, max: 1
       req
     });
 
-    res.json({ token: signToken(user), user: publicUser(user) });
+    const rotated = await rotateSessionVersion(user.id);
+    res.json({ token: signToken(rotated), user: publicUser(rotated) });
   } catch (e) {
     if (body && e.status === 401) {
       await writeAudit(query, {
@@ -389,6 +391,10 @@ router.post("/refresh", requireAuth, async (req, res, next) => {
 
 router.post("/logout", requireAuth, async (req, res, next) => {
   try {
+    // Rotating here (not just writing an audit row) is what makes logout
+    // actually revoke the presented token instead of merely deleting it
+    // client-side -- see rotateSessionVersion in common/auth.js.
+    await rotateSessionVersion(req.user.id);
     await writeAudit(query, {
       action: "logout",
       actorUserId: req.user.id,
