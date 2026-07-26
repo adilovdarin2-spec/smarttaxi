@@ -103,6 +103,7 @@ class PassengerShell extends StatefulWidget {
     required this.api,
     required this.authStore,
     required this.sockets,
+    required this.pushMessages,
     required this.accountLabel,
     required this.accountPhone,
     this.accountId = '',
@@ -117,6 +118,7 @@ class PassengerShell extends StatefulWidget {
   final ApiClient api;
   final AuthStore authStore;
   final SocketService sockets;
+  final Stream<Map<String, dynamic>> pushMessages;
   final String accountLabel;
   final String accountPhone;
   final String accountId;
@@ -286,6 +288,7 @@ class _PassengerShellState extends State<PassengerShell>
   String _paymentMethod = 'CASH';
   Timer? _nearbyDriversTimer;
   StreamSubscription<bool>? _socketConnectionSub;
+  StreamSubscription<Map<String, dynamic>>? _pushMessageSub;
   Timer? _socketFallbackPollTimer;
   int _nearbyDriversRequest = 0;
   int _mapPickerReverseRequest = 0;
@@ -323,8 +326,25 @@ class _PassengerShellState extends State<PassengerShell>
     _ratingCommentController.dispose();
     _socketConnectionSub?.cancel();
     _socketFallbackPollTimer?.cancel();
+    _pushMessageSub?.cancel();
     widget.sockets.clearListeners();
     super.dispose();
+  }
+
+  // Support replies and a driver's recurring-booking response have no
+  // matching socket event (order-tracking's socket channel doesn't carry
+  // them) — this is the only path that lets an already-open support or
+  // recurring-bookings tab notice the change without a manual pull-to-refresh.
+  void _handlePushMessage(Map<String, dynamic> data) {
+    switch (data['type']) {
+      case 'SUPPORT_REPLY':
+        unawaited(_loadMySupportMessages());
+        break;
+      case 'RECURRING_BOOKING_ACCEPTED':
+      case 'RECURRING_BOOKING_DECLINED':
+        unawaited(_loadRecurringBookings());
+        break;
+    }
   }
 
   @override
@@ -355,6 +375,7 @@ class _PassengerShellState extends State<PassengerShell>
     // two visible jumps a cold start otherwise did (placeholder -> region
     // center -> real GPS).
     unawaited(_seedMapCenterFromLastKnownLocation());
+    _pushMessageSub = widget.pushMessages.listen(_handlePushMessage);
     try {
       await widget.sockets.connect();
       widget.sockets.onOrderUpdate(_handleOrderUpdate);

@@ -27,6 +27,7 @@ import '../shared/models.dart';
 import 'models/driver_shell_helpers.dart';
 import 'screens/notifications/driver_notifications_screen.dart';
 import 'screens/rating/driver_rating_screen.dart';
+import 'screens/support/driver_support_screen.dart';
 import 'screens/wallet/driver_wallet_screen.dart';
 import 'widgets/driver_common_widgets.dart';
 import 'widgets/driver_line_widgets.dart';
@@ -61,6 +62,7 @@ class DriverShell extends StatefulWidget {
     required this.api,
     required this.authStore,
     required this.sockets,
+    required this.pushMessages,
     required this.accountLabel,
     required this.onLogout,
     required this.onOpenPassengerMode,
@@ -73,6 +75,7 @@ class DriverShell extends StatefulWidget {
   final ApiClient api;
   final AuthStore authStore;
   final SocketService sockets;
+  final Stream<Map<String, dynamic>> pushMessages;
   final String accountLabel;
   final Future<void> Function() onLogout;
   final Future<void> Function() onOpenPassengerMode;
@@ -123,6 +126,7 @@ class _DriverShellState extends State<DriverShell> {
   int? _tripDistanceTraveledM;
   StreamSubscription<Position>? _positionSub;
   StreamSubscription<bool>? _socketConnectionSub;
+  StreamSubscription<Map<String, dynamic>>? _pushMessageSub;
   Timer? _socketFallbackPollTimer;
   RoutePreview? _driverRoute;
   Position? _lastPosition;
@@ -164,15 +168,6 @@ class _DriverShellState extends State<DriverShell> {
   // _loadServiceContacts. Falls back to '112' inside DriverSosButton if this
   // never loads, so a slow/failed fetch never blocks the SOS action itself.
   String? _sosPhone;
-  // null until the driver picks one; the support sheet falls back to
-  // topics.first (the localized "order problem" topic) both for the
-  // selected-chip highlight and the actual submitted topic — see
-  // _driverSupportContent().
-  String? _supportTopic;
-  bool _supportSending = false;
-  final _supportController = TextEditingController();
-  String? _supportMessage;
-  bool _supportMessageDanger = false;
 
   // Live OSM-sourced navigation layer (speed cameras + posted speed limit) —
   // see osm-navigation.service.js on the backend for why this exists instead
@@ -233,12 +228,23 @@ class _DriverShellState extends State<DriverShell> {
     _positionSub?.cancel();
     _socketConnectionSub?.cancel();
     _socketFallbackPollTimer?.cancel();
+    _pushMessageSub?.cancel();
     widget.sockets.clearListeners();
-    _supportController.dispose();
     super.dispose();
   }
 
+  // Region approval/blocking is an admin action with no matching socket
+  // event (order-tracking's socket channel never carries it) — this is the
+  // only path that lets an already-open Line tab notice a region-status
+  // change without the driver manually pulling to refresh.
+  void _handlePushMessage(Map<String, dynamic> data) {
+    if (data['type'] == 'DRIVER_REGION_STATUS') {
+      unawaited(_loadRegions());
+    }
+  }
+
   Future<void> _bootstrap() async {
+    _pushMessageSub = widget.pushMessages.listen(_handlePushMessage);
     try {
       await widget.sockets.connect();
       widget.sockets.joinDrivers();
@@ -655,7 +661,12 @@ class _DriverShellState extends State<DriverShell> {
       if (isApprovalBlock) {
         if (mounted) {
           AppToast.showError(context, readableError(AppLocalizations.of(context), error));
-          _showDriverFullSheet(_driverSupportContent);
+          _showDriverFullSheet(() =>
+              DriverSupportScreen(
+              api: widget.api,
+              activeOrderId: _activeOrder?.id,
+              pushMessages: widget.pushMessages,
+            ));
         }
       } else if (mounted) {
         setState(() => _error = readableError(AppLocalizations.of(context), error));
@@ -1877,115 +1888,6 @@ class _DriverShellState extends State<DriverShell> {
   Widget _driverRecurringBookingsContent() =>
       _DriverRecurringBookingsScreen(api: widget.api);
 
-  Widget _driverSupportContent() {
-    return StatefulBuilder(
-      builder: (context, setSheetState) {
-        final l10n = AppLocalizations.of(context);
-        final topics = [
-          l10n.driverSupportTopicOrder,
-          l10n.driverSupportTopicRegion,
-          l10n.driverSupportTopicBilling,
-          l10n.driverSupportTopicOther,
-        ];
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            TitleBlock(
-              title: l10n.driverSupportTitle,
-              text: l10n.driverSupportSubtitle,
-            ),
-            const SizedBox(height: 16),
-            PremiumCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionLabel(
-                    title: l10n.driverSupportTopicSectionTitle,
-                    text: l10n.driverSupportTopicSectionText,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: topics
-                        .map(
-                          (topic) => DriverSupportTopicChip(
-                            label: topic,
-                            selected: (_supportTopic ?? topics.first) == topic,
-                            onTap: () =>
-                                setSheetState(() => _supportTopic = topic),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _supportController,
-                    minLines: 5,
-                    maxLines: 7,
-                    decoration: InputDecoration(
-                      labelText: l10n.driverSupportMessageLabel,
-                      hintText: l10n.driverSupportMessageHint,
-                      alignLabelWithHint: true,
-                    ),
-                  ),
-                  if (_supportMessage != null) ...[
-                    const SizedBox(height: 12),
-                    InlineMessage(
-                      text: _supportMessage!,
-                      danger: _supportMessageDanger,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _supportSending
-                        ? null
-                        : () async {
-                            final text = _supportController.text.trim();
-                            if (text.length < 8) {
-                              setSheetState(() {
-                                _supportMessageDanger = true;
-                                _supportMessage =
-                                    l10n.driverSupportMessageTooShort;
-                              });
-                              return;
-                            }
-                            setSheetState(() => _supportSending = true);
-                            try {
-                              await widget.api.submitSupportMessage(
-                                topic: _supportTopic ?? topics.first,
-                                message: text,
-                                orderId: _activeOrder?.id,
-                              );
-                              _supportController.clear();
-                              setSheetState(() {
-                                _supportMessageDanger = false;
-                                _supportMessage = l10n.driverSupportMessageSent;
-                              });
-                            } catch (error) {
-                              setSheetState(() {
-                                _supportMessageDanger = true;
-                                _supportMessage = readableError(AppLocalizations.of(context), error);
-                              });
-                            } finally {
-                              setSheetState(() => _supportSending = false);
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(52)),
-                    child: _supportSending
-                        ? ButtonSpinner(text: l10n.driverSupportSendingButton)
-                        : Text(l10n.driverSupportSendButton),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _driverFaqContent() {
     final l10n = AppLocalizations.of(context);
     final items = [
@@ -2256,7 +2158,12 @@ class _DriverShellState extends State<DriverShell> {
               _showDriverFullSheet(() => DriverRatingScreen(api: widget.api)),
           onNotifications: () => _showDriverFullSheet(
               () => DriverNotificationsScreen(api: widget.api)),
-          onSupport: () => _showDriverFullSheet(_driverSupportContent),
+          onSupport: () => _showDriverFullSheet(() =>
+              DriverSupportScreen(
+              api: widget.api,
+              activeOrderId: _activeOrder?.id,
+              pushMessages: widget.pushMessages,
+            )),
           onFaq: () => _showDriverFullSheet(_driverFaqContent),
           onAbout: () => _showDriverFullSheet(_driverAboutContent),
           onSettings: () => _showDriverFullSheet(_driverSettingsContent),
@@ -2908,7 +2815,12 @@ class _DriverShellState extends State<DriverShell> {
         title: l10n.driverNoApprovedRegionsTitle,
         message: l10n.driverNoRegionsMessage,
         actionLabel: l10n.driverContactSupportAction,
-        onAction: () => _showDriverFullSheet(_driverSupportContent),
+        onAction: () => _showDriverFullSheet(() =>
+            DriverSupportScreen(
+              api: widget.api,
+              activeOrderId: _activeOrder?.id,
+              pushMessages: widget.pushMessages,
+            )),
       );
     }
     if (_regionId == null) {
@@ -2941,7 +2853,12 @@ class _DriverShellState extends State<DriverShell> {
             ? l10n.driverRegionBlockedByAdminMessage(region.name)
             : region.blockReason,
         actionLabel: l10n.driverContactSupportAction,
-        onAction: () => _showDriverFullSheet(_driverSupportContent),
+        onAction: () => _showDriverFullSheet(() =>
+            DriverSupportScreen(
+              api: widget.api,
+              activeOrderId: _activeOrder?.id,
+              pushMessages: widget.pushMessages,
+            )),
       );
     }
     if (region?.status != 'APPROVED') {
@@ -5219,6 +5136,15 @@ class _DriverRecurringBookingCard extends StatelessWidget {
   (StatusTone, String) _statusMeta(AppLocalizations l10n) {
     switch (booking.status) {
       case 'ACTIVE':
+        // Same lifecycle status either way -- skippedToday only means
+        // *today's* trigger didn't dispatch, so it gets its own badge
+        // instead of looking identical to a normal active booking.
+        if (booking.skippedToday) {
+          return (
+            StatusTone.warning,
+            l10n.passengerRecurringStatusSkippedToday
+          );
+        }
         return (StatusTone.success, l10n.passengerRecurringStatusActive);
       case 'PAUSED':
         return (StatusTone.neutral, l10n.passengerRecurringStatusPaused);
@@ -5281,6 +5207,37 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                   ),
               ],
             ),
+            if (booking.isActive && booking.skippedToday) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: context.palette.goldPale,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.palette.borderStrong),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 16, color: context.palette.warning),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.passengerRecurringSkippedTodayText,
+                        style: TextStyle(
+                          color: context.palette.text,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (onAccept != null || onDecline != null) ...[
               const SizedBox(height: 12),
               Row(

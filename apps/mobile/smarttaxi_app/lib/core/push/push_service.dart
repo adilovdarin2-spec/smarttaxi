@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 
@@ -18,7 +17,14 @@ class PushService {
 
   final ApiClient _api;
   bool _initialized = false;
-  VoidCallback? onMessageReceived;
+  final _messageController = StreamController<Map<String, dynamic>>.broadcast();
+
+  /// Emits the `data` payload of every push notification received while the
+  /// app is running — both a foreground arrival and a tray-tap that opened
+  /// it. Screens listen and filter on `data['type']` (e.g.
+  /// 'DRIVER_REGION_STATUS', 'SUPPORT_REPLY') to refresh themselves instead
+  /// of waiting for a manual pull-to-refresh.
+  Stream<Map<String, dynamic>> get messages => _messageController.stream;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -41,10 +47,10 @@ class PushService {
       messaging.onTokenRefresh.listen(_registerToken);
 
       FirebaseMessaging.onMessage.listen((message) {
-        onMessageReceived?.call();
+        _messageController.add(message.data);
       });
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        onMessageReceived?.call();
+        _messageController.add(message.data);
       });
     } catch (_) {
       // Push setup failing must not crash the app; silently stay disabled.
