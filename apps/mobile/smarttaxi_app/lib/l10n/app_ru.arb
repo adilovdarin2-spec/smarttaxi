@@ -860,6 +860,7 @@
   "driverSupportStatusPending": "В обработке",
   "driverSupportResponseLabel": "Ответ поддержки",
   "driverSupportLoadError": "Не удалось загрузить обращения",
+  "driverTripHistoryLoadError": "Не удалось загрузить историю поездок",
   "driverSupportEmptyTitle": "Обращений пока нет",
   "driverSupportEmptyText": "Здесь появятся ваши обращения в поддержку и ответы на них",
 
@@ -1133,6 +1134,7 @@
   "driverCancelTripConfirmTitle": "Отменить поездку?",
   "driverCancelTripConfirmText": "Заказ вернётся в поиск для других водителей. Частые отмены могут повлиять на ваш рейтинг.",
   "back": "Назад",
+  "pressBackAgainToExit": "Нажмите «Назад» ещё раз, чтобы выйти",
   "driverNoApprovedRegionsTitle": "Нет одобренных регионов",
   "driverChooseWorkingRegionTitle": "Выберите рабочий регион",
   "driverRegionTemporarilyDisabledTitle": "Регион временно отключён",

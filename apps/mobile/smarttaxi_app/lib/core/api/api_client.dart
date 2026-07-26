@@ -527,8 +527,9 @@ class ApiClient {
   Future<String?> getDriverAvatarUrl() async {
     await _attachToken();
     final response = await _dio.get<Map<String, dynamic>>('/api/drivers/me');
-    final driver = response.data?['driver'] as Map<String, dynamic>?;
-    return driver?['avatar_url'] as String?;
+    final driverJson = response.data?['driver'];
+    if (driverJson is! Map) return null;
+    return driverJson['avatar_url'] as String?;
   }
 
   Future<String> uploadDriverAvatar(String filePath) async {

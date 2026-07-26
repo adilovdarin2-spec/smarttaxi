@@ -2196,7 +2196,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverAccountBlocked => 'Жүргізуші аккаунты бұғатталған';
 
   @override
-  String get sessionExpiredOtherDevice => 'Басқа құрылғыдан кіру орындалғандықтан, аккаунттан шықтыңыз';
+  String get sessionExpiredOtherDevice =>
+      'Басқа құрылғыдан кіру орындалғандықтан, аккаунттан шықтыңыз';
 
   @override
   String get passwordMinLength => 'Құпия сөз кемінде 6 таңбадан тұруы керек';
@@ -2666,6 +2667,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverSupportLoadError => 'Өтініштерді жүктеу мүмкін болмады';
+
+  @override
+  String get driverTripHistoryLoadError => 'Сапарлар тарихын жүктеу мүмкін болмады';
 
   @override
   String get driverSupportEmptyTitle => 'Әзірге өтініштер жоқ';
@@ -3476,6 +3480,9 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get back => 'Артқа';
+
+  @override
+  String get pressBackAgainToExit => 'Шығу үшін «Артқа» түймесін тағы басыңыз';
 
   @override
   String get driverNoApprovedRegionsTitle => 'Мақұлданған аймақтар жоқ';

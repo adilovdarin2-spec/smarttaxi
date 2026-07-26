@@ -2187,7 +2187,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverAccountBlocked => 'Аккаунт водителя заблокирован';
 
   @override
-  String get sessionExpiredOtherDevice => 'Вы вышли из аккаунта, так как был выполнен вход с другого устройства';
+  String get sessionExpiredOtherDevice =>
+      'Вы вышли из аккаунта, так как был выполнен вход с другого устройства';
 
   @override
   String get passwordMinLength => 'Пароль должен быть не короче 6 символов';
@@ -2658,6 +2659,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverSupportLoadError => 'Не удалось загрузить обращения';
+
+  @override
+  String get driverTripHistoryLoadError => 'Не удалось загрузить историю поездок';
 
   @override
   String get driverSupportEmptyTitle => 'Обращений пока нет';
@@ -3472,6 +3476,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get back => 'Назад';
+
+  @override
+  String get pressBackAgainToExit => 'Нажмите «Назад» ещё раз, чтобы выйти';
 
   @override
   String get driverNoApprovedRegionsTitle => 'Нет одобренных регионов';

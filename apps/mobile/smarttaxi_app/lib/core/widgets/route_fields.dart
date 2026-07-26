@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class RouteFields extends StatelessWidget {
@@ -24,6 +25,7 @@ class RouteFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final panelColor = dark
         ? const Color(0xe614181f)
         : SmartTaxiColors.cardWarm.withValues(alpha: 0.72);
@@ -72,14 +74,14 @@ class RouteFields extends StatelessWidget {
             child: Column(
               children: [
                 _RouteButton(
-                    label: 'Откуда',
+                    label: l10n.passengerFromLabel,
                     value: pickupLabel,
                     active: pickupActive,
                     onTap: onPickupTap,
                     dark: dark),
                 const SizedBox(height: 10),
                 _RouteButton(
-                    label: 'Куда',
+                    label: l10n.passengerToLabel,
                     value: dropoffLabel,
                     active: dropoffActive,
                     onTap: onDropoffTap,

@@ -859,6 +859,7 @@
   "driverSupportStatusPending": "Өңделуде",
   "driverSupportResponseLabel": "Қолдау қызметінің жауабы",
   "driverSupportLoadError": "Өтініштерді жүктеу мүмкін болмады",
+  "driverTripHistoryLoadError": "Сапарлар тарихын жүктеу мүмкін болмады",
   "driverSupportEmptyTitle": "Әзірге өтініштер жоқ",
   "driverSupportEmptyText": "Мұнда қолдау қызметіне жіберген өтініштеріңіз бен жауаптар көрсетіледі",
 
@@ -1132,6 +1133,7 @@
   "driverCancelTripConfirmTitle": "Сапарды бас тартасыз ба?",
   "driverCancelTripConfirmText": "Тапсырыс басқа жүргізушілерге іздеуге қайтады. Жиі бас тартулар рейтингіңізге әсер етуі мүмкін.",
   "back": "Артқа",
+  "pressBackAgainToExit": "Шығу үшін «Артқа» түймесін тағы басыңыз",
   "driverNoApprovedRegionsTitle": "Мақұлданған аймақтар жоқ",
   "driverChooseWorkingRegionTitle": "Жұмыс аймағын таңдаңыз",
   "driverRegionTemporarilyDisabledTitle": "Аймақ уақытша сөндірілген",

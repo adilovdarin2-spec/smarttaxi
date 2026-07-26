@@ -278,7 +278,7 @@ class OrderCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 _CompactRouteRow(
                   icon: Icons.location_on_rounded,
-                  iconColor: SmartTaxiColors.gold,
+                  iconColor: context.palette.gold,
                   label: order.dropoff,
                 ),
               ],

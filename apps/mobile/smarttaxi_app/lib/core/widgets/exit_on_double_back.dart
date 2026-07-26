@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/app_localizations.dart';
 import 'app_toast.dart';
 
 /// Shared "press back again to exit" helper for screens that sit at the
@@ -24,6 +25,7 @@ class ExitOnDoubleBack {
     // times, which sits above (and fully hides) a default bottom-docked
     // SnackBar. The rider/driver would see nothing happen on the first
     // back press and exit on the second, with no warning ever visible.
-    AppToast.showInfo(context, 'Нажмите «Назад» ещё раз, чтобы выйти');
+    AppToast.showInfo(
+        context, AppLocalizations.of(context).pressBackAgainToExit);
   }
 }

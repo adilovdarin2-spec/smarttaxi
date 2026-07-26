@@ -4869,6 +4869,12 @@ abstract class AppLocalizations {
   /// **'Не удалось загрузить обращения'**
   String get driverSupportLoadError;
 
+  /// No description provided for @driverTripHistoryLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить историю поездок'**
+  String get driverTripHistoryLoadError;
+
   /// No description provided for @driverSupportEmptyTitle.
   ///
   /// In ru, this message translates to:
@@ -6290,6 +6296,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Назад'**
   String get back;
+
+  /// No description provided for @pressBackAgainToExit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите «Назад» ещё раз, чтобы выйти'**
+  String get pressBackAgainToExit;
 
   /// No description provided for @driverNoApprovedRegionsTitle.
   ///

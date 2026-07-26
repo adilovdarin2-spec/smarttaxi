@@ -157,6 +157,7 @@ class _DriverShellState extends State<DriverShell> {
   DriverStats? _driverStats;
   List<OrderSummary> _tripHistory = const [];
   bool _tripHistoryLoading = false;
+  bool _tripHistoryError = false;
   bool _roadAlertsLoading = false;
   bool _driverStatsLoading = false;
   String? _avatarUrl;
@@ -304,13 +305,19 @@ class _DriverShellState extends State<DriverShell> {
 
   Future<void> _loadTripHistory() async {
     if (!mounted) return;
-    setState(() => _tripHistoryLoading = true);
+    setState(() {
+      _tripHistoryLoading = true;
+      _tripHistoryError = false;
+    });
     try {
       final history = await widget.api.getDriverOrderHistory();
       if (!mounted) return;
       setState(() => _tripHistory = history);
     } catch (_) {
-      // Best-effort — history is a nice-to-have, not a blocker for driving.
+      // Best-effort at bootstrap time (history isn't a blocker for driving),
+      // but the profile section still needs to tell a failed refresh apart
+      // from "no trips yet" instead of silently showing nothing either way.
+      if (mounted) setState(() => _tripHistoryError = true);
     } finally {
       if (mounted) setState(() => _tripHistoryLoading = false);
     }
@@ -1879,6 +1886,12 @@ class _DriverShellState extends State<DriverShell> {
               padding: EdgeInsets.all(12),
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
+          ),
+        ] else if (_tripHistoryError) ...[
+          const SizedBox(height: 20),
+          InlineMessage(
+            text: l10n.driverTripHistoryLoadError,
+            danger: true,
           ),
         ],
       ],
