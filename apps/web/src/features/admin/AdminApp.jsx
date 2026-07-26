@@ -2936,6 +2936,19 @@ function formatDaysOfWeek(days) {
   return days.map(day => labels[Number(day)] ?? day).join(", ");
 }
 
+// Mirrors the reason codes recurring-bookings.scheduler.js's recordSkip
+// actually writes (recurring-bookings-skip-visibility-2026-07-25.md) --
+// the client/driver apps only show a generic "skipped today" state, but an
+// admin diagnosing a recurring complaint needs the specific cause.
+const recurringSkipReasonLabels = {
+  CLIENT_MISSING: "Клиент не найден",
+  DRIVER_MISSING: "Водитель не найден",
+  ROUTE_UNAVAILABLE: "Не удалось определить маршрут",
+  DRIVER_OUT_OF_REGION: "Водитель не в регионе поездки",
+  DRIVER_NOT_READY: "Водитель не готов к выходу на линию",
+  DRIVER_BUSY: "Водитель занят другой поездкой"
+};
+
 function RecurringBookingsPage({ bookings, recurringBookingStatus, setRecurringBookingStatus }) {
   return (
     <div className="admin-page-stack">
@@ -2964,15 +2977,26 @@ function RecurringBookingsPage({ bookings, recurringBookingStatus, setRecurringB
                   <strong>{booking.clientName || booking.clientId}</strong>
                   <span>{booking.driverName || "Водитель не назначен"}</span>
                 </div>
-                <Badge tone={recurringBookingBadgeTone(booking.status)}>
-                  {recurringBookingStatusLabels[booking.status] || booking.status}
-                </Badge>
+                <div className="admin-card-badges">
+                  <Badge tone={recurringBookingBadgeTone(booking.status)}>
+                    {recurringBookingStatusLabels[booking.status] || booking.status}
+                  </Badge>
+                  {booking.status === "ACTIVE" && booking.skippedToday && (
+                    <Badge tone="warning">Пропущена сегодня</Badge>
+                  )}
+                </div>
               </header>
               <div className="admin-card-facts">
                 <InfoLine label="Маршрут" value={[sanitizeAddressText(booking.pickupText, ""), sanitizeAddressText(booking.dropoffText, "")].filter(Boolean).join(" → ") || "Маршрут не указан"} />
                 <InfoLine label="Дни" value={formatDaysOfWeek(booking.daysOfWeek)} />
                 <InfoLine label="Время" value={booking.timeOfDay || "Не указано"} />
                 <InfoLine label="Цена" value={formatMoney(booking.priceKzt)} />
+                {booking.status === "ACTIVE" && booking.skippedToday && (
+                  <InfoLine
+                    label="Причина пропуска"
+                    value={recurringSkipReasonLabels[booking.lastSkipReason] || booking.lastSkipReason || "Не указана"}
+                  />
+                )}
               </div>
             </article>
           ))}

@@ -5263,6 +5263,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 12px;
 }
 
+/* Recurring-bookings card header can show a status badge plus a separate
+   "skipped today" one -- stack them so a second badge doesn't force the
+   header wider or collide with the client/driver name column. */
+.admin-card-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
 .admin-region-card strong,
 .admin-application-card strong,
 .admin-approval-card strong,
