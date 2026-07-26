@@ -11,6 +11,7 @@ function read(path) {
 const schema = read("../db/schema.sql");
 const migrations = read("../db/migrations.js");
 const financeService = read("../modules/finance/finance.service.js");
+const financeRoutes = read("../modules/finance/finance.routes.js");
 const ordersRoutes = read("../modules/orders/orders.routes.js");
 const adminRoutes = read("../modules/admin/admin.routes.js");
 const adminAppUrl = new URL("../../../web/src/features/admin/AdminApp.jsx", import.meta.url);
@@ -123,5 +124,14 @@ if (hasWebSource) {
 } else {
   console.warn("Finance admin web-source checks skipped: apps/web is not present in this runtime image");
 }
+
+// GET /finance/stats queries orders.status directly (not the
+// financial_transactions ledger checked above) -- it must use the real
+// lifecycle statuses (order-dispatch.service.js), not the pre-lifecycle-
+// expansion values ('COMPLETED'/'NEW'/'DRIVER_ASSIGNED' alone), which
+// current orders never reach and left every number reading ~0.
+assert(financeRoutes.includes('import { OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES } from "../orders/order-dispatch.service.js"'), "finance.routes.js must import the real order-lifecycle status sets, not hardcode legacy-only statuses");
+assert(financeRoutes.includes('const SETTLED_WITH_PAYMENT_STATUSES = ["COMPLETED", "PAID", "RATED"];'), "finance stats revenue/commission/cashback must count PAID/RATED orders, not just the legacy 'COMPLETED' status");
+assert(!/status='COMPLETED'|status='NEW'|status IN \('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS'\)/.test(financeRoutes), "finance stats must not filter on the old legacy-only status literals directly");
 
 console.log("Finance ledger checks ok");
