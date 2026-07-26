@@ -1,5 +1,6 @@
 import { refundKaspiPayment } from "../payments/payment-provider.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
+import { AppError } from "../../common/errors.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -507,7 +508,7 @@ export async function adjustDriverDebt({
   const numericAmount = roundMoney(amount);
   const cleanReason = String(reason || "").trim();
   const driver = (await run(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [driverId])).rows[0];
-  if (!driver) throw new Error("DRIVER_NOT_FOUND");
+  if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
 
   const result = await run(executor, `
     INSERT INTO financial_transactions(

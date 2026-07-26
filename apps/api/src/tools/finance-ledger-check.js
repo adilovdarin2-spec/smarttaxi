@@ -134,4 +134,10 @@ assert(financeRoutes.includes('import { OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUS
 assert(financeRoutes.includes('const SETTLED_WITH_PAYMENT_STATUSES = ["COMPLETED", "PAID", "RATED"];'), "finance stats revenue/commission/cashback must count PAID/RATED orders, not just the legacy 'COMPLETED' status");
 assert(!/status='COMPLETED'|status='NEW'|status IN \('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS'\)/.test(financeRoutes), "finance stats must not filter on the old legacy-only status literals directly");
 
+// A missing driver on debt adjustment must be a clean 404, not a plain
+// Error the error handler can't classify (would 500 + get Sentry-logged
+// as unexpected instead of a normal client mistake).
+assert(financeService.includes('throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND")'), "adjustDriverDebt must throw AppError(404, DRIVER_NOT_FOUND) for a missing driver, not a plain Error");
+assert(financeService.includes('import { AppError } from "../../common/errors.js"'), "finance.service.js must import AppError to throw it correctly");
+
 console.log("Finance ledger checks ok");
