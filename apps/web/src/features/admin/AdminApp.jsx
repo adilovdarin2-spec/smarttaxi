@@ -1272,7 +1272,6 @@ export default function AdminApp() {
             onEditRegion={region => setModal({ type: "region", region })}
             onToggleRegion={region => (isActiveRegion(region) ? setModal({ type: "regionDeactivate", region }) : switchRegion(region))}
             onOpenDriver={openDriver}
-            onBlockDriver={setDriverBlocked}
             onOpenApplication={application => setModal({ type: "application", application })}
             onAddTariff={() => setModal({ type: "tariff", tariff: null })}
             onEditTariff={tariff => setModal({ type: "tariff", tariff })}
@@ -1814,7 +1813,7 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
   );
 }
 
-function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, onBlockDriver, payload, loadingMore, onLoadMoreDrivers }) {
+function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, payload, loadingMore, onLoadMoreDrivers }) {
   const [view, setView] = useState("list");
   const total = payload?.total;
   const hasMore = typeof total === "number" && drivers.length < total;
