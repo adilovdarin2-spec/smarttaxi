@@ -8,6 +8,7 @@ const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const auth = readFileSync(join(root, "common", "auth.js"), "utf8");
 const authRoutes = readFileSync(join(root, "modules", "auth", "auth.routes.js"), "utf8");
+const server = readFileSync(join(root, "server.js"), "utf8");
 
 // A stateless JWT has no server-side way to revoke a token before its
 // natural expiry -- session_version is what makes that possible: every
@@ -47,5 +48,16 @@ assert.doesNotMatch(refreshBody, /rotateSessionVersion/, "/refresh must NOT rota
 
 const logoutBody = authRoutes.match(/router\.post\("\/logout",[\s\S]*?\n}\);/)?.[0] || "";
 assert.match(logoutBody, /rotateSessionVersion\(req\.user\.id\)/, "/logout must rotate session_version so the presented token is actually revoked, not just discarded client-side");
+
+// A JWT alone isn't enough for socket.io either -- requireAuth's DB check
+// only guards HTTP. Without an equivalent check here, a device kicked out
+// over HTTP (login/reset/logout on another device) would keep its
+// already-open socket (driver location, order/dispatch events) working
+// indefinitely, undermining the whole point of session_version.
+assert.match(server, /async function authenticateSocketToken/, "server.js must validate session_version for socket connections too, not just HTTP");
+assert.match(server, /current\.session_version !== decoded\.sessionVersion/, "authenticateSocketToken must reject a socket token whose session_version is stale, same check as requireAuth");
+assert.match(server, /io\.use\(async \(socket, next\) => \{\s*socket\.user = await authenticateSocketToken/, "the io.use handshake middleware must go through authenticateSocketToken, not raw jwt.verify");
+assert.match(server, /setInterval\(async \(\) => \{/, "server.js must periodically re-validate already-connected sockets, since io.use only runs once at connect time and a shift-long driver socket could otherwise outlive a revoked session indefinitely");
+assert.match(server, /if \(!stillValid\) socket\.disconnect\(true\);/, "the periodic sweep must actually disconnect a socket whose session was superseded, not just detect it");
 
 console.log("Session-versioning (single active session per account) checks ok");

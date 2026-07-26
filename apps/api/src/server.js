@@ -58,11 +58,33 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: env.CORS_ORIGINS, credentials: true } });
 
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-  if (token) {
-    try { socket.user = jwt.verify(token, env.JWT_SECRET); } catch {}
+// Mirrors common/auth.js's requireAuth: a JWT alone isn't enough once
+// session_version exists -- a token signed before the account's most
+// recent login/reset/logout must be treated the same as an invalid one,
+// or a device kicked out over HTTP would keep receiving realtime updates
+// (driver location, order/dispatch events) over its still-open socket
+// indefinitely. Returns null (not a thrown error) on any failure so
+// callers can keep treating "no socket.user" as the existing catch-all
+// for "not authenticated", same as before session_version existed.
+async function authenticateSocketToken(token) {
+  if (!token) return null;
+  let decoded;
+  try {
+    decoded = jwt.verify(token, env.JWT_SECRET);
+  } catch {
+    return null;
   }
+  try {
+    const current = (await query("SELECT session_version FROM users WHERE id=$1", [decoded.id])).rows[0];
+    if (!current || current.session_version !== decoded.sessionVersion) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+io.use(async (socket, next) => {
+  socket.user = await authenticateSocketToken(socket.handshake.auth?.token);
   next();
 });
 io.on("connection", socket => {
@@ -101,6 +123,23 @@ io.on("connection", socket => {
     } catch {}
   });
 });
+
+// The io.use() check above only runs once, at connect time -- a driver's
+// socket can stay open for a whole shift, so without this sweep, logging
+// in on a second device would revoke the first device's HTTP session
+// instantly but leave its already-open socket (and the realtime updates
+// it's still receiving/sending) authenticated indefinitely. Runs
+// independently of any single request; unref()'d so it never keeps the
+// process alive on its own.
+setInterval(async () => {
+  for (const socket of io.sockets.sockets.values()) {
+    if (!socket.user) continue;
+    try {
+      const stillValid = await authenticateSocketToken(socket.handshake.auth?.token);
+      if (!stillValid) socket.disconnect(true);
+    } catch {}
+  }
+}, 60_000).unref();
 
 app.set("trust proxy", 1);
 app.use(helmet());
