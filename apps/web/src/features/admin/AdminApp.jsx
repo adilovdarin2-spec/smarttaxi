@@ -745,7 +745,18 @@ export default function AdminApp() {
 
   function logout() {
     clearToken();
-    window.location.href = "/";
+    // canAccess (below) already gates the whole panel on `user` being a
+    // valid admin -- clearing it re-renders this component's own login
+    // form in place, exactly like the driver/client apps do. A hard
+    // navigate here (the old behavior) sent the admin to the public
+    // marketing landing page instead of back to their own login screen,
+    // which was especially wrong for the new forced-logout-on-another-
+    // device-login path: getting kicked out of the panel shouldn't dump
+    // you on the homepage.
+    setUser(null);
+    setDashboard(null);
+    setAccessError("");
+    setLoginAuth({ phone: "", password: "" });
   }
 
   async function handleLogin(event) {
@@ -1172,6 +1183,9 @@ export default function AdminApp() {
           <div className="admin-user-chip">
             <strong>{user.name || user.phone || "Администратор"}</strong>
             <span>{user.role}</span>
+            <button type="button" className="admin-user-chip-logout" onClick={logout}>
+              Выйти
+            </button>
           </div>
         </header>
 

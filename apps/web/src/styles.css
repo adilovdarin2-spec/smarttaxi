@@ -4585,6 +4585,22 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-weight: 750;
 }
 
+.admin-user-chip-logout {
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--admin-gold);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-user-chip-logout:hover {
+  color: var(--admin-danger);
+  text-decoration: underline;
+}
+
 .admin-page-toolbar {
   display: flex;
   align-items: end;
