@@ -18,6 +18,16 @@ export async function api(path, options = {}) {
     const error = new Error(message);
     error.code = data.error;
     error.details = data.details;
+    if (response.status === 401 && data.error === "SESSION_SUPERSEDED") {
+      // Backend rotated session_version because another device just logged
+      // into this account (see common/auth.js's requireAuth) -- every
+      // token issued before that is now rejected. Without this, whichever
+      // admin/driver/client web tab was open just shows this one request's
+      // error inline instead of dropping the user back to a login screen,
+      // and keeps quietly failing every request after it the same way.
+      clearToken();
+      window.dispatchEvent(new CustomEvent("smarttaxi:session-expired"));
+    }
     throw error;
   }
   return data;

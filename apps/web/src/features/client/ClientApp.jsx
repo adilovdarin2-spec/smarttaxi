@@ -1589,6 +1589,16 @@ export default function ClientApp() {
     setDrawerOpen(false);
   }
 
+  // Fires the instant any request comes back 401/SESSION_SUPERSEDED --
+  // another device logged into this account and the backend invalidated
+  // every token issued before that (see common/auth.js). Without this the
+  // rider stays stuck on a stale screen silently failing every request
+  // instead of being dropped back to the login screen.
+  useEffect(() => {
+    window.addEventListener("smarttaxi:session-expired", logout);
+    return () => window.removeEventListener("smarttaxi:session-expired", logout);
+  }, []);
+
   return (
     <PhoneFrame className="taxi-pwa passenger-pwa taxi-client-shell">
       {incomingMessage && (

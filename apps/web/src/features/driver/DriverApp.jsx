@@ -616,6 +616,16 @@ export default function DriverApp() {
     setActiveOrder(null);
   }
 
+  // Fires the instant any request comes back 401/SESSION_SUPERSEDED --
+  // another device logged into this account and the backend invalidated
+  // every token issued before that (see common/auth.js). Without this the
+  // driver stays stuck on a stale panel silently failing every request
+  // instead of being dropped back to the login screen.
+  useEffect(() => {
+    window.addEventListener("smarttaxi:session-expired", handleLogout);
+    return () => window.removeEventListener("smarttaxi:session-expired", handleLogout);
+  }, []);
+
   async function withAction(name, fn) {
     setActionLoading(name);
     setError("");

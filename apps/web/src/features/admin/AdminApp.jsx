@@ -660,6 +660,19 @@ export default function AdminApp() {
     loadDashboard();
   }, [loadDashboard]);
 
+  // Fires the instant any request comes back 401/SESSION_SUPERSEDED --
+  // another device logged into this account and the backend invalidated
+  // every token issued before that (see common/auth.js). Without this the
+  // admin stays on a stale panel silently failing every request instead of
+  // being dropped back to the login screen.
+  useEffect(() => {
+    function handleSessionExpired() {
+      logout();
+    }
+    window.addEventListener("smarttaxi:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("smarttaxi:session-expired", handleSessionExpired);
+  }, []);
+
   useEffect(() => {
     if (canAccess) loadPage(active);
   }, [active, canAccess, loadPage]);
