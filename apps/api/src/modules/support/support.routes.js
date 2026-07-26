@@ -159,6 +159,18 @@ adminSupportRouter.patch("/:id/respond", requireAuth, requireRole("OWNER", "FINA
       metadata: { resolved: body.resolve },
       req
     });
+    // Without this, the app's own copy ("Мы ответим здесь и, если нужно,
+    // позвоним") was a promise with nothing behind it -- the reply only
+    // ever showed up if the user happened to reopen Support and manually
+    // pull-to-refresh. Best-effort/non-blocking, same pattern as the
+    // SOS/LOST_ITEM notifications above -- a push failure must never fail
+    // the admin's response itself.
+    notifyUser(existing.user_id, {
+      title: "Ответ от поддержки",
+      body: body.response,
+      type: "SUPPORT_REPLY",
+      data: { supportMessageId: params.id }
+    }).catch((error) => console.error("[push] support reply notify failed", error));
     res.json({ message: publicMessage(result.rows[0]) });
   } catch (error) {
     next(error);

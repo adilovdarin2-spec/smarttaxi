@@ -4635,7 +4635,15 @@ class _SupportHistoryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  item.topic,
+                  // Every other topic already stores its own Russian label
+                  // verbatim (see topicRuLabel() at submit time) -- LOST_ITEM
+                  // is the one exception, kept as a raw backend-matching
+                  // constant (support.routes.js keys off this exact string
+                  // to notify the trip's driver), so it needs its own
+                  // translation back to a real label here.
+                  item.topic == 'LOST_ITEM'
+                      ? l10n.passengerSupportTopicLostItem
+                      : item.topic,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -15709,6 +15717,7 @@ class _NotificationTile extends StatelessWidget {
         return Icons.savings_rounded;
       case 'SOS_ALERT':
       case 'LOST_ITEM':
+      case 'SUPPORT_REPLY':
         return Icons.support_agent_rounded;
       case 'BROADCAST':
         return Icons.campaign_rounded;

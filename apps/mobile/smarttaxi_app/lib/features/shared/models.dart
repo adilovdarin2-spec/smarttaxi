@@ -1042,7 +1042,7 @@ NotificationCategory notificationCategoryForType(String type) {
     'RECURRING_BOOKING_ACCEPTED',
     'RECURRING_BOOKING_DECLINED',
   };
-  const supportTypes = {'SOS_ALERT', 'LOST_ITEM'};
+  const supportTypes = {'SOS_ALERT', 'LOST_ITEM', 'SUPPORT_REPLY'};
   const bonusTypes = {'CASHBACK_EARNED', 'REFERRAL_BONUS'};
   if (orderTypes.contains(type)) return NotificationCategory.orders;
   if (supportTypes.contains(type)) return NotificationCategory.support;

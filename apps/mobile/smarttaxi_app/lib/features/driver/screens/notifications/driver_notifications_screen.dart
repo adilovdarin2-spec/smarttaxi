@@ -44,6 +44,8 @@ IconData _iconFor(String type) {
       return Icons.block_rounded;
     case 'ORDER_STATUS':
       return Icons.local_taxi_rounded;
+    case 'SUPPORT_REPLY':
+      return Icons.support_agent_rounded;
     default:
       return Icons.notifications_none_rounded;
   }
