@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../models/driver_shell_helpers.dart';
 import '../../models/driver_wallet_models.dart';
 import '../../widgets/driver_common_widgets.dart';
 import '../../widgets/driver_payout_widgets.dart';
@@ -116,11 +117,27 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
       );
       if (!mounted) return;
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
+      // The client-side checks above cover the common cases from the
+      // summary already in hand, but the backend re-validates against
+      // fresher state (wallet.service.js's createPayoutRequest) and can
+      // reject for reasons this screen didn't catch locally -- e.g. debt
+      // auto-settled from balance between opening this sheet and
+      // submitting, or the driver got blocked meanwhile. Map those specific
+      // codes to the same messages already used for the client-side
+      // pre-checks instead of one generic failure for everything.
+      final code = apiErrorCode(error);
       setState(() {
         _submitting = false;
-        _error = l10n.driverPayoutErrorGeneric;
+        _error = switch (code) {
+          'PAYOUT_EXCEEDS_BALANCE' => l10n.driverPayoutErrorExceedsBalance,
+          'PAYOUT_BELOW_MINIMUM' =>
+            l10n.driverPayoutErrorBelowMin('${widget.summary.minPayoutKzt} ₸'),
+          'PAYOUT_DETAILS_MISSING' => l10n.driverPayoutErrorPhoneRequired,
+          'DRIVER_BLOCKED' => l10n.driverErrorDriverBlocked,
+          _ => l10n.driverPayoutErrorGeneric,
+        };
       });
     }
   }

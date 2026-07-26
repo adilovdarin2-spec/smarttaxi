@@ -395,6 +395,16 @@ class _WalletTransactionRow extends StatelessWidget {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     final isCharge = transaction.isDebtCharge;
+    // ADJUSTMENT carries a signed driver_debt_delta (see wallet.service.js's
+    // walletTransactionAmount) -- it can be negative (debt paid down, e.g.
+    // auto-settlement from balance) or positive (an admin increased debt).
+    // Treating it as an unconditional credit like EARNING double-signed
+    // negative amounts ("+-500 ₸") and painted debt increases green like a
+    // real earning. Neither direction is a real earning or a real debt
+    // charge, so it gets its own neutral (gold) styling and the amount is
+    // shown with its own already-correct sign from _money(), not a
+    // hardcoded prefix.
+    final isAdjustment = transaction.kind == 'ADJUSTMENT';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -410,15 +420,25 @@ class _WalletTransactionRow extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isCharge ? palette.dangerSoft : palette.successSoft,
+              color: isCharge
+                  ? palette.dangerSoft
+                  : isAdjustment
+                      ? palette.goldSurface
+                      : palette.successSoft,
               shape: BoxShape.circle,
             ),
             child: Icon(
               isCharge
                   ? Icons.south_west_rounded
-                  : Icons.north_east_rounded,
+                  : isAdjustment
+                      ? Icons.sync_alt_rounded
+                      : Icons.north_east_rounded,
               size: 18,
-              color: isCharge ? palette.danger : palette.success,
+              color: isCharge
+                  ? palette.danger
+                  : isAdjustment
+                      ? palette.goldDeep
+                      : palette.success,
             ),
           ),
           const SizedBox(width: 12),
@@ -429,7 +449,7 @@ class _WalletTransactionRow extends StatelessWidget {
                 Text(
                   isCharge
                       ? l10n.driverWalletTxCashCommission
-                      : transaction.kind == 'ADJUSTMENT'
+                      : isAdjustment
                           ? l10n.driverWalletTxAdjustment
                           : l10n.driverWalletTxEarning,
                   style: TextStyle(
@@ -449,10 +469,18 @@ class _WalletTransactionRow extends StatelessWidget {
             ),
           ),
           Text(
-            '${isCharge ? '-' : '+'}${_money(transaction.amountKzt)}',
+            isCharge
+                ? '-${_money(transaction.amountKzt)}'
+                : isAdjustment
+                    ? _money(transaction.amountKzt)
+                    : '+${_money(transaction.amountKzt)}',
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: isCharge ? palette.danger : palette.success,
+              color: isCharge
+                  ? palette.danger
+                  : isAdjustment
+                      ? palette.goldDeep
+                      : palette.success,
             ),
           ),
         ],
