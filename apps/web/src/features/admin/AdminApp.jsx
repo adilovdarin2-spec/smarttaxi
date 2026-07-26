@@ -224,7 +224,16 @@ const orderStatusOptions = [
 
 function readError(error) {
   if (error?.code === "FORBIDDEN" || error?.message?.includes("Forbidden")) {
-    return "Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем или финансовым пользователем.";
+    // Shared by two very different callers: the initial dashboard-boot
+    // check (line ~412, where "no panel access at all" is a fair reading)
+    // and per-action failures like assign-driver/advance-status (line
+    // ~729) -- those 403 for a currently-logged-in FINANCE admin clicking
+    // a DRIVER/OWNER-only order action (see orders.routes.js's requireRole
+    // calls), who very much does have panel access, just not for that one
+    // action. The old wording ("this account has no access to this panel,
+    // log in as owner/finance") was actively false in the second case.
+    // This phrasing is accurate in both.
+    return "У вас нет прав для этого действия.";
   }
   if (error?.code === "NOT_FOUND") return "Данные не найдены";
   if (error?.code === "PROMO_CODE_HAS_REDEMPTIONS") return "Промокод уже использовался в заказах — отключите его вместо удаления, чтобы сохранить историю цен.";
@@ -469,7 +478,7 @@ export default function AdminApp() {
           tariffId: selectedTariffId,
           ...dateParams
         };
-        const [regions, drivers, tariffs, summary, driverDebts, reports, transactions] = await Promise.all([
+        const [regions, drivers, tariffs, summary, driverDebts, reports, transactions] = await Promise.allSettled([
           getAdminRegions(),
           getAdminDrivers(),
           getAdminTariffs(),
@@ -478,20 +487,35 @@ export default function AdminApp() {
           getAdminFinanceReports({ ...commonFilters, groupBy: financeGroupBy }),
           getAdminFinanceTransactions({ ...commonFilters, limit: 100 })
         ]);
+        // regions/drivers/tariffs feed every tab's filter dropdowns -- without
+        // them the page can't render meaningfully, so (like the tariffs
+        // loader above) a failure here still throws the whole page into the
+        // error panel. summary/driverDebts/reports/transactions are the 4
+        // independently-switchable finance tabs (financeSection state) --
+        // one being down (a slow query, a bad date-range filter) shouldn't
+        // blank the other three behind one generic error, same reasoning
+        // the orders/tariffs/quality loaders above already follow.
+        if (regions.status === "rejected") throw regions.reason;
+        if (drivers.status === "rejected") throw drivers.reason;
+        if (tariffs.status === "rejected") throw tariffs.reason;
         return {
-          regions: regions.regions || [],
-          drivers: drivers.drivers || [],
-          tariffs: tariffs.tariffs || [],
-          summary: summary.summary || null,
-          driverDebts: driverDebts.driverDebts || [],
-          reports: reports.rows || [],
-          reportTotals: reports.totals || null,
-          reportGroupBy: reports.groupBy || financeGroupBy,
-          transactions: transactions.items || transactions.transactions || [],
-          transactionTotal: transactions.total || 0,
-          transactionLimit: transactions.limit || 100,
-          transactionOffset: transactions.offset || 0,
-          dateRange: summary.dateRange || dateParams
+          regions: regions.value.regions || [],
+          drivers: drivers.value.drivers || [],
+          tariffs: tariffs.value.tariffs || [],
+          summary: summary.status === "fulfilled" ? summary.value.summary || null : null,
+          summaryError: summary.status === "rejected" ? "Не удалось загрузить сводку" : "",
+          driverDebts: driverDebts.status === "fulfilled" ? driverDebts.value.driverDebts || [] : [],
+          driverDebtsError: driverDebts.status === "rejected" ? "Не удалось загрузить долги водителей" : "",
+          reports: reports.status === "fulfilled" ? reports.value.rows || [] : [],
+          reportTotals: reports.status === "fulfilled" ? reports.value.totals || null : null,
+          reportGroupBy: reports.status === "fulfilled" ? reports.value.groupBy || financeGroupBy : financeGroupBy,
+          reportsError: reports.status === "rejected" ? "Не удалось загрузить отчёты" : "",
+          transactions: transactions.status === "fulfilled" ? (transactions.value.items || transactions.value.transactions || []) : [],
+          transactionTotal: transactions.status === "fulfilled" ? transactions.value.total || 0 : 0,
+          transactionLimit: transactions.status === "fulfilled" ? transactions.value.limit || 100 : 100,
+          transactionOffset: transactions.status === "fulfilled" ? transactions.value.offset || 0 : 0,
+          transactionsError: transactions.status === "rejected" ? "Не удалось загрузить транзакции" : "",
+          dateRange: summary.status === "fulfilled" ? summary.value.dateRange || dateParams : dateParams
         };
       },
       roadAlerts: async () => {
@@ -510,8 +534,16 @@ export default function AdminApp() {
         // to FINANCE too. Without this .catch, a FINANCE user's reviews-403
         // would reject the whole Promise.all and take the leaderboard down
         // with it, even though they're perfectly entitled to see that part.
-        const [reviews, raffles] = await Promise.all([
-          getAdminReviews().catch(() => ({ reviews: [] })),
+        // Distinguishing "genuinely no reviews" from "403, can't see them"
+        // matters: showing FINANCE an empty state that reads as "service
+        // quality is flawless" is simply wrong data for that role.
+        const [reviewsResult, raffles] = await Promise.all([
+          getAdminReviews()
+            .then(data => ({ reviews: data.reviews || [], restricted: false }))
+            .catch(error => ({
+              reviews: [],
+              restricted: error?.code === "FORBIDDEN" || error?.message?.includes("Forbidden")
+            })),
           getAdminRaffles().catch(() => ({ raffles: [] }))
         ]);
         const raffleList = raffles.raffles || [];
@@ -520,7 +552,8 @@ export default function AdminApp() {
           selectedRaffle ? { dateFrom: selectedRaffle.startsAt, dateTo: selectedRaffle.endsAt } : {}
         );
         return {
-          reviews: reviews.reviews || [],
+          reviews: reviewsResult.reviews,
+          reviewsRestricted: reviewsResult.restricted,
           leaderboard: leaderboard.leaderboard || [],
           raffles: raffleList
         };
@@ -1149,7 +1182,7 @@ export default function AdminApp() {
         {actionState.message && <InlineMessage text={actionState.message} />}
 
         {active === "dashboard" ? (
-          <DashboardPage dashboard={dashboard} health={dashboard?.health} onSelectPage={selectPage} />
+          <DashboardPage dashboard={dashboard} health={dashboard?.health} onSelectPage={selectPage} isOwner={user?.role === "OWNER"} />
         ) : pageState.loading ? (
           <LoadingState />
         ) : pageState.error ? (
@@ -1420,10 +1453,20 @@ export default function AdminApp() {
   );
 }
 
-function DashboardPage({ dashboard, health, onSelectPage }) {
+function DashboardPage({ dashboard, health, onSelectPage, isOwner }) {
   const cards = Array.isArray(dashboard?.cards) ? dashboard.cards : [];
   const summary = dashboard?.summary || {};
-  const problems = buildAdminProblemItems(dashboard, health);
+  // "applications" links to an OWNER-only page (see the `navigation` array
+  // and its comment near the top of this file: the underlying list endpoint
+  // is OWNER-only server-side, no FINANCE-visible fallback). The sidebar
+  // already hides that nav entry from FINANCE entirely; this tile used to
+  // still render for FINANCE with a real, non-zero count and a
+  // button-shaped click target that silently did nothing (selectPage's own
+  // ownerOnly guard swallows it with no feedback) -- same "looks
+  // interactive, isn't" trap the sidebar was already built to avoid.
+  const problems = buildAdminProblemItems(dashboard, health).filter(
+    item => isOwner || item.page !== "applications"
+  );
   const activeProblems = problems.filter(item => item.tone !== "success");
 
   return (
@@ -1508,11 +1551,13 @@ function DashboardPage({ dashboard, health, onSelectPage }) {
               <span>Водителей с высоким долгом</span>
               <small>Комиссия, касса, CSV</small>
             </button>
-            <button type="button" onClick={() => onSelectPage("roadAlerts")}>
-              <strong>{Number(summary.attention?.activeRoadAlerts || 0)}</strong>
-              <span>Активных дорожных событий</span>
-              <small>Модерация предупреждений</small>
-            </button>
+            {isOwner && (
+              <button type="button" onClick={() => onSelectPage("roadAlerts")}>
+                <strong>{Number(summary.attention?.activeRoadAlerts || 0)}</strong>
+                <span>Активных дорожных событий</span>
+                <small>Модерация предупреждений</small>
+              </button>
+            )}
             <button type="button" onClick={() => onSelectPage("quality")}>
               <strong>{Number(summary.attention?.lowReviews || 0)}</strong>
               <span>Низких оценок за 30 дней</span>
@@ -1636,6 +1681,7 @@ function AdminPage(props) {
     return (
       <QualityPage
         reviews={asArray(payload, "reviews")}
+        reviewsRestricted={Boolean(payload?.reviewsRestricted)}
         leaderboard={asArray(payload, "leaderboard")}
         raffles={asArray(payload, "raffles")}
         ratingScope={props.ratingScope}
@@ -2141,6 +2187,13 @@ function FinancePage({
   const driverDebts = asArray(payload, "driverDebts");
   const transactions = asArray(payload, "transactions");
   const reports = asArray(payload, "reports");
+  // Each of these 4 tabs is fetched independently now (see the `finance`
+  // loader's Promise.allSettled) -- one failing surfaces only on its own
+  // tab instead of blanking the other three behind the page-level error.
+  const summaryError = payload?.summaryError || "";
+  const reportsError = payload?.reportsError || "";
+  const driverDebtsError = payload?.driverDebtsError || "";
+  const transactionsError = payload?.transactionsError || "";
   const drivers = asArray(payload, "drivers");
   const tariffs = asArray(payload, "tariffs");
   const totals = payload?.reportTotals || {};
@@ -2232,6 +2285,7 @@ function FinancePage({
 
       {financeSection === "overview" && (
         <DataCard title="Обзор" text="Ключевые показатели за выбранный период.">
+          {summaryError && <InlineMessage danger text={summaryError} />}
           <section className="admin-analytics-grid finance">
             {cards.map(card => (
               <article className="admin-analytics-card finance" key={card[0]}>
@@ -2246,6 +2300,7 @@ function FinancePage({
 
       {financeSection === "reports" && (
         <DataCard title="Финансовый отчёт" text={`Группировка: ${financeGroupLabel(payload?.reportGroupBy || financeGroupBy)}.`}>
+          {reportsError && <InlineMessage danger text={reportsError} />}
           {!reports.length ? (
             <div className="admin-empty-note">
               <strong>За выбранный период финансовых данных нет</strong>
@@ -2280,6 +2335,7 @@ function FinancePage({
 
       {financeSection === "debts" && (
         <DataCard title="Долги водителей" text="Корректировки сохраняются отдельными строками финансового журнала.">
+          {driverDebtsError && <InlineMessage danger text={driverDebtsError} />}
           {!canAdjustFinance && <InlineMessage text="Недостаточно прав для корректировки" />}
           {!driverDebts.length ? (
             <div className="admin-empty-note">
@@ -2317,6 +2373,7 @@ function FinancePage({
           text={`${payload?.transactionTotal || 0} операций по текущим фильтрам.`}
           action={<button type="button" className="admin-secondary-button compact" onClick={onExportFinanceCsv}>Экспорт CSV</button>}
         >
+          {transactionsError && <InlineMessage danger text={transactionsError} />}
           {!transactions.length ? (
             <div className="admin-empty-note">
               <strong>Нет финансовых операций</strong>
@@ -2391,7 +2448,9 @@ function OrdersPage({
   onRequestCancelOrder,
   payload,
   loadingMore,
-  onLoadMoreOrders
+  onLoadMoreOrders,
+  canManageOwnerOnly,
+  canAdjustFinance
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const total = payload?.total;
@@ -2420,6 +2479,8 @@ function OrdersPage({
               onAssignDriver={onAssignOrderDriver}
               onAdvanceStatus={onAdvanceOrderStatus}
               onRequestCancel={onRequestCancelOrder}
+              canManageOwnerOnly={canManageOwnerOnly}
+              canAdjustFinance={canAdjustFinance}
             />
           ))}
         </div>
@@ -2435,13 +2496,26 @@ function OrdersPage({
   );
 }
 
-function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver, onAdvanceStatus, onRequestCancel }) {
+function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver, onAdvanceStatus, onRequestCancel, canManageOwnerOnly, canAdjustFinance }) {
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [busy, setBusy] = useState(false);
 
   const nextAction = nextOrderStatusAction(order.status);
-  const canAssign = OPEN_ORDER_STATUSES.includes(order.status) && !order.driver_id;
-  const canCancel = CANCELLABLE_ORDER_STATUSES.includes(order.status);
+  // Mirrors orders.routes.js's requireRole for each action: assign-driver
+  // and cancel are OWNER-only (canManageOwnerOnly is `role === "OWNER"`,
+  // set at the call site above); the status-advance chain
+  // (going-to-client/arrived/start/complete) is DRIVER+OWNER, so it needs
+  // the same owner-only gate; its one exception is the final step,
+  // mark-paid, which is OWNER+FINANCE. Showing these to a FINANCE admin
+  // who can't actually use them meant every click 403'd with a generic
+  // "no panel access" message that was simply false (see readError) --
+  // hiding what will fail is clearer than explaining the failure after.
+  const canAssign = OPEN_ORDER_STATUSES.includes(order.status) && !order.driver_id && canManageOwnerOnly;
+  const canCancel = CANCELLABLE_ORDER_STATUSES.includes(order.status) && canManageOwnerOnly;
+  const canAdvance = Boolean(
+    nextAction &&
+      (canManageOwnerOnly || (nextAction.action === "mark-paid" && canAdjustFinance))
+  );
   const regionName = regions.find(region => region.id === order.region_id)?.name;
   const eligibleDrivers = drivers.filter(driver =>
     driver.status === "FREE" && !driver.is_blocked && driver.current_region_id === order.region_id
@@ -2468,7 +2542,7 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
     }
   }
 
-  const hasActions = canAssign || nextAction || canCancel;
+  const hasActions = canAssign || canAdvance || canCancel;
 
   return (
     <div className="admin-order-block">
@@ -2524,7 +2598,7 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
             </div>
           )}
           <div className="admin-order-actions">
-            {nextAction && (
+            {canAdvance && (
               <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={handleAdvance}>
                 {nextAction.buttonLabel}
               </button>
@@ -3262,7 +3336,7 @@ function DriverBlockPanel({ driver, busy, onClose, onConfirm }) {
   );
 }
 
-function QualityPage({ reviews, leaderboard, raffles, ratingScope, setRatingScope, ratingRaffleId, setRatingRaffleId, onDeleteReview }) {
+function QualityPage({ reviews, reviewsRestricted, leaderboard, raffles, ratingScope, setRatingScope, ratingRaffleId, setRatingRaffleId, onDeleteReview }) {
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
     : 0;
@@ -3302,13 +3376,13 @@ function QualityPage({ reviews, leaderboard, raffles, ratingScope, setRatingScop
       <section className="admin-analytics-grid quality">
         <article className="admin-analytics-card quality">
           <span>Средняя оценка</span>
-          <strong>{averageRating ? averageRating.toFixed(1) : "—"}</strong>
-          <small>{reviews.length} отзывов в базе</small>
+          <strong>{reviewsRestricted ? "—" : averageRating ? averageRating.toFixed(1) : "—"}</strong>
+          <small>{reviewsRestricted ? "Доступно только владельцу" : `${reviews.length} отзывов в базе`}</small>
         </article>
         <article className="admin-analytics-card quality">
           <span>Низкие оценки</span>
-          <strong>{lowReviews.length}</strong>
-          <small>Требуют проверки причины</small>
+          <strong>{reviewsRestricted ? "—" : lowReviews.length}</strong>
+          <small>{reviewsRestricted ? "Доступно только владельцу" : "Требуют проверки причины"}</small>
         </article>
         <article className="admin-analytics-card quality">
           <span>Водителей в рейтинге</span>
@@ -3348,7 +3422,12 @@ function QualityPage({ reviews, leaderboard, raffles, ratingScope, setRatingScop
         </DataCard>
 
         <DataCard title="Последние отзывы" text="Низкие оценки нужно разбирать с заказом, водителем и оператором.">
-          {!reviews.length ? (
+          {reviewsRestricted ? (
+            <div className="admin-empty-note">
+              <strong>Отзывы доступны только владельцу</strong>
+              <span>Обратитесь к владельцу аккаунта, если нужно посмотреть или удалить отзыв.</span>
+            </div>
+          ) : !reviews.length ? (
             <div className="admin-empty-note">
               <strong>Отзывов пока нет</strong>
               <span>Отзывы появятся после завершения поездок и оценки клиента.</span>
