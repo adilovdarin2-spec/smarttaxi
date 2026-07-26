@@ -43,6 +43,11 @@ assert(routes.includes('"You have blocked this driver"'), "booking creation must
 // A still-pending booking can only be cancelled, not paused/activated directly.
 assert(routes.includes('existing.status === "PENDING_DRIVER" && body.status !== "CANCELLED"'), "a PENDING_DRIVER booking must only be movable to CANCELLED via the status endpoint");
 
+// pg returns a TIME column as "HH:MM:SS", but every client sends/expects
+// "HH:MM" (see the TimeOfDay zod schema) -- publicBooking() must trim the
+// seconds back off, not round-trip a format nothing asked for.
+assert(routes.includes("timeOfDay: String(row.time_of_day).slice(0, 5)"), "publicBooking must format time_of_day back to HH:MM, not return pg's raw HH:MM:SS");
+
 // Days-of-week must stay within the documented Mon..Fri (1..5) "school route" range.
 assert(routes.includes("z.array(z.coerce.number().int().min(1).max(5))"), "daysOfWeek must be constrained to ISO 1 (Mon) through 5 (Fri)");
 

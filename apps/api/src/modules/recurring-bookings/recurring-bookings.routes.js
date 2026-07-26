@@ -22,7 +22,11 @@ function publicBooking(row) {
     dropoffLat: Number(row.dropoff_lat),
     dropoffLng: Number(row.dropoff_lng),
     daysOfWeek: row.days_of_week,
-    timeOfDay: row.time_of_day,
+    // pg returns a TIME column as "HH:MM:SS" (no custom type parser is
+    // registered in db/pool.js) -- but every client always sends and
+    // expects "HH:MM" (see the TimeOfDay zod schema above), so trim the
+    // seconds back off rather than round-tripping a format nothing asked for.
+    timeOfDay: String(row.time_of_day).slice(0, 5),
     priceKzt: row.price_kzt,
     status: row.status,
     notes: row.notes || "",
