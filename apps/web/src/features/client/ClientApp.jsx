@@ -1731,9 +1731,14 @@ function ClientHeader({ routeReady = false, addressSelectionMode = false, route,
           <strong>Выбор тарифа</strong>
           <small>{route ? formatRouteSummary(route) : "Расчёт маршрута"}</small>
         </div>
-        <button type="button" className="client-icon-button" aria-label="Информация">
-          <IconAsset name="info" />
-        </button>
+        {/* No onClick was ever wired here and nothing in this app builds
+            towards one -- a tappable-looking button that silently does
+            nothing is worse than no button, but the two icon buttons
+            flanking the centered title are what keep it visually centered
+            (see .reference-client-header.tariff-mode .reference-title-stack
+            in styles.css), so an invisible same-size spacer keeps the
+            layout intact without the fake affordance. */}
+        <div className="client-icon-button" aria-hidden="true" />
       </header>
     );
   }
