@@ -2211,6 +2211,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get nameFieldLabel => 'Аты';
 
   @override
+  String get referralCodeFieldLabel => 'Шақыру коды (міндетті емес)';
+
+  @override
   String get passwordFieldLabel => 'Құпия сөз';
 
   @override

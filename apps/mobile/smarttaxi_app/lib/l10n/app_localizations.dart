@@ -4017,6 +4017,12 @@ abstract class AppLocalizations {
   /// **'Имя'**
   String get nameFieldLabel;
 
+  /// No description provided for @referralCodeFieldLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код приглашения (необязательно)'**
+  String get referralCodeFieldLabel;
+
   /// No description provided for @passwordFieldLabel.
   ///
   /// In ru, this message translates to:

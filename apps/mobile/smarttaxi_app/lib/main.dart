@@ -1907,6 +1907,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
   final _smsCodeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordRepeatController = TextEditingController();
+  final _referralCodeController = TextEditingController();
   final _exitGuard = ExitOnDoubleBack();
 
   bool _registerMode = false;
@@ -1947,6 +1948,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
     _smsCodeController.dispose();
     _passwordController.dispose();
     _passwordRepeatController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -2049,11 +2051,13 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
 
   Future<Map<String, dynamic>> _register() async {
     final fullName = _nameController.text.trim();
+    final referralCode = _referralCodeController.text.trim();
     final payload = await widget.api.registerWithPassword(
       name: fullName,
       phone: _verifiedPhone ?? _normalizePhone(_phoneController.text),
       verificationToken: _verificationToken ?? '',
       password: _passwordController.text,
+      referralCode: referralCode.isEmpty ? null : referralCode,
     );
     final user = payload['user'];
     if (user is Map) {
@@ -2499,6 +2503,22 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                                                         TextCapitalization
                                                             .words,
                                                   ),
+                                                  SizedBox(height: fieldGap),
+                                                  _PhotoAuthTextField(
+                                                    controller:
+                                                        _referralCodeController,
+                                                    label: l10n
+                                                        .referralCodeFieldLabel,
+                                                    icon: Icons
+                                                        .card_giftcard_rounded,
+                                                    onChanged:
+                                                        _clearFeedbackOnEdit,
+                                                    keyboardType:
+                                                        TextInputType.text,
+                                                    textCapitalization:
+                                                        TextCapitalization
+                                                            .characters,
+                                                  ),
                                                 ],
                                               )
                                             : _PhotoPhoneField(
@@ -2585,6 +2605,8 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                                                       _passwordController
                                                           .clear();
                                                       _passwordRepeatController
+                                                          .clear();
+                                                      _referralCodeController
                                                           .clear();
                                                     }),
                                             style: TextButton.styleFrom(
@@ -2768,6 +2790,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
         _smsCodeController.clear();
         _passwordController.clear();
         _passwordRepeatController.clear();
+        _referralCodeController.clear();
         _showPassword = false;
         _showPasswordRepeat = false;
         _devCode = devCode?.toString();

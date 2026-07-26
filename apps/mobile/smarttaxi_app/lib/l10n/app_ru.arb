@@ -702,6 +702,7 @@
   "createAccountButton": "Создать аккаунт",
   "creatingLabel": "Создаём...",
   "nameFieldLabel": "Имя",
+  "referralCodeFieldLabel": "Код приглашения (необязательно)",
   "passwordFieldLabel": "Пароль",
   "hidePasswordTooltip": "Скрыть пароль",
   "showPasswordTooltip": "Показать пароль",

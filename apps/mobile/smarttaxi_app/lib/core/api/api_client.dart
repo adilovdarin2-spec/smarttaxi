@@ -80,6 +80,7 @@ class ApiClient {
     required String phone,
     required String verificationToken,
     required String password,
+    String? referralCode,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/auth/register/password',
@@ -88,6 +89,8 @@ class ApiClient {
         'phone': phone,
         'verificationToken': verificationToken,
         'password': password,
+        if (referralCode != null && referralCode.isNotEmpty)
+          'referralCode': referralCode,
       },
     );
     final data = response.data ?? {};

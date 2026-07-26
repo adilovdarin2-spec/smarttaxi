@@ -701,6 +701,7 @@
   "createAccountButton": "Аккаунт жасау",
   "creatingLabel": "Жасап жатырмыз...",
   "nameFieldLabel": "Аты",
+  "referralCodeFieldLabel": "Шақыру коды (міндетті емес)",
   "passwordFieldLabel": "Құпия сөз",
   "hidePasswordTooltip": "Құпия сөзді жасыру",
   "showPasswordTooltip": "Құпия сөзді көрсету",

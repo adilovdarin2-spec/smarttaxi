@@ -2202,6 +2202,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get nameFieldLabel => 'Имя';
 
   @override
+  String get referralCodeFieldLabel => 'Код приглашения (необязательно)';
+
+  @override
   String get passwordFieldLabel => 'Пароль';
 
   @override
