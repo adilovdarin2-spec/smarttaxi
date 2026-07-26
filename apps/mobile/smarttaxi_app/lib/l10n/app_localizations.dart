@@ -6630,7 +6630,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverRoadAlertsSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Сообщения нужны для безопасности движения и соблюдения правил.'**
+  /// **'Отмеченные камеры и опасные участки сразу видны другим водителям на навигаторе — это помогает всем на дороге.'**
   String get driverRoadAlertsSubtitle;
 
   /// No description provided for @refreshButton.

@@ -3666,7 +3666,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverRoadAlertsSubtitle =>
-      'Сообщения нужны для безопасности движения и соблюдения правил.';
+      'Отмеченные камеры и опасные участки сразу видны другим водителям на навигаторе — это помогает всем на дороге.';
 
   @override
   String get refreshButton => 'Обновить';

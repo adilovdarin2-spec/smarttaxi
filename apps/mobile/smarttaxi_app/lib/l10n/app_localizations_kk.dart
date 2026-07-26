@@ -3672,7 +3672,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverRoadAlertsSubtitle =>
-      'Хабарламалар қозғалыс қауіпсіздігі мен ережелерді сақтау үшін қажет.';
+      'Белгіленген камералар мен қауіпті учаскелер басқа жүргізушілердің навигаторында бірден көрінеді — бұл жолда бәріне көмектеседі.';
 
   @override
   String get refreshButton => 'Жаңарту';
