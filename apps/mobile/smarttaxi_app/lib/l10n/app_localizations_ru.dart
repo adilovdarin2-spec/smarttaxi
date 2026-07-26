@@ -2187,6 +2187,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverAccountBlocked => 'Аккаунт водителя заблокирован';
 
   @override
+  String get sessionExpiredOtherDevice => 'Вы вышли из аккаунта, так как был выполнен вход с другого устройства';
+
+  @override
   String get passwordMinLength => 'Пароль должен быть не короче 6 символов';
 
   @override

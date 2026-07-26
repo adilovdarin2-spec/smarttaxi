@@ -696,6 +696,7 @@
   "invalidPhoneOrPassword": "Нөмір немесе құпия сөз қате",
   "phoneAlreadyRegistered": "Бұл нөмір бұрын тіркелген",
   "driverAccountBlocked": "Жүргізуші аккаунты бұғатталған",
+  "sessionExpiredOtherDevice": "Басқа құрылғыдан кіру орындалғандықтан, аккаунттан шықтыңыз",
   "passwordMinLength": "Құпия сөз кемінде 6 таңбадан тұруы керек",
   "checkFilledData": "Енгізген деректерді тексеріңіз",
   "createPasswordTitle": "Құпия сөз ойлап табыңыз",

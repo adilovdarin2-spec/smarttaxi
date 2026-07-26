@@ -697,6 +697,7 @@
   "invalidPhoneOrPassword": "Неверный номер или пароль",
   "phoneAlreadyRegistered": "Этот номер уже зарегистрирован",
   "driverAccountBlocked": "Аккаунт водителя заблокирован",
+  "sessionExpiredOtherDevice": "Вы вышли из аккаунта, так как был выполнен вход с другого устройства",
   "passwordMinLength": "Пароль должен быть не короче 6 символов",
   "checkFilledData": "Проверьте заполненные данные",
   "createPasswordTitle": "Придумайте пароль",

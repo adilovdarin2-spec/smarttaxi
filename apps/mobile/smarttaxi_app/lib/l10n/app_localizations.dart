@@ -3987,6 +3987,12 @@ abstract class AppLocalizations {
   /// **'Аккаунт водителя заблокирован'**
   String get driverAccountBlocked;
 
+  /// No description provided for @sessionExpiredOtherDevice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы вышли из аккаунта, так как был выполнен вход с другого устройства'**
+  String get sessionExpiredOtherDevice;
+
   /// No description provided for @passwordMinLength.
   ///
   /// In ru, this message translates to:

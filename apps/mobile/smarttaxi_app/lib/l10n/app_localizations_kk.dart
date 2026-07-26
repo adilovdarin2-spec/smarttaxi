@@ -2196,6 +2196,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverAccountBlocked => 'Жүргізуші аккаунты бұғатталған';
 
   @override
+  String get sessionExpiredOtherDevice => 'Басқа құрылғыдан кіру орындалғандықтан, аккаунттан шықтыңыз';
+
+  @override
   String get passwordMinLength => 'Құпия сөз кемінде 6 таңбадан тұруы керек';
 
   @override

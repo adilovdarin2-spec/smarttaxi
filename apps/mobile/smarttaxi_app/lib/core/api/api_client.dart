@@ -15,10 +15,31 @@ class ApiClient {
           connectTimeout: const Duration(seconds: 12),
           receiveTimeout: const Duration(seconds: 20),
           headers: {'Content-Type': 'application/json'},
-        ));
+        )) {
+    _dio.interceptors.add(InterceptorsWrapper(onError: (error, handler) {
+      // The backend invalidates every token issued before a rotation the
+      // instant a second device logs in (session_version mismatch — see
+      // common/auth.js's requireAuth). Dio has no other global place to
+      // catch that: without this, the kicked-out device would just show a
+      // confusing generic error on whatever screen happened to be open
+      // instead of being dropped back to the login screen.
+      final code = error.response?.data is Map
+          ? (error.response?.data as Map)['error']
+          : null;
+      if (error.response?.statusCode == 401 && code == 'SESSION_SUPERSEDED') {
+        onSessionExpired?.call();
+      }
+      handler.next(error);
+    }));
+  }
 
   final AuthStore _authStore;
   final Dio _dio;
+
+  // Set by the app root once at startup; fired at most once per forced
+  // logout (the root callback clears the token itself so subsequent 401s
+  // after that point simply route to the login screen already showing).
+  void Function()? onSessionExpired;
 
   Future<void> _attachToken() async {
     final token = await _authStore.readToken();

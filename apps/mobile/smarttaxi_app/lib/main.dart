@@ -113,6 +113,8 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   bool _updateNudgeShown = false;
   Locale? _locale;
   ThemeMode _themeMode = ThemeMode.light;
+  _AuthMessageKind? _authInitialError;
+  bool _forcedLogoutInProgress = false;
 
   void setLocale(Locale locale) {
     setState(() => _locale = locale);
@@ -143,6 +145,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     super.initState();
     unawaited(_loadLocale());
     unawaited(_loadThemeMode());
+    widget.api.onSessionExpired = _handleSessionExpired;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _restoreSession();
@@ -150,6 +153,28 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     });
     _watchConnectivity();
     unawaited(_checkAppVersion());
+  }
+
+  // Fires from ApiClient's Dio interceptor the instant any request comes
+  // back 401/SESSION_SUPERSEDED — i.e. another device just logged into this
+  // account and rotated session_version server-side (see common/auth.js).
+  // Mirrors _logout() but also surfaces a reason on the auth screen instead
+  // of dropping the user there with no explanation.
+  Future<void> _handleSessionExpired() async {
+    if (_forcedLogoutInProgress || _session == AppSession.auth) return;
+    _forcedLogoutInProgress = true;
+    widget.sockets.dispose();
+    await widget.authStore.clear();
+    if (mounted) {
+      setState(() {
+        _accountLabel = '';
+        _accountPhone = '';
+        _accountId = '';
+        _authInitialError = _AuthMessageKind.sessionExpiredOtherDevice;
+        _session = AppSession.auth;
+      });
+    }
+    _forcedLogoutInProgress = false;
   }
 
   // Best-effort — a failed/slow check never blocks the app from opening
@@ -286,6 +311,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   }
 
   Future<void> _handleLogin(Map<String, dynamic> authPayload) async {
+    _authInitialError = null;
     await _saveUserFromPayload(authPayload);
     final role = _userRole(authPayload['user']);
     if (role == 'DRIVER' && await _canOpenDriver()) {
@@ -359,6 +385,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           onLoggedIn: _handleLogin,
           currentLocale: _locale,
           onChangeLocale: setLocale,
+          initialError: _authInitialError,
         ),
       AppSession.passenger => PassengerShell(
           api: widget.api,
@@ -1841,6 +1868,7 @@ enum _AuthMessageKind {
   driverAccountBlocked,
   passwordMinLength,
   checkFilledData,
+  sessionExpiredOtherDevice,
 }
 
 String _resolveAuthMessage(_AuthMessageKind kind, AppLocalizations l10n) {
@@ -1883,6 +1911,8 @@ String _resolveAuthMessage(_AuthMessageKind kind, AppLocalizations l10n) {
       return l10n.passwordMinLength;
     case _AuthMessageKind.checkFilledData:
       return l10n.checkFilledData;
+    case _AuthMessageKind.sessionExpiredOtherDevice:
+      return l10n.sessionExpiredOtherDevice;
   }
 }
 
@@ -1892,12 +1922,14 @@ class _PhotoAuthScreen extends StatefulWidget {
     required this.onLoggedIn,
     required this.currentLocale,
     required this.onChangeLocale,
+    this.initialError,
   });
 
   final ApiClient api;
   final Future<void> Function(Map<String, dynamic>) onLoggedIn;
   final Locale? currentLocale;
   final ValueChanged<Locale> onChangeLocale;
+  final _AuthMessageKind? initialError;
 
   @override
   State<_PhotoAuthScreen> createState() => _PhotoAuthScreenState();
@@ -1926,6 +1958,12 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
   String? _devCode;
   String? _verifiedPhone;
   String? _verificationToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _error = widget.initialError;
+  }
 
   // Resolved lazily from the stored *kind*/raw value on every build, so a
   // language switch re-renders existing feedback in the new locale instead
