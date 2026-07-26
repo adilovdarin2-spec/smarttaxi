@@ -236,6 +236,8 @@ function readError(error) {
     return "У вас нет прав для этого действия.";
   }
   if (error?.code === "NOT_FOUND") return "Данные не найдены";
+  if (error?.code === "INVALID_CREDENTIALS") return "Неверный телефон или пароль";
+  if (error?.code === "DRIVER_BLOCKED") return "Аккаунт водителя заблокирован";
   if (error?.code === "PROMO_CODE_HAS_REDEMPTIONS") return "Промокод уже использовался в заказах — отключите его вместо удаления, чтобы сохранить историю цен.";
   if (error?.code === "PROMO_CODE_EXISTS") return "Промокод с таким кодом уже существует";
   if (error?.details?.length) return error.details.map(item => item.message).join("; ");
@@ -777,13 +779,22 @@ export default function AdminApp() {
     }
   }
 
-  async function runAction(work, successMessage) {
+  // rethrow: the 5 modal editors (region/tariff/promo code/raffle/debt
+  // adjustment) each already have their own local try/catch + inline error
+  // display around their onSave call -- correct behavior on paper, but
+  // dead code in practice, since this function used to swallow every
+  // failure into actionState.error, which renders on the page body behind
+  // the modal's full-screen overlay and was never actually seen. Passing
+  // { rethrow: true } from those 5 save functions lets their existing
+  // local catch actually fire.
+  async function runAction(work, successMessage, { rethrow = false } = {}) {
     setActionState({ loading: true, error: "", message: "" });
     try {
       await work();
       setActionState({ loading: false, error: "", message: successMessage || "Готово" });
     } catch (error) {
       setActionState({ loading: false, error: readError(error), message: "" });
+      if (rethrow) throw error;
     }
   }
 
@@ -804,7 +815,7 @@ export default function AdminApp() {
       setModal(null);
       await loadPage("regions");
       await loadDashboard();
-    }, "Регион сохранён");
+    }, "Регион сохранён", { rethrow: true });
   }
 
   async function switchRegion(region) {
@@ -919,7 +930,7 @@ export default function AdminApp() {
       else await createAdminTariff(payload);
       setModal(null);
       await loadPage("tariffs");
-    }, "Тариф сохранён");
+    }, "Тариф сохранён", { rethrow: true });
   }
 
   async function switchTariff(tariff) {
@@ -1002,7 +1013,7 @@ export default function AdminApp() {
       await createAdminPromoCode(payload);
       setModal(null);
       await loadPage("promoCodes");
-    }, "Промокод создан");
+    }, "Промокод создан", { rethrow: true });
   }
 
   async function togglePromoCode(promoCode) {
@@ -1029,7 +1040,7 @@ export default function AdminApp() {
       });
       setModal(null);
       await loadPage("raffles");
-    }, "Розыгрыш создан");
+    }, "Розыгрыш создан", { rethrow: true });
   }
 
   async function deleteRaffle(raffle) {
@@ -1325,6 +1336,7 @@ export default function AdminApp() {
           initialDriver={modal.driver}
           detail={driverDetail}
           busy={actionState.loading}
+          error={actionState.error}
           onClose={() => setModal(null)}
           onRefresh={() => refreshDriverDetail(modal.driver.id)}
           onBlock={setDriverBlocked}
@@ -1340,6 +1352,7 @@ export default function AdminApp() {
           application={modal.application}
           regions={regions}
           busy={actionState.loading}
+          error={actionState.error}
           onClose={() => setModal(null)}
           onReview={reviewApplication}
         />
@@ -1367,6 +1380,7 @@ export default function AdminApp() {
           onClose={() => setModal(null)}
           onSave={saveDebtAdjustment}
           busy={actionState.loading}
+          error={actionState.error}
         />
       )}
       {modal?.type === "promoCode" && (
@@ -1383,6 +1397,7 @@ export default function AdminApp() {
           text={`Промокод ${modal.promoCode.code} будет удалён без возможности восстановления.`}
           confirmLabel="Удалить"
           busy={actionState.loading}
+          error={actionState.error}
           danger
           onClose={() => setModal(null)}
           onConfirm={() => deletePromoCode(modal.promoCode)}
@@ -1401,6 +1416,7 @@ export default function AdminApp() {
           text={`Розыгрыш «${modal.raffle.title}» будет удалён. Поездки водителей не пострадают, но период исчезнет из фильтра рейтинга.`}
           confirmLabel="Удалить"
           busy={actionState.loading}
+          error={actionState.error}
           danger
           onClose={() => setModal(null)}
           onConfirm={() => deleteRaffle(modal.raffle)}
@@ -1412,6 +1428,7 @@ export default function AdminApp() {
           text={`Заказ ${modal.order.short_id || modal.order.id} будет отменён от имени администрации. Клиент и назначенный водитель (если есть) получат уведомление. Это действие нельзя отменить.`}
           confirmLabel="Отменить заказ"
           busy={actionState.loading}
+          error={actionState.error}
           danger
           onClose={() => setModal(null)}
           onConfirm={async () => {
@@ -1426,6 +1443,7 @@ export default function AdminApp() {
           text={`Регион «${modal.region.name}» перестанет принимать новые заказы — все водители и клиенты в нём потеряют доступ к сервису сразу. Активные поездки не прерываются, но новые заказы оформить будет нельзя.`}
           confirmLabel="Отключить регион"
           busy={actionState.loading}
+          error={actionState.error}
           danger
           onClose={() => setModal(null)}
           onConfirm={async () => {
@@ -1440,6 +1458,7 @@ export default function AdminApp() {
           text={`Тариф «${modal.tariff.displayName || modal.tariff.name}» перестанет предлагаться клиентам в своём регионе. Активные поездки на этом тарифе не прерываются.`}
           confirmLabel="Отключить тариф"
           busy={actionState.loading}
+          error={actionState.error}
           danger
           onClose={() => setModal(null)}
           onConfirm={async () => {
@@ -1454,6 +1473,7 @@ export default function AdminApp() {
           text="Отзыв будет удалён из истории рейтинга водителя без возможности восстановления. Используйте для явно накрученных или оскорбительных отзывов."
           confirmLabel="Удалить отзыв"
           busy={actionState.loading}
+          error={actionState.error}
           danger
           onClose={() => setModal(null)}
           onConfirm={() => deleteReview(modal.review)}
@@ -1463,6 +1483,7 @@ export default function AdminApp() {
         <PayoutRejectPanel
           payoutRequest={modal.payoutRequest}
           busy={actionState.loading}
+          error={actionState.error}
           onClose={() => setModal(null)}
           onConfirm={reason => reviewPayout(modal.payoutRequest, "REJECTED", reason)}
         />
@@ -1471,6 +1492,7 @@ export default function AdminApp() {
         <DriverBlockPanel
           driver={modal.driver}
           busy={actionState.loading}
+          error={actionState.error}
           onClose={() => setModal({ type: "driver", driver: modal.driver })}
           onConfirm={reason => confirmBlockDriver(modal.driver, reason)}
         />
@@ -3094,7 +3116,7 @@ function PromoCodeEditor({ regions, onClose, onSave, busy }) {
     try {
       await onSave(form);
     } catch (submitError) {
-      setError(submitError.message || "Не удалось сохранить промокод");
+      setError(readError(submitError));
     }
   }
 
@@ -3149,9 +3171,9 @@ function PromoCodeEditor({ regions, onClose, onSave, busy }) {
   );
 }
 
-function ConfirmPanel({ title, text, confirmLabel, danger, busy, onClose, onConfirm }) {
+function ConfirmPanel({ title, text, confirmLabel, danger, busy, onClose, onConfirm, error }) {
   return (
-    <ModalFrame title={title} onClose={onClose}>
+    <ModalFrame title={title} onClose={onClose} error={error}>
       <div className="admin-detail-stack">
         <p>{text}</p>
         <div className="admin-modal-actions">
@@ -3239,7 +3261,7 @@ function RaffleEditor({ onClose, onSave, busy }) {
     try {
       await onSave(form);
     } catch (submitError) {
-      setError(submitError.message || "Не удалось создать розыгрыш");
+      setError(readError(submitError));
     }
   }
 
@@ -3340,10 +3362,10 @@ function PayoutsPage({ payoutRequests, payoutStatus, setPayoutStatus, onApprove,
   );
 }
 
-function PayoutRejectPanel({ payoutRequest, busy, onClose, onConfirm }) {
+function PayoutRejectPanel({ payoutRequest, busy, onClose, onConfirm, error }) {
   const [reason, setReason] = useState("");
   return (
-    <ModalFrame title="Отклонить заявку на выплату" onClose={onClose}>
+    <ModalFrame title="Отклонить заявку на выплату" onClose={onClose} error={error}>
       <div className="admin-detail-stack">
         <p>Заявка водителя {payoutRequest.driverName || ""} на {formatMoney(payoutRequest.amountKzt)}.</p>
         <label className="admin-textarea-field">
@@ -3361,10 +3383,10 @@ function PayoutRejectPanel({ payoutRequest, busy, onClose, onConfirm }) {
   );
 }
 
-function DriverBlockPanel({ driver, busy, onClose, onConfirm }) {
+function DriverBlockPanel({ driver, busy, onClose, onConfirm, error }) {
   const [reason, setReason] = useState("");
   return (
-    <ModalFrame title="Заблокировать водителя" onClose={onClose}>
+    <ModalFrame title="Заблокировать водителя" onClose={onClose} error={error}>
       <div className="admin-detail-stack">
         <p>
           {driver.name || "Этот водитель"} потеряет доступ ко всему сервису
@@ -3823,7 +3845,11 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
       if (Number(form.surgeMultiplier) < 1) throw new Error("Коэффициент спроса должен быть не меньше 1");
       await onSave(form, tariff);
     } catch (submitError) {
-      setError(submitError.message || "Проверьте данные тарифа");
+      // Distinguish the client-side validation throws just above (plain
+      // Error, no .code -- their own message is already the right thing to
+      // show) from a real API failure (readError's translated message,
+      // e.g. instead of a raw English backend string).
+      setError(submitError.code ? readError(submitError) : submitError.message);
     }
   }
 
@@ -3977,7 +4003,7 @@ function RegionEditor({ region, onClose, onSave, busy }) {
       }
       await onSave(form, region);
     } catch (submitError) {
-      setError(submitError.message || "Проверьте данные региона");
+      setError(submitError.code ? readError(submitError) : submitError.message);
     }
   }
 
@@ -4019,7 +4045,7 @@ function RegionEditor({ region, onClose, onSave, busy }) {
   );
 }
 
-function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onRequestBlock, onSetRegion, onSetCommission, onClearCommission, canManageOwnerOnly }) {
+function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, onBlock, onRequestBlock, onSetRegion, onSetCommission, onClearCommission, canManageOwnerOnly, error }) {
   const [reasonByRegion, setReasonByRegion] = useState({});
   const driver = detail.payload?.driver || initialDriver;
   const regions = detail.payload?.regions || [];
@@ -4054,7 +4080,7 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
   }
 
   return (
-    <ModalFrame title="Карточка водителя" onClose={onClose} wide>
+    <ModalFrame title="Карточка водителя" onClose={onClose} wide error={error}>
       {detail.loading ? <LoadingState /> : detail.error ? (
         <StatePanel title="Не удалось загрузить данные" text={detail.error} action="Повторить" onAction={onRefresh} />
       ) : (
@@ -4409,7 +4435,7 @@ function DriverDocumentsPanel({ documents, loading, error, onRetry, mode, onRevi
   );
 }
 
-function ApplicationPanel({ application, regions, busy, onClose, onReview }) {
+function ApplicationPanel({ application, regions, busy, onClose, onReview, error }) {
   const [reason, setReason] = useState("");
   const [docs, setDocs] = useState({ loading: true, error: "", items: [] });
   const [busyDocumentId, setBusyDocumentId] = useState("");
@@ -4438,7 +4464,7 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview }) {
   }
 
   return (
-    <ModalFrame title="Заявка водителя" onClose={onClose} wide>
+    <ModalFrame title="Заявка водителя" onClose={onClose} wide error={error}>
       <div className="admin-detail-stack">
         <section className="admin-detail-hero">
           <div>
@@ -4489,7 +4515,7 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview }) {
   );
 }
 
-function DebtAdjustmentPanel({ driver, regions, onClose, onSave, busy }) {
+function DebtAdjustmentPanel({ driver, regions, onClose, onSave, busy, error: actionError }) {
   const [form, setForm] = useState({ amount: "", reason: "", regionId: "" });
   const [error, setError] = useState("");
 
@@ -4509,7 +4535,7 @@ function DebtAdjustmentPanel({ driver, regions, onClose, onSave, busy }) {
   }
 
   return (
-    <ModalFrame title="Корректировка долга" onClose={onClose}>
+    <ModalFrame title="Корректировка долга" onClose={onClose} error={error || actionError}>
       <form className="admin-form-grid" onSubmit={submit}>
         <section className="admin-detail-hero">
           <div>
@@ -4563,7 +4589,7 @@ function DebtAdjustmentPanel({ driver, regions, onClose, onSave, busy }) {
   );
 }
 
-function ModalFrame({ title, onClose, children, wide = false }) {
+function ModalFrame({ title, onClose, children, wide = false, error }) {
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape") onClose?.();
@@ -4585,6 +4611,11 @@ function ModalFrame({ title, onClose, children, wide = false }) {
           <h2>{title}</h2>
           <button type="button" onClick={onClose} aria-label="Закрыть">×</button>
         </header>
+        {/* The modal backdrop is a full-screen overlay (z-index above the
+            page body), so the page-level actionState.error banner sits
+            behind it and is never seen -- every save/confirm action that
+            fails here needs its own visible error inside the modal. */}
+        {error && <div className="admin-modal-error">{error}</div>}
         {children}
       </section>
     </div>

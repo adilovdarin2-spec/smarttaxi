@@ -58,6 +58,7 @@ const DRIVER_TABS = [
 ];
 
 const ERROR_MESSAGES = {
+  INVALID_CREDENTIALS: "Неверный телефон или пароль",
   DRIVER_REGION_NOT_SELECTED: "Выберите рабочий регион",
   DRIVER_REGION_REQUIRED: "Выберите рабочий регион",
   DRIVER_REGION_INACTIVE: "Регион временно отключен",

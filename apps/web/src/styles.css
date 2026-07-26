@@ -5497,6 +5497,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-weight: 950;
 }
 
+.admin-modal-error {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(185, 28, 28, .08);
+  border: 1px solid rgba(185, 28, 28, .18);
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .admin-modal > header button {
   width: 42px;
   height: 42px;
