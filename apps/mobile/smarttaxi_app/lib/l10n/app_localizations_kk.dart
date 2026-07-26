@@ -1836,6 +1836,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerRecurringStatusAwaitingDriver => 'Жүргізушіні күтудеміз';
 
   @override
+  String get passengerRecurringStatusSkippedToday => 'Бүгін өткізіп алды';
+
+  @override
+  String get passengerRecurringSkippedTodayText =>
+      'Бүгін сапар болмады: бос жүргізуші табылмады. Келесі жоспарлы күні бәрі әдеттегідей өтеді.';
+
+  @override
   String get passengerRecurringPauseButton => 'Тоқтату';
 
   @override
@@ -2641,6 +2648,28 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverSupportSendButton => 'Жіберу';
+
+  @override
+  String get driverSupportHistoryTitle => 'Сіздің өтініштеріңіз';
+
+  @override
+  String get driverSupportStatusResolved => 'Жауап берілді';
+
+  @override
+  String get driverSupportStatusPending => 'Өңделуде';
+
+  @override
+  String get driverSupportResponseLabel => 'Қолдау қызметінің жауабы';
+
+  @override
+  String get driverSupportLoadError => 'Өтініштерді жүктеу мүмкін болмады';
+
+  @override
+  String get driverSupportEmptyTitle => 'Әзірге өтініштер жоқ';
+
+  @override
+  String get driverSupportEmptyText =>
+      'Мұнда қолдау қызметіне жіберген өтініштеріңіз бен жауаптар көрсетіледі';
 
   @override
   String get driverFaqTitle => 'Жиі қойылатын сұрақтар';

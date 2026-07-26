@@ -1825,6 +1825,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerRecurringStatusAwaitingDriver => 'Ждём водителя';
 
   @override
+  String get passengerRecurringStatusSkippedToday => 'Пропущена сегодня';
+
+  @override
+  String get passengerRecurringSkippedTodayText =>
+      'Сегодня поездка не состоялась: не нашлось свободного водителя. В следующий раз по расписанию всё сработает как обычно.';
+
+  @override
   String get passengerRecurringPauseButton => 'Пауза';
 
   @override
@@ -2633,6 +2640,28 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverSupportSendButton => 'Отправить';
+
+  @override
+  String get driverSupportHistoryTitle => 'Ваши обращения';
+
+  @override
+  String get driverSupportStatusResolved => 'Отвечено';
+
+  @override
+  String get driverSupportStatusPending => 'В обработке';
+
+  @override
+  String get driverSupportResponseLabel => 'Ответ поддержки';
+
+  @override
+  String get driverSupportLoadError => 'Не удалось загрузить обращения';
+
+  @override
+  String get driverSupportEmptyTitle => 'Обращений пока нет';
+
+  @override
+  String get driverSupportEmptyText =>
+      'Здесь появятся ваши обращения в поддержку и ответы на них';
 
   @override
   String get driverFaqTitle => 'FAQ';

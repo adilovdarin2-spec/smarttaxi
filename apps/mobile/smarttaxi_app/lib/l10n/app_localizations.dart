@@ -3357,6 +3357,18 @@ abstract class AppLocalizations {
   /// **'Ждём водителя'**
   String get passengerRecurringStatusAwaitingDriver;
 
+  /// No description provided for @passengerRecurringStatusSkippedToday.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропущена сегодня'**
+  String get passengerRecurringStatusSkippedToday;
+
+  /// No description provided for @passengerRecurringSkippedTodayText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня поездка не состоялась: не нашлось свободного водителя. В следующий раз по расписанию всё сработает как обычно.'**
+  String get passengerRecurringSkippedTodayText;
+
   /// No description provided for @passengerRecurringPauseButton.
   ///
   /// In ru, this message translates to:
@@ -4820,6 +4832,48 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отправить'**
   String get driverSupportSendButton;
+
+  /// No description provided for @driverSupportHistoryTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваши обращения'**
+  String get driverSupportHistoryTitle;
+
+  /// No description provided for @driverSupportStatusResolved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отвечено'**
+  String get driverSupportStatusResolved;
+
+  /// No description provided for @driverSupportStatusPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'В обработке'**
+  String get driverSupportStatusPending;
+
+  /// No description provided for @driverSupportResponseLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ поддержки'**
+  String get driverSupportResponseLabel;
+
+  /// No description provided for @driverSupportLoadError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить обращения'**
+  String get driverSupportLoadError;
+
+  /// No description provided for @driverSupportEmptyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращений пока нет'**
+  String get driverSupportEmptyTitle;
+
+  /// No description provided for @driverSupportEmptyText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь появятся ваши обращения в поддержку и ответы на них'**
+  String get driverSupportEmptyText;
 
   /// No description provided for @driverFaqTitle.
   ///
