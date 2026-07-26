@@ -30,6 +30,13 @@ assert.match(driverRoutes, /router\.patch\("\/me\/region", requireAuth, requireR
 assert.match(driverRoutes, /router\.patch\("\/me\/status", requireAuth, requireRole\("DRIVER"\)/, "passenger cannot use driver status endpoint");
 assert.match(driverRoutes, /if \(body\.status === "FREE"\)/, "online transition must have a FREE-only approval guard");
 
+// A driver whose region gets approved/blocked must actually be told --
+// previously this endpoint silently updated the row with no notifyUser
+// call at all, unlike the adjacent document-review endpoint in the same
+// file, so a driver sat on the "under review" screen indefinitely unless
+// they happened to force-refresh.
+assert.match(adminRoutes, /type: "DRIVER_REGION_STATUS"/, "driver region approval/block must notify the driver via notifyUser");
+
 function createExecutor() {
   const state = {
     drivers: [

@@ -42,6 +42,8 @@ IconData _iconFor(String type) {
       return Icons.description_outlined;
     case 'DRIVER_AUTO_BLOCKED':
       return Icons.block_rounded;
+    case 'DRIVER_REGION_STATUS':
+      return Icons.map_rounded;
     case 'ORDER_STATUS':
       return Icons.local_taxi_rounded;
     case 'SUPPORT_REPLY':

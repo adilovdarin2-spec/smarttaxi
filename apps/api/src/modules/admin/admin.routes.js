@@ -1335,6 +1335,26 @@ router.patch("/drivers/:id/regions", requireAuth, requireRole("OWNER"), async (r
       });
       return updated;
     });
+    // Without this, a driver whose region got approved (or blocked) had no
+    // way to find out except force-quitting/reopening the app or manually
+    // pull-to-refreshing the region status -- no push, no live update. The
+    // adjacent document-review endpoint just above already notifies on
+    // approve/reject; this endpoint gates the same "can I go online" funnel
+    // one step further and had silently never grown the same call.
+    if (result.driver?.user_id) {
+      const notifyByStatus = {
+        APPROVED: {
+          title: "Регион одобрен",
+          body: `Вам одобрен доступ к региону «${result.region.name}» — можно выходить на линию`
+        },
+        BLOCKED: {
+          title: "Регион заблокирован",
+          body: body.reason || `Доступ к региону «${result.region.name}» заблокирован`
+        }
+      }[body.status];
+      notifyUser(result.driver.user_id, { ...notifyByStatus, type: "DRIVER_REGION_STATUS" })
+        .catch((error) => console.error("[push] notifyUser failed", error));
+    }
     res.json({
       approval: publicDriverRegionApproval(result.approval),
       driver: result.driver
