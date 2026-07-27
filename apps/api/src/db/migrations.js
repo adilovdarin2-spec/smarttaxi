@@ -888,6 +888,27 @@ const statements = [
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`,
 
+  // --- Driver wallet top-up requests ---
+  // Mirrors client_topup_requests exactly (same PENDING-until-real-Kaspi-Pay
+  // scaffold, see client-wallet.service.js) but for the driver side: a
+  // driver in debt (CASH trip commissions accrue as debt, never balance --
+  // see finance.service.js) had no way to signal "I paid this off" short of
+  // contacting an owner directly. This records the intent; an owner/finance
+  // user still applies it manually via the existing debt-adjustment admin
+  // action once the transfer is actually confirmed out-of-band.
+  `CREATE TABLE IF NOT EXISTS driver_topup_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    amount_kzt INTEGER NOT NULL CHECK (amount_kzt > 0),
+    method TEXT NOT NULL DEFAULT 'KASPI_PAY' CHECK (method IN ('KASPI_PAY')),
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','COMPLETED','FAILED','CANCELLED')),
+    provider_reference TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_driver_topup_requests_driver_id ON driver_topup_requests(driver_id)",
+  "CREATE INDEX IF NOT EXISTS idx_driver_topup_requests_status ON driver_topup_requests(status)",
+
   // --- Single active session per account ---
   // JWTs are otherwise stateless: once issued, a token stays valid until
   // its natural expiry with no server-side way to revoke it early. That

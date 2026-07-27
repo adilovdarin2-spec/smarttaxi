@@ -6,9 +6,12 @@ import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import {
   MIN_PAYOUT_KZT,
+  MIN_TOPUP_KZT,
   cancelPayoutRequest,
+  createDriverTopupRequest,
   createPayoutRequest,
   getWalletSummary,
+  listDriverTopupRequests,
   listPayoutRequests,
   listWalletTransactions,
   resolveDriverPayoutDetails,
@@ -179,6 +182,33 @@ router.post("/payout-requests/:id/cancel", requireAuth, requireRole("DRIVER"), a
       return cancelled;
     });
     res.json(result);
+  } catch (e) { next(e); }
+});
+
+router.get("/topup-requests", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const driver = await getDriverOrThrow(req.user.id);
+    const topupRequests = await listDriverTopupRequests(driver.id, query);
+    res.json({ topupRequests });
+  } catch (e) { next(e); }
+});
+
+router.post("/topup-requests", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+  try {
+    const body = z.object({
+      amountKzt: z.coerce.number().int().min(MIN_TOPUP_KZT)
+    }).parse(req.body);
+    const driver = await getDriverOrThrow(req.user.id);
+    const topupRequest = await createDriverTopupRequest({ driverId: driver.id, amountKzt: body.amountKzt }, query);
+    await writeAudit(query, {
+      action: "driver_topup_requested",
+      actorUserId: req.user.id,
+      entityType: "driver",
+      entityId: driver.id,
+      metadata: { amountKzt: body.amountKzt },
+      req
+    });
+    res.status(201).json({ topupRequest });
   } catch (e) { next(e); }
 });
 

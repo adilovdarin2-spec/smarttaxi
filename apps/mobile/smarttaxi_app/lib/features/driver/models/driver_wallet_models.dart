@@ -152,3 +152,33 @@ class PayoutRequest {
     );
   }
 }
+
+/// Records top-up intent only -- there is no live payment gateway wired to
+/// this yet (same scaffold as the client wallet's own topup requests). Stays
+/// PENDING until an owner/finance user applies it via the existing
+/// debt-adjustment admin action once the transfer is confirmed out-of-band.
+class TopupRequest {
+  const TopupRequest({
+    required this.id,
+    required this.amountKzt,
+    required this.status,
+    required this.createdAt,
+  });
+
+  final String id;
+  final int amountKzt;
+  final String status;
+  final DateTime createdAt;
+
+  bool get isPending => status == 'PENDING';
+
+  factory TopupRequest.fromJson(Map<String, dynamic> json) {
+    final raw = json['createdAt']?.toString();
+    return TopupRequest(
+      id: '${json['id']}',
+      amountKzt: _intOf(json['amountKzt']),
+      status: '${json['status'] ?? 'PENDING'}',
+      createdAt: raw == null ? DateTime.now() : DateTime.tryParse(raw) ?? DateTime.now(),
+    );
+  }
+}

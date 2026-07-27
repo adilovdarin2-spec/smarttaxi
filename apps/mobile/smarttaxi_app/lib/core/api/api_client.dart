@@ -1208,6 +1208,25 @@ class ApiClient {
     await _dio.post('/api/drivers/me/wallet/payout-requests/$id/cancel');
   }
 
+  Future<List<TopupRequest>> getTopupRequests() async {
+    await _attachToken();
+    final response =
+        await _dio.get<Map<String, dynamic>>('/api/drivers/me/wallet/topup-requests');
+    final items = _extractList(response.data, 'topupRequests');
+    return items.map((item) => TopupRequest.fromJson(item)).toList(growable: false);
+  }
+
+  Future<TopupRequest> createTopupRequest(int amountKzt) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/drivers/me/wallet/topup-requests',
+      data: {'amountKzt': amountKzt},
+    );
+    final data = response.data ?? {};
+    return TopupRequest.fromJson(
+        Map<String, dynamic>.from(data['topupRequest'] ?? data));
+  }
+
   Future<PayoutDetailsStatus> getPayoutDetailsStatus() async {
     await _attachToken();
     final response = await _dio

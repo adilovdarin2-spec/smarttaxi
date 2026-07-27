@@ -10,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../models/driver_wallet_models.dart';
 import '../../widgets/driver_common_widgets.dart';
 import 'driver_payout_request_sheet.dart';
+import 'driver_topup_request_sheet.dart';
 
 String _money(int value) {
   final text = value.abs().toString().replaceAllMapped(
@@ -51,6 +52,15 @@ String _payoutStatusLabel(AppLocalizations l10n, String status) {
   }
 }
 
+String _topupStatusLabel(AppLocalizations l10n, String status) {
+  switch (status) {
+    case 'PENDING':
+      return l10n.driverTopupStatusPending;
+    default:
+      return status;
+  }
+}
+
 class DriverWalletScreen extends StatefulWidget {
   const DriverWalletScreen({super.key, required this.api});
 
@@ -66,6 +76,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
   WalletSummary? _summary;
   List<WalletTransaction> _transactions = const [];
   List<PayoutRequest> _payoutRequests = const [];
+  List<TopupRequest> _topupRequests = const [];
 
   @override
   void initState() {
@@ -82,14 +93,17 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
       final summaryFuture = widget.api.getWalletSummary();
       final transactionsFuture = widget.api.getWalletTransactions(limit: 30);
       final payoutFuture = widget.api.getPayoutRequests();
+      final topupFuture = widget.api.getTopupRequests();
       final summary = await summaryFuture;
       final transactions = await transactionsFuture;
       final payoutRequests = await payoutFuture;
+      final topupRequests = await topupFuture;
       if (!mounted) return;
       setState(() {
         _summary = summary;
         _transactions = transactions.items;
         _payoutRequests = payoutRequests;
+        _topupRequests = topupRequests;
         _loading = false;
       });
     } catch (_) {
@@ -116,6 +130,20 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
         api: widget.api,
         summary: summary,
       ),
+    );
+    if (created == true) unawaited(_load());
+  }
+
+  Future<void> _openTopupRequest() async {
+    final palette = context.palette;
+    final created = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: palette.appBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => DriverTopupRequestSheet(api: widget.api),
     );
     if (created == true) unawaited(_load());
   }
@@ -158,7 +186,20 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
             _WalletBalanceCard(
               summary: _summary!,
               onRequestPayout: _openPayoutRequest,
+              onTopUp: _openTopupRequest,
             ),
+            const SizedBox(height: 20),
+            Text(l10n.driverWalletTopupRequestsTitle,
+                style: SmartTaxiTextStyles.subtitle
+                    .copyWith(color: palette.textSecondary)),
+            const SizedBox(height: 10),
+            if (_topupRequests.isEmpty)
+              _WalletEmptyRow(text: l10n.driverWalletNoTopupRequests)
+            else
+              for (final request in _topupRequests) ...[
+                _TopupRequestRow(request: request),
+                const SizedBox(height: 8),
+              ],
             const SizedBox(height: 20),
             Text(l10n.driverWalletPayoutRequestsTitle,
                 style: SmartTaxiTextStyles.subtitle
@@ -191,10 +232,15 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
 }
 
 class _WalletBalanceCard extends StatelessWidget {
-  const _WalletBalanceCard({required this.summary, required this.onRequestPayout});
+  const _WalletBalanceCard({
+    required this.summary,
+    required this.onRequestPayout,
+    required this.onTopUp,
+  });
 
   final WalletSummary summary;
   final VoidCallback onRequestPayout;
+  final VoidCallback onTopUp;
 
   @override
   Widget build(BuildContext context) {
@@ -259,10 +305,34 @@ class _WalletBalanceCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          DriverGradientButton(
-            text: l10n.driverWalletRequestPayoutButton,
-            enabled: canRequestPayout,
-            onTap: canRequestPayout ? onRequestPayout : null,
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onTopUp,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: palette.text,
+                    side: BorderSide(color: palette.border),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(SmartTaxiRadius.md),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.driverWalletTopUpButton,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: DriverGradientButton(
+                  text: l10n.driverWalletRequestPayoutButton,
+                  enabled: canRequestPayout,
+                  onTap: canRequestPayout ? onRequestPayout : null,
+                ),
+              ),
+            ],
           ),
           if (!canRequestPayout) ...[
             const SizedBox(height: 8),
@@ -378,6 +448,51 @@ class _PayoutRequestRow extends StatelessWidget {
           StatusPill(
             label: _payoutStatusLabel(l10n, request.status),
             tone: _payoutTone(request),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopupRequestRow extends StatelessWidget {
+  const _TopupRequestRow({required this.request});
+
+  final TopupRequest request;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_money(request.amountKzt),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: palette.text)),
+                const SizedBox(height: 2),
+                Text(_timeAgo(l10n, request.createdAt),
+                    style:
+                        TextStyle(color: palette.textMuted, fontSize: 11.5)),
+              ],
+            ),
+          ),
+          StatusPill(
+            label: _topupStatusLabel(l10n, request.status),
+            tone: StatusTone.warning,
           ),
         ],
       ),

@@ -4317,6 +4317,66 @@ abstract class AppLocalizations {
   /// **'Заявок пока нет'**
   String get driverWalletNoPayoutRequests;
 
+  /// No description provided for @driverWalletTopUpButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пополнить баланс'**
+  String get driverWalletTopUpButton;
+
+  /// No description provided for @driverWalletTopupRequestsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки на пополнение'**
+  String get driverWalletTopupRequestsTitle;
+
+  /// No description provided for @driverWalletNoTopupRequests.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявок пока нет'**
+  String get driverWalletNoTopupRequests;
+
+  /// No description provided for @driverTopupStatusPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидает зачисления'**
+  String get driverTopupStatusPending;
+
+  /// No description provided for @driverTopupSheetTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пополнить баланс'**
+  String get driverTopupSheetTitle;
+
+  /// No description provided for @driverTopupSheetHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите сумму. Менеджер свяжется с вами, чтобы принять перевод и зачислить средства'**
+  String get driverTopupSheetHint;
+
+  /// No description provided for @driverTopupAmountLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сумма, ₸'**
+  String get driverTopupAmountLabel;
+
+  /// No description provided for @driverTopupErrorBelowMin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Минимальная сумма — {amount}'**
+  String driverTopupErrorBelowMin(String amount);
+
+  /// No description provided for @driverTopupErrorGeneric.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось создать заявку. Попробуйте ещё раз'**
+  String get driverTopupErrorGeneric;
+
+  /// No description provided for @driverTopupSubmitButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить заявку'**
+  String get driverTopupSubmitButton;
+
   /// No description provided for @driverWalletTransactionsTitle.
   ///
   /// In ru, this message translates to:

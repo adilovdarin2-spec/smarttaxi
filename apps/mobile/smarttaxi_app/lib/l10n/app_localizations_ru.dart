@@ -2366,6 +2366,40 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverWalletNoPayoutRequests => 'Заявок пока нет';
 
   @override
+  String get driverWalletTopUpButton => 'Пополнить баланс';
+
+  @override
+  String get driverWalletTopupRequestsTitle => 'Заявки на пополнение';
+
+  @override
+  String get driverWalletNoTopupRequests => 'Заявок пока нет';
+
+  @override
+  String get driverTopupStatusPending => 'Ожидает зачисления';
+
+  @override
+  String get driverTopupSheetTitle => 'Пополнить баланс';
+
+  @override
+  String get driverTopupSheetHint =>
+      'Укажите сумму. Менеджер свяжется с вами, чтобы принять перевод и зачислить средства';
+
+  @override
+  String get driverTopupAmountLabel => 'Сумма, ₸';
+
+  @override
+  String driverTopupErrorBelowMin(String amount) {
+    return 'Минимальная сумма — $amount';
+  }
+
+  @override
+  String get driverTopupErrorGeneric =>
+      'Не удалось создать заявку. Попробуйте ещё раз';
+
+  @override
+  String get driverTopupSubmitButton => 'Отправить заявку';
+
+  @override
   String get driverWalletTransactionsTitle => 'Операции';
 
   @override

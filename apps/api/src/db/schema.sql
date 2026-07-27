@@ -389,6 +389,23 @@ CREATE TABLE IF NOT EXISTS client_topup_requests (
 CREATE INDEX IF NOT EXISTS idx_client_topup_requests_client_id ON client_topup_requests(client_id);
 CREATE INDEX IF NOT EXISTS idx_client_topup_requests_status ON client_topup_requests(status);
 
+-- Mirrors client_topup_requests: a driver in debt (CASH commissions accrue
+-- as debt, never balance) records top-up intent here; an owner/finance user
+-- applies it via the existing debt-adjustment admin action once the
+-- transfer is confirmed out-of-band. See wallet.service.js.
+CREATE TABLE IF NOT EXISTS driver_topup_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  amount_kzt INTEGER NOT NULL CHECK (amount_kzt > 0),
+  method TEXT NOT NULL DEFAULT 'KASPI_PAY' CHECK (method IN ('KASPI_PAY')),
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','COMPLETED','FAILED','CANCELLED')),
+  provider_reference TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_driver_topup_requests_driver_id ON driver_topup_requests(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_topup_requests_status ON driver_topup_requests(status);
+
 CREATE TABLE IF NOT EXISTS commission_overrides (
   driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
   percent NUMERIC(5,2) NOT NULL,

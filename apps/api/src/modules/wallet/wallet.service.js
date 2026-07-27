@@ -11,6 +11,7 @@ function run(executor, sql, params = []) {
 }
 
 export const MIN_PAYOUT_KZT = 3000;
+export const MIN_TOPUP_KZT = 500;
 
 // Standard mod-10 checksum every real card PAN satisfies — catches typos
 // (transposed/missing digits) before they end up as a "send money to this
@@ -244,6 +245,43 @@ export async function cancelPayoutRequest({ driverId, id }, executor) {
   `, [request.amount_kzt, driverId])).rows[0];
 
   return { payoutRequest: publicPayoutRequest(updated), driver };
+}
+
+export function publicTopupRequest(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    driverId: row.driver_id,
+    amountKzt: row.amount_kzt,
+    method: row.method,
+    status: row.status,
+    providerReference: row.provider_reference || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+// Records top-up intent only, same scaffold as client-wallet.service.js's
+// createTopupRequest -- there is no payment gateway wired to this yet.
+// Stays PENDING; an owner/finance user applies it via the existing
+// debt-adjustment admin action once the transfer is confirmed out-of-band.
+export async function createDriverTopupRequest({ driverId, amountKzt }, executor = defaultQuery) {
+  if (!Number.isInteger(amountKzt) || amountKzt < MIN_TOPUP_KZT) {
+    throw new AppError(`Minimum top-up is ${MIN_TOPUP_KZT} KZT`, 400, "TOPUP_BELOW_MINIMUM");
+  }
+  const created = (await run(executor, `
+    INSERT INTO driver_topup_requests(driver_id, amount_kzt, method, status)
+    VALUES($1,$2,'KASPI_PAY','PENDING')
+    RETURNING *
+  `, [driverId, amountKzt])).rows[0];
+  return publicTopupRequest(created);
+}
+
+export async function listDriverTopupRequests(driverId, executor = defaultQuery) {
+  const result = await run(executor, `
+    SELECT * FROM driver_topup_requests WHERE driver_id=$1 ORDER BY created_at DESC LIMIT 50
+  `, [driverId]);
+  return result.rows.map(publicTopupRequest);
 }
 
 export async function reviewPayoutRequest({ id, status, reason = "", providerReference = null, actorUserId }, executor) {

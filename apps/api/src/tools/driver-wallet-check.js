@@ -4,9 +4,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   MIN_PAYOUT_KZT,
+  MIN_TOPUP_KZT,
   cancelPayoutRequest,
+  createDriverTopupRequest,
   createPayoutRequest,
   getWalletSummary,
+  listDriverTopupRequests,
   listWalletTransactions,
   reviewPayoutRequest
 } from "../modules/wallet/wallet.service.js";
@@ -25,6 +28,11 @@ assert.match(walletRoutes, /router\.get\("\/", requireAuth, requireRole\("DRIVER
 assert.match(walletRoutes, /router\.post\("\/payout-requests", requireAuth, requireRole\("DRIVER"\)/, "payout creation must require driver role");
 assert.match(adminRoutes, /router\.patch\("\/payout-requests\/:id", requireAuth, requireRole\("OWNER", "FINANCE"\)/, "payout review must be owner/finance only");
 
+assert.match(schema, /CREATE TABLE IF NOT EXISTS driver_topup_requests/i, "schema must create driver_topup_requests table");
+assert.match(migrations, /CREATE TABLE IF NOT EXISTS driver_topup_requests/i, "migration must create driver_topup_requests table");
+assert.match(walletRoutes, /router\.post\("\/topup-requests", requireAuth, requireRole\("DRIVER"\)/, "topup creation must require driver role");
+assert.match(walletRoutes, /router\.get\("\/topup-requests", requireAuth, requireRole\("DRIVER"\)/, "topup listing must require driver role");
+
 function createExecutor() {
   const state = {
     drivers: [
@@ -32,6 +40,7 @@ function createExecutor() {
       { id: "driver-blocked", user_id: "user-2", balance: 50000, debt: 0, is_blocked: true }
     ],
     payoutRequests: [],
+    topupRequests: [],
     financialTransactions: [
       { id: "ft-1", order_id: "order-1", driver_id: "driver-1", type: "ORDER_COMPLETED", payment_method: "KASPI_TRANSFER", gross_amount: 1000, service_commission: 150, driver_earning: 850, driver_debt_delta: 0, currency: "KZT", status: "POSTED", created_at: "2026-01-03T00:00:00.000Z", order_short_id: "A1" },
       { id: "ft-2", order_id: "order-2", driver_id: "driver-1", type: "ORDER_COMPLETED", payment_method: "CASH", gross_amount: 1000, service_commission: 150, driver_earning: 850, driver_debt_delta: 0, currency: "KZT", status: "POSTED", created_at: "2026-01-02T00:00:00.000Z", order_short_id: "A2" },
@@ -39,6 +48,7 @@ function createExecutor() {
     ]
   };
   let payoutSeq = 0;
+  let topupSeq = 0;
 
   return {
     state,
@@ -134,6 +144,25 @@ function createExecutor() {
         if (status === "PAID") row.paid_at = "2026-01-04T00:07:00.000Z";
         row.updated_at = "2026-01-04T00:06:00.000Z";
         return { rows: [row] };
+      }
+      if (s.startsWith("INSERT INTO driver_topup_requests")) {
+        const [driverId, amountKzt] = params;
+        topupSeq += 1;
+        const row = {
+          id: `topup-${topupSeq}`,
+          driver_id: driverId,
+          amount_kzt: amountKzt,
+          method: "KASPI_PAY",
+          status: "PENDING",
+          provider_reference: null,
+          created_at: "2026-01-04T00:00:00.000Z",
+          updated_at: "2026-01-04T00:00:00.000Z"
+        };
+        state.topupRequests.push(row);
+        return { rows: [row] };
+      }
+      if (s.startsWith("SELECT * FROM driver_topup_requests WHERE driver_id=$1")) {
+        return { rows: state.topupRequests.filter(r => r.driver_id === params[0]) };
       }
       throw new Error(`Unexpected SQL in wallet check: ${s}`);
     }
@@ -251,6 +280,24 @@ function createExecutor() {
   const adjustment = items.find(item => item.orderShortId === null);
   assert.equal(adjustment.kind, "ADJUSTMENT", "manual debt adjustment is surfaced as an adjustment");
   assert.equal(adjustment.amountKzt, -500, "adjustment amount matches driver_debt_delta");
+}
+
+// --- createDriverTopupRequest / listDriverTopupRequests ---
+{
+  const executor = createExecutor();
+  await assert.rejects(
+    () => createDriverTopupRequest({ driverId: "driver-1", amountKzt: MIN_TOPUP_KZT - 1 }, executor),
+    { code: "TOPUP_BELOW_MINIMUM" },
+    "topup below minimum is rejected"
+  );
+  const created = await createDriverTopupRequest({ driverId: "driver-1", amountKzt: 2000 }, executor);
+  assert.equal(created.status, "PENDING", "topup request starts pending -- no live payment gateway yet");
+  assert.equal(created.amountKzt, 2000, "topup request records the requested amount");
+  assert.equal(created.driverId, "driver-1", "topup request is scoped to the requesting driver");
+
+  const list = await listDriverTopupRequests("driver-1", executor);
+  assert.equal(list.length, 1, "the created topup request shows up in the driver's list");
+  assert.equal(list[0].id, created.id, "listed request matches the created one");
 }
 
 console.log("Driver wallet checks ok");

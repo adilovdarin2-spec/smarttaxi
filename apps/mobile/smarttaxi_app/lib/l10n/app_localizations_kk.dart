@@ -2375,6 +2375,39 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverWalletNoPayoutRequests => 'Сұраныстар әлі жоқ';
 
   @override
+  String get driverWalletTopUpButton => 'Балансты толтыру';
+
+  @override
+  String get driverWalletTopupRequestsTitle => 'Толтыру сұраныстары';
+
+  @override
+  String get driverWalletNoTopupRequests => 'Сұраныстар әлі жоқ';
+
+  @override
+  String get driverTopupStatusPending => 'Есептелуін күтуде';
+
+  @override
+  String get driverTopupSheetTitle => 'Балансты толтыру';
+
+  @override
+  String get driverTopupSheetHint =>
+      'Соманы көрсетіңіз. Менеджер аударымды қабылдап, қаражатты есептеу үшін сізбен байланысады';
+
+  @override
+  String get driverTopupAmountLabel => 'Сома, ₸';
+
+  @override
+  String driverTopupErrorBelowMin(String amount) {
+    return 'Ең аз сома — $amount';
+  }
+
+  @override
+  String get driverTopupErrorGeneric => 'Сұраныс жасалмады. Қайталап көріңіз';
+
+  @override
+  String get driverTopupSubmitButton => 'Сұранысты жіберу';
+
+  @override
   String get driverWalletTransactionsTitle => 'Операциялар';
 
   @override
