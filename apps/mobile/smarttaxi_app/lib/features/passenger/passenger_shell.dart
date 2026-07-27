@@ -13369,7 +13369,7 @@ class _TariffSection extends StatelessWidget {
               // stretch cards centered in a box roughly 50px taller than
               // their content, i.e. visible dead space above and below.
               return SizedBox(
-                height: stretch ? 88 : 132,
+                height: stretch ? 106 : 150,
                 child: stretch
                     ? Row(
                         children: [
@@ -13447,8 +13447,8 @@ class _TariffCard extends StatelessWidget {
     final isDelivery = item.classId == _TariffVisualClass.delivery;
     final price = estimate?.estimatedPrice;
     final iconBox = Container(
-      height: stretch ? 52 : 48,
-      width: stretch ? 52 : double.infinity,
+      height: stretch ? 72 : 64,
+      width: stretch ? 54 : double.infinity,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: dark
@@ -13492,27 +13492,27 @@ class _TariffCard extends StatelessWidget {
               // needs to render at roughly the same visual weight as those.
               ? SvgPicture.asset(
                   _iconDeliveryVan,
-                  width: stretch ? 46 : 58,
-                  height: stretch ? 34 : 42,
+                  width: stretch ? 44 : 78,
+                  height: stretch ? 33 : 58,
                   fit: BoxFit.contain,
                 )
-              : _SvgIcon(_iconCar, size: 24, color: palette.goldDeep))
+              : _SvgIcon(_iconCar, size: 30, color: palette.goldDeep))
           : Image.asset(
               item.asset,
-              width: stretch ? 46 : 58,
-              height: stretch ? 34 : 42,
+              width: stretch ? 44 : 78,
+              height: stretch ? 33 : 58,
               // Comfort/Business car photos are raw exports (650KB-1.3MB,
-              // full camera resolution) shown at under 60px here -- decoding
+              // full camera resolution) shown at under 80px here -- decoding
               // at that source size for every tariff card is wasted work on
               // a screen that's already busy. ~3x the rendered size keeps it
               // sharp on high-DPI screens without the full decode cost.
-              cacheWidth: ((stretch ? 46 : 58) * 3).round(),
-              cacheHeight: ((stretch ? 34 : 42) * 3).round(),
+              cacheWidth: ((stretch ? 44 : 78) * 3).round(),
+              cacheHeight: ((stretch ? 33 : 58) * 3).round(),
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
               errorBuilder: (_, __, ___) => _SvgIcon(
                 isDelivery ? _iconDelivery : _iconCar,
-                size: 24,
+                size: 30,
                 color: palette.goldDeep,
               ),
             ),
@@ -13568,7 +13568,7 @@ class _TariffCard extends StatelessWidget {
         ? Row(
             children: [
               iconBox,
-              const SizedBox(width: 10),
+              const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
