@@ -1222,7 +1222,7 @@ router.post("/:id/waiting", requireAuth, requireRole("DRIVER", "OWNER"), (req,re
 router.post("/:id/start", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"TRIP_STARTED"));
 router.post("/:id/complete", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"TRIP_COMPLETED"));
 router.post("/:id/payment-pending", requireAuth, requireRole("OWNER", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAYMENT_PENDING"));
-router.post("/:id/mark-paid", requireAuth, requireRole("OWNER", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAID"));
+router.post("/:id/mark-paid", requireAuth, requireRole("DRIVER", "OWNER", "FINANCE"), (req,res,next)=>updateStatus(req,res,next,"PAID"));
 router.post("/:id/no-show", requireAuth, requireRole("DRIVER", "OWNER"), (req,res,next)=>updateStatus(req,res,next,"NO_SHOW"));
 // A driver cancelling an order they've already accepted is not the same as
 // an operator cancelling it outright: the rider still wants a ride, so this

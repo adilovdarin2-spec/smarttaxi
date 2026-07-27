@@ -246,13 +246,9 @@ String readableError(AppLocalizations l10n, Object error) {
     'DRIVER_LOCATION_OUTSIDE_REGION': l10n.driverErrorLocationOutsideRegion,
     'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,
     'DRIVER_LOCATION_UNAVAILABLE': l10n.driverErrorLocationUnavailable,
-    // Rating requires the order to reach PAID first. For CASH/KASPI trips
-    // (the only working payment methods today) that transition is only
-    // ever made by an operator via POST /orders/:id/mark-paid — DRIVER is
-    // not in that route's allowed roles, and neither app ever calls it
-    // automatically. So this isn't a "wait a moment" race the driver can
-    // just retry past; naming who it's actually waiting on is more honest
-    // than implying a short delay will fix it.
+    // Rating requires the order to reach PAID first -- the driver confirms
+    // that themselves via the "Оплата получена" step on the trip-completion
+    // card (DriverTripCompletionCard, calls POST /orders/:id/mark-paid).
     'ORDER_NOT_COMPLETED': l10n.driverErrorOrderNotCompleted,
     'ORDER_ALREADY_RATED': l10n.driverErrorOrderAlreadyRated,
   };

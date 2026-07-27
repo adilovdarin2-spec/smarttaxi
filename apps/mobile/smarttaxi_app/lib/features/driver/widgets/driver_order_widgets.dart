@@ -710,6 +710,8 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
   final _commentController = TextEditingController();
   bool _submitting = false;
   bool _rated = false;
+  late bool _paid = const {'PAID', 'RATED'}.contains(widget.order.status);
+  bool _confirmingPayment = false;
 
   String? _preferenceType;
   bool _preferenceSaving = false;
@@ -731,6 +733,19 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _confirmPayment() async {
+    if (_confirmingPayment) return;
+    setState(() => _confirmingPayment = true);
+    try {
+      await widget.api.markOrderPaid(widget.order.id);
+      if (mounted) setState(() => _paid = true);
+    } catch (error) {
+      if (mounted) AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+    } finally {
+      if (mounted) setState(() => _confirmingPayment = false);
+    }
   }
 
   Future<void> _submitRating() async {
@@ -809,7 +824,23 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
               value: '${payout.round()} ₸',
               emphasized: true),
           const SizedBox(height: 20),
-          if (!_rated) ...[
+          if (!_paid) ...[
+            Text(l10n.driverConfirmPaymentTitle,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: context.palette.text)),
+            const SizedBox(height: 6),
+            Text(l10n.driverConfirmPaymentHint,
+                style: TextStyle(fontSize: 13, color: context.palette.textSecondary)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _confirmingPayment ? null : _confirmPayment,
+              child: _confirmingPayment
+                  ? ButtonSpinner(text: l10n.driverConfirmingPaymentButton)
+                  : Text(l10n.driverConfirmPaymentButton),
+            ),
+          ] else if (!_rated) ...[
             Text(l10n.driverRatePassengerTitle,
                 style: TextStyle(
                     fontSize: 15,

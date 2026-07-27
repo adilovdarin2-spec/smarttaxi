@@ -5799,6 +5799,30 @@ abstract class AppLocalizations {
   /// **'Вы получите'**
   String get driverYouReceiveLabel;
 
+  /// No description provided for @driverConfirmPaymentTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Клиент оплатил поездку?'**
+  String get driverConfirmPaymentTitle;
+
+  /// No description provided for @driverConfirmPaymentHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердите получение оплаты, чтобы продолжить и оценить пассажира'**
+  String get driverConfirmPaymentHint;
+
+  /// No description provided for @driverConfirmPaymentButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата получена'**
+  String get driverConfirmPaymentButton;
+
+  /// No description provided for @driverConfirmingPaymentButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтверждаем...'**
+  String get driverConfirmingPaymentButton;
+
   /// No description provided for @driverRatePassengerTitle.
   ///
   /// In ru, this message translates to:

@@ -245,6 +245,10 @@ export function completeTrip(orderId) {
   return api(`/api/driver/orders/${orderId}/complete`, { method: "POST" });
 }
 
+export function markOrderPaid(orderId) {
+  return api(`/api/driver/orders/${orderId}/mark-paid`, { method: "POST" });
+}
+
 export function cancelDriverOrder(orderId) {
   return api(`/api/driver/orders/${orderId}/cancel`, { method: "POST" });
 }

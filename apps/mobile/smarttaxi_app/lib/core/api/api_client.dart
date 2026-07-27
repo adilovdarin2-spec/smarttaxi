@@ -583,6 +583,8 @@ class ApiClient {
       _postOrderAction('/api/orders/$orderId/no-show');
   Future<OrderSummary> cancelDriverOrder(String orderId) =>
       _postOrderAction('/api/orders/$orderId/cancel');
+  Future<OrderSummary> markOrderPaid(String orderId) =>
+      _postOrderAction('/api/orders/$orderId/mark-paid');
 
   // Torg: driver counter-proposes a price on an open order; rider accepts
   // or declines. See OrderSummary.driverOfferStatus for the tri-state.

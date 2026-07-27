@@ -2669,7 +2669,8 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverSupportLoadError => 'Өтініштерді жүктеу мүмкін болмады';
 
   @override
-  String get driverTripHistoryLoadError => 'Сапарлар тарихын жүктеу мүмкін болмады';
+  String get driverTripHistoryLoadError =>
+      'Сапарлар тарихын жүктеу мүмкін болмады';
 
   @override
   String get driverSupportEmptyTitle => 'Әзірге өтініштер жоқ';
@@ -3177,6 +3178,19 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverYouReceiveLabel => 'Сіз аласыз';
+
+  @override
+  String get driverConfirmPaymentTitle => 'Клиент төлем жасады ма?';
+
+  @override
+  String get driverConfirmPaymentHint =>
+      'Жолаушыны бағалау үшін төлемді растаңыз';
+
+  @override
+  String get driverConfirmPaymentButton => 'Төлем алынды';
+
+  @override
+  String get driverConfirmingPaymentButton => 'Растап жатырмыз...';
 
   @override
   String get driverRatePassengerTitle => 'Жолаушыны бағалаңыз';

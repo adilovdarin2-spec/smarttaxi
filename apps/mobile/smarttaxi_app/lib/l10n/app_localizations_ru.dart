@@ -2661,7 +2661,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverSupportLoadError => 'Не удалось загрузить обращения';
 
   @override
-  String get driverTripHistoryLoadError => 'Не удалось загрузить историю поездок';
+  String get driverTripHistoryLoadError =>
+      'Не удалось загрузить историю поездок';
 
   @override
   String get driverSupportEmptyTitle => 'Обращений пока нет';
@@ -3167,6 +3168,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverYouReceiveLabel => 'Вы получите';
+
+  @override
+  String get driverConfirmPaymentTitle => 'Клиент оплатил поездку?';
+
+  @override
+  String get driverConfirmPaymentHint =>
+      'Подтвердите получение оплаты, чтобы продолжить и оценить пассажира';
+
+  @override
+  String get driverConfirmPaymentButton => 'Оплата получена';
+
+  @override
+  String get driverConfirmingPaymentButton => 'Подтверждаем...';
 
   @override
   String get driverRatePassengerTitle => 'Оцените пассажира';

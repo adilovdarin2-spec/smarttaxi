@@ -23,6 +23,7 @@ import {
   markDriverArrived,
   markDriverGoingToClient,
   markDriverWaiting,
+  markOrderPaid,
   noShowDriverOrder,
   rejectDriverOrder,
   selectDriverRegion,
@@ -213,6 +214,9 @@ function orderNextAction(order) {
   if (status === "DRIVER_ARRIVED") return { label: "Начать ожидание", fn: markDriverWaiting };
   if (status === "WAITING_CLIENT") return { label: "Начать поездку", fn: startTrip };
   if (status === "TRIP_STARTED") return { label: "Завершить поездку", fn: completeTrip };
+  if (status === "TRIP_COMPLETED" || status === "PAYMENT_PENDING") {
+    return { label: "Подтвердить оплату", fn: markOrderPaid };
+  }
   return null;
 }
 
