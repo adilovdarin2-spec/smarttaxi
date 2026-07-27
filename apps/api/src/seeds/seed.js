@@ -204,10 +204,10 @@ async function seedTariffs(regions) {
     FROM regions r
     CROSS JOIN (
       VALUES
-        ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,15,0,1,3,50,0,10,true),
-        ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,15,0,1,3,60,0,20,false),
-        ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,15,0,1,3,80,0,999,false),
-        ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,15,0,1,3,50,0,30,true)
+        ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0,1,3,50,0,10,true),
+        ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,7,0,1,3,60,0,20,false),
+        ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,7,0,1,3,80,0,999,false),
+        ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
     ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
     WHERE r.code = ANY($1)
     ON CONFLICT (region_id, name) DO UPDATE
