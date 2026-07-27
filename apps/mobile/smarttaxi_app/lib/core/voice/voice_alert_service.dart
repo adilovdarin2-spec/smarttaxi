@@ -23,11 +23,48 @@ class VoiceAlertService {
       await _tts.setLanguage('ru-RU');
       await _tts.setVolume(0.55); // quiet by request — a hint, not a shout
       await _tts.setSpeechRate(0.45);
-      await _tts.setPitch(1.0);
+      // A hair above neutral -- on Android's on-device engine this reads as
+      // warmer/friendlier without the "chipmunk" effect a bigger bump gives.
+      await _tts.setPitch(1.05);
       await _tts.awaitSpeakCompletion(true);
+      await _selectBestAvailableVoice();
       _ready = true;
     } catch (_) {
       _ready = false;
+    }
+  }
+
+  // On-device TTS engines (Android's Google Speech Services, in particular)
+  // often ship several ru-RU voices side by side -- older compact/robotic
+  // ones alongside newer "network"/neural ones that sound noticeably more
+  // natural. flutter_tts defaults to whatever the engine picks first, which
+  // isn't necessarily the best-sounding one. Best-effort: if the engine
+  // exposes a voice list, prefer a network/neural voice over a local one,
+  // and prefer a female voice (the two engines seen on this project's test
+  // devices ship it as smoother-sounding for this rate/pitch than the male
+  // counterpart) -- never throws, since a missing/odd voice list must not
+  // block the rest of initialization.
+  Future<void> _selectBestAvailableVoice() async {
+    try {
+      final dynamic raw = await _tts.getVoices;
+      if (raw is! List) return;
+      final ruVoices = raw
+          .whereType<Map>()
+          .map((v) => v.map((key, value) => MapEntry(key.toString(), value.toString())))
+          .where((v) => (v['locale'] ?? '').toLowerCase().startsWith('ru'))
+          .toList();
+      if (ruVoices.isEmpty) return;
+      int score(Map<String, String> v) {
+        final name = (v['name'] ?? '').toLowerCase();
+        var s = 0;
+        if (name.contains('network') || name.contains('neural')) s += 2;
+        if (name.contains('female') || RegExp(r'ruf\b').hasMatch(name)) s += 1;
+        return s;
+      }
+      ruVoices.sort((a, b) => score(b).compareTo(score(a)));
+      await _tts.setVoice({'name': ruVoices.first['name']!, 'locale': ruVoices.first['locale']!});
+    } catch (_) {
+      // Keep whatever voice the engine already defaulted to.
     }
   }
 
