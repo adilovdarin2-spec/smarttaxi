@@ -243,22 +243,28 @@ await assert.rejects(
   "pickup/dropoff in different active regions rejects INTERCITY_NOT_SUPPORTED"
 );
 
-const ambiguousExecutor = createExecutor();
-ambiguousExecutor.state.regions.push({
+const overlapExecutor = createExecutor();
+// A second region whose boundary also covers baseInput's pickup/dropoff
+// (0.5,0.5)/(0.8,0.8) but whose own center sits farther away than region-a's
+// -- confirms overlapping regions resolve to whichever is actually closer
+// instead of erroring out (real bug found live: 18 overlapping boundary
+// pairs among Мақтаарал-district towns used to hard-reject every booking
+// whose pickup/dropoff fell in the overlap with REGION_AMBIGUOUS).
+overlapExecutor.state.regions.push({
   id: "region-overlap",
   code: "OVERLAP",
   name: "Overlap",
   is_active: true,
-  center_lat: 0.5,
-  center_lng: 0.5,
+  center_lat: 0.1,
+  center_lng: 0.1,
   currency: "KZT",
-  boundary: [[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75], [0.25, 0.25]]
+  // Covers the pickup point (0.5,0.5, also inside region-a) but stops short
+  // of the dropoff point (0.8,0.8) -- isolates the tie-break to the pickup
+  // side so this only tests overlap resolution, not intercity rejection.
+  boundary: [[0, 0], [0.6, 0], [0.6, 0.6], [0, 0.6], [0, 0]]
 });
-await assert.rejects(
-  () => prepareOrderPricing(baseInput, ambiguousExecutor),
-  { code: "REGION_AMBIGUOUS" },
-  "overlapping active regions reject REGION_AMBIGUOUS"
-);
+const overlapPricing = await prepareOrderPricing(baseInput, overlapExecutor);
+assert.equal(overlapPricing.regionId, "region-a", "overlapping regions resolve to the nearer one instead of rejecting");
 
 await assert.rejects(
   () => prepareOrderPricing({ ...baseInput, tariffId: "tariff-a-inactive", tariff: "Inactive" }, executor),

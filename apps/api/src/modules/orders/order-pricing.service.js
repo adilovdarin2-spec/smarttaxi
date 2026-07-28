@@ -1,13 +1,20 @@
 import { AppError } from "../../common/errors.js";
-import { listActiveRegions, normalizePoint, pointInPolygon, publicRegion } from "../regions/regions.service.js";
+import { findActiveRegionForPoint, normalizePoint, publicRegion } from "../regions/regions.service.js";
 import { getTariffForRegion, publicTariff } from "../tariffs/tariffs.service.js";
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {
   const point = normalizePoint(pointInput);
-  const matches = (await listActiveRegions(executor)).filter((region) => pointInPolygon(point, region.boundary));
-  if (matches.length === 0) throw new AppError("Point is outside active service regions", 403, failureCode);
-  if (matches.length > 1) throw new AppError("Point matches multiple active service regions", 409, "REGION_AMBIGUOUS");
-  return matches[0];
+  // Delegates to regions.service.js's findActiveRegionForPoint, which
+  // resolves overlapping region boundaries by nearest center. This function
+  // used to be a third independent copy that hard-failed with
+  // REGION_AMBIGUOUS whenever a point matched more than one region -- and
+  // since this is what actually prices every real order (prepareOrderPricing
+  // below), that meant real bookings with a pickup/dropoff in one of the many
+  // overlap zones among the Мақтаарал-district towns could never be created
+  // at all, not just get a wrong region assigned.
+  const region = await findActiveRegionForPoint(point, executor);
+  if (!region) throw new AppError("Point is outside active service regions", 403, failureCode);
+  return region;
 }
 
 function positiveFinite(value, name, max) {
