@@ -146,9 +146,38 @@ export async function setRegionActive(regionId, isActive, executor = defaultQuer
   return updateRegion(regionId, { isActive }, executor);
 }
 
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 export async function findActiveRegionForPoint(point, executor = defaultQuery) {
   const regions = await listActiveRegions(executor);
-  return regions.find((region) => pointInPolygon(point, region.boundary)) || null;
+  const matches = regions.filter((region) => pointInPolygon(point, region.boundary));
+  if (matches.length <= 1) return matches[0] || null;
+  // Several of these regions' boundary boxes genuinely overlap (confirmed:
+  // 18 overlapping pairs across the 13 towns clustered in Мақтаарал
+  // district) -- picking whichever match happened to sort first
+  // alphabetically by name meant a point near a town border could resolve
+  // to an unrelated neighbouring town's region instead of the one it's
+  // actually in/closest to. Break ties by nearest region center instead.
+  let best = matches[0];
+  let bestDistance = haversineMeters(point.lat, point.lng, Number(best.center_lat), Number(best.center_lng));
+  for (let i = 1; i < matches.length; i++) {
+    const candidate = matches[i];
+    const distance = haversineMeters(point.lat, point.lng, Number(candidate.center_lat), Number(candidate.center_lng));
+    if (distance < bestDistance) {
+      best = candidate;
+      bestDistance = distance;
+    }
+  }
+  return best;
 }
 
 export async function resolveActiveRegionForPoint({ lat, lng }, executor = defaultQuery) {
