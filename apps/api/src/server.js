@@ -1,3 +1,4 @@
+import dns from "dns";
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -43,6 +44,16 @@ import {
   driverRegionRoom,
   orderRoom
 } from "./modules/orders/order-dispatch.service.js";
+
+// Railway's containers have no outbound IPv6 route, but Node's fetch (undici)
+// still tries whatever address family DNS hands back first -- for hosts that
+// publish both A and AAAA records (e.g. the public Overpass mirrors used by
+// osm-navigation.service.js) that's often the AAAA record, and the connection
+// just hangs/fails with an unhelpful generic "fetch failed" (confirmed live:
+// Overpass answers instantly when queried directly from outside Railway, but
+// every osm-navigation lookup failed here). Forcing IPv4-first resolution
+// app-wide fixes it without touching any individual fetch call.
+dns.setDefaultResultOrder("ipv4first");
 
 initSentry();
 process.on("unhandledRejection", (error) => {
