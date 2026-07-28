@@ -275,6 +275,7 @@
   "passengerDriverFoundTitle": "Водитель найден",
   "passengerNewTripButton": "Новая поездка",
   "passengerCancelTripButton": "Отменить поездку",
+  "passengerCancelTripShortButton": "Отменить",
   "passengerRateDriverFallbackName": "водителем",
   "passengerRateDriverQuestion": "Как прошла поездка с {name}?",
   "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},

@@ -275,6 +275,7 @@
   "passengerDriverFoundTitle": "Haydovchi topildi",
   "passengerNewTripButton": "Yangi safar",
   "passengerCancelTripButton": "Safarni bekor qilish",
+  "passengerCancelTripShortButton": "Bekor qilish",
   "passengerRateDriverFallbackName": "haydovchi bilan",
   "passengerRateDriverQuestion": "{name} bilan safar qanday o'tdi?",
   "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},

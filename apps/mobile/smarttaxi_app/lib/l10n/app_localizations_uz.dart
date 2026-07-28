@@ -843,6 +843,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerCancelTripButton => 'Safarni bekor qilish';
 
   @override
+  String get passengerCancelTripShortButton => 'Bekor qilish';
+
+  @override
   String get passengerRateDriverFallbackName => 'haydovchi bilan';
 
   @override

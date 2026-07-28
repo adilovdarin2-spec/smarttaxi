@@ -8068,9 +8068,6 @@ class _TripStatusPanel extends StatelessWidget {
                 if (arrived) ...[
                   const _ArrivedBanner(),
                   const SizedBox(height: 10),
-                ] else if ((driverRouteText ?? '').isNotEmpty) ...[
-                  _EtaStrip(text: driverRouteText!),
-                  const SizedBox(height: 10),
                 ],
                 _DriverContactCard(
                   name: order.driverName ?? '',
@@ -8082,6 +8079,8 @@ class _TripStatusPanel extends StatelessWidget {
                   api: api,
                   orderId: order.id,
                   avatarUrl: order.driverAvatarUrl,
+                  onCancel: canCancel ? onCancel : null,
+                  cancelling: loading,
                 ),
               ] else
                 _CompactNotice(
@@ -8126,7 +8125,12 @@ class _TripStatusPanel extends StatelessWidget {
                 const SizedBox(height: 12),
                 _InlineMessage(text: error!, danger: true, dark: isDark),
               ],
-              if (canCancel || isTerminal) ...[
+              // While a driver is assigned, cancel lives in the compact
+              // chat/call/cancel row on _DriverContactCard above instead of
+              // this standalone button -- keeping both would duplicate the
+              // action, same class of redundancy as the old duplicate ETA
+              // strip on this same screen.
+              if ((canCancel && order.driverId == null) || isTerminal) ...[
                 const SizedBox(height: 12),
                 if (isTerminal)
                   _GoldCtaButton(
@@ -10854,54 +10858,6 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
   }
 }
 
-class _EtaStrip extends StatelessWidget {
-  const _EtaStrip({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            palette.gold.withValues(alpha: 0.14),
-            palette.gold.withValues(alpha: 0.04),
-          ],
-        ),
-        border: Border.all(color: palette.gold.withValues(alpha: 0.28)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.timer_rounded,
-            size: 16,
-            color: palette.goldDeep,
-          ),
-          const SizedBox(width: 7),
-          Flexible(
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: palette.goldDeep,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TripProgressCard extends StatelessWidget {
   const _TripProgressCard({
     required this.pickup,
@@ -11649,6 +11605,8 @@ class _DriverContactCard extends StatelessWidget {
     required this.orderId,
     this.compact = false,
     this.avatarUrl,
+    this.onCancel,
+    this.cancelling = false,
   });
 
   final String name;
@@ -11661,6 +11619,13 @@ class _DriverContactCard extends StatelessWidget {
   final String orderId;
   final bool compact;
   final String? avatarUrl;
+  // Folds the trip's cancel action into the same row as chat/call (one
+  // compact icon row, matching a reference UX the user pointed to) instead
+  // of a separate full-width red button further down the sheet. Only set
+  // for the non-compact driver-found/en-route card -- the compact variant
+  // (in-progress trip) has no cancel action at all.
+  final VoidCallback? onCancel;
+  final bool cancelling;
 
   Future<void> _call() async {
     final number = phone?.trim();
@@ -11874,47 +11839,110 @@ class _DriverContactCard extends StatelessWidget {
               ),
             ],
           ),
-          if (hasPhone) ...[
-            const SizedBox(height: 12),
+          if (hasPhone || onCancel != null) ...[
+            const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _openChat(context),
-                    icon: const Icon(Icons.chat_bubble_rounded, size: 18),
-                    label: Text(
-                      l10n.messageButton,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                if (hasPhone) ...[
+                  Expanded(
+                    child: _TripActionButton(
+                      icon: Icons.chat_bubble_rounded,
+                      label: l10n.messageButton,
+                      onTap: () => _openChat(context),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _call,
-                    icon: const Icon(Icons.call_rounded, size: 18),
-                    label: Text(
-                      l10n.callButton,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                  Expanded(
+                    child: _TripActionButton(
+                      icon: Icons.call_rounded,
+                      label: l10n.callButton,
+                      onTap: _call,
+                      primary: true,
                     ),
                   ),
-                ),
+                ],
+                if (onCancel != null)
+                  Expanded(
+                    child: _TripActionButton(
+                      icon: Icons.close_rounded,
+                      label: l10n.passengerCancelTripShortButton,
+                      onTap: cancelling ? null : onCancel,
+                      danger: true,
+                    ),
+                  ),
               ],
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// Icon-on-top, label-below action button -- gives each label its own line
+// instead of squeezing text next to an icon inside a pill, which is what
+// truncated "Написать"/"Позвонить"/"Отменить" to "Нап…"/"Поз…"/"Отм…" when
+// all three shared one row of inline icon+text buttons.
+class _TripActionButton extends StatelessWidget {
+  const _TripActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool primary;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final iconBg = danger
+        ? palette.dangerSoft
+        : primary
+            ? palette.gold
+            : palette.goldSurface;
+    final iconColor = danger
+        ? palette.danger
+        : primary
+            ? Colors.white
+            : palette.goldDeep;
+    final textColor = danger ? palette.danger : palette.text;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: iconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 20, color: iconColor),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

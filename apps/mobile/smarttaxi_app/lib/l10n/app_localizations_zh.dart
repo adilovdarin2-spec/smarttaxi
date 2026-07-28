@@ -781,6 +781,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerCancelTripButton => '取消行程';
 
   @override
+  String get passengerCancelTripShortButton => '取消';
+
+  @override
   String get passengerRateDriverFallbackName => '司机';
 
   @override

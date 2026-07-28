@@ -836,6 +836,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerCancelTripButton => 'Отменить поездку';
 
   @override
+  String get passengerCancelTripShortButton => 'Отменить';
+
+  @override
   String get passengerRateDriverFallbackName => 'водителем';
 
   @override

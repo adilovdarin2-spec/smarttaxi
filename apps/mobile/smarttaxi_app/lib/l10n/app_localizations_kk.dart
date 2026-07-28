@@ -842,6 +842,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerCancelTripButton => 'Сапарды болдырмау';
 
   @override
+  String get passengerCancelTripShortButton => 'Болдырмау';
+
+  @override
   String get passengerRateDriverFallbackName => 'жүргізушімен';
 
   @override

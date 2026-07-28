@@ -275,6 +275,7 @@
   "passengerDriverFoundTitle": "已找到司机",
   "passengerNewTripButton": "再叫一单",
   "passengerCancelTripButton": "取消行程",
+  "passengerCancelTripShortButton": "取消",
   "passengerRateDriverFallbackName": "司机",
   "passengerRateDriverQuestion": "与{name}的行程怎么样?",
   "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},

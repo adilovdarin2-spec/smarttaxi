@@ -274,6 +274,7 @@
   "passengerDriverFoundTitle": "Жүргізуші табылды",
   "passengerNewTripButton": "Жаңа сапар",
   "passengerCancelTripButton": "Сапарды болдырмау",
+  "passengerCancelTripShortButton": "Болдырмау",
   "passengerRateDriverFallbackName": "жүргізушімен",
   "passengerRateDriverQuestion": "{name} сапар қалай өтті?",
   "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},

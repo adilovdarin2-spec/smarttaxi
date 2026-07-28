@@ -1597,6 +1597,12 @@ abstract class AppLocalizations {
   /// **'Отменить поездку'**
   String get passengerCancelTripButton;
 
+  /// No description provided for @passengerCancelTripShortButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить'**
+  String get passengerCancelTripShortButton;
+
   /// No description provided for @passengerRateDriverFallbackName.
   ///
   /// In ru, this message translates to:
