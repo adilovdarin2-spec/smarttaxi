@@ -2587,7 +2587,8 @@ class _DriverShellState extends State<DriverShell> {
                         pickupLabel: _activeOrder!.pickup,
                         dropoffLabel: _activeOrder!.dropoff,
                         onPickupTap: null,
-                        onDropoffTap: null),
+                        onDropoffTap: null,
+                        dark: Theme.of(context).brightness == Brightness.dark),
                     if (_activeOrder!.status == 'WAITING_CLIENT' &&
                         _activeOrder!.waitingStartedAt != null) ...[
                       const SizedBox(height: 12),

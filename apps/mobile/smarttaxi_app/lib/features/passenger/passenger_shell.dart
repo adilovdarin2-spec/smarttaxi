@@ -8058,6 +8058,7 @@ class _TripStatusPanel extends StatelessWidget {
                 dropoffLabel: order.dropoff,
                 onPickupTap: null,
                 onDropoffTap: null,
+                dark: isDark,
               ),
               if ((order.notes ?? '').isNotEmpty) ...[
                 const SizedBox(height: 8),
