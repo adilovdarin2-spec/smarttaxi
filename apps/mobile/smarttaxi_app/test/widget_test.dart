@@ -56,7 +56,11 @@ void main() {
     );
     expect(
       pubspec,
-      contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+      contains('assets/cars/tariff_v11_economy.png'),
+    );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_v11_delivery.png'),
     );
     expect(
       pubspec,
@@ -67,12 +71,9 @@ void main() {
       contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
     );
     expect(pubspec, contains('assets/map/driver_car_topview_white.png'));
-    expect(
-      pubspec,
-      contains('assets/map/user_location_marker_blue_gold.png'),
-    );
-    expect(pubspec, contains('assets/map/destination_pin_gold_white.png'));
-    expect(pubspec, contains('assets/map/navigation_button_gold_white.png'));
+    expect(pubspec, contains('assets/map/marker_my_location_2026.png'));
+    expect(pubspec, contains('assets/map/marker_destination_2026.png'));
+    expect(pubspec, contains('assets/map/marker_address_pick_2026.png'));
   });
 
   test('auth screen is production-only and starts before main app', () {
