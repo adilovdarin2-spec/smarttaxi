@@ -12786,7 +12786,16 @@ class _AddressResultTile extends StatelessWidget {
     if (city.isNotEmpty && !visibleText.contains(city.toLowerCase())) {
       subtitleParts.add(city);
     }
-    if (subtitleParts.isEmpty && region.isNotEmpty) {
+    // Region used to only appear when there was nothing else to show at
+    // all -- meaning most real results (which almost always have a
+    // subtitle or city) never surfaced which of SmartTaxi's several
+    // regions an address belongs to. Show it whenever it adds real
+    // information, not already implied by the label/subtitle/city text
+    // already on screen (live-geocoded subtitles from routing.service.js
+    // already bake the region in, so this mainly matters for the curated
+    // local catalog entries that don't).
+    final textSoFar = '${item.label} ${subtitleParts.join(' ')}'.toLowerCase();
+    if (region.isNotEmpty && !textSoFar.contains(region.toLowerCase())) {
       subtitleParts.add(region);
     }
     final subtitle = subtitleParts.join(' • ');

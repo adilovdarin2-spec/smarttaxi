@@ -472,9 +472,22 @@ function normalizeAddress(address) {
   const lat = Number(address.lat);
   const lng = Number(address.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const title = address.label || address.title || "Точка на карте";
+  const base = address.subtitle || address.city || "";
+  const regionName = address.region || address.regionCode || "";
+  // Live-geocoded subtitles (routing.service.js) already bake the region
+  // into the formatted string, but the curated local catalog entries only
+  // carry separate city/region fields -- those used to fall back to
+  // "city OR region", so the region name (which region of several
+  // SmartTaxi operates in) never actually reached the screen for them.
+  // Append it whenever it isn't already implied by what's shown.
+  const combinedText = `${title} ${base}`.toLowerCase();
+  const subtitle = regionName && !combinedText.includes(regionName.toLowerCase())
+    ? [base, regionName].filter(Boolean).join(" • ")
+    : base;
   return {
-    title: address.label || address.title || "Точка на карте",
-    subtitle: address.subtitle || address.city || address.region || "Адрес выбран",
+    title,
+    subtitle: subtitle || "Адрес выбран",
     icon: address.icon || "pin",
     region: address.region || address.regionCode || address.city || "",
     tags: address.tags || [],
