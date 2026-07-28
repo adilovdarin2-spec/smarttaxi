@@ -6,7 +6,7 @@ import { query as defaultQuery } from "../../db/pool.js";
 import { orderRoom, dispatchRegionRoom, ACTIVE_ORDER_STATUSES, TO_PICKUP_ORDER_STATUSES, TO_DROPOFF_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 import { prepareOrderPricing } from "../orders/order-pricing.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
-import { listActiveRegions, normalizePoint, pointInPolygon, publicRegion } from "../regions/regions.service.js";
+import { findActiveRegionForPoint, normalizePoint, pointInPolygon, publicRegion } from "../regions/regions.service.js";
 
 function run(executor, sql, params = []) {
   return executor.query ? executor.query(sql, params) : executor(sql, params);
@@ -1411,10 +1411,15 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {
   const point = normalizePoint(pointInput);
-  const matches = (await listActiveRegions(executor)).filter(region => pointInPolygon(point, region.boundary));
-  if (matches.length === 0) throw new AppError("Point is outside active service regions", 403, failureCode);
-  if (matches.length > 1) throw new AppError("Point matches multiple active service regions", 409, "REGION_AMBIGUOUS");
-  return matches[0];
+  // Delegates the actual matching to regions.service.js's
+  // findActiveRegionForPoint, which resolves overlapping region boundaries
+  // by nearest center instead of erroring out -- this used to hard-fail
+  // every pickup/dropoff whose point fell in one of the many overlap zones
+  // among the 12 towns clustered in Мақтаарал district (confirmed live: 18
+  // overlapping boundary pairs), blocking those riders from booking at all.
+  const region = await findActiveRegionForPoint(point, executor);
+  if (!region) throw new AppError("Point is outside active service regions", 403, failureCode);
+  return region;
 }
 
 export async function resolveTripRegion(input, executor = defaultQuery) {
