@@ -305,34 +305,29 @@ class _WalletBalanceCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onTopUp,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: palette.text,
-                    side: BorderSide(color: palette.border),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(SmartTaxiRadius.md),
-                    ),
-                  ),
-                  child: Text(
-                    l10n.driverWalletTopUpButton,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onTopUp,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: palette.text,
+                side: BorderSide(color: palette.border),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(SmartTaxiRadius.md),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: DriverGradientButton(
-                  text: l10n.driverWalletRequestPayoutButton,
-                  enabled: canRequestPayout,
-                  onTap: canRequestPayout ? onRequestPayout : null,
-                ),
+              child: Text(
+                l10n.driverWalletTopUpButton,
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          DriverGradientButton(
+            text: l10n.driverWalletRequestPayoutButton,
+            enabled: canRequestPayout,
+            onTap: canRequestPayout ? onRequestPayout : null,
           ),
           if (!canRequestPayout) ...[
             const SizedBox(height: 8),
