@@ -1336,6 +1336,10 @@ class _DriverShellState extends State<DriverShell> {
                     value: 'ru', title: Text(l10n.languageRussian)),
                 RadioListTile<String>(
                     value: 'kk', title: Text(l10n.languageKazakh)),
+                RadioListTile<String>(
+                    value: 'uz', title: Text(l10n.languageUzbek)),
+                RadioListTile<String>(
+                    value: 'zh', title: Text(l10n.languageChinese)),
                 const SizedBox(height: 8),
               ],
             ),
@@ -2014,9 +2018,12 @@ class _DriverShellState extends State<DriverShell> {
           children: [
             DriverSettingsRow(
               title: l10n.driverSettingsLanguageLabel,
-              text: widget.currentLocale?.languageCode == 'kk'
-                  ? l10n.languageKazakh
-                  : l10n.languageRussian,
+              text: switch (widget.currentLocale?.languageCode) {
+                'kk' => l10n.languageKazakh,
+                'uz' => l10n.languageUzbek,
+                'zh' => l10n.languageChinese,
+                _ => l10n.languageRussian,
+              },
               onTap: _chooseLanguage,
             ),
             DriverSettingsRow(

@@ -554,16 +554,53 @@ class _PhotoAuthLanguageToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isKazakh = currentLocale?.languageCode == 'kk';
+    final l10n = AppLocalizations.of(context);
+    final currentCode = currentLocale?.languageCode ?? 'ru';
+    final options = <MapEntry<String, String>>[
+      MapEntry('ru', l10n.languageRussian),
+      MapEntry('kk', l10n.languageKazakh),
+      MapEntry('uz', l10n.languageUzbek),
+      MapEntry('zh', l10n.languageChinese),
+    ];
+    final currentLabel = options
+        .firstWhere(
+          (option) => option.key == currentCode,
+          orElse: () => options.first,
+        )
+        .value;
     return Material(
       color: Colors.white.withValues(alpha: 0.85),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(999),
         side: BorderSide(color: SmartTaxiColors.authBorder),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: () => onChanged(Locale(isKazakh ? 'ru' : 'kk')),
+      child: PopupMenuButton<String>(
+        tooltip: '',
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        onSelected: (code) => onChanged(Locale(code)),
+        itemBuilder: (context) => [
+          for (final option in options)
+            PopupMenuItem<String>(
+              value: option.key,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    child: option.key == currentCode
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 16,
+                            color: SmartTaxiColors.authInk,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(option.value),
+                ],
+              ),
+            ),
+        ],
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(
@@ -576,9 +613,7 @@ class _PhotoAuthLanguageToggle extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                isKazakh
-                    ? AppLocalizations.of(context).languageKazakh
-                    : AppLocalizations.of(context).languageRussian,
+                currentLabel,
                 style: const TextStyle(
                   color: SmartTaxiColors.authInk,
                   fontSize: 12.5,

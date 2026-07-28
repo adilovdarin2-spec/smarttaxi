@@ -14,6 +14,8 @@
   "language": "Тіл",
   "languageRussian": "Орысша",
   "languageKazakh": "Қазақша",
+  "languageUzbek": "Өзбекше",
+  "languageChinese": "Қытайша",
   "languageChangedNote": "Интерфейс тілі өзгертілді. Кейбір экрандар әзірге ішінара ғана аударылған.",
 
   "passengerSettingsTitle": "Баптаулар",

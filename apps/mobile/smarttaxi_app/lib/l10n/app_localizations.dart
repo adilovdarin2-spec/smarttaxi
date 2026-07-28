@@ -7,6 +7,8 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_kk.dart';
 import 'app_localizations_ru.dart';
+import 'app_localizations_uz.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -95,7 +97,9 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('kk'),
-    Locale('ru')
+    Locale('ru'),
+    Locale('uz'),
+    Locale('zh')
   ];
 
   /// App name, shown in the OS task switcher
@@ -181,6 +185,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Қазақша'**
   String get languageKazakh;
+
+  /// No description provided for @languageUzbek.
+  ///
+  /// In ru, this message translates to:
+  /// **'Узбекский'**
+  String get languageUzbek;
+
+  /// No description provided for @languageChinese.
+  ///
+  /// In ru, this message translates to:
+  /// **'Китайский'**
+  String get languageChinese;
 
   /// No description provided for @languageChangedNote.
   ///
@@ -7137,7 +7153,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['kk', 'ru'].contains(locale.languageCode);
+      <String>['kk', 'ru', 'uz', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -7150,6 +7166,10 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsKk();
     case 'ru':
       return AppLocalizationsRu();
+    case 'uz':
+      return AppLocalizationsUz();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(

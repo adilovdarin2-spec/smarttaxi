@@ -51,6 +51,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get languageKazakh => 'Қазақша';
 
   @override
+  String get languageUzbek => 'Өзбекше';
+
+  @override
+  String get languageChinese => 'Қытайша';
+
+  @override
   String get languageChangedNote =>
       'Интерфейс тілі өзгертілді. Кейбір экрандар әзірге ішінара ғана аударылған.';
 

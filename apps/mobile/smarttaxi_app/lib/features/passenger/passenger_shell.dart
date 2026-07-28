@@ -2438,6 +2438,10 @@ class _PassengerShellState extends State<PassengerShell>
                     value: 'ru', title: Text(l10n.languageRussian)),
                 RadioListTile<String>(
                     value: 'kk', title: Text(l10n.languageKazakh)),
+                RadioListTile<String>(
+                    value: 'uz', title: Text(l10n.languageUzbek)),
+                RadioListTile<String>(
+                    value: 'zh', title: Text(l10n.languageChinese)),
                 const SizedBox(height: 8),
               ],
             ),
@@ -2447,12 +2451,18 @@ class _PassengerShellState extends State<PassengerShell>
     );
     if (code == null || code == current) return;
     widget.onChangeLocale(Locale(code));
-    if (!mounted) return;
-    if (code == 'kk') {
+    if (code == 'ru') return;
+    // onChangeLocale's setState (in an ancestor) only takes effect on the
+    // next frame -- reading AppLocalizations.of(context) synchronously
+    // right here still resolves the OLD locale, so this snackbar showed
+    // the Russian text even when switching to Uzbek/Chinese. Defer past
+    // that rebuild.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).languageChangedNote)),
       );
-    }
+    });
   }
 
   Future<void> _chooseTheme() async {
@@ -4409,9 +4419,12 @@ class _PassengerShellState extends State<PassengerShell>
           children: [
             _SettingsRow(
               title: l10n.passengerSettingsLanguageLabel,
-              text: widget.currentLocale?.languageCode == 'kk'
-                  ? l10n.languageKazakh
-                  : l10n.languageRussian,
+              text: switch (widget.currentLocale?.languageCode) {
+                'kk' => l10n.languageKazakh,
+                'uz' => l10n.languageUzbek,
+                'zh' => l10n.languageChinese,
+                _ => l10n.languageRussian,
+              },
               onTap: _chooseLanguage,
             ),
             _SettingsRow(

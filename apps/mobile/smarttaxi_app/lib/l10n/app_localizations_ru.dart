@@ -51,6 +51,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get languageKazakh => 'Қазақша';
 
   @override
+  String get languageUzbek => 'Узбекский';
+
+  @override
+  String get languageChinese => 'Китайский';
+
+  @override
   String get languageChangedNote =>
       'Язык интерфейса изменён. Часть экранов пока переведена только частично.';
 
