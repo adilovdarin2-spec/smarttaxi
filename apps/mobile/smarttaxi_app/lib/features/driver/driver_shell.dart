@@ -2803,6 +2803,12 @@ class _DriverShellState extends State<DriverShell> {
   String? _disabledReason() {
     final l10n = AppLocalizations.of(context);
     final region = _selectedRegion;
+    // Distinguish "still fetching" from "fetched and got zero regions" --
+    // otherwise every cold launch flashes the "no approved regions, contact
+    // support" state for the second or so before _loadRegions() resolves,
+    // even for a driver approved everywhere. Keep the toggle disabled either
+    // way (nothing to go online with yet), just don't claim it's empty.
+    if (_regionsLoading && _regions.isEmpty) return l10n.driverLineRegionsLoading;
     if (_regions.isEmpty) return l10n.driverNoApprovedRegionsTitle;
     if (_regionId == null) return l10n.driverChooseWorkingRegionTitle;
     if (region?.isActive == false) return l10n.driverRegionTemporarilyDisabledTitle;
@@ -2822,6 +2828,9 @@ class _DriverShellState extends State<DriverShell> {
   _DriverAvailabilityIssue? _availabilityIssue() {
     final l10n = AppLocalizations.of(context);
     final region = _selectedRegion;
+    // Still fetching -- don't flash the "no approved regions, contact
+    // support" banner during the normal load window (see _disabledReason()).
+    if (_regionsLoading && _regions.isEmpty) return null;
     if (_regions.isEmpty) {
       return _DriverAvailabilityIssue(
         icon: Icons.map_outlined,
@@ -2985,12 +2994,14 @@ class _DriverShellState extends State<DriverShell> {
   String _driverStatusLabel() {
     final l10n = AppLocalizations.of(context);
     if (_activeOrder?.isActive == true) return l10n.driverStatusBusy;
+    if (_regionsLoading && _regions.isEmpty) return l10n.loading;
     if (!_online && _disabledReason() != null) return l10n.driverStatusUnavailableByRegion;
     return _online ? l10n.driverStatusOnline : l10n.driverStatusOffline;
   }
 
   StatusTone _driverStatusTone() {
     if (_activeOrder?.isActive == true) return StatusTone.warning;
+    if (_regionsLoading && _regions.isEmpty) return StatusTone.neutral;
     if (!_online && _disabledReason() != null) return StatusTone.danger;
     return _online ? StatusTone.success : StatusTone.neutral;
   }
