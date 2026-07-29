@@ -6,10 +6,11 @@ class SmartTaxiColors {
   static const goldSoft = Color(0xffb9d6ff);
   static const goldPale = Color(0xffeaf3ff);
   static const goldSurface = Color(0xfff2f7ff);
-  static const bgDark = Color(0xff071426);
-  static const bgDark2 = Color(0xff0b1b33);
-  static const cardDark = Color(0xff10223b);
-  static const cardDark2 = Color(0xff162c49);
+  // Kept in sync with SmartTaxiPalette.dark.appBackground below -- this is
+  // the only remaining consumer (main.dart's system nav-bar color), but it
+  // must match or the Android gesture bar shows a seam against the app's
+  // black+blue dark background.
+  static const bgDark = Color(0xff05070c);
   static const background = Color(0xffffffff);
   static const appBackground = Color(0xfff7fbff);
   static const card = Color(0xffffffff);
