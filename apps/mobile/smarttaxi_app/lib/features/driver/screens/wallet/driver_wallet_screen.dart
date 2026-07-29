@@ -196,10 +196,12 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
             if (_topupRequests.isEmpty)
               _WalletEmptyRow(text: l10n.driverWalletNoTopupRequests)
             else
-              for (final request in _topupRequests) ...[
-                _TopupRequestRow(request: request),
-                const SizedBox(height: 8),
-              ],
+              _WalletListCard(
+                rows: [
+                  for (final request in _topupRequests)
+                    _TopupRequestRow(request: request),
+                ],
+              ),
             const SizedBox(height: 20),
             Text(l10n.driverWalletPayoutRequestsTitle,
                 style: SmartTaxiTextStyles.subtitle
@@ -208,10 +210,12 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
             if (_payoutRequests.isEmpty)
               _WalletEmptyRow(text: l10n.driverWalletNoPayoutRequests)
             else
-              for (final request in _payoutRequests) ...[
-                _PayoutRequestRow(request: request),
-                const SizedBox(height: 8),
-              ],
+              _WalletListCard(
+                rows: [
+                  for (final request in _payoutRequests)
+                    _PayoutRequestRow(request: request),
+                ],
+              ),
             const SizedBox(height: 20),
             Text(l10n.driverWalletTransactionsTitle,
                 style: SmartTaxiTextStyles.subtitle
@@ -220,10 +224,12 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
             if (_transactions.isEmpty)
               _WalletEmptyRow(text: l10n.driverWalletNoTransactions)
             else
-              for (final transaction in _transactions) ...[
-                _WalletTransactionRow(transaction: transaction),
-                const SizedBox(height: 8),
-              ],
+              _WalletListCard(
+                rows: [
+                  for (final transaction in _transactions)
+                    _WalletTransactionRow(transaction: transaction),
+                ],
+              ),
           ],
         ],
       ),
@@ -398,6 +404,36 @@ class _WalletBreakdownRow extends StatelessWidget {
   }
 }
 
+// Wraps a list of wallet row widgets in one shared card with a hairline
+// divider between rows, instead of each row carrying its own border --
+// several bordered rows stacked with gaps read as a wall of boxes.
+class _WalletListCard extends StatelessWidget {
+  const _WalletListCard({required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i != 0) Divider(height: 1, thickness: 1, color: palette.border),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _PayoutRequestRow extends StatelessWidget {
   const _PayoutRequestRow({required this.request});
 
@@ -407,14 +443,8 @@ class _PayoutRequestRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         children: [
           Expanded(
@@ -463,14 +493,8 @@ class _TopupRequestRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         children: [
           Expanded(
@@ -519,14 +543,8 @@ class _WalletTransactionRow extends StatelessWidget {
     // shown with its own already-correct sign from _money(), not a
     // hardcoded prefix.
     final isAdjustment = transaction.kind == 'ADJUSTMENT';
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         children: [
           Container(

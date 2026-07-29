@@ -224,10 +224,12 @@ class _ClientWalletScreenState extends State<ClientWalletScreen> {
                   style: SmartTaxiTextStyles.subtitle
                       .copyWith(color: palette.textSecondary)),
               const SizedBox(height: 10),
-              for (final request in _topupRequests) ...[
-                _TopupRequestRow(request: request),
-                const SizedBox(height: 8),
-              ],
+              _WalletListCard(
+                rows: [
+                  for (final request in _topupRequests)
+                    _TopupRequestRow(request: request),
+                ],
+              ),
             ],
             const SizedBox(height: 20),
             Row(
@@ -254,14 +256,16 @@ class _ClientWalletScreenState extends State<ClientWalletScreen> {
                 onAction: _openAddCard,
               )
             else
-              for (final card in _cards) ...[
-                _ClientCardRow(
-                  card: card,
-                  onSetDefault: () => _setDefaultCard(card),
-                  onRemove: () => _removeCard(card),
-                ),
-                const SizedBox(height: 8),
-              ],
+              _WalletListCard(
+                rows: [
+                  for (final card in _cards)
+                    _ClientCardRow(
+                      card: card,
+                      onSetDefault: () => _setDefaultCard(card),
+                      onRemove: () => _removeCard(card),
+                    ),
+                ],
+              ),
           ],
         ],
       ),
@@ -401,6 +405,36 @@ String _topupStatusLabel(AppLocalizations l10n, String status) {
   }
 }
 
+// Wraps a list of wallet row widgets in one shared card with a hairline
+// divider between rows, instead of each row carrying its own border --
+// several bordered rows stacked with gaps read as a wall of boxes.
+class _WalletListCard extends StatelessWidget {
+  const _WalletListCard({required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i != 0) Divider(height: 1, thickness: 1, color: palette.border),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _TopupRequestRow extends StatelessWidget {
   const _TopupRequestRow({required this.request});
 
@@ -410,14 +444,8 @@ class _TopupRequestRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         children: [
           Expanded(
@@ -452,14 +480,8 @@ class _ClientCardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Row(
         children: [
           Container(
