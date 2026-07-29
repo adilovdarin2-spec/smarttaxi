@@ -67,9 +67,15 @@ class DriverShiftHero extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: (online ? palette.success : palette.gold)
-                .withValues(alpha: online ? 0.14 : 0.1),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
+                .withValues(alpha: online ? 0.22 : 0.16),
+            blurRadius: 34,
+            offset: const Offset(0, 16),
+          ),
+          BoxShadow(
+            color: (online ? palette.success : palette.gold)
+                .withValues(alpha: online ? 0.10 : 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
