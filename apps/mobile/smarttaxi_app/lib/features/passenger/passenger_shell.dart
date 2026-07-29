@@ -2993,32 +2993,39 @@ class _PassengerShellState extends State<PassengerShell>
                 ],
               ),
               const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ProfileStatTile(
-                      icon: Icons.route_rounded,
-                      value: '${completedTrips.length}',
-                      label: l10n.passengerStatTripsLabel,
+              // One shared strip with thin dividers, not three individually
+              // bordered chips side by side — this already lives inside the
+              // profile's outer _PremiumCard, so three more borders here read
+              // as boxes-within-a-box rather than one cohesive stat row.
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _ProfileStatTile(
+                        icon: Icons.route_rounded,
+                        value: '${completedTrips.length}',
+                        label: l10n.passengerStatTripsLabel,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ProfileStatTile(
-                      icon: Icons.payments_rounded,
-                      value: _formatTenge(totalSpent),
-                      label: l10n.passengerStatSpentLabel,
+                    _ProfileStatDivider(color: palette.border),
+                    Expanded(
+                      child: _ProfileStatTile(
+                        icon: Icons.payments_rounded,
+                        value: _formatTenge(totalSpent),
+                        label: l10n.passengerStatSpentLabel,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ProfileStatTile(
-                      icon: Icons.star_rounded,
-                      value: ratedTrips.isEmpty ? '—' : '${ratedTrips.length}',
-                      label: l10n.passengerStatRatedLabel,
+                    _ProfileStatDivider(color: palette.border),
+                    Expanded(
+                      child: _ProfileStatTile(
+                        icon: Icons.star_rounded,
+                        value: ratedTrips.isEmpty ? '—' : '${ratedTrips.length}',
+                        label: l10n.passengerStatRatedLabel,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 18),
               if (widget.accountId.trim().isNotEmpty) ...[
@@ -16764,6 +16771,20 @@ class _InlineMessage extends StatelessWidget {
   }
 }
 
+class _ProfileStatDivider extends StatelessWidget {
+  const _ProfileStatDivider({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: SizedBox(width: 1, child: ColoredBox(color: color)),
+    );
+  }
+}
+
 class _ProfileStatTile extends StatelessWidget {
   const _ProfileStatTile({
     required this.icon,
@@ -16778,14 +16799,10 @@ class _ProfileStatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: palette.goldSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 18, color: palette.goldDeep),
           const SizedBox(height: 6),
