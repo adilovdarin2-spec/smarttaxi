@@ -5,7 +5,31 @@ single thing beautiful/convenient/logical, no lags, no bugs — don't stop to
 ask"). Continued a multi-round design-consistency sweep already in progress
 this session, then pivoted to two rounds of automated bug-hunting (mobile,
 backend, web), then did a live-device deep-dive on the driver navigator
-after repeated "still looks terrible" feedback. 12 commits this round.
+after repeated "still looks terrible" feedback — which turned up what is
+very likely the actual root cause: the navigator's persistent cards ignored
+dark theme entirely. 15 commits this round.
+
+## Likely root cause of the repeated "looks terrible" feedback
+
+Toggling the app to dark theme and reopening the full-screen Navigator
+(`8400b95`, `bd66040`) showed three of its persistent on-screen cards
+rendering as bright white/cream boxes floating on an inverted dark map:
+the speed/speed-limit cockpit (`_NavigatorMetric`), the "До точки посадки"
+distance strip (`_NavTargetStrip`), and the "tap map to select alert point"
+banner on the road-alert reporting map (`_RoadAlertMap`). All three used
+hardcoded `SmartTaxiColors`/`Colors.white` with zero `context.palette`
+usage, despite their parent screens already being fully dark-theme-reactive
+(dark map tiles, dark Scaffold background) — a genuine "half-converted
+screen" gap, not a deliberate design choice. (There IS a deliberate,
+correctly-documented exception for small transient map badges/chips like
+`_DriverMapBadge` and `_RoadAlertMapFallback` — confirmed via project
+memory + git history before touching anything, and left untouched.) Fixed
+all three to use `context.palette`; confirmed live on-device in dark mode
+that the cockpit and distance strip now read as one cohesive dark UI
+instead of two glaring white boxes. If the user (or whoever they were
+demoing to) had dark theme active, this alone would fully explain
+"navigator still looks terrible" surviving several earlier rounds of
+light-mode-only visual fixes.
 
 ## "Wall of boxes" visual sweep (mobile)
 
@@ -97,6 +121,15 @@ them:
   panels (admin/client/driver) still bundle into one ~1.58MB JS chunk with
   no code-splitting — a real future perf opportunity, out of scope for a
   bug-fix round.
+
+## Other small fixes
+
+- Passenger driver-contact card (`8400b95`) — same "lone `Expanded` stretches
+  across the full row" pattern as the speed-card fix: when a driver record
+  has no phone number but the trip is still cancellable, the cancel button
+  was the row's only child and stretched across the full card width with a
+  large empty void on both sides. Fixed with the same `Align`+`IntrinsicWidth`
+  approach (Row's `Expanded` structure kept unchanged, per the lesson above).
 
 ## Not done / known limitations
 
