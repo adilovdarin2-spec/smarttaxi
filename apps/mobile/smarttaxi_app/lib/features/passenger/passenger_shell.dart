@@ -5554,7 +5554,7 @@ class _NearbyDriversPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1a141414),
+              color: Color(0x1a102a52),
               blurRadius: 14,
               offset: Offset(0, 6),
             ),
@@ -6041,7 +6041,7 @@ class _MapRouteState extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x1f141414),
+                color: Color(0x1f102a52),
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -9309,7 +9309,7 @@ class _CancelConfirmSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
@@ -9419,7 +9419,7 @@ class _ConfirmSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
@@ -9927,7 +9927,7 @@ class _AddDriverPreferenceSheetState
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
@@ -10059,7 +10059,7 @@ class _CreateFavoriteAddressSheetState
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
@@ -11279,7 +11279,7 @@ class _SafetySheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
@@ -11458,7 +11458,7 @@ class _ChatSheetState extends State<_ChatSheet> {
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
@@ -14539,7 +14539,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
             borderRadius: BorderRadius.circular(30),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x33141414),
+                color: Color(0x33102a52),
                 blurRadius: 28,
                 offset: Offset(0, 14),
               ),
@@ -14952,7 +14952,7 @@ class _DrawerItem extends StatelessWidget {
               boxShadow: active
                   ? const [
                       BoxShadow(
-                        color: Color(0x0f141414),
+                        color: Color(0x0f102a52),
                         blurRadius: 18,
                         offset: Offset(0, 8),
                       ),
@@ -15287,7 +15287,7 @@ class _MapBackButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x1a141414),
+                color: Color(0x1a102a52),
                 blurRadius: 14,
                 offset: Offset(0, 6),
               ),
@@ -15324,7 +15324,7 @@ class _RouteSummaryPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1f141414),
+              color: Color(0x1f102a52),
               blurRadius: 14,
               offset: Offset(0, 6),
             ),

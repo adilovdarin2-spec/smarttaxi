@@ -547,7 +547,7 @@ class _DriverSosSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x30141414),
+              color: Color(0x30102a52),
               blurRadius: 30,
               offset: Offset(0, 14),
             ),
