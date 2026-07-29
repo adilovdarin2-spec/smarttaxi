@@ -4594,13 +4594,15 @@ class _PassengerShellState extends State<PassengerShell>
           text: l10n.passengerLegalHubSubtitle,
         ),
         const SizedBox(height: 16),
-        for (final doc in legalDocuments) ...[
-          _LegalDocumentTile(
-            document: doc,
-            onTap: () => setState(() => _tab = _legalTabFor(doc.id)),
-          ),
-          const SizedBox(height: 10),
-        ],
+        _DividedListCard(
+          rows: [
+            for (final doc in legalDocuments)
+              _LegalDocumentTile(
+                document: doc,
+                onTap: () => setState(() => _tab = _legalTabFor(doc.id)),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -16421,13 +16423,45 @@ class _FaqScreenState extends State<_FaqScreen> {
             text: l10n.passengerFaqNoResultsText,
           )
         else
-          ...filtered.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _FaqTile(question: item.$1, answer: item.$2),
-            ),
+          _DividedListCard(
+            rows: [
+              for (final item in filtered)
+                _FaqTile(question: item.$1, answer: item.$2),
+            ],
           ),
       ],
+    );
+  }
+}
+
+// Wraps the FAQ tiles in one shared card with a hairline divider between
+// questions, instead of each tile carrying its own border/shadow -- a
+// dozen individually elevated cards for what's just an accordion list
+// read as a wall of boxes.
+class _DividedListCard extends StatelessWidget {
+  const _DividedListCard({required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.fromBorderSide(BorderSide(color: palette.border)),
+        borderRadius: const BorderRadius.all(Radius.circular(30)),
+        boxShadow: _cardShadow,
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i != 0) Divider(height: 1, thickness: 1, color: palette.border),
+            rows[i],
+          ],
+        ],
+      ),
     );
   }
 }
@@ -16448,13 +16482,12 @@ class _FaqTileState extends State<_FaqTile> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return _PremiumCard(
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => setState(() => _open = !_open),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _open = !_open),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -16566,15 +16599,9 @@ class _LegalDocumentTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: palette.card,
-            border: Border.all(color: palette.border),
-            borderRadius: BorderRadius.circular(20),
-          ),
           child: Row(
             children: [
               Container(
