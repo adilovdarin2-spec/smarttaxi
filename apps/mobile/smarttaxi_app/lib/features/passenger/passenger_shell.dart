@@ -11821,12 +11821,28 @@ class _DriverContactCard extends StatelessWidget {
                 ],
                 if (onCancel != null)
                   Expanded(
-                    child: _TripActionButton(
-                      icon: Icons.close_rounded,
-                      label: l10n.passengerCancelTripShortButton,
-                      onTap: cancelling ? null : onCancel,
-                      danger: true,
-                    ),
+                    // When there's no phone, this cancel button is the row's
+                    // only child -- Align+IntrinsicWidth keeps it centered at
+                    // its own natural size instead of the Expanded stretching
+                    // a small icon+label button across the full card width.
+                    child: hasPhone
+                        ? _TripActionButton(
+                            icon: Icons.close_rounded,
+                            label: l10n.passengerCancelTripShortButton,
+                            onTap: cancelling ? null : onCancel,
+                            danger: true,
+                          )
+                        : Align(
+                            alignment: Alignment.center,
+                            child: IntrinsicWidth(
+                              child: _TripActionButton(
+                                icon: Icons.close_rounded,
+                                label: l10n.passengerCancelTripShortButton,
+                                onTap: cancelling ? null : onCancel,
+                                danger: true,
+                              ),
+                            ),
+                          ),
                   ),
               ],
             ),

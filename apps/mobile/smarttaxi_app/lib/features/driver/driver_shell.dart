@@ -3788,11 +3788,12 @@ class _NavigatorMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: SmartTaxiColors.goldSurface,
-        border: Border.all(color: SmartTaxiColors.border),
+        color: palette.goldSurface,
+        border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -3800,8 +3801,8 @@ class _NavigatorMetric extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: SmartTaxiColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w800,
             ),
@@ -3816,7 +3817,7 @@ class _NavigatorMetric extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: valueColor ?? SmartTaxiColors.text,
+                    color: valueColor ?? palette.text,
                     fontSize: emphasize ? 40 : 23,
                     fontWeight: FontWeight.w900,
                   ),
@@ -3830,8 +3831,8 @@ class _NavigatorMetric extends StatelessWidget {
                     suffix,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: SmartTaxiColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
@@ -4306,7 +4307,7 @@ class _DriverFullScreenNavigatorState
                                   suffix: 'км/ч',
                                   emphasize: true,
                                   valueColor:
-                                      speeding ? SmartTaxiColors.danger : null,
+                                      speeding ? context.palette.danger : null,
                                 ),
                               ),
                             )
@@ -4316,7 +4317,7 @@ class _DriverFullScreenNavigatorState
                               suffix: 'км/ч',
                               emphasize: true,
                               valueColor:
-                                  speeding ? SmartTaxiColors.danger : null,
+                                  speeding ? context.palette.danger : null,
                             ),
                     ),
                     if (speedLimit != null) ...[
