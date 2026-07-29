@@ -72,7 +72,8 @@ const _blueBorder = Color(0xffe1e7f5);
 // states (_TariffCard selected, _GoldCtaButton) — those are a different,
 // intentional visual language, not an inconsistency to fix.
 const _cardShadow = <BoxShadow>[
-  BoxShadow(color: Color(0x14102a52), blurRadius: 24, offset: Offset(0, 10)),
+  BoxShadow(color: Color(0x22102a52), blurRadius: 36, offset: Offset(0, 16)),
+  BoxShadow(color: Color(0x12102a52), blurRadius: 8, offset: Offset(0, 2)),
 ];
 // Darkens the OSM raster tile layer for dark theme without a separate dark
 // tile provider/API key. Same math as the well-known CSS
@@ -16528,19 +16529,22 @@ class _TitleBlock extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 27,
-            height: 1.12,
+          style: TextStyle(
+            color: context.palette.text,
+            fontSize: 30,
+            height: 1.08,
+            letterSpacing: -0.4,
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         Text(
           text,
           style: TextStyle(
             color: context.palette.textSecondary,
             fontSize: 14,
             height: 1.35,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

@@ -415,7 +415,9 @@ class PremiumCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x18102a52), blurRadius: 42, offset: Offset(0, 18))
+              color: Color(0x22102a52), blurRadius: 42, offset: Offset(0, 18)),
+          BoxShadow(
+              color: Color(0x12102a52), blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: child,
@@ -435,15 +437,17 @@ class TitleBlock extends StatelessWidget {
       Text(title,
           style: TextStyle(
               color: context.palette.text,
-              fontSize: 27,
-              height: 1.12,
+              fontSize: 30,
+              height: 1.08,
+              letterSpacing: -0.4,
               fontWeight: FontWeight.w900)),
-      const SizedBox(height: 6),
+      const SizedBox(height: 7),
       Text(text,
           style: TextStyle(
               color: context.palette.textSecondary,
               fontSize: 14,
-              height: 1.35)),
+              height: 1.35,
+              fontWeight: FontWeight.w600)),
     ]);
   }
 }
