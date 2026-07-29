@@ -17024,11 +17024,11 @@ class _MenuLine extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: danger
-                    ? const Color(0xfffff1f1)
-                    : palette.goldSurface,
+                color: danger ? palette.dangerSoft : palette.goldSurface,
                 border: Border.all(
-                  color: danger ? const Color(0xfffecaca) : palette.border,
+                  color: danger
+                      ? palette.danger.withValues(alpha: 0.3)
+                      : palette.border,
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),

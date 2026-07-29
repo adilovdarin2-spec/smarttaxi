@@ -656,9 +656,11 @@ class InlineMessage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: danger ? const Color(0xfffff1f1) : context.palette.goldSurface,
+        color: danger ? context.palette.dangerSoft : context.palette.goldSurface,
         border: Border.all(
-            color: danger ? const Color(0xfffecaca) : context.palette.border),
+            color: danger
+                ? context.palette.danger.withValues(alpha: 0.3)
+                : context.palette.border),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(text,
