@@ -3448,7 +3448,13 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                           width: 34,
                           height: 34,
                           child: const _NavigatorPointMarker(
-                            icon: Icons.navigation_rounded,
+                            // radio_button_checked_rounded, not
+                            // navigation_rounded -- the app-wide pickup icon
+                            // (see route_fields.dart) is a plain dot; an arrow
+                            // reads as a heading/compass indicator and gets
+                            // confused with the driver's own position marker
+                            // once the two are close together on screen.
+                            icon: Icons.radio_button_checked_rounded,
                             background: SmartTaxiColors.gold,
                             foreground: Colors.white,
                           ),
@@ -4113,7 +4119,7 @@ class _DriverFullScreenNavigatorState
                               width: 34,
                               height: 34,
                               child: const _NavigatorPointMarker(
-                                icon: Icons.navigation_rounded,
+                                icon: Icons.radio_button_checked_rounded,
                                 background: SmartTaxiColors.gold,
                                 foreground: Colors.white,
                               ),
@@ -4279,20 +4285,40 @@ class _DriverFullScreenNavigatorState
                   children: [
                     Expanded(
                       flex: 3,
-                      child: _NavigatorMetric(
-                        title: l10n.driverSpeedLabel,
-                        value: speedKmh == null ? '--' : '$speedKmh',
-                        suffix: 'км/ч',
-                        emphasize: true,
-                        valueColor: speeding ? SmartTaxiColors.danger : null,
-                      ),
+                      // A posted limit is real, sourced data (OSM maxspeed
+                      // tags) — genuinely absent for most of these small-town
+                      // regions today, so the speed card is usually alone in
+                      // this Row. Without a sibling to share the row with, an
+                      // Expanded child stretches to the full width and the
+                      // number sits in a large empty void. Align+IntrinsicWidth
+                      // keeps it hugging its own content instead, without
+                      // changing the Row's own Expanded-child structure (a
+                      // bare, non-Expanded child here previously broke this
+                      // Positioned's bottom-anchoring in a way traced back to
+                      // exactly this change -- keep every child Expanded).
+                      child: speedLimit == null
+                          ? Align(
+                              alignment: Alignment.centerLeft,
+                              child: IntrinsicWidth(
+                                child: _NavigatorMetric(
+                                  title: l10n.driverSpeedLabel,
+                                  value: speedKmh == null ? '--' : '$speedKmh',
+                                  suffix: 'км/ч',
+                                  emphasize: true,
+                                  valueColor:
+                                      speeding ? SmartTaxiColors.danger : null,
+                                ),
+                              ),
+                            )
+                          : _NavigatorMetric(
+                              title: l10n.driverSpeedLabel,
+                              value: speedKmh == null ? '--' : '$speedKmh',
+                              suffix: 'км/ч',
+                              emphasize: true,
+                              valueColor:
+                                  speeding ? SmartTaxiColors.danger : null,
+                            ),
                     ),
-                    // A posted limit is real, sourced data (OSM maxspeed
-                    // tags) — genuinely absent for most of these small-town
-                    // regions today (confirmed: zero results for the test
-                    // area), so a permanent "Лимит --" card was dead weight
-                    // on screen almost all the time. Only takes its slot
-                    // when there's an actual number to show.
                     if (speedLimit != null) ...[
                       const SizedBox(width: 10),
                       Expanded(
@@ -4626,7 +4652,7 @@ class _TripMapState extends State<_TripMap> {
                   if (pickup != null)
                     _routePointMarker(
                       pickup,
-                      icon: Icons.navigation_rounded,
+                      icon: Icons.radio_button_checked_rounded,
                       background: SmartTaxiColors.gold,
                       foreground: Colors.white,
                     ),

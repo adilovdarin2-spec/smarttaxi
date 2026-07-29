@@ -557,7 +557,11 @@ void main() {
     expect(driver, isNot(contains("_NavigatorPointMarker(label: 'A')")));
     expect(driver, isNot(contains("_NavigatorPointMarker(label: 'B')")));
     expect(driver, isNot(contains('_letterMarker')));
-    expect(driver, contains('Icons.navigation_rounded'));
+    // radio_button_checked_rounded, not navigation_rounded -- matches the
+    // app-wide pickup icon convention (see route_fields.dart) and avoids an
+    // arrow icon reading as a heading/compass indicator next to the
+    // driver's own position marker.
+    expect(driver, contains('Icons.radio_button_checked_rounded'));
     expect(driver, contains('Icons.location_on_rounded'));
   });
 
