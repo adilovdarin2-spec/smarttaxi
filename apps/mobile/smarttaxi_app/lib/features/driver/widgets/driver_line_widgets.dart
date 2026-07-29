@@ -257,6 +257,7 @@ class DriverTodayStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
     final current = stats;
     final tripsValue = loading && current == null
         ? '···'
@@ -264,51 +265,83 @@ class DriverTodayStrip extends StatelessWidget {
             ? '—'
             : '${current.completedOrders}';
     final (demandLabel, demandColor) = _demandMeta(context);
-    // IntrinsicHeight, not CrossAxisAlignment.stretch — this Row lives inside
-    // a vertically-scrolling ListView, which gives it unbounded height;
-    // stretch tries to hand that unbounded height straight to the children
-    // and crashes with "BoxConstraints forces an infinite height".
-    // IntrinsicHeight measures the tallest child first, then constrains
-    // every child to that height — same equal-height look, no crash.
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: _MiniStat(
-              icon: Icons.done_all_rounded,
-              label: l10n.driverTripsTodayLabel,
-              value: tripsValue,
-              tone: context.palette.success,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _MiniStat(
-              icon: Icons.receipt_long_rounded,
-              label: l10n.driverNewOrdersLabel,
-              value: '$openOrders',
-              tone: context.palette.warning,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _MiniStat(
-              icon: Icons.trending_up_rounded,
-              label: l10n.driverDemandNearbyLabel,
-              value: demandLabel,
-              tone: demandColor,
-              loading: demandLoading,
-            ),
-          ),
+    // One shared card with internal dividers instead of three separately
+    // bordered/shadowed mini-cards — the old row cast three shadows side by
+    // side, which read as "another box" stacked under the hero card above.
+    // Same three stats, one visual unit.
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x14102a52), blurRadius: 26, offset: Offset(0, 12)),
+          BoxShadow(
+              color: Color(0x0a102a52), blurRadius: 6, offset: Offset(0, 2)),
         ],
+      ),
+      // IntrinsicHeight, not CrossAxisAlignment.stretch on the outer
+      // ListView — this lives inside a vertically-scrolling ListView, which
+      // gives it unbounded height; stretch tries to hand that unbounded
+      // height straight to the dividers and crashes with "BoxConstraints
+      // forces an infinite height". IntrinsicHeight measures the tallest
+      // child first, then constrains every child (including the dividers)
+      // to that height.
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _StatColumn(
+                icon: Icons.done_all_rounded,
+                label: l10n.driverTripsTodayLabel,
+                value: tripsValue,
+                tone: palette.success,
+              ),
+            ),
+            _StatDivider(color: palette.border),
+            Expanded(
+              child: _StatColumn(
+                icon: Icons.receipt_long_rounded,
+                label: l10n.driverNewOrdersLabel,
+                value: '$openOrders',
+                tone: palette.warning,
+              ),
+            ),
+            _StatDivider(color: palette.border),
+            Expanded(
+              child: _StatColumn(
+                icon: Icons.trending_up_rounded,
+                label: l10n.driverDemandNearbyLabel,
+                value: demandLabel,
+                tone: demandColor,
+                loading: demandLoading,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({
+class _StatDivider extends StatelessWidget {
+  const _StatDivider({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: SizedBox(width: 1, child: ColoredBox(color: color)),
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  const _StatColumn({
     required this.icon,
     required this.label,
     required this.value,
@@ -324,22 +357,13 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-      decoration: BoxDecoration(
-        color: context.palette.card,
-        border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x0f102a52), blurRadius: 18, offset: Offset(0, 8)),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 16, color: tone),
               if (loading) ...[
@@ -356,7 +380,6 @@ class _MiniStat extends StatelessWidget {
           const SizedBox(height: 9),
           FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
             child: Text(
               value,
               maxLines: 1,
@@ -371,6 +394,7 @@ class _MiniStat extends StatelessWidget {
           Text(
             label,
             maxLines: 2,
+            textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
             // textSecondary, not textMuted — textMuted's contrast against the
             // background fails WCAG AA (~2.5:1).
