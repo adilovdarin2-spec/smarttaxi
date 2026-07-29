@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import DriversLiveMap from "./DriversLiveMap.jsx";
 import {
@@ -1931,13 +1931,17 @@ function DriversPage({ drivers, driverStatus, setDriverStatus, onOpenDriver, pay
 function DriversLiveMapSection() {
   const [state, setState] = useState({ loading: true, error: "", drivers: [] });
   const [lastUpdated, setLastUpdated] = useState(null);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function load() {
     try {
       const data = await getAdminDriverLiveLocations();
+      if (!mountedRef.current) return;
       setState({ loading: false, error: "", drivers: data.drivers || [] });
       setLastUpdated(new Date());
     } catch (error) {
+      if (!mountedRef.current) return;
       setState(current => ({ loading: false, error: readError(error), drivers: current.drivers }));
     }
   }
@@ -1945,7 +1949,10 @@ function DriversLiveMapSection() {
   useEffect(() => {
     load();
     // A dispatcher tool needs to actually be live — refetch periodically
-    // while this view is open rather than only on manual action.
+    // while this view is open rather than only on manual action. This
+    // component is remounted every time the admin toggles between the
+    // list/map view, so a stale in-flight fetch from just before unmount
+    // needs the mountedRef guard above, not just the interval cleanup.
     const timer = setInterval(load, 15000);
     return () => clearInterval(timer);
   }, []);
@@ -4052,12 +4059,14 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
   const activeOrder = detail.payload?.activeOrder;
   const [docs, setDocs] = useState({ loading: true, error: "", items: [] });
   const [busyDocumentId, setBusyDocumentId] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   function loadDocuments() {
     setDocs({ loading: true, error: "", items: [] });
     getAdminDriverDocuments(driver.id)
-      .then(data => setDocs({ loading: false, error: "", items: data.documents || [] }))
-      .catch(error => setDocs({ loading: false, error: readError(error), items: [] }));
+      .then(data => { if (mountedRef.current) setDocs({ loading: false, error: "", items: data.documents || [] }); })
+      .catch(error => { if (mountedRef.current) setDocs({ loading: false, error: readError(error), items: [] }); });
   }
 
   useEffect(() => {
@@ -4071,11 +4080,11 @@ function DriverDetailPanel({ initialDriver, detail, busy, onClose, onRefresh, on
     setBusyDocumentId(document.id);
     try {
       await reviewAdminDriverDocument(document.id, { status, reason: docReason });
-      loadDocuments();
+      if (mountedRef.current) loadDocuments();
     } catch (error) {
-      setDocs(current => ({ ...current, error: readError(error) }));
+      if (mountedRef.current) setDocs(current => ({ ...current, error: readError(error) }));
     } finally {
-      setBusyDocumentId("");
+      if (mountedRef.current) setBusyDocumentId("");
     }
   }
 
@@ -4439,12 +4448,14 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview, error
   const [reason, setReason] = useState("");
   const [docs, setDocs] = useState({ loading: true, error: "", items: [] });
   const [busyDocumentId, setBusyDocumentId] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   function loadDocuments() {
     setDocs({ loading: true, error: "", items: [] });
     getAdminApplicationDocuments(application.id)
-      .then(data => setDocs({ loading: false, error: "", items: data.documents || [] }))
-      .catch(error => setDocs({ loading: false, error: readError(error), items: [] }));
+      .then(data => { if (mountedRef.current) setDocs({ loading: false, error: "", items: data.documents || [] }); })
+      .catch(error => { if (mountedRef.current) setDocs({ loading: false, error: readError(error), items: [] }); });
   }
 
   useEffect(() => {
@@ -4455,11 +4466,11 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview, error
     setBusyDocumentId(document.id);
     try {
       await reviewAdminDriverDocument(document.id, { status, reason: docReason });
-      loadDocuments();
+      if (mountedRef.current) loadDocuments();
     } catch (error) {
-      setDocs(current => ({ ...current, error: readError(error) }));
+      if (mountedRef.current) setDocs(current => ({ ...current, error: readError(error) }));
     } finally {
-      setBusyDocumentId("");
+      if (mountedRef.current) setBusyDocumentId("");
     }
   }
 

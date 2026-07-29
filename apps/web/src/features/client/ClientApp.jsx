@@ -4294,6 +4294,8 @@ function PromoSection({ regionId, authenticated }) {
 function ReferralSection({ authenticated }) {
   const [state, setState] = useState({ loading: true, error: "", data: null });
   const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef(null);
+  useEffect(() => () => window.clearTimeout(copiedTimeoutRef.current), []);
 
   useEffect(() => {
     if (!authenticated) {
@@ -4319,7 +4321,8 @@ function ReferralSection({ authenticated }) {
     }
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    window.clearTimeout(copiedTimeoutRef.current);
+    copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 2000);
   }
 
   if (!authenticated) {
