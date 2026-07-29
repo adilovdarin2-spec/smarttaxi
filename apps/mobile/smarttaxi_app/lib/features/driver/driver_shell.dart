@@ -5419,6 +5419,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
     final l10n = AppLocalizations.of(context);
     setState(() => _message = null);
     final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!mounted) return;
     if (!enabled) {
       setState(() => _message = l10n.driverEnableLocationOrPickOnMap);
       return;
@@ -5427,6 +5428,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
+    if (!mounted) return;
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
       setState(() => _message = l10n.driverAllowLocationOrPickOnMap);
