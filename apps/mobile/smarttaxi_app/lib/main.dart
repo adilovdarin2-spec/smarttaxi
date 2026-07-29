@@ -662,7 +662,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final titleSize = compact ? 25.0 : 29.0;
+    final titleSize = compact ? 26.0 : 30.0;
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
     final showFooter = !keyboardOpen;
     return DecoratedBox(
@@ -673,10 +673,15 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x17111827),
+            color: Color(0x1e102a52),
             blurRadius: 42,
             spreadRadius: -10,
             offset: Offset(0, -12),
+          ),
+          BoxShadow(
+            color: Color(0x0c102a52),
+            blurRadius: 8,
+            offset: Offset(0, -2),
           ),
         ],
       ),
@@ -699,7 +704,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
                 fontSize: titleSize,
                 height: 1.05,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 0,
+                letterSpacing: -0.3,
               ),
             ),
             SizedBox(height: compact ? 14 : 18),
@@ -2518,9 +2523,14 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                                   top: Radius.circular(compact ? 34 : 42)),
                               boxShadow: const [
                                 BoxShadow(
-                                  color: Color(0x0c111827),
-                                  blurRadius: 24,
-                                  offset: Offset(0, -8),
+                                  color: Color(0x1e102a52),
+                                  blurRadius: 36,
+                                  offset: Offset(0, -12),
+                                ),
+                                BoxShadow(
+                                  color: Color(0x0c102a52),
+                                  blurRadius: 8,
+                                  offset: Offset(0, -2),
                                 ),
                               ],
                             ),
@@ -2534,10 +2544,10 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                                   title,
                                   style: TextStyle(
                                     color: SmartTaxiColors.authInk,
-                                    fontSize: compact ? 25.0 : 29.0,
-                                    height: 1.08,
+                                    fontSize: compact ? 26.0 : 30.0,
+                                    height: 1.05,
                                     fontWeight: FontWeight.w900,
-                                    letterSpacing: 0,
+                                    letterSpacing: -0.3,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -3147,7 +3157,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
     final fieldGap =
         keyboardOpen ? (compact ? 14.0 : 16.0) : (compact ? 18.0 : 22.0);
     final titleSize =
-        keyboardOpen ? (compact ? 23.0 : 26.0) : (compact ? 25.0 : 29.0);
+        keyboardOpen ? (compact ? 24.0 : 27.0) : (compact ? 26.0 : 30.0);
     final subtitleSize =
         keyboardOpen ? (compact ? 12.6 : 13.6) : (compact ? 13.0 : 15.0);
 
@@ -3168,9 +3178,14 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
               BorderRadius.vertical(top: Radius.circular(compact ? 34 : 42)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0e111827),
-              blurRadius: 26,
-              offset: Offset(0, -9),
+              color: Color(0x1e102a52),
+              blurRadius: 36,
+              offset: Offset(0, -12),
+            ),
+            BoxShadow(
+              color: Color(0x0c102a52),
+              blurRadius: 8,
+              offset: Offset(0, -2),
             ),
           ],
         ),
@@ -3187,9 +3202,9 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
                 style: TextStyle(
                   color: SmartTaxiColors.authInk,
                   fontSize: titleSize,
-                  height: 1.08,
+                  height: 1.05,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
+                  letterSpacing: -0.3,
                 ),
               ),
               SizedBox(height: keyboardOpen ? 8 : (compact ? 10 : 13)),
@@ -3454,9 +3469,14 @@ class _PhotoNewPasswordCard extends StatelessWidget {
               BorderRadius.vertical(top: Radius.circular(compact ? 34 : 42)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0e111827),
-              blurRadius: 26,
-              offset: Offset(0, -9),
+              color: Color(0x1e102a52),
+              blurRadius: 36,
+              offset: Offset(0, -12),
+            ),
+            BoxShadow(
+              color: Color(0x0c102a52),
+              blurRadius: 8,
+              offset: Offset(0, -2),
             ),
           ],
         ),
@@ -3549,7 +3569,7 @@ class _PhotoNewPasswordRuleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x09111827),
+            color: Color(0x09102a52),
             blurRadius: 22,
             offset: Offset(0, 10),
           ),
