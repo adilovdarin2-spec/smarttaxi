@@ -131,6 +131,41 @@ them:
   large empty void on both sides. Fixed with the same `Align`+`IntrinsicWidth`
   approach (Row's `Expanded` structure kept unchanged, per the lesson above).
 
+## Web panels — same "wall of boxes" pattern found, deliberately not fixed
+
+Dispatched one more audit against the three React panels (admin/client/
+driver) for the same visual anti-pattern fixed all night on mobile. Real
+instances found: the admin Dashboard's "Что требует внимания" problem list
+(`.admin-problem-item`, highest-traffic screen), the driver home tab's
+`EarningsStrip`/`driver-core-money-grid` stat boxes, and the admin Quality
+page's reviews list (which already has a proven divided-row alternative
+elsewhere in the same file, `.admin-table-row`, that the reviews list
+doesn't use).
+
+**Deliberately not fixed this round**, for two compounding reasons:
+1. The problem-list items use per-severity border/background tint
+   (warning/danger/success) to convey real triage information, not pure
+   decoration — collapsing them into one shared card risks losing that
+   signal unless replaced with an equivalent cue (e.g. a colored left accent
+   bar), which needs live visual confirmation to get right, not a blind
+   guess.
+2. `.driver-core-stats div`'s actual styling comes from one shared CSS
+   selector list spanning ~20 unrelated component classes across multiple
+   theme-state blocks (`!important` overrides) — not the small, isolated
+   rule it first looked like. Changing it safely means either touching that
+   shared list in several places or forking a new rule, and I have no way
+   to visually verify the result here: the local backend is confirmed
+   broken (Docker hangs, no working Postgres/Redis — see project memory),
+   and previewing against the real admin/driver panel needs real
+   credentials against a live backend that this session doesn't have.
+
+Given the user's actual complaints tonight were entirely about the mobile
+app, and per this project's own stated preference (stop at static
+verification rather than force a risky change when live testing is
+blocked), left these as documented findings rather than unverified CSS
+edits. Worth a dedicated round with either local backend access restored
+or real staging credentials.
+
 ## Not done / known limitations
 
 - Navigator road-sign/camera data is only as complete as OpenStreetMap's
