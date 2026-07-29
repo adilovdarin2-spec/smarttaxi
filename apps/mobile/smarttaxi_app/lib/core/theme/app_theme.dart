@@ -71,8 +71,9 @@ class SmartTaxiRadius {
 class SmartTaxiTextStyles {
   static const title = TextStyle(
     color: SmartTaxiColors.text,
-    fontSize: 22,
+    fontSize: 30,
     height: 1.05,
+    letterSpacing: -0.3,
     fontWeight: FontWeight.w900,
   );
   static const subtitle = TextStyle(

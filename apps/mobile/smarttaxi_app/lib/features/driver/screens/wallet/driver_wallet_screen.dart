@@ -254,6 +254,10 @@ class _WalletBalanceCard extends StatelessWidget {
         color: palette.goldSurface,
         borderRadius: BorderRadius.circular(SmartTaxiRadius.lg),
         border: Border.all(color: palette.border),
+        boxShadow: const [
+          BoxShadow(color: Color(0x22102a52), blurRadius: 30, offset: Offset(0, 14)),
+          BoxShadow(color: Color(0x12102a52), blurRadius: 8, offset: Offset(0, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
