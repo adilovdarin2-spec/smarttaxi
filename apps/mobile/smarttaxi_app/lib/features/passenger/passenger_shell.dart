@@ -1579,7 +1579,8 @@ class _PassengerShellState extends State<PassengerShell>
       label,
       PointSource.map,
     );
-    if (mounted && _mapPointPickerActive) {
+    if (!mounted) return;
+    if (_mapPointPickerActive) {
       setState(() => _mapPointPickerActive = false);
     }
     if (target == PointTarget.pickup) {
@@ -1738,6 +1739,7 @@ class _PassengerShellState extends State<PassengerShell>
         );
         estimates[selectedTariffId] = preview;
       }
+      if (!mounted) return;
       setState(() {
         _preview = preview;
         _tariffs = tariffs;
@@ -1745,6 +1747,7 @@ class _PassengerShellState extends State<PassengerShell>
         _tariffEstimates = estimates;
       });
     } catch (error) {
+      if (!mounted) return;
       setState(() => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _previewLoading = false);
@@ -1857,8 +1860,10 @@ class _PassengerShellState extends State<PassengerShell>
         _order!.id,
         riderPhone: widget.accountPhone,
       );
+      if (!mounted) return;
       _startNewPassengerTrip();
     } catch (error) {
+      if (!mounted) return;
       setState(() => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _loading = false);
