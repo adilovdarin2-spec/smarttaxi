@@ -6112,18 +6112,23 @@ class _HomeOrderPanel extends StatelessWidget {
         8 + MediaQuery.paddingOf(context).bottom,
       ),
       child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(30)),
+        borderRadius: const BorderRadius.all(Radius.circular(32)),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(18, 9, 18, 16),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
           decoration: BoxDecoration(
             color: context.palette.card,
-            borderRadius: const BorderRadius.all(Radius.circular(30)),
+            borderRadius: const BorderRadius.all(Radius.circular(32)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x24102a52),
-                blurRadius: 30,
-                offset: Offset(0, 14),
+                color: Color(0x33102a52),
+                blurRadius: 44,
+                offset: Offset(0, 20),
+              ),
+              BoxShadow(
+                color: Color(0x14102a52),
+                blurRadius: 10,
+                offset: Offset(0, 3),
               ),
             ],
           ),
@@ -6152,22 +6157,22 @@ class _OrderSheetHeading extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: palette.text,
-            fontSize: 22.5,
-            height: 1.02,
-            letterSpacing: 0,
+            fontSize: 28,
+            height: 1.0,
+            letterSpacing: -0.4,
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 7),
         Text(
           text,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: palette.textSecondary,
-            fontSize: 13,
+            fontSize: 13.5,
             height: 1.1,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
