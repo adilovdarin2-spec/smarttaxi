@@ -7451,50 +7451,35 @@ class _TripDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _TripRouteMiniCard(pickup: trip.pickup, dropoff: trip.dropoff),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.passengerTripDistanceLabel,
-                    value: _distanceLabel(trip.distanceKm),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.passengerTripInTransitLabel,
-                    value: _durationLabel(trip.durationMin),
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.tariffLabel,
-                    value: (trip.tariff ?? '').trim().isEmpty
-                        ? l10n.tariffEconomyTitle
-                        : trip.tariff!,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.paymentMethodLabel,
-                    value: _paymentLabel(l10n, trip.paymentMethod ?? 'CASH'),
-                  ),
-                ),
-              ],
-            ),
+            _TripInfoRow(children: [
+              _TripInfoPill(
+                label: l10n.passengerTripDistanceLabel,
+                value: _distanceLabel(trip.distanceKm),
+              ),
+              _TripInfoPill(
+                label: l10n.passengerTripInTransitLabel,
+                value: _durationLabel(trip.durationMin),
+              ),
+            ]),
             const SizedBox(height: 8),
-            _TripInfoPill(
-              label: l10n.passengerTripTotalLabel,
-              value: trip.price == null ? '—' : _formatTenge(trip.price!),
-              emphasis: true,
-            ),
+            _TripInfoRow(children: [
+              _TripInfoPill(
+                label: l10n.tariffLabel,
+                value: (trip.tariff ?? '').trim().isEmpty
+                    ? l10n.tariffEconomyTitle
+                    : trip.tariff!,
+              ),
+              _TripInfoPill(
+                label: l10n.paymentMethodLabel,
+                value: _paymentLabel(l10n, trip.paymentMethod ?? 'CASH'),
+              ),
+              _TripInfoPill(
+                label: l10n.passengerTripTotalLabel,
+                value: trip.price == null ? '—' : _formatTenge(trip.price!),
+                emphasis: true,
+              ),
+            ]),
             if (hasDriver) ...[
               const SizedBox(height: 20),
               _ProfileGroupLabel(l10n.passengerTripDriverGroupLabel),
@@ -7838,40 +7823,29 @@ class _TripStatusPanel extends StatelessWidget {
                   _OrderNoteRow(note: order.notes),
                 ],
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TripInfoPill(
-                        label: l10n.tariffLabel,
-                        // (order.tariff ?? 'Эконом') meant the null case
-                        // itself never produced an empty string to trigger
-                        // the "use Эконом" branch — it fell through to the
-                        // null-check operator below and crashed for any
-                        // order with no tariff at all.
-                        value: (order.tariff?.trim().isEmpty ?? true)
-                            ? l10n.tariffEconomyTitle
-                            : order.tariff!,
-                      ),
+                _TripInfoRow(children: [
+                  _TripInfoPill(
+                    label: l10n.tariffLabel,
+                    // (order.tariff ?? 'Эконом') meant the null case
+                    // itself never produced an empty string to trigger
+                    // the "use Эконом" branch — it fell through to the
+                    // null-check operator below and crashed for any
+                    // order with no tariff at all.
+                    value: (order.tariff?.trim().isEmpty ?? true)
+                        ? l10n.tariffEconomyTitle
+                        : order.tariff!,
+                  ),
+                  _TripInfoPill(
+                    label: l10n.paymentMethodLabel,
+                    value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
+                  ),
+                  if (order.price != null)
+                    _TripInfoPill(
+                      label: l10n.passengerTripTotalLabel,
+                      value: _formatTenge(order.price!),
+                      emphasis: true,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TripInfoPill(
-                        label: l10n.paymentMethodLabel,
-                        value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
-                      ),
-                    ),
-                    if (order.price != null) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _TripInfoPill(
-                          label: l10n.passengerTripTotalLabel,
-                          value: _formatTenge(order.price!),
-                          emphasis: true,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                ]),
               ],
             ),
           ),
@@ -7935,40 +7909,29 @@ class _TripStatusPanel extends StatelessWidget {
                   dropoff: order.dropoff,
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TripInfoPill(
-                        label: l10n.tariffLabel,
-                        // (order.tariff ?? 'Эконом') meant the null case
-                        // itself never produced an empty string to trigger
-                        // the "use Эконом" branch — it fell through to the
-                        // null-check operator below and crashed for any
-                        // order with no tariff at all.
-                        value: (order.tariff?.trim().isEmpty ?? true)
-                            ? l10n.tariffEconomyTitle
-                            : order.tariff!,
-                      ),
+                _TripInfoRow(children: [
+                  _TripInfoPill(
+                    label: l10n.tariffLabel,
+                    // (order.tariff ?? 'Эконом') meant the null case
+                    // itself never produced an empty string to trigger
+                    // the "use Эконом" branch — it fell through to the
+                    // null-check operator below and crashed for any
+                    // order with no tariff at all.
+                    value: (order.tariff?.trim().isEmpty ?? true)
+                        ? l10n.tariffEconomyTitle
+                        : order.tariff!,
+                  ),
+                  _TripInfoPill(
+                    label: l10n.paymentMethodLabel,
+                    value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
+                  ),
+                  if (order.price != null)
+                    _TripInfoPill(
+                      label: l10n.passengerTripTotalLabel,
+                      value: _formatTenge(order.price!),
+                      emphasis: true,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TripInfoPill(
-                        label: l10n.paymentMethodLabel,
-                        value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
-                      ),
-                    ),
-                    if (order.price != null) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _TripInfoPill(
-                          label: l10n.passengerTripTotalLabel,
-                          value: _formatTenge(order.price!),
-                          emphasis: true,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                ]),
                 if (error != null) ...[
                   const SizedBox(height: 12),
                   _InlineMessage(text: error!, danger: true, dark: isDark),
@@ -8104,37 +8067,26 @@ class _TripStatusPanel extends StatelessWidget {
                   dark: isDark,
                 ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _TripInfoPill(
-                      label: l10n.tariffLabel,
-                      value: (order.tariff ?? l10n.tariffEconomyTitle)
-                              .trim()
-                              .isEmpty
-                          ? l10n.tariffEconomyTitle
-                          : order.tariff!,
-                    ),
+              _TripInfoRow(children: [
+                _TripInfoPill(
+                  label: l10n.tariffLabel,
+                  value: (order.tariff ?? l10n.tariffEconomyTitle)
+                          .trim()
+                          .isEmpty
+                      ? l10n.tariffEconomyTitle
+                      : order.tariff!,
+                ),
+                _TripInfoPill(
+                  label: l10n.paymentMethodLabel,
+                  value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
+                ),
+                if (order.price != null)
+                  _TripInfoPill(
+                    label: l10n.passengerTripTotalLabel,
+                    value: _formatTenge(order.price!),
+                    emphasis: true,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TripInfoPill(
-                      label: l10n.paymentMethodLabel,
-                      value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
-                    ),
-                  ),
-                  if (order.price != null) ...[
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _TripInfoPill(
-                        label: l10n.passengerTripTotalLabel,
-                        value: _formatTenge(order.price!),
-                        emphasis: true,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              ]),
               if (error != null) ...[
                 const SizedBox(height: 12),
                 _InlineMessage(text: error!, danger: true, dark: isDark),
@@ -8548,43 +8500,29 @@ class _TripReceiptPanel extends StatelessWidget {
             const SizedBox(height: 14),
             _TripRouteMiniCard(pickup: order.pickup, dropoff: order.dropoff),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.passengerTripDistanceLabel,
-                    value: _distanceLabel(order.distanceKm),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.passengerTripInTransitLabel,
-                    value: _durationLabel(order.durationMin),
-                  ),
-                ),
-              ],
-            ),
+            _TripInfoRow(children: [
+              _TripInfoPill(
+                label: l10n.passengerTripDistanceLabel,
+                value: _distanceLabel(order.distanceKm),
+              ),
+              _TripInfoPill(
+                label: l10n.passengerTripInTransitLabel,
+                value: _durationLabel(order.durationMin),
+              ),
+            ]),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.paymentMethodFullLabel,
-                    value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TripInfoPill(
-                    label: l10n.passengerTripTotalLabel,
-                    value:
-                        order.price == null ? '—' : _formatTenge(order.price!),
-                    emphasis: true,
-                  ),
-                ),
-              ],
-            ),
+            _TripInfoRow(children: [
+              _TripInfoPill(
+                label: l10n.paymentMethodFullLabel,
+                value: _paymentLabel(l10n, order.paymentMethod ?? 'CASH'),
+              ),
+              _TripInfoPill(
+                label: l10n.passengerTripTotalLabel,
+                value:
+                    order.price == null ? '—' : _formatTenge(order.price!),
+                emphasis: true,
+              ),
+            ]),
             const SizedBox(height: 18),
             _buildPaymentState(palette, l10n),
           ],
@@ -12282,6 +12220,11 @@ class _TripRouteMiniLine extends StatelessWidget {
   }
 }
 
+// Bare content (no border/background of its own) -- always placed inside a
+// _TripInfoRow, which owns the one shared card decoration for the whole
+// group. Used to individually carry its own bordered pill, so 2-3 of these
+// side by side cast 2-3 separate shadows/borders right under each other;
+// _TripInfoRow merges that into one card with dividers between cells.
 class _TripInfoPill extends StatelessWidget {
   const _TripInfoPill({
     required this.label,
@@ -12296,19 +12239,12 @@ class _TripInfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: emphasis ? palette.goldSurface : palette.card,
-        border: Border.all(
-          color: emphasis ? palette.borderStrong : palette.border,
-        ),
-        borderRadius: BorderRadius.circular(18),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
@@ -12337,6 +12273,42 @@ class _TripInfoPill extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// One shared card for a group of _TripInfoPill cells, divided by thin
+// vertical rules instead of each cell carrying its own border/shadow --
+// replaces what used to be a Row of individually-bordered pills (2-3 boxes
+// side by side, another box under the panel's other cards).
+class _TripInfoRow extends StatelessWidget {
+  const _TripInfoRow({required this.children});
+
+  final List<_TripInfoPill> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final cells = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      if (i > 0) {
+        cells.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: SizedBox(width: 1, child: ColoredBox(color: palette.border)),
+        ));
+      }
+      cells.add(Expanded(child: children[i]));
+    }
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: cells),
       ),
     );
   }
