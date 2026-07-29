@@ -5689,42 +5689,44 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            PremiumCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionLabel(
-                    title: l10n.driverNearbyAlertsTitle,
-                    text: l10n.driverNearbyAlertsSubtitle,
-                  ),
-                  const SizedBox(height: 12),
-                  if (_loading)
-                    LoadingStrip(text: l10n.driverLoadingAlerts)
-                  else if (_alertsLoadFailed)
-                    EmptyState(
-                      title: l10n.driverAlertsLoadFailedTitle,
-                      text: _message ?? l10n.driverCheckConnectionRetry,
-                      icon: Icons.wifi_off_rounded,
-                      action: l10n.retry,
-                      onAction: _loadAlerts,
-                    )
-                  else if (_alerts.isEmpty)
-                    EmptyState(
-                      title: l10n.driverNoNearbyAlertsTitle,
-                      text: l10n.driverNoNearbyAlertsText,
-                      icon: Icons.signpost_outlined,
-                    )
-                  else
-                    ..._alerts.map(
-                      (alert) => _RoadAlertRow(
-                        alert: alert,
-                        updating: _updatingAlertId == alert.id,
-                        onConfirm: () => _confirmAlert(alert),
-                        onDismiss: () => _dismissAlert(alert),
-                      ),
+            // Bare Column, not another PremiumCard -- each _RoadAlertRow
+            // below is already its own bordered, gold-tinted card, so
+            // wrapping the whole section in a second bordered card just
+            // nested one box inside another for no visual reason.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionLabel(
+                  title: l10n.driverNearbyAlertsTitle,
+                  text: l10n.driverNearbyAlertsSubtitle,
+                ),
+                const SizedBox(height: 12),
+                if (_loading)
+                  LoadingStrip(text: l10n.driverLoadingAlerts)
+                else if (_alertsLoadFailed)
+                  EmptyState(
+                    title: l10n.driverAlertsLoadFailedTitle,
+                    text: _message ?? l10n.driverCheckConnectionRetry,
+                    icon: Icons.wifi_off_rounded,
+                    action: l10n.retry,
+                    onAction: _loadAlerts,
+                  )
+                else if (_alerts.isEmpty)
+                  EmptyState(
+                    title: l10n.driverNoNearbyAlertsTitle,
+                    text: l10n.driverNoNearbyAlertsText,
+                    icon: Icons.signpost_outlined,
+                  )
+                else
+                  ..._alerts.map(
+                    (alert) => _RoadAlertRow(
+                      alert: alert,
+                      updating: _updatingAlertId == alert.id,
+                      onConfirm: () => _confirmAlert(alert),
+                      onDismiss: () => _dismissAlert(alert),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ],
         ),
