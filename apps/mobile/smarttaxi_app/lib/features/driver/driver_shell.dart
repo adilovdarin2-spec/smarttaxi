@@ -4438,11 +4438,12 @@ class _NavTargetStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: palette.card.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -4451,18 +4452,17 @@ class _NavTargetStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.route_rounded,
-              size: 18, color: SmartTaxiColors.goldDeep),
+          Icon(Icons.route_rounded, size: 18, color: palette.goldDeep),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
-                color: SmartTaxiColors.text,
+                color: palette.text,
               ),
             ),
           ),
@@ -5847,20 +5847,20 @@ class _RoadAlertMap extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.94),
-                  border: Border.all(color: SmartTaxiColors.border),
+                  color: context.palette.card.withValues(alpha: 0.94),
+                  border: Border.all(color: context.palette.border),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.shield_outlined,
-                        color: SmartTaxiColors.goldDeep, size: 18),
+                    Icon(Icons.shield_outlined,
+                        color: context.palette.goldDeep, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         l10n.driverTapMapToSelectAlertPoint,
-                        style: const TextStyle(
-                          color: SmartTaxiColors.text,
+                        style: TextStyle(
+                          color: context.palette.text,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                         ),
