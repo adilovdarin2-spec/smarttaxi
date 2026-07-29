@@ -21,7 +21,14 @@ async function dependencyStatus() {
     checks.redis = await redis.ping();
   } catch {}
 
-  const maps = await buildMapsDiagnostics();
+  // Unlike the db/redis checks above, buildMapsDiagnostics() wasn't guarded --
+  // a throw here (e.g. redis.isOpen on a disconnected client) had nowhere to
+  // go, since this route has no try/catch/next of its own, leaving the
+  // request hanging forever instead of returning a degraded status.
+  let maps = { osrm: { status: "fail" }, maptiler: { key: "not_configured" }, providers: {} };
+  try {
+    maps = await buildMapsDiagnostics();
+  } catch {}
   checks.osrm = maps.osrm.status;
   checks.maptiler = maps.maptiler.key;
   checks.mapSearch = maps.providers.search;
