@@ -165,11 +165,11 @@ class _RouteButton extends StatelessWidget {
         border: Border.all(color: border, width: active ? 1.8 : 1),
         borderRadius: BorderRadius.circular(18),
         boxShadow: active
-            ? const [
+            ? [
                 BoxShadow(
-                    color: Color(0x2ed4af37),
+                    color: SmartTaxiColors.gold.withValues(alpha: 0.18),
                     blurRadius: 18,
-                    offset: Offset(0, 8))
+                    offset: const Offset(0, 8))
               ]
             : null,
       ),

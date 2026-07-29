@@ -5717,7 +5717,7 @@ class _MarkerRadarPulseState extends State<_MarkerRadarPulse>
 // target. The *Deep variants below are still used elsewhere (trip status
 // copy), just not for the marker pin itself anymore.
 const _pickupMarkerColorDeep = SmartTaxiColors.goldDeep;
-const _dropoffMarkerColorDeep = Color(0xffb45309);
+const _dropoffMarkerColorDeep = SmartTaxiColors.warning;
 
 class _CenterMapMarker extends StatelessWidget {
   const _CenterMapMarker({required this.target});

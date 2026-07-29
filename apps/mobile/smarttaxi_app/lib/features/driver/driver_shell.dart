@@ -3745,11 +3745,11 @@ class _NavigatorPointMarker extends StatelessWidget {
         color: background,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x44d4af37),
+            color: background.withValues(alpha: 0.34),
             blurRadius: 16,
-            offset: Offset(0, 7),
+            offset: const Offset(0, 7),
           ),
         ],
       ),
