@@ -1923,11 +1923,12 @@ class _DriverShellState extends State<DriverShell> {
           text: l10n.driverFaqSubtitle,
         ),
         const SizedBox(height: 16),
-        for (final item in items)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: DriverFaqTile(question: item.$1, answer: item.$2),
-          ),
+        DriverDividedListCard(
+          rows: [
+            for (final item in items)
+              DriverFaqTile(question: item.$1, answer: item.$2),
+          ],
+        ),
       ],
     );
   }

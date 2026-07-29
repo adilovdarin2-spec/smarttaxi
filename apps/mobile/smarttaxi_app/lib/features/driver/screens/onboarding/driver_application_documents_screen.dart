@@ -105,16 +105,18 @@ class _DriverApplicationDocumentsScreenState
               Text(_error!, style: TextStyle(color: palette.danger)),
               const SizedBox(height: 12),
             ],
-            for (final type in DriverDocumentType.required) ...[
-              _ApplicationDocumentRow(
-                type: type,
-                uploaded: _uploaded[type],
-                uploading: _uploadingTypes.contains(type),
-                onCamera: () => _pickFromCamera(type),
-                onFile: () => _pickFromGallery(type),
-              ),
-              const SizedBox(height: 10),
-            ],
+            _ApplicationDocumentListCard(
+              rows: [
+                for (final type in DriverDocumentType.required)
+                  _ApplicationDocumentRow(
+                    type: type,
+                    uploaded: _uploaded[type],
+                    uploading: _uploadingTypes.contains(type),
+                    onCamera: () => _pickFromCamera(type),
+                    onFile: () => _pickFromGallery(type),
+                  ),
+              ],
+            ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -127,6 +129,36 @@ class _DriverApplicationDocumentsScreenState
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Wraps the required-document rows in one shared card with a hairline
+// divider between rows, instead of each row carrying its own border --
+// several bordered rows stacked with gaps read as a wall of boxes.
+class _ApplicationDocumentListCard extends StatelessWidget {
+  const _ApplicationDocumentListCard({required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i != 0) Divider(height: 1, thickness: 1, color: palette.border),
+            rows[i],
+          ],
+        ],
       ),
     );
   }
@@ -151,14 +183,8 @@ class _ApplicationDocumentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
