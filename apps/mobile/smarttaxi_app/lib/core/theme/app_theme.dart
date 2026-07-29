@@ -169,16 +169,19 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     goldSurface: SmartTaxiColors.goldSurface,
   );
 
+  // True black-and-blue dark theme, not navy: near-black surfaces with the
+  // brand blue reserved for accents/glow, matching the reference direction
+  // the user asked for (2026-07-29) over the earlier dark-navy palette.
   // Brand hues (gold/success/danger) stay identical to light — only neutral
   // surfaces, text and soft/surface washes change for dark backgrounds.
   static const dark = SmartTaxiPalette(
-    appBackground: SmartTaxiColors.bgDark,
-    card: SmartTaxiColors.cardDark,
-    cardWarm: SmartTaxiColors.cardDark2,
-    text: Color(0xfff3f6fb),
-    textSecondary: Color(0xffaab4c6),
-    textMuted: Color(0xff7c879c),
-    border: Color(0xff223350),
+    appBackground: Color(0xff05070c),
+    card: Color(0xff0d121f),
+    cardWarm: Color(0xff141b2e),
+    text: Color(0xfff5f7fb),
+    textSecondary: Color(0xff9aa4ba),
+    textMuted: Color(0xff6b7488),
+    border: Color(0xff1f2740),
     borderStrong: SmartTaxiColors.gold,
     success: SmartTaxiColors.success,
     successSoft: Color(0xff123222),
@@ -187,8 +190,8 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     warning: Color(0xff5b9bff),
     gold: SmartTaxiColors.gold,
     goldDeep: Color(0xff5b9bff),
-    goldPale: Color(0xff1c2c4a),
-    goldSurface: Color(0xff13253f),
+    goldPale: Color(0xff16223e),
+    goldSurface: Color(0xff101b33),
   );
 
   @override
