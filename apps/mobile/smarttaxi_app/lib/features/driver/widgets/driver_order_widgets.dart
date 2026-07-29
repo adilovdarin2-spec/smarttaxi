@@ -47,33 +47,78 @@ class DriverStatusStepper extends StatelessWidget {
     final rawIndex = steps.indexOf(normalized);
     final index =
         rawIndex < 0 ? 0 : rawIndex.clamp(0, steps.length - 1).toInt();
+    final palette = context.palette;
+    // Connected dots + line, not six individually bordered boxes -- matches
+    // the passenger app's trip-status stepper (_StatusStepper), which this
+    // one predates and visually contradicted: six adjacent bordered
+    // rectangles read as a strip of tiny boxes rather than one progress
+    // indicator.
     return Row(
       children: List.generate(steps.length, (stepIndex) {
         final done = stepIndex <= index;
         return Expanded(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            margin:
-                EdgeInsets.only(right: stepIndex == steps.length - 1 ? 0 : 6),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: done ? context.palette.goldPale : context.palette.card,
-              border: Border.all(
-                  color: done
-                      ? context.palette.borderStrong
-                      : context.palette.border),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(labels[stepIndex],
-                  maxLines: 1,
-                  style: TextStyle(
-                      color: context.palette.text,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900)),
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      width: done ? 12 : 9,
+                      height: done ? 12 : 9,
+                      decoration: BoxDecoration(
+                        color: done ? palette.gold : palette.card,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: done ? palette.gold : palette.borderStrong,
+                          width: 1.5,
+                        ),
+                        boxShadow: done
+                            ? [
+                                BoxShadow(
+                                  color: palette.gold.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // FittedBox, not a fixed font size -- six steps (vs. the
+                    // passenger stepper's four) leaves noticeably less width
+                    // per label, and Principal/Waiting-length words were
+                    // clipping to "Пр…"/"Ж…" at a fixed 10px before this.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        labels[stepIndex],
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: done ? palette.text : palette.textSecondary,
+                          fontSize: 10,
+                          height: 1,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (stepIndex != steps.length - 1)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: stepIndex < index ? palette.gold : palette.border,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       }),
