@@ -4728,7 +4728,7 @@ class _DriverMapBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14785a14),
+            color: Color(0x14102a52),
             blurRadius: 18,
             offset: Offset(0, 8),
           )

@@ -1515,7 +1515,7 @@ class _UpdateAvailableSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x20785a14),
+              color: Color(0x20102a52),
               blurRadius: 34,
               offset: Offset(0, 16),
             ),

@@ -30,7 +30,7 @@ class DriverHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x10785a14), blurRadius: 22, offset: Offset(0, 10))
+              color: Color(0x10102a52), blurRadius: 22, offset: Offset(0, 10))
         ],
       ),
       child: Row(

@@ -72,7 +72,7 @@ const _blueBorder = Color(0xffe1e7f5);
 // states (_TariffCard selected, _GoldCtaButton) — those are a different,
 // intentional visual language, not an inconsistency to fix.
 const _cardShadow = <BoxShadow>[
-  BoxShadow(color: Color(0x14785a14), blurRadius: 24, offset: Offset(0, 10)),
+  BoxShadow(color: Color(0x14102a52), blurRadius: 24, offset: Offset(0, 10)),
 ];
 // Darkens the OSM raster tile layer for dark theme without a separate dark
 // tile provider/API key. Same math as the well-known CSS
@@ -4859,7 +4859,7 @@ class _SupportTopicChip extends StatelessWidget {
         boxShadow: selected
             ? const [
                 BoxShadow(
-                  color: Color(0x10785a14),
+                  color: Color(0x10102a52),
                   blurRadius: 14,
                   offset: Offset(0, 6),
                 )
@@ -5870,7 +5870,7 @@ class _MapUnavailableCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x18785a14),
+            color: Color(0x18102a52),
             blurRadius: 24,
             offset: Offset(0, 12),
           ),
@@ -5943,7 +5943,7 @@ class _MapPermissionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x18785a14),
+            color: Color(0x18102a52),
             blurRadius: 22,
             offset: Offset(0, 10),
           ),
@@ -6121,7 +6121,7 @@ class _HomeOrderPanel extends StatelessWidget {
             borderRadius: const BorderRadius.all(Radius.circular(30)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x24785a14),
+                color: Color(0x24102a52),
                 blurRadius: 30,
                 offset: Offset(0, 14),
               ),
@@ -13103,7 +13103,7 @@ class _LocationPermissionSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14785a14),
+              color: Color(0x14102a52),
               blurRadius: 28,
               offset: Offset(0, 14),
             ),
@@ -14040,7 +14040,7 @@ class _RegionConfirmSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x20785a14),
+              color: Color(0x20102a52),
               blurRadius: 34,
               offset: Offset(0, 16),
             ),
@@ -14183,7 +14183,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x20785a14),
+              color: Color(0x20102a52),
               blurRadius: 30,
               offset: Offset(0, -10),
             ),
@@ -14646,7 +14646,7 @@ class _SmartDrawer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: const [
                   BoxShadow(
-                    color: Color(0x10785a14),
+                    color: Color(0x10102a52),
                     blurRadius: 24,
                     offset: Offset(0, 10),
                   ),
@@ -15059,7 +15059,7 @@ class _AppHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x10785a14),
+            color: Color(0x10102a52),
             blurRadius: 22,
             offset: Offset(0, 10),
           ),
@@ -17287,7 +17287,7 @@ class _MinimizedSheetBar extends StatelessWidget {
           borderRadius: const BorderRadius.all(Radius.circular(999)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x24785a14),
+              color: Color(0x24102a52),
               blurRadius: 24,
               offset: Offset(0, 10),
             ),

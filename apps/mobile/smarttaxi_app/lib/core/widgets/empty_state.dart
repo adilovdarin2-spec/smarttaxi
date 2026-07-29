@@ -32,7 +32,7 @@ class EmptyState extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x0f785a14),
+                color: Color(0x0f102a52),
                 blurRadius: 28,
                 offset: Offset(0, 14),
               ),
@@ -50,7 +50,7 @@ class EmptyState extends StatelessWidget {
                   borderRadius: BorderRadius.circular(26),
                   boxShadow: const [
                     BoxShadow(
-                        color: Color(0x14785a14),
+                        color: Color(0x14102a52),
                         blurRadius: 24,
                         offset: Offset(0, 12))
                   ],

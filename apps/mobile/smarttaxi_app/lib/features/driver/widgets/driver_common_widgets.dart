@@ -29,7 +29,7 @@ class FloatingNav extends StatelessWidget {
             borderRadius: BorderRadius.circular(26),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x16785a14),
+                  color: Color(0x16102a52),
                   blurRadius: 28,
                   offset: Offset(0, 12))
             ],
@@ -415,7 +415,7 @@ class PremiumCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x18785a14), blurRadius: 42, offset: Offset(0, 18))
+              color: Color(0x18102a52), blurRadius: 42, offset: Offset(0, 18))
         ],
       ),
       child: child,

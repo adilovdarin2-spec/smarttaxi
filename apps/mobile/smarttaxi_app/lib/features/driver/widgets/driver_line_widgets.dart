@@ -326,7 +326,7 @@ class _MiniStat extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x0f785a14), blurRadius: 18, offset: Offset(0, 8)),
+              color: Color(0x0f102a52), blurRadius: 18, offset: Offset(0, 8)),
         ],
       ),
       child: Column(
