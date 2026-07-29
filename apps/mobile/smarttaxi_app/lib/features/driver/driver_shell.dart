@@ -3945,6 +3945,20 @@ class _DriverFullScreenNavigatorState
     if (!mounted) return;
     final current = widget.shell._currentCoordinate;
     if (current != null) _lastFixAt = DateTime.now();
+    // _maybeRefreshDriverRoute is normally only triggered by the position
+    // stream, which Geolocator fires solely after 20m of movement (see the
+    // stream's distanceFilter) -- a driver stopped in traffic or waiting
+    // near the destination never moves that far, so the route/ETA it
+    // computed can sit frozen indefinitely even though the function's own
+    // 12-second staleness check would happily refresh it. This tick already
+    // runs unconditionally every 500ms, so use it as a movement-independent
+    // fallback trigger; the function's existing throttling (12s/4s floors,
+    // in-flight guard, active-order check) makes this a no-op almost every
+    // call.
+    final lastPosition = widget.shell._lastPosition;
+    if (lastPosition != null) {
+      unawaited(widget.shell._maybeRefreshDriverRoute(lastPosition));
+    }
     if (_autoFollow && _mapReady && current != null) {
       final heading = widget.shell._currentHeading;
       final point = current.toLatLng();
