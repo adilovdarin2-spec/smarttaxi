@@ -15691,11 +15691,13 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
             for (final group in _groupNotificationsByDay(l10n, filtered)) ...[
               _ProfileGroupLabel(group.label),
               const SizedBox(height: 8),
-              for (final item in group.items) ...[
-                _NotificationTile(notification: item),
-                const SizedBox(height: 10),
-              ],
-              const SizedBox(height: 6),
+              _NotificationListCard(
+                rows: [
+                  for (final item in group.items)
+                    _NotificationTile(notification: item),
+                ],
+              ),
+              const SizedBox(height: 14),
             ],
         ],
       ),
@@ -15802,6 +15804,37 @@ List<_NotificationDayGroup> _groupNotificationsByDay(
   ];
 }
 
+// Wraps a day-group's notification tiles in one shared card with a
+// hairline divider between rows, instead of each tile carrying its own
+// border -- a day with several notifications used to read as a stack of
+// separately-boxed cards rather than one list.
+class _NotificationListCard extends StatelessWidget {
+  const _NotificationListCard({required this.rows});
+
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border.all(color: palette.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i != 0) Divider(height: 1, thickness: 1, color: palette.border),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _NotificationTile extends StatelessWidget {
   const _NotificationTile({required this.notification});
 
@@ -15843,18 +15876,8 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(
-          color: notification.isUnread
-              ? palette.borderStrong
-              : palette.border,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
