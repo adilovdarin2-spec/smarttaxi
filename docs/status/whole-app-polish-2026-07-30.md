@@ -12,7 +12,42 @@ explicit "no lags" ask, and fixed the one real finding. Later, after finding
 one panel (driver web) missed by the original mounted-component audit,
 followed the same suspicion into the largest remaining file (admin web) and
 found 8 more real instances of the same bug, then the same check on the
-third and final panel (client web) found 7 more. 21 commits this round.
+third and final panel (client web) found 7 more. Finally, a dedicated
+audit of backend money-handling for race conditions found the code
+already solid, with one defensive hardening applied. 22 commits this
+round.
+
+## Backend money-handling concurrency audit
+
+Given this platform moves real money (fares, driver payouts, commission,
+client top-ups, promo discounts), ran a focused audit of wallet balance
+updates, order-payment status transitions, promo code usage-limit
+enforcement, and driver debt adjustments for read-then-write race
+conditions (the classic "two concurrent requests both read the same
+stale balance, second write silently clobbers the first" bug).
+
+**Result: no exploitable bug found.** Every balance/status write is
+either a single atomic `UPDATE ... SET col = col + $1` (no read-modify-
+write in JS at all) or a `SELECT ... FOR UPDATE` whose lock is correctly
+held across the read and the later write via an already-open transaction
+— payout requests, order mark-paid, and promo redemption all serialize
+correctly under concurrent load. This is worth recording precisely
+because it's a clean bill of health on the highest-stakes code in the
+app, not a gap.
+
+**One defensive hardening applied anyway** (`a0453a0`):
+`settleConfirmedOrderEarnings` and `settleDriverDebtFromBalance` both
+defaulted their `executor` parameter to the bare (non-transactional)
+connection pool, unlike the other read/report helpers in the same file
+where that default is harmless. For these two specifically, the `FOR
+UPDATE` lock they take only means anything because every *current*
+caller happens to pass a transaction-scoped client — the default was a
+latent foot-gun that would silently reopen the exact race being audited
+for if some future caller (a cron job, a new admin action) ever invoked
+either one without explicitly threading a transaction through. Removed
+the default so an omitted executor throws immediately instead of failing
+silently. Confirmed all three real call sites already pass one
+explicitly, so this is a no-op for current behavior.
 
 ## Web mounted-component sweep, round 3 (client panel)
 
