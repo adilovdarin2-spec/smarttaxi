@@ -2554,6 +2554,8 @@ function OrdersPage({
 function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver, onAdvanceStatus, onRequestCancel, canManageOwnerOnly, canAdjustFinance }) {
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [busy, setBusy] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const nextAction = nextOrderStatusAction(order.status);
   // Mirrors orders.routes.js's requireRole for each action: assign-driver
@@ -2581,9 +2583,9 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
     setBusy(true);
     try {
       await onAssignDriver(order.id, selectedDriverId);
-      setSelectedDriverId("");
+      if (mountedRef.current) setSelectedDriverId("");
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   }
 
@@ -2593,7 +2595,7 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
     try {
       await onAdvanceStatus(order.id, nextAction.action, nextAction.successMessage);
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   }
 
@@ -2805,6 +2807,8 @@ function SupportTicketCard({ message, onRespond, onReopen }) {
   const [draft, setDraft] = useState(message.adminResponse || "");
   const [busy, setBusy] = useState(false);
   const isResolved = message.status === "RESOLVED";
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function submit(resolve) {
     if (!draft.trim()) return;
@@ -2812,7 +2816,7 @@ function SupportTicketCard({ message, onRespond, onReopen }) {
     try {
       await onRespond(message, draft.trim(), resolve);
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   }
 
@@ -2821,7 +2825,7 @@ function SupportTicketCard({ message, onRespond, onReopen }) {
     try {
       await onReopen(message);
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   }
 
@@ -3104,6 +3108,8 @@ function PromoCodeEditor({ regions, onClose, onSave, busy }) {
     validUntil: ""
   });
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   function setField(field, value) {
     setForm(current => ({ ...current, [field]: value }));
@@ -3123,7 +3129,7 @@ function PromoCodeEditor({ regions, onClose, onSave, busy }) {
     try {
       await onSave(form);
     } catch (submitError) {
-      setError(readError(submitError));
+      if (mountedRef.current) setError(readError(submitError));
     }
   }
 
@@ -3249,6 +3255,8 @@ function RafflesPage({ raffles, onAddRaffle, onDeleteRaffle }) {
 function RaffleEditor({ onClose, onSave, busy }) {
   const [form, setForm] = useState({ title: "", startsAt: dateInputValue(new Date()), endsAt: dateInputValue(new Date()) });
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   function setField(field, value) {
     setForm(current => ({ ...current, [field]: value }));
@@ -3268,7 +3276,7 @@ function RaffleEditor({ onClose, onSave, busy }) {
     try {
       await onSave(form);
     } catch (submitError) {
-      setError(readError(submitError));
+      if (mountedRef.current) setError(readError(submitError));
     }
   }
 
@@ -3717,6 +3725,8 @@ function BroadcastComposer({ regions, onSend }) {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const segmentLabels = {
     ALL_CLIENTS: "Все клиенты",
@@ -3743,14 +3753,17 @@ function BroadcastComposer({ regions, onSend }) {
         title: title.trim(),
         body: body.trim()
       });
+      if (!mountedRef.current) return;
       setResult(response);
       setTitle("");
       setBody("");
     } catch (submitError) {
-      setError(readError(submitError));
+      if (mountedRef.current) setError(readError(submitError));
     } finally {
-      setBusy(false);
-      setConfirming(false);
+      if (mountedRef.current) {
+        setBusy(false);
+        setConfirming(false);
+      }
     }
   }
 
@@ -3821,6 +3834,8 @@ function BroadcastComposer({ regions, onSend }) {
 function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
   const [form, setForm] = useState(() => normalizeTariffForm(tariff, regions[0]?.id || ""));
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   function setField(field, value) {
     setForm(current => ({ ...current, [field]: value }));
@@ -3856,7 +3871,7 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
       // Error, no .code -- their own message is already the right thing to
       // show) from a real API failure (readError's translated message,
       // e.g. instead of a raw English backend string).
-      setError(submitError.code ? readError(submitError) : submitError.message);
+      if (mountedRef.current) setError(submitError.code ? readError(submitError) : submitError.message);
     }
   }
 
@@ -3917,14 +3932,18 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
 function TariffPreviewPanel({ tariff, onClose, onPreview }) {
   const [form, setForm] = useState({ distanceKm: "5", durationMin: "14", waitingMinutes: "0" });
   const [state, setState] = useState({ loading: false, error: "", result: null });
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function calculate(event) {
     event.preventDefault();
     setState({ loading: true, error: "", result: null });
     try {
       const result = await onPreview(tariff, form);
+      if (!mountedRef.current) return;
       setState({ loading: false, error: "", result: result.preview });
     } catch (error) {
+      if (!mountedRef.current) return;
       setState({ loading: false, error: readError(error), result: null });
     }
   }
@@ -3981,6 +4000,8 @@ function TariffPreviewPanel({ tariff, onClose, onPreview }) {
 function RegionEditor({ region, onClose, onSave, busy }) {
   const [form, setForm] = useState(() => normalizeRegionForm(region));
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   function setField(field, value) {
     setForm(current => ({ ...current, [field]: value }));
@@ -4010,7 +4031,7 @@ function RegionEditor({ region, onClose, onSave, busy }) {
       }
       await onSave(form, region);
     } catch (submitError) {
-      setError(submitError.code ? readError(submitError) : submitError.message);
+      if (mountedRef.current) setError(submitError.code ? readError(submitError) : submitError.message);
     }
   }
 
