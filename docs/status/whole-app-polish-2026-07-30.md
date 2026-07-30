@@ -384,6 +384,48 @@ ran one more pass verifying the *combined* effect of all of them together:
 tests passing), and `npm run build` for the web panels (clean compile, no
 new errors). Confirms none of tonight's fixes conflict with each other.
 
+## Mobile accessibility audit
+
+Dispatched a check of screen-reader support and touch-target sizing
+across the driver/passenger shells — a "convenient" dimension distinct
+from everything else checked tonight (visual consistency, dark mode,
+correctness, performance). Overall the app is not broadly inaccessible:
+the driver-side map controls (`_NavCircleButton`, `DriverSosButton`) were
+already a good example, wrapping icon-only controls in
+`Semantics(button:true, label:...)` with 44-46px targets. The gaps were
+concentrated on the passenger side, where that pattern wasn't mirrored.
+
+**Fixed**: the passenger SOS button (`_SafetyButton`) — the app's single
+most safety-critical control — had no Semantics label at all and a 34x34
+tap target, smaller than its own driver-side counterpart. The driver
+contact-card's call/chat icons (`_RoundIconButton`) were the same:
+unlabeled, 36x36. Both now wrap in `Semantics(button:true, label:...)`
+(reusing existing l10n strings — `passengerSafetyTitle`,
+`passengerChatFallbackTitle`, `passengerCallPhoneLabel`) and use 44x44
+minimum tap targets, matching the driver-side pattern. Verified safe via
+Row/Expanded structural review (not a Stack/Positioned overflow risk, see
+below) plus `flutter analyze`/`flutter test`, since live-verifying the
+passenger active-trip-with-assigned-driver screen would need a
+coordinated two-role live order.
+
+**Bigger find while live-verifying the third fix**: the shared driver
+bottom-sheet close button (`_showDriverFullSheet`, reused across 9 driver
+screens — Profile, Wallet, Rating, Notifications, Support, FAQ, About,
+Settings, Recurring Bookings) turned out to be both invisible *and*
+untappable, not just missing a tooltip. Its `Stack` had no explicit size,
+so it shrink-wrapped to its only non-positioned child (the ~14px drag
+handle) in both width and height; Stack's default `Clip.hardEdge` then
+clipped away the 48px-tall `Positioned` close button below that ~14px
+line, and `right: 8` resolved against the narrow handle-width box instead
+of the sheet's actual right edge. An on-device tap at the button's coded
+location did nothing — confirmed dead, not just hard to see. Fixed by
+giving the Stack an explicit full-width, 48px-tall `SizedBox` to lay out
+in; a fresh screenshot confirms the X is now visible in the correct
+top-right position, and tapping it closes the sheet. This affected all 9
+screens that reuse this helper, and would never have surfaced from
+`flutter analyze`/`flutter test` alone — only caught because a screenshot
+was taken to verify the accessibility fix.
+
 ## Not done / known limitations
 
 - Navigator road-sign/camera data is only as complete as OpenStreetMap's
