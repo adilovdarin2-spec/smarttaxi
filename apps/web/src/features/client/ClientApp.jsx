@@ -2493,6 +2493,8 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
   const [error, setError] = useState("");
   const reverseSeqRef = useRef(0);
   const reverseDebounceRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   const label = mode === "pickup" ? "Откуда?" : mode === "favorite" ? "Сохранить адрес" : "Куда едем?";
   const helper = mode === "pickup" ? "Выберите точку подачи" : mode === "favorite" ? "Выберите адрес для избранного" : "Выберите точку назначения";
   const popular = useMemo(() => localAddressesForRegion(region).slice(0, 4), [region?.id, region?.code, region?.name]);
@@ -2569,11 +2571,11 @@ function AddressPicker({ mode, region, onBack, onSelect }) {
         subtitle: `${Number(point.lat).toFixed(5)}, ${Number(point.lng).toFixed(5)}`,
         ...point
       };
-      if (seq === reverseSeqRef.current) setMapCandidate(address);
+      if (mountedRef.current && seq === reverseSeqRef.current) setMapCandidate(address);
     } catch {
-      if (seq === reverseSeqRef.current) setMapCandidate(fallback);
+      if (mountedRef.current && seq === reverseSeqRef.current) setMapCandidate(fallback);
     } finally {
-      if (seq === reverseSeqRef.current) {
+      if (mountedRef.current && seq === reverseSeqRef.current) {
         setMapCandidateReady(true);
         setMapPickLoading(false);
       }
@@ -2680,6 +2682,8 @@ function TripsSection({ order, pickup, destination, route, liveRoute, estimate, 
   const [ratingComment, setRatingComment] = useState("");
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingError, setRatingError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   useEffect(() => {
     setDetailsOpen(false);
     setRatingValue(5);
@@ -2730,11 +2734,16 @@ function TripsSection({ order, pickup, destination, route, liveRoute, estimate, 
         tags: ratingTags,
         comment: ratingComment
       });
+      // Always call this, even if TripsSection itself has since unmounted --
+      // onOrderUpdate writes to the always-mounted ClientApp root's state,
+      // not this component's, so it's safe (and correct: the rating really
+      // did succeed) regardless of mountedRef below, which only guards this
+      // component's own local state.
       onOrderUpdate?.(data.order);
     } catch (error) {
-      setRatingError(formatError(error));
+      if (mountedRef.current) setRatingError(formatError(error));
     } finally {
-      setRatingSubmitting(false);
+      if (mountedRef.current) setRatingSubmitting(false);
     }
   }
 
@@ -3030,6 +3039,8 @@ function SearchRouteCard({ pickup, dropoff }) {
 function PriceOfferCard({ order, onOrderUpdate }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function respond(accept) {
     if (busy) return;
@@ -3037,11 +3048,14 @@ function PriceOfferCard({ order, onOrderUpdate }) {
     setError("");
     try {
       const data = await respondPriceOffer(order.id, accept);
+      // Always call this even if the card itself has since unmounted (e.g.
+      // the offer expired via socket update mid-request) -- it writes to
+      // the always-mounted ClientApp root, not this component.
       onOrderUpdate?.(data.order);
     } catch (submitError) {
-      setError(formatError(submitError));
+      if (mountedRef.current) setError(formatError(submitError));
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   }
 
@@ -3069,6 +3083,8 @@ const quickMessageOptions = [
 function QuickMessagesBar({ orderId }) {
   const [sendingKey, setSendingKey] = useState("");
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function send(code) {
     if (sendingKey) return;
@@ -3077,9 +3093,9 @@ function QuickMessagesBar({ orderId }) {
     try {
       await sendQuickMessage(orderId, code);
     } catch (submitError) {
-      setError(formatError(submitError));
+      if (mountedRef.current) setError(formatError(submitError));
     } finally {
-      setSendingKey("");
+      if (mountedRef.current) setSendingKey("");
     }
   }
 
@@ -3449,6 +3465,8 @@ function DriverFoundMeta({ order, estimate }) {
 
 function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, onSupport, canCancel = false, cancelDisabled }) {
   const [notice, setNotice] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => {
     if (open) setNotice("");
@@ -3486,17 +3504,17 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
     try {
       if (navigator.share) {
         await navigator.share({ title: "SmartTaxi", text: shareText });
-        setNotice("Детали поездки отправлены");
+        if (mountedRef.current) setNotice("Детали поездки отправлены");
         return;
       }
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(shareText);
-        setNotice("Детали поездки скопированы");
+        if (mountedRef.current) setNotice("Детали поездки скопированы");
         return;
       }
       setNotice("Скопируйте ID заказа: " + orderId);
     } catch {
-      setNotice("Поделиться не удалось. Попробуйте позже.");
+      if (mountedRef.current) setNotice("Поделиться не удалось. Попробуйте позже.");
     }
   }
 
@@ -4116,6 +4134,8 @@ function SupportSection({ activeOrderId, authenticated }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const activeTopic = supportTopics.find(item => item.code === topicCode) || supportTopics[0];
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function submit() {
     if (!text.trim() || sending) return;
@@ -4131,12 +4151,13 @@ function SupportSection({ activeOrderId, authenticated }) {
         message: text.trim(),
         orderId: activeOrderId || undefined
       });
+      if (!mountedRef.current) return;
       setSent(true);
       setText("");
     } catch (submitError) {
-      setError(formatError(submitError));
+      if (mountedRef.current) setError(formatError(submitError));
     } finally {
-      setSending(false);
+      if (mountedRef.current) setSending(false);
     }
   }
 
@@ -4237,6 +4258,8 @@ function PromoSection({ regionId, authenticated }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const normalized = code.trim().toUpperCase();
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function check() {
     if (!normalized || checking) return;
@@ -4259,11 +4282,11 @@ function PromoSection({ regionId, authenticated }) {
         regionId,
         orderPriceKzt: Number(priceKzt) || 0
       });
-      setResult(data.promo);
+      if (mountedRef.current) setResult(data.promo);
     } catch (submitError) {
-      setError(formatError(submitError));
+      if (mountedRef.current) setError(formatError(submitError));
     } finally {
-      setChecking(false);
+      if (mountedRef.current) setChecking(false);
     }
   }
 
