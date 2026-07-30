@@ -465,6 +465,8 @@ export default function DriverApp() {
   const lastLocationSentAtRef = useRef(0);
   const lastRouteFetchAtRef = useRef(0);
   const driverRouteRequestIdRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const currentRegion = useMemo(
     () => regions.find(region => regionKey(region) === selectedRegionId) || regions.find(region => regionKey(region) === driver?.currentRegionId),
@@ -664,11 +666,13 @@ export default function DriverApp() {
     setRoadAlertsError("");
     try {
       const items = await getDriverRoadAlerts({ regionId: selectedRegionId || undefined });
+      if (!mountedRef.current) return;
       setRoadAlerts(items);
     } catch (error) {
+      if (!mountedRef.current) return;
       setRoadAlertsError(formatError(error));
     } finally {
-      setRoadAlertsLoading(false);
+      if (mountedRef.current) setRoadAlertsLoading(false);
     }
   }, [logged, selectedRegionId]);
 
@@ -695,12 +699,14 @@ export default function DriverApp() {
         lng: driverPosition.lng,
         regionId: selectedRegionId || undefined
       });
+      if (!mountedRef.current) return;
       setRoadAlertForm(current => ({ ...current, comment: "" }));
       await loadRoadAlerts();
     } catch (error) {
+      if (!mountedRef.current) return;
       setRoadAlertsError(formatError(error));
     } finally {
-      setRoadAlertSubmitting(false);
+      if (mountedRef.current) setRoadAlertSubmitting(false);
     }
   }
 
@@ -709,6 +715,7 @@ export default function DriverApp() {
       await confirmDriverRoadAlert(alertId);
       await loadRoadAlerts();
     } catch (error) {
+      if (!mountedRef.current) return;
       setRoadAlertsError(formatError(error));
     }
   }
@@ -718,6 +725,7 @@ export default function DriverApp() {
       await expireDriverRoadAlert(alertId);
       await loadRoadAlerts();
     } catch (error) {
+      if (!mountedRef.current) return;
       setRoadAlertsError(formatError(error));
     }
   }
