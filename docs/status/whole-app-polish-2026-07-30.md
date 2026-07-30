@@ -426,6 +426,66 @@ screens that reuse this helper, and would never have surfaced from
 `flutter analyze`/`flutter test` alone — only caught because a screenshot
 was taken to verify the accessibility fix.
 
+## Navigator quality pass (2GIS/Yandex Navigator/Google Maps parity)
+
+User directive: make the navigator match professional turn-by-turn apps.
+Dispatched a targeted audit comparing the current implementation against
+2GIS/Yandex Navigator/Google Maps, scoped to gaps solvable with data the
+app already has (not the OSM camera/traffic sparse-coverage limitation,
+already documented above as out of scope). Four concrete gaps found and
+fixed:
+
+1. **Live ETA/distance recompute** — previously the distance/ETA to
+   pickup/dropoff only updated on the backend's own refetch cadence (12s,
+   phase change, or 60m off-route), sitting frozen for up to 12s of real
+   driving between refreshes. Now projects the current position onto the
+   already-drawn route geometry every tick (same technique
+   `_computeNextManeuverHint` uses) and scales the last-fetched duration
+   by the resulting distance ratio.
+2. **Maneuver banner urgency escalation** — the visual banner was a
+   single flat style regardless of distance, even though voice guidance
+   already staged at 200m/40m. Now the banner's color/icon size escalate
+   through the same two tiers, eased via `AnimatedContainer` instead of
+   jumping.
+3. **Proactive arrival detection** — reaching the pickup/dropoff required
+   the driver to notice on their own and tap the status button. Added a
+   40m proximity check that highlights the button (glow) and fires one
+   haptic buzz — deliberately not auto-firing the status change itself,
+   since "Arrived" starts the waiting-fee timer and notifies the rider.
+4. **Smooth camera transitions** — the full-screen Navigator's camera
+   jumped under the self-marker every 500ms tick (direct `moveAndRotate`
+   calls) while the marker itself already glided smoothly via its own
+   `AnimationController` — the ground was visibly snapping under a
+   smoothly-moving car. Mirrors that same technique for the camera.
+
+Two real bugs caught and fixed while building #4: `latlong2`'s `LatLng`
+has no value `==`, so an early version of the "did the target change"
+check compared object identity and would have restarted the glide every
+single 500ms tick even while parked; and an in-flight follow-glide needed
+an explicit `stop()` the instant the driver grabs the map, or it would
+keep calling `moveAndRotate` against their finger for whatever remained
+of its ~700ms duration.
+
+Verified: `flutter analyze` (whole project, clean), all 35 tests passing,
+on-device install confirming no visual regression on the Line/Trip/
+Navigator screens. Could not live-verify the banner escalation or camera
+glide itself with real GPS movement — this physical device has no mock-
+location tooling set up, and building one just for this would be its own
+undue scope/risk. That part rests on code review plus the two bugs caught
+above, not on watching it drive; flagging this explicitly rather than
+claiming a live test that didn't happen.
+
+Order-acceptance race safety (already confirmed earlier tonight) and
+off-route rerouting (`_maybeRefreshDriverRoute`, confirmed already
+correct by the audit) round out the areas checked against professional
+navigator behavior. One remaining item from the audit, lane guidance, is
+deliberately left alone: OSRM's `intersections[].lanes` data isn't
+currently passed through by the backend's step mapper, and OSM's own lane
+tagging coverage for these regions is uncertain — a minimal pass-through
+would be cheap, but without knowing how often real lane data actually
+exists here, it's more honest to leave it as a known future item than
+ship a hint that might rarely have anything to show.
+
 ## Not done / known limitations
 
 - Navigator road-sign/camera data is only as complete as OpenStreetMap's
