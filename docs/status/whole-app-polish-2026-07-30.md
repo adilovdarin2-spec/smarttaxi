@@ -8,7 +8,36 @@ backend, web), then did a live-device deep-dive on the driver navigator
 after repeated "still looks terrible" feedback — which turned up what is
 very likely the actual root cause: the navigator's persistent cards ignored
 dark theme entirely. Also ran a targeted lag-pattern audit given the user's
-explicit "no lags" ask, and fixed the one real finding. 16 commits this round.
+explicit "no lags" ask, and fixed the one real finding. Later, after finding
+one panel (driver web) missed by the original mounted-component audit,
+followed the same suspicion into the largest remaining file (admin web) and
+found 8 more real instances of the same bug. 19 commits this round.
+
+## Web mounted-component sweep, round 2
+
+Noticed the earlier web audit's fix commit (`37cc26d`) only named specific
+Admin components and one Client component — no Driver-panel mention at
+all. Checked `apps/web/src/features/driver/DriverApp.jsx` directly: its
+road-alerts functions (`loadRoadAlerts`, `submitRoadAlert`,
+`confirmRoadAlert`, `dismissRoadAlert`) had the exact same setState-after-
+await-with-no-unmount-guard gap, just never caught because the first
+audit's report didn't cover this file (`d30fd03`). That raised the
+question of whether the *largest* panel, `AdminApp.jsx`, got equally
+partial coverage the first time — a follow-up audit of everything in that
+file the first round didn't touch found 8 more real instances: a tariff
+price-preview modal, an order row (advancing status routinely removes the
+row from a filtered list before its own request resolves — not an edge
+case), a support-ticket card (same "resolving removes it from the current
+filter" shape), a broadcast composer, and four save-modals (promo code,
+raffle, tariff, region) whose failure-path error display could fire after
+the modal was closed (`45af4b5`). All now use the same `mountedRef`
+pattern already established in this codebase. Verified via `npm run build`
+(clean, both rounds) and a local preview confirming each panel's login
+screen mounts with no console errors — could not exercise the actual
+authenticated flows live in either case (no admin/driver credentials or
+working local backend in this environment), so this is correctness-by-
+code-review-and-build, not a live behavioral test, unlike every mobile fix
+tonight which was screenshot-verified on the physical device.
 
 ## Performance
 
