@@ -7,7 +7,32 @@ this session, then pivoted to two rounds of automated bug-hunting (mobile,
 backend, web), then did a live-device deep-dive on the driver navigator
 after repeated "still looks terrible" feedback — which turned up what is
 very likely the actual root cause: the navigator's persistent cards ignored
-dark theme entirely. 15 commits this round.
+dark theme entirely. Also ran a targeted lag-pattern audit given the user's
+explicit "no lags" ask, and fixed the one real finding. 16 commits this round.
+
+## Performance
+
+Dispatched an audit specifically for lag-causing patterns (expensive
+per-build work, unmemoized computation in hot 500ms-tick callbacks, missing
+`const`, unnecessarily-broad `setState`) across the two heaviest screens
+(`driver_shell.dart`, `passenger_shell.dart`). Most of what it checked was
+already properly optimized (marker-glide animations correctly scoped to a
+narrow `AnimatedBuilder` instead of full-screen rebuilds, image `cacheWidth`/
+`cacheHeight` already set, route-refresh already throttled with race
+protection) — one real finding, fixed (`52bebdd`): `_nextManeuverHint()`
+scanned the full route geometry with Haversine trig to find the driver's
+nearest point, then — when real OSRM steps exist — scanned the whole
+geometry *again per step* to match each step's location. It's called from
+both the navigator's `build()` and the voice-announcement check on every
+500ms tick unconditionally, regardless of whether the driver's GPS position
+had actually changed. Since the position stream only fires after ~20m of
+real movement, most ticks between fixes were recomputing an identical
+answer from scratch. Now caches the result and only recomputes when the
+route instance changes or the position moved >5m. Live-verified the
+maneuver banner still shows correct distance/street data after the change
+(no way to directly measure frame-time improvement without profiling
+tools not available in this environment, so verification here is
+correctness-only, not a measured speedup).
 
 ## Likely root cause of the repeated "looks terrible" feedback
 
