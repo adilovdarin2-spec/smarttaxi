@@ -287,6 +287,58 @@ blocked), left these as documented findings rather than unverified CSS
 edits. Worth a dedicated round with either local backend access restored
 or real staging credentials.
 
+## Backend authorization / role & ownership audit
+
+Dispatched a targeted audit of `requireRole` usage and per-resource
+ownership checks across every module — a distinct bug class from the
+async-error-handling and money-concurrency audits done earlier tonight.
+
+**Result: the role/ownership model is correctly enforced almost
+everywhere.** Every CLIENT/DRIVER-facing endpoint checked (orders, wallet,
+client-wallet, favorites, recurring-bookings, driver-documents,
+driver-avatar, notifications, referrals) re-derives the actor's own
+`client.id`/`driver.id` from `req.user.id` and scopes the query to it.
+Money-moving code re-verifies ownership before mutating. OWNER-can-act-
+on-any-order and OWNER/FINANCE admin-sees-everything are intentional and
+correctly scoped. The retired OPERATOR role was cleanly migrated to OWNER
+(`migrations.js:800-807`); the only surviving `CANCELLED_BY_OPERATOR`
+reference is a status *label*, not a role check.
+
+**One real bug found and fixed**: `PATCH /driver/road-alerts/:id/expire`
+(`apps/api/src/modules/road-alerts/road-alerts.routes.js`) set
+`status='EXPIRED'` unconditionally on the very first call from *any*
+driver, regardless of how many times the alert had already been confirmed
+by others — a single "Нет" tap (even accidental, from a driver who never
+saw the hazard) could permanently kill a multiply-confirmed alert for
+everyone. This contradicted both the client's own "hidden from your list"
+copy (`driverAlertHiddenFromList`) and the gradual, capped, self-vote-
+blocked design already used by the sibling `/confirm` endpoint. Fixed so a
+third-party dismissal only actually expires the alert once repeated
+dismissals have driven `confidence_score` to zero (mirrors `/confirm`'s
+design); the reporter's own retraction stays immediate. The privileged
+admin override (`admin.routes.js` `/road-alerts/:id/expire`, OWNER-only) is
+untouched — an unconditional moderation action is correct there.
+
+## Backend SQL injection audit
+
+Also dispatched a check of all raw-SQL construction (the backend uses `pg`
+directly, no ORM) — 316 `query()`/`client.query()` call sites across every
+module reviewed. **Result: clean, no findings.** Every request-derived
+value reaches SQL through a `$1`/`$2` placeholder; no template-literal or
+string-concatenation splicing of user input into query text anywhere.
+Dynamic `UPDATE ... SET` column selection (tariffs, regions, finance
+report `groupBy`) is always gated by a hardcoded allowlist/map before the
+column name reaches the SQL string, never taken from the request
+directly. No dynamic `ORDER BY`/sort endpoints exist at all.
+
+## Full regression check after tonight's combined mobile + web changes
+
+Individual mobile edits were each verified per-file during the session;
+ran one more pass verifying the *combined* effect of all of them together:
+`flutter analyze` (whole project, no issues), `flutter test` (all 35
+tests passing), and `npm run build` for the web panels (clean compile, no
+new errors). Confirms none of tonight's fixes conflict with each other.
+
 ## Not done / known limitations
 
 - Navigator road-sign/camera data is only as complete as OpenStreetMap's
