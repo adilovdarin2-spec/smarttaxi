@@ -146,6 +146,11 @@ class _DriverShellState extends State<DriverShell> {
   })? _cachedManeuverHint;
   RoutePreview? _maneuverHintRoute;
   Coordinate? _maneuverHintPosition;
+  // Same cache shape as the maneuver hint above, for the live
+  // remaining-distance/ETA projection used by _liveRouteProgress().
+  ({double distanceMeters, double durationSeconds})? _cachedRouteProgress;
+  RoutePreview? _routeProgressRoute;
+  Coordinate? _routeProgressPosition;
   // GPS-reported course-over-ground (Position.heading) is only meaningful
   // once the device is actually moving at real speed — it's computed from
   // barely-distinguishable consecutive fixes at low speed and becomes
@@ -207,6 +212,14 @@ class _DriverShellState extends State<DriverShell> {
   // different upcoming maneuver.
   String? _announcedManeuverKey;
   int _announcedManeuverStage = 0;
+  // True once the driver is within arrival range of whichever point their
+  // current status is driving toward (pickup while DRIVER_GOING_TO_CLIENT,
+  // dropoff while on-trip) — see _checkArrivalProximity(). Drives the trip
+  // tab's action button glow so a driver who's basically there notices the
+  // status update is due, without silently auto-firing a transition that
+  // starts a timer and notifies the rider.
+  bool _showArrivalNudge = false;
+  bool _arrivalHapticFired = false;
   DateTime? _navigatorBannerUntil;
   String? _navigatorBannerText;
   // Quiet on-device TTS for camera/sign/speeding call-outs — see
@@ -734,6 +747,7 @@ class _DriverShellState extends State<DriverShell> {
       }
       _checkCameraProximity(position);
       _checkSignProximity(position);
+      _checkArrivalProximity(position);
       _checkSpeedingVoiceWarning(position);
       _checkManeuverVoiceAnnouncement();
       unawaited(_maybeFetchOsmNavigation(position));
@@ -1026,6 +1040,83 @@ class _DriverShellState extends State<DriverShell> {
     return result;
   }
 
+  // liveRouteMeta() otherwise renders route.distanceMeters/durationSeconds
+  // straight from the last backend fetch (every 12s, on phase change, or
+  // past 60m off-route via _maybeRefreshDriverRoute) — between refreshes the
+  // driver can cover several hundred meters while the on-screen number stays
+  // frozen. This projects the current position onto the already-drawn
+  // geometry (same technique _computeNextManeuverHint uses) to get the real
+  // remaining distance, and scales the last-fetched duration by the same
+  // ratio for an interpolated ETA — a reasonable estimate between real OSRM
+  // recalculations, not a substitute for them.
+  ({double distanceMeters, double durationSeconds})? _liveRouteProgress() {
+    final route = _driverRoute;
+    final position = _currentCoordinate;
+    if (route == null || position == null || route.geometry.length < 2) {
+      _cachedRouteProgress = null;
+      _routeProgressRoute = null;
+      _routeProgressPosition = null;
+      return null;
+    }
+    final lastPosition = _routeProgressPosition;
+    if (identical(route, _routeProgressRoute) &&
+        lastPosition != null &&
+        _metersBetween(lastPosition.lat, lastPosition.lng, position.lat,
+                position.lng) <
+            5) {
+      return _cachedRouteProgress;
+    }
+    final result = _computeLiveRouteProgress(route, position);
+    _cachedRouteProgress = result;
+    _routeProgressRoute = route;
+    _routeProgressPosition = position;
+    return result;
+  }
+
+  ({double distanceMeters, double durationSeconds})? _computeLiveRouteProgress(
+      RoutePreview route, Coordinate position) {
+    final geometry = route.geometry;
+    final current = position.toLatLng();
+    var nearestIndex = 0;
+    var nearestDistance = double.infinity;
+    for (var i = 0; i < geometry.length - 1; i++) {
+      final distance =
+          _distanceToSegmentMeters(current, geometry[i], geometry[i + 1]);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = i;
+      }
+    }
+    // Same 120m staleness guard as _computeNextManeuverHint — a route this
+    // far from the driver is about to be replaced by _maybeRefreshDriverRoute
+    // anyway, so fall back to the last-fetched static totals instead of
+    // projecting nonsense progress onto a route the driver has left.
+    if (nearestDistance > 120) return null;
+
+    var remainingMeters = _metersBetween(
+      current.latitude,
+      current.longitude,
+      geometry[nearestIndex + 1].latitude,
+      geometry[nearestIndex + 1].longitude,
+    );
+    for (var i = nearestIndex + 1; i < geometry.length - 1; i++) {
+      remainingMeters += _metersBetween(
+        geometry[i].latitude,
+        geometry[i].longitude,
+        geometry[i + 1].latitude,
+        geometry[i + 1].longitude,
+      );
+    }
+    final totalMeters = route.distanceMeters;
+    final ratio = totalMeters > 0
+        ? (remainingMeters / totalMeters).clamp(0.0, 1.0)
+        : 0.0;
+    return (
+      distanceMeters: remainingMeters,
+      durationSeconds: route.durationSeconds * ratio,
+    );
+  }
+
   ({
     String label,
     IconData icon,
@@ -1308,6 +1399,48 @@ class _DriverShellState extends State<DriverShell> {
       Timer(const Duration(seconds: 8), () {
         if (mounted) setState(() {});
       });
+    }
+  }
+
+  // Proactive arrival detection: the driver had to notice on their own that
+  // they'd reached the pickup/dropoff and remember to tap the status button
+  // — professional navigators nudge you the moment you're basically there.
+  // Kept as a highlight + one haptic buzz rather than auto-firing the status
+  // change itself, since "Arrived" starts the waiting-fee timer and notifies
+  // the rider — that should stay something the driver confirms, not
+  // something that fires just because the GPS fix drifted within range
+  // while passing on a through-street.
+  void _checkArrivalProximity(Position position) {
+    final order = _activeOrder;
+    Coordinate? target;
+    if (order != null &&
+        order.status == 'DRIVER_GOING_TO_CLIENT' &&
+        order.pickupCoordinate != null) {
+      target = order.pickupCoordinate;
+    } else if (order != null &&
+        (order.status == 'TRIP_STARTED' || order.status == 'IN_PROGRESS') &&
+        order.dropoffCoordinate != null) {
+      target = order.dropoffCoordinate;
+    }
+    if (target == null) {
+      _arrivalHapticFired = false;
+      if (_showArrivalNudge && mounted) {
+        setState(() => _showArrivalNudge = false);
+      }
+      return;
+    }
+    const nearAtMeters = 40.0;
+    final within = _metersBetween(position.latitude, position.longitude,
+            target.lat, target.lng) <=
+        nearAtMeters;
+    if (within && !_arrivalHapticFired) {
+      _arrivalHapticFired = true;
+      unawaited(HapticFeedback.mediumImpact());
+    } else if (!within) {
+      _arrivalHapticFired = false;
+    }
+    if (within != _showArrivalNudge && mounted) {
+      setState(() => _showArrivalNudge = within);
     }
   }
 
@@ -2762,6 +2895,7 @@ class _DriverShellState extends State<DriverShell> {
                             _tripActionLabel == action.$1,
                         loading: _tripActionLabel == action.$1,
                         loadingText: l10n.driverTripSavingButton,
+                        highlighted: _showArrivalNudge,
                         onTap: _tripActionLabel != null
                             ? null
                             : () => _tripAction(action.$1, action.$2),
@@ -3053,7 +3187,9 @@ class _DriverShellState extends State<DriverShell> {
       _activeOrder = null;
       _driverRoute = null;
       _tripDistanceTraveledM = null;
+      _showArrivalNudge = false;
     });
+    _arrivalHapticFired = false;
   }
 
   bool _isTripFinished(String status) => const [
@@ -3939,8 +4075,8 @@ class _DriverFullScreenNavigator extends StatefulWidget {
       _DriverFullScreenNavigatorState();
 }
 
-class _DriverFullScreenNavigatorState
-    extends State<_DriverFullScreenNavigator> {
+class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
+    with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
   Timer? _pollTimer;
   bool _autoFollow = true;
@@ -3948,6 +4084,21 @@ class _DriverFullScreenNavigatorState
   bool _mapUnavailable = false;
   int _tileErrorCount = 0;
   DateTime? _lastFixAt;
+  // moveAndRotate() used to be called every tick with the raw new
+  // point/heading, jumping the whole map frame under the self-marker each
+  // time — the marker itself already glides smoothly via
+  // _AnimatedSelfMarkerLayer's own AnimationController (see below), so the
+  // ground was visibly snapping under a smoothly-moving car. Mirrors that
+  // same from/to + AnimationController technique for the camera itself:
+  // _tick()/_recenter() only set a new target, this drives moveAndRotate
+  // every animation frame with the interpolated position/heading.
+  late final AnimationController _cameraAnim;
+  static const _cameraGlideDuration = Duration(milliseconds: 700);
+  static const _cameraSnapThresholdMeters = 1500.0;
+  LatLng? _cameraFromPoint;
+  LatLng? _cameraToPoint;
+  double _cameraFromHeadingDeg = 0;
+  double _cameraToHeadingDeg = 0;
   // The shell's own GPS stream (the class doc above relies on) only starts
   // once the driver actually goes online (_setOnline -> _startLocationFlow)
   // — a driver who opens the navigator first, just to preview the map/area
@@ -3975,6 +4126,9 @@ class _DriverFullScreenNavigatorState
     // GPS-lost/maneuver timers below, at meaningfully lower rebuild frequency.
     _pollTimer =
         Timer.periodic(const Duration(milliseconds: 500), (_) => _tick());
+    _cameraAnim =
+        AnimationController(vsync: this, duration: _cameraGlideDuration)
+          ..addListener(_applyAnimatedCameraFrame);
     if (widget.shell._currentCoordinate != null) {
       _lastFixAt = DateTime.now();
     }
@@ -4018,8 +4172,83 @@ class _DriverFullScreenNavigatorState
   void dispose() {
     _pollTimer?.cancel();
     _standalonePositionSub?.cancel();
+    _cameraAnim.dispose();
     _mapController.dispose();
     super.dispose();
+  }
+
+  void _applyAnimatedCameraFrame() {
+    if (!_mapReady) return;
+    final from = _cameraFromPoint;
+    final to = _cameraToPoint;
+    if (from == null || to == null) return;
+    final t = _cameraAnim.value;
+    final point = LatLng(
+      from.latitude + (to.latitude - from.latitude) * t,
+      from.longitude + (to.longitude - from.longitude) * t,
+    );
+    final headingDeg =
+        _cameraFromHeadingDeg + (_cameraToHeadingDeg - _cameraFromHeadingDeg) * t;
+    try {
+      _mapController.moveAndRotate(
+        point,
+        math.max(_mapController.camera.zoom, 17),
+        headingDeg,
+      );
+    } catch (_) {
+      // Best-effort — a mid-gesture camera nudge failing shouldn't crash
+      // the whole screen; the next tick tries again.
+    }
+  }
+
+  // Same idea as _AnimatedSelfMarkerLayer's _shortestAngleTarget, but in
+  // degrees (moveAndRotate's rotation is degrees, matching Position.heading)
+  // — picks the shorter way around the compass instead of spinning the long
+  // way whenever a heading crosses the 0/360 wraparound.
+  double _shortestHeadingDegTarget(double fromDeg, double toDeg) {
+    var diff = (toDeg - fromDeg) % 360;
+    if (diff < -180) diff += 360;
+    if (diff > 180) diff -= 360;
+    return fromDeg + diff;
+  }
+
+  // Starts a new glide from wherever the camera currently sits (mid-glide or
+  // settled) to a new target — called whenever _tick()/_recenter() decide
+  // the camera should move, instead of jumping moveAndRotate there directly.
+  void _startCameraGlide(LatLng targetPoint, double targetHeadingDeg) {
+    final currentFrom = _cameraFromPoint;
+    final currentTo = _cameraToPoint;
+    final t = _cameraAnim.value;
+    final startPoint = currentFrom == null || currentTo == null
+        ? targetPoint
+        : LatLng(
+            currentFrom.latitude +
+                (currentTo.latitude - currentFrom.latitude) * t,
+            currentFrom.longitude +
+                (currentTo.longitude - currentFrom.longitude) * t,
+          );
+    final startHeadingDeg = currentFrom == null
+        ? targetHeadingDeg
+        : _cameraFromHeadingDeg +
+            (_cameraToHeadingDeg - _cameraFromHeadingDeg) * t;
+    final jumpMeters = currentTo == null
+        ? 0.0
+        : _DriverShellState._metersBetween(startPoint.latitude,
+            startPoint.longitude, targetPoint.latitude, targetPoint.longitude);
+    _cameraFromPoint = startPoint;
+    _cameraToPoint = targetPoint;
+    _cameraFromHeadingDeg = startHeadingDeg;
+    _cameraToHeadingDeg =
+        _shortestHeadingDegTarget(startHeadingDeg, targetHeadingDeg);
+    if (jumpMeters > _cameraSnapThresholdMeters || currentTo == null) {
+      _cameraAnim.value = 1;
+      _applyAnimatedCameraFrame();
+    } else {
+      _cameraAnim
+        ..stop()
+        ..value = 0
+        ..animateTo(1, curve: Curves.easeOutCubic);
+    }
   }
 
   void _tick() {
@@ -4043,15 +4272,17 @@ class _DriverFullScreenNavigatorState
     if (_autoFollow && _mapReady && current != null) {
       final heading = widget.shell._currentHeading;
       final point = current.toLatLng();
-      try {
-        _mapController.moveAndRotate(
-          point,
-          math.max(_mapController.camera.zoom, 17),
-          heading == null ? 0 : -heading,
-        );
-      } catch (_) {
-        // Best-effort — a mid-gesture camera nudge failing shouldn't crash
-        // the whole screen; the next tick tries again.
+      final targetHeadingDeg = heading == null ? 0.0 : -heading;
+      final to = _cameraToPoint;
+      // LatLng (latlong2) has no value == override, so comparing the objects
+      // directly would always be "different" for a freshly-built point and
+      // restart the glide every single 500ms tick, even while stationary.
+      final unchanged = to != null &&
+          to.latitude == point.latitude &&
+          to.longitude == point.longitude &&
+          targetHeadingDeg == _cameraToHeadingDeg;
+      if (!unchanged) {
+        _startCameraGlide(point, targetHeadingDeg);
       }
     }
     setState(() {});
@@ -4073,6 +4304,10 @@ class _DriverFullScreenNavigatorState
   void _handleMapEvent(MapEvent event) {
     if (!_mapReady) _mapReady = true;
     if (_userGestureSources.contains(event.source) && _autoFollow) {
+      // A follow-glide that was already in flight would otherwise keep
+      // calling moveAndRotate against the finger dragging the map for
+      // whatever's left of its ~700ms duration, fighting the gesture.
+      _cameraAnim.stop();
       setState(() => _autoFollow = false);
     }
   }
@@ -4082,11 +4317,8 @@ class _DriverFullScreenNavigatorState
     final current = widget.shell._currentCoordinate;
     if (current != null) {
       final heading = widget.shell._currentHeading;
-      _mapController.moveAndRotate(
-        current.toLatLng(),
-        math.max(_mapController.camera.zoom, 17),
-        heading == null ? 0 : -heading,
-      );
+      _startCameraGlide(
+          current.toLatLng(), heading == null ? 0.0 : -heading);
     }
   }
 
@@ -4118,7 +4350,13 @@ class _DriverFullScreenNavigatorState
         speedKmh != null && speedLimit != null && speedKmh > speedLimit;
     final route = shell._driverRoute?.geometry ?? const <LatLng>[];
     final alerts = shell._allNavigatorAlerts;
-    final targetMeta = liveRouteMeta(l10n, shell._driverRoute);
+    final routeProgress = shell._liveRouteProgress();
+    final targetMeta = liveRouteMeta(
+      l10n,
+      shell._driverRoute,
+      liveDistanceMeters: routeProgress?.distanceMeters,
+      liveDurationSeconds: routeProgress?.durationSeconds,
+    );
     final showVoiceBanner = shell._navigatorBannerText != null &&
         shell._navigatorBannerUntil != null &&
         DateTime.now().isBefore(shell._navigatorBannerUntil!);
@@ -6262,30 +6500,63 @@ class _NextManeuverBanner extends StatelessWidget {
   // street data to offer, or when OSRM itself has no name for the way.
   final String? streetName;
 
+  // Same 200m/40m tiers _checkManeuverVoiceAnnouncement uses to decide when
+  // to speak — reusing them here means the banner's visual escalation lands
+  // at the exact same moments as the "in 200m..."/"now" voice callouts,
+  // instead of a second, independently-tuned notion of "getting close".
+  int _urgencyTier() {
+    if (distanceMeters <= 40) return 2;
+    if (distanceMeters <= 200) return 1;
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final rounded = math.max(20, (distanceMeters / 20).round() * 20);
     final distanceLabel = rounded >= 1000
         ? '${(rounded / 1000).toStringAsFixed(1)} км'
         : '$rounded м';
-    return Container(
+    final tier = _urgencyTier();
+    final gold = context.palette.gold;
+    // Plain navy far away; as the turn gets close the card and icon circle
+    // pick up the app's gold accent and grow slightly, then go fully gold
+    // right at the turn — an AnimatedContainer/AnimatedScale eases each tier
+    // change instead of the size/color jumping in a single frame.
+    final cardColor = switch (tier) {
+      2 => Color.lerp(const Color(0xff10192e), gold, 0.22)!,
+      1 => Color.lerp(const Color(0xff10192e), gold, 0.10)!,
+      _ => const Color(0xff10192e),
+    };
+    final iconCircleColor = switch (tier) {
+      2 => gold,
+      1 => gold.withValues(alpha: 0.35),
+      _ => Colors.white.withValues(alpha: 0.14),
+    };
+    final iconColor = tier == 2 ? const Color(0xff10192e) : Colors.white;
+    final circleSize = 42.0 + tier * 4;
+    final iconSize = 24.0 + tier * 3;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xff10192e),
+        color: cardColor,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+            width: circleSize,
+            height: circleSize,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
+              color: iconCircleColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(icon, color: iconColor, size: iconSize),
           ),
           const SizedBox(width: 12),
           Expanded(

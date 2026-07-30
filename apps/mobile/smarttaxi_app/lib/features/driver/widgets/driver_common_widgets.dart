@@ -94,6 +94,7 @@ class DriverGradientButton extends StatelessWidget {
     this.enabled = true,
     this.icon,
     this.height = 56,
+    this.highlighted = false,
   });
 
   final String text;
@@ -103,6 +104,13 @@ class DriverGradientButton extends StatelessWidget {
   final bool enabled;
   final IconData? icon;
   final double height;
+  // Set when the driver has just come within range of the pickup/dropoff
+  // point this button's action applies to (see _checkArrivalProximity in
+  // driver_shell.dart) — a stronger glow nudges them to notice the status
+  // update is due, without silently auto-firing it (marking arrival starts
+  // the waiting-fee timer and notifies the rider, so it should stay an
+  // explicit tap).
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +121,9 @@ class DriverGradientButton extends StatelessWidget {
       enabled: active,
       child: Opacity(
         opacity: enabled ? 1 : 0.5,
-        child: DecoratedBox(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             // gold itself is identical in both palettes, but goldDeep isn't
             // (light 0xff0b4fd1 vs dark 0xff5b9bff) — this was const, so it
@@ -131,8 +141,10 @@ class DriverGradientButton extends StatelessWidget {
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: context.palette.gold.withValues(alpha: 0.32),
-                      blurRadius: 20,
+                      color: context.palette.gold
+                          .withValues(alpha: highlighted ? 0.55 : 0.32),
+                      blurRadius: highlighted ? 28 : 20,
+                      spreadRadius: highlighted ? 2 : 0,
                       offset: const Offset(0, 10),
                     ),
                   ]

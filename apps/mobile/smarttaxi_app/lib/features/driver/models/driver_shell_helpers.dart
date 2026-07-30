@@ -162,10 +162,15 @@ String? routeMeta(AppLocalizations l10n, OrderSummary order) {
 // trip: routeMeta() is the static pickup-to-dropoff estimate captured once
 // at order creation, so it neither updates as the driver drives nor
 // reflects a reroute after the driver deviates from the drawn path.
-String? liveRouteMeta(AppLocalizations l10n, RoutePreview? route) {
+String? liveRouteMeta(
+  AppLocalizations l10n,
+  RoutePreview? route, {
+  double? liveDistanceMeters,
+  double? liveDurationSeconds,
+}) {
   if (route == null) return null;
-  final distanceKm = route.distanceMeters / 1000;
-  final minutes = (route.durationSeconds / 60).round();
+  final distanceKm = (liveDistanceMeters ?? route.distanceMeters) / 1000;
+  final minutes = ((liveDurationSeconds ?? route.durationSeconds) / 60).round();
   final label = route.isToDropoff
       ? l10n.driverPickupMetaToDropoff
       : l10n.driverPickupMetaToPickup;
