@@ -227,15 +227,20 @@ router.patch("/:id/expire", requireAuth, requireRole("DRIVER"), async (req, res,
     const alert = (await query("SELECT * FROM road_alerts WHERE id=$1", [params.id])).rows[0];
     if (!alert) throw new AppError("Road alert not found", 404, "ROAD_ALERT_NOT_FOUND");
     await resolveDriverRegion(driver, alert.region_id);
+    // A single "not there" tap must not be able to kill an alert other drivers
+    // already confirmed multiple times — only the reporter's own retraction is
+    // immediate; third-party dismissals only expire it once dismissals have
+    // driven confidence_score to zero (mirrors /confirm's gradual, capped design).
+    const isOwnReport = alert.driver_id === driver.id;
     const result = await query(`
       UPDATE road_alerts
-      SET status='EXPIRED',
-          dismissals_count=dismissals_count + 1,
+      SET dismissals_count=dismissals_count + 1,
           confidence_score=GREATEST(0, confidence_score - 20),
-          expires_at=LEAST(expires_at, NOW())
+          status=CASE WHEN $2 OR confidence_score - 20 <= 0 THEN 'EXPIRED' ELSE status END,
+          expires_at=CASE WHEN $2 OR confidence_score - 20 <= 0 THEN LEAST(expires_at, NOW()) ELSE expires_at END
       WHERE id=$1
       RETURNING *
-    `, [params.id]);
+    `, [params.id, isOwnReport]);
     res.json({ alert: publicAlert(result.rows[0]) });
   } catch (error) {
     next(error);
