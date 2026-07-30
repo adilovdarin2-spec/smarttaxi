@@ -130,6 +130,22 @@ class _DriverShellState extends State<DriverShell> {
   Timer? _socketFallbackPollTimer;
   RoutePreview? _driverRoute;
   Position? _lastPosition;
+  // _nextManeuverHint() cache: the full computation scans the entire route
+  // geometry (and, per step, scans it again) with Haversine trig -- cheap
+  // once, but it's called from both the navigator's build() and the voice-
+  // announcement check on every 500ms tick regardless of whether the driver
+  // actually moved. Recomputing only past a small movement threshold (or
+  // when the route itself changes) cuts that to near-zero cost on the very
+  // common case of ticks between real GPS movement.
+  ({
+    String label,
+    IconData icon,
+    double distanceMeters,
+    String? streetName,
+    LatLng location,
+  })? _cachedManeuverHint;
+  RoutePreview? _maneuverHintRoute;
+  Coordinate? _maneuverHintPosition;
   // GPS-reported course-over-ground (Position.heading) is only meaningful
   // once the device is actually moving at real speed — it's computed from
   // barely-distinguishable consecutive fixes at low speed and becomes
@@ -982,9 +998,44 @@ class _DriverShellState extends State<DriverShell> {
     LatLng location,
   })?
       _nextManeuverHint() {
-    final geometry = _driverRoute?.geometry;
+    final route = _driverRoute;
     final position = _currentCoordinate;
-    if (geometry == null || geometry.length < 3 || position == null) {
+    if (route == null || position == null) {
+      _cachedManeuverHint = null;
+      _maneuverHintRoute = null;
+      _maneuverHintPosition = null;
+      return null;
+    }
+    // The GPS position stream only fires on ~20m of real movement, so most
+    // of this method's 500ms-tick callers pass the exact same position tick
+    // after tick until the next fix arrives -- skip the expensive route-
+    // geometry/step scan entirely when nothing that could change the answer
+    // has changed since the last call.
+    final lastPosition = _maneuverHintPosition;
+    if (identical(route, _maneuverHintRoute) &&
+        lastPosition != null &&
+        _metersBetween(lastPosition.lat, lastPosition.lng, position.lat,
+                position.lng) <
+            5) {
+      return _cachedManeuverHint;
+    }
+    final result = _computeNextManeuverHint(route, position);
+    _cachedManeuverHint = result;
+    _maneuverHintRoute = route;
+    _maneuverHintPosition = position;
+    return result;
+  }
+
+  ({
+    String label,
+    IconData icon,
+    double distanceMeters,
+    String? streetName,
+    LatLng location,
+  })?
+      _computeNextManeuverHint(RoutePreview route, Coordinate position) {
+    final geometry = route.geometry;
+    if (geometry.length < 3) {
       return null;
     }
     final current = position.toLatLng();
@@ -1004,7 +1055,7 @@ class _DriverShellState extends State<DriverShell> {
     // don't guess a maneuver against a route that's about to be replaced.
     if (nearestDistance > 120) return null;
 
-    final steps = _driverRoute?.steps ?? const [];
+    final steps = route.steps;
     if (steps.isNotEmpty) {
       final fromSteps =
           _nextManeuverFromSteps(steps, geometry, nearestIndex, current);
