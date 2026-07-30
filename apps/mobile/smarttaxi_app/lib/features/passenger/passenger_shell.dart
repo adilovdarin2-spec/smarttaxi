@@ -11147,25 +11147,29 @@ class _SafetyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return Material(
-      color: palette.dangerSoft,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) =>
-              _SafetySheet(sosPhone: sosPhone, api: api, orderId: orderId),
-        ),
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            Icons.shield_outlined,
-            color: palette.danger,
-            size: 17,
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context).passengerSafetyTitle,
+      child: Material(
+        color: palette.dangerSoft,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) =>
+                _SafetySheet(sosPhone: sosPhone, api: api, orderId: orderId),
+          ),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(
+              Icons.shield_outlined,
+              color: palette.danger,
+              size: 20,
+            ),
           ),
         ),
       ),
@@ -11679,11 +11683,13 @@ class _DriverContactCard extends StatelessWidget {
               const SizedBox(width: 8),
               _RoundIconButton(
                 icon: Icons.chat_bubble_rounded,
+                label: l10n.passengerChatFallbackTitle,
                 onTap: () => _openChat(context),
               ),
               const SizedBox(width: 8),
               _RoundIconButton(
                 icon: Icons.call_rounded,
+                label: l10n.passengerCallPhoneLabel(phone ?? ''),
                 filled: true,
                 onTap: _call,
               ),
@@ -11926,30 +11932,36 @@ class _TripActionButton extends StatelessWidget {
 class _RoundIconButton extends StatelessWidget {
   const _RoundIconButton({
     required this.icon,
+    required this.label,
     required this.onTap,
     this.filled = false,
   });
 
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
   final bool filled;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return Material(
-      color: filled ? palette.gold : palette.goldSurface,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(
-            icon,
-            size: 17,
-            color: filled ? Colors.white : palette.goldDeep,
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: filled ? palette.gold : palette.goldSurface,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(
+              icon,
+              size: 17,
+              color: filled ? Colors.white : palette.goldDeep,
+            ),
           ),
         ),
       ),

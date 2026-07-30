@@ -1739,30 +1739,52 @@ class _DriverShellState extends State<DriverShell> {
               child: Builder(
                 builder: (sheetContext) => Column(
                   children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 10),
-                          child: SheetHandle(),
-                        ),
-                        // Drag-to-dismiss works but isn't discoverable —
-                        // this sheet is used for 9 different driver screens
-                        // (Profile, Wallet, Rating, Notifications, Support,
-                        // FAQ, About, Settings, Recurring Bookings) and none
-                        // of them had any other visible way back.
-                        Positioned(
-                          right: 8,
-                          top: 4,
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(sheetContext),
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: sheetContext.palette.textSecondary,
+                    // A bare Stack here sizes itself to its only
+                    // non-positioned child (the small drag handle, ~14px
+                    // tall and far narrower than the sheet) — this Column
+                    // has no crossAxisAlignment.stretch, so the Stack also
+                    // only gets a LOOSE width constraint and shrink-wraps
+                    // horizontally too. Both together broke the close
+                    // IconButton (48px tall, Positioned(right: 8, top: 4)):
+                    // Stack's default Clip.hardEdge silently clipped away
+                    // everything the button drew below the ~14px handle
+                    // line, and "right: 8" resolved against the narrow
+                    // handle-sized box instead of the sheet's actual right
+                    // edge — the button was both invisible and (since taps
+                    // outside a render object's own resolved size never
+                    // reach it) untappable. The full-width, fixed-height
+                    // SizedBox below gives the Stack a box that actually
+                    // matches the sheet and is tall enough to contain the
+                    // button.
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 10),
+                            child: SheetHandle(),
+                          ),
+                          // Drag-to-dismiss works but isn't discoverable —
+                          // this sheet is used for 9 different driver screens
+                          // (Profile, Wallet, Rating, Notifications, Support,
+                          // FAQ, About, Settings, Recurring Bookings) and none
+                          // of them had any other visible way back.
+                          Positioned(
+                            right: 8,
+                            top: 4,
+                            child: IconButton(
+                              onPressed: () => Navigator.pop(sheetContext),
+                              tooltip: AppLocalizations.of(sheetContext).close,
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: sheetContext.palette.textSecondary,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Expanded(child: contentBuilder()),
                   ],
