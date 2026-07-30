@@ -185,7 +185,16 @@ export async function createOrderCompletedTransaction(order, actorUserId = null,
 // fire the same "Начислен кешбэк"/"Бонус за приглашение" push notifications
 // at the point money actually moved, instead of at TRIP_COMPLETED where it
 // would be premature for an unconfirmed electronic payment.
-export async function settleConfirmedOrderEarnings(order, executor = defaultQuery, actorUserId = null) {
+// executor has no default (unlike the read/report helpers below) on
+// purpose: this does a read-then-write against drivers.balance
+// (settleDriverDebtFromBalance chains a second read-then-write right
+// after) that's only race-safe because every current caller holds a row
+// lock across both statements via an already-open transaction. Falling
+// back to the bare pool here would silently auto-commit each statement
+// and reopen the exact lost-update race a `FOR UPDATE` is meant to
+// prevent -- better to throw loudly if a future caller forgets to pass
+// one than to silently run unprotected.
+export async function settleConfirmedOrderEarnings(order, executor, actorUserId = null) {
   if (["CASH", "KASPI"].includes(order.payment_method)) return { cashbackCredited: 0, referralBonusResult: null };
 
   if (order.driver_id) {
@@ -539,7 +548,14 @@ export async function adjustDriverDebt({
 // right before a payout request is created (wallet.service.js), so debt
 // doesn't just sit on the books forever next to a growing balance waiting
 // for an operator to notice and run adjustDriverDebt by hand.
-export async function settleDriverDebtFromBalance(driverId, executor = defaultQuery) {
+// No default executor, same reasoning as settleConfirmedOrderEarnings
+// above: the FOR UPDATE read below only actually locks anything for the
+// duration of the write right after it if the caller's executor is a
+// client from an already-open transaction. Every current caller passes
+// one explicitly; forcing that by removing the default means a future
+// caller that forgets throws immediately instead of silently reproducing
+// a lost-update race between balance/debt reads and writes.
+export async function settleDriverDebtFromBalance(driverId, executor) {
   const driver = (await run(executor, "SELECT balance, debt FROM drivers WHERE id=$1 FOR UPDATE", [driverId])).rows[0];
   if (!driver) return { settledKzt: 0 };
   const balance = number(driver.balance);
