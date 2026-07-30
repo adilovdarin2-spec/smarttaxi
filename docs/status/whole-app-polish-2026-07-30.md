@@ -363,6 +363,19 @@ file, left as-is.
   `/auth/password/reset/confirm`) already has `rateLimit(...)` applied
   with sane per-endpoint windows/maxes. Already solid, no gap found.
 
+## Order-acceptance race condition (explicitly confirmed safe)
+
+The single most classic ride-hailing correctness bug — two drivers tapping
+"accept" on the same order at the same instant — was only mentioned in
+passing by the RBAC audit, so checked it directly rather than take that on
+faith. `POST /orders/:id/accept` (`orders.routes.js:714`) wraps the whole
+handler in `tx(async (client) => ...)`, and `acceptOrderForDriver`
+(`order-dispatch.service.js:371`) takes `SELECT * FROM orders WHERE id=$1
+FOR UPDATE` before checking `existing.driver_id`/`OPEN_ORDER_STATUSES`.
+Two concurrent accepts serialize on that row lock; the second sees the
+order already taken and throws `ORDER_ALREADY_ACCEPTED`. Confirmed safe,
+no fix needed.
+
 ## Full regression check after tonight's combined mobile + web changes
 
 Individual mobile edits were each verified per-file during the session;
