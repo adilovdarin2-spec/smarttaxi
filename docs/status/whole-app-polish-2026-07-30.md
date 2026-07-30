@@ -331,6 +331,38 @@ report `groupBy`) is always gated by a hardcoded allowlist/map before the
 column name reaches the SQL string, never taken from the request
 directly. No dynamic `ORDER BY`/sort endpoints exist at all.
 
+## Flutter resource-leak audit (Timers / streams / controllers)
+
+Directly tied to the user's explicit "no lags" requirement: a leaked
+`Timer.periodic`, GPS position-stream subscription, or animation controller
+keeps firing (setState calls, network calls, GPS listening) even after its
+owning widget is gone, accumulating slowdown across a long session of
+screen navigation. Audited every StatefulWidget in `driver_shell.dart` (9),
+`passenger_shell.dart` (22), and every supporting screen/sheet file under
+`lib/features/driver/` and `lib/features/passenger/` — roughly 14
+Timers, 9 StreamSubscriptions (incl. 2 `Geolocator.getPositionStream`
+listeners), 10 AnimationControllers, 25 TextEditingControllers.
+
+**Result: clean, no missing dispose/cancel calls found anywhere.** Every
+class uses manual per-field tracking, all torn down in `dispose()`. Two
+one-shot `Timer(duration, ...)` banner-auto-clear calls in
+`driver_shell.dart` (~1209, ~1308) aren't stored in a field, but both guard
+their callback with `if (mounted)` and self-resolve after firing once — not
+a genuine leak, just a minor style inconsistency versus the rest of the
+file, left as-is.
+
+## Web XSS + backend rate-limiting spot checks
+
+- **XSS**: the only two `innerHTML` assignments in the whole web codebase
+  (`apps/web/src/features/map/MapView.jsx:88,92`, marker icon SVGs) are
+  hardcoded static strings selected from a fixed 3-branch type switch —
+  never user-controlled. No `dangerouslySetInnerHTML` anywhere. Clean.
+- **Rate-limiting**: every sensitive auth endpoint (`/auth/login`,
+  `/auth/login/password`, `/auth/register/password`, `/auth/sms/send`,
+  `/auth/sms/verify`, `/auth/password/reset/request`,
+  `/auth/password/reset/confirm`) already has `rateLimit(...)` applied
+  with sane per-endpoint windows/maxes. Already solid, no gap found.
+
 ## Full regression check after tonight's combined mobile + web changes
 
 Individual mobile edits were each verified per-file during the session;
