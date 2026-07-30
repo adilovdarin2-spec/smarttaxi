@@ -11,7 +11,39 @@ dark theme entirely. Also ran a targeted lag-pattern audit given the user's
 explicit "no lags" ask, and fixed the one real finding. Later, after finding
 one panel (driver web) missed by the original mounted-component audit,
 followed the same suspicion into the largest remaining file (admin web) and
-found 8 more real instances of the same bug. 19 commits this round.
+found 8 more real instances of the same bug, then the same check on the
+third and final panel (client web) found 7 more. 21 commits this round.
+
+## Web mounted-component sweep, round 3 (client panel)
+
+Same suspicion as round 2, applied to the last unchecked panel. First
+confirmed the root `ClientApp` component itself never unmounts (single
+`createRoot().render()` call, no router-driven remounting) — so its own
+top-level async handlers (auth flow, order submit/cancel, favorites) were
+already safe regardless of guards, since they write to state that always
+stays mounted. The real gaps were in child components with their own
+lifecycle: `AddressPicker.updateMapCandidate` (a debounced reverse-geocode
+call only checked staleness against a *newer* request, never against the
+component having unmounted — tapping back or picking a search result
+mid-request fired setState after unmount, the highest-plausibility finding
+of the seven), `TripsSection.submitRating`, `SupportSection.submit`,
+`PromoSection.check`, `QuickMessagesBar.send` (all "submit then navigate
+away"), `PriceOfferCard.respond` (a live socket update pulling the offer
+out from under an in-flight accept/decline), and
+`TripDetailsSheet.handleShare` (lowest plausibility — share/clipboard
+promises resolve almost instantly). Two of these call an `onOrderUpdate`
+callback that writes to the always-mounted root; deliberately left those
+specific calls unguarded, since gating them on the child's own
+`mountedRef` would incorrectly drop a legitimate, already-succeeded update
+just because the child itself had unmounted (`1a1cfe9`). Verified via
+`npm run build` (clean) and a local preview of the public landing page
+(this app's default route) — no console errors. Same live-testing
+limitation as rounds 1-2: no passenger test credentials or working local
+backend to exercise the actual authenticated screens.
+
+This closes out the mounted-component sweep across all three web panels —
+admin, driver, and client all independently re-checked beyond whatever the
+original audit covered, each time finding real additional instances.
 
 ## Web mounted-component sweep, round 2
 
