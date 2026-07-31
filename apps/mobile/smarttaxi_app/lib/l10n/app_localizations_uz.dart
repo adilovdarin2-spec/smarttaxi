@@ -961,6 +961,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerDeclineOfferButton => 'Rad etish';
 
   @override
+  String get passengerQueuedOffersTitle => 'Boshqa haydovchilarning takliflari';
+
+  @override
+  String get passengerChooseOfferButton => 'Tanlash';
+
+  @override
   String get passengerWaitingDriverResponseTitle =>
       'Haydovchi javobini kutmoqdamiz';
 
@@ -1964,6 +1970,11 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String passengerCounterOfferSentToast(String amount) {
     return 'Sizning taklifingiz haydovchiga yuborildi: $amount';
+  }
+
+  @override
+  String passengerQueuedOfferArrivedToast(String amount) {
+    return 'Yana bir haydovchi narx taklif qildi: $amount';
   }
 
   @override

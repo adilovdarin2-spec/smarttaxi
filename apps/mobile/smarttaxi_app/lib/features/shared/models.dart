@@ -942,6 +942,53 @@ class OrderSummary {
   }
 }
 
+// A second (or third, ...) driver's торг offer submitted while another
+// driver's offer is already the rider-visible primary one (OrderSummary
+// .driverOfferPriceKzt/offerDriverName). Surfaced as a notification the
+// rider can promote into the primary slot instead of it silently
+// overwriting — see GET /orders/:id/price-offers/queue and POST
+// .../queue/:queueId/promote.
+class QueuedPriceOffer {
+  const QueuedPriceOffer({
+    required this.id,
+    required this.orderId,
+    required this.priceKzt,
+    required this.driverId,
+    this.driverName,
+    this.driverRating,
+    this.driverCarModel,
+    this.driverCarColor,
+    this.driverAvatarUrl,
+  });
+
+  final String id;
+  final String orderId;
+  final int priceKzt;
+  final String driverId;
+  final String? driverName;
+  final double? driverRating;
+  final String? driverCarModel;
+  final String? driverCarColor;
+  final String? driverAvatarUrl;
+
+  factory QueuedPriceOffer.fromJson(Map<String, dynamic> json) {
+    return QueuedPriceOffer(
+      id: (json['id'] ?? '').toString(),
+      orderId: (json['orderId'] ?? json['order_id'] ?? '').toString(),
+      priceKzt: int.tryParse('${json['priceKzt'] ?? json['price_kzt'] ?? 0}') ?? 0,
+      driverId: (json['driverId'] ?? json['driver_id'] ?? '').toString(),
+      driverName: (json['driverName'] ?? json['driver_name'])?.toString(),
+      driverRating: _nullableDouble(json['driverRating'] ?? json['driver_rating']),
+      driverCarModel:
+          (json['driverCarModel'] ?? json['driver_car_model'])?.toString(),
+      driverCarColor:
+          (json['driverCarColor'] ?? json['driver_car_color'])?.toString(),
+      driverAvatarUrl:
+          (json['driverAvatarUrl'] ?? json['driver_avatar_url'])?.toString(),
+    );
+  }
+}
+
 class PaymentInfo {
   const PaymentInfo({
     required this.id,

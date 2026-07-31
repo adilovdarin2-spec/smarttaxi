@@ -15,10 +15,14 @@ import {
   emitOrderCreated,
   emitOrderUpdated,
   listOrdersForDriver,
+  listQueuedPriceOffers,
   OPEN_ORDER_STATUSES,
+  orderRoom,
   ORDER_STATUSES,
+  promoteQueuedPriceOffer,
   publicOrderEvent,
   publicOrderStatus,
+  publicQueuedOffer,
   respondToClientCounterOffer,
   respondToDriverPriceOffer,
   submitClientCounterOffer,
@@ -749,7 +753,7 @@ router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ 
   try {
     const { id } = IdParam.parse(req.params);
     const body = PriceOfferBody.parse(req.body);
-    const order = await tx(async (client) => {
+    const outcome = await tx(async (client) => {
       const target = (await client.query("SELECT price FROM orders WHERE id=$1", [id])).rows[0];
       if (!target) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
       const { minAllowed, maxAllowed } = offeredPriceBounds(target.price);
@@ -761,11 +765,85 @@ router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ 
       }
       const result = await submitDriverPriceOffer({ orderId: id, userId: req.user.id, priceKzt: body.priceKzt, executor: client });
       await writeAudit(client, {
-        action: "order_driver_price_offer_submitted",
+        action: result.isPrimary ? "order_driver_price_offer_submitted" : "order_driver_price_offer_queued",
         actorUserId: req.user.id,
         entityType: "order",
         entityId: result.order.id,
-        metadata: { driverId: result.driver.id, priceKzt: body.priceKzt },
+        metadata: { driverId: result.driver.id, priceKzt: body.priceKzt, queued: !result.isPrimary },
+        req
+      });
+      const row = (await client.query(`
+        SELECT ${ORDER_SELECT}
+        FROM orders o
+        LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
+        WHERE o.id=$1
+      `, [result.order.id])).rows[0];
+      return { ...result, row };
+    });
+    if (outcome.isPrimary) {
+      emitOrderUpdated(req.io, outcome.row, "order.driver_price_offer");
+      notifyOrderClient(outcome.row, {
+        title: "Водитель предложил свою цену",
+        body: `Новая цена поездки: ${outcome.row.driver_offer_price_kzt} ₸`,
+        type: "DRIVER_PRICE_OFFER"
+      }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    } else {
+      // Another driver's offer is already the primary one — don't touch
+      // order_updated (nothing on the order itself changed); push this as
+      // its own event so the rider's UI can surface it as a notification
+      // stacked above the still-showing primary offer instead of replacing it.
+      const queuedOffer = publicQueuedOffer({
+        ...outcome.queued,
+        driver_name: outcome.driver.name,
+        driver_rating: outcome.driver.rating,
+        driver_car_model: outcome.driver.car_model,
+        driver_car_color: outcome.driver.car_color
+      });
+      if (req.io) {
+        req.io.to(orderRoom(id)).emit("order.driver_price_offer_queued", { orderId: id, offer: queuedOffer });
+      }
+      notifyOrderClient(outcome.row, {
+        title: "Ещё один водитель предложил цену",
+        body: `Новое предложение: ${outcome.queued.price_kzt} ₸`,
+        type: "DRIVER_PRICE_OFFER_QUEUED"
+      }).catch((error) => console.error("[push] notifyOrderClient failed", error));
+    }
+    res.status(201).json({ order: publicOrderResponse(outcome.row), queued: !outcome.isPrimary });
+  } catch (e) { next(e); }
+});
+
+// All currently-pending queued offers (see submitDriverPriceOffer) besides
+// the primary one already included on the order itself — the rider's UI
+// polls/reconnects here to reconstruct the notification stack rather than
+// only relying on the transient order.driver_price_offer_queued socket push.
+router.get("/:id/price-offers/queue", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
+  try {
+    const { id } = IdParam.parse(req.params);
+    const client = (await query("SELECT id FROM clients WHERE user_id=$1", [req.user.id])).rows[0];
+    if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
+    const order = (await query("SELECT client_id FROM orders WHERE id=$1", [id])).rows[0];
+    if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+    if (order.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+    const offers = await listQueuedPriceOffers(id, query);
+    res.json({ offers });
+  } catch (e) { next(e); }
+});
+
+// Rider picks a queued (non-primary) offer to promote into the primary
+// slot instead of the one currently showing — e.g. a later, cheaper offer.
+router.post("/:id/price-offers/queue/:queueId/promote", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-price-offer-promote", windowMs: 60_000, max: 30 }), async (req, res, next) => {
+  try {
+    const { id, queueId } = z.object({ id: z.string().uuid(), queueId: z.string().uuid() }).parse(req.params);
+    let previousDriverId = null;
+    const order = await tx(async (client) => {
+      const result = await promoteQueuedPriceOffer({ orderId: id, queueOfferId: queueId, clientUserId: req.user.id, executor: client });
+      previousDriverId = result.previousDriverId;
+      await writeAudit(client, {
+        action: "order_price_offer_queue_promoted",
+        actorUserId: req.user.id,
+        entityType: "order",
+        entityId: result.order.id,
+        metadata: { driverId: result.driver.id, priceKzt: result.order.driver_offer_price_kzt, previousDriverId },
         req
       });
       return (await client.query(`
@@ -776,12 +854,19 @@ router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ 
       `, [result.order.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, "order.driver_price_offer");
-    notifyOrderClient(order, {
-      title: "Водитель предложил свою цену",
-      body: `Новая цена поездки: ${order.driver_offer_price_kzt} ₸`,
-      type: "DRIVER_PRICE_OFFER"
-    }).catch((error) => console.error("[push] notifyOrderClient failed", error));
-    res.status(201).json({ order: publicOrderResponse(order) });
+    if (previousDriverId) {
+      notifyOrderDriver({ driver_id: previousDriverId }, {
+        title: "Клиент отклонил вашу цену",
+        body: "Можете предложить другую цену или взять другой заказ",
+        type: "DRIVER_PRICE_OFFER_DECLINED"
+      }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
+    }
+    notifyOrderDriver({ driver_id: order.driver_offer_by_driver_id }, {
+      title: "Клиент выбрал вашу цену",
+      body: `Клиент готов принять вашу цену: ${order.driver_offer_price_kzt} ₸`,
+      type: "DRIVER_PRICE_OFFER_PROMOTED"
+    }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
+    res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });
 

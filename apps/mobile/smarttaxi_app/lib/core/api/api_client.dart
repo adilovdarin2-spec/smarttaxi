@@ -652,6 +652,36 @@ class ApiClient {
         Map<String, dynamic>.from(data['order'] ?? data));
   }
 
+  // Any driver offers queued behind the current primary one (see
+  // QueuedPriceOffer) — used to reconstruct the notification stack on trip
+  // screen load/reconnect, alongside the live order.driver_price_offer_queued
+  // socket push for offers that arrive while the screen is already open.
+  Future<List<QueuedPriceOffer>> fetchQueuedPriceOffers(String orderId) async {
+    await _attachToken();
+    final response = await _dio
+        .get<Map<String, dynamic>>('/api/orders/$orderId/price-offers/queue');
+    final data = response.data ?? {};
+    final offers = (data['offers'] as List?) ?? const [];
+    return offers
+        .map((raw) => QueuedPriceOffer.fromJson(Map<String, dynamic>.from(raw)))
+        .toList();
+  }
+
+  // Rider promotes a queued (non-primary) offer into the primary slot —
+  // e.g. a later, cheaper offer than the one currently showing.
+  Future<OrderSummary> promoteQueuedPriceOffer({
+    required String orderId,
+    required String queueOfferId,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/orders/$orderId/price-offers/queue/$queueOfferId/promote',
+    );
+    final data = response.data ?? {};
+    return OrderSummary.fromJson(
+        Map<String, dynamic>.from(data['order'] ?? data));
+  }
+
   // "School route" recurring bookings — see
   // recurring-bookings.routes.js for the authoritative contract.
   Future<RecurringBooking> createRecurringBooking({

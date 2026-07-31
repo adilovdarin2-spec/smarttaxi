@@ -87,6 +87,14 @@ class SocketService {
     _socket?.on('driver_location_update', handler);
   }
 
+  // A driver's торг offer arrived while a DIFFERENT driver's offer is
+  // already the primary one showing — see order-dispatch.service.js's
+  // submitDriverPriceOffer. Distinct from onOrderUpdate: nothing on the
+  // order itself changed, so this never fires order_updated.
+  void onQueuedPriceOffer(void Function(dynamic data) handler) {
+    _socket?.on('order.driver_price_offer_queued', handler);
+  }
+
   void clearListeners() {
     _socket?.off('order_update');
     _socket?.off('order_updated');
@@ -97,6 +105,7 @@ class SocketService {
     _socket?.off('order_assigned');
     _socket?.off('driver_location_updated');
     _socket?.off('driver_location_update');
+    _socket?.off('order.driver_price_offer_queued');
   }
 
   void dispose() {

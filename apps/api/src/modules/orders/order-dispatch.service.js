@@ -409,11 +409,35 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
   return { order, driver: updatedDriver };
 }
 
+// Shared core for putting a specific driver's price into the single
+// rider-visible "primary" slot on the order — used both for a fresh
+// driver-submitted offer and for promoting an already-queued one (see
+// promoteQueuedPriceOffer) so the two paths can never drift out of sync.
+async function setPrimaryDriverOffer(orderId, driverId, priceKzt, executor) {
+  return (await runQuery(
+    executor,
+    `UPDATE orders
+     SET driver_offer_price_kzt=$1,
+         driver_offer_status='PENDING',
+         driver_offer_by_driver_id=$2,
+         driver_offer_proposed_by='DRIVER',
+         driver_offer_created_at=NOW(),
+         driver_offer_responded_at=NULL
+     WHERE id=$3
+     RETURNING *`,
+    [priceKzt, driverId, orderId]
+  )).rows[0];
+}
+
 // Driver counter-offer ("торг"): proposes a different price on an order
 // that's still open to everyone — doesn't take the order, just attaches a
-// pending offer the rider can accept or decline. Only one offer can be
-// pending at a time; a new one from a different driver overwrites it (first
-// to have their offer accepted wins the order, not first to submit).
+// pending offer the rider can accept or decline. The rider only ever sees
+// one PRIMARY offer at a time (the first one, in the order table's single
+// driver_offer_* slot) — first to have their offer accepted wins the
+// order, not first to submit. A second driver's offer no longer silently
+// overwrites the first: it's queued instead (order_price_offer_queue),
+// surfaced to the rider as a notification they can promote into the
+// primary slot (see promoteQueuedPriceOffer) without losing either offer.
 export async function submitDriverPriceOffer({ orderId, userId, priceKzt, executor }) {
   const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [userId])).rows[0];
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
@@ -434,21 +458,120 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
   await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
   await assertClientNotBlockedByDriver(existing.client_id, driver.id, executor);
 
-  const order = (await runQuery(
-    executor,
-    `UPDATE orders
-     SET driver_offer_price_kzt=$1,
-         driver_offer_status='PENDING',
-         driver_offer_by_driver_id=$2,
-         driver_offer_proposed_by='DRIVER',
-         driver_offer_created_at=NOW(),
-         driver_offer_responded_at=NULL
-     WHERE id=$3
-     RETURNING *`,
-    [priceKzt, driver.id, existing.id]
-  )).rows[0];
+  const primaryTakenByOther = existing.driver_offer_status === "PENDING" &&
+    existing.driver_offer_by_driver_id && existing.driver_offer_by_driver_id !== driver.id;
+  if (primaryTakenByOther) {
+    const queued = (await runQuery(
+      executor,
+      `INSERT INTO order_price_offer_queue(order_id, driver_id, price_kzt)
+       VALUES($1,$2,$3)
+       ON CONFLICT (order_id, driver_id) WHERE status='PENDING'
+       DO UPDATE SET price_kzt=EXCLUDED.price_kzt, updated_at=NOW()
+       RETURNING *`,
+      [existing.id, driver.id, priceKzt]
+    )).rows[0];
+    return { order: existing, driver, queued, isPrimary: false };
+  }
 
-  return { order, driver };
+  const order = await setPrimaryDriverOffer(existing.id, driver.id, priceKzt, executor);
+  return { order, driver, queued: null, isPrimary: true };
+}
+
+// Rider promotes an already-queued offer (see submitDriverPriceOffer) into
+// the primary slot — used when the rider wants to accept a LATER driver's
+// price instead of the first one currently showing. The previous primary
+// driver (if any) steps aside exactly as if the rider had explicitly
+// declined them, since from that driver's side their offer is off the
+// table either way.
+export async function promoteQueuedPriceOffer({ orderId, queueOfferId, clientUserId, executor }) {
+  const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
+  if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
+
+  // Peek unlocked to find which driver owns this queued offer, then lock
+  // driver-then-order — the same order every other price-offer path in this
+  // file uses (see respondToDriverPriceOffer's accept path) — to avoid a
+  // deadlock against submitDriverPriceOffer/acceptOrderForDriver locking
+  // the same driver+order pair concurrently in the other order.
+  const peekQueued = (await runQuery(
+    executor,
+    "SELECT * FROM order_price_offer_queue WHERE id=$1 AND order_id=$2 AND status='PENDING'",
+    [queueOfferId, orderId]
+  )).rows[0];
+  if (!peekQueued) throw new AppError("Queued price offer not found", 404, "QUEUED_PRICE_OFFER_NOT_FOUND");
+
+  const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [peekQueued.driver_id])).rows[0];
+  if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
+  if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+
+  const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+  if (existing.client_id !== client.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+  if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
+    throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
+  }
+
+  // Re-check the queued offer now that the order is locked too — its state
+  // may have changed since the unlocked peek (withdrawn, already promoted
+  // by a racing request, etc.), mirroring respondToDriverPriceOffer's own
+  // peek-then-lock-then-revalidate pattern.
+  const queued = (await runQuery(
+    executor,
+    "SELECT * FROM order_price_offer_queue WHERE id=$1 AND order_id=$2 AND status='PENDING' FOR UPDATE",
+    [queueOfferId, orderId]
+  )).rows[0];
+  if (!queued) throw new AppError("Queued price offer not found", 404, "QUEUED_PRICE_OFFER_NOT_FOUND");
+
+  const previousDriverId = existing.driver_offer_status === "PENDING" ? existing.driver_offer_by_driver_id : null;
+
+  const order = await setPrimaryDriverOffer(existing.id, driver.id, queued.price_kzt, executor);
+  await runQuery(
+    executor,
+    "UPDATE order_price_offer_queue SET status='PROMOTED', updated_at=NOW() WHERE id=$1",
+    [queued.id]
+  );
+
+  return { order, driver, previousDriverId };
+}
+
+// Serializes a queue row for API/socket responses, joined with the
+// offering driver's public info — mirrors the offer_driver_* fields
+// ORDER_SELECT already exposes for the primary offer, so both the primary
+// sheet and the queued-offer notifications can share the same rider-side
+// widget shape on the client.
+export function publicQueuedOffer(row) {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    priceKzt: row.price_kzt,
+    createdAt: row.created_at,
+    driverId: row.driver_id,
+    driverName: row.driver_name ?? null,
+    driverRating: row.driver_rating !== undefined && row.driver_rating !== null ? Number(row.driver_rating) : null,
+    driverCarModel: row.driver_car_model ?? null,
+    driverCarColor: row.driver_car_color ?? null,
+    driverAvatarUrl: row.driver_id ? `/api/drivers/${row.driver_id}/avatar` : null
+  };
+}
+
+// All still-relevant queued offers for an order, oldest first — "still
+// relevant" is computed at read time (order still open, unclaimed) rather
+// than eagerly cleared from every code path that can close an order, so a
+// direct-accept, cancellation, or expiry anywhere else in the codebase
+// can't leave a stale queue row behind.
+export async function listQueuedPriceOffers(orderId, executor) {
+  const order = (await runQuery(executor, "SELECT status, driver_id FROM orders WHERE id=$1", [orderId])).rows[0];
+  if (!order || order.driver_id || !OPEN_ORDER_STATUSES.includes(order.status)) return [];
+  const rows = (await runQuery(
+    executor,
+    `SELECT q.*, d.name AS driver_name, d.rating AS driver_rating,
+            d.car_model AS driver_car_model, d.car_color AS driver_car_color
+     FROM order_price_offer_queue q
+     JOIN drivers d ON d.id = q.driver_id
+     WHERE q.order_id=$1 AND q.status='PENDING'
+     ORDER BY q.created_at ASC`,
+    [orderId]
+  )).rows;
+  return rows.map(publicQueuedOffer);
 }
 
 // Rider's response to a pending driver price offer. Accepting assigns the
@@ -537,6 +660,15 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
     executor,
     "INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'DRIVER_FOUND','Client accepted driver price offer',$2)",
     [existing.id, clientUserId]
+  );
+  // Any other drivers' queued offers are moot now that the order is taken —
+  // listQueuedPriceOffers already self-filters once driver_id is set, so
+  // this isn't required for correctness, just keeps the queue table's own
+  // rows honest for anyone (e.g. an admin query) reading it directly.
+  await runQuery(
+    executor,
+    "UPDATE order_price_offer_queue SET status='EXPIRED', updated_at=NOW() WHERE order_id=$1 AND status='PENDING'",
+    [existing.id]
   );
 
   return { order, driver: updatedDriver, accepted: true };

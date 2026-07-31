@@ -922,7 +922,33 @@ const statements = [
   // immediately. Existing rows getting a fresh random value here means
   // every currently-logged-in session everywhere gets invalidated once —
   // an expected, one-time side effect of shipping this, not a bug.
-  "ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version UUID NOT NULL DEFAULT uuid_generate_v4()"
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version UUID NOT NULL DEFAULT uuid_generate_v4()",
+
+  // --- Queued driver price offers (торг with multiple competing drivers) ---
+  // orders.driver_offer_* is a single slot: only one driver's offer can be
+  // "the" pending offer at a time. A second driver submitting one used to
+  // silently overwrite the first (see order-dispatch.service.js's old
+  // submitDriverPriceOffer comment) -- the rider lost the first driver's
+  // offer entirely with no way to still accept it, and no signal that a
+  // second driver even offered. This table holds any offer submitted while
+  // a DIFFERENT driver's is already primary: the rider keeps seeing the
+  // first driver's offer as before, and queued ones surface as a
+  // notification the rider can promote into the primary slot (see
+  // promoteQueuedPriceOffer) instead of losing them.
+  `CREATE TABLE IF NOT EXISTS order_price_offer_queue (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    price_kzt INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','PROMOTED','EXPIRED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_order_price_offer_queue_order_status ON order_price_offer_queue(order_id, status)",
+  // Guards against the same driver stacking multiple queued rows for one
+  // order -- resubmitting while already queued should revise their queued
+  // price (see submitDriverPriceOffer's ON CONFLICT), not add a second row.
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_order_price_offer_queue_order_driver_pending ON order_price_offer_queue(order_id, driver_id) WHERE status='PENDING'"
 ];
 
 export async function runMigrations() {

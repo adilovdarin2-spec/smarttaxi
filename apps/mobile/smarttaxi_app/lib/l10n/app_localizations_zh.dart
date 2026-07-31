@@ -894,6 +894,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerDeclineOfferButton => '拒绝';
 
   @override
+  String get passengerQueuedOffersTitle => '其他司机的出价';
+
+  @override
+  String get passengerChooseOfferButton => '选择';
+
+  @override
   String get passengerWaitingDriverResponseTitle => '正在等待司机回复';
 
   @override
@@ -1812,6 +1818,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String passengerCounterOfferSentToast(String amount) {
     return '您的出价已发送给司机:$amount';
+  }
+
+  @override
+  String passengerQueuedOfferArrivedToast(String amount) {
+    return '又一位司机出价:$amount';
   }
 
   @override

@@ -389,6 +389,7 @@ class _PassengerShellState extends State<PassengerShell>
       await widget.sockets.connect();
       widget.sockets.onOrderUpdate(_handleOrderUpdate);
       widget.sockets.onDriverLocation(_handleDriverLocation);
+      widget.sockets.onQueuedPriceOffer(_handleQueuedPriceOffer);
       _socketConnectionSub =
           widget.sockets.connectionChanges.listen(_handleSocketConnectionChange);
     } catch (_) {
@@ -1006,6 +1007,8 @@ class _PassengerShellState extends State<PassengerShell>
     final tripInProgress = inProgressStatuses.contains(order.status);
     final hadPreviousOrder = _order != null;
     final wasTripInProgress = inProgressStatuses.contains(_order?.status);
+    final offerJustAppeared = order.isDriverOfferAwaitingClient &&
+        !(_order?.isDriverOfferAwaitingClient ?? false);
     setState(() {
       _order = order;
       if (order.driverId == null) {
@@ -1038,7 +1041,17 @@ class _PassengerShellState extends State<PassengerShell>
               order.distanceTraveledM! > _tripDistanceTraveledM!)) {
         _tripDistanceTraveledM = order.distanceTraveledM;
       }
+      if (!order.isDriverOfferAwaitingClient) {
+        _queuedPriceOffers = const [];
+      }
     });
+    // Seed the notification stack the moment a primary offer first shows —
+    // any offer that arrived before the rider had one to compare against
+    // wouldn't otherwise be fetched, only ones pushed live afterward (see
+    // _handleQueuedPriceOffer).
+    if (offerJustAppeared) {
+      unawaited(_loadQueuedPriceOffers(order.id));
+    }
     _tripElapsedTimer?.cancel();
     _tripElapsedTimer = tripInProgress
         ? Timer.periodic(const Duration(seconds: 30), (_) {
@@ -1925,6 +1938,70 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
+  // Other drivers' offers queued behind the currently-shown primary one —
+  // see submitDriverPriceOffer's queueing behavior server-side. Seeded via
+  // a fetch whenever the primary offer panel first appears, then kept live
+  // by _handleQueuedPriceOffer for anything arriving while this screen is
+  // already open.
+  List<QueuedPriceOffer> _queuedPriceOffers = const [];
+  String? _promotingQueuedOfferId;
+
+  Future<void> _loadQueuedPriceOffers(String orderId) async {
+    try {
+      final offers = await widget.api.fetchQueuedPriceOffers(orderId);
+      if (!mounted || _order?.id != orderId) return;
+      setState(() => _queuedPriceOffers = offers);
+    } catch (_) {
+      // Best-effort — the primary offer (the actually load-bearing one) is
+      // unaffected; a queued-offer notification just won't have reloaded
+      // after e.g. an app resume. The live socket push still works.
+    }
+  }
+
+  void _handleQueuedPriceOffer(dynamic data) {
+    if (!mounted) return;
+    final map = data is Map ? Map<String, dynamic>.from(data) : null;
+    final orderId = map?['orderId']?.toString();
+    final offerRaw = map?['offer'];
+    if (orderId == null || orderId != _order?.id || offerRaw is! Map) return;
+    final offer =
+        QueuedPriceOffer.fromJson(Map<String, dynamic>.from(offerRaw));
+    setState(() {
+      _queuedPriceOffers = [
+        for (final existing in _queuedPriceOffers)
+          if (existing.driverId != offer.driverId) existing,
+        offer,
+      ];
+    });
+    AppToast.showInfo(
+      context,
+      AppLocalizations.of(context)
+          .passengerQueuedOfferArrivedToast(_formatTenge(offer.priceKzt.toDouble())),
+    );
+  }
+
+  Future<void> _promoteQueuedPriceOffer(QueuedPriceOffer offer) async {
+    final order = _order;
+    if (order == null || _promotingQueuedOfferId != null) return;
+    setState(() => _promotingQueuedOfferId = offer.id);
+    try {
+      final updated = await widget.api.promoteQueuedPriceOffer(
+        orderId: order.id,
+        queueOfferId: offer.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _order = updated;
+        _queuedPriceOffers =
+            _queuedPriceOffers.where((item) => item.id != offer.id).toList();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+    } finally {
+      if (mounted) setState(() => _promotingQueuedOfferId = null);
+    }
+  }
 
   // Called both on every driver GPS ping (frequent — needs throttling so we
   // don't hammer the routing provider) and on order status changes (rare —
@@ -2771,6 +2848,9 @@ class _PassengerShellState extends State<PassengerShell>
               respondingToPriceOffer: _respondingToPriceOffer,
               onRespondToPriceOffer: _respondToDriverPriceOffer,
               onSubmitCounterOffer: _submitClientCounterOffer,
+              queuedPriceOffers: _queuedPriceOffers,
+              promotingQueuedOfferId: _promotingQueuedOfferId,
+              onPromoteQueuedOffer: _promoteQueuedPriceOffer,
               ),
             ),
           ),
@@ -2812,6 +2892,7 @@ class _PassengerShellState extends State<PassengerShell>
       _tripDistanceTraveledM = null;
       _driverPickupRoute = null;
       _driverRouteError = null;
+      _queuedPriceOffers = const [];
       _dropoff = null;
       _dropoffSource = PointSource.none;
       _preview = null;
@@ -7602,6 +7683,9 @@ class _TripStatusPanel extends StatelessWidget {
     required this.respondingToPriceOffer,
     required this.onRespondToPriceOffer,
     required this.onSubmitCounterOffer,
+    this.queuedPriceOffers = const [],
+    this.promotingQueuedOfferId,
+    this.onPromoteQueuedOffer,
   });
 
   final ApiClient api;
@@ -7640,6 +7724,9 @@ class _TripStatusPanel extends StatelessWidget {
   final bool respondingToPriceOffer;
   final ValueChanged<bool> onRespondToPriceOffer;
   final ValueChanged<int> onSubmitCounterOffer;
+  final List<QueuedPriceOffer> queuedPriceOffers;
+  final String? promotingQueuedOfferId;
+  final ValueChanged<QueuedPriceOffer>? onPromoteQueuedOffer;
 
   @override
   Widget build(BuildContext context) {
@@ -7677,6 +7764,9 @@ class _TripStatusPanel extends StatelessWidget {
           responding: respondingToPriceOffer,
           onRespond: onRespondToPriceOffer,
           onSubmitCounter: onSubmitCounterOffer,
+          queuedOffers: queuedPriceOffers,
+          promotingOfferId: promotingQueuedOfferId,
+          onPromoteOffer: onPromoteQueuedOffer,
         ),
       );
     }
@@ -8765,12 +8855,21 @@ class _DriverPriceOfferPanel extends StatefulWidget {
     required this.responding,
     required this.onRespond,
     required this.onSubmitCounter,
+    this.queuedOffers = const [],
+    this.promotingOfferId,
+    this.onPromoteOffer,
   });
 
   final OrderSummary order;
   final bool responding;
   final ValueChanged<bool> onRespond;
   final ValueChanged<int> onSubmitCounter;
+  // A different driver's offer submitted while this one is already primary
+  // — see submitDriverPriceOffer's queueing behavior. Shown as a
+  // notification stack above the primary offer below, not instead of it.
+  final List<QueuedPriceOffer> queuedOffers;
+  final String? promotingOfferId;
+  final ValueChanged<QueuedPriceOffer>? onPromoteOffer;
 
   @override
   State<_DriverPriceOfferPanel> createState() =>
@@ -8841,6 +8940,14 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
         children: [
           _SheetHandle(dark: isDark),
           const SizedBox(height: 12),
+          if (widget.queuedOffers.isNotEmpty) ...[
+            _QueuedPriceOfferBanner(
+              offers: widget.queuedOffers,
+              promotingOfferId: widget.promotingOfferId,
+              onPromote: widget.onPromoteOffer,
+            ),
+            const SizedBox(height: 14),
+          ],
           // Avatar + name + rating up top — the rider should see WHO is
           // asking for a different price before deciding whether to
           // negotiate, not just a bare number.
@@ -8985,6 +9092,165 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
           ),
         ],
       )),
+    );
+  }
+}
+
+// Other drivers' offers stacked above the primary one (order-dispatch
+// .service.js queues these instead of letting a second driver silently
+// overwrite the first — see submitDriverPriceOffer). Each row promotes
+// straight into the primary slot on tap rather than opening a separate
+// flow, since the rider's decision here really is just "this one instead."
+class _QueuedPriceOfferBanner extends StatelessWidget {
+  const _QueuedPriceOfferBanner({
+    required this.offers,
+    required this.promotingOfferId,
+    required this.onPromote,
+  });
+
+  final List<QueuedPriceOffer> offers;
+  final String? promotingOfferId;
+  final ValueChanged<QueuedPriceOffer>? onPromote;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.notifications_active_rounded,
+                  color: palette.gold, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                l10n.passengerQueuedOffersTitle,
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final offer in offers) ...[
+            _QueuedPriceOfferRow(
+              offer: offer,
+              promoting: promotingOfferId == offer.id,
+              disabled: promotingOfferId != null && promotingOfferId != offer.id,
+              onTap: onPromote == null ? null : () => onPromote!(offer),
+            ),
+            if (offer != offers.last) const SizedBox(height: 6),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _QueuedPriceOfferRow extends StatelessWidget {
+  const _QueuedPriceOfferRow({
+    required this.offer,
+    required this.promoting,
+    required this.disabled,
+    required this.onTap,
+  });
+
+  final QueuedPriceOffer offer;
+  final bool promoting;
+  final bool disabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final name = (offer.driverName ?? '').trim().isEmpty
+        ? l10n.driverProfileNameFallback
+        : offer.driverName!.trim();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: palette.goldSurface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _InitialsAvatar(
+            name: name,
+            size: 32,
+            showStatusDot: false,
+            avatarUrl: offer.driverAvatarUrl,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: palette.text,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  _formatTenge(offer.priceKzt.toDouble()),
+                  style: TextStyle(
+                    color: palette.goldDeep,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 32,
+            child: OutlinedButton(
+              onPressed: disabled ? null : onTap,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: palette.goldDeep,
+                side: BorderSide(color: palette.gold),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: promoting
+                  ? SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: palette.goldDeep,
+                      ),
+                    )
+                  : Text(
+                      l10n.passengerChooseOfferButton,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

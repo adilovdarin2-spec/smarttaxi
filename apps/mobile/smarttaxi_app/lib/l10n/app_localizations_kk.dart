@@ -958,6 +958,12 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerDeclineOfferButton => 'Бас тарту';
 
   @override
+  String get passengerQueuedOffersTitle => 'Басқа жүргізушілердің ұсыныстары';
+
+  @override
+  String get passengerChooseOfferButton => 'Таңдау';
+
+  @override
   String get passengerWaitingDriverResponseTitle =>
       'Жүргізушінің жауабын күтудеміз';
 
@@ -1954,6 +1960,11 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String passengerCounterOfferSentToast(String amount) {
     return 'Сіздің ұсынысыңыз жүргізушіге жіберілді: $amount';
+  }
+
+  @override
+  String passengerQueuedOfferArrivedToast(String amount) {
+    return 'Тағы бір жүргізуші баға ұсынды: $amount';
   }
 
   @override

@@ -953,6 +953,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerDeclineOfferButton => 'Отказаться';
 
   @override
+  String get passengerQueuedOffersTitle => 'Другие предложения водителей';
+
+  @override
+  String get passengerChooseOfferButton => 'Выбрать';
+
+  @override
   String get passengerWaitingDriverResponseTitle => 'Ждём ответа водителя';
 
   @override
@@ -1944,6 +1950,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String passengerCounterOfferSentToast(String amount) {
     return 'Ваше предложение отправлено водителю: $amount';
+  }
+
+  @override
+  String passengerQueuedOfferArrivedToast(String amount) {
+    return 'Ещё один водитель предложил цену: $amount';
   }
 
   @override

@@ -1819,6 +1819,18 @@ abstract class AppLocalizations {
   /// **'Отказаться'**
   String get passengerDeclineOfferButton;
 
+  /// No description provided for @passengerQueuedOffersTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Другие предложения водителей'**
+  String get passengerQueuedOffersTitle;
+
+  /// No description provided for @passengerChooseOfferButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать'**
+  String get passengerChooseOfferButton;
+
   /// No description provided for @passengerWaitingDriverResponseTitle.
   ///
   /// In ru, this message translates to:
@@ -3552,6 +3564,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Ваше предложение отправлено водителю: {amount}'**
   String passengerCounterOfferSentToast(String amount);
+
+  /// No description provided for @passengerQueuedOfferArrivedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ещё один водитель предложил цену: {amount}'**
+  String passengerQueuedOfferArrivedToast(String amount);
 
   /// No description provided for @passengerLegalHubTitle.
   ///
