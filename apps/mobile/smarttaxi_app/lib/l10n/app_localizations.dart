@@ -2887,6 +2887,12 @@ abstract class AppLocalizations {
   /// **'Дом, работа и другие частые точки'**
   String get passengerFavoriteAddressesSubtitle;
 
+  /// No description provided for @passengerFavoriteAddressesSectionTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранные адреса'**
+  String get passengerFavoriteAddressesSectionTitle;
+
   /// No description provided for @passengerDriversMenuSubtitle.
   ///
   /// In ru, this message translates to:

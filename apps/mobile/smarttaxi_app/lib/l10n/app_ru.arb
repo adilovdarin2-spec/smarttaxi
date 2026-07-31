@@ -501,6 +501,7 @@
   "passengerNotificationsMenuSubtitle": "Статусы поездок и сообщения",
   "passengerSupportMenuSubtitle": "Напишите нам, если нужна помощь",
   "passengerFavoriteAddressesSubtitle": "Дом, работа и другие частые точки",
+  "passengerFavoriteAddressesSectionTitle": "Избранные адреса",
   "passengerDriversMenuSubtitle": "Избранные и заблокированные водители",
   "passengerReferralsMenuSubtitle": "Ваш код и бонусы за приглашения",
 

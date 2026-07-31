@@ -1558,6 +1558,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Дом, работа и другие частые точки';
 
   @override
+  String get passengerFavoriteAddressesSectionTitle => 'Избранные адреса';
+
+  @override
   String get passengerDriversMenuSubtitle =>
       'Избранные и заблокированные водители';
 

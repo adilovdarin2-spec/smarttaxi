@@ -405,6 +405,12 @@ class _PassengerShellState extends State<PassengerShell>
     unawaited(_loadMySupportMessages());
     unawaited(_loadTripHistory());
     unawaited(_loadUnreadNotificationCount());
+    // Needed as soon as the destination search sheet can open (see
+    // _selectPoint's favoriteAddresses quick-picks), not just once the rider
+    // happens to visit the separate Favorites tab — otherwise a rider with
+    // saved places would see an empty shortcuts section for their entire
+    // first order of the session.
+    unawaited(_loadFavoriteAddresses());
   }
 
   Future<void> _loadUnreadNotificationCount() async {
@@ -1447,6 +1453,7 @@ class _PassengerShellState extends State<PassengerShell>
         region: _selectedRegion?.name,
         suggestedAddresses: sheetAddresses,
         suggestionTitle: sheetAddressTitle,
+        favoriteAddresses: _favoriteAddresses,
         mapCenter: _mapCenter ?? _selectedRegion?.center?.toLatLng(),
         title: target == PointTarget.pickup
             ? l10n.passengerFromLabel
@@ -12621,6 +12628,7 @@ class _AddressSearchSheet extends StatefulWidget {
     required this.region,
     required this.suggestedAddresses,
     required this.suggestionTitle,
+    this.favoriteAddresses = const [],
     required this.mapCenter,
     required this.title,
     required this.hint,
@@ -12630,6 +12638,11 @@ class _AddressSearchSheet extends StatefulWidget {
   final String? region;
   final List<AddressSuggestion> suggestedAddresses;
   final String suggestionTitle;
+  // Saved Дом/Работа/other places (see _favoriteAddressesScreen) — shown as
+  // one-tap shortcuts above recents, same as every major competitor's
+  // destination search (Uber, Yandex Go, inDrive all pin Home/Work here
+  // rather than leaving them buried in a separate settings-style tab).
+  final List<FavoriteAddress> favoriteAddresses;
   final LatLng? mapCenter;
   final String title;
   final String hint;
@@ -12864,15 +12877,34 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                   ],
                   const SizedBox(height: 12),
                   if (_query.text.trim().length < 2 &&
+                      widget.favoriteAddresses.isNotEmpty) ...[
+                    _RecentAddressSection(
+                      title: l10n.passengerFavoriteAddressesSectionTitle,
+                      addresses: widget.favoriteAddresses
+                          .map((favorite) => AddressSuggestion(
+                                label: favorite.title,
+                                subtitle: favorite.addressText,
+                                coordinate: favorite.coordinate,
+                              ))
+                          .toList(),
+                      onSelect: _select,
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  if (_query.text.trim().length < 2 &&
                       widget.suggestedAddresses.isNotEmpty)
                     _RecentAddressSection(
                       title: widget.suggestionTitle,
                       addresses: widget.suggestedAddresses,
                       onSelect: _select,
                     )
-                  else if (_query.text.trim().length < 2)
+                  else if (_query.text.trim().length < 2 &&
+                      widget.favoriteAddresses.isEmpty)
                     const _AddressEmptyHint()
-                  else if (!_loading && _results.isEmpty && _error == null)
+                  else if (!_loading &&
+                      _query.text.trim().length >= 2 &&
+                      _results.isEmpty &&
+                      _error == null)
                     _AddressEmptyHint(
                       title: l10n.passengerFaqNoResultsTitle,
                       text: l10n.passengerAddressNoResultsText,

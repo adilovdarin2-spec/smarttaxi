@@ -1567,6 +1567,9 @@ class AppLocalizationsKk extends AppLocalizations {
       'Үй, жұмыс және басқа жиі мекенжайлар';
 
   @override
+  String get passengerFavoriteAddressesSectionTitle => 'Таңдаулы мекенжайлар';
+
+  @override
   String get passengerDriversMenuSubtitle =>
       'Таңдаулы және бұғатталған жүргізушілер';
 

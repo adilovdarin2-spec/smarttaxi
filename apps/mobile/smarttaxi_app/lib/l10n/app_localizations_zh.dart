@@ -1460,6 +1460,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerFavoriteAddressesSubtitle => '家、公司等常用地点';
 
   @override
+  String get passengerFavoriteAddressesSectionTitle => '收藏地址';
+
+  @override
   String get passengerDriversMenuSubtitle => '收藏与已屏蔽的司机';
 
   @override

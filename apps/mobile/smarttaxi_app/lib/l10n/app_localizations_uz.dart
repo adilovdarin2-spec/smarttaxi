@@ -1575,6 +1575,9 @@ class AppLocalizationsUz extends AppLocalizations {
       'Uy, ish va boshqa tez-tez manzillar';
 
   @override
+  String get passengerFavoriteAddressesSectionTitle => 'Tanlangan manzillar';
+
+  @override
   String get passengerDriversMenuSubtitle =>
       'Sevimli va bloklangan haydovchilar';
 
