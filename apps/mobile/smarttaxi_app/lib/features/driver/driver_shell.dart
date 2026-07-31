@@ -6611,6 +6611,7 @@ class _NavigatorVoiceBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 220),
@@ -6626,8 +6627,8 @@ class _NavigatorVoiceBanner extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xfffff1e6),
-          border: Border.all(color: const Color(0xffffcc99)),
+          color: palette.goldPale,
+          border: Border.all(color: palette.gold.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -6636,8 +6637,8 @@ class _NavigatorVoiceBanner extends StatelessWidget {
               width: 38,
               height: 38,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: Color(0xffff8a00),
+              decoration: BoxDecoration(
+                color: palette.warning,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.speed_rounded,
@@ -6647,8 +6648,8 @@ class _NavigatorVoiceBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(
-                  color: Color(0xff9a4b00),
+                style: TextStyle(
+                  color: palette.goldDeep,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
