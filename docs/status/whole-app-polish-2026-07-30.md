@@ -496,3 +496,12 @@ ship a hint that might rarely have anything to show.
   overflow logged) — worked around structurally instead of chasing the
   underlying Flutter layout mechanism further, given the fix verified clean
   via direct A/B testing.
+- Checked whether the passenger side needed the same live-ETA/smooth-camera
+  treatment as the driver navigator. It doesn't, to the same degree: the
+  passenger's "driver ETA to pickup" already refetches every 8s (throttled,
+  socket-driven — `_loadDriverRoute` in passenger_shell.dart), tighter than
+  the driver's 12s window that motivated the fix there, and the passenger
+  map's camera deliberately only re-centers when a point falls outside the
+  visible area (`_MapCanvasState._refitCamera`) rather than every tick —
+  a reasonable design for a passive observer, not a driver actively
+  navigating. No change made.
