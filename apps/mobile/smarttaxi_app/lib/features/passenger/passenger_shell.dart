@@ -7385,7 +7385,7 @@ class _TripHistoryCard extends StatelessWidget {
             children: [
               if (trip.tariff != null && trip.tariff!.isNotEmpty)
                 Text(
-                  trip.tariff!,
+                  _localizedTariffLabel(l10n, trip.tariff),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -7561,9 +7561,7 @@ class _TripDetailScreen extends StatelessWidget {
             _TripInfoRow(children: [
               _TripInfoPill(
                 label: l10n.tariffLabel,
-                value: (trip.tariff ?? '').trim().isEmpty
-                    ? l10n.tariffEconomyTitle
-                    : trip.tariff!,
+                value: _localizedTariffLabel(l10n, trip.tariff),
               ),
               _TripInfoPill(
                 label: l10n.paymentMethodLabel,
@@ -7930,14 +7928,7 @@ class _TripStatusPanel extends StatelessWidget {
                 _TripInfoRow(children: [
                   _TripInfoPill(
                     label: l10n.tariffLabel,
-                    // (order.tariff ?? 'Эконом') meant the null case
-                    // itself never produced an empty string to trigger
-                    // the "use Эконом" branch — it fell through to the
-                    // null-check operator below and crashed for any
-                    // order with no tariff at all.
-                    value: (order.tariff?.trim().isEmpty ?? true)
-                        ? l10n.tariffEconomyTitle
-                        : order.tariff!,
+                    value: _localizedTariffLabel(l10n, order.tariff),
                   ),
                   _TripInfoPill(
                     label: l10n.paymentMethodLabel,
@@ -8016,14 +8007,7 @@ class _TripStatusPanel extends StatelessWidget {
                 _TripInfoRow(children: [
                   _TripInfoPill(
                     label: l10n.tariffLabel,
-                    // (order.tariff ?? 'Эконом') meant the null case
-                    // itself never produced an empty string to trigger
-                    // the "use Эконом" branch — it fell through to the
-                    // null-check operator below and crashed for any
-                    // order with no tariff at all.
-                    value: (order.tariff?.trim().isEmpty ?? true)
-                        ? l10n.tariffEconomyTitle
-                        : order.tariff!,
+                    value: _localizedTariffLabel(l10n, order.tariff),
                   ),
                   _TripInfoPill(
                     label: l10n.paymentMethodLabel,
@@ -8174,11 +8158,7 @@ class _TripStatusPanel extends StatelessWidget {
               _TripInfoRow(children: [
                 _TripInfoPill(
                   label: l10n.tariffLabel,
-                  value: (order.tariff ?? l10n.tariffEconomyTitle)
-                          .trim()
-                          .isEmpty
-                      ? l10n.tariffEconomyTitle
-                      : order.tariff!,
+                  value: _localizedTariffLabel(l10n, order.tariff),
                 ),
                 _TripInfoPill(
                   label: l10n.paymentMethodLabel,
@@ -13586,6 +13566,33 @@ String _tariffTitleFor(AppLocalizations l10n, _TariffVisualClass classId) {
     case _TariffVisualClass.delivery:
       return l10n.tariffDeliveryTitle;
   }
+}
+
+// Trip history/detail screens store the tariff name the order was placed
+// with verbatim (e.g. "Economy" from the seed data) and display it as-is --
+// unlike the live tariff-selection screen, which already runs raw names
+// through this same classification to show a localized title. Mirrors
+// _passengerTariffVisual's matching so a past order reads the same
+// language as the rest of the app instead of leaking the raw DB value.
+String _localizedTariffLabel(AppLocalizations l10n, String? rawName) {
+  final trimmed = rawName?.trim() ?? '';
+  if (trimmed.isEmpty) return l10n.tariffEconomyTitle;
+  final normalized = trimmed.toLowerCase();
+  if (normalized.contains('econom') || normalized.contains('эконом')) {
+    return l10n.tariffEconomyTitle;
+  }
+  if (normalized.contains('comfort') || normalized.contains('комфорт')) {
+    return l10n.tariffComfortTitle;
+  }
+  if (normalized.contains('business') || normalized.contains('бизнес')) {
+    return l10n.tariffBusinessTitle;
+  }
+  if (normalized.contains('delivery') ||
+      normalized.contains('доставка') ||
+      normalized.contains('parcel')) {
+    return l10n.tariffDeliveryTitle;
+  }
+  return trimmed;
 }
 
 String _formatTenge(num value) {
