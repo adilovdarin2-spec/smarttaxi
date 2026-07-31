@@ -2479,7 +2479,12 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                 final keyboardShift = keyboardOpen
                     ? -(keyboardInset * 0.4).clamp(0.0, maxKeyboardShift)
                     : 0.0;
-                final showDefaultFooter = !_registerMode;
+                // The SMS-consent line only makes sense before a code has
+                // been requested — an existing user entering their password
+                // (_phoneChecked) or a verified reset entering a new password
+                // (_resetPasswordStep) will never trigger an SMS send here.
+                final showDefaultFooter =
+                    !_registerMode && !_phoneChecked && !_resetPasswordStep;
 
                 return Stack(
                   children: [
@@ -3298,8 +3303,6 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
                 onPressed: onSubmit,
               ),
               if (!keyboardOpen) ...[
-                SizedBox(height: compact ? 22 : 28),
-                const _PhotoAuthSmsNotice(),
                 SizedBox(height: compact ? 24 : 30),
                 _PhotoAuthLegalNotice(onTerms: onTerms, onPrivacy: onPrivacy),
               ],
