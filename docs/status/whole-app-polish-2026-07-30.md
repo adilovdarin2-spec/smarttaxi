@@ -505,3 +505,91 @@ ship a hint that might rarely have anything to show.
   visible area (`_MapCanvasState._refitCamera`) rather than every tick —
   a reasonable design for a passive observer, not a driver actively
   navigating. No change made.
+
+## Multiple simultaneous driver price offers (торг)
+
+User-reported gap: if a driver countered an order's price while a
+different driver had already countered it too, the second driver's offer
+silently overwrote the first in the order's single `driver_offer_*` slot
+— the rider lost the first offer entirely, with no signal a second
+driver had even offered. Requested behavior: rider sees the first
+driver's price first; later offers from other drivers arrive as a
+notification stacked above it.
+
+Implemented as an additive `order_price_offer_queue` table rather than
+rewriting the existing, already-tested single-slot state machine — a
+second/third driver's offer now queues instead of overwriting, and the
+rider can promote any queued offer into the primary slot
+(`POST /orders/:id/price-offers/queue/:queueId/promote`, which steps the
+previous primary driver aside the same way an explicit decline would).
+Queue state is computed at read time (order still open, unclaimed)
+rather than eagerly cleared from every order-closing code path, so nothing
+elsewhere in the codebase can leave a stale row behind. All lock
+acquisition follows this file's established driver-then-order ordering —
+caught a real deadlock-ordering bug in an early draft of the promote path
+(it initially locked order-then-driver) before it shipped, by cross-
+checking against the existing code's own documented lock-ordering
+comments.
+
+Mobile: a new `order.driver_price_offer_queued` socket event plus a
+`GET .../price-offers/queue` endpoint feed a notification banner
+(`_QueuedPriceOfferBanner`) stacked above the passenger's existing
+primary-offer sheet, each row promotable with one tap.
+
+Verified: `flutter analyze`/`flutter test` clean, full build+install+
+launch smoke test on device (no crash), and careful manual tracing of
+every lock/race path against the file's own established conventions. NOT
+live-tested end-to-end — that needs two simultaneous driver sessions
+submitting competing offers on the same order against a live backend, and
+local Postgres is still unavailable tonight (Docker daemon confirmed
+down again), while testing against prod needs a push, which needs
+separate confirmation before deploying.
+
+## Marker size + go-online + order-arrival: live re-verification
+
+Three more specific concerns from tonight's instructions, checked
+directly rather than assumed fixed from history:
+
+- **Marker size shouldn't scale with zoom, for every marker type.**
+  Grepped both shell files exhaustively for any code that multiplies a
+  marker's width/height/size by a zoom-derived value — found none. Every
+  marker (car, pickup/dropoff pins, road-alert icons) renders through
+  `flutter_map`'s `Marker` widget, which is fixed-screen-size by
+  construction; there's no code path left that could still be scaling
+  with zoom. Confirmed live too: the navigator's car icon renders at a
+  sensible, road-proportioned size.
+- **"Can't go online."** Live-tested on device. The very first attempt
+  correctly failed — the test driver still had a genuine leftover active
+  order from earlier tonight's testing (Test Client, "Принят" status),
+  and going online while mid-trip is correctly blocked. After cancelling
+  that stale order through the normal driver-cancel flow (which correctly
+  reopened it for other drivers — confirmed via the "1 новых заказов"
+  counter appearing), a fresh go-online attempt succeeded immediately:
+  status flipped to "На линии", map switched to "Свободный режим". No bug
+  found — go-online works correctly for a driver with no active order.
+  (One transient observation: right after cancelling, the home screen's
+  map briefly still showed the old "Активный заказ" banner; by the next
+  screenshot a few minutes later it had already self-corrected to
+  "Свободный режим" with no action taken. Consistent with ordinary async
+  refresh lag, not a reproducible bug — not chasing further without being
+  able to reproduce it cleanly.)
+- **"Driver confirmed an order but it doesn't arrive [for the client]."**
+  This exact bug class was already found and fixed in an earlier round
+  this session (see completed task "Fix: driver accepting order doesn't
+  update client's screen"). Re-read the current `_applyOrderSnapshot`
+  or (passenger_shell.dart) and the server's `emitOrderUpdated`/
+  `orderRoom` socket plumbing today while building the price-offer
+  feature above — both still intact and unchanged by tonight's work, and
+  `driverJustAssigned` handling (haptic + toast + state update) reads
+  correctly. Not re-run as a full live two-account test tonight (would
+  need repeated login/logout on the single physical device); confidence
+  here is from code re-inspection, not a fresh live repro.
+
+## APK size re-check
+
+Re-verified the per-ABI release artifacts are still small
+(`app-arm64-v8a-release.apk` 35MB, `app-armeabi-v7a-release.apk` 33MB,
+`app-x86_64-release.apk` 37MB) — these are what Play Store actually
+serves per device, not the 249MB debug build (expected to be huge, unstripped,
+multi-arch, never ships). Confirms the earlier APK-size-reduction round
+held; no regression from tonight's changes.
