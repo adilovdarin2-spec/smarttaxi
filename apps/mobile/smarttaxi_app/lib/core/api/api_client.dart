@@ -50,6 +50,18 @@ class ApiClient {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
+  // A forced logout (SESSION_SUPERSEDED) clears the persisted token via
+  // AuthStore, but _dio.options.headers keeps whatever Bearer value the last
+  // _attachToken()/login() call set -- nothing removes it in between. Every
+  // unauthenticated call this Dio instance makes next (phone check, SMS
+  // send, and login itself, none of which call _attachToken()) still goes
+  // out carrying that now-invalid token. Call this alongside
+  // AuthStore.clear() so the client's in-memory state actually matches "logged
+  // out", not just its persisted storage.
+  void clearToken() {
+    _dio.options.headers.remove('Authorization');
+  }
+
   Future<Map<String, dynamic>> login(
       {String? phone, String? email, required String password}) async {
     final response =

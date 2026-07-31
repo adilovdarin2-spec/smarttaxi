@@ -164,6 +164,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     if (_forcedLogoutInProgress || _session == AppSession.auth) return;
     _forcedLogoutInProgress = true;
     widget.sockets.dispose();
+    widget.api.clearToken();
     await widget.authStore.clear();
     if (mounted) {
       setState(() {
@@ -304,6 +305,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
             savedMode == 'driver' ? AppSession.driver : AppSession.passenger);
         return;
       }
+      widget.api.clearToken();
       await widget.authStore.clear();
       await _showAppSystemUi();
       if (mounted) setState(() => _session = AppSession.auth);
@@ -365,6 +367,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
 
   Future<void> _logout() async {
     widget.sockets.dispose();
+    widget.api.clearToken();
     await widget.authStore.clear();
     if (mounted) {
       setState(() {
