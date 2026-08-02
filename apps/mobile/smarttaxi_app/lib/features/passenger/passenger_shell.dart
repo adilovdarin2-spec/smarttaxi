@@ -1022,6 +1022,9 @@ class _PassengerShellState extends State<PassengerShell>
       // once the terminal-status update lands.
       raw.putIfAbsent('distance_km', () => existing.distanceKm);
       raw.putIfAbsent('duration_min', () => existing.durationMin);
+      // ...and the driver's photo, which would otherwise flash back to the
+      // initials placeholder on every status change after DRIVER_FOUND.
+      raw.putIfAbsent('driver_avatar_url', () => existing.driverAvatarUrl);
     }
     final order = OrderSummary.fromJson(raw);
     if (_order?.id != order.id) return;
