@@ -117,12 +117,41 @@ rider side gained a `_expectedRoutePhase` helper mirroring the backend's
 - Dev server's transformed CSS refetched and every winning accent
   declaration confirmed.
 
-**Not visually verified.** The Browser pane was not compositing frames
-for this whole session (machine unattended), so no screenshots were
-possible, and no device was driven. Everything above is
-computed-value and static verification. A visual pass over the client,
-driver and admin panels in both themes is still owed before this is
-called finished.
+**Mobile: visually verified on device** (2409BRN2CY), screenshots in
+`qa_screenshots/bluewhite_2026-08-03/`. The browser pane never
+composited this session, so the *web panels* remain
+computed-value-verified only.
+
+Getting onto the device needed one trick worth remembering: plain
+`adb install` fails on this phone with
+`INSTALL_FAILED_USER_RESTRICTED: Install canceled by user` and no
+prompt ever appears. **Adding `-t` succeeds** — no file-manager
+sideload or physical tap needed, which is what previous sessions had
+resorted to.
+
+### What the screenshots actually showed
+
+The one thing no amount of code reading would have caught: **the map
+tiles were warm.** Stock OSM raster tiles are cream land, beige
+buildings, yellow roads — and the map is the largest surface on the
+home screen. Light theme was passing the *identity* matrix (no
+correction at all) while dark theme already had its own, so the map was
+the only warm thing on an otherwise cool blue-white screen and visibly
+fought the sheet sitting on it. Fixed with a light-theme matrix (18%
+desaturation + a slight per-channel cool tilt); before/after of the
+identical view confirms land goes cool blue-white, water reads properly
+blue, and every label stays readable. Applied to all six map instances.
+
+Also confirmed by eye and found *correct*, not broken: the blank map on
+the very first screenshot was just tiles still loading; the drawer,
+header, CTA gradient and region-confirmation dialog are all coherent.
+
+### Still not visually checked
+
+Dark theme on device — the app deliberately ignores the system night
+setting and uses its own in-app preference, and the theme toggle wasn't
+reached this round. The dark map matrix itself is untouched by this
+work. Web client/driver/admin panels also remain unverified visually.
 
 ## Operational note
 
