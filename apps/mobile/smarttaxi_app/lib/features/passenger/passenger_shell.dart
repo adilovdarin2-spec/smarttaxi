@@ -89,10 +89,22 @@ const _darkMapTileMatrix = <double>[
   -0.426, -1.430, 0.856, 0, 255,
   0, 0, 0, 1, 0,
 ];
-const _identityColorMatrix = <double>[
-  1, 0, 0, 0, 0,
-  0, 1, 0, 0, 0,
-  0, 0, 1, 0, 0,
+// Standard OSM raster tiles are warm — cream landmass, beige buildings,
+// yellow roads. Dropped unfiltered into this app they were the single
+// largest surface on the main screen and the only warm one, so the map
+// visibly clashed with the cool blue-white chrome sitting on top of it.
+//
+// This is an 18% desaturation composed with a slight per-channel cool
+// tilt (R x0.985, G x1.015, B x1.06 plus a small blue lift), which maps
+// the cream backdrop (250,245,237) to roughly (245,251,255) and cleans
+// up water toward the brand blue, while leaving roads and label text at
+// full legibility — a tint, not a restyle. Same one-matrix-per-widget
+// constraint as _darkMapTileMatrix, so it's pre-composed here rather
+// than chained.
+const _lightMapTileMatrix = <double>[
+  0.8455, 0.1268, 0.0128, 0, 0,
+  0.0389, 0.9629, 0.0132, 0, 2,
+  0.0406, 0.1364, 0.9041, 0, 10,
   0, 0, 0, 1, 0,
 ];
 const _iconMenu = 'assets/icons/menu.svg';
@@ -5305,7 +5317,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                 children: [
                   ColorFiltered(
                     colorFilter: ColorFilter.matrix(
-                      isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                      isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
                     ),
                     child: TileLayer(
                       urlTemplate: AppConfig.osmTileUrl,

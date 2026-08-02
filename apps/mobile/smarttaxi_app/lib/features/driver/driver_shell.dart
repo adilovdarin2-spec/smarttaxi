@@ -49,10 +49,16 @@ const _darkMapTileMatrix = <double>[
   -0.426, -1.430, 0.856, 0, 255,
   0, 0, 0, 1, 0,
 ];
-const _identityColorMatrix = <double>[
-  1, 0, 0, 0, 0,
-  0, 1, 0, 0, 0,
-  0, 0, 1, 0, 0,
+// Cools the warm stock OSM raster tiles (cream land, beige buildings,
+// yellow roads) so the map stops being the one warm surface under
+// cool blue-white chrome. Kept byte-identical to passenger_shell.dart's
+// copy, for the same reason the dark matrix above is duplicated: two
+// independent widget trees, not a shared map component. See the fuller
+// note there for the maths.
+const _lightMapTileMatrix = <double>[
+  0.8455, 0.1268, 0.0128, 0, 0,
+  0.0389, 0.9629, 0.0132, 0, 2,
+  0.0406, 0.1364, 0.9041, 0, 10,
   0, 0, 0, 1, 0,
 ];
 
@@ -3670,7 +3676,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                 children: [
                   ColorFiltered(
                     colorFilter: ColorFilter.matrix(
-                      isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                      isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
                     ),
                     child: TileLayer(
                       urlTemplate: AppConfig.osmTileUrl,
@@ -4478,7 +4484,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                       // here even though the rest of the app was light.
                       ColorFiltered(
                         colorFilter: ColorFilter.matrix(
-                          isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                          isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
                         ),
                         child: TileLayer(
                           urlTemplate: AppConfig.osmTileUrl,
@@ -5024,7 +5030,7 @@ class _TripMapState extends State<_TripMap> {
               children: [
                 ColorFiltered(
                   colorFilter: ColorFilter.matrix(
-                    isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                    isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
                   ),
                   child: TileLayer(
                       urlTemplate: AppConfig.osmTileUrl,
@@ -6206,7 +6212,7 @@ class _RoadAlertMap extends StatelessWidget {
                 children: [
                   ColorFiltered(
                     colorFilter: ColorFilter.matrix(
-                      isDark ? _darkMapTileMatrix : _identityColorMatrix,
+                      isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
                     ),
                     child: TileLayer(
                       urlTemplate: AppConfig.osmTileUrl,
