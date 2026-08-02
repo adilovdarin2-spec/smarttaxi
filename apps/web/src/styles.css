@@ -1750,7 +1750,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid var(--st-premium-line) !important;
   border-radius: 32px 32px 0 0 !important;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(255, 253, 248, .98)) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(247, 251, 255, .98)) !important;
   box-shadow: 0 -22px 54px rgba(0, 16, 42, .12) !important;
 }
 
@@ -1950,7 +1950,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-sticky-order {
-  background: linear-gradient(180deg, rgba(255, 253, 248, .0), rgba(255, 253, 248, .96) 34%, #ffffff 100%) !important;
+  background: linear-gradient(180deg, rgba(247, 251, 255, .0), rgba(247, 251, 255, .96) 34%, #ffffff 100%) !important;
 }
 
 .driver-core-phone {
@@ -6007,7 +6007,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 12px;
   padding: 12px 18px 8px;
   color: var(--taxi-text);
-  background: rgba(255, 252, 246, .9);
+  background: rgba(247, 251, 255, .9);
   border-bottom: 1px solid rgba(196, 212, 239, .65);
   backdrop-filter: blur(18px);
 }
@@ -6509,8 +6509,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .map-view.live-osm .map-vignette {
   background:
-    linear-gradient(180deg, rgba(255, 252, 246, .72), transparent 25%),
-    linear-gradient(0deg, rgba(255, 252, 246, .9), transparent 30%);
+    linear-gradient(180deg, rgba(247, 251, 255, .72), transparent 25%),
+    linear-gradient(0deg, rgba(247, 251, 255, .9), transparent 30%);
   pointer-events: none;
 }
 
@@ -8491,7 +8491,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   bottom: max(10px, env(safe-area-inset-bottom));
   z-index: 75;
   margin: 0;
-  background: rgba(255, 252, 246, .96);
+  background: rgba(247, 251, 255, .96);
   border: 1px solid var(--taxi-border);
   border-radius: 22px;
   box-shadow: 0 18px 54px rgba(15, 27, 45, .22);
@@ -10242,7 +10242,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid rgba(5, 86, 216, .13);
   border-radius: 30px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,250,238,.92)),
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(234, 243, 255,.92)),
     radial-gradient(circle at 50% 88%, rgba(5,86,216,.13), transparent 42%);
   box-shadow: 0 22px 48px rgba(15, 27, 45, .09);
 }
@@ -15615,7 +15615,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 78px;
   border-radius: 999px;
   color: #111827;
-  background: rgba(255, 249, 235, .92);
+  background: rgba(234, 243, 255, .92);
   border: 1px solid rgba(30, 102, 217, .22);
   box-shadow: 0 18px 36px rgba(17, 24, 39, .15), inset 0 1px 0 rgba(255, 255, 255, .9);
   animation: driverFoundCarIn 820ms cubic-bezier(.17, .9, .2, 1) 560ms both;
@@ -18152,7 +18152,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   inset: 0 !important;
   pointer-events: none !important;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .04) 0%, rgba(255, 255, 255, .16) 54%, rgba(255, 250, 239, .84) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .04) 0%, rgba(255, 255, 255, .16) 54%, rgba(234, 243, 255, .84) 100%),
     radial-gradient(circle at 50% 47%, rgba(5, 86, 216, .08), transparent 26%) !important;
   z-index: 2 !important;
 }
@@ -18497,7 +18497,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .address-picker-sheet {
-  background: linear-gradient(180deg, rgba(255,255,255,.985), rgba(255,251,241,.97)) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.985), rgba(242, 247, 255,.97)) !important;
   border: 1px solid rgba(255,255,255,.94) !important;
   box-shadow: 0 -22px 54px rgba(17, 24, 39, .14) !important;
 }
@@ -18682,7 +18682,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   z-index: 4 !important;
   pointer-events: none !important;
   background:
-    linear-gradient(180deg, rgba(255, 252, 244, .03) 0%, rgba(255, 252, 244, 0) 30%, rgba(255, 252, 244, .36) 100%),
+    linear-gradient(180deg, rgba(242, 247, 255, .03) 0%, rgba(242, 247, 255, 0) 30%, rgba(242, 247, 255, .36) 100%),
     radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0) 0 30%, rgba(232, 241, 255, .10) 68%, rgba(232, 241, 255, .24) 100%) !important;
 }
 
@@ -18813,7 +18813,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 0 !important;
   border-radius: 34px 34px 0 0 !important;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .985) 0%, rgba(255, 253, 248, .985) 62%, rgba(232, 241, 255, .99) 100%) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, .985) 0%, rgba(247, 251, 255, .985) 62%, rgba(232, 241, 255, .99) 100%) !important;
   box-shadow:
     0 -28px 62px rgba(17, 24, 39, .16),
     inset 0 1px 0 rgba(255,255,255,.95) !important;
