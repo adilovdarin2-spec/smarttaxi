@@ -3038,8 +3038,7 @@ class _PassengerShellState extends State<PassengerShell>
     if (distance == null && duration == null) return null;
     final parts = <String>[
       if (duration != null) '${duration.round()} мин',
-      if (distance != null)
-        '${distance.toStringAsFixed(1).replaceAll('.', ',')} км',
+      if (distance != null) '${distance.toStringAsFixed(1)} км',
     ];
     return parts.join(' · ');
   }
@@ -13683,7 +13682,7 @@ String _formatMinutes(RoutePreview route) {
 String _formatDistance(RoutePreview route) {
   final meters = route.distanceMeters;
   if (meters < 950) return '${meters.round()} м';
-  return '${(meters / 1000).toStringAsFixed(1).replaceAll('.', ',')} км';
+  return '${(meters / 1000).toStringAsFixed(1)} км';
 }
 
 class _TariffSection extends StatelessWidget {
