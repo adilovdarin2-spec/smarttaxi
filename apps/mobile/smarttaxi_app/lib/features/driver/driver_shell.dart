@@ -1831,12 +1831,27 @@ class _DriverShellState extends State<DriverShell> {
       }
     } catch (error) {
       if (requestId != _driverRouteRequestId) return;
-      if (mounted) {
-        setState(() {
-          _driverRoute = null;
-          _error = readableError(AppLocalizations.of(context), error);
-        });
-      }
+      if (!mounted) return;
+      // A driver mid-trip gets this refreshed every ~12s by
+      // _maybeRefreshDriverRoute, so a single blip of bad coverage (a
+      // tunnel, a dead zone — routine while actually driving) used to wipe
+      // the route line straight off the navigator map and raise a red
+      // shell-wide error, until some later refresh happened to succeed.
+      // The already-drawn route is still perfectly valid in that case, so
+      // keep rendering it and let the next refresh reconcile.
+      //
+      // The exception is a leg change: once the phase moves on
+      // (to_pickup -> to_dropoff), the route still on screen is for the
+      // leg just finished and would actively point the wrong way, so that
+      // one does have to be cleared and surfaced.
+      final phaseNow = _routePhaseForStatus(_activeOrder?.status);
+      final staleRouteStillValid =
+          _driverRoute != null && phaseNow != null && phaseNow == _lastRoutePhase;
+      if (staleRouteStillValid) return;
+      setState(() {
+        _driverRoute = null;
+        _error = readableError(AppLocalizations.of(context), error);
+      });
     }
   }
 

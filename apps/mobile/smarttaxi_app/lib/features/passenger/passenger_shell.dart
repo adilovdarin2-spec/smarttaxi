@@ -2113,12 +2113,47 @@ class _PassengerShellState extends State<PassengerShell>
     } catch (error) {
       if (requestId != _driverRouteRequestId) return;
       if (!mounted) return;
+      // This refetches on roughly every driver GPS ping while a trip is
+      // live, so a single failed poll (the driver passing through a dead
+      // zone, a momentary API hiccup) used to erase the driver's route
+      // line from the rider's map and raise "маршрут недоступен" — even
+      // though the route already drawn was still correct. Keep it and let
+      // the next ping reconcile.
+      //
+      // Only bail out of that when the leg itself has moved on: a route
+      // fetched for to_pickup is wrong once the rider is aboard and the
+      // trip is heading to the dropoff, so a stale one there has to go.
+      final expectedPhase = _expectedRoutePhase(_order?.status);
+      final held = _driverPickupRoute;
+      final staleRouteStillValid = held != null &&
+          expectedPhase != null &&
+          held.phase == expectedPhase;
+      if (staleRouteStillValid) return;
       setState(() {
         _driverPickupRoute = null;
         _driverRouteError =
             _readableDriverRouteError(AppLocalizations.of(context), error);
       });
     }
+  }
+
+  // Mirrors the backend's resolveActiveLeg (routing.service.js) — which
+  // physical leg a given order status puts the driver on. Used to tell a
+  // still-valid route apart from one left over from the previous leg.
+  static String? _expectedRoutePhase(String? status) {
+    const toPickup = {
+      'DRIVER_FOUND',
+      'DRIVER_GOING_TO_CLIENT',
+      'DRIVER_ASSIGNED',
+      'DRIVER_ARRIVED',
+      'WAITING_CLIENT',
+      'NEW',
+    };
+    const toDropoff = {'TRIP_STARTED', 'IN_PROGRESS'};
+    if (status == null) return null;
+    if (toDropoff.contains(status)) return 'to_dropoff';
+    if (toPickup.contains(status)) return 'to_pickup';
+    return null;
   }
 
   Future<void> _openDriverEntry() async {
