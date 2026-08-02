@@ -5927,8 +5927,15 @@ class _MarkerRadarPulseState extends State<_MarkerRadarPulse>
 // design — no longer needed now that the pin itself doesn't vary by
 // target. The *Deep variants below are still used elsewhere (trip status
 // copy), just not for the marker pin itself anymore.
+//
+// Both stay inside the accent ramp. The dropoff one used to read
+// `SmartTaxiColors.warning`, which worked only for as long as `warning`
+// was itself (wrongly) a blue — the moment it became a real amber, the
+// destination glyph on the map-picker card turned orange and was the
+// one warm thing on that screen. It was borrowing `warning` as a colour
+// slot, never as a semantic: picking a destination is not a warning.
 const _pickupMarkerColorDeep = SmartTaxiColors.goldDeep;
-const _dropoffMarkerColorDeep = SmartTaxiColors.warning;
+const _dropoffMarkerColorDeep = SmartTaxiColors.gold;
 
 class _CenterMapMarker extends StatelessWidget {
   const _CenterMapMarker({required this.target});
