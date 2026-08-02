@@ -1510,8 +1510,14 @@ class _PassengerShellState extends State<PassengerShell>
     final selected = await showModalBottomSheet<_PointResult>(
       context: context,
       isScrollControlled: true,
+      // The light value was 0xf6fffcf6 — the gold theme's cream. Because
+      // this barrier is near-opaque it effectively repaints the whole
+      // upper half of the screen, so it was the largest warm surface left
+      // in the app once the map tiles were cooled: opening the address
+      // sheet turned the backdrop ivory. Now the app's own cool
+      // background, which is what "fades to the app background" meant.
       barrierColor:
-          isDark ? const Color(0xf6071426) : const Color(0xf6fffcf6),
+          isDark ? const Color(0xf6071426) : const Color(0xf6f7fbff),
       backgroundColor: Colors.transparent,
       builder: (context) => _AddressSearchSheet(
         api: widget.api,
@@ -5426,10 +5432,14 @@ class _MapCanvasState extends State<_MapCanvas> {
                             Color(0x08071426),
                             Color(0xaa071426),
                           ]
+                        // Was the gold theme's cream (fffcf6). It is laid
+                        // straight over the map, so it tinted the tiles
+                        // warm from the top and bottom edges even after
+                        // the tiles themselves were cooled.
                         : const [
-                            Color(0x55fffcf6),
-                            Color(0x08fffcf6),
-                            Color(0xaafffcf6),
+                            Color(0x55f7fbff),
+                            Color(0x08f7fbff),
+                            Color(0xaaf7fbff),
                           ],
                   ),
                 ),

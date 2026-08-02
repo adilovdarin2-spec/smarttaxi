@@ -5074,18 +5074,29 @@ class _TripMapState extends State<_TripMap> {
                   ),
               ],
             ),
-            const Positioned.fill(
+            // This vignette sits directly on the map and had no dark
+            // branch at all — being `const` it painted the gold theme's
+            // creams (fffcf6/fff8e6) in *both* themes, so it hazed the
+            // tiles warm in light and washed a cream film over the dark
+            // map in dark. Now follows the theme like the tiles do.
+            Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x00fffcf6),
-                        Color(0x1afff8e6),
-                        Color(0xcafffcf6),
-                      ],
+                      colors: isDark
+                          ? const [
+                              Color(0x00071426),
+                              Color(0x1a071426),
+                              Color(0xca071426),
+                            ]
+                          : const [
+                              Color(0x00f7fbff),
+                              Color(0x1af2f7ff),
+                              Color(0xcaf7fbff),
+                            ],
                     ),
                   ),
                 ),
