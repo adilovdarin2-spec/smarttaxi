@@ -5,24 +5,24 @@
      backward compatibility with the ~21k lines below that already
      reference them — only the values changed, not the names (a full
      rename would touch every rule in this file for no visual gain). */
-  --bg: #F4F7FD;
-  --bg-deep: #E7EDFA;
-  --surface: #FFFFFF;
-  --surface-2: #EEF2FC;
-  --surface-3: #E4EAF9;
-  --gold: #2C5FE0;
-  --gold-light: #6FA8FF;
-  --gold-dark: #152352;
-  --text: #10192E;
-  --muted: #5B6B8C;
-  --border: #E1E7F5;
-  --gold-border: rgba(44, 95, 224, .35);
-  --danger: #E14B4B;
+  --bg: #f7fbff;
+  --bg-deep: #eef6ff;
+  --surface: #ffffff;
+  --surface-2: #f2f7ff;
+  --surface-3: #eaf3ff;
+  --gold: #1d6fff;
+  --gold-light: #65a3ff;
+  --gold-dark: #0b4fd1;
+  --text: #10192e;
+  --muted: #5b6b8c;
+  --border: #e1e7f5;
+  --gold-border: rgba(29, 111, 255, .35);
+  --danger: #dc2626;
   --danger-dark: #7a1f1f;
-  --success: #1E9E6B;
-  --warning: #C98A12;
+  --success: #16a34a;
+  --warning: #c98a12;
   --shadow: 0 22px 60px rgba(16, 25, 46, .12);
-  --gold-shadow: 0 14px 34px rgba(44, 95, 224, .22);
+  --gold-shadow: 0 14px 34px rgba(29, 111, 255, .22);
   font-family: Inter, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -34,8 +34,8 @@ html, body { overflow-x: hidden; }
 body {
   color: var(--text);
   background:
-    radial-gradient(circle at 50% -8%, rgba(44, 95, 224, .07), transparent 32rem),
-    linear-gradient(180deg, var(--bg-deep), var(--bg) 48%, #EEF2FC);
+    radial-gradient(circle at 50% -8%, rgba(29, 111, 255, .10), transparent 32rem),
+    linear-gradient(180deg, #f7fbff 0%, #ffffff 48%, #eef6ff 100%);
 }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -63,8 +63,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   overflow: hidden;
   color: var(--text);
   background:
-    radial-gradient(circle at 50% 6%, rgba(44, 95, 224, .06), transparent 15rem),
-    linear-gradient(180deg, #FFFFFF 0%, var(--bg) 56%, #EEF2FC 100%);
+    radial-gradient(circle at 50% 6%, rgba(29, 111, 255, .08), transparent 15rem),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 56%, #eef6ff 100%);
   border-inline: 1px solid var(--border);
 }
 @media (min-width: 760px) {
@@ -865,14 +865,14 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
    Keep this as the last product UI layer: it intentionally overrides older
    experimental blocks so client/driver/operator/admin feel like one app. */
 :root {
-  --st-ui-gold: #2C5FE0;
-  --st-ui-gold-bright: #6FA8FF;
-  --st-ui-gold-dark: #152352;
-  --st-ui-paper: #FFFFFF;
-  --st-ui-cream: #EEF2FC;
-  --st-ui-ink: #10192E;
-  --st-ui-muted: #5B6B8C;
-  --st-ui-line: #E1E7F5;
+  --st-ui-gold: #1d6fff;
+  --st-ui-gold-bright: #65a3ff;
+  --st-ui-gold-dark: #0b4fd1;
+  --st-ui-paper: #ffffff;
+  --st-ui-cream: #eef6ff;
+  --st-ui-ink: #10192e;
+  --st-ui-muted: #5b6b8c;
+  --st-ui-line: rgba(29, 111, 255, .14);
   --st-ui-shadow: 0 14px 34px rgba(16, 25, 46, .08);
   --st-ui-soft-shadow: 0 8px 22px rgba(16, 25, 46, .055);
 }
@@ -883,8 +883,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-control-shell {
   color: var(--st-ui-ink) !important;
   background:
-    radial-gradient(circle at 50% -10%, rgba(44, 95, 224, .10), transparent 280px),
-    linear-gradient(180deg, #FFFFFF 0%, var(--st-ui-cream) 46%, #FFFFFF 100%) !important;
+    radial-gradient(circle at 50% -10%, rgba(29, 111, 255, .12), transparent 280px),
+    linear-gradient(180deg, #ffffff 0%, var(--st-ui-cream) 46%, #ffffff 100%) !important;
 }
 
 .taxi-client-shell .reference-client-header,
@@ -1105,7 +1105,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-tariff-state {
   padding-bottom: calc(94px + env(safe-area-inset-bottom)) !important;
   color: var(--st-ui-ink) !important;
-  background: linear-gradient(180deg, #fffaf0 0%, #fffefb 100%) !important;
+  background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 100%) !important;
 }
 
 .taxi-client-shell .reference-tariff-state .reference-map-ghost {
@@ -1292,7 +1292,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   min-height: 48px !important;
   border-radius: 16px !important;
   border-color: var(--st-ui-line) !important;
-  background: #fffdf8 !important;
+  background: #ffffff !important;
   color: var(--st-ui-ink) !important;
 }
 
@@ -1625,7 +1625,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .driver-core-phone,
 .driver-core-login {
-  --driver-bg: #fffaf0;
+  --driver-bg: #f2f7ff;
   --driver-card: rgba(255, 255, 255, .96);
   --driver-ink: #111827;
   --driver-muted: #697180;
@@ -1633,7 +1633,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--driver-ink) !important;
   background:
     radial-gradient(circle at 50% 0, rgba(33, 115, 247, .20), transparent 320px),
-    linear-gradient(180deg, #fffdf8 0%, #e8f1ff 52%, #ffffff 100%) !important;
+    linear-gradient(180deg, #ffffff 0%, #e8f1ff 52%, #ffffff 100%) !important;
 }
 
 .driver-core-auth-card,
@@ -1680,24 +1680,24 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .driver-core-region-card select {
   color: var(--driver-ink) !important;
   border: 1px solid var(--driver-line) !important;
-  background: #fffdf8 !important;
+  background: #ffffff !important;
 }
 
 .driver-core-panel {
   color: var(--driver-ink) !important;
-  background: linear-gradient(180deg, rgba(255,255,255,.97), #fffdf8) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.97), #ffffff) !important;
 }
 
 /* SmartTaxi gold/white visual lock — keeps post-auth product screens coherent. */
 :root {
-  --st-premium-gold: #2C5FE0;
-  --st-premium-gold-2: #6FA8FF;
-  --st-premium-gold-dark: #152352;
-  --st-premium-cream: #EEF2FC;
-  --st-premium-paper: #FFFFFF;
-  --st-premium-ink: #10192E;
-  --st-premium-muted: #5B6B8C;
-  --st-premium-line: #E1E7F5;
+  --st-premium-gold: #1d6fff;
+  --st-premium-gold-2: #65a3ff;
+  --st-premium-gold-dark: #0b4fd1;
+  --st-premium-cream: #eef6ff;
+  --st-premium-paper: #ffffff;
+  --st-premium-ink: #10192e;
+  --st-premium-muted: #5b6b8c;
+  --st-premium-line: rgba(29, 111, 255, .14);
   --st-premium-shadow: 0 18px 46px rgba(16, 25, 46, .10);
   --st-premium-soft-shadow: 0 10px 28px rgba(16, 25, 46, .075);
 }
@@ -1710,8 +1710,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell.phone-frame,
 .phone-frame.driver-core-phone {
   background:
-    radial-gradient(circle at 50% -8%, rgba(44, 95, 224, .10), transparent 260px),
-    linear-gradient(180deg, #FFFFFF 0%, #EEF2FC 48%, #FFFFFF 100%);
+    radial-gradient(circle at 50% -8%, rgba(29, 111, 255, .12), transparent 260px),
+    linear-gradient(180deg, #ffffff 0%, #f7fbff 48%, #ffffff 100%);
 }
 
 .taxi-client-shell .reference-client-header,
@@ -1737,7 +1737,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-address-state {
-  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%) !important;
+  background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 100%) !important;
 }
 
 .taxi-client-shell .reference-address-state .reference-map-ambient {
@@ -1866,7 +1866,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-tariff-state {
-  background: linear-gradient(180deg, #fffaf0 0%, #fffefb 100%) !important;
+  background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 100%) !important;
   color: var(--st-premium-ink) !important;
 }
 
@@ -1950,7 +1950,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-sticky-order {
-  background: linear-gradient(180deg, rgba(255, 253, 248, .0), rgba(255, 253, 248, .96) 34%, #fffdf8 100%) !important;
+  background: linear-gradient(180deg, rgba(255, 253, 248, .0), rgba(255, 253, 248, .96) 34%, #ffffff 100%) !important;
 }
 
 .driver-core-phone {
@@ -1976,7 +1976,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .driver-core-panel {
   color: var(--st-premium-ink) !important;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .96), #fffdf8 100%) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, .96), #ffffff 100%) !important;
   border-color: var(--st-premium-line) !important;
   box-shadow: 0 -18px 45px rgba(0, 16, 42, .12) !important;
 }
@@ -2016,7 +2016,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .driver-core-region-card select {
   color: var(--st-premium-ink) !important;
   border-color: rgba(0, 64, 168, .15) !important;
-  background: #fffdf8 !important;
+  background: #ffffff !important;
 }
 
 .driver-core-order-meta span {
@@ -2038,7 +2038,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--st-premium-ink) !important;
   background:
     radial-gradient(circle at 12% 0, rgba(33, 115, 247, .16), transparent 420px),
-    linear-gradient(135deg, #fffdf8 0%, #e8f1ff 52%, #ffffff 100%) !important;
+    linear-gradient(135deg, #ffffff 0%, #e8f1ff 52%, #ffffff 100%) !important;
 }
 
 .operator-header h1,
@@ -2179,7 +2179,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   min-height: 100svh !important;
   background:
     radial-gradient(circle at 50% 0, rgba(33, 115, 247, .20), transparent 320px),
-    linear-gradient(180deg, #fffdf8 0%, #e6f0ff 54%, #ffffff 100%) !important;
+    linear-gradient(180deg, #ffffff 0%, #e6f0ff 54%, #ffffff 100%) !important;
 }
 
 .driver-core-auth-card {
@@ -2202,7 +2202,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .driver-core-form input {
   color: var(--st-premium-ink) !important;
   border: 1px solid rgba(0, 64, 168, .16) !important;
-  background: #fffdf8 !important;
+  background: #ffffff !important;
 }
 
 .driver-core-form input::placeholder {
@@ -2487,7 +2487,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   min-height: 126px;
   padding: 15px;
   color: var(--admin-text);
-  background: linear-gradient(180deg, #fff, #fffaf0);
+  background: linear-gradient(180deg, #fff, #f2f7ff);
   border: 1px solid var(--admin-border);
   border-radius: 22px;
   text-align: left;
@@ -3723,14 +3723,19 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 88px;
 }
 
+/* Two classes, so this outranks the single-class `.taxi-client-shell`
+   layer near the end of the file no matter which comes last — and
+   ClientApp.jsx really does render `taxi-pwa` on the client shell. It
+   therefore has to carry the canonical ramp itself, not a near-miss of
+   it (it was #2e69c9 on a warm cream, a leftover of the gold theme). */
 .phone-frame.taxi-pwa {
   --taxi-bg: #ffffff;
-  --taxi-app: #fffcf6;
+  --taxi-app: #f7fbff;
   --taxi-card: #ffffff;
-  --taxi-card-warm: #eaf2ff;
-  --taxi-gold: #2e69c9;
-  --taxi-gold-deep: #144da9;
-  --taxi-gold-soft: #bed4f7;
+  --taxi-card-warm: #f2f7ff;
+  --taxi-gold: #1d6fff;
+  --taxi-gold-deep: #0b4fd1;
+  --taxi-gold-soft: #dcebff;
   --taxi-text: #141414;
   --taxi-secondary: #666666;
   --taxi-muted: #9a9a9a;
@@ -5978,7 +5983,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 /* Final SmartTaxi client/admin polish */
 .taxi-client-shell {
-  --taxi-bg: #fffcf6;
+  --taxi-bg: #f7fbff;
   --taxi-card-warm: #e8f1ff;
   --taxi-gold: #0556d8;
   --taxi-gold-deep: #0041a9;
@@ -5988,7 +5993,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   --taxi-border: #c4d4ef;
   --taxi-border-strong: #5d8cd7;
   color: var(--taxi-text);
-  background: #fffcf6;
+  background: #f7fbff;
 }
 
 .taxi-client-shell .premium-client-header {
@@ -7008,7 +7013,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--taxi-text);
   background:
     radial-gradient(circle at 12% 0%, rgba(111, 166, 255, .16), transparent 34%),
-    linear-gradient(180deg, #fff 0%, #fffdf8 50%, #fff 100%);
+    linear-gradient(180deg, #fff 0%, #ffffff 50%, #fff 100%);
   border-right: 1px solid rgba(211, 222, 239, .9);
   border-radius: 0 34px 34px 0;
   box-shadow: 30px 0 74px rgba(17, 24, 39, .18);
@@ -7151,7 +7156,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: grid;
   place-items: center;
   color: #151515;
-  background: linear-gradient(180deg, #fff, #fffaf0);
+  background: linear-gradient(180deg, #fff, #f2f7ff);
   border: 1px solid rgba(229, 231, 235, .92);
   border-radius: 14px;
   box-shadow: 0 10px 22px rgba(17, 24, 39, .055);
@@ -7229,7 +7234,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--taxi-text);
   background:
     radial-gradient(circle at 50% -10%, rgba(213, 229, 255, .8), transparent 38%),
-    linear-gradient(180deg, #fffaf0 0%, #fff 50%, #f8f4ec 100%);
+    linear-gradient(180deg, #f2f7ff 0%, #fff 50%, #f8f4ec 100%);
 }
 
 .premium-address-screen .screen-intro.with-back {
@@ -7276,7 +7281,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 12px;
   padding: 12px 14px;
   color: var(--taxi-text);
-  background: #fffaf0;
+  background: #f2f7ff;
   border: 1px solid var(--taxi-border);
   border-radius: 18px;
 }
@@ -7316,7 +7321,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .premium-address-screen .skeleton-list span {
   height: 48px;
   border-radius: 17px;
-  background: linear-gradient(90deg, #fffaf0, #c2d7f8, #fffaf0);
+  background: linear-gradient(90deg, #f2f7ff, #c2d7f8, #f2f7ff);
 }
 
 .premium-address-list button {
@@ -8278,7 +8283,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   align-items: center;
   justify-content: center;
   border-radius: 19px;
-  background: linear-gradient(180deg, #fffdf8 0%, #d2e3ff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #d2e3ff 100%);
   border: 1px solid rgba(5, 86, 216, .22);
   overflow: hidden;
 }
@@ -8701,7 +8706,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .region-sheet-note.muted { color: #9a4b4b; }
 .taxi-client-shell .region-sheet-note.muted {
   color: var(--taxi-secondary);
-  background: #fffaf0;
+  background: #f2f7ff;
   border: 1px solid var(--taxi-border);
   border-radius: 14px;
   padding: 8px 10px;
@@ -9798,7 +9803,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-card.selected {
   border-color: rgba(5, 86, 216, .72);
-  background: linear-gradient(180deg, #fff 0%, #fffaf0 100%);
+  background: linear-gradient(180deg, #fff 0%, #f2f7ff 100%);
   box-shadow: 0 0 0 2px rgba(5, 86, 216, .15), 0 14px 32px rgba(0, 65, 169, .12);
 }
 
@@ -9960,7 +9965,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--st-ink);
   background:
     radial-gradient(circle at 8% 0%, rgba(77, 145, 255, .14), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #fffdf8 54%, #ffffff 100%);
+    linear-gradient(180deg, #ffffff 0%, #ffffff 54%, #ffffff 100%);
   border-right-color: rgba(232, 226, 214, .94);
 }
 
@@ -10042,7 +10047,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 34px;
   border-radius: 13px;
   color: var(--st-ink);
-  background: linear-gradient(180deg, #fff 0%, #fffaf0 100%);
+  background: linear-gradient(180deg, #fff 0%, #f2f7ff 100%);
   border-color: rgba(229, 231, 235, .94);
 }
 
@@ -10185,7 +10190,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--taxi-text);
   background:
     radial-gradient(circle at 50% 112px, rgba(0, 98, 255, .13), transparent 118px),
-    linear-gradient(180deg, #ffffff 0%, #fffdf8 56%, #f8f4eb 100%);
+    linear-gradient(180deg, #ffffff 0%, #ffffff 56%, #f8f4eb 100%);
 }
 
 .taxi-client-shell .auth-topbar {
@@ -11125,7 +11130,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   align-content: start;
   background:
     radial-gradient(circle at 80% -10%, rgba(5, 86, 216, .16), transparent 30%),
-    linear-gradient(180deg, #fffaf0 0%, #fff 48%, #f8f4ec 100%);
+    linear-gradient(180deg, #f2f7ff 0%, #fff 48%, #f8f4ec 100%);
 }
 
 .taxi-client-shell .auth-hero-panel {
@@ -11191,7 +11196,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   overflow: hidden;
   border: 1px solid rgba(5, 86, 216, .16);
   box-shadow: 0 18px 42px rgba(17, 17, 17, .10);
-  background: linear-gradient(180deg, #fffaf0, #eef3ec);
+  background: linear-gradient(180deg, #f2f7ff, #eef3ec);
 }
 
 .address-map-picker-card .map-view {
@@ -11257,7 +11262,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--taxi-text);
   background:
     radial-gradient(circle at 50% -10%, rgba(213, 229, 255, .9), transparent 38%),
-    linear-gradient(180deg, #fffaf0 0%, #fff 52%, #f7f3ea 100%);
+    linear-gradient(180deg, #f2f7ff 0%, #fff 52%, #f7f3ea 100%);
 }
 
 .trip-searching-screen {
@@ -11266,7 +11271,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0;
   padding: 0 12px 12px;
-  background: #fffaf0;
+  background: #f2f7ff;
   overflow: hidden;
 }
 
@@ -11298,7 +11303,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   align-content: stretch;
   gap: 0;
   padding: 0 12px 12px;
-  background: #fffaf0;
+  background: #f2f7ff;
   overflow: hidden;
 }
 
@@ -12607,7 +12612,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 11px 12px;
   border-radius: 18px;
   color: var(--taxi-text);
-  background: #fffaf0;
+  background: #f2f7ff;
   border: 1px solid rgba(5, 86, 216, .15);
 }
 
@@ -12677,7 +12682,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 11px;
   padding: 12px;
   border-radius: 20px;
-  background: linear-gradient(180deg, #fffdf8, #e6f0ff);
+  background: linear-gradient(180deg, #ffffff, #e6f0ff);
   border: 1px solid rgba(5, 86, 216, .16);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7);
 }
@@ -12889,7 +12894,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 42px;
   border-radius: 15px;
   border: 1px solid rgba(17, 17, 17, .08);
-  background: #fffaf0;
+  background: #f2f7ff;
   color: var(--taxi-text);
   display: inline-flex;
   align-items: center;
@@ -14143,7 +14148,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 12px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .99) 0%, #fff 58%, #fffdf8 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, .99) 0%, #fff 58%, #ffffff 100%);
   border: 1px solid rgba(255, 255, 255, .9);
   border-bottom: 0;
   border-radius: 34px 34px 0 0;
@@ -14326,7 +14331,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .address-picker-skeleton span {
   height: 46px;
   border-radius: 16px;
-  background: linear-gradient(90deg, #fffaf0, #c2d7f8, #fffaf0);
+  background: linear-gradient(90deg, #f2f7ff, #c2d7f8, #f2f7ff);
   background-size: 220% 100%;
   animation: taxiSkeleton 1.25s ease-in-out infinite;
 }
@@ -14497,7 +14502,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 43px;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #fff 0%, #fffaf0 100%);
+  background: linear-gradient(180deg, #fff 0%, #f2f7ff 100%);
   border: 2px solid #0556d8;
   border-radius: 16px;
   box-shadow:
@@ -14817,7 +14822,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 10px 38px max(16px, env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 50% 24%, rgba(0, 94, 246, .08), transparent 190px),
-    linear-gradient(180deg, #fff 0%, #fff 52%, #fffdf8 100%);
+    linear-gradient(180deg, #fff 0%, #fff 52%, #ffffff 100%);
   color: #111;
 }
 
@@ -15991,7 +15996,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 12px 14px;
   border: 1px solid #edf0f4;
   border-radius: 20px;
-  background: linear-gradient(180deg, #fff, #fffaf0);
+  background: linear-gradient(180deg, #fff, #f2f7ff);
 }
 
 .taxi-client-shell .lifecycle-car-row span {
@@ -18511,7 +18516,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-state {
   padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
-  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 45%, #e8f1ff 100%) !important;
+  background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 45%, #e8f1ff 100%) !important;
 }
 
 .taxi-client-shell .reference-tariff-state .reference-route-card {
@@ -18656,7 +18661,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background:
     radial-gradient(circle at 18% 4%, rgba(120, 172, 255, .25), transparent 31%),
     radial-gradient(circle at 86% 18%, rgba(5, 86, 216, .13), transparent 30%),
-    linear-gradient(180deg, #fffaf0 0%, #ffffff 52%, #e8f1ff 100%) !important;
+    linear-gradient(180deg, #f2f7ff 0%, #ffffff 52%, #e8f1ff 100%) !important;
 }
 
 .taxi-client-shell .final10-address-state .reference-map-ambient {
@@ -18923,7 +18928,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 32px !important;
   border-radius: 14px !important;
   color: #111827 !important;
-  background: linear-gradient(180deg, #fffdf8, #dfebff) !important;
+  background: linear-gradient(180deg, #ffffff, #dfebff) !important;
   border: 1px solid rgba(5, 86, 216, .12) !important;
   box-shadow: 0 10px 18px rgba(17, 24, 39, .05), inset 0 1px 0 rgba(255,255,255,.86) !important;
 }

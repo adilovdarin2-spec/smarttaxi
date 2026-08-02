@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 class SmartTaxiColors {
   static const gold = Color(0xff1d6fff);
   static const goldDeep = Color(0xff0b4fd1);
-  // accent-sky from the canonical system: the lighter blue that tops every
-  // primary-CTA / hero gradient. Was hardcoded as 0xff5b9dff separately in
-  // the passenger and driver CTA buttons before being named here.
-  static const goldSky = Color(0xff6fa8ff);
+  // The lighter blue that tops every primary-CTA / hero gradient. Was
+  // hardcoded as 0xff5b9dff separately in the passenger and driver CTA
+  // buttons before being named here; the value matches the web panels'
+  // --gold-light so the two products' CTAs are the same ramp.
+  static const goldSky = Color(0xff65a3ff);
   static const goldSoft = Color(0xffb9d6ff);
   static const goldPale = Color(0xffeaf3ff);
   static const goldSurface = Color(0xfff2f7ff);

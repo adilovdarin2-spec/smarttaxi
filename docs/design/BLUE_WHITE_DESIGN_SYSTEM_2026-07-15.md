@@ -10,21 +10,37 @@ Reference mockup (tokens + key screens + toast + admin table): see the artifact 
 
 ## Color tokens
 
+> **Reconciled 2026-08-02.** The accent/surface hexes originally written
+> here (`#2C5FE0` / `#F4F7FD` / `#152352` …) were never actually
+> implemented anywhere. Both products shipped a slightly brighter blue
+> ramp instead, and the web CSS additionally carried four competing
+> `:root` override layers with their own near-miss values. The table
+> below now records the ramp that is really in the code, verified
+> against `SmartTaxiColors` (mobile) and every `:root` layer in
+> `apps/web/src/styles.css` — so mobile, web and this doc agree. Don't
+> "restore" the old hexes: they would repaint every screen the product
+> owner has already signed off on.
+
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `bg` | `#F4F7FD` | `#0B1224` | page background |
-| `surface` | `#FFFFFF` | `#101B34` | cards, sheets |
-| `surface-2` | `#EEF2FC` | `#16223F` | recessed panels, map background |
-| `border` | `#E1E7F5` | `#23335C` | hairlines |
-| `text-primary` | `#10192E` | `#EAF0FF` | body text |
-| `text-secondary` | `#5B6B8C` | `#93A5D1` | muted/labels |
-| `text-muted` | `#93A0BE` | `#5E6E96` | placeholders, captions |
-| `accent` | `#2C5FE0` | `#6FA1FF` | primary CTA, links, active states |
-| `accent-sky` | `#6FA8FF` | `#93C5FF` | gradient top (splash), light accents |
-| `accent-deep` | `#152352` | `#0A1330` | gradient bottom (splash), dark accents |
-| `success` | `#1E9E6B` | `#3FC088` | |
-| `danger` | `#E14B4B` | `#F17575` | SOS, cancel, errors |
-| `warning` | `#C98A12` | `#E0A93A` | |
+| `bg` | `#F7FBFF` | `#05070C` | page background |
+| `surface` | `#FFFFFF` | `#0D121F` | cards, sheets |
+| `surface-2` | `#F2F7FF` | `#141B2E` | recessed panels, map background |
+| `border` | `#E1E7F5` | `#1F2740` | hairlines |
+| `text-primary` | `#10192E` | `#F5F7FB` | body text |
+| `text-secondary` | `#5B6B8C` | `#9AA4BA` | muted/labels |
+| `text-muted` | `#93A0BE` | `#6B7488` | placeholders, captions |
+| `accent` | `#1D6FFF` | `#1D6FFF` | primary CTA, links, active states |
+| `accent-sky` | `#65A3FF` | `#93C5FF` | gradient top (splash/CTA), light accents |
+| `accent-deep` | `#0B4FD1` | `#5B9BFF` | gradient bottom (splash/CTA), dark accents |
+| `success` | `#16A34A` | `#16A34A` | |
+| `danger` | `#DC2626` | `#EF4444` | SOS, cancel, errors |
+| `warning` | `#C98A12` | `#E0A93A` | amber, deliberately NOT a blue — see below |
+
+`warning` spent a while set to `#0B66D8`, a blue almost identical to
+`accent`, which made every "needs attention" state (road hazards, pending
+payouts, active-trip pills, rating stars) read as an ordinary CTA. It is
+an amber on purpose; keep it clearly distinct from `accent`.
 
 Splash/auth gradient: `linear-gradient(180deg, accent-sky 0%, accent 55%, accent-deep 100%)` — this is what's already implemented on the auth screens tonight; treat it as the reference gradient everywhere else a hero/gradient surface is needed (not just auth).
 
