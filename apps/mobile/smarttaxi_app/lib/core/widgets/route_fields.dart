@@ -55,16 +55,19 @@ class RouteFields extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 18),
-                // Origin and destination are a matched pair: same accent
-                // disc, same white glyph, only the icon differs. They used
-                // to be styled unlike each other (near-black disc + white
-                // glyph for the origin, accent disc + near-black glyph for
-                // the destination), which read as two unrelated controls
-                // and put a ~4:1 dark glyph on the accent.
+                // Origin reads as accent (where you are now), destination as
+                // ink (where you're headed) — the same relationship the trip
+                // history cards use, which is the most-repeated route
+                // indicator in the app. This widget had it backwards: a
+                // near-black disc for the origin and an accent disc for the
+                // destination, which also put a ~4:1 dark glyph on the
+                // accent. Foreground is `card`, not a literal white, so the
+                // pair inverts correctly when `text` goes near-white in dark
+                // mode instead of turning into white-on-white.
                 _RouteMarker(
                     icon: Icons.radio_button_checked_rounded,
                     background: palette.gold,
-                    foreground: Colors.white),
+                    foreground: palette.card),
                 Expanded(
                   child: Container(
                       width: 2,
@@ -73,8 +76,8 @@ class RouteFields extends StatelessWidget {
                 ),
                 _RouteMarker(
                     icon: Icons.location_on_rounded,
-                    background: palette.gold,
-                    foreground: Colors.white),
+                    background: palette.text,
+                    foreground: palette.card),
                 const SizedBox(height: 18),
               ],
             ),
