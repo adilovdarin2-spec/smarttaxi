@@ -1,21 +1,28 @@
 :root {
-  --bg: #0d0f12;
-  --bg-deep: #080b0e;
-  --surface: #1b1f27;
-  --surface-2: #20252d;
-  --surface-3: #252b35;
-  --gold: #0062ff;
-  --gold-light: #5c9aff;
-  --gold-dark: #1a66df;
-  --text: #f5f5f5;
-  --muted: #8a8f99;
-  --border: rgba(255, 255, 255, .08);
-  --gold-border: rgba(0, 98, 255, .45);
-  --danger: #ef4444;
+  /* Canonical blue/white tokens — kept in lockstep with
+     docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md and the mobile
+     app's SmartTaxiColors. Variable names kept as --gold-* / --bg-deep for
+     backward compatibility with the ~21k lines below that already
+     reference them — only the values changed, not the names (a full
+     rename would touch every rule in this file for no visual gain). */
+  --bg: #F4F7FD;
+  --bg-deep: #E7EDFA;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2FC;
+  --surface-3: #E4EAF9;
+  --gold: #2C5FE0;
+  --gold-light: #6FA8FF;
+  --gold-dark: #152352;
+  --text: #10192E;
+  --muted: #5B6B8C;
+  --border: #E1E7F5;
+  --gold-border: rgba(44, 95, 224, .35);
+  --danger: #E14B4B;
   --danger-dark: #7a1f1f;
-  --success: #22c55e;
-  --shadow: 0 22px 60px rgba(0, 0, 0, .44);
-  --gold-shadow: 0 14px 34px rgba(0, 98, 255, .28);
+  --success: #1E9E6B;
+  --warning: #C98A12;
+  --shadow: 0 22px 60px rgba(16, 25, 46, .12);
+  --gold-shadow: 0 14px 34px rgba(44, 95, 224, .22);
   font-family: Inter, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -27,8 +34,8 @@ html, body { overflow-x: hidden; }
 body {
   color: var(--text);
   background:
-    radial-gradient(circle at 50% -8%, rgba(0, 98, 255, .1), transparent 32rem),
-    linear-gradient(180deg, var(--bg-deep), var(--bg) 48%, #10151a);
+    radial-gradient(circle at 50% -8%, rgba(44, 95, 224, .07), transparent 32rem),
+    linear-gradient(180deg, var(--bg-deep), var(--bg) 48%, #EEF2FC);
 }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -56,15 +63,15 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   overflow: hidden;
   color: var(--text);
   background:
-    radial-gradient(circle at 50% 6%, rgba(0, 98, 255, .08), transparent 15rem),
-    linear-gradient(180deg, #090d10 0%, var(--bg) 56%, #11171b 100%);
-  border-inline: 1px solid rgba(255, 255, 255, .12);
+    radial-gradient(circle at 50% 6%, rgba(44, 95, 224, .06), transparent 15rem),
+    linear-gradient(180deg, #FFFFFF 0%, var(--bg) 56%, #EEF2FC 100%);
+  border-inline: 1px solid var(--border);
 }
 @media (min-width: 760px) {
   .phone-frame {
     min-height: 844px;
     margin-block: 18px;
-    border: 1px solid rgba(255, 255, 255, .16);
+    border: 1px solid var(--border);
     border-radius: 28px;
     box-shadow: var(--shadow);
   }
@@ -858,16 +865,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
    Keep this as the last product UI layer: it intentionally overrides older
    experimental blocks so client/driver/operator/admin feel like one app. */
 :root {
-  --st-ui-gold: #0556d8;
-  --st-ui-gold-bright: #287aff;
-  --st-ui-gold-dark: #003c9c;
-  --st-ui-paper: #fffefb;
-  --st-ui-cream: #e8f1ff;
-  --st-ui-ink: #111827;
-  --st-ui-muted: #667085;
-  --st-ui-line: rgba(0, 64, 168, .15);
-  --st-ui-shadow: 0 14px 34px rgba(0, 16, 41, .08);
-  --st-ui-soft-shadow: 0 8px 22px rgba(0, 16, 41, .055);
+  --st-ui-gold: #2C5FE0;
+  --st-ui-gold-bright: #6FA8FF;
+  --st-ui-gold-dark: #152352;
+  --st-ui-paper: #FFFFFF;
+  --st-ui-cream: #EEF2FC;
+  --st-ui-ink: #10192E;
+  --st-ui-muted: #5B6B8C;
+  --st-ui-line: #E1E7F5;
+  --st-ui-shadow: 0 14px 34px rgba(16, 25, 46, .08);
+  --st-ui-soft-shadow: 0 8px 22px rgba(16, 25, 46, .055);
 }
 
 .taxi-client-shell.phone-frame,
@@ -876,8 +883,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-control-shell {
   color: var(--st-ui-ink) !important;
   background:
-    radial-gradient(circle at 50% -10%, rgba(40, 122, 255, .18), transparent 280px),
-    linear-gradient(180deg, #fffdf8 0%, var(--st-ui-cream) 46%, #ffffff 100%) !important;
+    radial-gradient(circle at 50% -10%, rgba(44, 95, 224, .10), transparent 280px),
+    linear-gradient(180deg, #FFFFFF 0%, var(--st-ui-cream) 46%, #FFFFFF 100%) !important;
 }
 
 .taxi-client-shell .reference-client-header,
@@ -1683,23 +1690,28 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 /* SmartTaxi gold/white visual lock — keeps post-auth product screens coherent. */
 :root {
-  --st-premium-gold: #0556d8;
-  --st-premium-gold-2: #2173f7;
-  --st-premium-gold-dark: #003d9f;
-  --st-premium-cream: #e8f1ff;
-  --st-premium-paper: #fffefb;
-  --st-premium-ink: #101522;
-  --st-premium-muted: #717886;
-  --st-premium-line: rgba(0, 64, 168, .18);
-  --st-premium-shadow: 0 18px 46px rgba(0, 16, 42, .10);
-  --st-premium-soft-shadow: 0 10px 28px rgba(0, 16, 42, .075);
+  --st-premium-gold: #2C5FE0;
+  --st-premium-gold-2: #6FA8FF;
+  --st-premium-gold-dark: #152352;
+  --st-premium-cream: #EEF2FC;
+  --st-premium-paper: #FFFFFF;
+  --st-premium-ink: #10192E;
+  --st-premium-muted: #5B6B8C;
+  --st-premium-line: #E1E7F5;
+  --st-premium-shadow: 0 18px 46px rgba(16, 25, 46, .10);
+  --st-premium-soft-shadow: 0 10px 28px rgba(16, 25, 46, .075);
 }
 
+/* Superseded by the !important rule for the same selectors above (line
+   ~880) -- !important always wins regardless of source order, so this
+   rule is currently dead for .taxi-client-shell.phone-frame /
+   .phone-frame.driver-core-phone. Left values in sync rather than
+   deleted, in case the !important block above is ever relaxed. */
 .taxi-client-shell.phone-frame,
 .phone-frame.driver-core-phone {
   background:
-    radial-gradient(circle at 50% -8%, rgba(33, 115, 247, .18), transparent 260px),
-    linear-gradient(180deg, #fffdf8 0%, #fffaf0 48%, #fff 100%);
+    radial-gradient(circle at 50% -8%, rgba(44, 95, 224, .10), transparent 260px),
+    linear-gradient(180deg, #FFFFFF 0%, #EEF2FC 48%, #FFFFFF 100%);
 }
 
 .taxi-client-shell .reference-client-header,
@@ -19722,23 +19734,10 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* SmartTaxi blue/white direction lock.
-   The latest product direction is calm blue + white instead of orange/black.
-   This layer intentionally overrides older gold/orange visual locks without
-   touching the already wired map, address, estimate and order logic. */
-:root {
-  --gold: #1d6fff;
-  --gold-light: #65a3ff;
-  --gold-dark: #0b4fd1;
-  --gold-border: rgba(29, 111, 255, .38);
-  --gold-shadow: 0 14px 34px rgba(29, 111, 255, .24);
-}
-
-body {
-  background:
-    radial-gradient(circle at 50% -8%, rgba(29, 111, 255, .10), transparent 32rem),
-    linear-gradient(180deg, #f7fbff 0%, #ffffff 48%, #eef6ff 100%);
-}
+/* Blue/white tokens now live at :root (top of file) as the single source
+   of truth — this used to be a duplicate late-cascade override block that
+   silently won over anything declared earlier in :root. Removed rather
+   than kept in sync twice. See docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md. */
 
 .smart-logo {
   filter: drop-shadow(0 14px 28px rgba(29, 111, 255, .24));

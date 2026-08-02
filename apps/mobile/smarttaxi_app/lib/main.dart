@@ -3894,12 +3894,12 @@ class _PhotoAuthTextField extends StatelessWidget {
         hintText: hintText,
         floatingLabelBehavior: FloatingLabelBehavior.never,
         labelStyle: const TextStyle(
-          color: Color(0xff9aa2b0),
+          color: SmartTaxiColors.authFieldLabel,
           fontSize: 15.4,
           fontWeight: FontWeight.w700,
         ),
         hintStyle: const TextStyle(
-          color: Color(0xffadb4bf),
+          color: SmartTaxiColors.authFieldHint,
           fontSize: 15.4,
           fontWeight: FontWeight.w600,
         ),

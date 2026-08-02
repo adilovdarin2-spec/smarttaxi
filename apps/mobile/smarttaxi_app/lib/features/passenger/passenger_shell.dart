@@ -8302,7 +8302,7 @@ class _StarRatingSelector extends StatelessWidget {
               child: Icon(
                 filled ? Icons.star_rounded : Icons.star_outline_rounded,
                 color: filled
-                    ? const Color(0xfff5a623)
+                    ? context.palette.warning
                     : context.palette.border,
                 size: 38,
               ),
@@ -11338,7 +11338,7 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: const Color(0xff2f80ed),
+                    color: palette.gold,
                     shape: BoxShape.circle,
                     border: Border.all(color: palette.card, width: 2),
                   ),
@@ -16624,24 +16624,28 @@ class _GoldCtaButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedLoadingText =
         loadingText ?? AppLocalizations.of(context).passengerCtaCreatingOrder;
+    // Reads the palette rather than the raw SmartTaxiColors constants: this
+    // gradient used to be `const`, which froze the primary CTA at the light
+    // theme's blues even in dark mode (goldDeep differs per theme).
+    final palette = context.palette;
     return _PressScale(
       enabled: enabled && !loading,
       child: Opacity(
       opacity: enabled ? 1 : 0.52,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [
-              Color(0xff5b9dff),
-              SmartTaxiColors.gold,
-              SmartTaxiColors.goldDeep,
+              palette.goldSky,
+              palette.gold,
+              palette.goldDeep,
             ],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: enabled
               ? [
                   BoxShadow(
-                    color: SmartTaxiColors.gold.withValues(alpha: 0.34),
+                    color: palette.gold.withValues(alpha: 0.34),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),

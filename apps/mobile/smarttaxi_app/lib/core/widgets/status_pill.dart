@@ -14,7 +14,7 @@ class StatusPill extends StatelessWidget {
     final palette = context.palette;
     final colors = switch (tone) {
       StatusTone.success => (palette.success, palette.successSoft, palette.success.withValues(alpha: 0.35)),
-      StatusTone.warning => (palette.warning, palette.goldPale, palette.borderStrong),
+      StatusTone.warning => (palette.warning, palette.warningSoft, palette.warning.withValues(alpha: 0.35)),
       StatusTone.danger => (palette.danger, palette.dangerSoft, palette.danger.withValues(alpha: 0.35)),
       StatusTone.neutral => (palette.textSecondary, palette.card, palette.border),
     };

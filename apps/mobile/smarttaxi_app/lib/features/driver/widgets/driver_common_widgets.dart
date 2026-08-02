@@ -132,7 +132,7 @@ class DriverGradientButton extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xff5b9dff),
+                context.palette.goldSky,
                 context.palette.gold,
                 context.palette.goldDeep,
               ],

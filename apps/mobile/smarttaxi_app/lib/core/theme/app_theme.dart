@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 class SmartTaxiColors {
   static const gold = Color(0xff1d6fff);
   static const goldDeep = Color(0xff0b4fd1);
+  // accent-sky from the canonical system: the lighter blue that tops every
+  // primary-CTA / hero gradient. Was hardcoded as 0xff5b9dff separately in
+  // the passenger and driver CTA buttons before being named here.
+  static const goldSky = Color(0xff6fa8ff);
   static const goldSoft = Color(0xffb9d6ff);
   static const goldPale = Color(0xffeaf3ff);
   static const goldSurface = Color(0xfff2f7ff);
@@ -24,7 +28,13 @@ class SmartTaxiColors {
   static const successSoft = Color(0xffecfdf3);
   static const danger = Color(0xffdc2626);
   static const dangerSoft = Color(0xfffef2f2);
-  static const warning = Color(0xff0b66d8);
+  // A genuine amber, distinct from the blue accent -- previously this was
+  // set to a near-identical blue (0xff0b66d8), which defeated the purpose
+  // of a separate semantic "needs attention" color (pending payouts, road
+  // hazards, active-trip status pills all rendered the same hue as the
+  // primary CTA). Matches docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md.
+  static const warning = Color(0xffc98a12);
+  static const warningSoft = Color(0xfffbf1de);
   static const mapOverlay = Color(0xebf7fbff);
 
   // Auth-flow specific tokens (welcome / SMS / password / new-password
@@ -38,6 +48,12 @@ class SmartTaxiColors {
   static const authIcon = Color(0xff252d3a);
   static const authChipBackground = Color(0xfff0f2f6);
   static const authGradientStart = Color(0xff3a86ff);
+  // Field label/hint greys. Previously raw neutral greys (0xff9aa2b0 /
+  // 0xffadb4bf) inline in main.dart's auth TextField — they read visibly
+  // warm next to the cool blue chrome around them. These are the same
+  // lightness, re-tinted toward the canonical blue-grey text-muted ramp.
+  static const authFieldLabel = Color(0xff93a0be);
+  static const authFieldHint = Color(0xffa9b4cc);
 }
 
 /// Spacing scale (px). Use these instead of ad-hoc numbers for new layout
@@ -127,8 +143,10 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     required this.danger,
     required this.dangerSoft,
     required this.warning,
+    required this.warningSoft,
     required this.gold,
     required this.goldDeep,
+    required this.goldSky,
     required this.goldPale,
     required this.goldSurface,
   });
@@ -146,8 +164,10 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
   final Color danger;
   final Color dangerSoft;
   final Color warning;
+  final Color warningSoft;
   final Color gold;
   final Color goldDeep;
+  final Color goldSky;
   final Color goldPale;
   final Color goldSurface;
 
@@ -165,8 +185,10 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     danger: SmartTaxiColors.danger,
     dangerSoft: SmartTaxiColors.dangerSoft,
     warning: SmartTaxiColors.warning,
+    warningSoft: SmartTaxiColors.warningSoft,
     gold: SmartTaxiColors.gold,
     goldDeep: SmartTaxiColors.goldDeep,
+    goldSky: SmartTaxiColors.goldSky,
     goldPale: SmartTaxiColors.goldPale,
     goldSurface: SmartTaxiColors.goldSurface,
   );
@@ -189,9 +211,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     successSoft: Color(0xff123222),
     danger: Color(0xffef4444),
     dangerSoft: Color(0xff3a1414),
-    warning: Color(0xff5b9bff),
+    warning: Color(0xffe0a93a),
+    warningSoft: Color(0xff2e2210),
     gold: SmartTaxiColors.gold,
     goldDeep: Color(0xff5b9bff),
+    goldSky: Color(0xff93c5ff),
     goldPale: Color(0xff16223e),
     goldSurface: Color(0xff101b33),
   );
@@ -211,8 +235,10 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     Color? danger,
     Color? dangerSoft,
     Color? warning,
+    Color? warningSoft,
     Color? gold,
     Color? goldDeep,
+    Color? goldSky,
     Color? goldPale,
     Color? goldSurface,
   }) {
@@ -230,8 +256,10 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
       danger: danger ?? this.danger,
       dangerSoft: dangerSoft ?? this.dangerSoft,
       warning: warning ?? this.warning,
+      warningSoft: warningSoft ?? this.warningSoft,
       gold: gold ?? this.gold,
       goldDeep: goldDeep ?? this.goldDeep,
+      goldSky: goldSky ?? this.goldSky,
       goldPale: goldPale ?? this.goldPale,
       goldSurface: goldSurface ?? this.goldSurface,
     );
@@ -254,8 +282,10 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
       danger: Color.lerp(danger, other.danger, t)!,
       dangerSoft: Color.lerp(dangerSoft, other.dangerSoft, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
+      warningSoft: Color.lerp(warningSoft, other.warningSoft, t)!,
       gold: Color.lerp(gold, other.gold, t)!,
       goldDeep: Color.lerp(goldDeep, other.goldDeep, t)!,
+      goldSky: Color.lerp(goldSky, other.goldSky, t)!,
       goldPale: Color.lerp(goldPale, other.goldPale, t)!,
       goldSurface: Color.lerp(goldSurface, other.goldSurface, t)!,
     );
