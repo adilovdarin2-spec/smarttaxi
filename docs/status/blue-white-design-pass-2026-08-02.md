@@ -1,0 +1,142 @@
+# Blue/white design pass + route-logic fixes — 2026-08-02 (night)
+
+Round brief: bring the whole product to one blue/white system, taking
+composition cues from the uploaded reference packs, and make the route /
+navigator logic correct — not just the colours.
+
+## Headline: the design system had drifted from the code
+
+The reference packs that were uploaded (`_ui_handoff/`,
+`.codex_tmp_client_pack*/`, `_smarttaxi_final_images_only/`,
+`.codex_tmp_darkgold_handoff/`) are **gold-themed**. They are good
+references for composition — bottom sheets, tariff cards, the
+driver-found card, the trip-details modal — but explicitly superseded on
+colour by `docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md`.
+
+Checking what the browser actually computes, rather than reading the
+files, turned up the real problem: **the canonical doc's hexes were
+never implemented anywhere.**
+
+| | doc claimed | actually shipped |
+|---|---|---|
+| accent | `#2C5FE0` | `#1D6FFF` |
+| accent-sky | `#6FA8FF` | `#65A3FF` |
+| accent-deep | `#152352` | `#0B4FD1` |
+| bg | `#F4F7FD` | `#F7FBFF` |
+
+Adopting the doc's values would have repainted every screen already
+signed off. So the shipped ramp wins and the doc was corrected to record
+it, with a note not to "restore" the old hexes.
+
+### `apps/web/src/styles.css` fights itself
+
+21k lines carrying **four** separate `:root`-ish override layers, added
+by different sessions at different times, each with its own near-miss
+hexes and `!important`:
+
+1. `:root` at the top of the file — dead, overridden by everything below
+2. "ultimate gold/white visual QA lock" (~line 867)
+3. "premium gold/white visual lock" (~line 1692)
+4. a scoped `.taxi-client-shell, .driver-shell` block at the very end
+
+Plus a fifth trap: **`.phone-frame.taxi-pwa` is two classes**, so it
+outranks the single-class end-of-file layer regardless of source order —
+and `ClientApp.jsx:1616` really does render that class, so the client
+panel read its colours from there. It was still on `#2e69c9` over a warm
+cream.
+
+All layers now agree. One fully-duplicate block was deleted; the rest are
+annotated with which one actually wins.
+
+## What changed
+
+### Tokens (affects every screen)
+
+- **`warning` was a blue** (`0xff0b66d8`) all but identical to the
+  accent, so every "needs attention" state — road hazards, pending
+  payouts, active-trip pills, rating stars — rendered as an ordinary
+  CTA. Now a real amber (`#C98A12` / `#E0A93A`), with a new
+  `warningSoft` so `StatusPill` uses the same `(fg, softBg, border)`
+  shape as its success/danger siblings instead of borrowing the accent
+  surface.
+- **`goldSky` added** (accent-sky). Both primary CTA gradients had
+  hardcoded the same unnamed light blue; on the passenger side the
+  gradient was also `const`, which froze it at light-theme values in
+  dark mode.
+- Rating stars, a route-timeline origin dot, and the auth field
+  label/hint greys were off-token; all now read from the palette.
+- **54 warm off-whites** from the gold theme (`#fffaf0`, `#fffdf8`,
+  `#fffcf6`, `#fffefb`, plus seven more hiding in `rgba(255, 253, 248, …)`
+  notation that a hex-only pass could not see) swapped for cool
+  blue-white equivalents. These were the tints making otherwise-blue
+  surfaces read faintly yellow.
+
+### Route / navigator logic — one real bug
+
+Both shells refetch the driver's active route on a timer while a trip is
+running: the driver's every ~12s (or on deviation), the rider's on
+roughly every driver GPS ping. **Either one's catch block
+unconditionally nulled the held route and raised an error.** A single
+failed poll therefore wiped the route line off the map:
+
+- driver: `_driverRoute = null` + the shell-wide `_error`, which also
+  fires an error toast — mid-navigation, on the screen being driven with
+- rider: `_driverPickupRoute = null` + "маршрут недоступен"
+
+Losing coverage for one poll is routine while actually driving (tunnels,
+dead zones) and the route already drawn is still correct, so both now
+keep rendering it and let the next poll reconcile.
+
+The exception is a **leg change**: a route fetched for `to_pickup`
+genuinely points the wrong way once the rider is aboard and the trip is
+running to the dropoff. Both sides compare the held route's leg against
+the leg the current order status implies, and only keep it when they
+match — so a stale wrong-leg route is still cleared and surfaced. The
+rider side gained a `_expectedRoutePhase` helper mirroring the backend's
+`resolveActiveLeg` (`routing.service.js`); the driver side already had
+`_routePhaseForStatus`.
+
+### Audited, found correct (no change)
+
+- Navigator GPS-lost handling — a 500ms tick drives the rebuild, so the
+  banner does appear, and the maneuver banner is correctly suppressed
+  against a stale fix.
+- `_computeLiveRouteProgress` / `_computeNextManeuverHint` — both carry a
+  120m staleness guard and fall back cleanly.
+- `_loadRegions` clearing its list on failure — it only runs at startup,
+  so there is nothing loaded to preserve. Not the same bug class.
+- Driver-side `driverAvatarUrl` — never referenced, so no backfill needed.
+
+## Verification
+
+- `flutter analyze` — no issues.
+- `flutter test` — 35/35 pass.
+- Web production build — succeeds; emitted CSS grepped directly: **126**
+  occurrences of the canonical accent, **0** of the superseded one, **0**
+  warm tints in either hex or `rgba()` notation.
+- Dev server's transformed CSS refetched and every winning accent
+  declaration confirmed.
+
+**Not visually verified.** The Browser pane was not compositing frames
+for this whole session (machine unattended), so no screenshots were
+possible, and no device was driven. Everything above is
+computed-value and static verification. A visual pass over the client,
+driver and admin panels in both themes is still owed before this is
+called finished.
+
+## Operational note
+
+`npx vite build` **fails through the `C:\Users\...\Desktop` junction**
+("fileName … must not be an absolute path") after the repo was relocated
+to `D:`. Modules transform fine; only the HTML-emit step dies. Build from
+`D:\smarttaxi-github-starter` directly. `vite dev`, `flutter analyze` and
+`flutter test` are unaffected. Clear `apps/web/node_modules/.vite` if the
+dev server starts reporting `Failed to load url /src/main.jsx` — the
+optimizer cache holds pre-move paths.
+
+## Still open
+
+Per-screen composition polish against the reference packs — the token
+foundation under every screen is now correct and consistent, but the
+individual screens have not each been reworked this round. Tracked as
+tasks #223–228 and #230–232.
