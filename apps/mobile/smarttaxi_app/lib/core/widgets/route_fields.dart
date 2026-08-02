@@ -26,13 +26,18 @@ class RouteFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    // Reads the palette rather than hardcoded darks: the two constants
+    // this used in dark mode (0xe614181f panel, 0xcc1f232b field) are
+    // warm greys left from an older dark theme, while every surface
+    // around them is the current blue-black — the route card visibly
+    // read warmer than the sheet it sits in.
     final panelColor = dark
-        ? const Color(0xe614181f)
-        : SmartTaxiColors.cardWarm.withValues(alpha: 0.72);
-    final borderColor =
-        dark ? Colors.white.withValues(alpha: 0.08) : SmartTaxiColors.border;
+        ? palette.cardWarm.withValues(alpha: 0.90)
+        : palette.cardWarm.withValues(alpha: 0.72);
+    final borderColor = palette.border;
     final lineColor = dark
-        ? Colors.white.withValues(alpha: 0.20)
+        ? palette.border
         : SmartTaxiColors.borderStrong;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -50,10 +55,15 @@ class RouteFields extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 18),
+                // Origin and destination are a matched pair: same accent
+                // disc, same white glyph, only the icon differs. They used
+                // to be styled unlike each other (near-black disc + white
+                // glyph for the origin, accent disc + near-black glyph for
+                // the destination), which read as two unrelated controls
+                // and put a ~4:1 dark glyph on the accent.
                 _RouteMarker(
                     icon: Icons.radio_button_checked_rounded,
-                    background:
-                        dark ? SmartTaxiColors.gold : SmartTaxiColors.text,
+                    background: palette.gold,
                     foreground: Colors.white),
                 Expanded(
                   child: Container(
@@ -61,10 +71,10 @@ class RouteFields extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(vertical: 7),
                       color: lineColor),
                 ),
-                const _RouteMarker(
+                _RouteMarker(
                     icon: Icons.location_on_rounded,
-                    background: SmartTaxiColors.gold,
-                    foreground: SmartTaxiColors.text),
+                    background: palette.gold,
+                    foreground: Colors.white),
                 const SizedBox(height: 18),
               ],
             ),
@@ -141,20 +151,13 @@ class _RouteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final background = dark
-        ? (active
-            ? SmartTaxiColors.gold.withValues(alpha: 0.15)
-            : const Color(0xcc1f232b))
-        : (active ? SmartTaxiColors.goldPale : Colors.white);
-    final border = active
-        ? SmartTaxiColors.gold
-        : (dark
-            ? Colors.white.withValues(alpha: 0.08)
-            : SmartTaxiColors.border);
-    final labelColor = dark
-        ? Colors.white.withValues(alpha: 0.60)
-        : SmartTaxiColors.textSecondary;
-    final valueColor = dark ? Colors.white : SmartTaxiColors.text;
+        ? (active ? palette.gold.withValues(alpha: 0.15) : palette.card)
+        : (active ? palette.goldPale : palette.card);
+    final border = active ? palette.gold : palette.border;
+    final labelColor = palette.textSecondary;
+    final valueColor = palette.text;
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       width: double.infinity,
@@ -167,7 +170,7 @@ class _RouteButton extends StatelessWidget {
         boxShadow: active
             ? [
                 BoxShadow(
-                    color: SmartTaxiColors.gold.withValues(alpha: 0.18),
+                    color: palette.gold.withValues(alpha: 0.18),
                     blurRadius: 18,
                     offset: const Offset(0, 8))
               ]
