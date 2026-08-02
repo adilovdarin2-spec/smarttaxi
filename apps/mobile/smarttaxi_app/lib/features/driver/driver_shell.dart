@@ -355,13 +355,45 @@ class _DriverShellState extends State<DriverShell> {
   void _handleOrderUpdate(dynamic data) {
     if (data is! Map) return;
     final payload = Map<String, dynamic>.from(data['order'] ?? data);
-    final order = OrderSummary.fromJson(payload);
     final hasRouteDetails = payload.containsKey('pickup_text') ||
         payload.containsKey('pickupText') ||
         payload.containsKey('pickup') ||
         payload.containsKey('dropoff_text') ||
         payload.containsKey('dropoffText') ||
         payload.containsKey('dropoff');
+    // publicOrderEvent() (the backend's real-time payload) omits pickup/
+    // dropoff text and coordinates entirely for the region-wide broadcast
+    // audience — !hasRouteDetails below already triggers a REST refetch to
+    // recover it, but that's async, so the interim setState still briefly
+    // shows the model's placeholder text ("Точка посадки" etc.) until it
+    // resolves. Backfilling from whatever this driver already knew about
+    // the order (its own open-list entry, or the active order) closes that
+    // gap so the placeholder never renders at all.
+    if (!hasRouteDetails) {
+      final orderId = payload['id']?.toString();
+      OrderSummary? known = _activeOrder?.id == orderId ? _activeOrder : null;
+      if (known == null && orderId != null) {
+        for (final existing in _orders) {
+          if (existing.id == orderId) {
+            known = existing;
+            break;
+          }
+        }
+      }
+      if (known != null) {
+        payload.putIfAbsent('pickup_text', () => known!.pickup);
+        payload.putIfAbsent('dropoff_text', () => known!.dropoff);
+        payload.putIfAbsent('pickup_lat', () => known!.pickupCoordinate?.lat);
+        payload.putIfAbsent('pickup_lng', () => known!.pickupCoordinate?.lng);
+        payload.putIfAbsent(
+            'dropoff_lat', () => known!.dropoffCoordinate?.lat);
+        payload.putIfAbsent(
+            'dropoff_lng', () => known!.dropoffCoordinate?.lng);
+        payload.putIfAbsent('distance_km', () => known!.distanceKm);
+        payload.putIfAbsent('duration_min', () => known!.durationMin);
+      }
+    }
+    final order = OrderSummary.fromJson(payload);
     final previousPhase = _routePhaseForStatus(_activeOrder?.status);
     final nextPhase = _routePhaseForStatus(order.status);
     // Find whatever this driver already knew about this order's price offer
@@ -4056,6 +4088,46 @@ class _NavigatorMetric extends StatelessWidget {
   }
 }
 
+// Real-road-sign styling (red ring, white fill, bold black number) is the
+// convention drivers already read at a glance on actual Kazakhstan/CIS
+// roads — a plain text card reading "Лимит: 60" made them parse a label
+// before the number registered.
+class _SpeedLimitSign extends StatelessWidget {
+  const _SpeedLimitSign({required this.limitKmh});
+
+  final int limitKmh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE0343A), width: 5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Text(
+        '$limitKmh',
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
 /// Smart Navigator's dedicated full-screen presentation — pushed as a real
 /// route (see _DriverShellState._openFullScreenNavigator), not tab index 3.
 /// Deliberately reads state straight off the [_DriverShellState] it was
@@ -4633,13 +4705,9 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                     ),
                     if (speedLimit != null) ...[
                       const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: _NavigatorMetric(
-                          title: l10n.driverLimitLabel,
-                          value: '$speedLimit',
-                          suffix: 'км/ч',
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: _SpeedLimitSign(limitKmh: speedLimit),
                       ),
                     ],
                   ],

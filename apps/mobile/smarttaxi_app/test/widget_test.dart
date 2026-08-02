@@ -167,7 +167,7 @@ void main() {
       expect(passenger, contains('FlutterMap'));
       expect(passenger, contains('_OrderSheet'));
       expect(passenger, contains('_MapOverlayHeader'));
-      expect(passenger, contains('_MapChromeButton'));
+      expect(passenger, contains('_UnifiedMapHeader'));
       expect(passenger, contains('_SheetAddressEntryCard'));
       expect(passenger, isNot(contains('_FloatingAddressCard')));
       expect(passenger, contains('_MapPermissionCard'));
@@ -336,7 +336,7 @@ void main() {
     expect(passenger, contains('assets/map/driver_car_topview_white.png'));
     // navigation_button_gold_white.png (an image-based recenter/nav button)
     // isn't referenced anywhere under lib/ anymore -- the map chrome moved to
-    // icon-only controls (Icons.my_location_rounded / _MapChromeButton,
+    // icon-only controls (Icons.my_location_rounded / _UnifiedMapHeader,
     // already covered elsewhere in this file).
     expect(passenger, contains('_driverPickupRoute'));
     expect(passenger, contains('_driverRouteError'));

@@ -428,8 +428,17 @@ class _PassengerShellState extends State<PassengerShell>
   // fall back to polling REST so an active trip doesn't look frozen.
   void _handleSocketConnectionChange(bool connected) {
     if (connected) {
+      final wasDown = _socketFallbackPollTimer != null;
       _socketFallbackPollTimer?.cancel();
       _socketFallbackPollTimer = null;
+      // socket.io does not replay events emitted while a client was
+      // disconnected -- any order_updated broadcast the backend fired
+      // during that gap (driver completes the trip, cancels, etc.) is
+      // simply gone once the socket reconnects, with nothing left to
+      // signal that a status was missed. One reconciliation poll right
+      // after reconnecting closes that gap instead of leaving the screen
+      // silently stuck on whatever status it last saw before the drop.
+      if (wasDown) unawaited(_pollActiveOrderFallback());
       return;
     }
     _socketFallbackPollTimer ??= Timer.periodic(
@@ -989,9 +998,32 @@ class _PassengerShellState extends State<PassengerShell>
 
   void _handleOrderUpdate(dynamic data) {
     if (data is! Map) return;
-    final order = OrderSummary.fromJson(
-      Map<String, dynamic>.from(data['order'] ?? data),
-    );
+    final raw = Map<String, dynamic>.from(data['order'] ?? data);
+    // The socket payload is built by the backend's publicOrderEvent(), which
+    // deliberately trims pickup/dropoff text and coordinates for the
+    // driver-region broadcast audience (nobody should see another rider's
+    // destination before deciding to accept). That same trimmed shape is
+    // reused for this order's own room, so every status change here would
+    // otherwise stomp the pickup/dropoff the rider already knows — it's
+    // *their* order, they typed those addresses in — with the model's
+    // generic "Точка посадки"/"Точка назначения" fallback. Backfill from
+    // what we already have before parsing, rather than losing it.
+    final existing = _order;
+    if (existing != null &&
+        existing.id == (raw['id']?.toString() ?? existing.id)) {
+      raw.putIfAbsent('pickup_text', () => existing.pickup);
+      raw.putIfAbsent('dropoff_text', () => existing.dropoff);
+      raw.putIfAbsent('pickup_lat', () => existing.pickupCoordinate?.lat);
+      raw.putIfAbsent('pickup_lng', () => existing.pickupCoordinate?.lng);
+      raw.putIfAbsent('dropoff_lat', () => existing.dropoffCoordinate?.lat);
+      raw.putIfAbsent('dropoff_lng', () => existing.dropoffCoordinate?.lng);
+      // Same trimming also drops the estimated trip distance/duration,
+      // which otherwise silently renders as "—" on the completion receipt
+      // once the terminal-status update lands.
+      raw.putIfAbsent('distance_km', () => existing.distanceKm);
+      raw.putIfAbsent('duration_min', () => existing.durationMin);
+    }
+    final order = OrderSummary.fromJson(raw);
     if (_order?.id != order.id) return;
     _applyOrderSnapshot(order);
   }
@@ -1011,6 +1043,20 @@ class _PassengerShellState extends State<PassengerShell>
         arrivedStatuses.contains(order.status);
     const inProgressStatuses = {'TRIP_STARTED', 'IN_PROGRESS'};
     final tripInProgress = inProgressStatuses.contains(order.status);
+    // Once the trip reaches a terminal status (completed, paid, rated,
+    // cancelled...) there is no more "route to pickup/dropoff" to track —
+    // continuing to poll driverToPickupRoute here just surfaced a stray
+    // ROUTE_UNAVAILABLE banner on top of the receipt screen.
+    const activeDriverRouteStatuses = {
+      'DRIVER_FOUND',
+      'DRIVER_GOING_TO_CLIENT',
+      'DRIVER_ARRIVED',
+      'WAITING_CLIENT',
+      'TRIP_STARTED',
+      'IN_PROGRESS',
+    };
+    final driverRouteActive = order.driverId != null &&
+        activeDriverRouteStatuses.contains(order.status);
     final hadPreviousOrder = _order != null;
     final wasTripInProgress = inProgressStatuses.contains(_order?.status);
     final offerJustAppeared = order.isDriverOfferAwaitingClient &&
@@ -1023,6 +1069,10 @@ class _PassengerShellState extends State<PassengerShell>
         _driverRouteError = null;
       } else {
         _nearbyDrivers = const [];
+        if (!driverRouteActive) {
+          _driverPickupRoute = null;
+          _driverRouteError = null;
+        }
       }
       if (driverJustAssigned) {
         _noDriversFound = false;
@@ -1103,13 +1153,13 @@ class _PassengerShellState extends State<PassengerShell>
         setState(() => _unreadNotificationCount++);
       }
     }
-    if (order.driverId != null) {
+    if (driverRouteActive) {
       // force: true even with no _driverLocation yet — the route response
       // itself seeds the driver marker (see _loadDriverRoute), which is what
       // makes a cold-start restore show the driver immediately instead of
       // waiting for their next GPS ping.
       _loadDriverRoute(order.id, force: true);
-    } else {
+    } else if (order.driverId == null) {
       unawaited(_refreshNearbyDrivers(silent: true));
     }
     _maybeStartPaymentFlow(order);
@@ -7978,7 +8028,7 @@ class _TripStatusPanel extends StatelessWidget {
                           const SizedBox(height: 5),
                           Text(
                             searchingSubtitle,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: palette.textSecondary,
@@ -8057,7 +8107,11 @@ class _TripStatusPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
-              Row(
+              Builder(builder: (context) {
+              final activeTitleText = order.driverId == null
+                  ? l10n.passengerTripWithIdTitle(orderShortId)
+                  : l10n.passengerDriverFoundTitle;
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
@@ -8065,9 +8119,7 @@ class _TripStatusPanel extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          order.driverId == null
-                              ? l10n.passengerTripWithIdTitle(orderShortId)
-                              : l10n.passengerDriverFoundTitle,
+                          activeTitleText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -8077,6 +8129,14 @@ class _TripStatusPanel extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                           ),
                         ),
+                        // The subtitle is meant to add specifics beyond the
+                        // headline ("Водитель едет к вам", "Водитель
+                        // приехал"...) — right at DRIVER_FOUND/DRIVER_ASSIGNED
+                        // though, _statusLabel resolves to the exact same
+                        // string as the title above, so this would render
+                        // "Водитель найден" twice in a row. Skip it only in
+                        // that one case rather than showing a redundant line.
+                        if (statusText != activeTitleText) ...[
                         const SizedBox(height: 5),
                         Text(
                           statusText,
@@ -8089,6 +8149,7 @@ class _TripStatusPanel extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        ],
                       ],
                     ),
                   ),
@@ -8113,7 +8174,8 @@ class _TripStatusPanel extends StatelessWidget {
                         sosPhone: sosPhone, api: api, orderId: order.id),
                   ],
                 ],
-              ),
+              );
+              }),
               const SizedBox(height: 12),
               _StatusStepper(status: order.status),
               const SizedBox(height: 12),
@@ -15555,28 +15617,150 @@ class _MapOverlayHeader extends StatelessWidget {
         ),
       );
     }
-    return SizedBox(
-      height: 60,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _MapChromeButton(
+    return _UnifiedMapHeader(
+      onMenu: onMenu,
+      onNotifications: onNotifications,
+      unreadNotificationCount: unreadNotificationCount,
+      menuLabel: l10n.driverDrawerMenuTooltip,
+    );
+  }
+}
+
+// One cohesive floating bar (menu + brand + notifications) instead of three
+// separate pills fighting for attention across the same row — the previous
+// layout read as loose chrome scattered over the map rather than a single
+// deliberate header, the single biggest "does this look premium" complaint
+// about this screen. Thin vertical dividers keep the three zones legible
+// without needing three separate glass containers each casting their own
+// shadow.
+class _UnifiedMapHeader extends StatelessWidget {
+  const _UnifiedMapHeader({
+    required this.onMenu,
+    required this.onNotifications,
+    required this.unreadNotificationCount,
+    required this.menuLabel,
+  });
+
+  final VoidCallback onMenu;
+  final VoidCallback onNotifications;
+  final int unreadNotificationCount;
+  final String menuLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor =
+        isDark ? Colors.white.withValues(alpha: 0.10) : palette.border;
+    return _MapGlassChrome(
+      borderRadius: 20,
+      child: SizedBox(
+        height: 56,
+        child: Row(
+          children: [
+            _HeaderIconSlot(
               iconAsset: _iconMenu,
-              label: l10n.driverDrawerMenuTooltip,
+              label: menuLabel,
               onTap: onMenu,
             ),
-          ),
-          const _MapBrandPill(),
-          Align(
-            alignment: Alignment.centerRight,
-            child: _NotificationButton(
+            Container(width: 1, height: 26, color: dividerColor),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.all(Radius.circular(9)),
+                      child: SizedBox.square(
+                        dimension: 26,
+                        child: Image.asset(
+                          BrandLogo.iconAssetPath,
+                          fit: BoxFit.cover,
+                          cacheWidth: 78,
+                          cacheHeight: 78,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'SmartTaxi',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: palette.text,
+                          fontSize: 15,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(width: 1, height: 26, color: dividerColor),
+            _HeaderIconSlot(
+              iconAsset: _iconBell,
+              label: AppLocalizations.of(context).notifications,
               onTap: onNotifications,
-              unreadCount: unreadNotificationCount,
+              badgeVisible: unreadNotificationCount > 0,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconSlot extends StatelessWidget {
+  const _HeaderIconSlot({
+    required this.iconAsset,
+    required this.label,
+    required this.onTap,
+    this.badgeVisible = false,
+  });
+
+  final String iconAsset;
+  final String label;
+  final VoidCallback onTap;
+  final bool badgeVisible;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: 56,
+            height: 56,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                _SvgIcon(iconAsset, color: palette.goldDeep, size: 20),
+                if (badgeVisible)
+                  Positioned(
+                    right: 13,
+                    top: 13,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: palette.gold,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: palette.card, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -15710,142 +15894,6 @@ class _MapGlassChrome extends StatelessWidget {
             ],
           ),
           child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _MapBrandPill extends StatelessWidget {
-  const _MapBrandPill();
-
-  @override
-  Widget build(BuildContext context) {
-    return _MapGlassChrome(
-      borderRadius: 24,
-      child: Container(
-        height: 44,
-        constraints: const BoxConstraints(minWidth: 128, maxWidth: 176),
-        padding: const EdgeInsets.only(left: 6, right: 16),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(10)),
-              child: SizedBox.square(
-                dimension: 30,
-                child: Image.asset(
-                  BrandLogo.iconAssetPath,
-                  fit: BoxFit.cover,
-                  cacheWidth: 90,
-                  cacheHeight: 90,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                'SmartTaxi',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: context.palette.text,
-                  fontSize: 14.5,
-                  height: 1,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MapChromeButton extends StatelessWidget {
-  const _MapChromeButton({
-    required this.iconAsset,
-    required this.label,
-    required this.onTap,
-  });
-
-  final String iconAsset;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: _MapGlassChrome(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onTap,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: _SvgIcon(iconAsset,
-                    color: context.palette.goldDeep, size: 20),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationButton extends StatelessWidget {
-  const _NotificationButton({required this.onTap, required this.unreadCount});
-
-  final VoidCallback onTap;
-  final int unreadCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Tooltip(
-      message: AppLocalizations.of(context).notifications,
-      child: _MapGlassChrome(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onTap,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  _SvgIcon(
-                    _iconBell,
-                    color: palette.goldDeep,
-                    size: 20,
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: palette.gold,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: palette.card, width: 1.5),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
