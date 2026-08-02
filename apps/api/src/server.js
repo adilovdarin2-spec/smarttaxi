@@ -107,7 +107,13 @@ io.on("connection", socket => {
       const region = (await query("SELECT id, is_active FROM regions WHERE id=$1", [regionId])).rows[0];
       if (!region?.is_active) return;
       socket.join(dispatchRegionRoom(region.id));
-    } catch {}
+    } catch (error) {
+      // A silent join failure here means the owner/finance dashboard never
+      // receives live dispatch updates with no visible symptom beyond a
+      // stale screen — log it so a DB hiccup or bad payload is debuggable
+      // instead of indistinguishable from "nobody tried to join".
+      console.error("[socket] join_dispatch failed", error);
+    }
   });
   socket.on("join_drivers", async () => {
     try {
@@ -116,7 +122,9 @@ io.on("connection", socket => {
       if (!driver) return;
       await assertDriverDispatchReady(driver, query);
       socket.join(driverRegionRoom(driver.current_region_id));
-    } catch {}
+    } catch (error) {
+      console.error("[socket] join_drivers failed", error);
+    }
   });
   socket.on("join_order", async orderId => {
     try {
@@ -125,13 +133,22 @@ io.on("connection", socket => {
       if (!order) return;
       await assertCanAccessOrderLocation({ user: socket.user, order, executor: query });
       socket.join(orderRoom(orderId));
-    } catch {}
+    } catch (error) {
+      // Client-side, a failed join here means the rider/driver silently
+      // stops receiving real-time order_update/driver_location events for
+      // this trip with no error surfaced anywhere — they'd only notice as
+      // "the screen didn't update". Logging is the only way to tell that
+      // apart from an event genuinely never having been emitted.
+      console.error("[socket] join_order failed", { orderId, userId: socket.user?.id, error });
+    }
   });
   socket.on("driver_location_update", async payload => {
     try {
       if (socket.user?.role !== "DRIVER") return;
       await updateDriverLocation({ userId: socket.user.id, location: payload || {}, io, executor: query });
-    } catch {}
+    } catch (error) {
+      console.error("[socket] driver_location_update failed", error);
+    }
   });
 });
 
