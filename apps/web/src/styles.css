@@ -1171,7 +1171,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-state .reference-tariff-card.selected {
   border-color: rgba(5, 86, 216, .78) !important;
-  background: linear-gradient(180deg, #fffdf7, #ffffff) !important;
+  background: linear-gradient(180deg, #f7fbff, #ffffff) !important;
   box-shadow: 0 0 0 2px rgba(5, 86, 216, .10), 0 14px 28px rgba(5, 86, 216, .10) !important;
 }
 
@@ -1798,7 +1798,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-address-sheet .reference-address-row.destination {
-  background: linear-gradient(180deg, #fff, #fffdf7) !important;
+  background: linear-gradient(180deg, #fff, #f7fbff) !important;
 }
 
 .taxi-client-shell .reference-point-icon {
@@ -1908,7 +1908,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-state .reference-tariff-card.selected {
   border-color: rgba(5, 86, 216, .84) !important;
-  background: linear-gradient(180deg, #fffdf6, #fff) !important;
+  background: linear-gradient(180deg, #f7fbff, #fff) !important;
   box-shadow: 0 0 0 2px rgba(5, 86, 216, .12), 0 18px 40px rgba(5, 86, 216, .12) !important;
 }
 
@@ -7841,7 +7841,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   margin-bottom: 9px;
   padding: 12px 14px 14px;
   border-radius: 22px;
-  background: linear-gradient(180deg, #fffdfa, #e8f1ff);
+  background: linear-gradient(180deg, #f7fbff, #e8f1ff);
   border: 1px solid var(--taxi-border);
   box-shadow: 0 12px 28px rgba(15, 27, 45, .1);
 }
@@ -8398,7 +8398,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--taxi-gold-deep);
   border: 1.5px solid rgba(0, 65, 169, .28);
   border-radius: 999px;
-  background: #fffdfa;
+  background: #f7fbff;
 }
 
 .taxi-client-shell .reference-tariff-card.selected .reference-tariff-radio {
@@ -10170,7 +10170,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   min-height: 46px;
   border: 1px solid rgba(5, 86, 216, .28);
   border-radius: 16px;
-  background: linear-gradient(180deg, #fffdf7 0%, #dfebff 100%);
+  background: linear-gradient(180deg, #f7fbff 0%, #dfebff 100%);
   color: var(--taxi-gold-deep);
   font-weight: 800;
   box-shadow: 0 10px 22px rgba(0, 65, 169, .08);
@@ -11509,7 +11509,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   min-height: 48px;
   border-radius: 17px;
   color: #9a3412;
-  background: #fff3ed;
+  background: #f2f7ff;
   border: 1px solid #aacafe;
 }
 
@@ -11844,7 +11844,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   place-items: center;
   overflow: hidden;
   border-radius: 18px;
-  background: linear-gradient(180deg, #fffdf7, #dfebff);
+  background: linear-gradient(180deg, #f7fbff, #dfebff);
 }
 
 .search-tariff-car img {
@@ -12292,7 +12292,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   justify-content: center;
   border-radius: 18px;
   color: #9a3412;
-  background: #fff3ed;
+  background: #f2f7ff;
   border: 1px solid #aacafe;
 }
 
@@ -12415,7 +12415,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: #92400e;
   background:
     radial-gradient(circle at 35% 22%, rgba(255, 255, 255, .92), transparent 34%),
-    linear-gradient(180deg, #fff7ed, #aacafe);
+    linear-gradient(180deg, #f2f7ff, #aacafe);
   border-color: rgba(60, 133, 251, .28);
 }
 
@@ -12622,7 +12622,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .ride-status-note.waiting {
-  background: #fff7ed;
+  background: #f2f7ff;
   border-color: rgba(60, 133, 251, .2);
 }
 
@@ -14261,7 +14261,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 12px 14px;
   color: #111827;
   text-align: left;
-  background: linear-gradient(180deg, #fffdf7 0%, #e8f1ff 100%);
+  background: linear-gradient(180deg, #f7fbff 0%, #e8f1ff 100%);
   border: 1px solid rgba(5, 86, 216, .27);
   border-radius: 22px;
   box-shadow: 0 13px 30px rgba(0, 65, 169, .09);
@@ -14694,7 +14694,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 10px 12px;
   border-radius: 16px;
   color: #0d377a;
-  background: linear-gradient(180deg, #e8f1ff 0%, #fffdf6 100%);
+  background: linear-gradient(180deg, #e8f1ff 0%, #f7fbff 100%);
   border: 1px solid rgba(5, 86, 216, .22);
   box-shadow: 0 10px 22px rgba(0, 65, 169, .06);
   font-size: 12px;
@@ -16073,7 +16073,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .lifecycle-reference-sheet .trip-rating-card {
   padding: 15px;
   border-radius: 24px;
-  background: linear-gradient(180deg, #fffdfa, #e8f1ff);
+  background: linear-gradient(180deg, #f7fbff, #e8f1ff);
   border-color: rgba(30, 101, 215, .22);
   box-shadow: 0 12px 28px rgba(17, 24, 39, .05);
 }
@@ -17969,7 +17969,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-address-state {
   background:
     radial-gradient(circle at 50% 38%, rgba(255, 255, 255, .72), transparent 42%),
-    linear-gradient(180deg, #fffdf7 0%, #e8f1ff 100%) !important;
+    linear-gradient(180deg, #f7fbff 0%, #e8f1ff 100%) !important;
 }
 
 .taxi-client-shell .reference-address-state .reference-map-ambient {
@@ -18120,7 +18120,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .client-region-list button.selected {
   border-color: rgba(5, 86, 216, .5) !important;
-  background: linear-gradient(180deg, #fffdf7, #ddeaff) !important;
+  background: linear-gradient(180deg, #f7fbff, #ddeaff) !important;
   box-shadow: 0 12px 28px rgba(5, 86, 216, .14) !important;
 }
 
@@ -18262,7 +18262,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 31px !important;
   border-radius: 13px !important;
   color: #111827 !important;
-  background: linear-gradient(145deg, #fffdf6, #dfebff) !important;
+  background: linear-gradient(145deg, #f7fbff, #dfebff) !important;
   box-shadow: inset 0 0 0 1px rgba(5, 86, 216, .12), 0 8px 18px rgba(17, 24, 39, .05) !important;
 }
 
@@ -18539,7 +18539,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-tariff-state .reference-tariff-card.selected {
   border-color: rgba(5, 86, 216, .9) !important;
-  background: linear-gradient(180deg, #fffef8 0%, #dfebff 100%) !important;
+  background: linear-gradient(180deg, #f7fbff 0%, #dfebff 100%) !important;
   box-shadow: 0 16px 34px rgba(5, 86, 216, .17), inset 0 0 0 1px rgba(255,255,255,.86) !important;
 }
 
