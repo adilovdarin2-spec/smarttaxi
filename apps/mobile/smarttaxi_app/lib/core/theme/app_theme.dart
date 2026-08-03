@@ -391,13 +391,21 @@ ThemeData buildSmartTaxiTheme() {
         borderSide: const BorderSide(color: SmartTaxiColors.danger, width: 1.8),
       ),
     ),
+    // Primary and secondary have to be able to sit side by side in a dialog
+    // row and read as one pair, so height, radius and text size are shared
+    // deliberately — they used to differ (56 vs 52 high, radius 20 vs 18),
+    // which is visible at a glance when the two are adjacent.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
         backgroundColor: SmartTaxiColors.gold,
-        foregroundColor: SmartTaxiColors.text,
+        // White, not ink. Dark text on the accent is a holdover from the
+        // gold theme, where near-black on gold was right; on this blue it
+        // reads muddy and disagrees with the app's own primary CTAs, which
+        // already draw their label white.
+        foregroundColor: Colors.white,
         disabledBackgroundColor: SmartTaxiColors.gold.withValues(alpha: 0.45),
-        disabledForegroundColor: SmartTaxiColors.text.withValues(alpha: 0.55),
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
         elevation: 0,
         shadowColor: SmartTaxiColors.gold.withValues(alpha: 0.24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -406,11 +414,15 @@ ThemeData buildSmartTaxiTheme() {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: const Size.fromHeight(56),
         foregroundColor: SmartTaxiColors.text,
-        side: const BorderSide(color: SmartTaxiColors.borderStrong),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        // Hairline in the plain border token. This was `borderStrong` — a
+        // full-strength accent outline — so next to a filled accent button
+        // the two competed for the same emphasis instead of reading as
+        // primary and secondary.
+        side: const BorderSide(color: SmartTaxiColors.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -543,13 +555,15 @@ ThemeData buildSmartTaxiDarkTheme() {
         borderSide: BorderSide(color: palette.danger, width: 1.8),
       ),
     ),
+    // Same pairing rules as the light theme above — shared height, radius
+    // and text size so a dialog's two buttons read as one control group.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
         backgroundColor: palette.gold,
-        foregroundColor: SmartTaxiColors.text,
+        foregroundColor: Colors.white,
         disabledBackgroundColor: palette.gold.withValues(alpha: 0.35),
-        disabledForegroundColor: palette.text.withValues(alpha: 0.55),
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
         elevation: 0,
         shadowColor: palette.gold.withValues(alpha: 0.24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -558,11 +572,11 @@ ThemeData buildSmartTaxiDarkTheme() {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: const Size.fromHeight(56),
         foregroundColor: palette.text,
-        side: BorderSide(color: palette.borderStrong),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        side: BorderSide(color: palette.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
