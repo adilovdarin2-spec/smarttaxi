@@ -146,12 +146,43 @@ Also confirmed by eye and found *correct*, not broken: the blank map on
 the very first screenshot was just tiles still loading; the drawer,
 header, CTA gradient and region-confirmation dialog are all coherent.
 
+### Dark theme — checked, and the map matrix turned out to be wrong too
+
+The theme toggle lives in Профиль → Настройки → Интерфейс → Тема
+(Светлая / Тёмная / Как в системе) and was set explicitly to Светлая,
+which is why toggling the *system* night setting changed nothing
+earlier. Not a bug.
+
+Dark theme itself applies instantly and correctly, and the map carries
+no cream haze — confirming the vignette fix. But the dark map was
+rendering brown, and working the matrix through by hand found why:
+
+- a plain invert of OSM's cream land (250,245,237) gives (5,10,18),
+  already cool blue — the inversion was never the problem
+- the `hue-rotate(180deg)` chained after it rotated that back to orange,
+  landing land on (14,9,1) and beige buildings — the largest area on a
+  tile — on (53,44,37)
+- but the hue-rotate cannot just be removed: without it a pure invert
+  turns water (170,211,223) brown (85,44,32) and parks purple. Warm and
+  cool sources want opposite corrections.
+
+Fixed by inverting *one* partially-desaturated luminance and re-tinting
+cool per channel, so every hue lands on the same blue-black ramp. Land
+now (12,16,24), buildings (45,50,60), white ≈ `palette.appBackground`,
+labels still legible at (189,199,215).
+
+**Tradeoff:** water and parks now separate from land by lightness rather
+than hue. That is the cost of guaranteeing nothing renders warm.
+
 ### Still not visually checked
 
-Dark theme on device — the app deliberately ignores the system night
-setting and uses its own in-app preference, and the theme toggle wasn't
-reached this round. The dark map matrix itself is untouched by this
-work. Web client/driver/admin panels also remain unverified visually.
+- The dark-map fix above is verified by computing the transform against
+  real OSM sample colours, not on device — the phone went offline before
+  that build could be installed.
+- Web client/driver/admin panels remain computed-value-verified only.
+- The app is currently left on the **dark** theme: the phone dropped out
+  mid-way through switching it back. One tap in the same place restores
+  it.
 
 ## Operational note
 
