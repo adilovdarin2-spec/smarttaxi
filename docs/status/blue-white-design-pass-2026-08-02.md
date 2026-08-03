@@ -174,15 +174,24 @@ labels still legible at (189,199,215).
 **Tradeoff:** water and parks now separate from land by lightness rather
 than hue. That is the cost of guaranteeing nothing renders warm.
 
+**Confirmed on device.** Sampling the same land pixels before and after
+shows the channel order flipping exactly as designed:
+
+| | land (R, G, B) | |
+|---|---|---|
+| before | (8, 6, 5) | R > B — warm/brown |
+| after | (4, 6, 10) | B > R — cool blue |
+
+Screenshot 22 in `qa_screenshots/bluewhite_2026-08-03/`.
+
+Theme was switched back to Светлая afterwards (screenshot 24), so the
+device is left as it was found.
+
 ### Still not visually checked
 
-- The dark-map fix above is verified by computing the transform against
-  real OSM sample colours, not on device — the phone went offline before
-  that build could be installed.
-- Web client/driver/admin panels remain computed-value-verified only.
-- The app is currently left on the **dark** theme: the phone dropped out
-  mid-way through switching it back. One tap in the same place restores
-  it.
+Web client/driver/admin panels remain computed-value-verified only — the
+browser pane never composited a frame this whole session, so every web
+claim rests on reading emitted CSS rather than seeing it rendered.
 
 ## Operational note
 
