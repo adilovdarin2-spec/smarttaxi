@@ -39,14 +39,17 @@ import 'widgets/driver_shell_chrome.dart';
 const _appVersion = AppConfig.appVersion;
 
 // Darkens the OSM raster tile layer for dark theme, same treatment as
-// passenger_shell.dart's map (invert + hue-rotate so it isn't a plain photo
-// negative — green stays green-ish, water stays blue-ish). Duplicated here
-// rather than shared since these are two independent widget trees, not a
-// common map component.
+// passenger_shell.dart's map — see the fuller note there for the maths
+// and the worked-through colour examples. Short version: this inverts a
+// single partially-desaturated luminance and re-tints it cool, rather
+// than inverting per channel, because the old `invert + hue-rotate`
+// approach turned OSM's cream land and yellow roads brown. Duplicated
+// here rather than shared since these are two independent widget trees,
+// not a common map component; keep the two byte-identical.
 const _darkMapTileMatrix = <double>[
-  0.574, -1.430, -0.144, 0, 255,
-  -0.426, -0.430, -0.144, 0, 255,
-  -0.426, -1.430, 0.856, 0, 255,
+  -0.4275, -0.4750, -0.0475, 0, 246.25,
+  -0.4410, -0.4900, -0.0490, 0, 257.90,
+  -0.4590, -0.5100, -0.0510, 0, 276.10,
   0, 0, 0, 1, 0,
 ];
 // Cools the warm stock OSM raster tiles (cream land, beige buildings,

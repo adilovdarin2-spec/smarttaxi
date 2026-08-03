@@ -75,18 +75,36 @@ const _cardShadow = <BoxShadow>[
   BoxShadow(color: Color(0x22102a52), blurRadius: 36, offset: Offset(0, 16)),
   BoxShadow(color: Color(0x12102a52), blurRadius: 8, offset: Offset(0, 2)),
 ];
-// Darkens the OSM raster tile layer for dark theme without a separate dark
-// tile provider/API key. Same math as the well-known CSS
-// `filter: invert(1) hue-rotate(180deg)` dark-map trick (invert flips
-// luminosity so light backgrounds go dark; the hue-rotate afterwards undoes
-// the hue shift invert alone would cause, so green stays green-ish and blue
-// water stays blue-ish instead of turning magenta/orange). Left as a flat
-// list (not computed from two chained ColorFilter.matrix calls) since
-// ColorFiltered only composes one matrix per widget.
+// Darkens the OSM raster tile layer for dark theme without needing a
+// separate dark tile provider or API key.
+//
+// This replaces the well-known `invert(1) hue-rotate(180deg)` CSS trick,
+// which looked right in theory but rendered the map brown. Working the
+// old matrix through by hand shows why: OSM's cream landmass
+// (250,245,237) came out as (14,9,1) and its yellow roads similarly —
+// R > G > B, i.e. dark brown, on a UI that is otherwise blue-black.
+// hue-rotate can keep green/blue features honest but it cannot stop a
+// warm source from inverting to a warm result.
+//
+// So instead of inverting each channel, this inverts *one* partially
+// desaturated luminance (0.45R + 0.50G + 0.05B — weighted toward green
+// the way perceived brightness is, but leaving enough own-channel signal
+// that water and parks stay distinguishable), then re-tints the result
+// cool with a per-channel scale and lift. Every hue therefore lands on
+// the same blue-black ramp regardless of how warm it started:
+//
+//   cream land  (250,245,237) -> ( 12, 16, 24)   cool near-background
+//   pure white  (255,255,255) -> (  4,  8, 16)   ~= palette.appBackground
+//   yellow road (255,255,179) -> (  8, 12, 20)   was the worst offender
+//   water       (170,211,223) -> ( 63, 69, 79)   lighter, still reads blue
+//   label ink   ( 60, 60, 60) -> (189,199,215)   stays legible
+//
+// Kept as a flat list rather than chained ColorFilter.matrix calls since
+// ColorFiltered composes only one matrix per widget.
 const _darkMapTileMatrix = <double>[
-  0.574, -1.430, -0.144, 0, 255,
-  -0.426, -0.430, -0.144, 0, 255,
-  -0.426, -1.430, 0.856, 0, 255,
+  -0.4275, -0.4750, -0.0475, 0, 246.25,
+  -0.4410, -0.4900, -0.0490, 0, 257.90,
+  -0.4590, -0.5100, -0.0510, 0, 276.10,
   0, 0, 0, 1, 0,
 ];
 // Standard OSM raster tiles are warm — cream landmass, beige buildings,
