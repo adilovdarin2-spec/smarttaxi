@@ -70,6 +70,32 @@ Either drive it through the driver UI on the phone (which is the better
 test anyway, since it exercises the incoming-order card), or create
 orders with the *client* token, which does not conflict.
 
+## Open, not yet resolved: the incoming-order card shows no addresses
+
+Screenshot 54. The driver's "Заказы в регионе" card renders **"Точка
+посадки" / "Точка назначения"** where the street names should be, for an
+order that definitely has them (улица Бектасова → улица Акниет). Those
+two strings are exactly the fallbacks in `OrderSummary.fromJson`
+(models.dart), so the parsed `pickup`/`dropoff` came back empty.
+
+Not yet established which of these it is, and it matters:
+
+1. **A bug.** `ORDER_SELECT` starts with `o.*` and
+   `publicOrderResponse` spreads the whole row, so the REST list *should*
+   carry `pickup_text`. If it does and the card still shows fallbacks,
+   something between is dropping it.
+2. **Deliberate privacy.** `publicOrderEvent()` intentionally strips
+   pickup/dropoff text from the broadcast-to-many-drivers payload, and
+   hiding the exact address until a driver accepts is normal for the
+   category — Yandex does it too. If the card is fed from the socket
+   event rather than the REST row, this is working as designed.
+
+Worth resolving before judging it: if it is (2), the card should still
+say something useful — a district, or a distance — rather than a bare
+placeholder that reads as missing data. Right now a driver decides
+whether to accept without knowing where the trip goes, and the card
+looks broken either way.
+
 ## Ground rules for this work
 
 - Verify by looking, not by reading. Every claim in this document must
