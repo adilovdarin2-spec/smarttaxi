@@ -427,7 +427,15 @@ class _DriverShellState extends State<DriverShell> {
     }
     setState(() {
       _orders = mergeOrder(_orders, order);
-      if (_activeOrder?.id == order.id || order.isActive) {
+      // awaitsSettlement as well as isActive: a finished-but-unpaid trip is
+      // the one state where the driver still owes an action ("Оплата
+      // получена") *and* the rider is blocked from ordering again until it
+      // happens. Keying only off isActive meant such an order never reached
+      // _activeOrder, so DriverTripCompletionCard — which carries that
+      // button — was never built, and neither side could clear it.
+      if (_activeOrder?.id == order.id ||
+          order.isActive ||
+          order.awaitsSettlement) {
         _activeOrder = order;
       }
       if (!order.isActive && !order.isOpen) {
@@ -867,6 +875,12 @@ class _DriverShellState extends State<DriverShell> {
       final orders = await widget.api.getOrders();
       final active =
           orders.where((order) => order.isActive).toList(growable: false);
+      // Same reason as the socket path above: a finished-but-unpaid trip
+      // still owes the driver an action and blocks the rider until it
+      // happens, so it has to survive a cold start too. Ranked below `active`
+      // so a genuinely live trip always wins if somehow both exist.
+      final awaitingSettlement =
+          orders.where((order) => order.awaitsSettlement).toList(growable: false);
       final current = _activeOrder;
       OrderSummary? retainedTerminal;
       if (current != null && !current.isActive) {
@@ -877,7 +891,11 @@ class _DriverShellState extends State<DriverShell> {
           }
         }
       }
-      final restoredActive = active.isEmpty ? retainedTerminal : active.first;
+      final restoredActive = active.isNotEmpty
+          ? active.first
+          : (awaitingSettlement.isNotEmpty
+              ? awaitingSettlement.first
+              : retainedTerminal);
       final needsRoute = restoredActive != null &&
           restoredActive.id != current?.id &&
           _hasActiveDrivingLeg(restoredActive.status);

@@ -842,6 +842,18 @@ class OrderSummary {
       ].contains(status);
   bool get isOpen => const ['NEW', 'SEARCHING_DRIVER'].contains(status);
 
+  /// The ride is over but the fare has not been settled yet.
+  ///
+  /// Deliberately separate from [isActive]: the car has stopped, so this is
+  /// not an active trip — but it is not finished either, and it still needs
+  /// an action from the driver ("Оплата получена"). The backend counts these
+  /// two statuses against the rider's one-active-order limit
+  /// (CLIENT_ACTIVE_ORDER_STATUSES in order-dispatch.service.js), so a trip
+  /// parked here blocks the rider from ordering again — which means the
+  /// driver has to be able to see it in order to clear it.
+  bool get awaitsSettlement =>
+      const ['TRIP_COMPLETED', 'PAYMENT_PENDING'].contains(status);
+
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     final snapshot = json['pricing_snapshot'] is Map
         ? Map<String, dynamic>.from(json['pricing_snapshot'])
