@@ -12,10 +12,44 @@ class ApiClient {
   ApiClient(this._authStore)
       : _dio = Dio(BaseOptions(
           baseUrl: AppConfig.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 12),
-          receiveTimeout: const Duration(seconds: 20),
+          // 12s was too tight for the first request after an idle stretch.
+          // The host suspends the service when nothing has hit it for a
+          // while and waking it takes longer than that, so a returning user
+          // was met with "сервер недоступен" on the very first screen even
+          // though the backend answered fine a second later. Reported from
+          // the field as "when you haven't opened the app for a while".
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
           headers: {'Content-Type': 'application/json'},
         )) {
+    // Retry a cold backend instead of declaring it unreachable. Only
+    // connection-level failures qualify — a timeout, or a refused/dropped
+    // socket, which is exactly what a suspended service produces. Anything
+    // that actually came back (4xx, 5xx) is a real answer and is left
+    // alone; that also keeps non-idempotent POSTs safe, since a request the
+    // server did receive never reaches this branch.
+    _dio.interceptors.add(InterceptorsWrapper(onError: (error, handler) async {
+      const retriable = {
+        DioExceptionType.connectionTimeout,
+        DioExceptionType.receiveTimeout,
+        DioExceptionType.connectionError,
+      };
+      final attempt =
+          (error.requestOptions.extra['coldStartAttempt'] as int?) ?? 0;
+      if (retriable.contains(error.type) && attempt < 2) {
+        // 1s then 3s: enough for a waking service to finish booting, short
+        // enough that a genuinely offline phone still fails quickly.
+        await Future<void>.delayed(Duration(seconds: attempt == 0 ? 1 : 3));
+        final options = error.requestOptions;
+        options.extra = {...options.extra, 'coldStartAttempt': attempt + 1};
+        try {
+          return handler.resolve(await _dio.fetch(options));
+        } on DioException catch (retryError) {
+          return handler.next(retryError);
+        }
+      }
+      handler.next(error);
+    }));
     _dio.interceptors.add(InterceptorsWrapper(onError: (error, handler) {
       // The backend invalidates every token issued before a rotation the
       // instant a second device logs in (session_version mismatch — see
