@@ -7170,6 +7170,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ПЕШ'**
   String get roadAlertShortPedestrianCrossing;
+
+  /// No description provided for @driverRegionsLoadFailedTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить регионы'**
+  String get driverRegionsLoadFailedTitle;
+
+  /// No description provided for @driverRegionsLoadFailedMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.'**
+  String get driverRegionsLoadFailedMessage;
+
+  /// No description provided for @driverRegionsRetryAction.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get driverRegionsRetryAction;
 }
 
 class _AppLocalizationsDelegate

@@ -17,7 +17,6 @@
   "languageUzbek": "Өзбекше",
   "languageChinese": "Қытайша",
   "languageChangedNote": "Интерфейс тілі өзгертілді. Кейбір экрандар әзірге ішінара ғана аударылған.",
-
   "passengerSettingsTitle": "Баптаулар",
   "passengerSettingsSubtitle": "Аккаунт, сапарлар және қосымша туралы ақпарат",
   "passengerSettingsAccountGroup": "Аккаунт",
@@ -47,13 +46,11 @@
   "passengerSettingsVersionLabel": "Қосымша нұсқасы",
   "passengerSettingsLegalTitle": "Құқықтық ақпарат",
   "passengerSettingsLegalText": "Пайдалану шарттары, төлем, бас тарту, қауіпсіздік",
-
   "home": "Басты бет",
   "trips": "Сапарлар",
   "profile": "Профиль",
   "notifications": "Хабарландырулар",
   "support": "Қолдау",
-
   "passengerDrawerTrips": "Менің сапарларым",
   "passengerDrawerWallet": "Әмиян",
   "passengerDrawerPromoCodes": "Промокодтар",
@@ -67,7 +64,6 @@
   "passengerDrawerAboutSection": "Қызмет туралы",
   "passengerDrawerAboutUs": "Біз туралы",
   "passengerDrawerRegionalBadge": "Аймақтық такси",
-
   "passengerFaqSubtitle": "Жиі қойылатын сұрақтарға жауаптар",
   "passengerFaqSearchHint": "Сұрақтар бойынша іздеу",
   "passengerFaqClearSearch": "Іздеуді тазалау",
@@ -89,11 +85,16 @@
   "passengerFaqA7": "Геолокация алу нүктесін таңдауға және дәл маршрут құруға көмектеседі.",
   "passengerFaqQ8": "Қолдау қызметімен қалай байланысуға болады?",
   "passengerFaqA8": "Мәзірден «Қолдау» бөлімін ашып, хабарлама жазыңыз.",
-
   "passengerSupportSubtitle": "Мәселені сипаттаңыз, біз көмектесеміз",
   "passengerSupportUrgentTitle": "Шұғыл сұрақ па?",
   "passengerSupportCallDirectly": "Тікелей қоңырау шалыңыз: {phone}",
-  "@passengerSupportCallDirectly": {"placeholders": {"phone": {"type": "String"}}},
+  "@passengerSupportCallDirectly": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "callButton": "Қоңырау шалу",
   "passengerSupportTopicSectionTitle": "Өтініш тақырыбы",
   "passengerSupportTopicSectionText": "Қандай көмек керек екенін таңдаңыз",
@@ -114,7 +115,6 @@
   "passengerSupportDialFailed": "Нөмірді теру мүмкін болмады",
   "passengerSupportYourRequests": "Сіздің өтініштеріңіз",
   "passengerSupportLoadError": "Өтініштерді жүктеу мүмкін болмады",
-
   "passengerAboutDescription": "SmartTaxi — белсенді аймақтарда жылдам, түсінікті және әділ сапарлар үшін аймақтық такси қызметі.",
   "passengerAboutRegionalModelTitle": "Аймақтық модель",
   "passengerAboutRegionalModelText": "Сапарлар тек әкімші қосқан аймақтарда қолжетімді. Қалааралық сапарларға қолдау көрсетілмейді.",
@@ -123,8 +123,13 @@
   "passengerAboutSupportSubtitle": "Сұрағыңыз бар ма? Біз жауап береміз",
   "passengerAboutLegalSubtitle": "Шарттар, төлем, бас тарту, қауіпсіздік",
   "passengerAboutVersionLabel": "SmartTaxi · {version} нұсқасы",
-  "@passengerAboutVersionLabel": {"placeholders": {"version": {"type": "String"}}},
-
+  "@passengerAboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "loadFailedTitle": "Жүктеу мүмкін болмады",
   "passengerRecurringSubtitle": "Мектеп маршруты және кесте бойынша басқа сапарлар",
   "passengerRecurringNewRoute": "Жаңа маршрут",
@@ -132,18 +137,38 @@
   "passengerRecurringEmptyText": "Маршрут жасаңыз — мысалы, баланы мектепке апару — және жүргізуші таңдалған күндері кесте бойынша келеді.",
   "passengerRecurringCancelTitle": "Тұрақты сапарды бас тартасыз ба?",
   "passengerRecurringCancelText": "{route}, {days} сағат {time}. Бұл әрекетті болдырмау мүмкін емес.",
-  "@passengerRecurringCancelText": {"placeholders": {"route": {"type": "String"}, "days": {"type": "String"}, "time": {"type": "String"}}},
+  "@passengerRecurringCancelText": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "passengerRecurringCancelConfirm": "Сапарды бас тарту",
   "passengerFavoritesAddAddressTitle": "Қандай мекенжайды қосу керек?",
   "passengerFavoritesDeleteTitle": "Мекенжайды таңдаулылардан өшіресіз бе?",
   "passengerFavoritesDeleteText": "{title} — {address}.",
-  "@passengerFavoritesDeleteText": {"placeholders": {"title": {"type": "String"}, "address": {"type": "String"}}},
+  "@passengerFavoritesDeleteText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    }
+  },
   "deleteButton": "Өшіру",
   "passengerFavoritesSubtitle": "Үй, жұмыс және басқа жиі мекенжайлар — тапсырысты жылдам енгізу үшін",
   "passengerFavoritesAddButton": "Мекенжай қосу",
   "passengerFavoritesEmptyTitle": "Таңдаулы мекенжайлар әлі жоқ",
   "passengerFavoritesEmptyText": "Үйді, жұмысты немесе жиі баратын кез келген орынды қосыңыз — олар осында жылдам қолжетімді болады.",
-
   "passengerDriverAppSubtitle": "Өз көлігіңізде ыңғайлы кестемен табыс табыңыз",
   "passengerDriverStep1Title": "Өтінішті толтырыңыз",
   "passengerDriverStep1Text": "Аты-жөні, телефон және көлік деректері — бір минут алады",
@@ -166,7 +191,6 @@
   "passengerDriverTermsLink": "Пайдалану шарттарымен",
   "passengerDriverSafetyRulesLink": "Қауіпсіздік ережелерімен",
   "passengerDriverSubmitButton": "Өтінішті жіберу",
-
   "passengerDriverPrefsSubtitle": "Ұнаған жүргізушілерді белгілеп, қаламайтындарды бұғаттаңыз",
   "passengerDriverPrefsAddButton": "Сапарлар тарихынан қосу",
   "passengerDriverPrefsEmptyTitle": "Әлі белгілер жоқ",
@@ -175,19 +199,23 @@
   "passengerDriverPrefsFavoritesText": "Тұрақты сапарларда алдымен солар ұсынылады",
   "passengerDriverPrefsBlockedTitle": "Бұғатталғандар",
   "passengerDriverPrefsBlockedText": "Тұрақты сапарларға ұсынылмайды",
-
   "passengerReferralsSubtitle": "Кодпен бөлісіп, әр дос үшін бонус алыңыз",
   "passengerReferralsYourCode": "Сіздің кодыңыз",
   "copyButton": "Көшіру",
   "passengerReferralsCodeCopied": "Код көшірілді",
   "passengerReferralsShareCode": "Кодпен бөлісу",
   "passengerReferralsShareMessage": "SmartTaxi-де менің {code} кодым бойынша такси шақыр және алғашқы сапарыңа бонус ал!",
-  "@passengerReferralsShareMessage": {"placeholders": {"code": {"type": "String"}}},
+  "@passengerReferralsShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "passengerReferralsInvited": "Шақырылды",
   "passengerReferralsEarned": "Табылды",
   "passengerReferralsHowItWorksTitle": "Бұл қалай жұмыс істейді",
   "passengerReferralsHowItWorksText": "Дос тіркелу кезінде сіздің кодыңызды енгізеді. Оның алғашқы сапарынан кейін сіздің балансыңызға бонус есептеледі.",
-
   "passengerPromoSubtitle": "Промокодты тексеріп, жеңілдік мөлшерін біліңіз",
   "passengerPromoHaveCode": "Промокодыңыз бар ма?",
   "passengerPromoHint": "Аймағыңызда жарамды екенін тексеру және жеңілдік мөлшерін көру үшін оны енгізіңіз.",
@@ -196,24 +224,39 @@
   "checkingButton": "Тексерілуде...",
   "passengerPromoNoRegionError": "Алдымен басты экранда аймақты таңдаңыз",
   "passengerPromoActiveTitle": "«{code}» промокоды жарамды",
-  "@passengerPromoActiveTitle": {"placeholders": {"code": {"type": "String"}}},
+  "@passengerPromoActiveTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "passengerPromoDiscountSummary": "Жеңілдік {discount} · мысалы, {previewPrice} тұратын сапарда сіз {finalPrice} төлейсіз",
-  "@passengerPromoDiscountSummary": {"placeholders": {"discount": {"type": "String"}, "previewPrice": {"type": "String"}, "finalPrice": {"type": "String"}}},
+  "@passengerPromoDiscountSummary": {
+    "placeholders": {
+      "discount": {
+        "type": "String"
+      },
+      "previewPrice": {
+        "type": "String"
+      },
+      "finalPrice": {
+        "type": "String"
+      }
+    }
+  },
   "passengerPromoHowToApplyTitle": "Жеңілдікті қалай қолдану керек",
   "passengerPromoHowToApplyText": "Осы тексеруден өткен промокодты тариф таңдау қадамында тағы да енгізу керек болады — сонда жеңілдік нақты сапарыңыздың соңғы бағасын бірден қайта есептейді.",
-
   "passengerHomeWhereToTitle": "Қайда барамыз?",
   "passengerHomeWhereToSubtitle": "Алу нүктесі мен межелі мекенжайды таңдаңыз",
   "passengerHomeSetDestination": "Қайда екенін көрсету",
   "passengerHomeRouteIssueTitle": "Маршрутты нақтылаңыз",
   "passengerHomeRouteIssueText": "Маршрутты құру мүмкін болмады. Мекенжайды өзгертіңіз немесе картадан нүктені таңдаңыз.",
   "passengerHomePickupQuestion": "Қайдан?",
-
   "passengerAddressSearchError": "Мекенжайды іздеу уақытша қолжетімсіз. Картадан нүктені таңдаңыз.",
   "passengerAddressNoResultsText": "Көшені, ауданды немесе орын атауын нақтылаңыз.",
   "passengerAddressPickOnMapTitle": "Картадан көрсету",
   "passengerAddressPickOnMapSubtitle": "Картадан нүктені таңдаңыз",
-
   "tariffEconomyTitle": "Эконом",
   "tariffComfortTitle": "Комфорт",
   "tariffBusinessTitle": "Бизнес",
@@ -233,14 +276,19 @@
   "paymentMethodLabel": "Төлем",
   "paymentMethodFullLabel": "Төлем тәсілі",
   "passengerTripInTransitLabel": "Жолда",
-
   "passengerCtaCreatingOrder": "Тапсырыс жасалуда...",
   "passengerCtaPickPickup": "Қону нүктесін таңдаңыз",
   "passengerCtaPickDropoff": "Межелі мекенжайды таңдаңыз",
   "passengerCtaCalculate": "Есептеу",
   "passengerCtaOrderDelivery": "Жеткізуге тапсырыс беру",
   "passengerCtaOrderWithLabel": "{label} тапсырыс беру",
-  "@passengerCtaOrderWithLabel": {"placeholders": {"label": {"type": "String"}}},
+  "@passengerCtaOrderWithLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCtaOrder": "Тапсырыс беру",
   "passengerTripsSubtitle": "Белсенді тапсырыс, сапар мәртебесі және маршрут мәліметтері",
   "passengerTripsLoadErrorTitle": "Тарихты жүктеу мүмкін болмады",
@@ -262,7 +310,13 @@
   "passengerTripDateYesterday": "Кеше",
   "passengerTripShareTextPrefix": "SmartTaxi сапары",
   "passengerSearchingSubtitleWithCount": "Ең жақын {count} бос жүргізушіні көрсетудеміз",
-  "@passengerSearchingSubtitleWithCount": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerSearchingSubtitleWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerSearchingSubtitleGeneric": "Жақын маңдағы бос жүргізушілерді тексерудеміз",
   "passengerDriverOfferDescription": "Тапсырысты ең жақын жүргізушілерге ұсынудамыз.",
   "passengerDriverRouteDescription": "Сапар мәртебесі мен маршрутты нақты уақытта көрсетудеміз.",
@@ -270,14 +324,26 @@
   "passengerCancellingLabel": "Болдырылмауда...",
   "passengerCancelSearchButton": "Іздеуді тоқтату",
   "passengerTripWithIdTitle": "Сапар {id}",
-  "@passengerTripWithIdTitle": {"placeholders": {"id": {"type": "String"}}},
+  "@passengerTripWithIdTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverFoundTitle": "Жүргізуші табылды",
   "passengerNewTripButton": "Жаңа сапар",
   "passengerCancelTripButton": "Сапарды болдырмау",
   "passengerCancelTripShortButton": "Болдырмау",
   "passengerRateDriverFallbackName": "жүргізушімен",
   "passengerRateDriverQuestion": "{name} сапар қалай өтті?",
-  "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},
+  "@passengerRateDriverQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSubmitRatingButton": "Бағалауды жіберу",
   "passengerSubmittingRatingButton": "Жіберілуде...",
   "passengerSkipButton": "Өткізіп жіберу",
@@ -317,7 +383,13 @@
   "passengerWaitingDriverResponseTitle": "Жүргізушінің жауабын күтудеміз",
   "passengerOfferSentText": "Сіздің ұсынысыңыз жіберілді",
   "passengerYouOfferedText": "Сіз {amount} ұсындыңыз",
-  "@passengerYouOfferedText": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerYouOfferedText": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCancelledByDriverTitle": "Жүргізуші сапарды болдырмады",
   "passengerCancelledByDriverText": "Бірнеше секундта басқа жүргізуші табамыз",
   "passengerCancelledByOperatorTitle": "Сапар оператормен болдырылмады",
@@ -336,15 +408,36 @@
   "passengerEnRouteLowercase": "жолда",
   "passengerJustStartedLowercase": "жаңа бастады",
   "passengerMinutesEnRoute": "{minutes} мин жолда",
-  "@passengerMinutesEnRoute": {"placeholders": {"minutes": {"type": "int"}}},
+  "@passengerMinutesEnRoute": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "passengerJustStartedCapitalized": "Жаңа бастады",
   "passengerShareTripTooltipEnabled": "Сапарды бақылаумен бөлісу",
   "passengerShareTripTooltipDisabled": "Сілтеме жүргізуші табылған соң пайда болады",
   "passengerShareTripMessage": "SmartTaxi сапарын бақылап отырмын{routeSuffix}. Мәртебе: {link}",
-  "@passengerShareTripMessage": {"placeholders": {"routeSuffix": {"type": "String"}, "link": {"type": "String"}}},
+  "@passengerShareTripMessage": {
+    "placeholders": {
+      "routeSuffix": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSafetyTitle": "Сапар қауіпсіздігі",
   "passengerCallPhoneLabel": "{phone} қоңырау шалу",
-  "@passengerCallPhoneLabel": {"placeholders": {"phone": {"type": "String"}}},
+  "@passengerCallPhoneLabel": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSosEmergencyLineText": "Бірдеңе дұрыс болмаса — SmartTaxi шұғыл желісі",
   "passengerSupportWillBeNotifiedTitle": "Қолдау қызметіне сигнал жіберіледі",
   "passengerSupportWillBeNotifiedText": "Сапар нөмірі мен координаттарыңыз бар өтінім қоңыраумен бірге қолдау қызметіне жіберіледі",
@@ -376,16 +469,46 @@
   "passengerBonusBalanceLabel": "Кешбэк және бонус балансы",
   "passengerBonusNotEnoughText": "Минималды тариф бойынша сапарға әзірге жетпейді",
   "passengerBonusRidesLeft": "Тағы {count} {count, plural, other{сапарға}} жетеді",
-  "@passengerBonusRidesLeft": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerBonusRidesLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerNearbyCarsCount": "Жанында {count} {count, plural, other{көлік}}",
-  "@passengerNearbyCarsCount": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerNearbyCarsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoJustNow": "жаңа ғана",
   "passengerTimeAgoMinutes": "{minutes} мин бұрын",
-  "@passengerTimeAgoMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@passengerTimeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoHours": "{hours} сағ бұрын",
-  "@passengerTimeAgoHours": {"placeholders": {"hours": {"type": "int"}}},
+  "@passengerTimeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoDays": "{days} күн бұрын",
-  "@passengerTimeAgoDays": {"placeholders": {"days": {"type": "int"}}},
+  "@passengerTimeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "passengerMarkDriverTitle": "Жүргізушіні белгілеу",
   "passengerNoTripDriversText": "Сапар тарихынан белгілей алатын жүргізуші жоқ.",
   "passengerChooseDriverHint": "Жүргізушіні таңдаңыз",
@@ -450,7 +573,19 @@
   "driverPickupMetaToPickup": "Қону нүктесіне дейін",
   "driverRouteFallbackNotice": "шамамен",
   "driverPickupMetaText": "{label}: {distance} км · {minutes} мин",
-  "@driverPickupMetaText": {"placeholders": {"label": {"type": "String"}, "distance": {"type": "String"}, "minutes": {"type": "int"}}},
+  "@driverPickupMetaText": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "routeErrorWaitingLocation": "Жүргізушінің геолокациясын күтудеміз.",
   "routeErrorDriverRouteUnavailable": "Жүргізуші маршруты уақытша қолжетімсіз.",
   "errorClientHasActiveOrder": "Сізде белсенді тапсырыс бар. Сапарды ашыңыз немесе оны болдырмаңыз.",
@@ -503,7 +638,6 @@
   "passengerFavoriteAddressesSectionTitle": "Таңдаулы мекенжайлар",
   "passengerDriversMenuSubtitle": "Таңдаулы және бұғатталған жүргізушілер",
   "passengerReferralsMenuSubtitle": "Сіздің кодыңыз бен шақыру бонустары",
-
   "passengerWalletTitle": "Әмиян",
   "passengerWalletSubtitle": "Баланс, толықтыру және байланысқан карталар",
   "passengerWalletBalanceLabel": "Баланс",
@@ -519,7 +653,13 @@
   "passengerWalletRemoveAction": "Жою",
   "passengerWalletRemoveCardConfirmTitle": "Картаны жою керек пе?",
   "passengerWalletRemoveCardConfirmText": "{last4} картасы жойылады.",
-  "@passengerWalletRemoveCardConfirmText": {"placeholders": {"last4": {"type": "String"}}},
+  "@passengerWalletRemoveCardConfirmText": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCardNumberLabel": "Карта нөмірі",
   "passengerCardHolderNameLabel": "Иесінің аты (міндетті емес)",
   "passengerErrorInvalidCardNumber": "Дұрыс карта нөмірін енгізіңіз",
@@ -527,7 +667,13 @@
   "passengerWalletTopUpSheetTitle": "Балансты толықтыру",
   "passengerWalletTopUpAmountLabel": "Толықтыру сомасы",
   "passengerWalletTopUpMinNote": "Ең аз сома — {amount}",
-  "@passengerWalletTopUpMinNote": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerWalletTopUpMinNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerWalletTopUpPendingNote": "Kaspi Pay арқылы төлеу мүмкіндігі кейінірек қосылады — өтінім сақталды және бұл мүмкіндік іске қосылған соң автоматты түрде өңделеді.",
   "passengerWalletTopUpSubmitButton": "Өтінім жасау",
   "passengerWalletTopupStatusPending": "Күтілуде",
@@ -553,7 +699,13 @@
   "passengerPriceHintSlower": "Көбірек уақыт кетуі мүмкін",
   "passengerPriceHintNormal": "Қалыпты қону жылдамдығы",
   "passengerYourRegionQuestion": "Сіздің аймағыңыз: {region}?",
-  "@passengerYourRegionQuestion": {"placeholders": {"region": {"type": "String"}}},
+  "@passengerYourRegionQuestion": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "passengerRegionDetectedText": "Аймақты геолокация бойынша анықтадық. Тапсырыстардың дұрыс жұмыс істеуі үшін тексеріңіз.",
   "passengerChangeButton": "Өзгерту",
   "passengerYesCorrectButton": "Иә, дұрыс",
@@ -597,9 +749,21 @@
   "passengerRecurringCancelButton": "Бас тарту",
   "passengerDriverArrivedWaitingBanner": "Жүргізуші келді және сізді күтуде",
   "passengerCopiedValueToast": "Көшірілді: {value}",
-  "@passengerCopiedValueToast": {"placeholders": {"value": {"type": "String"}}},
+  "@passengerCopiedValueToast": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCopyLabelSemantics": "{label} көшіру",
-  "@passengerCopyLabelSemantics": {"placeholders": {"label": {"type": "String"}}},
+  "@passengerCopyLabelSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverAppSubmittedMessage": "Өтінім жіберілді. Әкімші деректерді тексереді.",
   "passengerServerUnavailableError": "Сервер уақытша қолжетімсіз. Байланыс қалпына келгенде маршрутты таңдай аласыз.",
   "passengerRecurringSentToDriverToast": "Өтінім жүргізушіге жіберілді, растауды күтудеміз",
@@ -614,17 +778,41 @@
   "passengerActiveRegionsNotLoadedError": "Белсенді аймақтар әлі жүктелген жоқ",
   "passengerDriverFoundExclamation": "Жүргізуші табылды!",
   "passengerDriverFoundNamedText": "Жүргізуші табылды: {name} сізге қарай келеді",
-  "@passengerDriverFoundNamedText": {"placeholders": {"name": {"type": "String"}}},
+  "@passengerDriverFoundNamedText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverCancelledSearchingAnotherToast": "Жүргізуші сапарды болдырмады — сізге басқасын іздеудеміз",
   "passengerPaymentInitiateFailedError": "Төлемді бастау мүмкін болмады. Байланысты тексеріңіз.",
   "passengerLoginRequiredForOrderError": "Тапсырыс беру үшін телефон нөміріңізбен кіріңіз.",
   "passengerAcceptedNewPriceToast": "Сіз жаңа бағамен келістіңіз: {amount}",
-  "@passengerAcceptedNewPriceToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerAcceptedNewPriceToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDeclinedOfferedPriceToast": "Сіз ұсынылған бағадан бас тарттыңыз",
   "passengerCounterOfferSentToast": "Сіздің ұсынысыңыз жүргізушіге жіберілді: {amount}",
-  "@passengerCounterOfferSentToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerCounterOfferSentToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerQueuedOfferArrivedToast": "Тағы бір жүргізуші баға ұсынды: {amount}",
-  "@passengerQueuedOfferArrivedToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerQueuedOfferArrivedToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerLegalHubTitle": "Құқықтық ақпарат",
   "passengerLegalHubSubtitle": "SmartTaxi ресми құжаттары, 2026 жылғы 6 шілдедегі редакция",
   "passengerAllDocumentsButton": "Барлық құжаттар",
@@ -634,7 +822,13 @@
   "passengerPickupPointSemanticLabel": "Қону нүктесі",
   "passengerDropoffPointSemanticLabel": "Межелі нүкте",
   "passengerNearbyFreeDriverSemanticLabel": "Жақын жерде бос жүргізуші, {eta} мин",
-  "@passengerNearbyFreeDriverSemanticLabel": {"placeholders": {"eta": {"type": "int"}}},
+  "@passengerNearbyFreeDriverSemanticLabel": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      }
+    }
+  },
   "passengerDriverCarSemanticLabel": "Жүргізушінің көлігі",
   "passengerLocationServiceDisabledError": "Геолокация өшірулі. Оны баптауларда қосыңыз немесе картадан нүкте таңдаңыз.",
   "passengerChooseRegionTitle": "Аймақты таңдаңыз",
@@ -661,7 +855,6 @@
   "passengerWhichTripLabel": "Қай сапар?",
   "passengerWhichTripText": "Жүргізушіні хабардар ету үшін қажет",
   "passengerChooseTripHint": "Сапарды таңдаңыз",
-
   "authWelcomeTitle": "Кіру және тіркелу",
   "authWelcomeSubtitle": "Жалғастыру үшін телефон нөмірін енгізіңіз",
   "phoneNumberLabel": "Телефон нөмірі",
@@ -686,7 +879,13 @@
   "runtimeFallbackBody": "Экранды ашу мүмкін болмады. Қолданбаны қайта іске қосыңыз немесе қайта кіріп көріңіз.",
   "runtimeFallbackAction": "Басты бетке оралу",
   "devCodeLabel": "Жергілікті сынақ коды: {devCode}",
-  "@devCodeLabel": {"placeholders": {"devCode": {"type": "String"}}},
+  "@devCodeLabel": {
+    "placeholders": {
+      "devCode": {
+        "type": "String"
+      }
+    }
+  },
   "validateEnterName": "Атыңызды енгізіңіз",
   "validateEnterPhone": "Телефон нөмірін енгізіңіз",
   "validateCorrectPhone": "Дұрыс нөмір енгізіңіз",
@@ -738,7 +937,6 @@
   "secureHint": "Құпия сөзіңіз сенімді қорғалған және үшінші тұлғаларға берілмейді",
   "defaultAccountLabel": "SmartTaxi аккаунты",
   "appTagline": "Сіздің жайлылығыңыз. Біздің қамқорлығымыз",
-
   "driverDrawerWallet": "Әмиян",
   "driverDrawerDocuments": "Құжаттар",
   "driverDrawerRating": "Рейтинг",
@@ -750,18 +948,35 @@
   "driverDrawerServiceSection": "Қызмет",
   "driverDrawerRoadAlerts": "Жол оқиғалары",
   "driverDrawerPassengerMode": "Жолаушы режимі",
-
   "driverWalletTitle": "Әмиян",
   "driverWalletSubtitle": "Баланс, борыш және төлемдер",
   "driverWalletLoadError": "Әмиянды жүктеу мүмкін болмады",
   "driverWalletBalanceLabel": "Баланс",
   "driverWalletDebtLabel": "Борыш: {amount}",
-  "@driverWalletDebtLabel": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletDebtLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletPendingLabel": "Өңделуде: {amount}",
-  "@driverWalletPendingLabel": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletPendingLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletRequestPayoutButton": "Төлем сұрау",
   "driverWalletMinPayoutNote": "Ең аз төлем сомасы — {amount}",
-  "@driverWalletMinPayoutNote": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletMinPayoutNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletPayoutRequestsTitle": "Төлем сұраныстары",
   "driverWalletNoPayoutRequests": "Сұраныстар әлі жоқ",
   "driverWalletTopUpButton": "Балансты толтыру",
@@ -772,7 +987,13 @@
   "driverTopupSheetHint": "Соманы көрсетіңіз. Менеджер аударымды қабылдап, қаражатты есептеу үшін сізбен байланысады",
   "driverTopupAmountLabel": "Сома, ₸",
   "driverTopupErrorBelowMin": "Ең аз сома — {amount}",
-  "@driverTopupErrorBelowMin": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverTopupErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverTopupErrorGeneric": "Сұраныс жасалмады. Қайталап көріңіз",
   "driverTopupSubmitButton": "Сұранысты жіберу",
   "driverWalletTransactionsTitle": "Операциялар",
@@ -780,25 +1001,34 @@
   "driverWalletTxCashCommission": "Қолма-қол сапар үшін комиссия",
   "driverWalletTxAdjustment": "Түзету",
   "driverWalletTxEarning": "Сапар үшін түсім",
-
   "driverPayoutStatusPending": "Қаралуда",
   "driverPayoutStatusApproved": "Мақұлданды",
   "driverPayoutStatusPaid": "Төленді",
   "driverPayoutStatusRejected": "Қабылданбады",
   "driverPayoutStatusCancelled": "Болдырылмады",
-
   "driverPayoutSheetTitle": "Төлем сұрау",
   "driverPayoutSheetAvailable": "Шығаруға қолжетімді: {amount}",
-  "@driverPayoutSheetAvailable": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverPayoutSheetAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutAmountLabel": "Сома, ₸",
   "driverPayoutPhoneLabel": "Аударым үшін Kaspi нөірі",
   "driverPayoutErrorBelowMin": "Ең аз сома — {amount}",
-  "@driverPayoutErrorBelowMin": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverPayoutErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutErrorExceedsBalance": "Сома қолжетімді баланстан асып кетті",
   "driverPayoutErrorPhoneRequired": "Kaspi аударымы үшін нөірді көрсетіңіз",
   "driverPayoutErrorGeneric": "Сұранысты жасау мүмкін болмады. Қайталап көріңіз",
   "driverPayoutSubmitButton": "Сұранысты жіберу",
-
   "driverDocumentsTitle": "Құжаттар",
   "driverDocumentsSubtitle": "SmartTaxi әкімшісі тексеруі үшін құжаттарды жүктеңіз",
   "driverDocumentsLoadError": "Құжаттарды жүктеу мүмкін болмады",
@@ -814,7 +1044,6 @@
   "driverDocumentPickFile": "Файл таңдау",
   "driverDocumentPickCameraShort": "Фото",
   "driverDocumentPickFileShort": "Файл",
-
   "driverDocumentTypeLicenseFront": "Жүргізуші куәлігі (алды)",
   "driverDocumentTypeLicenseBack": "Жүргізуші куәлігі (арты)",
   "driverDocumentTypeIdCardFront": "Жеке куәлік (алды)",
@@ -823,13 +1052,11 @@
   "driverDocumentTypeInsurancePolicy": "Сақтандыру полисі",
   "driverDocumentTypeProfilePhoto": "Профиль фотосы",
   "driverDocumentTypeOther": "Құжат",
-
   "driverApplicationDocumentsTitle": "Құжаттар",
   "driverApplicationDocumentsIntro": "Өтініш жіберілді. Тексеруді жеделдету үшін құжаттарды қазір жүктеңіз",
   "driverApplicationDocumentsDone": "Дайын",
   "driverApplicationDocumentsLater": "Кейінірек жалғастыру",
   "driverApplicationDocumentUploaded": "Жүктелді",
-
   "driverRatingTitle": "Рейтинг",
   "driverRatingSubtitle": "Жолаушылардың бағалары мен пікірлері",
   "driverRatingLoadError": "Рейтингті жүктеу мүмкін болмады",
@@ -837,13 +1064,11 @@
   "driverRatingEmptyText": "Жолаушылар сапарларды бағалаған кезде пікірлер осында пайда болады",
   "driverRatingTopTagsTitle": "Жиі белгіленеді",
   "driverRatingRecentTitle": "Соңғы пікірлер",
-
   "driverNotificationsTitle": "Хабарландырулар",
   "driverNotificationsSubtitle": "Төлемдер, құжаттар және тапсырыстар статустары",
   "driverNotificationsLoadError": "Хабарландыруларды жүктеу мүмкін болмады",
   "driverNotificationsEmptyTitle": "Жаңа хабарландырулар жоқ",
   "driverNotificationsEmptyText": "Мұнда төлемдер, құжат тексерулері және сапарлар статустары пайда болады",
-
   "driverProfileTitle": "Жүргізуші профилі",
   "driverProfileSubtitle": "Аккаунт деректері және ағымдағы ауысым",
   "driverProfileNameFallback": "Жүргізуші",
@@ -858,7 +1083,6 @@
   "driverProfileTripHistoryTitle": "Сапарлар тарихы",
   "driverAvatarUpdated": "Фото жаңартылды",
   "driverAvatarUploadError": "Фотоны жүктеу мүмкін болмады",
-
   "driverSupportTitle": "Қолдау қызметі",
   "driverSupportSubtitle": "Мәселені сипаттаңыз, біз көмектесеміз",
   "driverSupportTopicSectionTitle": "Өтініш тақырыбы",
@@ -881,7 +1105,6 @@
   "driverTripHistoryLoadError": "Сапарлар тарихын жүктеу мүмкін болмады",
   "driverSupportEmptyTitle": "Әзірге өтініштер жоқ",
   "driverSupportEmptyText": "Мұнда қолдау қызметіне жіберген өтініштеріңіз бен жауаптар көрсетіледі",
-
   "driverFaqTitle": "Жиі қойылатын сұрақтар",
   "driverFaqSubtitle": "Жүргізушілердің жиі қойылатын сұрақтарына жауаптар",
   "driverFaqQ1": "Тапсырысты қалай қабылдауға болады?",
@@ -896,10 +1119,8 @@
   "driverFaqA5": "Аймақ «Желі» бөлімінде таңдалады. Тек әкімші растаған аймақтар қолжетімді.",
   "driverFaqQ6": "Өткізіп алған тапсырыстар қайда кетеді?",
   "driverFaqA6": "Өткізіп алынған тапсырыс оны ешкім қабылдамағанша аймақтағы басқа жүргізушілерге қолжетімді болып қалады.",
-
   "driverAboutDescription": "SmartTaxi — аймақтық такси қызметі. Жүргізуші қосымшасы тек әкімші растаған белсенді аймақтардағы тапсырыстарды көрсетеді.",
   "driverAboutVersionLabel": "Қосымша нұсқасы",
-
   "driverSettingsTitle": "Баптаулар",
   "driverSettingsSubtitle": "Аккаунт және қосымша туралы ақпарат",
   "driverSettingsAccountGroup": "Аккаунт",
@@ -915,12 +1136,10 @@
   "driverSettingsTermsText": "Сапарлар, тапсырыстар және тараптардың жауапкершілігі ережелері",
   "driverSettingsPrivacyTitle": "Құпиялылық саясаты",
   "driverSettingsPrivacyText": "Телефон, геолокация және сапарлар тарихы қалай пайдаланылады",
-
   "driverTabLine": "Желі",
   "driverTabOrders": "Тапсырыстар",
   "driverTabTrip": "Сапар",
   "driverTabNavigator": "Навигатор",
-
   "driverLineRegionSectionTitle": "Жұмыс аймағы",
   "driverLineRegionSectionText": "Тапсырыстар тек таңдалған аймақтан келеді",
   "driverLineRegionsLoading": "Аймақтар жүктелуде...",
@@ -928,7 +1147,6 @@
   "driverLineNoRegionsText": "Жұмыс істеу үшін әкімші сізді мақұлдауы керек.",
   "driverLineLocationSectionTitle": "Геолокация",
   "driverLineLocationSectionText": "Позиция тек желіде жұмыс істеу кезінде жіберіледі",
-
   "driverOrdersTitle": "Аймақтағы тапсырыстар",
   "driverOrdersSubtitle": "Тек жұмыс аймағыңыздағы тапсырыстарды көрсетеміз.",
   "driverOrdersUpdating": "Тапсырыстар жаңартылуда...",
@@ -936,28 +1154,30 @@
   "driverOrdersGoOnlineText": "Желіге шыққаннан кейін тапсырыстар осында пайда болады.",
   "driverOrdersEmptyTitle": "Аймағыңызда әлі тапсырыстар жоқ",
   "driverOrdersEmptyText": "Жолаушылар сапар жасағанда жаңа тапсырыстар осында пайда болады.",
-
   "driverTripTitle": "Белсенді сапар",
   "driverTripSubtitle": "Сапардың келесі қадамы",
   "driverTripEmptyTitle": "Белсенді сапар жоқ",
   "driverTripEmptyText": "Тапсырысты қабылдаңыз, сапар осында пайда болады.",
   "driverTripTariffLabel": "Тариф: {tariff}",
-  "@driverTripTariffLabel": {"placeholders": {"tariff": {"type": "String"}}},
+  "@driverTripTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
   "driverTripSavingButton": "Сақталуда...",
   "driverTripDoneButton": "Дайын, жаңа тапсырыстарға",
   "driverTripNoShowButton": "Клиент шықпады",
   "driverTripCancelButton": "Бас тарту",
-
   "driverActionGoingToClient": "Клиентке жол алды",
   "driverActionArrived": "Келді",
   "driverActionStartWaiting": "Күтуді бастау",
   "driverActionStartTrip": "Сапарды бастау",
   "driverActionCompleteTrip": "Сапарды аяқтау",
-
   "driverStatusBusy": "Бос емес",
   "driverStatusOnline": "Желіде",
   "driverStatusOffline": "Желіде емес",
-
   "driverLocationChecking": "Геолокация тексерілуде...",
   "driverLocationRequiredError": "Желіде жұмыс істеу үшін геолокация керек",
   "driverLocationSendFailed": "Геолокацияны жіберу мүмкін болмады. Қайталап көріңіз.",
@@ -966,7 +1186,6 @@
   "driverGoOnlineRequiredError": "Тапсырыстарды қабылдау үшін желіге шығыңыз.",
   "driverGoOnlineRequiredRejectError": "Тапсырыстарды өткізіп жіберу үшін желіге шығыңыз.",
   "driverUpdatesUnavailableNote": "Жаңарту серверімен байланыс уақытша қолжетімсіз. Экран API арқылы жұмысын жалғастырады.",
-
   "driverManeuverTurnLeft": "Солға бұрылыс",
   "driverManeuverTurnRight": "Оңға бұрылыс",
   "driverManeuverSlightLeft": "Сәл солға қарай",
@@ -980,18 +1199,27 @@
   "driverManeuverOnRamp": "Трассаға шығу",
   "driverManeuverOffRamp": "Трассадан шығу",
   "driverManeuverRoundaboutWithExit": "Шеңберлі қозғалыс, {exit}-шығу",
-  "@driverManeuverRoundaboutWithExit": {"placeholders": {"exit": {"type": "int"}}},
+  "@driverManeuverRoundaboutWithExit": {
+    "placeholders": {
+      "exit": {
+        "type": "int"
+      }
+    }
+  },
   "driverManeuverRoundabout": "Шеңберлі қозғалыс",
   "driverManeuverExitRoundabout": "Шеңберлі қозғалыстан шығу",
   "driverManeuverArrive": "Сіз мақсатқа жақынсыз",
   "driverManeuverFollowRoute": "Бағыт бойынша жүріңіз",
-
   "driverPaymentCashback": "Бонустар",
   "driverPaymentMixed": "Аралас",
-
   "driverRouteMetaLabel": "Бағыт: {details}",
-  "@driverRouteMetaLabel": {"placeholders": {"details": {"type": "String"}}},
-
+  "@driverRouteMetaLabel": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "driverOrderStatusNew": "Жаңа",
   "driverOrderStatusAccepted": "Қабылданды",
   "driverOrderStatusGoingToClient": "Клиентке келе жатыр",
@@ -1003,7 +1231,6 @@
   "driverOrderStatusCancelledByClient": "Клиент бас тартты",
   "driverOrderStatusCancelledByOperator": "Оператор бас тартты",
   "driverOrderStatusCancelled": "Бас тартылды",
-
   "driverErrorRegionNotSelected": "Жұмыс аймағын таңдаңыз",
   "driverErrorRegionInactive": "Аймақ уақытша сөндірілген",
   "driverErrorRegionNotApproved": "Сіз бұл аймаққа мақұлданбағансыз",
@@ -1031,7 +1258,13 @@
   "driverNewOrderTitle": "Жаңа тапсырыс",
   "driverWorkingRegionLabel": "Жұмыс аймағы",
   "driverTariffLabel": "Тариф {tariff}",
-  "@driverTariffLabel": {"placeholders": {"tariff": {"type": "String"}}},
+  "@driverTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceAfterCalculation": "Есептеуден кейінгі баға",
   "driverCustomPriceBadge": "Өз бағасы",
   "driverSkippingButton": "Өткізіп жатырмыз...",
@@ -1041,11 +1274,23 @@
   "driverDeclineButton": "Бас тарту",
   "driverRespondingButton": "Жауап беріп жатырмыз...",
   "driverClientOfferedCustomPrice": "Клиент {price} ұсынды",
-  "@driverClientOfferedCustomPrice": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientOfferedCustomPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverClientOfferedCustomPriceGeneric": "өз бағасын",
   "driverAwaitingClientResponse": "Клиенттің жауабын күтудеміз",
   "driverAwaitingClientResponseWithPrice": "Жауапты күтудеміз: {price}",
-  "@driverAwaitingClientResponseWithPrice": {"placeholders": {"price": {"type": "String"}}},
+  "@driverAwaitingClientResponseWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverOfferCustomPriceButton": "Өз бағаңызды ұсыныңыз",
   "driverPaidWaitingLabel": "Ақылы күту",
   "driverFreeWaitingLabel": "Тегін күту",
@@ -1078,11 +1323,23 @@
   "driverBlockButton": "Қабылдамау",
   "doneButton": "Дайын",
   "driverStarRatingSemanticLabel": "Баға: {count} {count, plural, other{жұлдыз}}",
-  "@driverStarRatingSemanticLabel": {"placeholders": {"count": {"type": "int"}}},
+  "@driverStarRatingSemanticLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverUpdatingGeneric": "Жаңартылуда...",
   "driverEmergencyHelpTitle": "Шұғыл көмек",
   "driverEmergencyCallButton": "{phone} қоңырау шалу",
-  "@driverEmergencyCallButton": {"placeholders": {"phone": {"type": "String"}}},
+  "@driverEmergencyCallButton": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "driverEmergencyLineSubtitle": "Бірдеңе дұрыс болмаса, SmartTaxi шұғыл желісі",
   "driverSupportWillReceiveSignal": "Қолдау қызметі сигнал алады",
   "driverSupportSignalDescription": "Координаттарыңыз бен сапар нөмірі (болса) бар өтінім қоңыраумен бірге қолдау қызметіне жіберіледі",
@@ -1100,9 +1357,21 @@
   "driverUpdatingStatusButton": "Мәртебе жаңартылуда...",
   "driverPayoutMethodTitle": "Төлем әдісі",
   "driverPayoutCardSummary": "Карта •• •• •• {last4}",
-  "@driverPayoutCardSummary": {"placeholders": {"last4": {"type": "String"}}},
+  "@driverPayoutCardSummary": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutKaspiSummary": "Kaspi аударымы: {phone}",
-  "@driverPayoutKaspiSummary": {"placeholders": {"phone": {"type": "String"}}},
+  "@driverPayoutKaspiSummary": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutMethodNotSet": "Көрсетілмеген — қаражат шығару үшін қосыңыз",
   "driverPayoutMethodSubtitle": "Қаражатты шығарғанда қайда аудару керек",
   "driverPayoutMethodKaspiOption": "Kaspi аударымы",
@@ -1117,32 +1386,104 @@
   "driverPayoutMethodNotSetShort": "Төлем әдісі көрсетілмеген",
   "addButton": "Қосу",
   "driverReviewsCountLabel": "{count} {count, plural, other{пікір}}",
-  "@driverReviewsCountLabel": {"placeholders": {"count": {"type": "int"}}},
+  "@driverReviewsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverTopTagLabel": "{tag} · {count}",
-  "@driverTopTagLabel": {"placeholders": {"tag": {"type": "String"}, "count": {"type": "int"}}},
+  "@driverTopTagLabel": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverClientAcceptedPriceToast": "Клиент сіздің бағаңызды қабылдады: {price}",
-  "@driverClientAcceptedPriceToast": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientAcceptedPriceToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverClientDeclinedOfferToast": "Клиент баға ұсынысыңызды қабылдамады",
   "driverClientCounterOfferToast": "Клиент өз бағасын ұсынды: {price}",
-  "@driverClientCounterOfferToast": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientCounterOfferToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverSpeedLimitAnnouncement": "Жылдамдық шектеуі {limit}",
-  "@driverSpeedLimitAnnouncement": {"placeholders": {"limit": {"type": "int"}}},
+  "@driverSpeedLimitAnnouncement": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "driverCameraIn500mVoice": "500 метрден кейін камера",
   "driverCameraIn500mBanner": "Камера 500 м{heading}",
-  "@driverCameraIn500mBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraIn500mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverCameraIn200mVoice": "200 метрден кейін камера",
   "driverCameraIn200mBanner": "Камера 200 м{heading}",
-  "@driverCameraIn200mBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraIn200mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverCameraNowVoice": "Камера",
   "driverCameraNowBanner": "Камера{heading}",
-  "@driverCameraNowBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraNowBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverSignBannerLabel": "Белгі: {sign}",
-  "@driverSignBannerLabel": {"placeholders": {"sign": {"type": "String"}}},
+  "@driverSignBannerLabel": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      }
+    }
+  },
   "driverSpeedingVoiceWarning": "Жылдамдықтан асу",
   "driverManeuverIn200mVoice": "200 метрден кейін {maneuver}{street}",
-  "@driverManeuverIn200mVoice": {"placeholders": {"maneuver": {"type": "String"}, "street": {"type": "String"}}},
+  "@driverManeuverIn200mVoice": {
+    "placeholders": {
+      "maneuver": {
+        "type": "String"
+      },
+      "street": {
+        "type": "String"
+      }
+    }
+  },
   "driverStreetSuffix": " {street} көшесінде",
-  "@driverStreetSuffix": {"placeholders": {"street": {"type": "String"}}},
+  "@driverStreetSuffix": {
+    "placeholders": {
+      "street": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceOfferSentToast": "Баға ұсынысы клиентке жіберілді",
   "driverAcceptedClientPriceToast": "Сіз клиенттің бағасын қабылдадыңыз — тапсырыс сіздікі",
   "driverDeclinedClientOfferToast": "Сіз клиенттің ұсынысын қабылдамадыңыз",
@@ -1166,16 +1507,34 @@
   "driverContactSupportAction": "Қолдау қызметіне жазу",
   "driverChooseRegionMessage": "Сізде мақұлданған аймақтар бар — тапсырыс қабылдауды бастау үшін біреуін таңдаңыз.",
   "driverRegionPausedMessage": "«{region}» аймағында жұмыс қазір тоқтатылған. ",
-  "@driverRegionPausedMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverRegionPausedMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverTryLaterOrChangeRegion": "Кейінірек көріңіз немесе басқа аймақты таңдаңыз.",
   "driverTryLater": "Кейінірек көріңіз.",
   "driverChangeRegionAction": "Аймақты ауыстыру",
   "driverAccessBlockedTitle": "Қолжетімділік бұғатталған",
   "driverRegionBlockedByAdminMessage": "«{region}» аймағында жұмыс әкімші тарапынан бұғатталған.",
-  "@driverRegionBlockedByAdminMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverRegionBlockedByAdminMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverApplicationUnderReviewTitle": "Өтінім қаралуда",
   "driverApplicationUnderReviewMessage": "Біз сіздің «{region}» аймағына қолжетімділігіңізді тексеріп жатырмыз. Әдетте бұл біраз уақыт алады.",
-  "@driverApplicationUnderReviewMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverApplicationUnderReviewMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverStatusUnavailableByRegion": "Аймақ бойынша қолжетімсіз",
   "driverRegionStatusDisabled": "Сөндірілген",
   "driverRegionStatusBlocked": "Бұғатталған",
@@ -1199,13 +1558,25 @@
   "driverQuickMessagePleaseComeOut": "Шығыңызшы",
   "driverQuickMessageOnMyWay": "Сізге жолдамын",
   "driverQuickMessageSentToast": "Жіберілді: {text}",
-  "@driverQuickMessageSentToast": {"placeholders": {"text": {"type": "String"}}},
+  "@driverQuickMessageSentToast": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "driverQuickMessageSheetTitle": "Жылдам хабарлама",
   "driverPriceOfferRangeError": "200-ден 1 000 000 ₸ дейінгі бағаны енгізіңіз",
   "driverPriceOfferSheetTitle": "Өз бағаңызды ұсыныңыз",
   "driverPriceOfferSheetSubtitle": "Клиент бағаңызды көріп, келісе алады немесе бас тарта алады",
   "driverCurrentOrderPriceLabel": "Тапсырыстың ағымдағы бағасы: {price}",
-  "@driverCurrentOrderPriceLabel": {"placeholders": {"price": {"type": "String"}}},
+  "@driverCurrentOrderPriceLabel": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceFieldLabel": "Баға, ₸",
   "driverSendOfferButton": "Ұсынысты жіберу",
   "driverRouteAcceptedToast": "Бағыт қабылданды",
@@ -1239,7 +1610,16 @@
   "driverAlertSpeedLimitLabel": "Шектеу, км/сағ",
   "driverAlertSpeedLimitHint": "Тек белгімен көрсетілген болса",
   "driverPointSelectedCoordinates": "Нүкте таңдалды: {lat}, {lng}",
-  "@driverPointSelectedCoordinates": {"placeholders": {"lat": {"type": "String"}, "lng": {"type": "String"}}},
+  "@driverPointSelectedCoordinates": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
   "driverNearbyAlertsTitle": "Жақындағы оқиғалар",
   "driverNearbyAlertsSubtitle": "Тек сақталған белсенді хабарламаларды көрсетеміз.",
   "driverLoadingAlerts": "Оқиғаларды жүктеп жатырмыз...",
@@ -1267,15 +1647,42 @@
   "roadAlertPedestrianCrossing": "Жаяу жүргіншілер өткелі",
   "roadAlertOther": "Басқа",
   "driverAlertConfidenceLabel": "Сенім: {score}% · растаулар: {count}",
-  "@driverAlertConfidenceLabel": {"placeholders": {"score": {"type": "int"}, "count": {"type": "int"}}},
+  "@driverAlertConfidenceLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverAlertSpeedLimitDetail": "Шектеу: {limit} км/сағ",
-  "@driverAlertSpeedLimitDetail": {"placeholders": {"limit": {"type": "int"}}},
+  "@driverAlertSpeedLimitDetail": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "driverAlertHeadingDetail": "Бағыты: {direction}",
-  "@driverAlertHeadingDetail": {"placeholders": {"direction": {"type": "String"}}},
+  "@driverAlertHeadingDetail": {
+    "placeholders": {
+      "direction": {
+        "type": "String"
+      }
+    }
+  },
   "driverConfirmAlertButton": "Орында",
   "noButton": "Жоқ",
   "driverInDistanceLabel": "{distance} қалды",
-  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}},
+  "@driverInDistanceLabel": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "roadAlertShortAccident": "ЖКО",
   "roadAlertShortRoadWork": "Ж",
   "roadAlertShortSpeedCamera": "К",
@@ -1289,5 +1696,8 @@
   "roadAlertShortTemporarySpeedLimit": "ШЕК",
   "roadAlertShortDangerousTurn": "ҚБ",
   "roadAlertShortRailroadCrossing": "ТЖ",
-  "roadAlertShortPedestrianCrossing": "ЖЖ"
+  "roadAlertShortPedestrianCrossing": "ЖЖ",
+  "driverRegionsLoadFailedTitle": "Аймақтарды жүктеу мүмкін болмады",
+  "driverRegionsLoadFailedMessage": "Байланысты тексеріп, жаңарту үшін экранды төмен қарай тартыңыз. Аймақтарға қолжетімдігіңіз сақталған.",
+  "driverRegionsRetryAction": "Жаңарту"
 }

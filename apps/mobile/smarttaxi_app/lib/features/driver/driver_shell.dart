@@ -107,6 +107,13 @@ class _DriverShellState extends State<DriverShell> {
   int _tab = 0;
   bool _loading = false;
   bool _regionsLoading = false;
+  // A failed fetch is not an empty list. Without this the cold-start path
+  // read as "your account has no approved regions, contact support" — the
+  // most alarming message the screen can show — every time the very first
+  // request after launch lost a race with a cold backend. Seen live
+  // 2026-08-05: the whole screen claimed the driver was locked out, then
+  // came back intact on one pull-to-refresh.
+  bool _regionsLoadFailed = false;
   bool _ordersLoading = false;
   bool _locationLoading = false;
   bool _online = false;
@@ -510,6 +517,7 @@ class _DriverShellState extends State<DriverShell> {
     try {
       final result = await widget.api.getDriverRegions();
       final regions = result.regions;
+      _regionsLoadFailed = false;
       if (_regionHintPosition == null) {
         await _loadRegionHintPosition();
       }
@@ -563,7 +571,12 @@ class _DriverShellState extends State<DriverShell> {
       }
       unawaited(_loadDemandHint());
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        setState(() {
+          _regionsLoadFailed = true;
+          _error = readableError(AppLocalizations.of(context), error);
+        });
+      }
     } finally {
       if (mounted) setState(() => _regionsLoading = false);
     }
@@ -2574,9 +2587,10 @@ class _DriverShellState extends State<DriverShell> {
       child: ListView(
         padding: driverPagePadding(context),
         children: [
+          // No status/tone here any more: DriverHeader already shows the
+          // very same pill on every tab, and printing "Занят" twice within
+          // 350 vertical pixels was the screen's loudest bit of clutter.
           DriverShiftHero(
-            status: _driverStatusLabel(),
-            tone: _driverStatusTone(),
             online: _online,
             busy: busy,
             loading: _loading,
@@ -3099,6 +3113,9 @@ class _DriverShellState extends State<DriverShell> {
     // even for a driver approved everywhere. Keep the toggle disabled either
     // way (nothing to go online with yet), just don't claim it's empty.
     if (_regionsLoading && _regions.isEmpty) return l10n.driverLineRegionsLoading;
+    if (_regions.isEmpty && _regionsLoadFailed) {
+      return l10n.driverRegionsLoadFailedTitle;
+    }
     if (_regions.isEmpty) return l10n.driverNoApprovedRegionsTitle;
     if (_regionId == null) return l10n.driverChooseWorkingRegionTitle;
     if (region?.isActive == false) return l10n.driverRegionTemporarilyDisabledTitle;
@@ -3121,6 +3138,18 @@ class _DriverShellState extends State<DriverShell> {
     // Still fetching -- don't flash the "no approved regions, contact
     // support" banner during the normal load window (see _disabledReason()).
     if (_regionsLoading && _regions.isEmpty) return null;
+    // The list is empty because the request failed, not because the driver
+    // has no regions — say so, and offer a retry instead of sending them to
+    // support over a dropped connection.
+    if (_regions.isEmpty && _regionsLoadFailed) {
+      return _DriverAvailabilityIssue(
+        icon: Icons.cloud_off_rounded,
+        title: l10n.driverRegionsLoadFailedTitle,
+        message: l10n.driverRegionsLoadFailedMessage,
+        actionLabel: l10n.driverRegionsRetryAction,
+        onAction: () => unawaited(_loadRegions()),
+      );
+    }
     if (_regions.isEmpty) {
       return _DriverAvailabilityIssue(
         icon: Icons.map_outlined,

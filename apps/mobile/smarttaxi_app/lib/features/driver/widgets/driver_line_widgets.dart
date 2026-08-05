@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/status_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 import 'driver_common_widgets.dart';
@@ -9,8 +8,6 @@ import 'driver_common_widgets.dart';
 class DriverShiftHero extends StatelessWidget {
   const DriverShiftHero({
     super.key,
-    required this.status,
-    required this.tone,
     required this.online,
     required this.busy,
     required this.loading,
@@ -22,8 +19,6 @@ class DriverShiftHero extends StatelessWidget {
     this.sosButton,
   });
 
-  final String status;
-  final StatusTone tone;
   final bool online;
   final bool busy;
   final bool loading;
@@ -38,21 +33,10 @@ class DriverShiftHero extends StatelessWidget {
   final String? todayEarnings;
   final Widget? sosButton;
 
-  Color _toneColor(BuildContext context) {
-    final palette = context.palette;
-    return switch (tone) {
-      StatusTone.success => palette.success,
-      StatusTone.warning => palette.warning,
-      StatusTone.danger => palette.danger,
-      StatusTone.neutral => palette.textSecondary,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final toneColor = _toneColor(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
@@ -64,18 +48,15 @@ class DriverShiftHero extends StatelessWidget {
               : palette.border,
           width: online ? 1.4 : 1,
         ),
+        // One shadow, not two stacked. A 34px-blur coloured glow plus a
+        // second tight shadow under the same card is what made this read as
+        // heavy and slightly cheap — a card lit from two directions at once.
         boxShadow: [
           BoxShadow(
             color: (online ? palette.success : palette.gold)
-                .withValues(alpha: online ? 0.22 : 0.16),
-            blurRadius: 34,
-            offset: const Offset(0, 16),
-          ),
-          BoxShadow(
-            color: (online ? palette.success : palette.gold)
-                .withValues(alpha: online ? 0.10 : 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+                .withValues(alpha: online ? 0.16 : 0.11),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -137,59 +118,48 @@ class DriverShiftHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+          // Earnings, not the status word again. This row used to open with
+          // a tone dot and the very same "Занят"/"На линии" that the header
+          // pill already shows a few dozen pixels higher — the screen said
+          // it twice and, between the two, said the day's takings once and
+          // quietly, in the corner. The status still lives in the header
+          // (where it stays visible on every tab) and in the button below,
+          // which names the state by naming its opposite.
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
               color: palette.goldSurface,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                Container(
-                  width: 9,
-                  height: 9,
-                  decoration:
-                      BoxDecoration(color: toneColor, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 9),
+                Icon(Icons.account_balance_wallet_rounded,
+                    size: 18, color: palette.goldDeep),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    status,
+                    l10n.driverTodayLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    // textSecondary, not textMuted — textMuted's contrast
+                    // against this background fails WCAG AA (~2.5:1).
                     style: TextStyle(
-                      color: palette.text,
-                      fontSize: 13.5,
+                      color: palette.textSecondary,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                if (todayEarnings != null) ...[
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        l10n.driverTodayLabel,
-                        // textSecondary, not textMuted — textMuted's contrast
-                        // against the background fails WCAG AA (~2.5:1).
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        todayEarnings!,
-                        style: TextStyle(
-                          color: palette.goldDeep,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
+                const SizedBox(width: 10),
+                Text(
+                  todayEarnings ?? '—',
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: palette.goldDeep,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
                   ),
-                ],
+                ),
               ],
             ),
           ),

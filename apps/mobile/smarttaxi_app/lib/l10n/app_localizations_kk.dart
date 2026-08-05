@@ -3966,4 +3966,14 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get roadAlertShortPedestrianCrossing => 'ЖЖ';
+
+  @override
+  String get driverRegionsLoadFailedTitle => 'Аймақтарды жүктеу мүмкін болмады';
+
+  @override
+  String get driverRegionsLoadFailedMessage =>
+      'Байланысты тексеріп, жаңарту үшін экранды төмен қарай тартыңыз. Аймақтарға қолжетімдігіңіз сақталған.';
+
+  @override
+  String get driverRegionsRetryAction => 'Жаңарту';
 }

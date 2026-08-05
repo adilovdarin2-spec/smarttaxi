@@ -1,7 +1,9 @@
 {
   "@@locale": "ru",
   "appName": "SmartTaxi",
-  "@appName": {"description": "App name, shown in the OS task switcher"},
+  "@appName": {
+    "description": "App name, shown in the OS task switcher"
+  },
   "continueLabel": "Продолжить",
   "cancel": "Отмена",
   "save": "Сохранить",
@@ -18,7 +20,6 @@
   "languageUzbek": "Узбекский",
   "languageChinese": "Китайский",
   "languageChangedNote": "Язык интерфейса изменён. Часть экранов пока переведена только частично.",
-
   "passengerSettingsTitle": "Настройки",
   "passengerSettingsSubtitle": "Аккаунт, поездки и информация о приложении",
   "passengerSettingsAccountGroup": "Аккаунт",
@@ -48,13 +49,11 @@
   "passengerSettingsVersionLabel": "Версия приложения",
   "passengerSettingsLegalTitle": "Правовая информация",
   "passengerSettingsLegalText": "Условия использования, оплата, отмена, безопасность",
-
   "home": "Главная",
   "trips": "Поездки",
   "profile": "Профиль",
   "notifications": "Уведомления",
   "support": "Поддержка",
-
   "passengerDrawerTrips": "Мои поездки",
   "passengerDrawerWallet": "Кошелёк",
   "passengerDrawerPromoCodes": "Промокоды",
@@ -68,7 +67,6 @@
   "passengerDrawerAboutSection": "О сервисе",
   "passengerDrawerAboutUs": "О нас",
   "passengerDrawerRegionalBadge": "Региональное такси",
-
   "passengerFaqSubtitle": "Ответы на частые вопросы",
   "passengerFaqSearchHint": "Поиск по вопросам",
   "passengerFaqClearSearch": "Очистить поиск",
@@ -90,11 +88,16 @@
   "passengerFaqA7": "Геолокация помогает выбрать точку посадки и строить честный маршрут.",
   "passengerFaqQ8": "Как связаться с поддержкой?",
   "passengerFaqA8": "Откройте раздел «Поддержка» в меню и напишите сообщение.",
-
   "passengerSupportSubtitle": "Опишите проблему, мы поможем",
   "passengerSupportUrgentTitle": "Срочный вопрос?",
   "passengerSupportCallDirectly": "Позвоните напрямую: {phone}",
-  "@passengerSupportCallDirectly": {"placeholders": {"phone": {"type": "String"}}},
+  "@passengerSupportCallDirectly": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "callButton": "Позвонить",
   "passengerSupportTopicSectionTitle": "Тема обращения",
   "passengerSupportTopicSectionText": "Выберите, с чем нужна помощь",
@@ -115,7 +118,6 @@
   "passengerSupportDialFailed": "Не удалось открыть набор номера",
   "passengerSupportYourRequests": "Ваши обращения",
   "passengerSupportLoadError": "Не удалось загрузить обращения",
-
   "passengerAboutDescription": "SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.",
   "passengerAboutRegionalModelTitle": "Региональная модель",
   "passengerAboutRegionalModelText": "Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.",
@@ -124,8 +126,13 @@
   "passengerAboutSupportSubtitle": "Есть вопрос? Мы ответим",
   "passengerAboutLegalSubtitle": "Условия, оплата, отмена, безопасность",
   "passengerAboutVersionLabel": "SmartTaxi · версия {version}",
-  "@passengerAboutVersionLabel": {"placeholders": {"version": {"type": "String"}}},
-
+  "@passengerAboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "loadFailedTitle": "Не удалось загрузить",
   "passengerRecurringSubtitle": "Школьный маршрут и другие поездки по расписанию",
   "passengerRecurringNewRoute": "Новый маршрут",
@@ -133,18 +140,38 @@
   "passengerRecurringEmptyText": "Создайте маршрут — например, отвозить ребёнка в школу — и водитель будет приезжать по расписанию в выбранные дни.",
   "passengerRecurringCancelTitle": "Отменить регулярную поездку?",
   "passengerRecurringCancelText": "{route}, {days} в {time}. Это действие нельзя отменить.",
-  "@passengerRecurringCancelText": {"placeholders": {"route": {"type": "String"}, "days": {"type": "String"}, "time": {"type": "String"}}},
+  "@passengerRecurringCancelText": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "passengerRecurringCancelConfirm": "Отменить поездку",
   "passengerFavoritesAddAddressTitle": "Какой адрес добавить?",
   "passengerFavoritesDeleteTitle": "Удалить адрес из избранного?",
   "passengerFavoritesDeleteText": "{title} — {address}.",
-  "@passengerFavoritesDeleteText": {"placeholders": {"title": {"type": "String"}, "address": {"type": "String"}}},
+  "@passengerFavoritesDeleteText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    }
+  },
   "deleteButton": "Удалить",
   "passengerFavoritesSubtitle": "Дом, работа и другие частые точки — быстрее вводить заказ",
   "passengerFavoritesAddButton": "Добавить адрес",
   "passengerFavoritesEmptyTitle": "Пока нет избранных адресов",
   "passengerFavoritesEmptyText": "Добавьте дом, работу или любое место, куда часто ездите — они появятся здесь для быстрого доступа.",
-
   "passengerDriverAppSubtitle": "Зарабатывайте на своём авто в удобном графике",
   "passengerDriverStep1Title": "Заполните заявку",
   "passengerDriverStep1Text": "Имя, телефон и данные автомобиля — это займёт минуту",
@@ -167,7 +194,6 @@
   "passengerDriverTermsLink": "Условиями использования",
   "passengerDriverSafetyRulesLink": "Правилами безопасности",
   "passengerDriverSubmitButton": "Отправить заявку",
-
   "passengerDriverPrefsSubtitle": "Отмечайте любимых водителей и блокируйте нежелательных",
   "passengerDriverPrefsAddButton": "Добавить из истории поездок",
   "passengerDriverPrefsEmptyTitle": "Пока нет отметок",
@@ -176,19 +202,23 @@
   "passengerDriverPrefsFavoritesText": "Регулярные поездки предложат их в первую очередь",
   "passengerDriverPrefsBlockedTitle": "Заблокированные",
   "passengerDriverPrefsBlockedText": "Не будут предложены на регулярные поездки",
-
   "passengerReferralsSubtitle": "Делитесь кодом и получайте бонусы за каждого друга",
   "passengerReferralsYourCode": "Ваш код",
   "copyButton": "Скопировать",
   "passengerReferralsCodeCopied": "Код скопирован",
   "passengerReferralsShareCode": "Поделиться кодом",
   "passengerReferralsShareMessage": "Заказывай такси в SmartTaxi по моему коду {code} и получи бонус на первую поездку!",
-  "@passengerReferralsShareMessage": {"placeholders": {"code": {"type": "String"}}},
+  "@passengerReferralsShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "passengerReferralsInvited": "Приглашено",
   "passengerReferralsEarned": "Заработано",
   "passengerReferralsHowItWorksTitle": "Как это работает",
   "passengerReferralsHowItWorksText": "Друг вводит ваш код при регистрации. После его первой поездки вам начисляется бонус на баланс.",
-
   "passengerPromoSubtitle": "Проверьте промокод и узнайте размер скидки",
   "passengerPromoHaveCode": "Есть промокод?",
   "passengerPromoHint": "Введите его, чтобы проверить, действует ли он в вашем регионе, и увидеть размер скидки.",
@@ -197,24 +227,39 @@
   "checkingButton": "Проверяем...",
   "passengerPromoNoRegionError": "Сначала выберите регион на главном экране",
   "passengerPromoActiveTitle": "Промокод «{code}» действует",
-  "@passengerPromoActiveTitle": {"placeholders": {"code": {"type": "String"}}},
+  "@passengerPromoActiveTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "passengerPromoDiscountSummary": "Скидка {discount} · например, на поездке за {previewPrice} вы заплатите {finalPrice}",
-  "@passengerPromoDiscountSummary": {"placeholders": {"discount": {"type": "String"}, "previewPrice": {"type": "String"}, "finalPrice": {"type": "String"}}},
+  "@passengerPromoDiscountSummary": {
+    "placeholders": {
+      "discount": {
+        "type": "String"
+      },
+      "previewPrice": {
+        "type": "String"
+      },
+      "finalPrice": {
+        "type": "String"
+      }
+    }
+  },
   "passengerPromoHowToApplyTitle": "Как применить скидку",
   "passengerPromoHowToApplyText": "Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.",
-
   "passengerHomeWhereToTitle": "Куда едем?",
   "passengerHomeWhereToSubtitle": "Выберите точку подачи и адрес назначения",
   "passengerHomeSetDestination": "Указать куда",
   "passengerHomeRouteIssueTitle": "Уточните маршрут",
   "passengerHomeRouteIssueText": "Не удалось построить маршрут. Измените адрес или выберите точку на карте.",
   "passengerHomePickupQuestion": "Откуда?",
-
   "passengerAddressSearchError": "Поиск адреса временно недоступен. Выберите точку на карте.",
   "passengerAddressNoResultsText": "Уточните улицу, район или название места.",
   "passengerAddressPickOnMapTitle": "Указать на карте",
   "passengerAddressPickOnMapSubtitle": "Выберите точку на карте",
-
   "tariffEconomyTitle": "Эконом",
   "tariffComfortTitle": "Комфорт",
   "tariffBusinessTitle": "Бизнес",
@@ -234,14 +279,19 @@
   "paymentMethodLabel": "Оплата",
   "paymentMethodFullLabel": "Способ оплаты",
   "passengerTripInTransitLabel": "В пути",
-
   "passengerCtaCreatingOrder": "Создаём заказ...",
   "passengerCtaPickPickup": "Выбрать точку подачи",
   "passengerCtaPickDropoff": "Выбрать адрес назначения",
   "passengerCtaCalculate": "Рассчитать",
   "passengerCtaOrderDelivery": "Оформить доставку",
   "passengerCtaOrderWithLabel": "Заказать {label}",
-  "@passengerCtaOrderWithLabel": {"placeholders": {"label": {"type": "String"}}},
+  "@passengerCtaOrderWithLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCtaOrder": "Заказать",
   "passengerTripsSubtitle": "Активный заказ, статус поездки и детали маршрута",
   "passengerTripsLoadErrorTitle": "Не удалось загрузить историю",
@@ -263,7 +313,13 @@
   "passengerTripDateYesterday": "Вчера",
   "passengerTripShareTextPrefix": "Поездка SmartTaxi",
   "passengerSearchingSubtitleWithCount": "Показываем {count} ближайших свободных водителей",
-  "@passengerSearchingSubtitleWithCount": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerSearchingSubtitleWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerSearchingSubtitleGeneric": "Проверяем свободных водителей рядом",
   "passengerDriverOfferDescription": "Предлагаем заказ ближайшим водителям.",
   "passengerDriverRouteDescription": "Показываем статус поездки и маршрут в реальном времени.",
@@ -271,14 +327,26 @@
   "passengerCancellingLabel": "Отменяем...",
   "passengerCancelSearchButton": "Отменить поиск",
   "passengerTripWithIdTitle": "Поездка {id}",
-  "@passengerTripWithIdTitle": {"placeholders": {"id": {"type": "String"}}},
+  "@passengerTripWithIdTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverFoundTitle": "Водитель найден",
   "passengerNewTripButton": "Новая поездка",
   "passengerCancelTripButton": "Отменить поездку",
   "passengerCancelTripShortButton": "Отменить",
   "passengerRateDriverFallbackName": "водителем",
   "passengerRateDriverQuestion": "Как прошла поездка с {name}?",
-  "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},
+  "@passengerRateDriverQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSubmitRatingButton": "Отправить оценку",
   "passengerSubmittingRatingButton": "Отправляем...",
   "passengerSkipButton": "Пропустить",
@@ -318,7 +386,13 @@
   "passengerWaitingDriverResponseTitle": "Ждём ответа водителя",
   "passengerOfferSentText": "Ваше предложение отправлено",
   "passengerYouOfferedText": "Вы предложили {amount}",
-  "@passengerYouOfferedText": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerYouOfferedText": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCancelledByDriverTitle": "Водитель отменил поездку",
   "passengerCancelledByDriverText": "Найдём вам другого водителя за пару секунд",
   "passengerCancelledByOperatorTitle": "Поездка отменена оператором",
@@ -337,15 +411,36 @@
   "passengerEnRouteLowercase": "в пути",
   "passengerJustStartedLowercase": "только начали",
   "passengerMinutesEnRoute": "{minutes} мин в пути",
-  "@passengerMinutesEnRoute": {"placeholders": {"minutes": {"type": "int"}}},
+  "@passengerMinutesEnRoute": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "passengerJustStartedCapitalized": "Только начали",
   "passengerShareTripTooltipEnabled": "Поделиться отслеживанием поездки",
   "passengerShareTripTooltipDisabled": "Ссылка появится, как только найдётся водитель",
   "passengerShareTripMessage": "Слежу за поездкой SmartTaxi{routeSuffix}. Статус: {link}",
-  "@passengerShareTripMessage": {"placeholders": {"routeSuffix": {"type": "String"}, "link": {"type": "String"}}},
+  "@passengerShareTripMessage": {
+    "placeholders": {
+      "routeSuffix": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSafetyTitle": "Безопасность поездки",
   "passengerCallPhoneLabel": "Позвонить {phone}",
-  "@passengerCallPhoneLabel": {"placeholders": {"phone": {"type": "String"}}},
+  "@passengerCallPhoneLabel": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSosEmergencyLineText": "Экстренная линия SmartTaxi, если что-то пошло не так",
   "passengerSupportWillBeNotifiedTitle": "Поддержка получит сигнал",
   "passengerSupportWillBeNotifiedText": "Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком",
@@ -377,16 +472,46 @@
   "passengerBonusBalanceLabel": "Баланс кешбэка и бонусов",
   "passengerBonusNotEnoughText": "Пока не хватит на поездку по минимальному тарифу",
   "passengerBonusRidesLeft": "Хватит ещё на {count} {count, plural, one{поездку} few{поездки} many{поездок} other{поездок}}",
-  "@passengerBonusRidesLeft": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerBonusRidesLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerNearbyCarsCount": "{count} {count, plural, one{машина} few{машины} many{машин} other{машин}} рядом",
-  "@passengerNearbyCarsCount": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerNearbyCarsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoJustNow": "только что",
   "passengerTimeAgoMinutes": "{minutes} мин назад",
-  "@passengerTimeAgoMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@passengerTimeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoHours": "{hours} ч назад",
-  "@passengerTimeAgoHours": {"placeholders": {"hours": {"type": "int"}}},
+  "@passengerTimeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoDays": "{days} дн назад",
-  "@passengerTimeAgoDays": {"placeholders": {"days": {"type": "int"}}},
+  "@passengerTimeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "passengerMarkDriverTitle": "Отметить водителя",
   "passengerNoTripDriversText": "Нет водителей из истории поездок, которых ещё можно отметить.",
   "passengerChooseDriverHint": "Выберите водителя",
@@ -451,7 +576,19 @@
   "driverPickupMetaToPickup": "До точки посадки",
   "driverRouteFallbackNotice": "приблизительно",
   "driverPickupMetaText": "{label}: {distance} км · {minutes} мин",
-  "@driverPickupMetaText": {"placeholders": {"label": {"type": "String"}, "distance": {"type": "String"}, "minutes": {"type": "int"}}},
+  "@driverPickupMetaText": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "routeErrorWaitingLocation": "Ожидаем геолокацию водителя.",
   "routeErrorDriverRouteUnavailable": "Маршрут водителя временно недоступен.",
   "errorClientHasActiveOrder": "У вас уже есть активный заказ. Откройте поездку или отмените её.",
@@ -504,7 +641,6 @@
   "passengerFavoriteAddressesSectionTitle": "Избранные адреса",
   "passengerDriversMenuSubtitle": "Избранные и заблокированные водители",
   "passengerReferralsMenuSubtitle": "Ваш код и бонусы за приглашения",
-
   "passengerWalletTitle": "Кошелёк",
   "passengerWalletSubtitle": "Баланс, пополнение и привязанные карты",
   "passengerWalletBalanceLabel": "Баланс",
@@ -520,7 +656,13 @@
   "passengerWalletRemoveAction": "Удалить",
   "passengerWalletRemoveCardConfirmTitle": "Удалить карту?",
   "passengerWalletRemoveCardConfirmText": "Карта {last4} будет удалена.",
-  "@passengerWalletRemoveCardConfirmText": {"placeholders": {"last4": {"type": "String"}}},
+  "@passengerWalletRemoveCardConfirmText": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCardNumberLabel": "Номер карты",
   "passengerCardHolderNameLabel": "Имя владельца (необязательно)",
   "passengerErrorInvalidCardNumber": "Введите корректный номер карты",
@@ -528,7 +670,13 @@
   "passengerWalletTopUpSheetTitle": "Пополнение баланса",
   "passengerWalletTopUpAmountLabel": "Сумма пополнения",
   "passengerWalletTopUpMinNote": "Минимальная сумма — {amount}",
-  "@passengerWalletTopUpMinNote": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerWalletTopUpMinNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerWalletTopUpPendingNote": "Оплата через Kaspi Pay появится в приложении позже — заявка сохранена и будет обработана автоматически, как только это станет доступно.",
   "passengerWalletTopUpSubmitButton": "Создать заявку",
   "passengerWalletTopupStatusPending": "Ожидает",
@@ -554,7 +702,13 @@
   "passengerPriceHintSlower": "Может занять больше времени",
   "passengerPriceHintNormal": "Обычная скорость подачи",
   "passengerYourRegionQuestion": "Ваш регион: {region}?",
-  "@passengerYourRegionQuestion": {"placeholders": {"region": {"type": "String"}}},
+  "@passengerYourRegionQuestion": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "passengerRegionDetectedText": "Мы определили регион по геолокации. Проверьте, чтобы заказы работали правильно.",
   "passengerChangeButton": "Изменить",
   "passengerYesCorrectButton": "Да, верно",
@@ -598,9 +752,21 @@
   "passengerRecurringCancelButton": "Отменить",
   "passengerDriverArrivedWaitingBanner": "Водитель приехал и ждёт вас",
   "passengerCopiedValueToast": "Скопировано: {value}",
-  "@passengerCopiedValueToast": {"placeholders": {"value": {"type": "String"}}},
+  "@passengerCopiedValueToast": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCopyLabelSemantics": "Скопировать {label}",
-  "@passengerCopyLabelSemantics": {"placeholders": {"label": {"type": "String"}}},
+  "@passengerCopyLabelSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverAppSubmittedMessage": "Заявка отправлена. Администратор проверит данные.",
   "passengerServerUnavailableError": "Сервер временно недоступен. Можно выбрать маршрут, когда подключение восстановится.",
   "passengerRecurringSentToDriverToast": "Заявка отправлена водителю, ждём подтверждения",
@@ -615,17 +781,41 @@
   "passengerActiveRegionsNotLoadedError": "Активные регионы пока не загружены",
   "passengerDriverFoundExclamation": "Водитель найден!",
   "passengerDriverFoundNamedText": "Водитель найден: {name} едет к вам",
-  "@passengerDriverFoundNamedText": {"placeholders": {"name": {"type": "String"}}},
+  "@passengerDriverFoundNamedText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverCancelledSearchingAnotherToast": "Водитель отменил поездку — ищем для вас другого",
   "passengerPaymentInitiateFailedError": "Не удалось начать оплату. Проверьте соединение.",
   "passengerLoginRequiredForOrderError": "Для заказа войдите по номеру телефона.",
   "passengerAcceptedNewPriceToast": "Вы согласились на новую цену: {amount}",
-  "@passengerAcceptedNewPriceToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerAcceptedNewPriceToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDeclinedOfferedPriceToast": "Вы отклонили предложенную цену",
   "passengerCounterOfferSentToast": "Ваше предложение отправлено водителю: {amount}",
-  "@passengerCounterOfferSentToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerCounterOfferSentToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerQueuedOfferArrivedToast": "Ещё один водитель предложил цену: {amount}",
-  "@passengerQueuedOfferArrivedToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerQueuedOfferArrivedToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerLegalHubTitle": "Правовая информация",
   "passengerLegalHubSubtitle": "Официальные документы SmartTaxi, редакция от 6 июля 2026 года",
   "passengerAllDocumentsButton": "Все документы",
@@ -635,7 +825,13 @@
   "passengerPickupPointSemanticLabel": "Точка подачи",
   "passengerDropoffPointSemanticLabel": "Точка назначения",
   "passengerNearbyFreeDriverSemanticLabel": "Свободный водитель рядом, {eta} мин",
-  "@passengerNearbyFreeDriverSemanticLabel": {"placeholders": {"eta": {"type": "int"}}},
+  "@passengerNearbyFreeDriverSemanticLabel": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      }
+    }
+  },
   "passengerDriverCarSemanticLabel": "Автомобиль водителя",
   "passengerLocationServiceDisabledError": "Геолокация выключена. Включите её в настройках или выберите точку на карте.",
   "passengerChooseRegionTitle": "Выберите регион",
@@ -662,7 +858,6 @@
   "passengerWhichTripLabel": "Какая поездка?",
   "passengerWhichTripText": "Нужна для того, чтобы уведомить водителя",
   "passengerChooseTripHint": "Выберите поездку",
-
   "authWelcomeTitle": "Вход и регистрация",
   "authWelcomeSubtitle": "Введите номер телефона, чтобы продолжить",
   "phoneNumberLabel": "Номер телефона",
@@ -687,7 +882,13 @@
   "runtimeFallbackBody": "Не удалось открыть экран. Перезапустите приложение или попробуйте войти снова.",
   "runtimeFallbackAction": "Вернуться на главную",
   "devCodeLabel": "Код для локального теста: {devCode}",
-  "@devCodeLabel": {"placeholders": {"devCode": {"type": "String"}}},
+  "@devCodeLabel": {
+    "placeholders": {
+      "devCode": {
+        "type": "String"
+      }
+    }
+  },
   "validateEnterName": "Введите имя",
   "validateEnterPhone": "Введите номер телефона",
   "validateCorrectPhone": "Введите корректный номер",
@@ -739,7 +940,6 @@
   "secureHint": "Ваш пароль надёжно защищён и не передаётся третьим лицам",
   "defaultAccountLabel": "Аккаунт SmartTaxi",
   "appTagline": "Ваш комфорт. Наша забота",
-
   "driverDrawerWallet": "Кошелёк",
   "driverDrawerDocuments": "Документы",
   "driverDrawerRating": "Рейтинг",
@@ -751,18 +951,35 @@
   "driverDrawerServiceSection": "Сервис",
   "driverDrawerRoadAlerts": "Дорожные события",
   "driverDrawerPassengerMode": "Режим пассажира",
-
   "driverWalletTitle": "Кошелёк",
   "driverWalletSubtitle": "Баланс, задолженность и выплаты",
   "driverWalletLoadError": "Не удалось загрузить кошелёк",
   "driverWalletBalanceLabel": "Баланс",
   "driverWalletDebtLabel": "Задолженность: {amount}",
-  "@driverWalletDebtLabel": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletDebtLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletPendingLabel": "В обработке: {amount}",
-  "@driverWalletPendingLabel": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletPendingLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletRequestPayoutButton": "Запросить выплату",
   "driverWalletMinPayoutNote": "Минимальная сумма выплаты — {amount}",
-  "@driverWalletMinPayoutNote": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletMinPayoutNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletPayoutRequestsTitle": "Заявки на выплату",
   "driverWalletNoPayoutRequests": "Заявок пока нет",
   "driverWalletTopUpButton": "Пополнить баланс",
@@ -773,7 +990,13 @@
   "driverTopupSheetHint": "Укажите сумму. Менеджер свяжется с вами, чтобы принять перевод и зачислить средства",
   "driverTopupAmountLabel": "Сумма, ₸",
   "driverTopupErrorBelowMin": "Минимальная сумма — {amount}",
-  "@driverTopupErrorBelowMin": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverTopupErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverTopupErrorGeneric": "Не удалось создать заявку. Попробуйте ещё раз",
   "driverTopupSubmitButton": "Отправить заявку",
   "driverWalletTransactionsTitle": "Операции",
@@ -781,25 +1004,34 @@
   "driverWalletTxCashCommission": "Комиссия за наличную поездку",
   "driverWalletTxAdjustment": "Корректировка",
   "driverWalletTxEarning": "Поступление за поездку",
-
   "driverPayoutStatusPending": "На рассмотрении",
   "driverPayoutStatusApproved": "Одобрено",
   "driverPayoutStatusPaid": "Выплачено",
   "driverPayoutStatusRejected": "Отклонено",
   "driverPayoutStatusCancelled": "Отменено",
-
   "driverPayoutSheetTitle": "Запросить выплату",
   "driverPayoutSheetAvailable": "Доступно к выводу: {amount}",
-  "@driverPayoutSheetAvailable": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverPayoutSheetAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutAmountLabel": "Сумма, ₸",
   "driverPayoutPhoneLabel": "Номер Kaspi для перевода",
   "driverPayoutErrorBelowMin": "Минимальная сумма — {amount}",
-  "@driverPayoutErrorBelowMin": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverPayoutErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutErrorExceedsBalance": "Сумма превышает доступный баланс",
   "driverPayoutErrorPhoneRequired": "Укажите номер для перевода Kaspi",
   "driverPayoutErrorGeneric": "Не удалось создать заявку. Попробуйте ещё раз",
   "driverPayoutSubmitButton": "Отправить заявку",
-
   "driverDocumentsTitle": "Документы",
   "driverDocumentsSubtitle": "Загрузите документы для проверки администратором SmartTaxi",
   "driverDocumentsLoadError": "Не удалось загрузить документы",
@@ -815,7 +1047,6 @@
   "driverDocumentPickFile": "Выбрать файл",
   "driverDocumentPickCameraShort": "Фото",
   "driverDocumentPickFileShort": "Файл",
-
   "driverDocumentTypeLicenseFront": "Водительское удостоверение (лицевая)",
   "driverDocumentTypeLicenseBack": "Водительское удостоверение (оборот)",
   "driverDocumentTypeIdCardFront": "Удостоверение личности (лицевая)",
@@ -824,13 +1055,11 @@
   "driverDocumentTypeInsurancePolicy": "Страховой полис",
   "driverDocumentTypeProfilePhoto": "Фото профиля",
   "driverDocumentTypeOther": "Документ",
-
   "driverApplicationDocumentsTitle": "Документы",
   "driverApplicationDocumentsIntro": "Заявка отправлена. Чтобы ускорить проверку, загрузите документы сейчас",
   "driverApplicationDocumentsDone": "Готово",
   "driverApplicationDocumentsLater": "Продолжить позже",
   "driverApplicationDocumentUploaded": "Загружено",
-
   "driverRatingTitle": "Рейтинг",
   "driverRatingSubtitle": "Оценки и отзывы пассажиров",
   "driverRatingLoadError": "Не удалось загрузить рейтинг",
@@ -838,13 +1067,11 @@
   "driverRatingEmptyText": "Как только пассажиры оценят поездки, отзывы появятся здесь",
   "driverRatingTopTagsTitle": "Чаще всего отмечают",
   "driverRatingRecentTitle": "Последние отзывы",
-
   "driverNotificationsTitle": "Уведомления",
   "driverNotificationsSubtitle": "Статусы выплат, документов и заказов",
   "driverNotificationsLoadError": "Не удалось загрузить уведомления",
   "driverNotificationsEmptyTitle": "Новых уведомлений нет",
   "driverNotificationsEmptyText": "Здесь появятся статусы выплат, проверки документов и поездок",
-
   "driverProfileTitle": "Профиль водителя",
   "driverProfileSubtitle": "Данные аккаунта и текущей смены",
   "driverProfileNameFallback": "Водитель",
@@ -859,7 +1086,6 @@
   "driverProfileTripHistoryTitle": "История поездок",
   "driverAvatarUpdated": "Фото обновлено",
   "driverAvatarUploadError": "Не удалось загрузить фото",
-
   "driverSupportTitle": "Поддержка",
   "driverSupportSubtitle": "Опишите проблему, мы поможем",
   "driverSupportTopicSectionTitle": "Тема обращения",
@@ -882,7 +1108,6 @@
   "driverTripHistoryLoadError": "Не удалось загрузить историю поездок",
   "driverSupportEmptyTitle": "Обращений пока нет",
   "driverSupportEmptyText": "Здесь появятся ваши обращения в поддержку и ответы на них",
-
   "driverFaqTitle": "FAQ",
   "driverFaqSubtitle": "Ответы на частые вопросы водителей",
   "driverFaqQ1": "Как принять заказ?",
@@ -897,10 +1122,8 @@
   "driverFaqA5": "Регион выбирается на вкладке «Линия». Доступны только регионы, подтверждённые администратором.",
   "driverFaqQ6": "Куда пропадают заказы, которые я пропустил?",
   "driverFaqA6": "Пропущенный заказ остаётся доступным другим водителям в регионе, пока его не примут.",
-
   "driverAboutDescription": "SmartTaxi — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.",
   "driverAboutVersionLabel": "Версия приложения",
-
   "driverSettingsTitle": "Настройки",
   "driverSettingsSubtitle": "Аккаунт и информация о приложении",
   "driverSettingsAccountGroup": "Аккаунт",
@@ -916,12 +1139,10 @@
   "driverSettingsTermsText": "Правила поездок, заказов и ответственности сторон",
   "driverSettingsPrivacyTitle": "Политика конфиденциальности",
   "driverSettingsPrivacyText": "Как используются телефон, геолокация и история поездок",
-
   "driverTabLine": "Линия",
   "driverTabOrders": "Заказы",
   "driverTabTrip": "Поездка",
   "driverTabNavigator": "Навигатор",
-
   "driverLineRegionSectionTitle": "Рабочий регион",
   "driverLineRegionSectionText": "Заказы поступают только из выбранного региона",
   "driverLineRegionsLoading": "Загружаем регионы...",
@@ -929,7 +1150,6 @@
   "driverLineNoRegionsText": "Администратор должен одобрить вас для работы.",
   "driverLineLocationSectionTitle": "Геолокация",
   "driverLineLocationSectionText": "Позиция отправляется только во время работы на линии",
-
   "driverOrdersTitle": "Заказы в регионе",
   "driverOrdersSubtitle": "Показываем заказы только в вашем рабочем регионе.",
   "driverOrdersUpdating": "Обновляем заказы...",
@@ -937,28 +1157,30 @@
   "driverOrdersGoOnlineText": "После выхода на линию заказы появятся здесь.",
   "driverOrdersEmptyTitle": "Заказов в вашем регионе пока нет",
   "driverOrdersEmptyText": "Новые заказы появятся здесь, когда пассажиры создадут поездку.",
-
   "driverTripTitle": "Активная поездка",
   "driverTripSubtitle": "Следующий шаг по поездке",
   "driverTripEmptyTitle": "Активной поездки нет",
   "driverTripEmptyText": "Примите заказ, и поездка появится здесь.",
   "driverTripTariffLabel": "Тариф: {tariff}",
-  "@driverTripTariffLabel": {"placeholders": {"tariff": {"type": "String"}}},
+  "@driverTripTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
   "driverTripSavingButton": "Сохраняем...",
   "driverTripDoneButton": "Готово, к новым заказам",
   "driverTripNoShowButton": "Клиент не вышел",
   "driverTripCancelButton": "Отменить",
-
   "driverActionGoingToClient": "Выехал к клиенту",
   "driverActionArrived": "Прибыл",
   "driverActionStartWaiting": "Начать ожидание",
   "driverActionStartTrip": "Начать поездку",
   "driverActionCompleteTrip": "Завершить поездку",
-
   "driverStatusBusy": "Занят",
   "driverStatusOnline": "На линии",
   "driverStatusOffline": "Не на линии",
-
   "driverLocationChecking": "Проверяем геолокацию...",
   "driverLocationRequiredError": "Для работы на линии нужна геолокация",
   "driverLocationSendFailed": "Не удалось отправить геолокацию. Попробуйте снова.",
@@ -967,7 +1189,6 @@
   "driverGoOnlineRequiredError": "Выйдите на линию, чтобы принимать заказы.",
   "driverGoOnlineRequiredRejectError": "Выйдите на линию, чтобы пропускать заказы.",
   "driverUpdatesUnavailableNote": "Связь с сервером обновлений временно недоступна. Экран продолжит работать через API.",
-
   "driverManeuverTurnLeft": "Поворот налево",
   "driverManeuverTurnRight": "Поворот направо",
   "driverManeuverSlightLeft": "Держитесь левее",
@@ -981,18 +1202,27 @@
   "driverManeuverOnRamp": "Съезд на трассу",
   "driverManeuverOffRamp": "Съезд с трассы",
   "driverManeuverRoundaboutWithExit": "Круговое движение, {exit}-й съезд",
-  "@driverManeuverRoundaboutWithExit": {"placeholders": {"exit": {"type": "int"}}},
+  "@driverManeuverRoundaboutWithExit": {
+    "placeholders": {
+      "exit": {
+        "type": "int"
+      }
+    }
+  },
   "driverManeuverRoundabout": "Круговое движение",
   "driverManeuverExitRoundabout": "Съезд с кругового движения",
   "driverManeuverArrive": "Вы почти на месте",
   "driverManeuverFollowRoute": "Двигайтесь по маршруту",
-
   "driverPaymentCashback": "Бонусы",
   "driverPaymentMixed": "Смешанная",
-
   "driverRouteMetaLabel": "Маршрут: {details}",
-  "@driverRouteMetaLabel": {"placeholders": {"details": {"type": "String"}}},
-
+  "@driverRouteMetaLabel": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "driverOrderStatusNew": "Новый",
   "driverOrderStatusAccepted": "Принят",
   "driverOrderStatusGoingToClient": "Едет к клиенту",
@@ -1004,7 +1234,6 @@
   "driverOrderStatusCancelledByClient": "Отменён клиентом",
   "driverOrderStatusCancelledByOperator": "Отменён оператором",
   "driverOrderStatusCancelled": "Отменён",
-
   "driverErrorRegionNotSelected": "Выберите рабочий регион",
   "driverErrorRegionInactive": "Регион временно отключён",
   "driverErrorRegionNotApproved": "Вы не одобрены для этого региона",
@@ -1032,7 +1261,13 @@
   "driverNewOrderTitle": "Новый заказ",
   "driverWorkingRegionLabel": "Рабочий регион",
   "driverTariffLabel": "Тариф {tariff}",
-  "@driverTariffLabel": {"placeholders": {"tariff": {"type": "String"}}},
+  "@driverTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceAfterCalculation": "Цена после расчёта",
   "driverCustomPriceBadge": "Своя цена",
   "driverSkippingButton": "Пропускаем...",
@@ -1042,11 +1277,23 @@
   "driverDeclineButton": "Отказаться",
   "driverRespondingButton": "Отвечаем...",
   "driverClientOfferedCustomPrice": "Клиент предложил {price}",
-  "@driverClientOfferedCustomPrice": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientOfferedCustomPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverClientOfferedCustomPriceGeneric": "свою цену",
   "driverAwaitingClientResponse": "Ожидаем ответа клиента",
   "driverAwaitingClientResponseWithPrice": "Ожидаем ответа: {price}",
-  "@driverAwaitingClientResponseWithPrice": {"placeholders": {"price": {"type": "String"}}},
+  "@driverAwaitingClientResponseWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverOfferCustomPriceButton": "Предложить свою цену",
   "driverPaidWaitingLabel": "Платное ожидание",
   "driverFreeWaitingLabel": "Бесплатное ожидание",
@@ -1079,11 +1326,23 @@
   "driverBlockButton": "Не принимать",
   "doneButton": "Готово",
   "driverStarRatingSemanticLabel": "Оценка: {count} {count, plural, one{звезда} few{звезды} many{звёзд} other{звёзд}}",
-  "@driverStarRatingSemanticLabel": {"placeholders": {"count": {"type": "int"}}},
+  "@driverStarRatingSemanticLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverUpdatingGeneric": "Обновляем...",
   "driverEmergencyHelpTitle": "Экстренная помощь",
   "driverEmergencyCallButton": "Позвонить {phone}",
-  "@driverEmergencyCallButton": {"placeholders": {"phone": {"type": "String"}}},
+  "@driverEmergencyCallButton": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "driverEmergencyLineSubtitle": "Экстренная линия SmartTaxi, если что-то пошло не так",
   "driverSupportWillReceiveSignal": "Поддержка получит сигнал",
   "driverSupportSignalDescription": "Заявка с вашими координатами и номером поездки (если есть) уходит в поддержку одновременно со звонком",
@@ -1101,9 +1360,21 @@
   "driverUpdatingStatusButton": "Обновляем статус...",
   "driverPayoutMethodTitle": "Способ выплаты",
   "driverPayoutCardSummary": "Карта •• •• •• {last4}",
-  "@driverPayoutCardSummary": {"placeholders": {"last4": {"type": "String"}}},
+  "@driverPayoutCardSummary": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutKaspiSummary": "Kaspi-перевод: {phone}",
-  "@driverPayoutKaspiSummary": {"placeholders": {"phone": {"type": "String"}}},
+  "@driverPayoutKaspiSummary": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutMethodNotSet": "Не указан — добавьте, чтобы выводить средства",
   "driverPayoutMethodSubtitle": "Куда переводить деньги при выводе средств",
   "driverPayoutMethodKaspiOption": "Kaspi-перевод",
@@ -1118,32 +1389,104 @@
   "driverPayoutMethodNotSetShort": "Способ выплаты не указан",
   "addButton": "Добавить",
   "driverReviewsCountLabel": "{count} {count, plural, one{отзыв} few{отзыва} many{отзывов} other{отзывов}}",
-  "@driverReviewsCountLabel": {"placeholders": {"count": {"type": "int"}}},
+  "@driverReviewsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverTopTagLabel": "{tag} · {count}",
-  "@driverTopTagLabel": {"placeholders": {"tag": {"type": "String"}, "count": {"type": "int"}}},
+  "@driverTopTagLabel": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverClientAcceptedPriceToast": "Клиент принял вашу цену: {price}",
-  "@driverClientAcceptedPriceToast": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientAcceptedPriceToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverClientDeclinedOfferToast": "Клиент отклонил ваше предложение цены",
   "driverClientCounterOfferToast": "Клиент предложил свою цену: {price}",
-  "@driverClientCounterOfferToast": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientCounterOfferToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverSpeedLimitAnnouncement": "Ограничение скорости {limit}",
-  "@driverSpeedLimitAnnouncement": {"placeholders": {"limit": {"type": "int"}}},
+  "@driverSpeedLimitAnnouncement": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "driverCameraIn500mVoice": "Через 500 метров камера",
   "driverCameraIn500mBanner": "Камера через 500 м{heading}",
-  "@driverCameraIn500mBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraIn500mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverCameraIn200mVoice": "Через 200 метров камера",
   "driverCameraIn200mBanner": "Камера через 200 м{heading}",
-  "@driverCameraIn200mBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraIn200mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverCameraNowVoice": "Камера",
   "driverCameraNowBanner": "Камера{heading}",
-  "@driverCameraNowBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraNowBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverSignBannerLabel": "Знак: {sign}",
-  "@driverSignBannerLabel": {"placeholders": {"sign": {"type": "String"}}},
+  "@driverSignBannerLabel": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      }
+    }
+  },
   "driverSpeedingVoiceWarning": "Превышение скорости",
   "driverManeuverIn200mVoice": "Через 200 метров {maneuver}{street}",
-  "@driverManeuverIn200mVoice": {"placeholders": {"maneuver": {"type": "String"}, "street": {"type": "String"}}},
+  "@driverManeuverIn200mVoice": {
+    "placeholders": {
+      "maneuver": {
+        "type": "String"
+      },
+      "street": {
+        "type": "String"
+      }
+    }
+  },
   "driverStreetSuffix": " на {street}",
-  "@driverStreetSuffix": {"placeholders": {"street": {"type": "String"}}},
+  "@driverStreetSuffix": {
+    "placeholders": {
+      "street": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceOfferSentToast": "Предложение цены отправлено клиенту",
   "driverAcceptedClientPriceToast": "Вы приняли цену клиента — заказ ваш",
   "driverDeclinedClientOfferToast": "Вы отклонили предложение клиента",
@@ -1167,16 +1510,34 @@
   "driverContactSupportAction": "Написать в поддержку",
   "driverChooseRegionMessage": "У вас есть одобренные регионы — выберите один, чтобы начать принимать заказы.",
   "driverRegionPausedMessage": "Работа в регионе «{region}» сейчас приостановлена. ",
-  "@driverRegionPausedMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverRegionPausedMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverTryLaterOrChangeRegion": "Попробуйте позже или выберите другой регион.",
   "driverTryLater": "Попробуйте позже.",
   "driverChangeRegionAction": "Сменить регион",
   "driverAccessBlockedTitle": "Доступ заблокирован",
   "driverRegionBlockedByAdminMessage": "Работа в регионе «{region}» заблокирована администратором.",
-  "@driverRegionBlockedByAdminMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverRegionBlockedByAdminMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverApplicationUnderReviewTitle": "Заявка на рассмотрении",
   "driverApplicationUnderReviewMessage": "Мы проверяем ваш доступ к региону «{region}». Обычно это занимает немного времени.",
-  "@driverApplicationUnderReviewMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverApplicationUnderReviewMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverStatusUnavailableByRegion": "Недоступен по региону",
   "driverRegionStatusDisabled": "Отключён",
   "driverRegionStatusBlocked": "Заблокирован",
@@ -1200,13 +1561,25 @@
   "driverQuickMessagePleaseComeOut": "Пожалуйста, выходите",
   "driverQuickMessageOnMyWay": "Уже еду к вам",
   "driverQuickMessageSentToast": "Отправлено: {text}",
-  "@driverQuickMessageSentToast": {"placeholders": {"text": {"type": "String"}}},
+  "@driverQuickMessageSentToast": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "driverQuickMessageSheetTitle": "Быстрое сообщение",
   "driverPriceOfferRangeError": "Введите цену от 200 до 1 000 000 ₸",
   "driverPriceOfferSheetTitle": "Предложить свою цену",
   "driverPriceOfferSheetSubtitle": "Клиент увидит вашу цену и сможет согласиться или отказаться",
   "driverCurrentOrderPriceLabel": "Текущая цена заказа: {price}",
-  "@driverCurrentOrderPriceLabel": {"placeholders": {"price": {"type": "String"}}},
+  "@driverCurrentOrderPriceLabel": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceFieldLabel": "Цена, ₸",
   "driverSendOfferButton": "Отправить предложение",
   "driverRouteAcceptedToast": "Маршрут принят",
@@ -1240,7 +1613,16 @@
   "driverAlertSpeedLimitLabel": "Ограничение, км/ч",
   "driverAlertSpeedLimitHint": "Только если указано знаком",
   "driverPointSelectedCoordinates": "Точка выбрана: {lat}, {lng}",
-  "@driverPointSelectedCoordinates": {"placeholders": {"lat": {"type": "String"}, "lng": {"type": "String"}}},
+  "@driverPointSelectedCoordinates": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
   "driverNearbyAlertsTitle": "События рядом",
   "driverNearbyAlertsSubtitle": "Показываем только сохранённые активные сообщения.",
   "driverLoadingAlerts": "Загружаем события...",
@@ -1268,15 +1650,42 @@
   "roadAlertPedestrianCrossing": "Пешеходный переход",
   "roadAlertOther": "Другое",
   "driverAlertConfidenceLabel": "Доверие: {score}% · подтверждений: {count}",
-  "@driverAlertConfidenceLabel": {"placeholders": {"score": {"type": "int"}, "count": {"type": "int"}}},
+  "@driverAlertConfidenceLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverAlertSpeedLimitDetail": "Ограничение: {limit} км/ч",
-  "@driverAlertSpeedLimitDetail": {"placeholders": {"limit": {"type": "int"}}},
+  "@driverAlertSpeedLimitDetail": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "driverAlertHeadingDetail": "Смотрит: {direction}",
-  "@driverAlertHeadingDetail": {"placeholders": {"direction": {"type": "String"}}},
+  "@driverAlertHeadingDetail": {
+    "placeholders": {
+      "direction": {
+        "type": "String"
+      }
+    }
+  },
   "driverConfirmAlertButton": "На месте",
   "noButton": "Нет",
   "driverInDistanceLabel": "Через {distance}",
-  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}},
+  "@driverInDistanceLabel": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "roadAlertShortAccident": "ДТП",
   "roadAlertShortRoadWork": "Р",
   "roadAlertShortSpeedCamera": "К",
@@ -1290,5 +1699,8 @@
   "roadAlertShortTemporarySpeedLimit": "ЛИМ",
   "roadAlertShortDangerousTurn": "ПВ",
   "roadAlertShortRailroadCrossing": "ЖД",
-  "roadAlertShortPedestrianCrossing": "ПЕШ"
+  "roadAlertShortPedestrianCrossing": "ПЕШ",
+  "driverRegionsLoadFailedTitle": "Не удалось загрузить регионы",
+  "driverRegionsLoadFailedMessage": "Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.",
+  "driverRegionsRetryAction": "Обновить"
 }

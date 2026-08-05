@@ -1,7 +1,9 @@
 {
   "@@locale": "uz",
   "appName": "SmartTaxi",
-  "@appName": {"description": "App name, shown in the OS task switcher"},
+  "@appName": {
+    "description": "App name, shown in the OS task switcher"
+  },
   "continueLabel": "Davom etish",
   "cancel": "Bekor qilish",
   "save": "Saqlash",
@@ -18,7 +20,6 @@
   "languageUzbek": "O'zbekcha",
   "languageChinese": "Xitoycha",
   "languageChangedNote": "Interfeys tili o'zgartirildi. Ba'zi ekranlar hozircha faqat qisman tarjima qilingan.",
-
   "passengerSettingsTitle": "Sozlamalar",
   "passengerSettingsSubtitle": "Hisob, safarlar va ilova haqida ma'lumot",
   "passengerSettingsAccountGroup": "Hisob",
@@ -48,13 +49,11 @@
   "passengerSettingsVersionLabel": "Ilova versiyasi",
   "passengerSettingsLegalTitle": "Huquqiy ma'lumot",
   "passengerSettingsLegalText": "Foydalanish shartlari, to'lov, bekor qilish, xavfsizlik",
-
   "home": "Bosh sahifa",
   "trips": "Safarlar",
   "profile": "Profil",
   "notifications": "Bildirishnomalar",
   "support": "Yordam",
-
   "passengerDrawerTrips": "Mening safarlarim",
   "passengerDrawerWallet": "Hamyon",
   "passengerDrawerPromoCodes": "Promokodlar",
@@ -68,7 +67,6 @@
   "passengerDrawerAboutSection": "Xizmat haqida",
   "passengerDrawerAboutUs": "Biz haqimizda",
   "passengerDrawerRegionalBadge": "Mintaqaviy taksi",
-
   "passengerFaqSubtitle": "Tez-tez so'raladigan savollarga javoblar",
   "passengerFaqSearchHint": "Savollar bo'yicha qidirish",
   "passengerFaqClearSearch": "Qidiruvni tozalash",
@@ -90,11 +88,16 @@
   "passengerFaqA7": "Geolokatsiya olib ketish nuqtasini tanlashga va aniq marshrut qurishga yordam beradi.",
   "passengerFaqQ8": "Qo'llab-quvvatlash xizmati bilan qanday bog'lanish mumkin?",
   "passengerFaqA8": "Menyudan «Yordam» bo'limini ochib, xabar yozing.",
-
   "passengerSupportSubtitle": "Muammoni tasvirlab bering, biz yordam beramiz",
   "passengerSupportUrgentTitle": "Shoshilinch savolmi?",
   "passengerSupportCallDirectly": "To'g'ridan-to'g'ri qo'ng'iroq qiling: {phone}",
-  "@passengerSupportCallDirectly": {"placeholders": {"phone": {"type": "String"}}},
+  "@passengerSupportCallDirectly": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "callButton": "Qo'ng'iroq qilish",
   "passengerSupportTopicSectionTitle": "Murojaat mavzusi",
   "passengerSupportTopicSectionText": "Qanday yordam kerakligini tanlang",
@@ -115,7 +118,6 @@
   "passengerSupportDialFailed": "Raqamni terib bo'lmadi",
   "passengerSupportYourRequests": "Sizning murojaatlaringiz",
   "passengerSupportLoadError": "Murojaatlarni yuklab bo'lmadi",
-
   "passengerAboutDescription": "SmartTaxi — faol hududlarda tez, tushunarli va halol safarlar uchun mintaqaviy taksi xizmati.",
   "passengerAboutRegionalModelTitle": "Mintaqaviy model",
   "passengerAboutRegionalModelText": "Safarlar faqat administrator yoqqan hududlarda mavjud. Shaharlararo safarlarga qo'llab-quvvatlash yo'q.",
@@ -124,8 +126,13 @@
   "passengerAboutSupportSubtitle": "Savolingiz bormi? Javob beramiz",
   "passengerAboutLegalSubtitle": "Shartlar, to'lov, bekor qilish, xavfsizlik",
   "passengerAboutVersionLabel": "SmartTaxi · {version}-versiya",
-  "@passengerAboutVersionLabel": {"placeholders": {"version": {"type": "String"}}},
-
+  "@passengerAboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "loadFailedTitle": "Yuklab bo'lmadi",
   "passengerRecurringSubtitle": "Maktab marshruti va jadval bo'yicha boshqa safarlar",
   "passengerRecurringNewRoute": "Yangi marshrut",
@@ -133,18 +140,38 @@
   "passengerRecurringEmptyText": "Marshrut yarating — masalan, bolani maktabga olib borish — va haydovchi tanlangan kunlari jadval bo'yicha keladi.",
   "passengerRecurringCancelTitle": "Doimiy safarni bekor qilasizmi?",
   "passengerRecurringCancelText": "{route}, {days} soat {time}. Bu amalni bekor qilib bo'lmaydi.",
-  "@passengerRecurringCancelText": {"placeholders": {"route": {"type": "String"}, "days": {"type": "String"}, "time": {"type": "String"}}},
+  "@passengerRecurringCancelText": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "passengerRecurringCancelConfirm": "Safarni bekor qilish",
   "passengerFavoritesAddAddressTitle": "Qaysi manzilni qo'shish kerak?",
   "passengerFavoritesDeleteTitle": "Manzilni sevimlilardan o'chirasizmi?",
   "passengerFavoritesDeleteText": "{title} — {address}.",
-  "@passengerFavoritesDeleteText": {"placeholders": {"title": {"type": "String"}, "address": {"type": "String"}}},
+  "@passengerFavoritesDeleteText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    }
+  },
   "deleteButton": "O'chirish",
   "passengerFavoritesSubtitle": "Uy, ish va boshqa tez-tez boradigan joylar — buyurtmani tezroq kiritish uchun",
   "passengerFavoritesAddButton": "Manzil qo'shish",
   "passengerFavoritesEmptyTitle": "Hozircha sevimli manzillar yo'q",
   "passengerFavoritesEmptyText": "Uyingizni, ishingizni yoki tez-tez boradigan istalgan joyni qo'shing — ular bu yerda tezkor kirish uchun paydo bo'ladi.",
-
   "passengerDriverAppSubtitle": "O'z avtomobilingizda qulay grafik bilan daromad qiling",
   "passengerDriverStep1Title": "Arizani to'ldiring",
   "passengerDriverStep1Text": "Ism, telefon va avtomobil ma'lumotlari — bu bir daqiqa vaqt oladi",
@@ -167,7 +194,6 @@
   "passengerDriverTermsLink": "Foydalanish shartlari bilan",
   "passengerDriverSafetyRulesLink": "Xavfsizlik qoidalari bilan",
   "passengerDriverSubmitButton": "Arizani yuborish",
-
   "passengerDriverPrefsSubtitle": "Yoqtirgan haydovchilarni belgilang va istamaganlarini bloklang",
   "passengerDriverPrefsAddButton": "Safarlar tarixidan qo'shish",
   "passengerDriverPrefsEmptyTitle": "Hozircha belgilar yo'q",
@@ -176,19 +202,23 @@
   "passengerDriverPrefsFavoritesText": "Doimiy safarlarda birinchi navbatda ular taklif qilinadi",
   "passengerDriverPrefsBlockedTitle": "Bloklanganlar",
   "passengerDriverPrefsBlockedText": "Doimiy safarlarga taklif qilinmaydi",
-
   "passengerReferralsSubtitle": "Kodni ulashing va har bir do'st uchun bonus oling",
   "passengerReferralsYourCode": "Sizning kodingiz",
   "copyButton": "Nusxalash",
   "passengerReferralsCodeCopied": "Kod nusxalandi",
   "passengerReferralsShareCode": "Kodni ulashish",
   "passengerReferralsShareMessage": "SmartTaxi-da mening {code} kodim bilan taksi chaqiring va birinchi safaringiz uchun bonus oling!",
-  "@passengerReferralsShareMessage": {"placeholders": {"code": {"type": "String"}}},
+  "@passengerReferralsShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "passengerReferralsInvited": "Taklif qilindi",
   "passengerReferralsEarned": "Ishlab topildi",
   "passengerReferralsHowItWorksTitle": "Bu qanday ishlaydi",
   "passengerReferralsHowItWorksText": "Do'stingiz ro'yxatdan o'tishda sizning kodingizni kiritadi. Uning birinchi safaridan so'ng balansingizga bonus qo'shiladi.",
-
   "passengerPromoSubtitle": "Promokodni tekshiring va chegirma miqdorini bilib oling",
   "passengerPromoHaveCode": "Promokodingiz bormi?",
   "passengerPromoHint": "Hududingizda amal qilishini tekshirish va chegirma miqdorini ko'rish uchun uni kiriting.",
@@ -197,24 +227,39 @@
   "checkingButton": "Tekshirilmoqda...",
   "passengerPromoNoRegionError": "Avval bosh ekranda hududni tanlang",
   "passengerPromoActiveTitle": "«{code}» promokodi amal qiladi",
-  "@passengerPromoActiveTitle": {"placeholders": {"code": {"type": "String"}}},
+  "@passengerPromoActiveTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "passengerPromoDiscountSummary": "Chegirma {discount} · masalan, {previewPrice} turadigan safarda siz {finalPrice} to'laysiz",
-  "@passengerPromoDiscountSummary": {"placeholders": {"discount": {"type": "String"}, "previewPrice": {"type": "String"}, "finalPrice": {"type": "String"}}},
+  "@passengerPromoDiscountSummary": {
+    "placeholders": {
+      "discount": {
+        "type": "String"
+      },
+      "previewPrice": {
+        "type": "String"
+      },
+      "finalPrice": {
+        "type": "String"
+      }
+    }
+  },
   "passengerPromoHowToApplyTitle": "Chegirmani qanday qo'llash kerak",
   "passengerPromoHowToApplyText": "Shu tekshiruvdan o'tgan promokodni tarif tanlash bosqichida yana bir bor kiritish kerak bo'ladi — shunda chegirma haqiqiy safaringizning yakuniy narxini darhol qayta hisoblaydi.",
-
   "passengerHomeWhereToTitle": "Qayerga boramiz?",
   "passengerHomeWhereToSubtitle": "Olib ketish nuqtasi va manzilni tanlang",
   "passengerHomeSetDestination": "Qayerga ekanini ko'rsatish",
   "passengerHomeRouteIssueTitle": "Marshrutni aniqlashtiring",
   "passengerHomeRouteIssueText": "Marshrutni qurib bo'lmadi. Manzilni o'zgartiring yoki kartadan nuqtani tanlang.",
   "passengerHomePickupQuestion": "Qayerdan?",
-
   "passengerAddressSearchError": "Manzil qidiruvi vaqtincha mavjud emas. Kartadan nuqtani tanlang.",
   "passengerAddressNoResultsText": "Ko'cha, tuman yoki joy nomini aniqlashtiring.",
   "passengerAddressPickOnMapTitle": "Kartadan ko'rsatish",
   "passengerAddressPickOnMapSubtitle": "Kartadan nuqtani tanlang",
-
   "tariffEconomyTitle": "Ekonom",
   "tariffComfortTitle": "Komfort",
   "tariffBusinessTitle": "Biznes",
@@ -234,14 +279,19 @@
   "paymentMethodLabel": "To'lov",
   "paymentMethodFullLabel": "To'lov usuli",
   "passengerTripInTransitLabel": "Yo'lda",
-
   "passengerCtaCreatingOrder": "Buyurtma yaratilmoqda...",
   "passengerCtaPickPickup": "Olib ketish nuqtasini tanlash",
   "passengerCtaPickDropoff": "Manzilni tanlash",
   "passengerCtaCalculate": "Hisoblash",
   "passengerCtaOrderDelivery": "Yetkazib berishga buyurtma berish",
   "passengerCtaOrderWithLabel": "{label} buyurtma berish",
-  "@passengerCtaOrderWithLabel": {"placeholders": {"label": {"type": "String"}}},
+  "@passengerCtaOrderWithLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCtaOrder": "Buyurtma berish",
   "passengerTripsSubtitle": "Faol buyurtma, safar holati va marshrut tafsilotlari",
   "passengerTripsLoadErrorTitle": "Tarixni yuklab bo'lmadi",
@@ -263,7 +313,13 @@
   "passengerTripDateYesterday": "Kecha",
   "passengerTripShareTextPrefix": "SmartTaxi safari",
   "passengerSearchingSubtitleWithCount": "Eng yaqin {count} bo'sh haydovchini ko'rsatmoqdamiz",
-  "@passengerSearchingSubtitleWithCount": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerSearchingSubtitleWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerSearchingSubtitleGeneric": "Yaqin atrofdagi bo'sh haydovchilarni tekshirmoqdamiz",
   "passengerDriverOfferDescription": "Buyurtmani eng yaqin haydovchilarga taklif qilmoqdamiz.",
   "passengerDriverRouteDescription": "Safar holati va marshrutni real vaqtda ko'rsatmoqdamiz.",
@@ -271,14 +327,26 @@
   "passengerCancellingLabel": "Bekor qilinmoqda...",
   "passengerCancelSearchButton": "Qidiruvni bekor qilish",
   "passengerTripWithIdTitle": "Safar {id}",
-  "@passengerTripWithIdTitle": {"placeholders": {"id": {"type": "String"}}},
+  "@passengerTripWithIdTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverFoundTitle": "Haydovchi topildi",
   "passengerNewTripButton": "Yangi safar",
   "passengerCancelTripButton": "Safarni bekor qilish",
   "passengerCancelTripShortButton": "Bekor qilish",
   "passengerRateDriverFallbackName": "haydovchi bilan",
   "passengerRateDriverQuestion": "{name} bilan safar qanday o'tdi?",
-  "@passengerRateDriverQuestion": {"placeholders": {"name": {"type": "String"}}},
+  "@passengerRateDriverQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSubmitRatingButton": "Bahoni yuborish",
   "passengerSubmittingRatingButton": "Yuborilmoqda...",
   "passengerSkipButton": "O'tkazib yuborish",
@@ -318,7 +386,13 @@
   "passengerWaitingDriverResponseTitle": "Haydovchi javobini kutmoqdamiz",
   "passengerOfferSentText": "Sizning taklifingiz yuborildi",
   "passengerYouOfferedText": "Siz {amount} taklif qildingiz",
-  "@passengerYouOfferedText": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerYouOfferedText": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCancelledByDriverTitle": "Haydovchi safarni bekor qildi",
   "passengerCancelledByDriverText": "Bir necha soniyada sizga boshqa haydovchi topamiz",
   "passengerCancelledByOperatorTitle": "Safar operator tomonidan bekor qilindi",
@@ -337,15 +411,36 @@
   "passengerEnRouteLowercase": "yo'lda",
   "passengerJustStartedLowercase": "yangi boshladi",
   "passengerMinutesEnRoute": "{minutes} daq yo'lda",
-  "@passengerMinutesEnRoute": {"placeholders": {"minutes": {"type": "int"}}},
+  "@passengerMinutesEnRoute": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "passengerJustStartedCapitalized": "Yangi boshladi",
   "passengerShareTripTooltipEnabled": "Safar kuzatuvini ulashish",
   "passengerShareTripTooltipDisabled": "Havola haydovchi topilgach paydo bo'ladi",
   "passengerShareTripMessage": "SmartTaxi safarini kuzatib turibman{routeSuffix}. Holat: {link}",
-  "@passengerShareTripMessage": {"placeholders": {"routeSuffix": {"type": "String"}, "link": {"type": "String"}}},
+  "@passengerShareTripMessage": {
+    "placeholders": {
+      "routeSuffix": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSafetyTitle": "Safar xavfsizligi",
   "passengerCallPhoneLabel": "{phone} raqamiga qo'ng'iroq qilish",
-  "@passengerCallPhoneLabel": {"placeholders": {"phone": {"type": "String"}}},
+  "@passengerCallPhoneLabel": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "passengerSosEmergencyLineText": "Nimadir noto'g'ri ketsa — SmartTaxi shoshilinch liniyasi",
   "passengerSupportWillBeNotifiedTitle": "Qo'llab-quvvatlash xizmatiga signal yuboriladi",
   "passengerSupportWillBeNotifiedText": "Safar raqami va koordinatalaringiz bilan murojaat qo'ng'iroq bilan bir vaqtda qo'llab-quvvatlash xizmatiga yuboriladi",
@@ -377,16 +472,46 @@
   "passengerBonusBalanceLabel": "Keshbek va bonus balansi",
   "passengerBonusNotEnoughText": "Minimal tarif bo'yicha safarga hozircha yetmaydi",
   "passengerBonusRidesLeft": "Yana {count} {count, plural, other{safarga}} yetadi",
-  "@passengerBonusRidesLeft": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerBonusRidesLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerNearbyCarsCount": "Yaqinda {count} {count, plural, other{mashina}}",
-  "@passengerNearbyCarsCount": {"placeholders": {"count": {"type": "int"}}},
+  "@passengerNearbyCarsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoJustNow": "hozirgina",
   "passengerTimeAgoMinutes": "{minutes} daq oldin",
-  "@passengerTimeAgoMinutes": {"placeholders": {"minutes": {"type": "int"}}},
+  "@passengerTimeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoHours": "{hours} soat oldin",
-  "@passengerTimeAgoHours": {"placeholders": {"hours": {"type": "int"}}},
+  "@passengerTimeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "passengerTimeAgoDays": "{days} kun oldin",
-  "@passengerTimeAgoDays": {"placeholders": {"days": {"type": "int"}}},
+  "@passengerTimeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "passengerMarkDriverTitle": "Haydovchini belgilash",
   "passengerNoTripDriversText": "Safarlar tarixida hali belgilash mumkin bo'lgan haydovchi yo'q.",
   "passengerChooseDriverHint": "Haydovchini tanlang",
@@ -451,7 +576,19 @@
   "driverPickupMetaToPickup": "Olib ketish nuqtasigacha",
   "driverRouteFallbackNotice": "taxminan",
   "driverPickupMetaText": "{label}: {distance} km · {minutes} daq",
-  "@driverPickupMetaText": {"placeholders": {"label": {"type": "String"}, "distance": {"type": "String"}, "minutes": {"type": "int"}}},
+  "@driverPickupMetaText": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "routeErrorWaitingLocation": "Haydovchi geolokatsiyasini kutmoqdamiz.",
   "routeErrorDriverRouteUnavailable": "Haydovchi marshruti vaqtincha mavjud emas.",
   "errorClientHasActiveOrder": "Sizda allaqachon faol buyurtma bor. Safarni oching yoki uni bekor qiling.",
@@ -504,7 +641,6 @@
   "passengerFavoriteAddressesSectionTitle": "Tanlangan manzillar",
   "passengerDriversMenuSubtitle": "Sevimli va bloklangan haydovchilar",
   "passengerReferralsMenuSubtitle": "Sizning kodingiz va taklif bonuslari",
-
   "passengerWalletTitle": "Hamyon",
   "passengerWalletSubtitle": "Balans, to'ldirish va bog'langan kartalar",
   "passengerWalletBalanceLabel": "Balans",
@@ -520,7 +656,13 @@
   "passengerWalletRemoveAction": "O'chirish",
   "passengerWalletRemoveCardConfirmTitle": "Kartani o'chirasizmi?",
   "passengerWalletRemoveCardConfirmText": "{last4} kartasi o'chiriladi.",
-  "@passengerWalletRemoveCardConfirmText": {"placeholders": {"last4": {"type": "String"}}},
+  "@passengerWalletRemoveCardConfirmText": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCardNumberLabel": "Karta raqami",
   "passengerCardHolderNameLabel": "Egasining ismi (ixtiyoriy)",
   "passengerErrorInvalidCardNumber": "To'g'ri karta raqamini kiriting",
@@ -528,7 +670,13 @@
   "passengerWalletTopUpSheetTitle": "Balansni to'ldirish",
   "passengerWalletTopUpAmountLabel": "To'ldirish summasi",
   "passengerWalletTopUpMinNote": "Minimal summa — {amount}",
-  "@passengerWalletTopUpMinNote": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerWalletTopUpMinNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerWalletTopUpPendingNote": "Kaspi Pay orqali to'lash imkoniyati keyinroq qo'shiladi — so'rov saqlandi va bu imkoniyat ishga tushgach avtomatik qayta ishlanadi.",
   "passengerWalletTopUpSubmitButton": "So'rov yaratish",
   "passengerWalletTopupStatusPending": "Kutilmoqda",
@@ -554,7 +702,13 @@
   "passengerPriceHintSlower": "Ko'proq vaqt olishi mumkin",
   "passengerPriceHintNormal": "Odatiy olib ketish tezligi",
   "passengerYourRegionQuestion": "Sizning hududingiz: {region}?",
-  "@passengerYourRegionQuestion": {"placeholders": {"region": {"type": "String"}}},
+  "@passengerYourRegionQuestion": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "passengerRegionDetectedText": "Hududni geolokatsiya bo'yicha aniqladik. Buyurtmalar to'g'ri ishlashi uchun tekshiring.",
   "passengerChangeButton": "O'zgartirish",
   "passengerYesCorrectButton": "Ha, to'g'ri",
@@ -598,9 +752,21 @@
   "passengerRecurringCancelButton": "Bekor qilish",
   "passengerDriverArrivedWaitingBanner": "Haydovchi keldi va sizni kutmoqda",
   "passengerCopiedValueToast": "Nusxalandi: {value}",
-  "@passengerCopiedValueToast": {"placeholders": {"value": {"type": "String"}}},
+  "@passengerCopiedValueToast": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "passengerCopyLabelSemantics": "{label} nusxalash",
-  "@passengerCopyLabelSemantics": {"placeholders": {"label": {"type": "String"}}},
+  "@passengerCopyLabelSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverAppSubmittedMessage": "Ariza yuborildi. Administrator ma'lumotlarni tekshiradi.",
   "passengerServerUnavailableError": "Server vaqtincha mavjud emas. Ulanish tiklangach marshrutni tanlashingiz mumkin.",
   "passengerRecurringSentToDriverToast": "So'rov haydovchiga yuborildi, tasdiqni kutmoqdamiz",
@@ -615,17 +781,41 @@
   "passengerActiveRegionsNotLoadedError": "Faol hududlar hali yuklanmagan",
   "passengerDriverFoundExclamation": "Haydovchi topildi!",
   "passengerDriverFoundNamedText": "Haydovchi topildi: {name} sizga tomon kelmoqda",
-  "@passengerDriverFoundNamedText": {"placeholders": {"name": {"type": "String"}}},
+  "@passengerDriverFoundNamedText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDriverCancelledSearchingAnotherToast": "Haydovchi safarni bekor qildi — sizga boshqasini qidirmoqdamiz",
   "passengerPaymentInitiateFailedError": "To'lovni boshlab bo'lmadi. Ulanishni tekshiring.",
   "passengerLoginRequiredForOrderError": "Buyurtma berish uchun telefon raqamingiz orqali kiring.",
   "passengerAcceptedNewPriceToast": "Siz yangi narxga rozi bo'ldingiz: {amount}",
-  "@passengerAcceptedNewPriceToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerAcceptedNewPriceToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerDeclinedOfferedPriceToast": "Siz taklif qilingan narxni rad etdingiz",
   "passengerCounterOfferSentToast": "Sizning taklifingiz haydovchiga yuborildi: {amount}",
-  "@passengerCounterOfferSentToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerCounterOfferSentToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerQueuedOfferArrivedToast": "Yana bir haydovchi narx taklif qildi: {amount}",
-  "@passengerQueuedOfferArrivedToast": {"placeholders": {"amount": {"type": "String"}}},
+  "@passengerQueuedOfferArrivedToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "passengerLegalHubTitle": "Huquqiy ma'lumot",
   "passengerLegalHubSubtitle": "SmartTaxi rasmiy hujjatlari, 2026-yil 6-iyuldagi tahrir",
   "passengerAllDocumentsButton": "Barcha hujjatlar",
@@ -635,7 +825,13 @@
   "passengerPickupPointSemanticLabel": "Olib ketish nuqtasi",
   "passengerDropoffPointSemanticLabel": "Manzil nuqtasi",
   "passengerNearbyFreeDriverSemanticLabel": "Yaqin atrofda bo'sh haydovchi, {eta} daq",
-  "@passengerNearbyFreeDriverSemanticLabel": {"placeholders": {"eta": {"type": "int"}}},
+  "@passengerNearbyFreeDriverSemanticLabel": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      }
+    }
+  },
   "passengerDriverCarSemanticLabel": "Haydovchi avtomobili",
   "passengerLocationServiceDisabledError": "Geolokatsiya o'chirilgan. Uni sozlamalarda yoqing yoki kartadan nuqta tanlang.",
   "passengerChooseRegionTitle": "Hududni tanlang",
@@ -662,7 +858,6 @@
   "passengerWhichTripLabel": "Qaysi safar?",
   "passengerWhichTripText": "Haydovchini xabardor qilish uchun kerak",
   "passengerChooseTripHint": "Safarni tanlang",
-
   "authWelcomeTitle": "Kirish va ro'yxatdan o'tish",
   "authWelcomeSubtitle": "Davom etish uchun telefon raqamini kiriting",
   "phoneNumberLabel": "Telefon raqami",
@@ -687,7 +882,13 @@
   "runtimeFallbackBody": "Ekranni ochib bo'lmadi. Ilovani qayta ishga tushiring yoki qayta kirib ko'ring.",
   "runtimeFallbackAction": "Bosh sahifaga qaytish",
   "devCodeLabel": "Lokal test uchun kod: {devCode}",
-  "@devCodeLabel": {"placeholders": {"devCode": {"type": "String"}}},
+  "@devCodeLabel": {
+    "placeholders": {
+      "devCode": {
+        "type": "String"
+      }
+    }
+  },
   "validateEnterName": "Ismingizni kiriting",
   "validateEnterPhone": "Telefon raqamini kiriting",
   "validateCorrectPhone": "To'g'ri raqamni kiriting",
@@ -739,7 +940,6 @@
   "secureHint": "Parolingiz ishonchli himoyalangan va uchinchi shaxslarga berilmaydi",
   "defaultAccountLabel": "SmartTaxi hisobi",
   "appTagline": "Sizning qulayligingiz. Bizning g'amxo'rligimiz",
-
   "driverDrawerWallet": "Hamyon",
   "driverDrawerDocuments": "Hujjatlar",
   "driverDrawerRating": "Reyting",
@@ -751,18 +951,35 @@
   "driverDrawerServiceSection": "Xizmat",
   "driverDrawerRoadAlerts": "Yo'l voqealari",
   "driverDrawerPassengerMode": "Yo'lovchi rejimi",
-
   "driverWalletTitle": "Hamyon",
   "driverWalletSubtitle": "Balans, qarz va to'lovlar",
   "driverWalletLoadError": "Hamyonni yuklab bo'lmadi",
   "driverWalletBalanceLabel": "Balans",
   "driverWalletDebtLabel": "Qarz: {amount}",
-  "@driverWalletDebtLabel": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletDebtLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletPendingLabel": "Qayta ishlanmoqda: {amount}",
-  "@driverWalletPendingLabel": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletPendingLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletRequestPayoutButton": "To'lov so'rash",
   "driverWalletMinPayoutNote": "Minimal to'lov summasi — {amount}",
-  "@driverWalletMinPayoutNote": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverWalletMinPayoutNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverWalletPayoutRequestsTitle": "To'lov so'rovlari",
   "driverWalletNoPayoutRequests": "Hozircha so'rovlar yo'q",
   "driverWalletTopUpButton": "Balansni to'ldirish",
@@ -773,7 +990,13 @@
   "driverTopupSheetHint": "Summani ko'rsating. Menejer o'tkazmani qabul qilish va mablag'ni hisoblash uchun siz bilan bog'lanadi",
   "driverTopupAmountLabel": "Summa, ₸",
   "driverTopupErrorBelowMin": "Minimal summa — {amount}",
-  "@driverTopupErrorBelowMin": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverTopupErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverTopupErrorGeneric": "So'rov yaratilmadi. Qayta urinib ko'ring",
   "driverTopupSubmitButton": "So'rovni yuborish",
   "driverWalletTransactionsTitle": "Operatsiyalar",
@@ -781,25 +1004,34 @@
   "driverWalletTxCashCommission": "Naqd safar uchun komissiya",
   "driverWalletTxAdjustment": "Tuzatish",
   "driverWalletTxEarning": "Safar uchun tushum",
-
   "driverPayoutStatusPending": "Ko'rib chiqilmoqda",
   "driverPayoutStatusApproved": "Tasdiqlandi",
   "driverPayoutStatusPaid": "To'landi",
   "driverPayoutStatusRejected": "Rad etildi",
   "driverPayoutStatusCancelled": "Bekor qilindi",
-
   "driverPayoutSheetTitle": "To'lov so'rash",
   "driverPayoutSheetAvailable": "Yechib olish uchun mavjud: {amount}",
-  "@driverPayoutSheetAvailable": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverPayoutSheetAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutAmountLabel": "Summa, ₸",
   "driverPayoutPhoneLabel": "O'tkazma uchun Kaspi raqami",
   "driverPayoutErrorBelowMin": "Minimal summa — {amount}",
-  "@driverPayoutErrorBelowMin": {"placeholders": {"amount": {"type": "String"}}},
+  "@driverPayoutErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutErrorExceedsBalance": "Summa mavjud balansdan oshib ketdi",
   "driverPayoutErrorPhoneRequired": "Kaspi o'tkazmasi uchun raqamni ko'rsating",
   "driverPayoutErrorGeneric": "So'rovni yaratib bo'lmadi. Qayta urinib ko'ring",
   "driverPayoutSubmitButton": "So'rovni yuborish",
-
   "driverDocumentsTitle": "Hujjatlar",
   "driverDocumentsSubtitle": "SmartTaxi administratori tekshiruvi uchun hujjatlarni yuklang",
   "driverDocumentsLoadError": "Hujjatlarni yuklab bo'lmadi",
@@ -815,7 +1047,6 @@
   "driverDocumentPickFile": "Fayl tanlash",
   "driverDocumentPickCameraShort": "Rasm",
   "driverDocumentPickFileShort": "Fayl",
-
   "driverDocumentTypeLicenseFront": "Haydovchilik guvohnomasi (old tomoni)",
   "driverDocumentTypeLicenseBack": "Haydovchilik guvohnomasi (orqa tomoni)",
   "driverDocumentTypeIdCardFront": "Shaxsni tasdiqlovchi hujjat (old tomoni)",
@@ -824,13 +1055,11 @@
   "driverDocumentTypeInsurancePolicy": "Sug'urta polisi",
   "driverDocumentTypeProfilePhoto": "Profil rasmi",
   "driverDocumentTypeOther": "Hujjat",
-
   "driverApplicationDocumentsTitle": "Hujjatlar",
   "driverApplicationDocumentsIntro": "Ariza yuborildi. Tekshiruvni tezlashtirish uchun hujjatlarni hozir yuklang",
   "driverApplicationDocumentsDone": "Tayyor",
   "driverApplicationDocumentsLater": "Keyinroq davom etish",
   "driverApplicationDocumentUploaded": "Yuklandi",
-
   "driverRatingTitle": "Reyting",
   "driverRatingSubtitle": "Yo'lovchilarning baholari va fikrlari",
   "driverRatingLoadError": "Reytingni yuklab bo'lmadi",
@@ -838,13 +1067,11 @@
   "driverRatingEmptyText": "Yo'lovchilar safarlarni baholaganda, fikrlar shu yerda paydo bo'ladi",
   "driverRatingTopTagsTitle": "Ko'proq belgilanadigan",
   "driverRatingRecentTitle": "So'nggi fikrlar",
-
   "driverNotificationsTitle": "Bildirishnomalar",
   "driverNotificationsSubtitle": "To'lovlar, hujjatlar va buyurtmalar holati",
   "driverNotificationsLoadError": "Bildirishnomalarni yuklab bo'lmadi",
   "driverNotificationsEmptyTitle": "Yangi bildirishnoma yo'q",
   "driverNotificationsEmptyText": "Bu yerda to'lovlar, hujjat tekshiruvlari va safarlar holati paydo bo'ladi",
-
   "driverProfileTitle": "Haydovchi profili",
   "driverProfileSubtitle": "Hisob ma'lumotlari va joriy smena",
   "driverProfileNameFallback": "Haydovchi",
@@ -859,7 +1086,6 @@
   "driverProfileTripHistoryTitle": "Safarlar tarixi",
   "driverAvatarUpdated": "Rasm yangilandi",
   "driverAvatarUploadError": "Rasmni yuklab bo'lmadi",
-
   "driverSupportTitle": "Qo'llab-quvvatlash",
   "driverSupportSubtitle": "Muammoni tasvirlab bering, biz yordam beramiz",
   "driverSupportTopicSectionTitle": "Murojaat mavzusi",
@@ -882,7 +1108,6 @@
   "driverTripHistoryLoadError": "Safarlar tarixini yuklab bo'lmadi",
   "driverSupportEmptyTitle": "Hozircha murojaatlar yo'q",
   "driverSupportEmptyText": "Bu yerda qo'llab-quvvatlash xizmatiga yuborgan murojaatlaringiz va javoblar ko'rsatiladi",
-
   "driverFaqTitle": "Ko'p so'raladigan savollar",
   "driverFaqSubtitle": "Haydovchilarning tez-tez so'raladigan savollariga javoblar",
   "driverFaqQ1": "Buyurtmani qanday qabul qilish mumkin?",
@@ -897,10 +1122,8 @@
   "driverFaqA5": "Hudud «Liniya» bo'limida tanlanadi. Faqat administrator tasdiqlagan hududlar mavjud.",
   "driverFaqQ6": "O'tkazib yuborgan buyurtmalar qayerga ketadi?",
   "driverFaqA6": "O'tkazib yuborilgan buyurtma uni hech kim qabul qilmaguncha hududdagi boshqa haydovchilarga taklif qilinaveradi.",
-
   "driverAboutDescription": "SmartTaxi — mintaqaviy taksi xizmati. Haydovchi ilovasi faqat administrator tasdiqlagan faol hududlardagi buyurtmalarni ko'rsatadi.",
   "driverAboutVersionLabel": "Ilova versiyasi",
-
   "driverSettingsTitle": "Sozlamalar",
   "driverSettingsSubtitle": "Hisob va ilova haqida ma'lumot",
   "driverSettingsAccountGroup": "Hisob",
@@ -916,12 +1139,10 @@
   "driverSettingsTermsText": "Safarlar, buyurtmalar va tomonlar javobgarligi qoidalari",
   "driverSettingsPrivacyTitle": "Maxfiylik siyosati",
   "driverSettingsPrivacyText": "Telefon, geolokatsiya va safarlar tarixi qanday ishlatiladi",
-
   "driverTabLine": "Liniya",
   "driverTabOrders": "Buyurtmalar",
   "driverTabTrip": "Safar",
   "driverTabNavigator": "Navigator",
-
   "driverLineRegionSectionTitle": "Ish hududi",
   "driverLineRegionSectionText": "Buyurtmalar faqat tanlangan hududdan keladi",
   "driverLineRegionsLoading": "Hududlar yuklanmoqda...",
@@ -929,7 +1150,6 @@
   "driverLineNoRegionsText": "Ishlash uchun administrator sizni tasdiqlashi kerak.",
   "driverLineLocationSectionTitle": "Geolokatsiya",
   "driverLineLocationSectionText": "Pozitsiya faqat liniyada ishlash vaqtida yuboriladi",
-
   "driverOrdersTitle": "Hududdagi buyurtmalar",
   "driverOrdersSubtitle": "Faqat sizning ish hududingizdagi buyurtmalarni ko'rsatamiz.",
   "driverOrdersUpdating": "Buyurtmalar yangilanmoqda...",
@@ -937,28 +1157,30 @@
   "driverOrdersGoOnlineText": "Liniyaga chiqqandan so'ng buyurtmalar shu yerda paydo bo'ladi.",
   "driverOrdersEmptyTitle": "Hududingizda hozircha buyurtmalar yo'q",
   "driverOrdersEmptyText": "Yo'lovchilar safar yaratganda yangi buyurtmalar shu yerda paydo bo'ladi.",
-
   "driverTripTitle": "Faol safar",
   "driverTripSubtitle": "Safarning keyingi qadami",
   "driverTripEmptyTitle": "Faol safar yo'q",
   "driverTripEmptyText": "Buyurtmani qabul qiling, safar shu yerda paydo bo'ladi.",
   "driverTripTariffLabel": "Tarif: {tariff}",
-  "@driverTripTariffLabel": {"placeholders": {"tariff": {"type": "String"}}},
+  "@driverTripTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
   "driverTripSavingButton": "Saqlanmoqda...",
   "driverTripDoneButton": "Tayyor, yangi buyurtmalarga",
   "driverTripNoShowButton": "Mijoz chiqmadi",
   "driverTripCancelButton": "Bekor qilish",
-
   "driverActionGoingToClient": "Mijozga yo'l oldi",
   "driverActionArrived": "Yetib keldi",
   "driverActionStartWaiting": "Kutishni boshlash",
   "driverActionStartTrip": "Safarni boshlash",
   "driverActionCompleteTrip": "Safarni yakunlash",
-
   "driverStatusBusy": "Band",
   "driverStatusOnline": "Liniyada",
   "driverStatusOffline": "Liniyada emas",
-
   "driverLocationChecking": "Geolokatsiya tekshirilmoqda...",
   "driverLocationRequiredError": "Liniyada ishlash uchun geolokatsiya kerak",
   "driverLocationSendFailed": "Geolokatsiyani yuborib bo'lmadi. Qayta urinib ko'ring.",
@@ -967,7 +1189,6 @@
   "driverGoOnlineRequiredError": "Buyurtmalarni qabul qilish uchun liniyaga chiqing.",
   "driverGoOnlineRequiredRejectError": "Buyurtmalarni o'tkazib yuborish uchun liniyaga chiqing.",
   "driverUpdatesUnavailableNote": "Yangilanish serveri bilan aloqa vaqtincha mavjud emas. Ekran API orqali ishlashda davom etadi.",
-
   "driverManeuverTurnLeft": "Chapga burilish",
   "driverManeuverTurnRight": "O'ngga burilish",
   "driverManeuverSlightLeft": "Sal chapga qarab yuring",
@@ -981,18 +1202,27 @@
   "driverManeuverOnRamp": "Trassaga chiqish",
   "driverManeuverOffRamp": "Trassadan chiqish",
   "driverManeuverRoundaboutWithExit": "Aylanma harakat, {exit}-chiqish",
-  "@driverManeuverRoundaboutWithExit": {"placeholders": {"exit": {"type": "int"}}},
+  "@driverManeuverRoundaboutWithExit": {
+    "placeholders": {
+      "exit": {
+        "type": "int"
+      }
+    }
+  },
   "driverManeuverRoundabout": "Aylanma harakat",
   "driverManeuverExitRoundabout": "Aylanma harakatdan chiqish",
   "driverManeuverArrive": "Siz manzilga yaqinsiz",
   "driverManeuverFollowRoute": "Marshrut bo'ylab yuring",
-
   "driverPaymentCashback": "Bonuslar",
   "driverPaymentMixed": "Aralash",
-
   "driverRouteMetaLabel": "Marshrut: {details}",
-  "@driverRouteMetaLabel": {"placeholders": {"details": {"type": "String"}}},
-
+  "@driverRouteMetaLabel": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "driverOrderStatusNew": "Yangi",
   "driverOrderStatusAccepted": "Qabul qilindi",
   "driverOrderStatusGoingToClient": "Mijozga kelmoqda",
@@ -1004,7 +1234,6 @@
   "driverOrderStatusCancelledByClient": "Mijoz tomonidan bekor qilindi",
   "driverOrderStatusCancelledByOperator": "Operator tomonidan bekor qilindi",
   "driverOrderStatusCancelled": "Bekor qilindi",
-
   "driverErrorRegionNotSelected": "Ish hududini tanlang",
   "driverErrorRegionInactive": "Hudud vaqtincha o'chirilgan",
   "driverErrorRegionNotApproved": "Siz bu hudud uchun tasdiqlanmagansiz",
@@ -1032,7 +1261,13 @@
   "driverNewOrderTitle": "Yangi buyurtma",
   "driverWorkingRegionLabel": "Ish hududi",
   "driverTariffLabel": "Tarif {tariff}",
-  "@driverTariffLabel": {"placeholders": {"tariff": {"type": "String"}}},
+  "@driverTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceAfterCalculation": "Hisoblashdan keyingi narx",
   "driverCustomPriceBadge": "O'z narxi",
   "driverSkippingButton": "O'tkazib yuborilmoqda...",
@@ -1042,11 +1277,23 @@
   "driverDeclineButton": "Rad etish",
   "driverRespondingButton": "Javob berilmoqda...",
   "driverClientOfferedCustomPrice": "Mijoz {price} taklif qildi",
-  "@driverClientOfferedCustomPrice": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientOfferedCustomPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverClientOfferedCustomPriceGeneric": "o'z narxini",
   "driverAwaitingClientResponse": "Mijoz javobini kutmoqdamiz",
   "driverAwaitingClientResponseWithPrice": "Javobni kutmoqdamiz: {price}",
-  "@driverAwaitingClientResponseWithPrice": {"placeholders": {"price": {"type": "String"}}},
+  "@driverAwaitingClientResponseWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverOfferCustomPriceButton": "O'z narxingizni taklif qiling",
   "driverPaidWaitingLabel": "Pullik kutish",
   "driverFreeWaitingLabel": "Bepul kutish",
@@ -1079,11 +1326,23 @@
   "driverBlockButton": "Qabul qilmaslik",
   "doneButton": "Tayyor",
   "driverStarRatingSemanticLabel": "Baho: {count} {count, plural, other{yulduz}}",
-  "@driverStarRatingSemanticLabel": {"placeholders": {"count": {"type": "int"}}},
+  "@driverStarRatingSemanticLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverUpdatingGeneric": "Yangilanmoqda...",
   "driverEmergencyHelpTitle": "Shoshilinch yordam",
   "driverEmergencyCallButton": "{phone} raqamiga qo'ng'iroq qilish",
-  "@driverEmergencyCallButton": {"placeholders": {"phone": {"type": "String"}}},
+  "@driverEmergencyCallButton": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "driverEmergencyLineSubtitle": "Nimadir noto'g'ri ketsa, SmartTaxi shoshilinch liniyasi",
   "driverSupportWillReceiveSignal": "Qo'llab-quvvatlash xizmati signal oladi",
   "driverSupportSignalDescription": "Koordinatalaringiz va safar raqami (agar bo'lsa) bilan murojaat qo'ng'iroq bilan bir vaqtda qo'llab-quvvatlash xizmatiga yuboriladi",
@@ -1101,9 +1360,21 @@
   "driverUpdatingStatusButton": "Holat yangilanmoqda...",
   "driverPayoutMethodTitle": "To'lov usuli",
   "driverPayoutCardSummary": "Karta •• •• •• {last4}",
-  "@driverPayoutCardSummary": {"placeholders": {"last4": {"type": "String"}}},
+  "@driverPayoutCardSummary": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutKaspiSummary": "Kaspi o'tkazmasi: {phone}",
-  "@driverPayoutKaspiSummary": {"placeholders": {"phone": {"type": "String"}}},
+  "@driverPayoutKaspiSummary": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "driverPayoutMethodNotSet": "Ko'rsatilmagan — mablag' yechish uchun qo'shing",
   "driverPayoutMethodSubtitle": "Mablag' yechilganda qayerga o'tkazish kerak",
   "driverPayoutMethodKaspiOption": "Kaspi o'tkazmasi",
@@ -1118,32 +1389,104 @@
   "driverPayoutMethodNotSetShort": "To'lov usuli ko'rsatilmagan",
   "addButton": "Qo'shish",
   "driverReviewsCountLabel": "{count} {count, plural, other{fikr}}",
-  "@driverReviewsCountLabel": {"placeholders": {"count": {"type": "int"}}},
+  "@driverReviewsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverTopTagLabel": "{tag} · {count}",
-  "@driverTopTagLabel": {"placeholders": {"tag": {"type": "String"}, "count": {"type": "int"}}},
+  "@driverTopTagLabel": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverClientAcceptedPriceToast": "Mijoz sizning narxingizni qabul qildi: {price}",
-  "@driverClientAcceptedPriceToast": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientAcceptedPriceToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverClientDeclinedOfferToast": "Mijoz sizning narx taklifingizni rad etdi",
   "driverClientCounterOfferToast": "Mijoz o'z narxini taklif qildi: {price}",
-  "@driverClientCounterOfferToast": {"placeholders": {"price": {"type": "String"}}},
+  "@driverClientCounterOfferToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverSpeedLimitAnnouncement": "Tezlik chegarasi {limit}",
-  "@driverSpeedLimitAnnouncement": {"placeholders": {"limit": {"type": "int"}}},
+  "@driverSpeedLimitAnnouncement": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "driverCameraIn500mVoice": "500 metrdan keyin kamera",
   "driverCameraIn500mBanner": "Kamera 500 m{heading}",
-  "@driverCameraIn500mBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraIn500mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverCameraIn200mVoice": "200 metrdan keyin kamera",
   "driverCameraIn200mBanner": "Kamera 200 m{heading}",
-  "@driverCameraIn200mBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraIn200mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverCameraNowVoice": "Kamera",
   "driverCameraNowBanner": "Kamera{heading}",
-  "@driverCameraNowBanner": {"placeholders": {"heading": {"type": "String"}}},
+  "@driverCameraNowBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
   "driverSignBannerLabel": "Belgi: {sign}",
-  "@driverSignBannerLabel": {"placeholders": {"sign": {"type": "String"}}},
+  "@driverSignBannerLabel": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      }
+    }
+  },
   "driverSpeedingVoiceWarning": "Tezlikdan oshib ketish",
   "driverManeuverIn200mVoice": "200 metrdan keyin {maneuver}{street}",
-  "@driverManeuverIn200mVoice": {"placeholders": {"maneuver": {"type": "String"}, "street": {"type": "String"}}},
+  "@driverManeuverIn200mVoice": {
+    "placeholders": {
+      "maneuver": {
+        "type": "String"
+      },
+      "street": {
+        "type": "String"
+      }
+    }
+  },
   "driverStreetSuffix": " {street} ko'chasida",
-  "@driverStreetSuffix": {"placeholders": {"street": {"type": "String"}}},
+  "@driverStreetSuffix": {
+    "placeholders": {
+      "street": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceOfferSentToast": "Narx taklifi mijozga yuborildi",
   "driverAcceptedClientPriceToast": "Siz mijoz narxini qabul qildingiz — buyurtma sizniki",
   "driverDeclinedClientOfferToast": "Siz mijoz taklifini rad etdingiz",
@@ -1167,16 +1510,34 @@
   "driverContactSupportAction": "Qo'llab-quvvatlash xizmatiga yozish",
   "driverChooseRegionMessage": "Sizda tasdiqlangan hududlar bor — buyurtmalarni qabul qilishni boshlash uchun birini tanlang.",
   "driverRegionPausedMessage": "«{region}» hududida ishlash hozir to'xtatilgan. ",
-  "@driverRegionPausedMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverRegionPausedMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverTryLaterOrChangeRegion": "Keyinroq urinib ko'ring yoki boshqa hududni tanlang.",
   "driverTryLater": "Keyinroq urinib ko'ring.",
   "driverChangeRegionAction": "Hududni almashtirish",
   "driverAccessBlockedTitle": "Kirish bloklangan",
   "driverRegionBlockedByAdminMessage": "«{region}» hududida ishlash administrator tomonidan bloklangan.",
-  "@driverRegionBlockedByAdminMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverRegionBlockedByAdminMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverApplicationUnderReviewTitle": "Ariza ko'rib chiqilmoqda",
   "driverApplicationUnderReviewMessage": "Biz sizning «{region}» hududiga kirishingizni tekshirmoqdamiz. Odatda bu biroz vaqt oladi.",
-  "@driverApplicationUnderReviewMessage": {"placeholders": {"region": {"type": "String"}}},
+  "@driverApplicationUnderReviewMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
   "driverStatusUnavailableByRegion": "Hudud bo'yicha mavjud emas",
   "driverRegionStatusDisabled": "O'chirilgan",
   "driverRegionStatusBlocked": "Bloklangan",
@@ -1200,13 +1561,25 @@
   "driverQuickMessagePleaseComeOut": "Iltimos, chiqing",
   "driverQuickMessageOnMyWay": "Sizga tomon yo'ldaman",
   "driverQuickMessageSentToast": "Yuborildi: {text}",
-  "@driverQuickMessageSentToast": {"placeholders": {"text": {"type": "String"}}},
+  "@driverQuickMessageSentToast": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "driverQuickMessageSheetTitle": "Tezkor xabar",
   "driverPriceOfferRangeError": "200 dan 1 000 000 ₸ gacha narx kiriting",
   "driverPriceOfferSheetTitle": "O'z narxingizni taklif qiling",
   "driverPriceOfferSheetSubtitle": "Mijoz narxingizni ko'radi va rozi bo'lishi yoki rad etishi mumkin",
   "driverCurrentOrderPriceLabel": "Buyurtmaning joriy narxi: {price}",
-  "@driverCurrentOrderPriceLabel": {"placeholders": {"price": {"type": "String"}}},
+  "@driverCurrentOrderPriceLabel": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "driverPriceFieldLabel": "Narx, ₸",
   "driverSendOfferButton": "Taklifni yuborish",
   "driverRouteAcceptedToast": "Marshrut qabul qilindi",
@@ -1240,7 +1613,16 @@
   "driverAlertSpeedLimitLabel": "Chegara, km/soat",
   "driverAlertSpeedLimitHint": "Faqat belgida ko'rsatilgan bo'lsa",
   "driverPointSelectedCoordinates": "Nuqta tanlandi: {lat}, {lng}",
-  "@driverPointSelectedCoordinates": {"placeholders": {"lat": {"type": "String"}, "lng": {"type": "String"}}},
+  "@driverPointSelectedCoordinates": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
   "driverNearbyAlertsTitle": "Yaqin atrofdagi voqealar",
   "driverNearbyAlertsSubtitle": "Faqat saqlangan faol xabarlarni ko'rsatamiz.",
   "driverLoadingAlerts": "Voqealar yuklanmoqda...",
@@ -1268,15 +1650,42 @@
   "roadAlertPedestrianCrossing": "Piyodalar o'tish joyi",
   "roadAlertOther": "Boshqa",
   "driverAlertConfidenceLabel": "Ishonch: {score}% · tasdiqlar: {count}",
-  "@driverAlertConfidenceLabel": {"placeholders": {"score": {"type": "int"}, "count": {"type": "int"}}},
+  "@driverAlertConfidenceLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverAlertSpeedLimitDetail": "Chegara: {limit} km/soat",
-  "@driverAlertSpeedLimitDetail": {"placeholders": {"limit": {"type": "int"}}},
+  "@driverAlertSpeedLimitDetail": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
   "driverAlertHeadingDetail": "Yo'nalish: {direction}",
-  "@driverAlertHeadingDetail": {"placeholders": {"direction": {"type": "String"}}},
+  "@driverAlertHeadingDetail": {
+    "placeholders": {
+      "direction": {
+        "type": "String"
+      }
+    }
+  },
   "driverConfirmAlertButton": "Joyida",
   "noButton": "Yo'q",
   "driverInDistanceLabel": "{distance} qoldi",
-  "@driverInDistanceLabel": {"placeholders": {"distance": {"type": "String"}}},
+  "@driverInDistanceLabel": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
   "roadAlertShortAccident": "YTH",
   "roadAlertShortRoadWork": "Y",
   "roadAlertShortSpeedCamera": "K",
@@ -1290,5 +1699,8 @@
   "roadAlertShortTemporarySpeedLimit": "CHEG",
   "roadAlertShortDangerousTurn": "XB",
   "roadAlertShortRailroadCrossing": "TY",
-  "roadAlertShortPedestrianCrossing": "PO"
+  "roadAlertShortPedestrianCrossing": "PO",
+  "driverRegionsLoadFailedTitle": "Hududlarni yuklab bo'lmadi",
+  "driverRegionsLoadFailedMessage": "Aloqani tekshiring va yangilash uchun ekranni pastga torting. Hududlarga ruxsatingiz saqlanib qolgan.",
+  "driverRegionsRetryAction": "Yangilash"
 }

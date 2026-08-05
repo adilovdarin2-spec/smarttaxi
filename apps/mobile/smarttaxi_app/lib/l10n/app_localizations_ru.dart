@@ -3961,4 +3961,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get roadAlertShortPedestrianCrossing => 'ПЕШ';
+
+  @override
+  String get driverRegionsLoadFailedTitle => 'Не удалось загрузить регионы';
+
+  @override
+  String get driverRegionsLoadFailedMessage =>
+      'Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.';
+
+  @override
+  String get driverRegionsRetryAction => 'Обновить';
 }

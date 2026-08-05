@@ -3718,4 +3718,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get roadAlertShortPedestrianCrossing => '行';
+
+  @override
+  String get driverRegionsLoadFailedTitle => '无法加载区域';
+
+  @override
+  String get driverRegionsLoadFailedMessage => '请检查网络连接，然后下拉刷新。您的区域权限没有变化。';
+
+  @override
+  String get driverRegionsRetryAction => '刷新';
 }

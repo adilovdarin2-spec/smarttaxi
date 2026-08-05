@@ -4002,4 +4002,14 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get roadAlertShortPedestrianCrossing => 'PO';
+
+  @override
+  String get driverRegionsLoadFailedTitle => 'Hududlarni yuklab bo\'lmadi';
+
+  @override
+  String get driverRegionsLoadFailedMessage =>
+      'Aloqani tekshiring va yangilash uchun ekranni pastga torting. Hududlarga ruxsatingiz saqlanib qolgan.';
+
+  @override
+  String get driverRegionsRetryAction => 'Yangilash';
 }
