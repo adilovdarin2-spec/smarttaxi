@@ -1246,7 +1246,70 @@ async function reverseAddressWithPhoton({ lat, lng }, fetchImpl = fetch) {
   return publicPhotonAddressSuggestion(features[0]);
 }
 
+// Looks the query up in the locally harvested OSM gazetteer (see
+// tools/import-addresses.js). Deliberately consulted before any external
+// geocoder: for the towns we operate in, OSM already holds the house
+// numbers, streets, named buildings and POIs riders actually type —
+// Атакент ~2 914 house numbers, Шымкент ~99 386 — so answering from our
+// own table is both more complete than what the remote geocoders return
+// for these places and free of their rate limits and latency. Returns []
+// while the table is still empty (before the first import run), leaving
+// the existing remote cascade untouched.
+async function searchGazetteer(text, regionName, limit, executor = defaultQuery) {
+  const { rows } = await executor(
+    `SELECT a.label, a.lat, a.lng, a.kind, r.name AS region_name
+       FROM addresses a
+       JOIN regions r ON r.id = a.region_id
+      WHERE a.label ILIKE $1
+        AND ($2::text IS NULL OR r.name = $2)
+      ORDER BY
+        -- Prefix matches first: someone typing "Бекта" wants the street
+        -- itself above every shop that merely mentions it.
+        (a.label ILIKE $3) DESC,
+        -- Then the classes in the order a rider most likely means.
+        CASE a.kind WHEN 'housenumber' THEN 0 WHEN 'poi' THEN 1
+                    WHEN 'building' THEN 2 ELSE 3 END,
+        length(a.label)
+      LIMIT $4`,
+    [`%${text}%`, regionName || null, `${text}%`, limit]
+  );
+  return rows.map((row) => ({
+    label: row.label,
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    region: row.region_name,
+    source: "gazetteer"
+  }));
+}
+
 export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz" }, fetchImpl = fetch) {
+  const trimmed = String(q || "").trim();
+  if (trimmed.length < 2) return [];
+  // Local first; fall through to the remote cascade only when the
+  // gazetteer cannot fill the page, so a rider searching a street we do
+  // hold never waits on a slower, thinner remote answer.
+  try {
+    const local = await searchGazetteer(trimmed, compactText(region), limit);
+    if (local.length >= limit) return local;
+    if (local.length) {
+      const remote = await searchAddressesRemote(
+        { q, region, limit: limit - local.length, countrycodes }, fetchImpl
+      );
+      const seen = new Set(local.map((item) => item.label.toLowerCase()));
+      return [
+        ...local,
+        ...remote.filter((item) => !seen.has(String(item.label).toLowerCase()))
+      ];
+    }
+  } catch (error) {
+    // A gazetteer problem must never take address search down with it —
+    // the remote cascade below is a complete implementation on its own.
+    console.error("[addresses] gazetteer lookup failed", error);
+  }
+  return searchAddressesRemote({ q, region, limit, countrycodes }, fetchImpl);
+}
+
+async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz" }, fetchImpl = fetch) {
   const query = String(q || "").trim();
   if (query.length < 2) return [];
   const explicitRegion = compactText(region);

@@ -948,7 +948,39 @@ const statements = [
   // Guards against the same driver stacking multiple queued rows for one
   // order -- resubmitting while already queued should revise their queued
   // price (see submitDriverPriceOffer's ON CONFLICT), not add a second row.
-  "CREATE UNIQUE INDEX IF NOT EXISTS idx_order_price_offer_queue_order_driver_pending ON order_price_offer_queue(order_id, driver_id) WHERE status='PENDING'"
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_order_price_offer_queue_order_driver_pending ON order_price_offer_queue(order_id, driver_id) WHERE status='PENDING'",
+  // Local address gazetteer, harvested from OSM per region (see
+  // tools/import-addresses.js). Live geocoding stays as the fallback for
+  // anything not held here, but most of what a rider actually types -- a
+  // street, a house number, a shop or clinic by name -- is already in OSM
+  // for these towns (Атакент alone has ~2.9k house numbers, Шымкент ~99k)
+  // and can be answered locally and instantly, with no third-party rate
+  // limit sitting in the request path.
+  `CREATE TABLE IF NOT EXISTS addresses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+    -- 'housenumber' | 'street' | 'building' | 'poi'
+    kind TEXT NOT NULL,
+    -- What the rider sees and searches against, composed at import time
+    -- ("улица Бектасова, 12", "Магазин Береке").
+    label TEXT NOT NULL,
+    street TEXT,
+    housenumber TEXT,
+    name TEXT,
+    lat NUMERIC(10,6) NOT NULL,
+    lng NUMERIC(10,6) NOT NULL,
+    -- OSM element identity, so a re-import updates rather than duplicates.
+    osm_type TEXT NOT NULL,
+    osm_id BIGINT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_addresses_osm ON addresses(osm_type, osm_id)",
+  "CREATE INDEX IF NOT EXISTS idx_addresses_region ON addresses(region_id)",
+  // Trigram index over the label: substring matching that still works when
+  // the rider types the middle of a name rather than its start, which a
+  // plain prefix index would miss.
+  `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
+  "CREATE INDEX IF NOT EXISTS idx_addresses_label_trgm ON addresses USING gin(label gin_trgm_ops)"
 ];
 
 export async function runMigrations() {
