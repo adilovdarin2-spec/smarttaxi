@@ -1260,12 +1260,16 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
     `SELECT a.label, a.lat, a.lng, a.kind, r.name AS region_name
        FROM addresses a
        JOIN regions r ON r.id = a.region_id
-      WHERE a.label ILIKE $1
+      -- search_text, not label: it carries the label plus every name
+      -- spelling the harvest found, so "Бектасова" and "Бектасов көшесі"
+      -- both reach the same street — riders here use either form. COALESCE
+      -- keeps rows written before that column existed searchable.
+      WHERE COALESCE(a.search_text, a.label) ILIKE $1
         AND ($2::text IS NULL OR r.name = $2)
       ORDER BY
         -- Prefix matches first: someone typing "Бекта" wants the street
         -- itself above every shop that merely mentions it.
-        (a.label ILIKE $3) DESC,
+        (COALESCE(a.search_text, a.label) ILIKE $3) DESC,
         -- Then the classes in the order a rider most likely means.
         CASE a.kind WHEN 'housenumber' THEN 0 WHEN 'poi' THEN 1
                     WHEN 'building' THEN 2 ELSE 3 END,

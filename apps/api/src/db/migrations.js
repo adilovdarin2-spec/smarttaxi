@@ -980,7 +980,16 @@ const statements = [
   // the rider types the middle of a name rather than its start, which a
   // plain prefix index would miss.
   `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
-  "CREATE INDEX IF NOT EXISTS idx_addresses_label_trgm ON addresses USING gin(label gin_trgm_ops)"
+  "CREATE INDEX IF NOT EXISTS idx_addresses_label_trgm ON addresses USING gin(label gin_trgm_ops)",
+  // Streets here are named both ways in daily use — "Бектасова" and
+  // "Бектасов көшесі" are the same street, and riders type whichever comes
+  // to mind. OSM carries one spelling in `name` and frequently the other in
+  // `name:ru`/`name:kk`; 1 420 of Мырзакент's 26 715 harvested rows carry
+  // more than one. search_text holds the label plus every spelling found,
+  // so a single index answers a query in either language.
+  "ALTER TABLE addresses ADD COLUMN IF NOT EXISTS search_text TEXT",
+  "UPDATE addresses SET search_text = label WHERE search_text IS NULL",
+  "CREATE INDEX IF NOT EXISTS idx_addresses_search_trgm ON addresses USING gin(search_text gin_trgm_ops)"
 ];
 
 export async function runMigrations() {

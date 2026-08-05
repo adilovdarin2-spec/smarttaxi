@@ -9,6 +9,7 @@ import { env } from "./config/env.js";
 import { connectRedis } from "./db/redis.js";
 import { query, pool } from "./db/pool.js";
 import { runMigrations } from "./db/migrations.js";
+import { loadHarvestedAddresses } from "./tools/load-addresses.js";
 import { errorHandler, notFound } from "./common/errors.js";
 import { captureError, initSentry } from "./common/sentry.js";
 import { rateLimit } from "./common/rateLimit.js";
@@ -232,6 +233,23 @@ async function bootstrap() {
   await query("SELECT 1");
   startRecurringBookingsScheduler(io);
   server.listen(env.API_PORT, () => console.log(`[API] SmartTaxi running on ${env.API_PORT}`));
+  // Detached, and after the listener is up: loading ~100k address rows must
+  // never delay the health check or hold the port closed. It skips itself
+  // once the table already holds what the files contain, so this does real
+  // work on the first boot after a harvest and nothing on every boot after.
+  //
+  // This is the only way the gazetteer reaches production: the container
+  // cannot open a connection to any Overpass mirror, so the data is
+  // harvested on a developer machine into data/addresses/ and committed
+  // (see tools/harvest-addresses.js). Without it the table stays empty and
+  // every address search in Мырзакент returns the settlement itself and
+  // nothing else, whatever the rider types — measured against the live API
+  // on 2026-08-06.
+  loadHarvestedAddresses()
+    .then((written) => {
+      if (written) console.log(`[addresses] gazetteer load finished: ${written} rows`);
+    })
+    .catch((error) => console.error("[addresses] gazetteer load failed", error));
 }
 process.on("SIGTERM", async () => { await pool.end(); process.exit(0); });
 process.on("SIGINT", async () => { await pool.end(); process.exit(0); });
