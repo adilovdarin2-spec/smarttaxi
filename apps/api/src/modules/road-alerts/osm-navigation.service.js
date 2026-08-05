@@ -166,7 +166,24 @@ function delay(ms) {
 const OVERPASS_PASS_ATTEMPTS = 2;
 const OVERPASS_RETRY_DELAY_MS = 1200;
 
+// When Overpass is not merely busy but unreachable, every lookup burns six
+// doomed fetches and writes another line to the log. Observed on Railway
+// 2026-08-05: all three mirrors returning `fetch failed` — a connect/DNS
+// failure, not an HTTP status — on a ~45s loop for as long as a driver had
+// the navigator open. Thousands of identical log lines, and six pointless
+// connection attempts on every single request.
+//
+// After enough consecutive total failures, stop trying for a while and hand
+// back an empty result immediately. The window is deliberately short: the
+// far more common case is one mirror having a bad ten minutes, and cameras
+// should come back on their own without needing a redeploy.
+const OVERPASS_BREAKER_THRESHOLD = 3;
+const OVERPASS_BREAKER_COOLDOWN_MS = 5 * 60 * 1000;
+let overpassConsecutiveFailures = 0;
+let overpassBreakerOpenUntil = 0;
+
 async function overpassQuery(ql) {
+  if (Date.now() < overpassBreakerOpenUntil) return [];
   await acquireOverpassSlot();
   try {
     let lastError = null;
@@ -191,6 +208,7 @@ async function overpassQuery(ql) {
           });
           if (!response.ok) throw new Error(`Overpass HTTP ${response.status}`);
           const data = await response.json();
+          overpassConsecutiveFailures = 0;
           return Array.isArray(data.elements) ? data.elements : [];
         } catch (error) {
           lastError = error;
@@ -200,6 +218,15 @@ async function overpassQuery(ql) {
         }
       }
       if (attempt < OVERPASS_PASS_ATTEMPTS) await delay(OVERPASS_RETRY_DELAY_MS);
+    }
+    overpassConsecutiveFailures += 1;
+    if (overpassConsecutiveFailures >= OVERPASS_BREAKER_THRESHOLD) {
+      overpassBreakerOpenUntil = Date.now() + OVERPASS_BREAKER_COOLDOWN_MS;
+      overpassConsecutiveFailures = 0;
+      console.warn(
+        `[osm-navigation] every mirror unreachable ${OVERPASS_BREAKER_THRESHOLD}x in a row; ` +
+        `pausing lookups for ${OVERPASS_BREAKER_COOLDOWN_MS / 60000} min`
+      );
     }
     throw lastError ?? new Error("All Overpass mirrors failed");
   } finally {
