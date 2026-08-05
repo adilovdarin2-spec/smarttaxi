@@ -5354,15 +5354,19 @@ class _MapCanvasState extends State<_MapCanvas> {
                   if (route.isNotEmpty)
                     PolylineLayer(
                       polylines: [
+                        // Dark blue casing under the bright blue core. The
+                        // casing used to be white, which against a near-white
+                        // map is invisible: the route read as a thin blue
+                        // stroke that the street grid kept cutting through.
                         Polyline(
                           points: route,
-                          color: Colors.white.withValues(alpha: 0.92),
-                          strokeWidth: 9,
+                          color: SmartTaxiColors.goldDeep,
+                          strokeWidth: 11,
                         ),
                         Polyline(
                           points: route,
                           color: SmartTaxiColors.gold,
-                          strokeWidth: 5.5,
+                          strokeWidth: 7,
                         ),
                       ],
                     ),

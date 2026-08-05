@@ -3710,15 +3710,17 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                   if (widget.route.isNotEmpty)
                     PolylineLayer(
                       polylines: [
-                        Polyline(
-                          points: widget.route,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          strokeWidth: 9,
-                        ),
+                        // Dark casing under a bright core — see the navigator
+                        // map for why the white casing had to go.
                         Polyline(
                           points: widget.route,
                           color: SmartTaxiColors.goldDeep,
-                          strokeWidth: 5.5,
+                          strokeWidth: 11,
+                        ),
+                        Polyline(
+                          points: widget.route,
+                          color: SmartTaxiColors.gold,
+                          strokeWidth: 7,
                         ),
                       ],
                     ),
@@ -3731,13 +3733,14 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                           width: 34,
                           height: 34,
                           child: const _NavigatorPointMarker(
-                            // radio_button_checked_rounded, not
-                            // navigation_rounded -- the app-wide pickup icon
-                            // (see route_fields.dart) is a plain dot; an arrow
-                            // reads as a heading/compass indicator and gets
-                            // confused with the driver's own position marker
-                            // once the two are close together on screen.
-                            icon: Icons.radio_button_checked_rounded,
+                            // Not navigation_rounded (reads as a heading
+                            // arrow) and no longer the concentric-ring dot
+                            // either: on a live map beside the car marker,
+                            // a ringed blue disc is the universal "you are
+                            // here" glyph and was being read as a duplicate
+                            // of the driver's own position. A person icon
+                            // can only mean the passenger.
+                            icon: Icons.person_rounded,
                             background: SmartTaxiColors.gold,
                             foreground: Colors.white,
                           ),
@@ -4052,80 +4055,140 @@ class _NavigatorPointMarker extends StatelessWidget {
   }
 }
 
-class _NavigatorMetric extends StatelessWidget {
-  const _NavigatorMetric({
-    required this.title,
-    required this.value,
-    required this.suffix,
-    this.emphasize = false,
-    this.valueColor,
+class _NavSpeedDial extends StatelessWidget {
+  const _NavSpeedDial({
+    required this.speedKmh,
+    required this.speeding,
+    required this.label,
   });
 
-  final String title;
-  final String value;
-  final String suffix;
-  // Bumps the value's font size for the primary GPS speed readout — the one
-  // number a driver needs to read at a glance without looking away long.
-  final bool emphasize;
-  final Color? valueColor;
+  final int? speedKmh;
+  final bool speeding;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    // Round, like the instrument it stands in for. A rectangular card of the
+    // same size reads as one more panel among many; the circle is spotted
+    // without being looked for, which is the entire point of a speed readout.
+    final tint = speeding ? palette.danger : palette.gold;
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: 72,
+      height: 72,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: palette.goldSurface,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(20),
+        shape: BoxShape.circle,
+        color: speeding ? palette.dangerSoft : palette.goldSurface,
+        border: Border.all(color: tint.withValues(alpha: 0.45), width: 2),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            title,
+            speedKmh == null ? '--' : '$speedKmh',
+            maxLines: 1,
+            style: TextStyle(
+              color: speeding ? palette.danger : palette.text,
+              fontSize: 26,
+              height: 1.05,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 1,
             style: TextStyle(
               color: palette.textSecondary,
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Flexible(
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: valueColor ?? palette.text,
-                    fontSize: emphasize ? 40 : 23,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              if (suffix.isNotEmpty) ...[
-                const SizedBox(width: 5),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                    suffix,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
         ],
       ),
+    );
+  }
+}
+
+// Distance, time and clock arrival in one block, sized by content instead of
+// by an equal-thirds grid. "2.7 км" is what the driver checks constantly, so
+// it carries the weight; the minutes and the arrival clock sit under it as
+// context rather than competing for the same emphasis.
+class _NavRouteReadout extends StatelessWidget {
+  const _NavRouteReadout({
+    required this.distanceMeters,
+    required this.durationSeconds,
+  });
+
+  final double? distanceMeters;
+  final double? durationSeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final meters = distanceMeters;
+    final distance = meters == null
+        ? '--'
+        : meters >= 1000
+            ? '${(meters / 1000).toStringAsFixed(1)} км'
+            : '${meters.round()} м';
+
+    final seconds = durationSeconds;
+    final minutes = seconds == null ? null : (seconds / 60).ceil();
+    // Arrival is the question behind "сколько ещё" — a driver answering a
+    // passenger says a time, not a duration. Computed off the live remaining
+    // duration, so it slides as traffic does.
+    final arrival =
+        seconds == null ? null : DateTime.now().add(Duration(seconds: seconds.round()));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: Text(
+                distance,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: palette.text,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            if (minutes != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                '$minutes мин',
+                maxLines: 1,
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          arrival == null
+              ? 'Рассчитываем маршрут'
+              : 'Прибытие в ${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -4471,6 +4534,21 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
       liveDistanceMeters: routeProgress?.distanceMeters,
       liveDurationSeconds: routeProgress?.durationSeconds,
     );
+    // The panel's top line names WHERE we are heading, not how far it is.
+    // It used to carry the distance/ETA sentence while the row underneath
+    // repeated the very same two numbers — the panel said everything twice
+    // and still never told the driver which street he was aiming for.
+    final navOrder = shell._activeOrder;
+    final navToDropoff = navOrder != null &&
+        _DriverShellState._routePhaseForStatus(navOrder.status) == 'to_dropoff';
+    final targetLabel = navOrder == null
+        ? targetMeta
+        : (navToDropoff ? navOrder.dropoff : navOrder.pickup);
+    final targetIcon = navOrder == null
+        ? Icons.route_rounded
+        : (navToDropoff
+            ? Icons.place_rounded
+            : Icons.person_pin_circle_rounded);
     final showVoiceBanner = shell._navigatorBannerText != null &&
         shell._navigatorBannerUntil != null &&
         DateTime.now().isBefore(shell._navigatorBannerUntil!);
@@ -4524,15 +4602,22 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                       if (route.isNotEmpty)
                         PolylineLayer(
                           polylines: [
-                            Polyline(
-                              points: route,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              strokeWidth: 9,
-                            ),
+                            // The casing used to be white, which on a
+                            // near-white map is no casing at all — the route
+                            // was a bare 5.5px stroke with nothing separating
+                            // it from the streets underneath. A dark blue
+                            // outline under a brighter blue core is what
+                            // makes a route line read as a ribbon laid over
+                            // the map instead of one more drawn road.
                             Polyline(
                               points: route,
                               color: SmartTaxiColors.goldDeep,
-                              strokeWidth: 5.5,
+                              strokeWidth: 12,
+                            ),
+                            Polyline(
+                              points: route,
+                              color: SmartTaxiColors.gold,
+                              strokeWidth: 8,
                             ),
                           ],
                         ),
@@ -4544,8 +4629,14 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                                   .toLatLng(),
                               width: 34,
                               height: 34,
+                              // Deliberately NOT the concentric-ring glyph:
+                              // a blue disc with a white ring is what every
+                              // map app uses for "you are here", so next to
+                              // the car marker it read as a second, offset
+                              // copy of the driver's own position rather
+                              // than as the passenger waiting up ahead.
                               child: const _NavigatorPointMarker(
-                                icon: Icons.radio_button_checked_rounded,
+                                icon: Icons.person_rounded,
                                 background: SmartTaxiColors.gold,
                                 foreground: Colors.white,
                               ),
@@ -4559,7 +4650,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                               child: const _NavigatorPointMarker(
                                 icon: Icons.location_on_rounded,
                                 background: SmartTaxiColors.gold,
-                                foreground: SmartTaxiColors.text,
+                                foreground: Colors.white,
                               ),
                             ),
                           for (final alert in alerts.take(12))
@@ -4720,62 +4811,32 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (targetMeta != null) ...[
-                  _NavTargetStrip(text: targetMeta),
-                  const SizedBox(height: 10),
+                if (targetLabel != null) ...[
+                  _NavTargetStrip(text: targetLabel, icon: targetIcon),
+                  const SizedBox(height: 12),
                 ],
-                // Three readings across the panel, not one card marooned in
-                // white space. Merging the two floating cards left the speed
-                // alone in a wide surface, which traded "scattered debris"
-                // for "mostly empty" — the same cheapness in another form.
-                // Remaining distance and arrival time are already computed
-                // for the strip above, so filling the row costs nothing and
-                // answers what a driver actually glances down for.
+                // A speedometer dial, then the route figures, then the limit
+                // sign — one continuous row rather than three boxed cells.
+                // The boxed version had to give each number an equal third of
+                // the width, which left "0" swimming in white space while
+                // "2.7" was squeezed until it clipped away entirely.
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Expanded(
-                      child: _NavigatorMetric(
-                        title: l10n.driverSpeedLabel,
-                        value: speedKmh == null ? '--' : '$speedKmh',
-                        suffix: 'км/ч',
-                        emphasize: true,
-                        valueColor: speeding ? context.palette.danger : null,
-                      ),
+                    _NavSpeedDial(
+                      speedKmh: speedKmh,
+                      speeding: speeding,
+                      label: l10n.driverSpeedLabel,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: _NavigatorMetric(
-                        title: 'Осталось',
-                        value: routeProgress?.distanceMeters == null
-                            ? '--'
-                            : (routeProgress!.distanceMeters >= 1000
-                                ? (routeProgress.distanceMeters / 1000)
-                                    .toStringAsFixed(1)
-                                : '${routeProgress.distanceMeters.round()}'),
-                        suffix: (routeProgress?.distanceMeters ?? 0) >= 1000
-                            ? 'км'
-                            : 'м',
-                        emphasize: true,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _NavigatorMetric(
-                        title: 'В пути',
-                        value: routeProgress?.durationSeconds == null
-                            ? '--'
-                            : '${(routeProgress!.durationSeconds / 60).ceil()}',
-                        suffix: 'мин',
-                        emphasize: true,
+                      child: _NavRouteReadout(
+                        distanceMeters: routeProgress?.distanceMeters,
+                        durationSeconds: routeProgress?.durationSeconds,
                       ),
                     ),
                     if (speedLimit != null) ...[
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: _SpeedLimitSign(limitKmh: speedLimit),
-                      ),
+                      const SizedBox(width: 10),
+                      _SpeedLimitSign(limitKmh: speedLimit),
                     ],
                   ],
                 ),
@@ -4879,9 +4940,13 @@ class _NavCircleButton extends StatelessWidget {
 }
 
 class _NavTargetStrip extends StatelessWidget {
-  const _NavTargetStrip({required this.text});
+  const _NavTargetStrip({required this.text, this.icon});
 
   final String text;
+  // Whether this leg is a pickup or a drop-off is the one thing the address
+  // alone cannot say, and getting it wrong is the difference between driving
+  // to a passenger and driving away with none.
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -4894,7 +4959,7 @@ class _NavTargetStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
-          Icon(Icons.route_rounded, size: 18, color: palette.goldDeep),
+          Icon(icon ?? Icons.route_rounded, size: 18, color: palette.goldDeep),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -5084,18 +5149,18 @@ class _TripMapState extends State<_TripMap> {
                   PolylineLayer(polylines: [
                     Polyline(
                         points: widget.route,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        strokeWidth: 7.5),
+                        color: SmartTaxiColors.goldDeep,
+                        strokeWidth: 9),
                     Polyline(
                         points: widget.route,
-                        color: SmartTaxiColors.goldDeep,
-                        strokeWidth: 4)
+                        color: SmartTaxiColors.gold,
+                        strokeWidth: 5.5)
                   ]),
                 MarkerLayer(markers: [
                   if (pickup != null)
                     _routePointMarker(
                       pickup,
-                      icon: Icons.radio_button_checked_rounded,
+                      icon: Icons.person_rounded,
                       background: SmartTaxiColors.gold,
                       foreground: Colors.white,
                     ),

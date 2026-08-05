@@ -557,11 +557,13 @@ void main() {
     expect(driver, isNot(contains("_NavigatorPointMarker(label: 'A')")));
     expect(driver, isNot(contains("_NavigatorPointMarker(label: 'B')")));
     expect(driver, isNot(contains('_letterMarker')));
-    // radio_button_checked_rounded, not navigation_rounded -- matches the
-    // app-wide pickup icon convention (see route_fields.dart) and avoids an
-    // arrow icon reading as a heading/compass indicator next to the
-    // driver's own position marker.
-    expect(driver, contains('Icons.radio_button_checked_rounded'));
+    // On the driver's live maps the pickup pin is a person, NOT the
+    // concentric-ring dot route_fields.dart uses: a ringed blue disc is the
+    // universal "you are here" glyph, so next to the car marker it read as a
+    // second, offset copy of the driver's own position rather than as the
+    // waiting passenger.
+    expect(driver, contains('Icons.person_rounded'));
+    expect(driver, isNot(contains('Icons.radio_button_checked_rounded')));
     expect(driver, contains('Icons.location_on_rounded'));
   });
 
@@ -628,12 +630,16 @@ void main() {
     expect(driver, contains('_TripMap'));
     // Navigator became a dedicated pushed full-screen route instead of a
     // 4th IndexedStack tab (P2 rework) — _navigatorTab/_NavigatorCockpit no
-    // longer exist; _SmartNavigatorMap's layers and _NavigatorMetric are
-    // reused inside the new _DriverFullScreenNavigator.
+    // longer exist; _SmartNavigatorMap's layers are reused inside the new
+    // _DriverFullScreenNavigator. The equal-thirds _NavigatorMetric cards
+    // that once filled its bottom panel are gone too — they gave every
+    // reading the same width, which left the speed swimming in white space
+    // while the distance was squeezed until it clipped away entirely.
     expect(driver, contains('_openFullScreenNavigator'));
     expect(driver, contains('_DriverFullScreenNavigator'));
     expect(driver, contains('_SmartNavigatorMap'));
-    expect(driver, contains('_NavigatorMetric'));
+    expect(driver, contains('_NavSpeedDial'));
+    expect(driver, contains('_NavRouteReadout'));
     expect(driver, contains('driverFreeModeLabel'));
     // 2GIS/Yandex/Google external-navigator buttons were removed by explicit
     // request — guard against them silently coming back.
