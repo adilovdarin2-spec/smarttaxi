@@ -153,6 +153,14 @@ function createExecutor() {
       if (/INSERT INTO order_status_history/i.test(sql)) {
         return { rows: [] };
       }
+      // Accepting one offer expires every other driver's queued bid for the
+      // same order. This fixture has no queue rows to expire, so the write
+      // is simply acknowledged — but it has to be known here, or the mock's
+      // catch-all below fails the whole check on a statement that is
+      // perfectly correct in the service.
+      if (/UPDATE order_price_offer_queue SET status='EXPIRED'/i.test(sql)) {
+        return { rows: [] };
+      }
       if (/SELECT DISTINCT ON \(type\) type, status\s+FROM driver_documents/i.test(sql)) {
         // This file's fixtures aren't about document review — every driver
         // here is treated as fully document-approved (see

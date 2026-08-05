@@ -35,9 +35,16 @@ const paymentsRoutes = readFileSync(join(root, "modules", "payments", "payments.
     /balance=balance\+/,
     "the non-CASH/KASPI (CARD) branch of TRIP_COMPLETED must not credit drivers.balance directly — only settleConfirmedOrderEarnings() may do that, once payment is confirmed"
   );
+  // The invariant being locked in is the CASH/KASPI early return, not the
+  // exact parameter list. `executor` has since lost its `= defaultQuery`
+  // default — deliberately, by the look of it: settlement moves money and
+  // both call sites hand in an open transaction, so forcing the executor to
+  // be passed explicitly is the safer signature. Pinning the defaults here
+  // made this check fail on a change that was an improvement, so the
+  // signature is now matched loosely and the early return precisely.
   assert.match(
     financeService,
-    /export async function settleConfirmedOrderEarnings\(order, executor = defaultQuery, actorUserId = null\) \{\s*\n\s*if \(\["CASH", "KASPI"\]\.includes\(order\.payment_method\)\) return/,
+    /export async function settleConfirmedOrderEarnings\([^)]*\) \{\s*\n\s*if \(\["CASH", "KASPI"\]\.includes\(order\.payment_method\)\) return/,
     "settleConfirmedOrderEarnings must no-op for CASH/KASPI (already settled as debt at TRIP_COMPLETED)"
   );
   assert.match(
