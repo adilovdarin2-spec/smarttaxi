@@ -326,10 +326,13 @@ router.post("/addresses/import", requireAuth, requireRole("OWNER"), async (req, 
     )).rows;
     if (!regions.length) throw new AppError("No matching region", 404, "REGION_NOT_FOUND");
 
-    await writeAudit({
+    // writeAudit takes the executor first and the options second, and the
+    // field is `metadata` — calling it with a single object silently left
+    // `action` undefined and failed the insert.
+    await writeAudit(query, {
       actorUserId: req.user.id,
       action: "ADDRESS_IMPORT_STARTED",
-      meta: { regions: regions.map((region) => region.code) }
+      metadata: { regions: regions.map((region) => region.code) }
     });
 
     // Deliberately not awaited — see the note above.
