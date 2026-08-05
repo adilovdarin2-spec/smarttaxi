@@ -4699,7 +4699,25 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
             left: 14,
             right: 14,
             bottom: bottomInset + 14,
-            child: Column(
+            // One bottom panel, not a scatter of floating chips. Route
+            // distance/ETA and the speed readout used to be two separate
+            // cards stacked with a gap, which on a mostly-empty map read as
+            // debris in the corners rather than a cockpit. Yandex Go keeps
+            // this as a single bar and so does this now: the target strip is
+            // the panel's top row, the speed sits directly under it inside
+            // the same surface.
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.palette.card.withValues(alpha: 0.97),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: context.palette.border),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black26, blurRadius: 18, offset: Offset(0, 8)),
+                ],
+              ),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (targetMeta != null) ...[
@@ -4755,6 +4773,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                   ],
                 ),
               ],
+            ),
             ),
           ),
         ],
@@ -4860,17 +4879,12 @@ class _NavTargetStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    // Now a row inside the navigator's single bottom panel rather than a
+    // free-floating card, so it carries no surface or shadow of its own —
+    // two stacked shadows on top of each other read as a stack of debris.
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: palette.card.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-              color: Colors.black26, blurRadius: 14, offset: Offset(0, 6)),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
           Icon(Icons.route_rounded, size: 18, color: palette.goldDeep),
