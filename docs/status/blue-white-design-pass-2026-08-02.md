@@ -209,3 +209,73 @@ Per-screen composition polish against the reference packs — the token
 foundation under every screen is now correct and consistent, but the
 individual screens have not each been reworked this round. Tracked as
 tasks #223–228 and #230–232.
+
+---
+
+## 2026-08-06, 00:30 — trial screen approved, rolled out
+
+The customer approved the Линия trial and chose blue over amber, so the
+pattern went app-wide.
+
+### The amber was mine
+
+`warning` used to be `0xff0b66d8` — a blue almost indistinguishable from the
+accent. Three places had borrowed it as a *colour* rather than a meaning:
+the driver's "Занят" header pill, the avatar glyph, and the trip-card status
+pill. Nobody noticed while it was blue. Turning `warning` into a real amber
+earlier in this session made all three shout.
+
+`StatusTone` gains an `info` tone in brand blue and those three use it. The
+"Новых заказов" stat was tinted the same amber for no reason at all — orders
+waiting nearby are the good news of a shift, not a caution.
+
+Every other `warning` use was audited individually this time rather than
+assumed, having got that audit wrong once already:
+
+| use | verdict |
+|---|---|
+| road hazards, potholes, dangerous turns | genuine caution — keep |
+| region "на проверке" | genuine caution — keep |
+| pending payout / pending top-up | genuine caution — keep |
+| passenger's filled rating stars | convention, kept — but see below |
+
+The stars are the one loose end: amber stars are universally understood, but
+they read the colour off `warning`, so they will drift again the next time
+that token moves. They want their own token.
+
+### One shadow per card
+
+Twelve places had independently arrived at the same recipe — a wide soft
+shadow plus a second tight one under the same surface. Two shadows means two
+light sources, and a card lit from two directions is what reads as heavy and
+slightly cheap however carefully the alphas are tuned.
+
+`SmartTaxiShadows.card` / `.raised` / `.sheet` now hold the three cases, and
+eleven of the twelve point at them. The twelfth was a selected/unselected
+either-or pair, not a stack, and was left alone.
+
+### Also fixed this round
+
+- **A failed region fetch is no longer an empty region list.** On a cold
+  start the whole screen claimed "Нет одобренных регионов — напишите в
+  поддержку" and lost the active order; one pull-to-refresh restored
+  everything. Nothing was wrong with the account. The failure branch could
+  not be photographed — it did not reproduce on the next cold start.
+- **One name for the navigator.** The drawer said "Smart Navigator" in Latin
+  script in the middle of a Cyrillic list; the bottom bar said "Навигатор".
+
+### A trap worth recording
+
+Editing these files from Python flips LF to CRLF, which `flutter analyze`
+and `git diff --stat` both report as clean while `widget_test.dart` fails
+with a confusing message pointing at code you never touched. Bash `cat -A`
+did **not** detect it — the MSYS tools normalised the output and told me the
+file was fine when it was not. Only the Dart-side failure message was
+truthful.
+
+### Verified on device
+
+Screenshots 68 (Линия), 69 (drawer), 70 (Кошелёк) after checking
+`lastUpdateTime` against the APK mtime. Pixel-sampled: the pill is
+`#0b4fd1`, and no `#c98a12` survives on Линия. The only remaining accent is
+the success green on completed trips, which is correct.
