@@ -4724,47 +4724,54 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                   _NavTargetStrip(text: targetMeta),
                   const SizedBox(height: 10),
                 ],
+                // Three readings across the panel, not one card marooned in
+                // white space. Merging the two floating cards left the speed
+                // alone in a wide surface, which traded "scattered debris"
+                // for "mostly empty" — the same cheapness in another form.
+                // Remaining distance and arrival time are already computed
+                // for the strip above, so filling the row costs nothing and
+                // answers what a driver actually glances down for.
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
-                      flex: 3,
-                      // A posted limit is real, sourced data (OSM maxspeed
-                      // tags) — genuinely absent for most of these small-town
-                      // regions today, so the speed card is usually alone in
-                      // this Row. Without a sibling to share the row with, an
-                      // Expanded child stretches to the full width and the
-                      // number sits in a large empty void. Align+IntrinsicWidth
-                      // keeps it hugging its own content instead, without
-                      // changing the Row's own Expanded-child structure (a
-                      // bare, non-Expanded child here previously broke this
-                      // Positioned's bottom-anchoring in a way traced back to
-                      // exactly this change -- keep every child Expanded).
-                      child: speedLimit == null
-                          ? Align(
-                              alignment: Alignment.centerLeft,
-                              child: IntrinsicWidth(
-                                child: _NavigatorMetric(
-                                  title: l10n.driverSpeedLabel,
-                                  value: speedKmh == null ? '--' : '$speedKmh',
-                                  suffix: 'км/ч',
-                                  emphasize: true,
-                                  valueColor:
-                                      speeding ? context.palette.danger : null,
-                                ),
-                              ),
-                            )
-                          : _NavigatorMetric(
-                              title: l10n.driverSpeedLabel,
-                              value: speedKmh == null ? '--' : '$speedKmh',
-                              suffix: 'км/ч',
-                              emphasize: true,
-                              valueColor:
-                                  speeding ? context.palette.danger : null,
-                            ),
+                      child: _NavigatorMetric(
+                        title: l10n.driverSpeedLabel,
+                        value: speedKmh == null ? '--' : '$speedKmh',
+                        suffix: 'км/ч',
+                        emphasize: true,
+                        valueColor: speeding ? context.palette.danger : null,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _NavigatorMetric(
+                        title: 'Осталось',
+                        value: routeProgress?.distanceMeters == null
+                            ? '--'
+                            : (routeProgress!.distanceMeters >= 1000
+                                ? (routeProgress.distanceMeters / 1000)
+                                    .toStringAsFixed(1)
+                                : '${routeProgress.distanceMeters.round()}'),
+                        suffix: (routeProgress?.distanceMeters ?? 0) >= 1000
+                            ? 'км'
+                            : 'м',
+                        emphasize: true,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _NavigatorMetric(
+                        title: 'В пути',
+                        value: routeProgress?.durationSeconds == null
+                            ? '--'
+                            : '${(routeProgress!.durationSeconds / 60).ceil()}',
+                        suffix: 'мин',
+                        emphasize: true,
+                      ),
                     ),
                     if (speedLimit != null) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: _SpeedLimitSign(limitKmh: speedLimit),
