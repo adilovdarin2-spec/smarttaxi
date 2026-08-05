@@ -1289,7 +1289,12 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
   // gazetteer cannot fill the page, so a rider searching a street we do
   // hold never waits on a slower, thinner remote answer.
   try {
-    const local = await searchGazetteer(trimmed, compactText(region), limit);
+    // compactText returns "" (not null) for a missing region, and an empty
+    // string is not NULL in SQL — so passing it straight through made the
+    // region filter compare r.name against '', matching nothing and
+    // silently emptying every unscoped search. Normalise to null here.
+    const regionFilter = compactText(region) || null;
+    const local = await searchGazetteer(trimmed, regionFilter, limit);
     if (local.length >= limit) return local;
     if (local.length) {
       const remote = await searchAddressesRemote(
