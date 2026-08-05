@@ -36,6 +36,11 @@ class SmartTaxiColors {
   // primary CTA). Matches docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md.
   static const warning = Color(0xffc98a12);
   static const warningSoft = Color(0xfffbf1de);
+  // Rating stars. Amber, and deliberately NOT `warning`: stars had been
+  // reading their colour off the warning token, so the day that token
+  // changed the stars changed with it for no reason anyone intended.
+  // A star means "good", which is the opposite of a caution.
+  static const star = Color(0xffe8a317);
   static const mapOverlay = Color(0xebf7fbff);
 
   // Auth-flow specific tokens (welcome / SMS / password / new-password
@@ -171,6 +176,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     required this.dangerSoft,
     required this.warning,
     required this.warningSoft,
+    required this.star,
     required this.gold,
     required this.goldDeep,
     required this.goldSky,
@@ -192,6 +198,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
   final Color dangerSoft;
   final Color warning;
   final Color warningSoft;
+  final Color star;
   final Color gold;
   final Color goldDeep;
   final Color goldSky;
@@ -213,6 +220,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     dangerSoft: SmartTaxiColors.dangerSoft,
     warning: SmartTaxiColors.warning,
     warningSoft: SmartTaxiColors.warningSoft,
+    star: SmartTaxiColors.star,
     gold: SmartTaxiColors.gold,
     goldDeep: SmartTaxiColors.goldDeep,
     goldSky: SmartTaxiColors.goldSky,
@@ -240,6 +248,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     dangerSoft: Color(0xff3a1414),
     warning: Color(0xffe0a93a),
     warningSoft: Color(0xff2e2210),
+    star: Color(0xffffc043),
     gold: SmartTaxiColors.gold,
     goldDeep: Color(0xff5b9bff),
     goldSky: Color(0xff93c5ff),
@@ -263,6 +272,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     Color? dangerSoft,
     Color? warning,
     Color? warningSoft,
+    Color? star,
     Color? gold,
     Color? goldDeep,
     Color? goldSky,
@@ -284,6 +294,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
       dangerSoft: dangerSoft ?? this.dangerSoft,
       warning: warning ?? this.warning,
       warningSoft: warningSoft ?? this.warningSoft,
+      star: star ?? this.star,
       gold: gold ?? this.gold,
       goldDeep: goldDeep ?? this.goldDeep,
       goldSky: goldSky ?? this.goldSky,
@@ -310,6 +321,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
       dangerSoft: Color.lerp(dangerSoft, other.dangerSoft, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       warningSoft: Color.lerp(warningSoft, other.warningSoft, t)!,
+      star: Color.lerp(star, other.star, t)!,
       gold: Color.lerp(gold, other.gold, t)!,
       goldDeep: Color.lerp(goldDeep, other.goldDeep, t)!,
       goldSky: Color.lerp(goldSky, other.goldSky, t)!,

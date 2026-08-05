@@ -7746,7 +7746,7 @@ class _TripDetailScreen extends StatelessWidget {
                     if (trip.driverRating != null) ...[
                       Icon(
                         Icons.star_rounded,
-                        color: palette.warning,
+                        color: palette.star,
                         size: 18,
                       ),
                       const SizedBox(width: 2),
@@ -8377,7 +8377,7 @@ class _StarRatingSelector extends StatelessWidget {
               child: Icon(
                 filled ? Icons.star_rounded : Icons.star_outline_rounded,
                 color: filled
-                    ? context.palette.warning
+                    ? context.palette.star
                     : context.palette.border,
                 size: 38,
               ),
