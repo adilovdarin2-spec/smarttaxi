@@ -104,3 +104,79 @@ looks broken either way.
   post-install screenshot — a chained install has silently failed
   before and produced a convincing false negative.
 - Sample pixels rather than judging colour by eye.
+
+---
+
+## Round 2 — 2026-08-05 evening: the navigator's bottom panel
+
+Everything below traces to a screenshot in
+`qa_screenshots/bluewhite_2026-08-03/`, taken after checking
+`lastUpdateTime` against the APK mtime.
+
+### What screenshot 60 showed, and what it cost
+
+The panel had been rebuilt as three equal-width metric cards (Скорость /
+Осталось / В пути). On device that was worse, not better:
+
+- **The middle card showed no number at all** — just the word "Осталось"
+  and the unit "км". A 40sp value in a card one-third of the screen wide
+  cannot fit "2.7", and the `TextOverflow.ellipsis` swallowed it.
+- **The panel said everything twice.** The strip above already read
+  "До места назначения: 2.7 км · 9 мин"; the cards below repeated the
+  same two figures.
+- The speed card's "0" sat alone in white space — the equal-thirds grid
+  gives every reading the same room regardless of how much it needs.
+
+### What replaced it (screenshots 62, 63)
+
+- A round **speed dial** (72px, blue ring, red when speeding) — an
+  instrument shape, spotted without being looked for.
+- A **content-sized route block**: "2.7 км" at 28sp, "9 мин" beside it at
+  16sp, "Прибытие в 23:21" underneath. Arrival is computed off the live
+  remaining duration, so it moves as traffic does. A driver answering
+  "сколько ещё" says a time, not a duration.
+- The **top line now names the target address** instead of repeating the
+  numbers, with a person icon for the pickup leg and a pin for the
+  drop-off leg.
+
+### Two map defects fixed in the same round
+
+**The pickup pin looked like the driver's own position.** It was
+`radio_button_checked_rounded` on blue — a blue disc inside a white ring,
+which is the glyph Google, Yandex and every other map uses for "you are
+here". A few metres from the car marker it read as a second, offset copy
+of the driver. It is `person_rounded` now, on all three driver maps.
+
+An earlier note in this session called this "два разных маркера машины,
+смещённых друг от друга". That reading was wrong — they were never two
+self-markers. The pin was the passenger all along; it simply looked like
+something else, which is the same defect from the driver's side.
+
+**The pickup pin outlived its purpose.** Once the passenger is aboard the
+navigator kept drawing it, leaving a destination-looking marker in the
+middle of a route that no longer passes it. Now gated on the leg.
+
+### Route line
+
+The casing was `Colors.white` at 0.9 alpha under a 5.5px core. On a
+near-white map that is not a casing — the route was a bare thin stroke the
+street grid kept cutting through. Now a `goldDeep` casing under a `gold`
+core, 12/8 on the navigator and 11/7 elsewhere, on both driver maps and
+the passenger map.
+
+### Not a bug: the "Точка назначения" placeholder
+
+The destination reads as a literal placeholder in screenshots 62/63.
+`GET /drivers/me/active-order` does `SELECT o.*`, so `dropoff_text` does
+reach the app, and `OrderSummary.fromJson` reads it directly. The test
+order simply carries that string in the column. Test data, not a defect —
+but a demo order should be created with a real address.
+
+### Still open
+
+- The maneuver banner is a dark navy surface in light theme. Off-palette,
+  but high-contrast and legible, and mainstream navigators do the same.
+  Left alone deliberately rather than by omission.
+- Addresses: gazetteer search must handle Russian and Kazakh street forms
+  (the customer confirmed both are used); 11 of 13 regions still
+  unimported.
