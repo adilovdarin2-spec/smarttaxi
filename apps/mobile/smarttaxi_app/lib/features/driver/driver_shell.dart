@@ -4623,7 +4623,13 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                         ),
                       MarkerLayer(
                         markers: [
-                          if (shell._activeOrder?.pickupCoordinate != null)
+                          // Only while there is still someone to collect.
+                          // Once the passenger is aboard the pickup point is
+                          // history, and leaving its pin on the map put a
+                          // second destination-looking marker in the middle
+                          // of a route that no longer goes anywhere near it.
+                          if (!navToDropoff &&
+                              shell._activeOrder?.pickupCoordinate != null)
                             Marker(
                               point: shell._activeOrder!.pickupCoordinate!
                                   .toLatLng(),
