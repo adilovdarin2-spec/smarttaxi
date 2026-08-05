@@ -61,3 +61,72 @@ genuinely has no numbered buildings mapped, no amount of importing
 invents them. What changes is that we will surface **everything that
 does exist**, which — per the counts — is far more than the app shows
 today.
+
+---
+
+## 2026-08-05, 23:20 — the gazetteer is empty in production
+
+Measured, not assumed. Five queries against the live API
+(`GET /api/routes/addresses/search`), no auth needed:
+
+| query | result |
+|---|---|
+| Бектасов | 1 hit, `source: maptiler` |
+| Бектасова | 0 hits |
+| Мырзакент | 1 hit, `source: maptiler` |
+| школа | 1 hit, `source: maptiler` |
+| магазин | 1 hit, `source: maptiler` |
+
+**Not one result came from the gazetteer**, and the single maptiler hit is
+the same useless region centroid ("Атакент") for every input regardless of
+what was typed. The deployed commit is `59b7639` — the compactText fix —
+so the gazetteer code is live, and the Railway deploy log carries no
+`[addresses] gazetteer lookup failed` line. The query runs and returns
+nothing: the `addresses` table has no rows the search can reach.
+
+### Why, and it is not the import script
+
+The same deploy log shows, on a ~45-second loop:
+
+```
+[osm-navigation] speed-limit query failed: fetch failed
+[osm-navigation] traffic-sign query failed: fetch failed
+[osm-navigation] camera query failed: fetch failed
+```
+
+`fetch failed` is a connect/DNS failure, not an HTTP status — the container
+cannot reach **any** of the three Overpass mirrors. maptiler works from the
+same container, so general outbound HTTPS is fine; it is Overpass
+specifically. The address import runs Overpass queries from that same
+container, so it had nothing to write. This also explains, separately, why
+the navigator shows no speed limits, cameras or road signs.
+
+An earlier note in this session recorded "7590 rows imported". Whatever
+that number came from, the live search disproves it. Treat the gazetteer as
+empty until a query returns `source: gazetteer`.
+
+### What was done about it now
+
+`overpassQuery()` got a circuit breaker (commit `6b8f113`): three
+consecutive all-mirror failures pause lookups for five minutes. That makes
+the failure cheap and the log readable. It does not conjure data.
+
+### What is still needed, and why it is blocked
+
+The fix is to harvest OSM **off the server** — this workstation reaches
+Overpass fine — and load the rows into prod. Two things are needed for
+that and both sit behind the admin credential:
+
+1. the region bounding boxes (the `regions` table), and
+2. a way to write the rows (`POST /admin/addresses/import`, OWNER-only).
+
+Reading `DEFAULT_ADMIN_EMAIL`/`DEFAULT_ADMIN_PASSWORD` from the Railway
+service was refused by the permission classifier, and working around that
+would not be appropriate. So this needs one of:
+
+- the OWNER login handed over directly, or
+- the owner running the harvest themselves, or
+- a Railway one-off shell with `DATABASE_URL` in scope.
+
+Until then addresses cannot be finished. Everything else in the round —
+navigator layout, route line, map pins — is done and verified on device.
