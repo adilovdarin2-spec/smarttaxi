@@ -315,6 +315,21 @@ function summarizeTariffAnalytics(analytics) {
 // many minutes of deliberately-throttled Overpass calls, far longer than
 // any sane HTTP timeout. Progress goes to the service logs, and the result
 // is observable through the address search itself.
+// Row counts for the harvested gazetteer. Exists because the import runs
+// detached and its progress only reaches the service logs — without this
+// there is no way to tell "still running" from "silently wrote nothing".
+router.get("/addresses/stats", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT r.code, a.kind, COUNT(*)::int AS total
+         FROM addresses a JOIN regions r ON r.id = a.region_id
+        GROUP BY r.code, a.kind ORDER BY r.code, a.kind`
+    );
+    const total = (await query("SELECT COUNT(*)::int AS total FROM addresses")).rows[0].total;
+    res.json({ total, byRegion: rows });
+  } catch (e) { next(e); }
+});
+
 router.post("/addresses/import", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const code = typeof req.body?.code === "string" ? req.body.code.trim() : null;
