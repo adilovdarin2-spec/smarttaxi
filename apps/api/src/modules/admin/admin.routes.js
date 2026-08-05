@@ -4,6 +4,7 @@ import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { importRegion } from "../../tools/import-addresses.js";
 import { createRegion, listRegions, publicRegion, setRegionActive, updateRegion } from "../regions/regions.service.js";
 import {
   listDriverRegionApprovals,
@@ -304,6 +305,49 @@ function summarizeTariffAnalytics(analytics) {
     completedSharePercent: totals.orderCount ? Math.round((totals.completedOrderCount / totals.orderCount) * 1000) / 10 : null
   };
 }
+
+// Triggers the OSM address harvest server-side. It lives here rather than
+// staying CLI-only because the production database is not reachable from a
+// developer machine, so there was otherwise no way to populate the
+// gazetteer on the deployed environment.
+//
+// Runs detached and answers immediately: a full pass over 13 regions takes
+// many minutes of deliberately-throttled Overpass calls, far longer than
+// any sane HTTP timeout. Progress goes to the service logs, and the result
+// is observable through the address search itself.
+router.post("/addresses/import", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const code = typeof req.body?.code === "string" ? req.body.code.trim() : null;
+    const regions = (await query(
+      code
+        ? "SELECT * FROM regions WHERE code=$1"
+        : "SELECT * FROM regions WHERE is_active=true ORDER BY name",
+      code ? [code] : []
+    )).rows;
+    if (!regions.length) throw new AppError("No matching region", 404, "REGION_NOT_FOUND");
+
+    await writeAudit({
+      actorUserId: req.user.id,
+      action: "ADDRESS_IMPORT_STARTED",
+      meta: { regions: regions.map((region) => region.code) }
+    });
+
+    // Deliberately not awaited — see the note above.
+    (async () => {
+      for (const region of regions) {
+        try {
+          const written = await importRegion(region);
+          console.log(`[addresses] ${region.code}: ${written} rows`);
+        } catch (error) {
+          console.error(`[addresses] ${region.code} failed`, error);
+        }
+      }
+      console.log("[addresses] import finished");
+    })();
+
+    res.json({ started: true, regions: regions.map((region) => region.code) });
+  } catch (e) { next(e); }
+});
 
 router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {

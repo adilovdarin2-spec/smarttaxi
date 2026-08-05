@@ -114,7 +114,7 @@ function coordsOf(element) {
   return [null, null];
 }
 
-async function importRegion(region) {
+export async function importRegion(region) {
   const bbox = bboxOf(region);
   let written = 0;
   for (const { kind, body } of queriesFor(bbox)) {
@@ -183,7 +183,12 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Only run the CLI flow when this file is executed directly. The admin
+// route imports importRegion() from here, and must not trigger a full
+// import (and a process.exit) merely by loading the module.
+if (process.argv[1] && process.argv[1].endsWith("import-addresses.js")) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
