@@ -212,7 +212,11 @@ class DriverDrawer extends StatelessWidget {
                 active: activeTab == 2,
                 onTap: () => onTab(2)),
             DrawerItem(
-                label: l10n.driverDrawerNavigatorBrand,
+                // Same key the bottom bar uses. The drawer had its own
+                // "brand" string for this screen, which put a Latin-script
+                // name in the middle of a Cyrillic list and gave one screen
+                // two names in one app.
+                label: l10n.driverTabNavigator,
                 icon: Icons.explore_rounded,
                 active: activeTab == 3,
                 onTap: () => onTab(3)),

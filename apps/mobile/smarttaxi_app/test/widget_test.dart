@@ -507,7 +507,11 @@ void main() {
     expect(chrome, contains('label: l10n.driverTabLine'));
     expect(chrome, contains('label: l10n.driverTabOrders'));
     expect(chrome, contains('label: l10n.driverTabTrip'));
-    expect(chrome, contains('label: l10n.driverDrawerNavigatorBrand'));
+    // The drawer names the navigator exactly as the bottom bar does. It used
+    // to say "Smart Navigator" here — Latin script in the middle of a
+    // Cyrillic list, and a second name for a screen that already had one.
+    expect(chrome, contains('label: l10n.driverTabNavigator'));
+    expect(chrome, isNot(contains('driverDrawerNavigatorBrand')));
     expect(chrome, contains('label: l10n.profile'));
     expect(chrome, contains('label: l10n.driverDrawerRoadAlerts'));
     expect(chrome, contains('label: l10n.support'));
