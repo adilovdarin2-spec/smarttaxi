@@ -224,10 +224,7 @@ class DriverDividedListCard extends StatelessWidget {
         color: palette.card,
         border: Border.all(color: palette.border),
         borderRadius: const BorderRadius.all(Radius.circular(30)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x22102a52), blurRadius: 42, offset: Offset(0, 18)),
-          BoxShadow(color: Color(0x12102a52), blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        boxShadow: SmartTaxiShadows.raised,
       ),
       child: Column(
         children: [

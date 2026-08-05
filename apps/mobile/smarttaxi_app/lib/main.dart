@@ -674,19 +674,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(compact ? 34 : 42),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1e102a52),
-            blurRadius: 42,
-            spreadRadius: -10,
-            offset: Offset(0, -12),
-          ),
-          BoxShadow(
-            color: Color(0x0c102a52),
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
+        boxShadow: SmartTaxiShadows.sheet,
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -2529,18 +2517,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.vertical(
                                   top: Radius.circular(compact ? 34 : 42)),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x1e102a52),
-                                  blurRadius: 36,
-                                  offset: Offset(0, -12),
-                                ),
-                                BoxShadow(
-                                  color: Color(0x0c102a52),
-                                  blurRadius: 8,
-                                  offset: Offset(0, -2),
-                                ),
-                              ],
+                              boxShadow: SmartTaxiShadows.sheet,
                             ),
                             child: SingleChildScrollView(
                               physics: const ClampingScrollPhysics(),
@@ -3184,18 +3161,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
           color: Colors.white,
           borderRadius:
               BorderRadius.vertical(top: Radius.circular(compact ? 34 : 42)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1e102a52),
-              blurRadius: 36,
-              offset: Offset(0, -12),
-            ),
-            BoxShadow(
-              color: Color(0x0c102a52),
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
+          boxShadow: SmartTaxiShadows.sheet,
         ),
         child: SingleChildScrollView(
           physics: keyboardOpen
@@ -3473,18 +3439,7 @@ class _PhotoNewPasswordCard extends StatelessWidget {
           color: Colors.white,
           borderRadius:
               BorderRadius.vertical(top: Radius.circular(compact ? 34 : 42)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1e102a52),
-              blurRadius: 36,
-              offset: Offset(0, -12),
-            ),
-            BoxShadow(
-              color: Color(0x0c102a52),
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
+          boxShadow: SmartTaxiShadows.sheet,
         ),
         child: child,
       ),

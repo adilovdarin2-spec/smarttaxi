@@ -16,6 +16,12 @@ class StatusPill extends StatelessWidget {
       StatusTone.success => (palette.success, palette.successSoft, palette.success.withValues(alpha: 0.35)),
       StatusTone.warning => (palette.warning, palette.warningSoft, palette.warning.withValues(alpha: 0.35)),
       StatusTone.danger => (palette.danger, palette.dangerSoft, palette.danger.withValues(alpha: 0.35)),
+      // Brand blue, for a state that is neither good, bad nor a warning —
+      // "Занят" is simply what a working driver is. It used to borrow the
+      // warning tone, which went unnoticed while `warning` was itself a
+      // near-blue and turned loudly amber the day that token became a real
+      // amber.
+      StatusTone.info => (palette.goldDeep, palette.goldSurface, palette.gold.withValues(alpha: 0.35)),
       StatusTone.neutral => (palette.textSecondary, palette.card, palette.border),
     };
 
@@ -51,4 +57,4 @@ class StatusPill extends StatelessWidget {
   }
 }
 
-enum StatusTone { neutral, success, warning, danger }
+enum StatusTone { neutral, success, warning, danger, info }

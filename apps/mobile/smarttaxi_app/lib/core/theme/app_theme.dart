@@ -82,6 +82,32 @@ class SmartTaxiRadius {
   static const sheet = 34.0;
 }
 
+/// One shadow per surface.
+///
+/// Twelve places had independently arrived at the same recipe — a wide, soft
+/// shadow *plus* a second tight one directly under the same card. Two
+/// shadows means two light sources, and a surface lit from two directions at
+/// once is what reads as heavy and slightly cheap however carefully the
+/// alphas are tuned. Cards pull from here now, so depth is consistent across
+/// the app and there is a single place to change it.
+class SmartTaxiShadows {
+  /// An ordinary content card resting on the page.
+  static const card = <BoxShadow>[
+    BoxShadow(color: Color(0x14102a52), blurRadius: 26, offset: Offset(0, 12)),
+  ];
+
+  /// A card that should read as lifted above its neighbours — a balance
+  /// panel, a summary hero. Same light, held a little higher.
+  static const raised = <BoxShadow>[
+    BoxShadow(color: Color(0x1e102a52), blurRadius: 34, offset: Offset(0, 16)),
+  ];
+
+  /// Bottom sheets and bottom bars, which cast upward onto the page behind.
+  static const sheet = <BoxShadow>[
+    BoxShadow(color: Color(0x1e102a52), blurRadius: 36, offset: Offset(0, -12)),
+  ];
+}
+
 /// Named text styles for the roles that recur across the app (title/body/
 /// caption/button). Prefer these over inline `TextStyle(fontSize: .., ...)`
 /// in new code so the same role reads identically on every screen.

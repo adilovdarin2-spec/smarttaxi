@@ -244,12 +244,7 @@ class DriverTodayStrip extends StatelessWidget {
         color: palette.card,
         border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x14102a52), blurRadius: 26, offset: Offset(0, 12)),
-          BoxShadow(
-              color: Color(0x0a102a52), blurRadius: 6, offset: Offset(0, 2)),
-        ],
+        boxShadow: SmartTaxiShadows.card,
       ),
       // IntrinsicHeight, not CrossAxisAlignment.stretch on the outer
       // ListView — this lives inside a vertically-scrolling ListView, which
@@ -276,7 +271,11 @@ class DriverTodayStrip extends StatelessWidget {
                 icon: Icons.receipt_long_rounded,
                 label: l10n.driverNewOrdersLabel,
                 value: '$openOrders',
-                tone: palette.warning,
+                // Orders waiting nearby are the good news of a shift, not a
+                // caution — this was tinted with the warning token purely
+                // because it happened to look right back when that token was
+                // a near-blue.
+                tone: palette.gold,
               ),
             ),
             _StatDivider(color: palette.border),

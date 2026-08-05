@@ -2834,8 +2834,11 @@ class _DriverShellState extends State<DriverShell> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StatusPill(
+                        // A trip in progress is the normal working state,
+                        // same as the "Занят" pill in the header — brand
+                        // blue, not a warning amber.
                         label: statusLabel(l10n, _activeOrder!.status),
-                        tone: StatusTone.warning),
+                        tone: StatusTone.info),
                     const SizedBox(height: 16),
                     DriverStatusStepper(status: _activeOrder!.status),
                     const SizedBox(height: 16),
@@ -3321,7 +3324,7 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   StatusTone _driverStatusTone() {
-    if (_activeOrder?.isActive == true) return StatusTone.warning;
+    if (_activeOrder?.isActive == true) return StatusTone.info;
     if (_regionsLoading && _regions.isEmpty) return StatusTone.neutral;
     if (!_online && _disabledReason() != null) return StatusTone.danger;
     return _online ? StatusTone.success : StatusTone.neutral;

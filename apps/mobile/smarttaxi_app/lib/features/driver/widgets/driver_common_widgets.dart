@@ -242,8 +242,11 @@ class LineGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Brand blue for "занят", not the warning amber it used to borrow — a
+    // driver on a job is working normally, not in a warning state. The
+    // borrowing went unnoticed while `warning` was itself a near-blue.
     final color = busy
-        ? context.palette.warning
+        ? context.palette.gold
         : online
             ? context.palette.success
             : context.palette.textMuted;
@@ -425,12 +428,7 @@ class PremiumCard extends StatelessWidget {
         color: context.palette.card,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x22102a52), blurRadius: 42, offset: Offset(0, 18)),
-          BoxShadow(
-              color: Color(0x12102a52), blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        boxShadow: SmartTaxiShadows.raised,
       ),
       child: child,
     );

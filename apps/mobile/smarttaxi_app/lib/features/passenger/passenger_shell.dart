@@ -6360,18 +6360,7 @@ class _HomeOrderPanel extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.palette.card,
             borderRadius: const BorderRadius.all(Radius.circular(32)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33102a52),
-                blurRadius: 44,
-                offset: Offset(0, 20),
-              ),
-              BoxShadow(
-                color: Color(0x14102a52),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
+            boxShadow: SmartTaxiShadows.raised,
           ),
           child: child,
         ),
