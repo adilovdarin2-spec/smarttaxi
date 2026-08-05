@@ -4702,10 +4702,10 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
             // One bottom panel, not a scatter of floating chips. Route
             // distance/ETA and the speed readout used to be two separate
             // cards stacked with a gap, which on a mostly-empty map read as
-            // debris in the corners rather than a cockpit. Yandex Go keeps
-            // this as a single bar and so does this now: the target strip is
-            // the panel's top row, the speed sits directly under it inside
-            // the same surface.
+            // debris in the corners rather than a cockpit. Every mainstream
+            // navigator keeps this as one bar, and so does this now: the
+            // target strip is the panel's top row and the speed sits
+            // directly under it, inside the same surface.
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
