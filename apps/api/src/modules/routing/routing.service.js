@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors.js";
 import { redis } from "../../db/redis.js";
 import { query as defaultQuery } from "../../db/pool.js";
+import { regionRadiusKmByName } from "./region-geo.js";
 import { orderRoom, dispatchRegionRoom, ACTIVE_ORDER_STATUSES, TO_PICKUP_ORDER_STATUSES, TO_DROPOFF_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 import { prepareOrderPricing } from "../orders/order-pricing.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
@@ -1256,6 +1257,20 @@ async function reverseAddressWithPhoton({ lat, lng }, fetchImpl = fetch) {
 // while the table is still empty (before the first import run), leaving
 // the existing remote cascade untouched.
 async function searchGazetteer(text, regionName, limit, executor = defaultQuery) {
+  // Scoped by distance from the region's centre, NOT by `r.name = $2`.
+  //
+  // Every address row belongs to exactly one region — the nearest settlement
+  // (see region-geo.js). These settlements are 4-6 km apart, so the streets
+  // physically around a rider in Ынтымак are very often filed under Киров or
+  // Жана жол. Under name equality that rider saw 9 rows in total and none of
+  // their own neighbourhood. What a rider means by "near me" is a distance,
+  // not an administrative label, so that is what this asks for.
+  const radiusKm = regionName ? regionRadiusKmByName(regionName) : null;
+  // A degree of latitude is ~111 km; longitude shrinks with the cosine of
+  // the latitude (~0.76 at 40.7°N), so the box has to be wider than it is
+  // tall or it clips the east and west edges of the region.
+  const latDelta = radiusKm == null ? null : radiusKm / 111;
+  const lngDelta = radiusKm == null ? null : radiusKm / (111 * Math.cos((40.7 * Math.PI) / 180));
   const { rows } = await executor(
     `SELECT a.label, a.lat, a.lng, a.kind, r.name AS region_name
        FROM addresses a
@@ -1265,7 +1280,12 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
       -- both reach the same street — riders here use either form. COALESCE
       -- keeps rows written before that column existed searchable.
       WHERE COALESCE(a.search_text, a.label) ILIKE $1
-        AND ($2::text IS NULL OR r.name = $2)
+        AND ($2::text IS NULL OR EXISTS (
+              SELECT 1 FROM regions scope
+               WHERE scope.name = $2
+                 AND a.lat BETWEEN scope.center_lat - $5 AND scope.center_lat + $5
+                 AND a.lng BETWEEN scope.center_lng - $6 AND scope.center_lng + $6
+            ))
       ORDER BY
         -- Prefix matches first: someone typing "Бекта" wants the street
         -- itself above every shop that merely mentions it.
@@ -1275,7 +1295,7 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
                     WHEN 'building' THEN 2 ELSE 3 END,
         length(a.label)
       LIMIT $4`,
-    [`%${text}%`, regionName || null, `${text}%`, limit]
+    [`%${text}%`, regionName || null, `${text}%`, limit, latDelta, lngDelta]
   );
   return rows.map((row) => ({
     label: row.label,

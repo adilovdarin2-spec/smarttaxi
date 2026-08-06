@@ -30,6 +30,19 @@ export const REGION_GEO = [
   { code: "ATAMEKEN", name: "Атамекен", lat: 40.8121, lng: 68.5839, radiusKm: 12 }
 ];
 
+/// Working radius for a region given its display name, for callers that only
+/// have the name (the address search API takes one). Falls back to the
+/// widest radius in use, so an unknown name searches generously rather than
+/// returning nothing.
+export function regionRadiusKmByName(name) {
+  const wanted = String(name || "").trim().toLocaleLowerCase("ru-KZ");
+  if (!wanted) return null;
+  const match = REGION_GEO.find(
+    (region) => region.name.toLocaleLowerCase("ru-KZ") === wanted
+  );
+  return match ? match.radiusKm : 25;
+}
+
 const EARTH_RADIUS_KM = 6371;
 const toRadians = (degrees) => (degrees * Math.PI) / 180;
 
