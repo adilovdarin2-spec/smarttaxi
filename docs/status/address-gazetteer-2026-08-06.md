@@ -115,3 +115,56 @@ region at a time still leaves a manifest describing the whole directory.
 
 Then commit `apps/api/data/addresses/` and push — the first boot after that
 loads the difference.
+
+---
+
+## Live in production, and what the first hour taught
+
+Deployed 09:59 UTC. The loader ran, and searching Мырзакент immediately
+returned real house numbers — which had never existed there. Every one came
+back tagged `"region":"Ынтымак"`.
+
+**Overlapping boxes plus a unique OSM key means one row, one region, and no
+rule means "whoever loaded last".** Мырзакент loaded at 10:00:16, Ынтымак at
+10:00:18, and Ынтымак took the overlap. `region-geo.js` now holds the centres
+and the rule is nearest centre wins.
+
+Two things that exposed, both worth remembering:
+
+- **A radius gate is wrong here.** The first version of the rule only kept a
+  row inside its nearest region's own `radiusKm`. These settlements are 4-6 km
+  apart with 12 km radii, so a point is routinely nearest to a region *and*
+  outside its radius — belonging to nobody. It discarded 63 807 of 81 603
+  rows. Caught by reading the numbers before pushing.
+- **The row counts were always inflated.** 81 603 lines describe 27 476
+  distinct objects; the rest are the same object in overlapping boxes. The
+  first deploy's "72 437 rows written" was that same inflation.
+
+Verified live after the fix (10:18 UTC reload, 26 794 rows):
+
+| query | result |
+|---|---|
+| Бектасова @ Мырзакент | 8 hits, all gazetteer, all tagged Мырзакент |
+| Бектасова, 24 @ Мырзакент | exact house number |
+| Абая @ Жетысай | 8 hits, all gazetteer, all tagged Жетысай |
+| школа @ Атакент | Школа №12 им. Комарова, Школа №10 им. Сатпаева |
+
+## Two things still open
+
+**Атакент wrote 3 125 rows where the manifest expects 3 489.** Both sides use
+the same nearest-centre function, so the 364-row gap is unexplained. Because
+the "already loaded?" check is exact equality, Атакент will re-upsert on
+every boot until this is understood. Harmless but wasteful, and an
+unexplained discrepancy is worth chasing on its own account.
+
+**Small regions get tiny shares.** Ынтымак owns 9 rows, Киров 3, Достык 36 —
+their centres sit so close to their neighbours' that most of their area is
+nearer to someone else. Since the gazetteer query filters on
+`regions.name = $2`, a rider in Ынтымак sees almost nothing local even though
+the streets around them are in the table under a neighbour's name.
+
+The fix is probably to stop filtering the gazetteer by region equality and
+filter by distance from the region's centre instead — the rows are already
+positioned, and a rider cares about what is near them, not about which
+administrative row owns it. That is a design decision, not a bug fix, so it
+is left for a deliberate call.
