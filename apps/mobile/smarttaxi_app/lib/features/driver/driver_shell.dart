@@ -2756,7 +2756,18 @@ class _DriverShellState extends State<DriverShell> {
             EmptyState(
                 title: l10n.driverOrdersGoOnlineTitle,
                 text: l10n.driverOrdersGoOnlineText,
-                icon: Icons.power_settings_new_rounded)
+                icon: Icons.power_settings_new_rounded,
+                // The empty state named the one action that fixes it and
+                // then made the driver leave the screen to find it. Same
+                // handler as the toggle on Линия, disabled for the same
+                // reasons, so a driver who cannot go online still cannot —
+                // they just find that out here instead of two taps away.
+                action: _loading || _disabledReason() != null
+                    ? null
+                    : l10n.driverGoOnlineButton,
+                onAction: _loading || _disabledReason() != null
+                    ? null
+                    : () => _setOnline(true))
           else if (openOrders.isEmpty)
             EmptyState(
                 title: l10n.driverOrdersEmptyTitle,
