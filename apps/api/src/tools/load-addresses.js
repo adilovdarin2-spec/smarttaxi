@@ -197,7 +197,24 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
       continue;
     }
     log(`[addresses] ${region.name}: loading ${fileRows} rows (had ${have})`);
+    // Everything the file still contains is upserted with updated_at=NOW(),
+    // so anything left with an older stamp is a row the file has dropped.
+    const startedAt = new Date().toISOString();
     const written = await loadFile(file, region.id, code);
+    // Without this the load is insert-only and the table can never shrink.
+    // That is not theoretical: cutting the service area at the Uzbek border
+    // removed ~7 000 rows from the files, and production went on serving
+    // "Guliston ko'chasi" and "Uzmarket" to riders in Мырзакент because
+    // nothing ever deleted them. Rows reassigned to a neighbouring region
+    // are not caught here — they carry a fresh stamp under their new
+    // region_id, which is exactly right.
+    const removed = await query(
+      "DELETE FROM addresses WHERE region_id=$1 AND updated_at < $2",
+      [region.id, startedAt]
+    );
+    if (removed.rowCount) {
+      log(`[addresses] ${region.name}: ${removed.rowCount} stale rows removed`);
+    }
     log(`[addresses] ${region.name}: ${written} rows written`);
     total += written;
   }
