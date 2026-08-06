@@ -21,6 +21,7 @@ import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 import { query } from "../db/pool.js";
+import { nearestRegionCode } from "../modules/routing/region-geo.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(HERE, "../../data/addresses");
@@ -83,7 +84,7 @@ async function flush(regionId, batch) {
   return batch.length;
 }
 
-async function loadFile(file, regionId) {
+async function loadFile(file, regionId, regionCode) {
   // Harvest files are gzipped (see harvest-addresses.js); a plain .jsonl is
   // still accepted so a file dropped in by hand also loads.
   const raw = fs.createReadStream(file);
@@ -103,6 +104,12 @@ async function loadFile(file, regionId) {
       continue;
     }
     if (!row.label || row.lat == null || row.lng == null) continue;
+    // Harvest boxes overlap, so this file contains objects that are really
+    // in a neighbouring settlement. Each row belongs to whichever centre it
+    // is nearest; the rest are left for that region's own file. Without
+    // this, `addresses`'s (osm_type, osm_id) key means the last file loaded
+    // silently steals the overlap — see region-geo.js.
+    if (nearestRegionCode(row.lat, row.lng) !== regionCode) continue;
     batch.push(row);
     if (batch.length >= BATCH_SIZE) {
       written += await flush(regionId, batch);
@@ -179,12 +186,18 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
       [region.id]
     );
     const have = existing.rows[0]?.count || 0;
-    if (have >= fileRows) {
+    // Exact equality, not `have >= fileRows`. The count changes whenever the
+    // nearest-centre rule reassigns rows between neighbouring regions, and
+    // with `>=` a region that had *too many* rows (because it stole its
+    // neighbour's overlap) would look satisfied and never be corrected. Any
+    // mismatch in either direction means reload; the upsert then rewrites
+    // region_id and the two regions converge.
+    if (have === fileRows) {
       log(`[addresses] ${region.name}: ${have} rows already loaded, skipping`);
       continue;
     }
     log(`[addresses] ${region.name}: loading ${fileRows} rows (had ${have})`);
-    const written = await loadFile(file, region.id);
+    const written = await loadFile(file, region.id, code);
     log(`[addresses] ${region.name}: ${written} rows written`);
     total += written;
   }

@@ -12,6 +12,8 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
+import { nearestRegionCode } from "../modules/routing/region-geo.js";
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(HERE, "../../data/addresses");
 
@@ -63,6 +65,8 @@ for (const name of files) {
     fail(`${name} does not decompress: ${error.message}`);
   }
   let rows = 0;
+  let owned = 0;
+  const code = name.replace(/\.jsonl\.gz$/, "");
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
     let row;
@@ -87,19 +91,26 @@ for (const name of files) {
       fail(`${name} line ${rows + 1}: search text does not contain the label`);
     }
     if (Array.isArray(row.variants) && row.variants.length > 1) multiVariant += 1;
+    if (nearestRegionCode(row.lat, row.lng) === code) owned += 1;
     rows += 1;
   }
   if (!rows) fail(`${name} is empty`);
-  // The loader trusts the manifest to decide whether it has work to do, so
-  // a stale entry would either skip a real load or force a pointless one on
-  // every boot. Nothing else would notice.
+  // The manifest holds the count the loader will actually write — rows whose
+  // nearest region centre is this file's region — not the raw line count.
+  // Harvest boxes overlap heavily, so those differ by a lot: 81 603 lines
+  // across the files describe 27 476 distinct objects.
+  //
+  // The loader trusts this number to decide whether it has work to do, so a
+  // stale entry would either skip a real load or force a pointless one on
+  // every boot, and nothing else would notice.
   const claimed = manifest.counts?.[name];
   if (claimed == null) fail(`${name} has no manifest entry`);
-  if (claimed !== rows) {
-    fail(`${name}: manifest claims ${claimed} rows, file holds ${rows}`);
+  if (claimed !== owned) {
+    fail(`${name}: manifest claims ${claimed} rows, file owns ${owned} (of ${rows} lines)`);
   }
-  console.log(`  ${name}: ${rows} rows`);
-  total += rows;
+  if (!owned) fail(`${name} owns no rows at all — check the region centres`);
+  console.log(`  ${name}: ${owned} owned of ${rows} lines`);
+  total += owned;
 }
 
 for (const name of Object.keys(manifest.counts || {})) {

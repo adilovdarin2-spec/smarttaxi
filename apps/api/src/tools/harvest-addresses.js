@@ -29,6 +29,8 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
+import { nearestRegionCode } from "../modules/routing/region-geo.js";
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.resolve(HERE, "../../data/addresses");
 
@@ -215,9 +217,25 @@ function writeManifest() {
   const counts = {};
   for (const name of fs.readdirSync(OUT_DIR)) {
     if (!name.endsWith(".jsonl.gz")) continue;
+    const code = name.replace(/\.jsonl\.gz$/, "");
     const text = zlib.gunzipSync(fs.readFileSync(path.join(OUT_DIR, name))).toString("utf8");
     let rows = 0;
-    for (const line of text.split("\n")) if (line.trim()) rows += 1;
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      let row;
+      try {
+        row = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      // Count what the loader will actually keep, not what the file holds.
+      // Boxes overlap, so a file carries objects belonging to neighbouring
+      // settlements; the loader drops those, and if this counted them the
+      // "already loaded?" check could never be satisfied and every boot
+      // would re-upsert the lot.
+      if (nearestRegionCode(row.lat, row.lng) !== code) continue;
+      rows += 1;
+    }
     counts[name] = rows;
   }
   fs.writeFileSync(

@@ -62,9 +62,18 @@ const _addressPickMarkerColor = SmartTaxiColors.gold;
 // that specific screen per the doc's own "migrate as you touch a screen,
 // not a blanket repaint" guidance. Not a replacement for SmartTaxiColors.gold
 // used everywhere else in this file.
-const _blueAccent = Color(0xff2c5fe0);
-const _blueSurface = Color(0xffeef2fc);
-const _blueBorder = Color(0xffe1e7f5);
+// Aliases for the real brand tokens, kept only because a few uses below sit
+// inside const constructors that context.palette cannot reach.
+//
+// These held their own values until now — #2c5fe0 / #eef2fc / #e1e7f5, taken
+// from the design doc during an opportunistic migration of the trip-search
+// screen. The doc's blue was never what shipped: the palette's blue is
+// #1d6fff. So the screen a rider stares at while waiting for a driver was
+// painted in a blue subtly unlike the rest of the app — the kind of mismatch
+// that reads as cheap without ever being nameable.
+const _blueAccent = SmartTaxiColors.gold;
+const _blueSurface = SmartTaxiColors.goldSurface;
+const _blueBorder = SmartTaxiColors.border;
 // One consistent neutral card shadow, applied opportunistically as screens
 // get touched (design doc: "one consistent card shadow", same
 // migrate-don't-blanket-repaint policy as the color tokens above). Does not

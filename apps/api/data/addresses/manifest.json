@@ -1,16 +1,16 @@
 {
   "counts": {
-    "ASYKATA.jsonl.gz": 925,
-    "ATAKENT.jsonl.gz": 3649,
-    "ATAMEKEN.jsonl.gz": 4401,
-    "BIRLIK.jsonl.gz": 1671,
-    "DOSTYK.jsonl.gz": 1499,
-    "FIRDOUSI.jsonl.gz": 4773,
-    "KIROV.jsonl.gz": 3995,
-    "MAKTAARAL.jsonl.gz": 6312,
-    "MYRZAKENT.jsonl.gz": 26728,
-    "YNTYMAK.jsonl.gz": 7972,
-    "ZHANAZHOL.jsonl.gz": 8174,
-    "ZHETYSAY.jsonl.gz": 10512
+    "ASYKATA.jsonl.gz": 325,
+    "ATAKENT.jsonl.gz": 3489,
+    "ATAMEKEN.jsonl.gz": 489,
+    "BIRLIK.jsonl.gz": 112,
+    "DOSTYK.jsonl.gz": 36,
+    "FIRDOUSI.jsonl.gz": 184,
+    "KIROV.jsonl.gz": 3,
+    "MAKTAARAL.jsonl.gz": 273,
+    "MYRZAKENT.jsonl.gz": 14774,
+    "YNTYMAK.jsonl.gz": 9,
+    "ZHANAZHOL.jsonl.gz": 34,
+    "ZHETYSAY.jsonl.gz": 7500
   }
 }
