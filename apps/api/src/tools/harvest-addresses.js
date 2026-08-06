@@ -208,6 +208,25 @@ async function harvestRegion(region) {
   return rows;
 }
 
+// Rebuilt from whatever files are on disk rather than from this run's
+// results, so harvesting one region at a time still leaves a manifest that
+// describes the whole directory.
+function writeManifest() {
+  const counts = {};
+  for (const name of fs.readdirSync(OUT_DIR)) {
+    if (!name.endsWith(".jsonl.gz")) continue;
+    const text = zlib.gunzipSync(fs.readFileSync(path.join(OUT_DIR, name))).toString("utf8");
+    let rows = 0;
+    for (const line of text.split("\n")) if (line.trim()) rows += 1;
+    counts[name] = rows;
+  }
+  fs.writeFileSync(
+    path.join(OUT_DIR, "manifest.json"),
+    JSON.stringify({ counts }, null, 2) + "\n",
+    "utf8"
+  );
+}
+
 async function main() {
   const wanted = process.argv[2];
   const regions = wanted
@@ -231,6 +250,11 @@ async function main() {
     fs.writeFileSync(file, zlib.gzipSync(Buffer.from(text, "utf8"), { level: 9 }));
     console.log(`  -> ${rows.length} rows to ${path.relative(process.cwd(), file)}`);
     total += rows.length;
+    // Row counts alongside the data. The loader compares them against the
+    // database on every boot to decide whether it has anything to do;
+    // reading a 300-byte JSON beats gunzipping 1.9 MB synchronously inside
+    // a process that is already serving requests.
+    writeManifest();
   }
   console.log(`Done: ${total} rows across ${regions.length} region(s)`);
 }

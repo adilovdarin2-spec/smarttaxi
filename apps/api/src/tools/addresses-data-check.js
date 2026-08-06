@@ -43,6 +43,13 @@ if (!fs.existsSync(DATA_DIR)) fail(`no data directory at ${DATA_DIR}`);
 const files = fs.readdirSync(DATA_DIR).filter((name) => name.endsWith(".jsonl.gz"));
 if (!files.length) fail("no harvested address files found");
 
+let manifest;
+try {
+  manifest = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "manifest.json"), "utf8"));
+} catch (error) {
+  fail(`manifest.json is missing or unreadable: ${error.message}`);
+}
+
 const KINDS = new Set(["housenumber", "poi", "building", "street"]);
 let total = 0;
 let multiVariant = 0;
@@ -83,8 +90,20 @@ for (const name of files) {
     rows += 1;
   }
   if (!rows) fail(`${name} is empty`);
+  // The loader trusts the manifest to decide whether it has work to do, so
+  // a stale entry would either skip a real load or force a pointless one on
+  // every boot. Nothing else would notice.
+  const claimed = manifest.counts?.[name];
+  if (claimed == null) fail(`${name} has no manifest entry`);
+  if (claimed !== rows) {
+    fail(`${name}: manifest claims ${claimed} rows, file holds ${rows}`);
+  }
   console.log(`  ${name}: ${rows} rows`);
   total += rows;
+}
+
+for (const name of Object.keys(manifest.counts || {})) {
+  if (!files.includes(name)) fail(`manifest lists ${name}, which is not on disk`);
 }
 
 if (!multiVariant) {

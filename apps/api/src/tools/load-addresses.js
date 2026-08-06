@@ -113,9 +113,27 @@ async function loadFile(file, regionId) {
   return written;
 }
 
+// Row counts come from the manifest the harvester writes, so the common
+// case — every boot after the first — reads a few hundred bytes of JSON
+// instead of synchronously gunzipping 1.9 MB inside a process that is
+// already serving requests. Counting the file is the fallback for a file
+// dropped in by hand with no manifest entry.
+let manifestCounts = null;
+
+function manifestCountFor(name) {
+  if (manifestCounts === null) {
+    try {
+      manifestCounts = JSON.parse(
+        fs.readFileSync(path.join(DATA_DIR, "manifest.json"), "utf8")
+      ).counts || {};
+    } catch {
+      manifestCounts = {};
+    }
+  }
+  return manifestCounts[name];
+}
+
 function countLines(file) {
-  // Cheap enough at this size, and it is the only thing standing between a
-  // boot and a pointless full re-upsert of 100k+ rows.
   const buffer = fs.readFileSync(file);
   const text = file.endsWith(".gz")
     ? zlib.gunzipSync(buffer).toString("utf8")
@@ -155,7 +173,7 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
       log(`[addresses] ${code}: no such region, skipping`);
       continue;
     }
-    const fileRows = countLines(file);
+    const fileRows = manifestCountFor(name) ?? countLines(file);
     const existing = await query(
       "SELECT COUNT(*)::int AS count FROM addresses WHERE region_id=$1",
       [region.id]
