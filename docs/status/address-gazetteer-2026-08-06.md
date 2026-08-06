@@ -168,3 +168,48 @@ filter by distance from the region's centre instead — the rows are already
 positioned, and a rider cares about what is near them, not about which
 administrative row owns it. That is a design decision, not a bug fix, so it
 is left for a deliberate call.
+
+---
+
+## Scoping by distance, not by name
+
+Ten of the twelve regions were still effectively empty to their own riders,
+and the reason was the query, not the data.
+
+Every row belongs to exactly one region — its nearest settlement. Correct
+for storage; wrong for search. These settlements are 4-6 km apart, so the
+streets physically around a rider in Ынтымак sit in the table under Киров or
+Жана жол. `searchGazetteer` matched `regions.name = $2`, so that rider saw
+the nine rows Ынтымак happens to own and nothing from their own street.
+
+The gazetteer now scopes to a box around the region's centre, sized by that
+region's working radius. "Near me" is a distance, not an administrative
+label. The longitude delta divides by the cosine of the latitude — a square
+in degrees is not square on the ground, and without it the box clips the
+east and west edges of every region.
+
+Verified live:
+
+| region | query | before | after |
+|---|---|---|---|
+| Ынтымак | Абая | 0 from gazetteer | 8 — Абая Ташкентская, улица Абая, 3 |
+| Киров | Абая | 0 | 3 |
+| Достык | школа | 0 | 8 — Школа №12 им. Комарова, №13 им. Бапышева |
+| Атакент | школа | 3 of 8 | 8 of 8 |
+| Мырзакент | Бектасова | 8 | 8 — улица Бектасова, 2, 4 |
+
+## Still open
+
+**Атакент wrote 3 125 rows where the manifest expects 3 489.** Not
+duplicates — the file holds 3 489 rows with 3 489 distinct OSM identities.
+Both sides call the same `nearestRegionCode`. Unexplained. Because the
+"already loaded?" check is exact equality, Атакент re-upserts on every boot
+until someone works out why. Harmless, wasteful, and an unexplained
+discrepancy deserves an answer on its own account.
+
+**"мектеп" finds nothing in Мырзакент.** The gazetteer stores POI names as
+OSM has them, so a school named "Средняя школа №1" has no "мектеп" anywhere
+in its text. Street names are handled — the harvest keeps `name:ru` and
+`name:kk` — but *category* words in Kazakh are not. Mapping a small set of
+them (мектеп/школа, дүкен/магазин, дәріхана/аптека, аурухана/больница) onto
+the OSM `amenity`/`shop` tag at harvest time would close it.
