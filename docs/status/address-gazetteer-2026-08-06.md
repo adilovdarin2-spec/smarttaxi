@@ -213,3 +213,26 @@ in its text. Street names are handled — the harvest keeps `name:ru` and
 `name:kk` — but *category* words in Kazakh are not. Mapping a small set of
 them (мектеп/школа, дүкен/магазин, дәріхана/аптека, аурухана/больница) onto
 the OSM `amenity`/`shop` tag at harvest time would close it.
+
+---
+
+## Correction: distance cannot cut a border that runs through the radius
+
+I reported the 25 km service-area floor as removing rows that are "almost
+entirely across the border". That was measured in aggregate and stated too
+confidently. Checked per-row afterwards: **36 Guliston rows still pass the
+filter**, because they sit *inside* 25 km of Мырзакент's centre. The earlier
+measurement said 20% of rows within 25 km carry Latin-script Uzbek names —
+around 3 900 of them. Those were never going to be cut by a radius.
+
+The floor still did real work (~7 000 rows beyond 25 km, 95% Uzbek), but it
+is a blunt instrument for this. Мырзакент straddles the border; no circle
+centred on it separates the two countries.
+
+The right tool is the actual boundary: either filter at harvest time on the
+OSM element's containing country, or clip against Kazakhstan's boundary
+polygon. Both are straightforward and neither is guesswork, which a distance
+threshold here always will be.
+
+Until that lands, riders in Мырзакент can still surface a few dozen
+addresses across the border.
