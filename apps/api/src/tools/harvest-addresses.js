@@ -30,7 +30,7 @@ import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = path.resolve(HERE, "../../../../data/addresses");
+const OUT_DIR = path.resolve(HERE, "../../data/addresses");
 
 // Centre + radius per region, mirroring REGION_SEARCH_CENTERS in
 // routing.service.js. Kept as a literal so this tool needs no database.

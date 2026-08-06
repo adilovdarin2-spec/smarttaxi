@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import { query } from "../db/pool.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(HERE, "../../../../data/addresses");
+const DATA_DIR = path.resolve(HERE, "../../data/addresses");
 
 const BATCH_SIZE = 500;
 
