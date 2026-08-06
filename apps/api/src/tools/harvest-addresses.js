@@ -128,7 +128,14 @@ function queriesFor(bbox) {
 // `name:ru`/`name:kk`. Keeping every variant we are given means the search
 // index can match whichever form the rider happens to use.
 function nameVariants(tags) {
-  const variants = [tags.name, tags["name:ru"], tags["name:kk"], tags["name:en"], tags.alt_name];
+  const variants = [
+    tags.name,
+    tags["name:ru"],
+    tags["name:kk"],
+    tags["name:en"],
+    tags.alt_name,
+    ...categoryWords(tags)
+  ];
   const seen = new Set();
   const out = [];
   for (const variant of variants) {
@@ -138,6 +145,56 @@ function nameVariants(tags) {
     out.push(text);
   }
   return out;
+}
+
+// What the place IS, in both languages, from its OSM tag.
+//
+// Names alone are not enough. A school tagged `amenity=school` is usually
+// named "Средняя школа №1" — so a rider typing "мектеп" (Kazakh for school)
+// matches nothing, and one typing "школа" matches only if the Russian word
+// happens to be in the name. Measured against the live API on 2026-08-06:
+// "мектеп" in Мырзакент returned zero.
+//
+// Street *names* were already handled — the harvest keeps name:ru and
+// name:kk. This is the same problem one level up, for category words, and it
+// needs the tag rather than the name.
+const CATEGORY_WORDS = {
+  school: ["школа", "мектеп"],
+  kindergarten: ["детский сад", "балабақша"],
+  hospital: ["больница", "аурухана"],
+  clinic: ["поликлиника", "емхана"],
+  doctors: ["поликлиника", "емхана"],
+  pharmacy: ["аптека", "дәріхана"],
+  bank: ["банк"],
+  atm: ["банкомат"],
+  post_office: ["почта", "пошта"],
+  police: ["полиция"],
+  fuel: ["заправка", "азық-түлік станциясы", "жанармай"],
+  cafe: ["кафе", "дәмхана"],
+  restaurant: ["ресторан", "мейрамхана"],
+  bakery: ["пекарня", "наубайхана"],
+  marketplace: ["базар", "рынок"],
+  mosque: ["мечеть", "мешіт"],
+  place_of_worship: ["мечеть", "мешіт"],
+  bus_station: ["автовокзал", "автобекет"],
+  townhall: ["акимат", "әкімдік"],
+  supermarket: ["супермаркет", "магазин", "дүкен"],
+  convenience: ["магазин", "дүкен"],
+  greengrocer: ["магазин", "дүкен"],
+  butcher: ["мясной", "ет дүкені"],
+  clothes: ["одежда", "киім"],
+  hairdresser: ["парикмахерская", "шаштараз"],
+  car_repair: ["автосервис", "СТО"],
+  car_wash: ["автомойка", "жуу"]
+};
+
+function categoryWords(tags) {
+  const key = tags.amenity || tags.shop;
+  if (!key) return [];
+  // `shop=yes` and friends carry no information — a bare "магазин" alias on
+  // every unnamed shop would flood a search for the word with noise.
+  if (key === "yes") return tags.shop ? ["магазин", "дүкен"] : [];
+  return CATEGORY_WORDS[key] || [];
 }
 
 function labelFor(kind, tags) {
@@ -210,6 +267,19 @@ async function harvestRegion(region) {
   return rows;
 }
 
+function existingRowCount(file) {
+  if (!fs.existsSync(file)) return 0;
+  try {
+    const text = zlib.gunzipSync(fs.readFileSync(file)).toString("utf8");
+    let rows = 0;
+    for (const line of text.split("\n")) if (line.trim()) rows += 1;
+    return rows;
+  } catch {
+    // An unreadable file is not worth protecting.
+    return 0;
+  }
+}
+
 // Rebuilt from whatever files are on disk rather than from this run's
 // results, so harvesting one region at a time still leaves a manifest that
 // describes the whole directory.
@@ -257,6 +327,7 @@ async function main() {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   let total = 0;
+  let failures = 0;
   for (const region of regions) {
     console.log(`${region.name} (${region.code})`);
     const rows = await harvestRegion(region);
@@ -264,6 +335,24 @@ async function main() {
     // is 5.6 MB of JSON and 0.6 MB compressed, and there are twelve
     // regions. Node reads it back with zlib — no dependency, no build step.
     const file = path.join(OUT_DIR, `${region.code}.jsonl.gz`);
+
+    // Refuse to replace a good harvest with a crippled one. Overpass fails a
+    // class at a time and the run carries on regardless — which is right,
+    // a partial gazetteer beats none on a first harvest. But on a re-run it
+    // means a single "fetch failed" silently overwrites committed data with
+    // a fraction of it. Seen on 2026-08-06: three of Мырзакент's four
+    // classes failed and the file went from 26 728 rows to 1 364. It was
+    // only recoverable because it was already committed.
+    const existing = existingRowCount(file);
+    if (existing && rows.length < existing * 0.8) {
+      console.error(
+        `  ${region.name}: REFUSING to overwrite — harvested ${rows.length} rows, ` +
+        `file already holds ${existing}. Re-run this region when Overpass is healthy.`
+      );
+      failures += 1;
+      continue;
+    }
+
     const text = rows.map((row) => JSON.stringify(row)).join("\n") + (rows.length ? "\n" : "");
     fs.writeFileSync(file, zlib.gzipSync(Buffer.from(text, "utf8"), { level: 9 }));
     console.log(`  -> ${rows.length} rows to ${path.relative(process.cwd(), file)}`);
@@ -274,7 +363,13 @@ async function main() {
     // a process that is already serving requests.
     writeManifest();
   }
-  console.log(`Done: ${total} rows across ${regions.length} region(s)`);
+  console.log(`Done: ${total} rows across ${regions.length - failures} region(s)`);
+  if (failures) {
+    // Non-zero exit, so a scripted re-harvest cannot mistake a refused
+    // overwrite for a clean run and commit stale data as if it were fresh.
+    console.error(`${failures} region(s) kept their previous data — re-run them.`);
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

@@ -69,7 +69,20 @@ export function distanceKm(aLat, aLng, bLat, bLng) {
 /// The outer bound only rejects coordinates that cannot be a harvest result
 /// at all — a parsing accident, or a bounding box computed without the
 /// cosine-of-latitude correction.
-const MAX_PLAUSIBLE_DISTANCE_KM = 120;
+/// Beyond this, a point is outside the service area even if some region is
+/// technically nearest to it. Мырзакент sits on the Uzbek border and its
+/// 22 km harvest box reaches well across: of its rows more than 25 km from
+/// the centre, 95% carry Latin-script Uzbek names ("Guliston shahar
+/// 1-maktab", "Nosir Mahmudov ko'chasi"), against 20% within 25 km. The
+/// service does not cross the border, and a rider should not be offered a
+/// street in another country.
+///
+/// The floor is a floor, not a replacement: a region with a wider radius
+/// keeps its own. Applying the radius alone as the cutoff is what discarded
+/// three quarters of the data on the first attempt — these settlements are
+/// 4-6 km apart with 12 km radii, so a point is routinely nearest to a
+/// region and outside its radius.
+const SERVICE_AREA_FLOOR_KM = 25;
 
 export function nearestRegionCode(lat, lng) {
   let best = null;
@@ -81,6 +94,8 @@ export function nearestRegionCode(lat, lng) {
       best = region;
     }
   }
-  if (!best || bestDistance > MAX_PLAUSIBLE_DISTANCE_KM) return null;
-  return best.code;
+  if (!best) return null;
+  return bestDistance <= Math.max(best.radiusKm, SERVICE_AREA_FLOOR_KM)
+    ? best.code
+    : null;
 }
