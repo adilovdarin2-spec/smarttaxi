@@ -18,9 +18,13 @@ function read(path) {
   return fs.readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-const adminApp = read("../../../web/src/features/admin/AdminApp.jsx");
-const adminApi = read("../../../web/src/lib/mvpApi.js");
+const adminAppUrl = new URL("../../../web/src/features/admin/AdminApp.jsx", import.meta.url);
+const adminApiUrl = new URL("../../../web/src/lib/mvpApi.js", import.meta.url);
+const hasWebSource = fs.existsSync(adminAppUrl) && fs.existsSync(adminApiUrl);
+const adminApp = hasWebSource ? fs.readFileSync(adminAppUrl, "utf8") : "";
+const adminApi = hasWebSource ? fs.readFileSync(adminApiUrl, "utf8") : "";
 
+if (hasWebSource) {
 [
   "Главная",
   "Регионы",
@@ -75,10 +79,10 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
 ].forEach(token => assert(!adminApp.includes(token), `Admin shell contains forbidden token ${token}`));
 
 [
-  "Пока нет обращений",
+  "Когда клиент или водитель отправит обращение, оно появится здесь для обработки.",
   "Нет данных для отображения",
   "Не удалось загрузить данные",
-  "Нет доступа к панели управления"
+  "Текущий аккаунт не имеет доступа к этой панели"
 ].forEach(copy => assert(adminApp.includes(copy), `Admin shell missing honest state copy: ${copy}`));
 
 [
@@ -95,6 +99,9 @@ const adminApi = read("../../../web/src/lib/mvpApi.js");
   "Заявка водителя",
   "Отклонить"
 ].forEach(copy => assert(adminApp.includes(copy), `Admin operations UI missing ${copy}`));
+} else {
+  console.warn("Admin shell web-source checks skipped: apps/web is not present in this runtime image");
+}
 
 const adminRoutes = read("../modules/admin/admin.routes.js");
 [
@@ -104,5 +111,13 @@ const adminRoutes = read("../modules/admin/admin.routes.js");
   'router.patch("/drivers/:id/regions"',
   'router.patch("/driver-applications/:id"'
 ].forEach(route => assert(adminRoutes.includes(route), `Admin route missing ${route}`));
+
+const redisDb = read("../db/redis.js");
+assert(redisDb.includes('env.NODE_ENV === "production"'), "Redis connect should stay strict in production");
+assert(redisDb.includes("API will run in degraded mode"), "Redis connect should allow degraded local API startup");
+
+const rateLimiter = read("../common/rateLimit.js");
+assert(rateLimiter.includes("Redis fallback"), "Rate limiter should document Redis fallback behavior");
+assert(!rateLimiter.includes("next(error);"), "Rate limiter must not turn Redis fallback into API 500 responses");
 
 console.log("Milestone 1, 2, 3, 4, auth/seed, routing/location and admin control checks ok");

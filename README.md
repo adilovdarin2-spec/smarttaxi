@@ -27,7 +27,7 @@ curl http://127.0.0.1:4000/api/health/ready
 4. Open:
 
 ```txt
-Client: http://localhost:5173/client
+Client: http://localhost:5173/
 Driver: http://localhost:5173/driver
 Owner:  http://localhost:5173/owner
 ```
@@ -40,8 +40,11 @@ Fill `.env` from `.env.example`:
 POSTGRES_DB=smarttaxi
 POSTGRES_USER=smarttaxi
 POSTGRES_PASSWORD=strong-password
-DATABASE_URL=postgresql://smarttaxi:strong-password@postgres:5432/smarttaxi
-REDIS_URL=redis://redis:6379
+POSTGRES_PORT=5433
+DATABASE_URL=postgresql://smarttaxi:strong-password@127.0.0.1:5433/smarttaxi
+REDIS_URL=redis://127.0.0.1:6379
+API_DATABASE_URL=postgresql://smarttaxi:strong-password@postgres:5432/smarttaxi
+API_REDIS_URL=redis://redis:6379
 JWT_SECRET=random-64-character-production-secret
 CORS_ORIGINS=https://app.smarttaxi.kz,https://smarttaxi.kz
 API_ORIGIN=https://api.smarttaxi.kz
@@ -52,7 +55,26 @@ GOOGLE_MAPS_SERVER_KEY=
 
 `JWT_SECRET` must be at least 32 characters. In production, do not use demo values.
 
+For local host runs (`npm --prefix apps/api run dev`), `DATABASE_URL` and `REDIS_URL`
+must point to ports reachable from Windows, for example `127.0.0.1:5433` and
+`127.0.0.1:6379`. For Docker Compose, the API container uses
+`API_DATABASE_URL` and `API_REDIS_URL`; keep those pointed at the Compose service
+names `postgres` and `redis`.
+
 Google Maps keys are optional for now. If they are empty, `/api/maps/estimate` returns a safe fallback estimate and the client app keeps working.
+
+## SMS Provider
+
+Local development uses the built-in dev SMS code flow. For real SMS on VPS, keep the Infobip token only in `.env` or server secrets:
+
+```txt
+SMS_PROVIDER=infobip
+SMS_FROM=ServiceSMS
+INFOBIP_BASE_URL=https://YOUR_INFOBIP_SUBDOMAIN.api.infobip.com
+INFOBIP_API_KEY=YOUR_INFOBIP_APP_KEY
+```
+
+Do not commit the real `INFOBIP_API_KEY`. If `SMS_PROVIDER=infobip` is enabled and delivery fails, `/api/auth/sms/send` returns a clean backend error instead of pretending the SMS was sent.
 
 ## VPS Deploy
 

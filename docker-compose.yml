@@ -30,6 +30,28 @@ services:
       timeout: 5s
       retries: 10
 
+  osrm:
+    image: osrm/osrm-backend:v5.27.1
+    container_name: smarttaxi-osrm
+    restart: always
+    profiles:
+      - routing
+    command: >
+      sh -c "if [ ! -f /data/kazakhstan.osrm ]; then
+        echo 'OSRM data is not prepared. Put kazakhstan.osm.pbf into ./data/osrm and run: docker compose --profile routing run --rm osrm osrm-extract -p /opt/car.lua /data/kazakhstan.osm.pbf && docker compose --profile routing run --rm osrm osrm-partition /data/kazakhstan.osrm && docker compose --profile routing run --rm osrm osrm-customize /data/kazakhstan.osrm';
+        exit 1;
+      fi;
+      osrm-routed --algorithm mld --ip 0.0.0.0 --port 5000 /data/kazakhstan.osrm"
+    volumes:
+      - ./data/osrm:/data
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- 'http://127.0.0.1:5000/route/v1/driving/68.509021,40.844435;68.543090,40.666108?overview=false' >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   api:
     build:
       context: ./apps/api
@@ -42,8 +64,24 @@ services:
         required: false
     environment:
       NODE_ENV: ${NODE_ENV:-development}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4000}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:5173}
       DATABASE_URL: ${API_DATABASE_URL:-postgresql://${POSTGRES_USER:-smarttaxi}:${POSTGRES_PASSWORD:-smarttaxi}@postgres:5432/${POSTGRES_DB:-smarttaxi}}
       REDIS_URL: ${API_REDIS_URL:-redis://redis:6379}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      MAPTILER_API_KEY: ${MAPTILER_API_KEY:-}
+      MAPTILER_STYLE_URL: ${MAPTILER_STYLE_URL:-https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY:-}}
+      MAPTILER_GEOCODING_URL: ${MAPTILER_GEOCODING_URL:-https://api.maptiler.com/geocoding}
+      MAP_SEARCH_PROVIDER: ${MAP_SEARCH_PROVIDER:-local_catalog_maptiler_photon_nominatim}
+      MAP_REVERSE_PROVIDER: ${MAP_REVERSE_PROVIDER:-maptiler_nominatim_photon_local_fallback}
+      OSRM_BASE_URL: ${OSRM_BASE_URL:-http://osrm:5000}
+      ROUTING_BASE_URL: ${ROUTING_BASE_URL:-http://osrm:5000}
+      SMS_PROVIDER: ${SMS_PROVIDER:-dev}
+      SMS_FROM: ${SMS_FROM:-ServiceSMS}
+      SMS_DEV_MODE: ${SMS_DEV_MODE:-false}
+      SMS_DEV_CODE: ${SMS_DEV_CODE:-111111}
+      INFOBIP_BASE_URL: ${INFOBIP_BASE_URL:-}
+      INFOBIP_API_KEY: ${INFOBIP_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-local_dev_secret_please_change_32_chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       API_PORT: ${API_PORT:-4000}
@@ -56,8 +94,12 @@ services:
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-ChangeMe_2026!}
       DEFAULT_DRIVER_PHONE: ${DEFAULT_DRIVER_PHONE:-+77000000000}
       DEFAULT_DRIVER_PASSWORD: ${DEFAULT_DRIVER_PASSWORD:-123456}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/secrets/firebase-service-account.json}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      - ./apps/api/secrets:/app/secrets:ro
     ports:
-      - "127.0.0.1:4000:4000"
+      - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,13 +117,17 @@ services:
       args:
         VITE_API_URL: ${API_ORIGIN:-http://localhost:4000}
         VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4000}
-        VITE_GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
+        VITE_MAPTILER_API_KEY: ${VITE_MAPTILER_API_KEY:-${MAPTILER_API_KEY:-}}
+        VITE_MAPTILER_STYLE_URL: ${VITE_MAPTILER_STYLE_URL:-https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY:-}}
+        VITE_OSM_TILE_URL: ${VITE_OSM_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
     container_name: smarttaxi-web
     restart: always
     environment:
       VITE_API_URL: ${API_ORIGIN:-http://localhost:4000}
       VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4000}
-      VITE_GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
+      VITE_MAPTILER_API_KEY: ${VITE_MAPTILER_API_KEY:-${MAPTILER_API_KEY:-}}
+      VITE_MAPTILER_STYLE_URL: ${VITE_MAPTILER_STYLE_URL:-https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY:-}}
+      VITE_OSM_TILE_URL: ${VITE_OSM_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
     ports:
       - "127.0.0.1:5173:80"
     depends_on:
