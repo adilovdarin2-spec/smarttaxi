@@ -6855,23 +6855,21 @@ class _RouteSummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 7),
-          TextButton(
+          const SizedBox(width: 4),
+          // A chevron, not a labelled button: "Изменить" took about 90dp of
+          // a 326dp sheet and squeezed the addresses beside it into an
+          // ellipsis — "улица Бектасова, …" on the screen it exists to show.
+          // The whole card is the target, so the affordance can be this small.
+          IconButton(
             onPressed: onEdit,
-            style: TextButton.styleFrom(
-              foregroundColor: palette.goldDeep,
-              backgroundColor: palette.goldSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              minimumSize: const Size(0, 0),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: palette.border),
-              ),
-            ),
-            child: Text(
-              l10n.passengerChangeButton,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            tooltip: l10n.passengerChangeButton,
+            icon: Icon(
+              Icons.chevron_right_rounded,
+              size: 24,
+              color: palette.textMuted,
             ),
           ),
         ],
