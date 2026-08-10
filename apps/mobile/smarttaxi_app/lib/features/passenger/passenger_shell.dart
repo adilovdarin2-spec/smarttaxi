@@ -14156,74 +14156,92 @@ class _PriceAdjuster extends StatelessWidget {
             ? l10n.passengerPriceHintSlower
             : l10n.passengerPriceHintNormal;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
       decoration: BoxDecoration(
-        color: palette.card,
-        // Matches _PaymentMethodRow right below it — both are supplementary
-        // order-config rows and previously disagreed (faint gray border
-        // here vs. the bold blue border there), which read as unfinished.
-        border: Border.fromBorderSide(
-          BorderSide(color: palette.borderStrong),
-        ),
-        borderRadius: const BorderRadius.all(Radius.circular(18)),
-        boxShadow: _cardShadow,
+        color: palette.goldPale,
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.passengerYourPriceLabel,
-                  style: TextStyle(
-                    color: palette.text,
-                    fontSize: 12.5,
-                    height: 1.1,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  hint,
+          Text(
+            l10n.passengerYourPriceLabel,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 12.5,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PriceStepButton(
+                icon: Icons.remove_rounded,
+                onTap: currentPrice > _minPrice ? () => _adjust(-_step) : null,
+              ),
+              // The amount is the only price on the sheet now, so it is set
+              // large and given room for "1 000 000 ₸" without clipping.
+              Expanded(
+                child: Text(
+                  _formatTenge(currentPrice),
+                  textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 10.5,
-                    height: 1.1,
-                    fontWeight: FontWeight.w600,
+                    color: palette.text,
+                    fontSize: 30,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1.2,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              _PriceStepButton(
+                icon: Icons.add_rounded,
+                onTap: currentPrice < _maxPrice ? () => _adjust(_step) : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          // Its own row: "Обычная скорость подачи" is 23 characters and was
+          // cut to "Обычная скорость ..." beside the stepper.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: palette.goldSurface,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: palette.goldDeep,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Text(
+                    hint,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: palette.goldDeep,
+                      fontSize: 12,
+                      height: 1.15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          _PriceStepButton(
-            icon: Icons.remove_rounded,
-            onTap: currentPrice > _minPrice ? () => _adjust(-_step) : null,
-          ),
-          SizedBox(
-            // 66 clipped digits mid-number on realistic values — _maxPrice
-            // is 1,000,000, formatted as "1 000 000 ₸" (11 chars), which
-            // never fit 66px at this size even before three-digit fares.
-            width: 96,
-            child: Text(
-              _formatTenge(currentPrice),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: palette.text,
-                fontSize: 14.5,
-                fontWeight: FontWeight.w900,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          _PriceStepButton(
-            icon: Icons.add_rounded,
-            onTap: currentPrice < _maxPrice ? () => _adjust(_step) : null,
           ),
         ],
       ),
@@ -14241,18 +14259,22 @@ class _PriceStepButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final enabled = onTap != null;
+    // 44dp round targets: at 30dp square these sat below the recommended
+    // minimum tap size, on the one control a rider presses repeatedly.
     return Material(
-      color: palette.goldSurface.withValues(alpha: enabled ? 1 : 0.5),
-      borderRadius: BorderRadius.circular(10),
+      color: palette.card.withValues(alpha: enabled ? 1 : 0.5),
+      shape: const CircleBorder(),
+      elevation: enabled ? 2 : 0,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 30,
-          height: 30,
+          width: 44,
+          height: 44,
           child: Icon(
             icon,
-            size: 16,
+            size: 22,
             color: enabled ? palette.goldDeep : palette.textMuted,
           ),
         ),
@@ -16621,68 +16643,56 @@ class _GoldCtaButton extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: loading
                     ? Center(child: _ButtonSpinner(text: resolvedLoadingText))
-                    : Stack(
-                        alignment: Alignment.center,
+                    // Label and fare read as one phrase — "Заказать Эконом
+                    // · 700 ₸" — instead of the label centred and the price
+                    // pinned to the far edge, which read as two unrelated
+                    // things. The round arrow stays in both cases.
+                    : Row(
                         children: [
-                          Center(
-                            child: Padding(
-                              padding: EdgeInsets.only(
-                                left: (trailingText ?? '').isNotEmpty ? 0 : 18,
-                                right:
-                                    (trailingText ?? '').isNotEmpty ? 70 : 28,
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  text,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(text: text),
+                                    if ((trailingText ?? '').isNotEmpty)
+                                      TextSpan(
+                                        text: '  ·  $trailingText',
+                                        style: const TextStyle(
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ),
                           ),
-                          if ((trailingText ?? '').isNotEmpty) ...[
-                            Positioned(
-                              right: 0,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  trailingText!,
-                                  maxLines: 1,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15.2,
-                                    fontWeight: FontWeight.w900,
-                                    fontFeatures: [FontFeature.tabularFigures()],
-                                  ),
-                                ),
-                              ),
-                            )
-                          ] else ...[
-                            Positioned(
-                              right: 0,
-                              child: Container(
-                                width: 34,
-                                height: 34,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: Colors.white,
-                                  size: 19,
-                                ),
-                              ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 34,
+                            height: 34,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              shape: BoxShape.circle,
                             ),
-                          ],
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 19,
+                            ),
+                          ),
                         ],
                       ),
               ),
