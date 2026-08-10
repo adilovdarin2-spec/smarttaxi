@@ -13871,75 +13871,50 @@ class _TariffSection extends StatelessWidget {
             text: l10n.passengerTariffUnavailableText,
             dark: dark,
           )
-        else
-          // A horizontal carousel instead of a vertical list: every option
-          // fits in one compact-height row (no more scrolling several
-          // 92px-tall cards inside an already height-constrained sheet to
-          // even see them all), and a partially-visible next card is the
-          // standard "there's more here" cue — a rider isn't left assuming
-          // one card is the only option. When the cards fit the sheet width
-          // without scrolling, stretch them to fill it instead of leaving
-          // dead space after the last card.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const cardWidth = 118.0;
-              const gap = 8.0;
-              final naturalWidth = visibleTariffs.length * cardWidth +
-                  (visibleTariffs.length - 1) * gap;
-              final stretch = naturalWidth <= constraints.maxWidth;
-              // The stretch (icon-left, text-right) layout is much shorter
-              // than the stacked (icon-above-text) layout the scrollable
-              // case uses — sharing one fixed height between both left the
-              // stretch cards centered in a box roughly 50px taller than
-              // their content, i.e. visible dead space above and below.
-              return SizedBox(
-                height: stretch ? 106 : 150,
-                child: stretch
-                    ? Row(
-                        children: [
-                          for (var index = 0;
-                              index < visibleTariffs.length;
-                              index++) ...[
-                            if (index != 0) const SizedBox(width: gap),
-                            Expanded(
-                              child: _TariffCard(
-                                item: visibleTariffs[index],
-                                selected:
-                                    visibleTariffs[index].tariff.id ==
-                                        selectedId,
-                                estimate:
-                                    estimates[visibleTariffs[index].tariff.id],
-                                onTap: () =>
-                                    onSelect(visibleTariffs[index].tariff.id),
-                                dark: dark,
-                                bestValue: visibleTariffs[index].tariff.id ==
-                                    bestValueTariffId,
-                                stretch: true,
-                              ),
-                            ),
-                          ],
-                        ],
-                      )
-                    : ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: visibleTariffs.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: gap),
-                        itemBuilder: (context, index) {
-                          final item = visibleTariffs[index];
-                          return _TariffCard(
-                            item: item,
-                            selected: item.tariff.id == selectedId,
-                            estimate: estimates[item.tariff.id],
-                            onTap: () => onSelect(item.tariff.id),
-                            dark: dark,
-                            bestValue: item.tariff.id == bestValueTariffId,
-                          );
-                        },
-                      ),
-              );
-            },
+        else ...[
+          // A segmented switch over a single large card, rather than one card
+          // per tariff. Two equally-weighted cards split the rider's attention
+          // and left the white car photo on a near-white card, where it was
+          // barely visible; the switch also survives a region gaining a third
+          // or fourth tariff without the sheet growing.
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : const Color(0xffeff1f5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                for (var index = 0; index < visibleTariffs.length; index++) ...[
+                  if (index != 0) const SizedBox(width: 4),
+                  Expanded(
+                    child: _TariffCard(
+                      item: visibleTariffs[index],
+                      selected:
+                          visibleTariffs[index].tariff.id == selectedId,
+                      estimate: estimates[visibleTariffs[index].tariff.id],
+                      onTap: () => onSelect(visibleTariffs[index].tariff.id),
+                      dark: dark,
+                      bestValue:
+                          visibleTariffs[index].tariff.id == bestValueTariffId,
+                      stretch: true,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
+          const SizedBox(height: 10),
+          _TariffHero(
+            item: visibleTariffs.firstWhere(
+              (item) => item.tariff.id == selectedId,
+              orElse: () => visibleTariffs.first,
+            ),
+            dark: dark,
+          ),
+        ],
       ],
     );
   }
@@ -13968,215 +13943,47 @@ class _TariffCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    final isDelivery = item.classId == _TariffVisualClass.delivery;
-    final price = estimate?.estimatedPrice;
-    final iconBox = Container(
-      height: stretch ? 72 : 64,
-      width: stretch ? 54 : double.infinity,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: dark
-            ? LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: selected
-                    ? [
-                        palette.goldSurface,
-                        Color.lerp(palette.goldSurface, Colors.black, 0.28)!,
-                      ]
-                    : [
-                        Colors.white.withValues(alpha: 0.08),
-                        Colors.white.withValues(alpha: 0.03),
-                      ],
-              )
-            : LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: selected
-                    ? [SmartTaxiColors.goldSurface, Colors.white]
-                    : [const Color(0xfffbfbfb), const Color(0xfff5f6f8)],
-              ),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(
-          color: selected ? palette.borderStrong : palette.border,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.22 : 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: item.asset.isEmpty
-          ? (isDelivery
-              // Full-color illustration, not tinted through _SvgIcon — a
-              // flat single-color glyph looked cheap next to the real photo
-              // renders on the other cards. This has its own shading, so it
-              // needs to render at roughly the same visual weight as those.
-              ? SvgPicture.asset(
-                  _iconDeliveryVan,
-                  width: stretch ? 44 : 78,
-                  height: stretch ? 33 : 58,
-                  fit: BoxFit.contain,
-                )
-              : _SvgIcon(_iconCar, size: 30, color: palette.goldDeep))
-          : Image.asset(
-              item.asset,
-              width: stretch ? 44 : 78,
-              height: stretch ? 33 : 58,
-              // Comfort/Business car photos are raw exports (650KB-1.3MB,
-              // full camera resolution) shown at under 80px here -- decoding
-              // at that source size for every tariff card is wasted work on
-              // a screen that's already busy. ~3x the rendered size keeps it
-              // sharp on high-DPI screens without the full decode cost.
-              cacheWidth: ((stretch ? 44 : 78) * 3).round(),
-              cacheHeight: ((stretch ? 33 : 58) * 3).round(),
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (_, __, ___) => _SvgIcon(
-                isDelivery ? _iconDelivery : _iconCar,
-                size: 30,
-                color: palette.goldDeep,
-              ),
-            ),
-    );
-    final titleText = Text(
+    final accent = dark ? palette.goldSky : palette.goldDeep;
+    // A segment shows the tariff name only. The car moved to _TariffHero,
+    // and the price to the single "your price" field below the switch —
+    // it used to be written three times on one screen.
+    final content = Text(
       _tariffTitleFor(l10n, item.classId),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
       style: TextStyle(
-        color: palette.textSecondary,
-        fontSize: 11.5,
+        color: selected ? accent : palette.textSecondary,
+        fontSize: 14.5,
         height: 1.1,
         fontWeight: FontWeight.w800,
+        letterSpacing: -0.1,
       ),
     );
-    final priceText = Text(
-      price == null ? '...' : _formatTenge(price),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color: palette.text,
-        fontSize: 16.5,
-        height: 1.05,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -0.2,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      ),
-    );
-    final bestValueBadge = bestValue
-        ? Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(
-              color: palette.success.withValues(alpha: dark ? 0.22 : 0.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              l10n.passengerTariffBestValueBadge,
-              style: TextStyle(
-                color: palette.success,
-                fontSize: 9.5,
-                height: 1,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          )
-        : null;
-    // Stretch (wide, one-or-two-tariff) cards use a horizontal layout —
-    // icon on the left, text to its right — instead of the same centered
-    // vertical stack the narrow scrollable cards use. A vertical stack
-    // stretched to ~150dp+ left the icon centered but the text left-aligned
-    // below it, an unbalanced mismatch that read as sloppy on wide cards.
-    final content = stretch
-        ? Row(
-            children: [
-              iconBox,
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    titleText,
-                    const SizedBox(height: 3),
-                    priceText,
-                    if (bestValueBadge != null) ...[
-                      const SizedBox(height: 5),
-                      bestValueBadge,
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              iconBox,
-              const SizedBox(height: 9),
-              titleText,
-              const SizedBox(height: 2),
-              priceText,
-              if (bestValueBadge != null) ...[
-                const SizedBox(height: 6),
-                bestValueBadge,
-              ],
-            ],
-          );
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          width: stretch ? null : 122,
-          padding: EdgeInsets.fromLTRB(12, stretch ? 11 : 12, 12, stretch ? 11 : 11),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
           decoration: BoxDecoration(
-            color: dark
-                ? (selected ? null : Colors.white.withValues(alpha: 0.06))
-                : (selected ? null : Colors.white),
-            gradient: selected
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: dark
-                        ? [
-                            palette.gold.withValues(alpha: 0.20),
-                            Colors.white.withValues(alpha: 0.05),
-                          ]
-                        : [
-                            SmartTaxiColors.gold.withValues(alpha: 0.12),
-                            SmartTaxiColors.gold.withValues(alpha: 0.03),
-                          ],
-                  )
-                : null,
-            // No checkmark badge anymore — the border + glow below is the
-            // only selection cue, so it needs to read clearly on its own:
-            // a visibly thicker ring, not just a color swap.
-            border: Border.all(
-              color: selected
-                  ? palette.gold
-                  : (dark
-                      ? Colors.white.withValues(alpha: 0.10)
-                      : SmartTaxiColors.border),
-              width: selected ? 2.2 : 1,
-            ),
-            borderRadius: BorderRadius.circular(20),
+            // A pill inside the switch track: the selected one lifts off the
+            // track in white, the others stay flat on it. No borders — two
+            // ringed cards side by side were the noisiest thing on the sheet.
+            color: selected
+                ? (dark ? palette.cardWarm : Colors.white)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               if (selected)
                 BoxShadow(
-                  color: palette.gold.withValues(alpha: dark ? 0.35 : 0.28),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              if (!selected)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.28 : 0.04),
-                  blurRadius: 10,
+                  color: Colors.black.withValues(alpha: dark ? 0.45 : 0.12),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
             ],
@@ -14184,6 +13991,71 @@ class _TariffCard extends StatelessWidget {
           child: content,
         ),
       ),
+    );
+  }
+}
+
+/// The one large view of the chosen car. A photo shown at 78px on a white card
+/// was indistinguishable between tariffs; at full sheet width, on a tinted
+/// ground, it is the thing the rider actually looks at.
+class _TariffHero extends StatelessWidget {
+  const _TariffHero({required this.item, required this.dark});
+
+  final _PassengerTariffVisual item;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDelivery = item.classId == _TariffVisualClass.delivery;
+    const artWidth = 208.0;
+    const artHeight = 96.0;
+    final Widget art = item.asset.isEmpty
+        ? (isDelivery
+            ? SvgPicture.asset(
+                _iconDeliveryVan,
+                width: artWidth,
+                height: artHeight,
+                fit: BoxFit.contain,
+              )
+            : _SvgIcon(_iconCar, size: 64, color: palette.goldDeep))
+        : Image.asset(
+            item.asset,
+            width: artWidth,
+            height: artHeight,
+            // Same reasoning as the old thumbnails: the source exports run to
+            // over a megabyte, so decode at ~2x the rendered size rather than
+            // at full camera resolution.
+            cacheWidth: (artWidth * 2).round(),
+            cacheHeight: (artHeight * 2).round(),
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) => _SvgIcon(
+              isDelivery ? _iconDelivery : _iconCar,
+              size: 64,
+              color: palette.goldDeep,
+            ),
+          );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: dark
+              ? [palette.goldSurface, palette.card]
+              : [Colors.white, palette.goldPale],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: dark
+              ? Colors.white.withValues(alpha: 0.08)
+              : palette.gold.withValues(alpha: 0.18),
+        ),
+      ),
+      child: art,
     );
   }
 }
