@@ -125,6 +125,11 @@ export const env = {
   DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD || "ChangeMe_2026!",
   DEFAULT_DRIVER_PHONE: process.env.DEFAULT_DRIVER_PHONE || "+77000000000",
   DEFAULT_DRIVER_PASSWORD: process.env.DEFAULT_DRIVER_PASSWORD || "123456",
+  // The seed's test client and finance accounts were hardcoded to "123456";
+  // they are configurable now so production can be given real ones. seed.js
+  // refuses to run against production while any of these is still the default.
+  DEFAULT_CLIENT_PASSWORD: process.env.DEFAULT_CLIENT_PASSWORD || "123456",
+  DEFAULT_FINANCE_PASSWORD: process.env.DEFAULT_FINANCE_PASSWORD || "123456",
   // Firebase Admin SDK service-account credentials (Project settings ->
   // Service accounts -> Generate new private key). _JSON takes the whole
   // downloaded file's contents directly (the practical option on Railway,

@@ -2,36 +2,65 @@ import bcrypt from "bcryptjs";
 import { pool, query } from "../db/pool.js";
 import { env } from "../config/env.js";
 
+// Every password below is readable by anyone who opens the repository, so they
+// are development defaults only. `assertSeedPasswordsAreSafe` refuses to write
+// them into a production database — a FINANCE account whose password is
+// published is the finance module handed over.
+const DEV_PASSWORD = "123456";
+const DEV_ADMIN_PASSWORD = "ChangeMe_2026!";
+
 const ACCOUNTS = {
   client: {
     name: "Test Client",
     role: "CLIENT",
     phone: "+77000000001",
     email: "client@smarttaxi.local",
-    password: "123456"
+    password: env.DEFAULT_CLIENT_PASSWORD
   },
   driver: {
     name: "Test Driver",
     role: "DRIVER",
-    phone: "+77000000000",
+    // Was hardcoded, which quietly ignored DEFAULT_DRIVER_PHONE and
+    // DEFAULT_DRIVER_PASSWORD — both already declared in env.js and .env.example.
+    phone: env.DEFAULT_DRIVER_PHONE,
     email: "driver@smarttaxi.local",
-    password: "123456"
+    password: env.DEFAULT_DRIVER_PASSWORD
   },
   owner: {
     name: "SmartTaxi Owner",
     role: "OWNER",
     phone: "+77000000099",
-    email: env.DEFAULT_ADMIN_EMAIL || "admin@smarttaxi.local",
-    password: env.DEFAULT_ADMIN_PASSWORD || "ChangeMe_2026!"
+    email: env.DEFAULT_ADMIN_EMAIL,
+    password: env.DEFAULT_ADMIN_PASSWORD
   },
   finance: {
     name: "Test Finance",
     role: "FINANCE",
     phone: "+77000000097",
     email: "finance@smarttaxi.local",
-    password: "123456"
+    password: env.DEFAULT_FINANCE_PASSWORD
   }
 };
+
+const PASSWORD_ENV_VAR = {
+  client: "DEFAULT_CLIENT_PASSWORD",
+  driver: "DEFAULT_DRIVER_PASSWORD",
+  owner: "DEFAULT_ADMIN_PASSWORD",
+  finance: "DEFAULT_FINANCE_PASSWORD"
+};
+
+/// Names every account still holding a published password at once, so one run
+/// tells you the full list of variables to set instead of failing four times.
+function assertSeedPasswordsAreSafe() {
+  if (env.NODE_ENV !== "production") return;
+  const weak = Object.entries(ACCOUNTS)
+    .filter(([, account]) => account.password === DEV_PASSWORD || account.password === DEV_ADMIN_PASSWORD)
+    .map(([key]) => PASSWORD_ENV_VAR[key]);
+  if (!weak.length) return;
+  throw new Error(
+    `Refusing to seed production with passwords published in the repository. Set ${weak.join(", ")} and run again.`
+  );
+}
 
 async function upsertUser({ name, email, phone, password, role }) {
   const passwordHash = await bcrypt.hash(password, 10);
@@ -318,6 +347,8 @@ async function seedSettings() {
 }
 
 async function seed() {
+  // Before anything is written, not after the regions are already in.
+  assertSeedPasswordsAreSafe();
   const regions = await seedRegions();
   const region = regions.find((item) => item.code === "ATAKENT") || regions[0];
   await seedSettings();
