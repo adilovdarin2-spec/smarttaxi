@@ -109,7 +109,16 @@ function queriesFor(bbox) {
     },
     {
       kind: "poi",
-      body: `[out:json][timeout:180];(node["amenity"]["name"](${bbox});node["shop"]["name"](${bbox});way["amenity"]["name"](${bbox});way["shop"]["name"](${bbox}););out center tags;`
+      // No ["name"] filter, and nwr rather than node+way.
+      //
+      // Requiring a name dropped every unnamed pharmacy, shop and cafe on the
+      // map — 116 of Мырзакент's 399 shops and 15 of its 35 pharmacies,
+      // counted against Overpass on 2026-08-12. An unnamed pharmacy is still
+      // somewhere a rider asks to be taken; labelFor() gives those rows their
+      // category word ("Аптека") instead of a name, and drops anything whose
+      // category says nothing ("shop=yes"). nwr also catches the ones mapped
+      // as multipolygon relations, which node+way missed entirely.
+      body: `[out:json][timeout:180];(nwr["amenity"](${bbox});nwr["shop"](${bbox}););out center tags;`
     },
     {
       kind: "building",
@@ -200,18 +209,32 @@ function categoryWords(tags) {
 function labelFor(kind, tags) {
   const street = tags["addr:street"];
   const housenumber = tags["addr:housenumber"];
-  const [name] = nameVariants(tags);
   if (kind === "housenumber") {
     // A bare number with no street is unsearchable — skip it rather than
     // store "12" on its own.
     if (!street) return null;
     return housenumber ? `${street}, ${housenumber}` : street;
   }
-  if (!name) return null;
+  // An unnamed place keeps its category as the label: "Аптека" is a
+  // destination a rider can say out loud, "amenity=pharmacy" is not.
+  //
+  // The name is read from the tags rather than from nameVariants(), which
+  // deliberately mixes category words in with the real names so that a search
+  // for "аптека" also finds one called "Дару". Taking the label off that list
+  // titled every unnamed row in lower case.
+  const realName = [tags.name, tags["name:ru"], tags["name:kk"], tags["name:en"], tags.alt_name]
+    .map((value) => String(value || "").replace(/\s+/g, " ").trim())
+    .find(Boolean);
+  // shop=yes says nothing; a row called "Магазин" for every one of them would
+  // bury the named shops in search.
+  const category = (tags.amenity || tags.shop) === "yes" ? null : categoryWords(tags)[0];
+  const display = realName
+    || (category ? category.charAt(0).toUpperCase() + category.slice(1) : null);
+  if (!display) return null;
   // A shop is far easier to find when its address rides along with it.
-  if (street && housenumber) return `${name} (${street}, ${housenumber})`;
-  if (street) return `${name} (${street})`;
-  return name;
+  if (street && housenumber) return `${display} (${street}, ${housenumber})`;
+  if (street) return `${display} (${street})`;
+  return display;
 }
 
 function coordsOf(element) {
@@ -224,14 +247,17 @@ async function harvestRegion(region) {
   const bbox = bboxOf(region);
   const rows = [];
   const seen = new Set();
+  const failedKinds = new Set();
   for (const { kind, body } of queriesFor(bbox)) {
     let payload;
     try {
       payload = await overpass(body);
     } catch (error) {
       // One class failing must not cost the rest of the region — a partial
-      // gazetteer still beats none.
+      // gazetteer still beats none. What this class already had is carried
+      // over from the file on disk; see rowsOfKindFrom below.
       console.error(`  ${region.name}/${kind}: FAILED (${error.message})`);
+      failedKinds.add(kind);
       continue;
     }
     const elements = payload.elements || [];
@@ -264,7 +290,37 @@ async function harvestRegion(region) {
     console.log(`  ${region.name}/${kind}: ${kept} of ${elements.length}`);
     await sleep(PAUSE_BETWEEN_QUERIES_MS);
   }
-  return rows;
+  return { rows, failedKinds };
+}
+
+/// Rows of the given classes from a harvest already on disk.
+///
+/// Overpass fails a class at a time, at random, and a different one on every
+/// run — Мактаарал lost its streets to a 504 on one pass and Киров its POIs
+/// on the next. Without this the run would write the region back minus that
+/// class, and since the loss is only a few hundred rows out of thousands the
+/// 80% guard below waves it through. Carrying the old rows over makes a
+/// re-harvest incapable of making the gazetteer worse.
+function rowsOfKindFrom(file, kinds) {
+  if (!kinds.size || !fs.existsSync(file)) return [];
+  let text;
+  try {
+    text = zlib.gunzipSync(fs.readFileSync(file)).toString("utf8");
+  } catch {
+    return [];
+  }
+  const kept = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    let row;
+    try {
+      row = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (kinds.has(row.kind)) kept.push(row);
+  }
+  return kept;
 }
 
 function existingRowCount(file) {
@@ -330,7 +386,7 @@ async function main() {
   let failures = 0;
   for (const region of regions) {
     console.log(`${region.name} (${region.code})`);
-    const rows = await harvestRegion(region);
+    const { rows, failedKinds } = await harvestRegion(region);
     // Gzipped, because this data lives in the repository: Мырзакент alone
     // is 5.6 MB of JSON and 0.6 MB compressed, and there are twelve
     // regions. Node reads it back with zlib — no dependency, no build step.
@@ -343,6 +399,22 @@ async function main() {
     // a fraction of it. Seen on 2026-08-06: three of Мырзакент's four
     // classes failed and the file went from 26 728 rows to 1 364. It was
     // only recoverable because it was already committed.
+    const carried = rowsOfKindFrom(file, failedKinds);
+    if (carried.length) {
+      const seen = new Set(rows.map((row) => `${row.osmType}/${row.osmId}`));
+      let added = 0;
+      for (const row of carried) {
+        const key = `${row.osmType}/${row.osmId}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        rows.push(row);
+        added += 1;
+      }
+      console.log(
+        `  ${region.name}: kept ${added} rows of [${[...failedKinds].join(", ")}] from the previous harvest`
+      );
+    }
+
     const existing = existingRowCount(file);
     if (existing && rows.length < existing * 0.8) {
       console.error(
