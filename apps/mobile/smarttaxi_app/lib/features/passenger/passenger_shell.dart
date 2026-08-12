@@ -6970,10 +6970,16 @@ class _OrderNoteRow extends StatelessWidget {
               const SizedBox(width: 9),
               Expanded(
                 child: Text(
+                  // The long placeholder — "Описать место (дверь, подъезд,
+                  // этаж)" — never fitted this row and was shown as "Описать
+                  // место (дверь, подъезд, э…", so the examples it exists to
+                  // give were the part that got cut. The sheet's own title is
+                  // the same instruction at a length that fits, and the
+                  // examples still appear inside the sheet.
                   hasNote
                       ? note!
                       : AppLocalizations.of(context)
-                          .passengerAddressNotePlaceholder,
+                          .passengerOrderNoteSheetTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
