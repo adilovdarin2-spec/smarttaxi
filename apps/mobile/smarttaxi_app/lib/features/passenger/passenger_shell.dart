@@ -13818,40 +13818,20 @@ class _TariffSection extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ] else ...[
+          // No "фикс. цена" pill here any more: it sat a finger's width above
+          // the adjuster that exists to change the fare, and the two
+          // contradicted each other. What the badge really promises — no
+          // surge — is carried by the speed hint under the amount.
           Padding(
             padding: const EdgeInsets.only(left: 2, right: 2, bottom: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.passengerTariffSectionTitle,
-                    style: TextStyle(
-                      color: context.palette.text,
-                      fontSize: 15.4,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: context.palette.goldSurface,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: context.palette.gold),
-                  ),
-                  child: Text(
-                    l10n.passengerTariffFixedPriceBadge,
-                    style: TextStyle(
-                      color: context.palette.goldDeep,
-                      fontSize: 10.5,
-                      height: 1,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              l10n.passengerTariffSectionTitle,
+              style: TextStyle(
+                color: context.palette.text,
+                fontSize: 15.4,
+                height: 1,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
