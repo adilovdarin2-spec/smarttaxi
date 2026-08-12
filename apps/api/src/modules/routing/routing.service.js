@@ -1457,6 +1457,48 @@ async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz"
   return sortAddressSuggestions(localFallback, region, query);
 }
 
+// "KZ13-01", "Р29", "А-2", "M32": a road's reference number, which is what
+// every geocoder falls back to when the way it matched has no name. It is a
+// correct answer and a useless one — no rider in Мырзакент tells a driver to
+// meet them at KZ13-01.
+const ROAD_CODE = /^(kz[\s-]?\d|ah\d|[a-zа-я]{1,2}[\s-]?\d{1,4})(\s*[-–]\s*\d+)?$/i;
+
+function looksLikeRoadCode(label) {
+  const text = String(label || "").trim();
+  if (!text) return true;
+  // "Р29, 14" is a house on that road — a usable address, unlike "Р29" alone.
+  const head = text.split(",")[0].trim();
+  if (text.includes(",") && /\d/.test(text.split(",").slice(1).join(","))) return false;
+  return ROAD_CODE.test(head);
+}
+
+/// The nearest harvested address to a point, for when the geocoders answer
+/// with a road number. Reads from the same gazetteer the search box uses, so
+/// a dropped pin gets named the way a rider would name it.
+async function nearestGazetteerAddress(point, maxMeters = 400, executor = defaultQuery) {
+  // ~111 km per degree of latitude; longitude shrinks by cos(latitude).
+  const latDelta = maxMeters / 111000;
+  const lngDelta = maxMeters / (111000 * Math.cos((point.lat * Math.PI) / 180));
+  const { rows } = await executor(
+    `SELECT label, lat, lng, kind
+       FROM addresses
+      WHERE lat BETWEEN $1 - $3 AND $1 + $3
+        AND lng BETWEEN $2 - $4 AND $2 + $4
+      ORDER BY
+        -- A house number is the most recognisable thing to stand next to;
+        -- a bare street name is the least specific but still far better
+        -- than a road code.
+        CASE kind WHEN 'housenumber' THEN 0 WHEN 'building' THEN 1
+                  WHEN 'poi' THEN 2 ELSE 3 END,
+        (lat - $1) * (lat - $1) + (lng - $2) * (lng - $2)
+      LIMIT 1`,
+    [point.lat, point.lng, latDelta, lngDelta]
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return String(row.label || "").trim() || null;
+}
+
 export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
   const point = normalizePoint({ lat, lng });
   const fallbackPoint = {
@@ -1471,7 +1513,26 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
     fallback: true,
     confidence: 0.2
   };
-  const mapTiler = await reverseAddressWithMapTiler(point, fetchImpl).catch(() => null);
+  // Every provider below can answer with a road code; rather than repeat the
+  // check three times, each result passes through here first.
+  const named = async (suggestion) => {
+    if (!suggestion) return null;
+    if (!looksLikeRoadCode(suggestion.label)) return suggestion;
+    const local = await nearestGazetteerAddress(point).catch(() => null);
+    if (local) {
+      return { ...suggestion, label: local, title: local, source: "gazetteer_reverse" };
+    }
+    // Nothing harvested within walking distance — much of Мақтаарал district
+    // is fields. "Точка на карте" tells the rider exactly as much as the road
+    // number did, without pretending to be an address they could give a
+    // driver over the phone.
+    const place = suggestion.city || nearestLocalPlace(point)?.city || env.CITY || "";
+    const label = place ? `Точка на карте, ${place}` : "Точка на карте";
+    return { ...suggestion, label, title: "Точка на карте", source: "point_on_map" };
+  };
+  const mapTiler = await named(
+    await reverseAddressWithMapTiler(point, fetchImpl).catch(() => null)
+  );
   if (mapTiler) return { ...mapTiler, fallback: false };
   const url = new URL("https://nominatim.openstreetmap.org/reverse");
   url.searchParams.set("format", "jsonv2");
@@ -1482,23 +1543,29 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
   try {
     response = await getJson(url, { headers: nominatimHeaders(), fetchImpl });
   } catch {
-    const fallback = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+    const fallback = await named(
+      await reverseAddressWithPhoton(point, fetchImpl).catch(() => null)
+    );
     if (fallback) return fallback;
     return fallbackPoint;
   }
   if (!response.ok) {
-    const fallback = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+    const fallback = await named(
+      await reverseAddressWithPhoton(point, fetchImpl).catch(() => null)
+    );
     if (fallback) return fallback;
     return fallbackPoint;
   }
   const data = response.data;
-  const suggestion = publicAddressSuggestion(data);
+  const suggestion = await named(publicAddressSuggestion(data));
   if (!suggestion) {
-    const fallback = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+    const fallback = await named(
+      await reverseAddressWithPhoton(point, fetchImpl).catch(() => null)
+    );
     if (fallback) return fallback;
     return fallbackPoint;
   }
-  return { ...suggestion, source: "nominatim", fallback: false };
+  return { source: "nominatim", ...suggestion, fallback: false };
 }
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {
