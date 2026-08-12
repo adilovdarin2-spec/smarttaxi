@@ -25,7 +25,12 @@ export const REGION_GEO = [
   { code: "YNTYMAK", name: "Ынтымак", lat: 40.7606, lng: 68.4979, radiusKm: 12 },
   { code: "BIRLIK", name: "Бирлик", lat: 40.8225, lng: 68.4018, radiusKm: 12 },
   { code: "FIRDOUSI", name: "Фирдоуси", lat: 40.7231, lng: 68.5016, radiusKm: 12 },
-  { code: "ZHANAZHOL", name: "Жана жол", lat: 40.7567, lng: 68.5661, radiusKm: 12 },
+  // ZHANA_ZHOL, with the underscore, because that is the code migrations.js
+  // creates the region under and the loader looks it up by. Spelled without
+  // one, every address nearest to Жана Жол was harvested, filed under
+  // "ZHANAZHOL", matched no region and was dropped: the settlement had zero
+  // addresses in the database.
+  { code: "ZHANA_ZHOL", name: "Жана жол", lat: 40.7567, lng: 68.5661, radiusKm: 12 },
   { code: "MAKTAARAL", name: "Мактаарал", lat: 40.7358, lng: 68.5364, radiusKm: 12 },
   { code: "ATAMEKEN", name: "Атамекен", lat: 40.8121, lng: 68.5839, radiusKm: 12 }
 ];

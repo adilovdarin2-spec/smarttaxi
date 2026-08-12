@@ -46,7 +46,8 @@ const REGIONS = [
   { code: "YNTYMAK", name: "Ынтымак", lat: 40.7606, lng: 68.4979, radiusKm: 12 },
   { code: "BIRLIK", name: "Бирлик", lat: 40.8225, lng: 68.4018, radiusKm: 12 },
   { code: "FIRDOUSI", name: "Фирдоуси", lat: 40.7231, lng: 68.5016, radiusKm: 12 },
-  { code: "ZHANAZHOL", name: "Жана жол", lat: 40.7567, lng: 68.5661, radiusKm: 12 },
+  // Matches migrations.js and region-geo.js — see the note there.
+  { code: "ZHANA_ZHOL", name: "Жана жол", lat: 40.7567, lng: 68.5661, radiusKm: 12 },
   { code: "MAKTAARAL", name: "Мактаарал", lat: 40.7358, lng: 68.5364, radiusKm: 12 },
   { code: "ATAMEKEN", name: "Атамекен", lat: 40.8121, lng: 68.5839, radiusKm: 12 }
 ];
@@ -336,6 +337,57 @@ function existingRowCount(file) {
   }
 }
 
+/// Moves every row into the file of the region that owns it.
+///
+/// Harvest boxes overlap, so an object is usually collected several times;
+/// the loader keeps it only from the file of the region whose centre is
+/// nearest. When a neighbour's wider box reached an object that the owner's
+/// own narrower box did not, no file ever loads it — 86 addresses were
+/// sitting in the directory unreachable for exactly that reason. Copying
+/// them into the owner's file costs a few kilobytes and makes "harvested"
+/// and "loadable" the same set.
+function redistributeOwnedRows() {
+  const byFile = new Map();
+  const owners = new Map();
+  for (const name of fs.readdirSync(OUT_DIR)) {
+    if (!name.endsWith(".jsonl.gz")) continue;
+    const code = name.replace(/\.jsonl\.gz$/, "");
+    const text = zlib.gunzipSync(fs.readFileSync(path.join(OUT_DIR, name))).toString("utf8");
+    const rows = [];
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      let row;
+      try {
+        row = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      rows.push(row);
+      const owner = nearestRegionCode(row.lat, row.lng);
+      if (!owner) continue;
+      const key = `${row.osmType}/${row.osmId}`;
+      if (!owners.has(key)) owners.set(key, { owner, row });
+    }
+    byFile.set(code, rows);
+  }
+
+  let moved = 0;
+  for (const [key, { owner, row }] of owners) {
+    const target = byFile.get(owner);
+    if (!target) continue;
+    if (target.some((existing) => `${existing.osmType}/${existing.osmId}` === key)) continue;
+    target.push(row);
+    moved += 1;
+  }
+  if (!moved) return 0;
+
+  for (const [code, rows] of byFile) {
+    const text = rows.map((row) => JSON.stringify(row)).join("\n") + (rows.length ? "\n" : "");
+    fs.writeFileSync(path.join(OUT_DIR, `${code}.jsonl.gz`), zlib.gzipSync(Buffer.from(text, "utf8"), { level: 9 }));
+  }
+  return moved;
+}
+
 // Rebuilt from whatever files are on disk rather than from this run's
 // results, so harvesting one region at a time still leaves a manifest that
 // describes the whole directory.
@@ -434,6 +486,15 @@ async function main() {
     // reading a 300-byte JSON beats gunzipping 1.9 MB synchronously inside
     // a process that is already serving requests.
     writeManifest();
+  }
+  // Only meaningful once every region has been written, so it runs after the
+  // loop rather than per region.
+  if (regions.length === REGIONS.length) {
+    const moved = redistributeOwnedRows();
+    if (moved) {
+      console.log(`Moved ${moved} row(s) into the file of the region that owns them`);
+      writeManifest();
+    }
   }
   console.log(`Done: ${total} rows across ${regions.length - failures} region(s)`);
   if (failures) {
