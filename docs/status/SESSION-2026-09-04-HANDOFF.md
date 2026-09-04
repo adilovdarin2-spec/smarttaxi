@@ -140,8 +140,15 @@ exact fix; none should be done without being able to look at the result.
 
   ```bash
   "$LOCALAPPDATA/Android/Sdk/emulator/emulator.exe" -avd Pixel_7a -gpu auto &
+  # kz.smarttaxi.app is already installed on this AVD - tapping the icon is
+  # enough. Only build if you changed Dart since:
   cd apps/mobile/smarttaxi_app && /c/dev/flutter-sdk/bin/flutter.bat run -d emulator-5554
   ```
+
+  **Start it from your own terminal, not from an agent.** Tried three times
+  from a tool session, including detached through `cmd start`: the emulator
+  comes up, boots, runs the app — and dies when the spawning task is reaped.
+  An agent cannot hand you a running device, only the command that starts one.
 
   The AVD is `Pixel_7a`; the debug build talks to `api.smarttaxi.kz`, which is
   live. Registration is SMS-only and Infobip returns 403, so an existing account
