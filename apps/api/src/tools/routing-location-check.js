@@ -90,7 +90,49 @@ function mockAddressFetch() {
   });
 }
 
-const addressResults = await searchAddresses({ q: "Абая", limit: 3 }, mockAddressFetch());
+/// The `addresses` table, as a fixture.
+///
+/// This assertion used to call searchAddresses with no executor, so the
+/// gazetteer half needed a live Postgres — and the CI job has no database
+/// service, so `npm test` failed here and every check after it never ran,
+/// including the ones added since. Nothing else in this suite needs a
+/// database; addresses-data-check.js says as much in its own header. Now that
+/// searchAddresses takes an executor the case is deterministic instead of
+/// environment-dependent, which is what it should have been.
+/// Both statements have to be answered: filterGazetteerRowsToServiceArea drops
+/// everything when the active-region list is empty, so a fixture that returns
+/// addresses but no regions yields nothing at all.
+const gazetteerFixture = (rows) => async (sql) => {
+  if (/FROM regions/i.test(sql)) {
+    return {
+      rows: [{
+        id: "fixture-atakent",
+        code: "ATAKENT",
+        name: "Атакент",
+        is_active: true,
+        center_lat: 40.844435,
+        center_lng: 68.509021,
+        boundary: [[68.475, 40.82], [68.535, 40.82], [68.535, 40.875], [68.475, 40.875]]
+      }]
+    };
+  }
+  if (/FROM addresses/i.test(sql)) return { rows };
+  return { rows: [] };
+};
+
+const addressResults = await searchAddresses(
+  { q: "Абая", limit: 3 },
+  mockAddressFetch(),
+  gazetteerFixture([
+    {
+      label: "улица Абая, Атакент",
+      lat: 40.8444,
+      lng: 68.5090,
+      kind: "street",
+      region_name: "Атакент"
+    }
+  ])
+);
 // A bare query with no region hint must not discard a genuine provider
 // match just because it's in a different city than the local launch
 // catalog (Atakent) -- doing so was the root cause of a real regression
