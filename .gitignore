@@ -23,3 +23,9 @@ coverage
 backups/
 data/osrm/*
 !data/osrm/README.md
+
+# Scratch screenshots and probe output from QA sessions. These accumulate at
+# the repo root during device/emulator passes; they are evidence for a single
+# session, not project files.
+tmp-*
+*.out.log

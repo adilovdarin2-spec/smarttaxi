@@ -1,14 +1,15 @@
+name: smarttaxi
+
 services:
   postgres:
     image: postgres:16-bookworm
-    container_name: smarttaxi-postgres
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-smarttaxi}
       POSTGRES_USER: ${POSTGRES_USER:-smarttaxi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smarttaxi}
     ports:
-      - "127.0.0.1:5434:5432"
+      - "127.0.0.1:${SMARTTAXI_POSTGRES_PORT:-5435}:5432"
     volumes:
       - smarttaxi_pg:/var/lib/postgresql/data
       - ./apps/api/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
@@ -20,10 +21,9 @@ services:
 
   redis:
     image: redis:7-bookworm
-    container_name: smarttaxi-redis
     restart: always
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:${SMARTTAXI_REDIS_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -32,7 +32,6 @@ services:
 
   osrm:
     image: osrm/osrm-backend:v5.27.1
-    container_name: smarttaxi-osrm
     restart: always
     profiles:
       - routing
@@ -57,15 +56,14 @@ services:
       context: ./apps/api
       args:
         NPM_STRICT_SSL: ${NPM_STRICT_SSL:-false}
-    container_name: smarttaxi-api
     restart: always
     env_file:
       - path: .env
         required: false
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4000}
-      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:5173}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4001}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-http://localhost:5175}
       DATABASE_URL: ${API_DATABASE_URL:-postgresql://${POSTGRES_USER:-smarttaxi}:${POSTGRES_PASSWORD:-smarttaxi}@postgres:5432/${POSTGRES_DB:-smarttaxi}}
       REDIS_URL: ${API_REDIS_URL:-redis://redis:6379}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
@@ -85,7 +83,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-local_dev_secret_please_change_32_chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       API_PORT: ${API_PORT:-4000}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5179,http://127.0.0.1:5179}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5175,http://127.0.0.1:5175,http://localhost:5179,http://127.0.0.1:5179}
       GOOGLE_MAPS_SERVER_KEY: ${GOOGLE_MAPS_SERVER_KEY:-}
       CITY: ${CITY:-Atakent}
       CURRENCY: ${CURRENCY:-KZT}
@@ -99,7 +97,7 @@ services:
     volumes:
       - ./apps/api/secrets:/app/secrets:ro
     ports:
-      - "4000:4000"
+      - "${SMARTTAXI_API_PORT:-4001}:4000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,21 +113,20 @@ services:
     build:
       context: ./apps/web
       args:
-        VITE_API_URL: ${API_ORIGIN:-http://localhost:4000}
-        VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4000}
+        VITE_API_URL: ${API_ORIGIN:-http://localhost:4001}
+        VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4001}
         VITE_MAPTILER_API_KEY: ${VITE_MAPTILER_API_KEY:-${MAPTILER_API_KEY:-}}
         VITE_MAPTILER_STYLE_URL: ${VITE_MAPTILER_STYLE_URL:-https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY:-}}
         VITE_OSM_TILE_URL: ${VITE_OSM_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
-    container_name: smarttaxi-web
     restart: always
     environment:
-      VITE_API_URL: ${API_ORIGIN:-http://localhost:4000}
-      VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4000}
+      VITE_API_URL: ${API_ORIGIN:-http://localhost:4001}
+      VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4001}
       VITE_MAPTILER_API_KEY: ${VITE_MAPTILER_API_KEY:-${MAPTILER_API_KEY:-}}
       VITE_MAPTILER_STYLE_URL: ${VITE_MAPTILER_STYLE_URL:-https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY:-}}
       VITE_OSM_TILE_URL: ${VITE_OSM_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
     ports:
-      - "127.0.0.1:5173:80"
+      - "127.0.0.1:${SMARTTAXI_WEB_PORT:-5175}:80"
     depends_on:
       - api
     healthcheck:
