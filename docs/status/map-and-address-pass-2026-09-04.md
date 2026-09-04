@@ -45,7 +45,10 @@ state. It now takes an executor, and `address-selection-check.js` runs the real
 cases against fixtures: a road code over a house, a road code over fields, a
 bare street over a house, a bare street over only a shop, the two drifted
 street words, an address that must be left untouched, the service-area filter,
-and every region resolving its own radius by name. In `npm test`.
+and every region resolving its own radius by name — plus, on the search side, a
+local hit surviving a total provider outage, a row the polygon excludes from
+both halves, and a one-character query that must touch neither the database nor
+a provider. In `npm test`.
 
 ## The picker card said nothing when the pin resolved to nothing
 
@@ -82,6 +85,31 @@ cleanup and is region-scoped, and the map picker's own reverse request already
 had an id guard. The region default in `_AddressSearchSheet` is the rider's own
 region, not `regions.first` by accident — `_destinationSearchRegions()` puts
 the selected region first deliberately.
+
+## A provider outage took down search the catalogue could answer
+
+Found by writing the test, not by reading it.
+
+`searchAddresses` puts the local gazetteer first and says so in a comment: "a
+rider searching a street we do hold never waits on a slower, thinner remote
+answer". The remote call sat inside the same `try` as the gazetteer, so when
+every external provider was unreachable the 503 escaped from there, past a
+`catch` that logged it as `[addresses] gazetteer lookup failed`, into a second
+remote call that threw again. The rider got an error page for a street the
+catalogue had in hand.
+
+That is backwards exactly where it costs most: five of the thirteen launch
+regions have no house-level OSM data, and the catalogue is the only thing that
+answers for them. Giving it up because someone else's geocoder is down defeats
+the reason for holding it.
+
+The gazetteer and the remote enrichment now have separate error handling — a
+gazetteer failure still falls through to the cascade, a provider failure leaves
+the local results standing, and the cascade may still fail loudly when there
+was nothing local, since an empty page would be a lie.
+
+`searchAddresses` took the same executor seam as `reverseAddress`, which is how
+the case became reachable at all.
 
 ## The two clients were drawing different markers
 
