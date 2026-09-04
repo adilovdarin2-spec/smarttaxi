@@ -1313,7 +1313,7 @@ export function filterGazetteerRowsToServiceArea(rows, regions, regionName) {
   });
 }
 
-async function filterAddressSuggestionsToServiceArea(addresses, regionName) {
+async function filterAddressSuggestionsToServiceArea(addresses, regionName, executor = defaultQuery) {
   const requestedRegion = compactText(regionName);
   // With no user-selected town the existing provider behaviour is preserved:
   // an unscoped search may intentionally look outside the launch catalogue.
@@ -1321,7 +1321,7 @@ async function filterAddressSuggestionsToServiceArea(addresses, regionName) {
   try {
     return filterGazetteerRowsToServiceArea(
       addresses,
-      await listActiveRegions(),
+      await listActiveRegions(executor),
       requestedRegion
     );
   } catch (error) {
@@ -1405,59 +1405,79 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
   }));
 }
 
-export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz" }, fetchImpl = fetch) {
+// `executor` matches the seam added to reverseAddress(): the gazetteer half of
+// this cascade reached straight for defaultQuery, so the region scoping and the
+// local/remote merge could only be exercised against a live database and were
+// therefore never exercised at all.
+export async function searchAddresses(
+  { q, region, limit = 8, countrycodes = "kz" },
+  fetchImpl = fetch,
+  executor = defaultQuery
+) {
   const trimmed = String(q || "").trim();
   if (trimmed.length < 2) return [];
+  // compactText returns "" (not null) for a missing region, and an empty
+  // string is not NULL in SQL — so passing it straight through made the
+  // region filter compare r.name against '', matching nothing and
+  // silently emptying every unscoped search. Normalise to null here.
+  const regionFilter = compactText(region) || null;
   // Local first; fall through to the remote cascade only when the
   // gazetteer cannot fill the page, so a rider searching a street we do
   // hold never waits on a slower, thinner remote answer.
+  //
+  // A gazetteer problem must never take address search down with it — the
+  // remote cascade below is a complete implementation on its own.
+  let local = [];
   try {
-    // compactText returns "" (not null) for a missing region, and an empty
-    // string is not NULL in SQL — so passing it straight through made the
-    // region filter compare r.name against '', matching nothing and
-    // silently emptying every unscoped search. Normalise to null here.
-    const regionFilter = compactText(region) || null;
     // Do not let a dense local catalogue consume the entire result page.
     // A rider searching a well-covered street still needs to see at least one
     // independent provider result (POI, building entrance or a neighbouring
     // town) rather than a page of nearly identical road segments.
     const localLimit = limit > 1 ? limit - 1 : 1;
-    const local = await searchGazetteer(trimmed, regionFilter, localLimit);
-    if (local.length) {
-      const remote = await filterAddressSuggestionsToServiceArea(
-        await searchAddressesRemote(
-          { q, region, limit, countrycodes }, fetchImpl
-        ),
-        regionFilter
-      );
-      const seen = new Set(local.map((item) => item.label.toLowerCase()));
-      const deduped = dedupeAddressSuggestions([
-        ...local,
-        ...remote.filter((item) => !seen.has(String(item.label).toLowerCase()))
-      ]);
-      const merged = sortAddressSuggestions(deduped, regionFilter, trimmed).slice(0, limit);
-      const hasProviderResult = merged.some((item) =>
-        ["nominatim", "photon", "maptiler"].includes(item.source)
-      );
-      const firstProviderResult = deduped.find((item) =>
-        ["nominatim", "photon", "maptiler"].includes(item.source)
-      );
-      // Keep an independently geocoded address visible on a short result
-      // page. The local gazetteer is intentionally exhaustive and otherwise
-      // crowds out POIs and building-level results from real providers.
-      if (!hasProviderResult && firstProviderResult && limit > 1) {
-        return [...merged.slice(0, limit - 1), firstProviderResult];
-      }
-      return merged;
-    }
+    local = await searchGazetteer(trimmed, regionFilter, localLimit, executor);
   } catch (error) {
-    // A gazetteer problem must never take address search down with it —
-    // the remote cascade below is a complete implementation on its own.
     console.error("[addresses] gazetteer lookup failed", error);
   }
+  if (local.length) {
+    // ...and the reverse must hold too. Every provider being unreachable
+    // used to throw straight out of here, past a catch that logged it as a
+    // gazetteer failure, into a second remote call that threw again — so a
+    // rider searching a street the local catalogue *had* got a 503. The
+    // catalogue is the whole reason the app works in these villages;
+    // losing it to someone else's outage defeats the point of holding it.
+    const remote = await filterAddressSuggestionsToServiceArea(
+      await searchAddressesRemote(
+        { q, region, limit, countrycodes }, fetchImpl
+      ).catch(() => []),
+      regionFilter,
+      executor
+    );
+    const seen = new Set(local.map((item) => item.label.toLowerCase()));
+    const deduped = dedupeAddressSuggestions([
+      ...local,
+      ...remote.filter((item) => !seen.has(String(item.label).toLowerCase()))
+    ]);
+    const merged = sortAddressSuggestions(deduped, regionFilter, trimmed).slice(0, limit);
+    const hasProviderResult = merged.some((item) =>
+      ["nominatim", "photon", "maptiler"].includes(item.source)
+    );
+    const firstProviderResult = deduped.find((item) =>
+      ["nominatim", "photon", "maptiler"].includes(item.source)
+    );
+    // Keep an independently geocoded address visible on a short result
+    // page. The local gazetteer is intentionally exhaustive and otherwise
+    // crowds out POIs and building-level results from real providers.
+    if (!hasProviderResult && firstProviderResult && limit > 1) {
+      return [...merged.slice(0, limit - 1), firstProviderResult];
+    }
+    return merged;
+  }
+  // Nothing local. The remote cascade is allowed to fail loudly here: with no
+  // catalogue answer either, an empty page would be a lie.
   return filterAddressSuggestionsToServiceArea(
     await searchAddressesRemote({ q, region, limit, countrycodes }, fetchImpl),
-    compactText(region) || null
+    regionFilter,
+    executor
   );
 }
 

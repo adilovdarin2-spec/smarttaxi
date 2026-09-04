@@ -17,6 +17,7 @@ import assert from "node:assert/strict";
 
 import {
   reverseAddress,
+  searchAddresses,
   filterGazetteerRowsToServiceArea
 } from "../modules/routing/routing.service.js";
 import {
@@ -194,4 +195,109 @@ for (const seeded of REGION_SEED) {
 assert.equal(regionRadiusKmByName("Нет такого города"), 25, "an unknown region falls back to the widest radius");
 assert.equal(regionRadiusKmByName(""), null, "an empty hint is not a region at all");
 
-console.log(`Address selection checks ok: 7 map-pick cases, ${REGION_SEED.length} region radii`);
+// ---------------------------------------------------------------------------
+// Search. Same seam as the map pick: searchAddresses() reached straight for
+// defaultQuery, so the region scoping and the local/remote merge could only run
+// against a live database and were therefore never covered.
+
+const MYRZAKENT = {
+  id: "r-myrzakent",
+  code: "MYRZAKENT",
+  name: "Мырзакент",
+  is_active: true,
+  center_lat: 40.665495,
+  center_lng: 68.549994,
+  boundary: [[68.47, 40.6], [68.6, 40.6], [68.6, 40.73], [68.47, 40.73]]
+};
+
+/// Routes the two statements searchAddresses issues: the active-region list
+/// and the gazetteer SELECT. Rows are returned as written — the ordering the
+/// real query does is SQL's job, not this fixture's.
+function searchDb(rows) {
+  return async (sql) => {
+    if (/FROM regions/i.test(sql)) return { rows: [MYRZAKENT] };
+    if (/FROM addresses/i.test(sql)) return { rows };
+    return { rows: [] };
+  };
+}
+
+const noRemote = async () => ({ ok: false, async json() { return {}; } });
+
+// 9. A local hit inside the service area is returned and credited - and it
+//     survives every external provider being unreachable, which is what
+//     `noRemote` simulates here. This used to throw a 503: the remote call sat
+//     inside the same try as the gazetteer, so a provider outage escaped past
+//     a catch that logged it as a gazetteer failure, into a second remote call
+//     that threw again. A rider searching a street the catalogue *had* got an
+//     error page. The catalogue is the reason the app works in villages OSM
+//     barely covers; losing it to someone else's downtime defeats the point.
+const localHit = await searchAddresses(
+  { q: "Абая", region: "Мырзакент", limit: 5 },
+  noRemote,
+  searchDb([
+    { label: "улица Абая, 14", lat: 40.7001, lng: 68.5201, kind: "housenumber", region_name: "Мырзакент" }
+  ])
+);
+assert.ok(localHit.length >= 1, "a local match is returned");
+assert.equal(localHit[0].label, "улица Абая, 14", "with its real label");
+assert.equal(localHit[0].source, "gazetteer", "credited to the local catalogue");
+assert.equal(localHit.length, 1, "and nothing is invented to pad the page out");
+
+// 10. A row the SQL box reached but the polygon excludes must not survive, and
+//     an out-of-area provider result must not slip in behind it. This is the
+//     guard that keeps a neighbouring town's street - and, before the boundary
+//     fix, another country's - off a rider's result page.
+//
+//     Note what happens when the local half comes back empty: search falls
+//     through to the remote cascade rather than showing nothing, which is why
+//     the provider has to be answered here rather than left dead.
+const provider = async (url) => ({
+  ok: true,
+  async json() {
+    if (url.toString().includes("/reverse")) return {};
+    return [
+      {
+        lat: "40.7002",
+        lon: "68.5202",
+        display_name: "улица Абая, 16, Мырзакент, Казахстан",
+        address: { road: "улица Абая", house_number: "16", village: "Мырзакент" }
+      },
+      {
+        lat: "40.8193",
+        lon: "68.6073",
+        display_name: "Marxamat ko'chasi, Sirdaryo, O'zbekiston",
+        address: { road: "Marxamat ko'chasi", village: "Sirdaryo" }
+      }
+    ];
+  }
+});
+const outside = await searchAddresses(
+  { q: "Абая", region: "Мырзакент", limit: 5 },
+  provider,
+  searchDb([
+    { label: "Marxamat ko'chasi", lat: 40.8193, lng: 68.6073, kind: "street", region_name: "Атамекен" }
+  ])
+);
+const labels = outside.map((item) => String(item.label));
+assert.ok(
+  labels.every((label) => !/ko['`‘’]chasi/i.test(label)),
+  `nothing outside the service area survives, from either half — got ${JSON.stringify(labels)}`
+);
+assert.ok(
+  labels.some((label) => label.includes("Абая")),
+  "while the in-area provider result comes through"
+);
+
+// 11. A query shorter than two characters never reaches the database at all.
+const tooShort = await searchAddresses(
+  { q: "а", region: "Мырзакент" },
+  async () => {
+    throw new Error("no provider call for a one-character query");
+  },
+  async () => {
+    throw new Error("no database call for a one-character query");
+  }
+);
+assert.deepEqual(tooShort, [], "a one-character query short-circuits");
+
+console.log(`Address selection checks ok: 7 map-pick cases, 3 search cases, ${REGION_SEED.length} region radii`);
