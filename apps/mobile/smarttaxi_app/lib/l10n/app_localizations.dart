@@ -2491,6 +2491,12 @@ abstract class AppLocalizations {
   /// **'Не удалось получить геолокацию. Выберите точку подачи на карте.'**
   String get passengerLocationFailedPickManuallyError;
 
+  /// No description provided for @passengerPickupDestinationSameError.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка назначения совпадает с точкой подачи. Выберите другой адрес.'**
+  String get passengerPickupDestinationSameError;
+
   /// No description provided for @statusStepSearching.
   ///
   /// In ru, this message translates to:

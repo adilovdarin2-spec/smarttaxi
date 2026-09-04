@@ -1354,6 +1354,10 @@ class AppLocalizationsUz extends AppLocalizations {
       'Geolokatsiyani olib bo\'lmadi. Olib ketish nuqtasini kartadan tanlang.';
 
   @override
+  String get passengerPickupDestinationSameError =>
+      'Manzil olib ketish nuqtasi bilan bir xil. Boshqa manzilni tanlang.';
+
+  @override
   String get statusStepSearching => 'Qidiruv';
 
   @override

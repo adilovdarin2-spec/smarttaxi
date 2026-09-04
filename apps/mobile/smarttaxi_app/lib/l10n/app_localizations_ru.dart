@@ -1345,6 +1345,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось получить геолокацию. Выберите точку подачи на карте.';
 
   @override
+  String get passengerPickupDestinationSameError =>
+      'Точка назначения совпадает с точкой подачи. Выберите другой адрес.';
+
+  @override
   String get statusStepSearching => 'Поиск';
 
   @override

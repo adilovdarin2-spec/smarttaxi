@@ -785,6 +785,17 @@ function distanceKmFromRoute(route) {
   return Math.max(0.1, Math.round((Number(route.distanceMeters) / 1000) * 10) / 10);
 }
 
+// OSRM returns a zero-length route for an identical pickup and destination.
+// Treat only effectively identical pins as the same point (about one metre),
+// leaving genuinely short rides available to book.
+function isSameTripPoint(first, second) {
+  if (!first || !second) return false;
+  return Math.abs(Number(first.lat) - Number(second.lat)) < 0.00001 &&
+    Math.abs(Number(first.lng) - Number(second.lng)) < 0.00001;
+}
+
+const sameTripPointMessage = "Точка назначения совпадает с точкой подачи. Выберите другой адрес.";
+
 function durationMinFromRoute(route) {
   if (!route?.durationSeconds) return null;
   return Math.max(1, Math.ceil(Number(route.durationSeconds) / 60));
@@ -1103,6 +1114,13 @@ export default function ClientApp() {
       setRouteError("");
       return undefined;
     }
+    if (isSameTripPoint(pickup, destination)) {
+      setRoute(null);
+      setTariffEstimates({});
+      setOfferedPriceKzt(null);
+      setRouteError(sameTripPointMessage);
+      return undefined;
+    }
     let ignore = false;
     setRouteLoading(true);
     setRouteError("");
@@ -1141,6 +1159,10 @@ export default function ClientApp() {
 
   useEffect(() => {
     if (!pickup || !destination || !tariffs.length) {
+      setTariffEstimates({});
+      return undefined;
+    }
+    if (isSameTripPoint(pickup, destination)) {
       setTariffEstimates({});
       return undefined;
     }
@@ -1764,6 +1786,10 @@ export default function ClientApp() {
       return;
     }
     if (!pickup || !destination || !tariff || !route || !estimate) return;
+    if (isSameTripPoint(pickup, destination)) {
+      setRouteError(sameTripPointMessage);
+      return;
+    }
     const distanceKm = distanceKmFromRoute(route);
     const durationMin = durationMinFromRoute(route);
     if (!distanceKm || !durationMin) {

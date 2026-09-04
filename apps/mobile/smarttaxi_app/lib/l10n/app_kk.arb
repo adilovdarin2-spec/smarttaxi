@@ -556,6 +556,7 @@
   "passengerChooseAddressText": "Мекенжайды таңдау",
   "passengerRecentAddressesTitle": "Соңғы мекенжайлар",
   "passengerLocationFailedPickManuallyError": "Геолокацияны алу мүмкін болмады. Қону нүктесін картадан таңдаңыз.",
+  "passengerPickupDestinationSameError": "Межелі нүкте қону нүктесімен бірдей. Басқа мекенжайды таңдаңыз.",
   "statusStepSearching": "Іздеу",
   "statusStepGoing": "Келеді",
   "statusStepWaiting": "Күтуде",

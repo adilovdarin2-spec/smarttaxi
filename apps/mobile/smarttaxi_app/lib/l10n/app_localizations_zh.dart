@@ -1260,6 +1260,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerLocationFailedPickManuallyError => '无法获取定位,请在地图上选择上车点。';
 
   @override
+  String get passengerPickupDestinationSameError => '目的地与上车点相同。请选择其他地址。';
+
+  @override
   String get statusStepSearching => '搜索中';
 
   @override

@@ -1931,6 +1931,17 @@ class _PassengerShellState extends State<PassengerShell>
             lng: inferredPickupCenter.longitude,
           )
         : null;
+    final effectivePickup = _pickup ?? inferredPickup;
+    if (target == PointTarget.dropoff &&
+        effectivePickup != null &&
+        _isSameTripPoint(effectivePickup, coordinate)) {
+      if (!mounted) return;
+      AppToast.showError(
+        context,
+        l10n.passengerPickupDestinationSameError,
+      );
+      return;
+    }
     setState(() {
       if (inferredPickup != null) {
         _pickup = inferredPickup;
@@ -1989,6 +2000,14 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _refreshPreview() async {
     if (_pickup == null || _dropoff == null) return;
+    if (_isSameTripPoint(_pickup!, _dropoff!)) {
+      setState(() {
+        _preview = null;
+        _tariffEstimates = const {};
+        _error = AppLocalizations.of(context).passengerPickupDestinationSameError;
+      });
+      return;
+    }
     setState(() {
       _previewLoading = true;
       _error = null;
@@ -2064,6 +2083,12 @@ class _PassengerShellState extends State<PassengerShell>
     }
     if (_dropoff == null) {
       await _selectPoint(target: PointTarget.dropoff);
+      return;
+    }
+    if (_isSameTripPoint(_pickup!, _dropoff!)) {
+      final message = l10n.passengerPickupDestinationSameError;
+      setState(() => _error = message);
+      AppToast.showError(context, message);
       return;
     }
     if (_tariffId == null) {
@@ -2985,11 +3010,19 @@ class _PassengerShellState extends State<PassengerShell>
     return l10n.passengerGpsOrMapHintText;
   }
 
+  // The routing provider has no route to return when both pins are the same.
+  // Keep the threshold tight (about one metre) so real very-short trips still
+  // work while an accidentally duplicated address fails at selection time.
+  bool _isSameTripPoint(Coordinate first, Coordinate second) =>
+      (first.lat - second.lat).abs() < 0.00001 &&
+      (first.lng - second.lng).abs() < 0.00001;
+
   bool get _routePreviewError {
     final error = _error;
     if (error == null) return false;
     final l10n = AppLocalizations.of(context);
     return error == l10n.errorRouteUnavailable ||
+        error == l10n.passengerPickupDestinationSameError ||
         error == l10n.errorPickupRegionInactive ||
         error == l10n.errorDropoffRegionInactive ||
         error == l10n.errorIntercityNotSupported;

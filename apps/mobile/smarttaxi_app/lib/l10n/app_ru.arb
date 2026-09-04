@@ -559,6 +559,7 @@
   "passengerChooseAddressText": "Выбрать адрес",
   "passengerRecentAddressesTitle": "Недавние адреса",
   "passengerLocationFailedPickManuallyError": "Не удалось получить геолокацию. Выберите точку подачи на карте.",
+  "passengerPickupDestinationSameError": "Точка назначения совпадает с точкой подачи. Выберите другой адрес.",
   "statusStepSearching": "Поиск",
   "statusStepGoing": "Едет",
   "statusStepWaiting": "Ждёт",

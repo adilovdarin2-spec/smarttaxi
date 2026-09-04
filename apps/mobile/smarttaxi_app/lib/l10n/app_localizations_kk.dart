@@ -1350,6 +1350,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'Геолокацияны алу мүмкін болмады. Қону нүктесін картадан таңдаңыз.';
 
   @override
+  String get passengerPickupDestinationSameError =>
+      'Межелі нүкте қону нүктесімен бірдей. Басқа мекенжайды таңдаңыз.';
+
+  @override
   String get statusStepSearching => 'Іздеу';
 
   @override
