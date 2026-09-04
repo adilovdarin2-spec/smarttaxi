@@ -114,18 +114,27 @@ is what the keystore is used for going forward:
 
 ## 5. Live production domain
 
-- `api.smarttaxi.kz` and `smarttaxi.kz` **do not currently resolve**
-  (confirmed via `curl` this session — see `DEPLOYMENT_VPS.md`). The
-  real backend right now is a Railway URL used for development/testing.
-- Standing up the actual VPS (`docs/DEPLOYMENT_VPS.md` has the technical
-  steps) requires you personally: pointing DNS at the VPS IP, paying for
-  the VPS/hosting, and running the deployment steps (or authorizing
-  someone to run them) — none of this can be done without access to your
-  domain registrar and hosting provider accounts.
-- Decide before store submission whether release builds point at
-  `api.smarttaxi.kz` (once it's live) or the Railway URL — see the note
-  in `APP_STORE_READINESS.md`. Submitting a build pointed at a domain
-  that doesn't resolve would fail store review outright.
+Re-measured 2026-09-04. This section used to say none of it resolved; that is
+no longer true, and the part that is still broken is a different part.
+
+| host | state |
+|---|---|
+| `api.smarttaxi.kz` | **200.** `/api/health` reports ok with db, redis and osrm all healthy. The Flutter app's default `API_BASE_URL` points here and the debug build talks to it. |
+| `www.smarttaxi.kz` | resolves, **502**. DNS is fine; nothing healthy is answering behind it. |
+| `smarttaxi.kz` (apex) | still does not resolve. Expected — `app_config.dart` notes ps.kz cannot put a CNAME on the apex because it already carries the zone's NS/MX/TXT records, which is why `WEB_BASE_URL` is the www host. |
+
+**The 502 is a live user-facing break, not just a deployment gap.**
+`AppConfig.webBaseUrl` defaults to `https://www.smarttaxi.kz`, and that is the
+host in the "поделиться поездкой" tracking link a rider sends to family while
+travelling. Every one of those links currently opens an error.
+
+- Standing up or repairing the web deployment (`docs/DEPLOYMENT_VPS.md` has the
+  technical steps) requires you personally: DNS, paying for the hosting, and
+  running the deploy — none of it possible without your registrar and hosting
+  accounts.
+- The API host question is settled: release builds can point at
+  `api.smarttaxi.kz`, since it answers. Store review would still fail on the
+  web host while it 502s, if anything in the listing links to it.
 
 ## 6. SMS provider (Infobip) — account funded, but sender ID still blocks real delivery
 

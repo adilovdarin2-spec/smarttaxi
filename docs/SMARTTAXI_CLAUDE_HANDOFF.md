@@ -82,7 +82,10 @@ category of Uber / inDrive / Grab, adapted for Kazakhstan:
 - Android location access was checked on the connected device: GPS and app
   permission were enabled. The app now tries a fresh cached system position
   before waiting for a cold GPS fix.
-- Current Flutter source checks: **25/25 passed** after the latest changes.
+- Checks as of 2026-09-04: Flutter **42/42** and `flutter analyze` clean (with
+  four extra lints now enabled); API `npm test` **35/35**, which was failing
+  before this date on an assertion that needed a database CI does not provide;
+  the web build passes.
 
 ## What remains before commercial launch
 
