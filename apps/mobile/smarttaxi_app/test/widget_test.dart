@@ -549,6 +549,39 @@ void main() {
     expect(passenger, contains('_SmartDrawer'));
   });
 
+  test('address search discards stale responses and stays region scoped', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    // Both search sheets awaited the API and painted whatever came back. The
+    // 360 ms debounce narrows the window but does not close it: a slow request
+    // for "Абая" lands after a fast one for "Абая 1" and repaints the list
+    // under a query the rider has already moved past, and its finally clears
+    // the spinner while the newer request is still running. The file already
+    // used this guard for the live driver route.
+    expect(
+      RegExp(r'requestId != _searchRequestId').allMatches(passenger).length,
+      greaterThanOrEqualTo(4),
+      reason: 'both sheets must drop a response that a newer query superseded',
+    );
+    expect(
+      passenger,
+      contains('if (mounted && requestId == _searchRequestId) {'),
+      reason: 'and only the newest request may clear the spinner',
+    );
+
+    // _SimpleAddressSearchSheet searched unscoped, so a recurring route or a
+    // saved favourite could be given a street in a town the order flow will
+    // refuse - "улица Абая" exists in Шымкент and Атакент alike.
+    expect(passenger, contains('region: widget.regionName'));
+    expect(
+      RegExp(r'regionName: (?:_selectedRegion\?\.name|widget\.regionName)')
+          .allMatches(passenger)
+          .length,
+      greaterThanOrEqualTo(3),
+      reason: 'favourites and both recurring-route pickers pass the region',
+    );
+  });
+
   test('3D buildings stay under the style label layers on both maps', () {
     // The driver map passed no anchor at all, so MapLibre put the extrusion
     // above every style layer and it drew houses over the street names on the

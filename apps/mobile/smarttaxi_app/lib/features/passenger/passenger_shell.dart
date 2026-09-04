@@ -4373,6 +4373,7 @@ class _PassengerShellState extends State<PassengerShell>
         knownDrivers: _knownDriversFromHistory,
         submitting: _creatingRecurringBooking,
         onSubmit: _createRecurringBooking,
+        regionName: _selectedRegion?.name,
       ),
     );
   }
@@ -4467,6 +4468,7 @@ class _PassengerShellState extends State<PassengerShell>
       builder: (_) => _SimpleAddressSearchSheet(
         api: widget.api,
         title: AppLocalizations.of(context).passengerFavoritesAddAddressTitle,
+        regionName: _selectedRegion?.name,
       ),
     );
     if (picked == null || !mounted) return;
@@ -11728,10 +11730,19 @@ class _CreateFavoriteAddressSheetState
 // plain text-search-only sheet built from the same searchAddresses API,
 // not a modification of the actual address-selection screen.
 class _SimpleAddressSearchSheet extends StatefulWidget {
-  const _SimpleAddressSearchSheet({required this.api, required this.title});
+  const _SimpleAddressSearchSheet({
+    required this.api,
+    required this.title,
+    this.regionName,
+  });
 
   final ApiClient api;
   final String title;
+  // The rider's selected region. This sheet searched unscoped, so a recurring
+  // route or a saved favourite could be given an address in a town the order
+  // flow will refuse — Шымкент is in the same catalogue as Атакент and
+  // "улица Абая" exists in both.
+  final String? regionName;
 
   @override
   State<_SimpleAddressSearchSheet> createState() =>
@@ -11744,6 +11755,8 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
   bool _loading = false;
   String? _error;
   List<AddressSuggestion> _results = const [];
+  // See the note on _AddressSearchSheetState._searchRequestId.
+  int _searchRequestId = 0;
 
   @override
   void dispose() {
@@ -11769,20 +11782,26 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
       });
       return;
     }
+    final requestId = ++_searchRequestId;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final results = await widget.api.searchAddresses(query);
-      if (!mounted) return;
+      final results = await widget.api.searchAddresses(
+        query,
+        region: widget.regionName,
+      );
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() => _results = results);
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() => _error =
           AppLocalizations.of(context).passengerAddressSearchNotFoundError);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && requestId == _searchRequestId) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -11901,9 +11920,13 @@ class _CreateRecurringBookingSheet extends StatefulWidget {
     required this.knownDrivers,
     required this.submitting,
     required this.onSubmit,
+    this.regionName,
   });
 
   final ApiClient api;
+  // Scopes the two address pickers below to the rider's own town; a recurring
+  // route saved against another region's street is one the order flow refuses.
+  final String? regionName;
   final List<(String id, String name)> knownDrivers;
   final bool submitting;
   final Future<void> Function({
@@ -11960,6 +11983,7 @@ class _CreateRecurringBookingSheetState
         title: pickup
             ? l10n.passengerPickupPointTitle
             : l10n.passengerDropoffPointTitle,
+        regionName: widget.regionName,
       ),
     );
     if (result == null || !mounted) return;
@@ -14021,6 +14045,12 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
   String? _error;
   List<AddressSuggestion> _results = const [];
   RegionOption? _searchRegion;
+  // Same guard the live driver route uses (_driverRouteRequestId). The 360 ms
+  // debounce narrows the window but does not close it: a slow request for
+  // "Абая" still lands after a fast one for "Абая 1" and repaints the list
+  // under a query the rider has already moved past, and its `finally` clears
+  // the spinner while the newer request is still in flight.
+  int _searchRequestId = 0;
 
   @override
   void initState() {
@@ -14054,6 +14084,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
       });
       return;
     }
+    final requestId = ++_searchRequestId;
     setState(() {
       _loading = true;
       _error = null;
@@ -14063,16 +14094,18 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
         query,
         region: _searchRegion?.name,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() => _results = results);
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
         _results = const [];
         _error = AppLocalizations.of(context).passengerAddressSearchError;
       });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && requestId == _searchRequestId) {
+        setState(() => _loading = false);
+      }
     }
   }
 
