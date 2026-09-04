@@ -2970,7 +2970,7 @@ class _PassengerShellState extends State<PassengerShell>
         ],
       ),
     );
-    if (confirmed == true) widget.onLogout();
+    if (confirmed == true) unawaited(widget.onLogout());
   }
 
   String? get _geolocationNotice {

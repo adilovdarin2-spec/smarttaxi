@@ -2589,7 +2589,7 @@ class _DriverShellState extends State<DriverShell> {
               message: l10n.driverLogoutConfirmText,
               confirmLabel: l10n.logOut,
             );
-            if (confirmed) widget.onLogout();
+            if (confirmed) unawaited(widget.onLogout());
           },
         ),
         body: SafeArea(
@@ -3119,8 +3119,9 @@ class _DriverShellState extends State<DriverShell> {
                                           l10n.driverNoShowConfirmButton,
                                     );
                                     if (confirmed) {
-                                      _tripAction(l10n.driverTripNoShowButton,
-                                          widget.api.noShow);
+                                      unawaited(_tripAction(
+                                          l10n.driverTripNoShowButton,
+                                          widget.api.noShow));
                                     }
                                   },
                             icon: const Icon(Icons.person_off_rounded),
@@ -3139,8 +3140,9 @@ class _DriverShellState extends State<DriverShell> {
                                     confirmLabel: l10n.driverTripCancelButton,
                                   );
                                   if (confirmed) {
-                                    _tripAction(l10n.driverTripCancelButton,
-                                        widget.api.cancelDriverOrder);
+                                    unawaited(_tripAction(
+                                        l10n.driverTripCancelButton,
+                                        widget.api.cancelDriverOrder));
                                   }
                                 },
                           child: Text(l10n.driverTripCancelButton)),
