@@ -61,8 +61,39 @@ export function getCurrentUser() {
   return api("/api/auth/me");
 }
 
+export function submitDriverApplication(payload) {
+  return api("/api/admin/driver-applications", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function uploadDriverApplicationDocument({ applicationId, file, type }) {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("type", type);
+  return api(`/api/driver-applications/${encodeURIComponent(applicationId)}/documents`, {
+    method: "POST",
+    body
+  });
+}
+
 export function getActiveRegions() {
   return api("/api/regions/active");
+}
+
+// Public operational contacts are configured by the service owner.  Keeping
+// them on the API prevents a web release from accidentally shipping a demo
+// telephone number as a real emergency/support action.
+export function getServiceSettings() {
+  return api("/api/regions/service-settings");
+}
+
+// Public route availability, scoped to the pickup region. The address picker
+// uses this before selection, so it does not offer a disabled intercity trip.
+export function getIntercityRoutes(originRegionId) {
+  const query = originRegionId ? `?originRegionId=${encodeURIComponent(originRegionId)}` : "";
+  return api(`/api/regions/intercity${query}`);
 }
 
 export function getTariffs(regionId) {
@@ -140,6 +171,14 @@ export function cancelPublicOrder(orderId, riderPhone) {
   });
 }
 
+export function initiateOrderPayment(orderId) {
+  return api(`/api/orders/${orderId}/payments/initiate`, { method: "POST" });
+}
+
+export function getOrderPaymentStatus(orderId) {
+  return api(`/api/orders/${orderId}/payments/status`);
+}
+
 export function getOrderStatusHistory(orderId) {
   return api(`/api/orders/${orderId}/status-history`);
 }
@@ -164,6 +203,14 @@ export function getNotifications(params = {}) {
 
 export function markNotificationRead(notificationId) {
   return api(`/api/notifications/${notificationId}/read`, { method: "POST" });
+}
+
+export function markAllNotificationsRead() {
+  return api("/api/notifications/read-all", { method: "POST" });
+}
+
+export function getClientTripHistory(params = {}) {
+  return api(`/api/orders/me/history${queryString(params)}`);
 }
 
 export function rateOrder(orderId, payload) {
@@ -651,6 +698,73 @@ export function addFavoriteAddress(payload) {
 
 export function deleteFavoriteAddress(favoriteId) {
   return api(`/api/favorites/addresses/${favoriteId}`, { method: "DELETE" });
+}
+
+export function getDriverPreferences() {
+  return api("/api/favorites/drivers");
+}
+
+export function removeDriverPreference(driverId) {
+  return api(`/api/favorites/drivers/${driverId}`, { method: "DELETE" });
+}
+
+export function setDriverPreference(payload) {
+  return api("/api/favorites/drivers", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getRecurringBookings() {
+  return api("/api/recurring-bookings/mine");
+}
+
+export function createRecurringBooking(payload) {
+  return api("/api/recurring-bookings", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateRecurringBookingStatus(bookingId, status) {
+  return api(`/api/recurring-bookings/${bookingId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status })
+  });
+}
+
+export function getSupportHistory() {
+  return api("/api/support/mine");
+}
+
+export function getClientWallet() {
+  return api("/api/clients/me/wallet");
+}
+
+export function getClientWalletCards() {
+  return api("/api/clients/me/wallet/cards");
+}
+
+export function addClientWalletCard(payload) {
+  return api("/api/clients/me/wallet/cards", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteClientWalletCard(cardId) {
+  return api(`/api/clients/me/wallet/cards/${cardId}`, { method: "DELETE" });
+}
+
+export function setDefaultClientWalletCard(cardId) {
+  return api(`/api/clients/me/wallet/cards/${cardId}/default`, { method: "PUT" });
+}
+
+export function createClientWalletTopup(amountKzt) {
+  return api("/api/clients/me/wallet/topup-requests", {
+    method: "POST",
+    body: JSON.stringify({ amountKzt })
+  });
 }
 
 export function getReferralSummary() {

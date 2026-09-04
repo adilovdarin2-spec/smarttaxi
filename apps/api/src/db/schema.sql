@@ -167,10 +167,37 @@ CREATE TABLE IF NOT EXISTS tariffs (
   UNIQUE(region_id, name)
 );
 
+-- A route between service regions is a separately manageable product, not a
+-- side effect of two points landing in different polygons.  Direction is
+-- intentional: demand, driver return availability and pricing can differ.
+CREATE TABLE IF NOT EXISTS intercity_routes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  origin_region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  destination_region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  max_distance_km INTEGER NOT NULL DEFAULT 350 CHECK (max_distance_km BETWEEN 1 AND 1000),
+  max_duration_min INTEGER NOT NULL DEFAULT 720 CHECK (max_duration_min BETWEEN 1 AND 1440),
+  base_surcharge_kzt INTEGER NOT NULL DEFAULT 0 CHECK (base_surcharge_kzt >= 0),
+  price_per_km_override INTEGER,
+  min_price_override INTEGER,
+  requires_destination_approval BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (origin_region_id <> destination_region_id),
+  CHECK (price_per_km_override IS NULL OR price_per_km_override >= 0),
+  CHECK (min_price_override IS NULL OR min_price_override >= 0),
+  UNIQUE(origin_region_id, destination_region_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_intercity_routes_origin_active
+  ON intercity_routes(origin_region_id, is_active);
+
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   short_id TEXT UNIQUE NOT NULL,
   region_id UUID REFERENCES regions(id) ON DELETE RESTRICT,
+  dropoff_region_id UUID REFERENCES regions(id) ON DELETE RESTRICT,
+  is_intercity BOOLEAN NOT NULL DEFAULT false,
   client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
   driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
   rider_name TEXT NOT NULL,
@@ -219,7 +246,7 @@ CREATE TABLE IF NOT EXISTS order_status_history (
 CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  method TEXT NOT NULL CHECK (method IN ('CASH','KASPI')),
+  method TEXT NOT NULL CHECK (method IN ('CASH','KASPI','CARD','CASHBACK')),
   status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','PAID','FAILED','CANCELLED')),
   amount INTEGER NOT NULL,
   currency TEXT NOT NULL DEFAULT 'KZT',
@@ -255,7 +282,7 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
   region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
   tariff_id UUID REFERENCES tariffs(id) ON DELETE SET NULL,
   type TEXT NOT NULL CHECK (type IN ('ORDER_COMPLETED','ORDER_CANCELLED','DRIVER_DEBT_CREATED','DRIVER_DEBT_ADJUSTED','MANUAL_ADJUSTMENT')),
-  payment_method TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (payment_method IN ('CASH','KASPI_TRANSFER','UNKNOWN')),
+  payment_method TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (payment_method IN ('CASH','KASPI_TRANSFER','CASHBACK','MIXED','UNKNOWN')),
   gross_amount NUMERIC NOT NULL DEFAULT 0,
   service_commission NUMERIC NOT NULL DEFAULT 0,
   driver_earning NUMERIC NOT NULL DEFAULT 0,
@@ -277,8 +304,8 @@ CREATE TABLE IF NOT EXISTS service_settings (
   default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
   auto_approve_drivers BOOLEAN NOT NULL DEFAULT false,
   auto_assign_orders BOOLEAN NOT NULL DEFAULT false,
-  support_phone TEXT NOT NULL DEFAULT '+77000000000',
-  sos_phone TEXT NOT NULL DEFAULT '+77000000000',
+  support_phone TEXT NOT NULL DEFAULT '',
+  sos_phone TEXT NOT NULL DEFAULT '112',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT service_settings_singleton CHECK (id = 1)
 );

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomInt } from "node:crypto";
 import { z } from "zod";
 import { query } from "../../db/pool.js";
 import { signToken, requireAuth, rotateSessionVersion } from "../../common/auth.js";
@@ -86,7 +87,9 @@ async function findUserByPhone(phoneInput) {
 
 function smsCode() {
   if (env.SMS_PROVIDER !== "infobip" && env.NODE_ENV !== "production") return env.SMS_DEV_CODE;
-  return String(Math.floor(100000 + Math.random() * 900000));
+  // An SMS code is an authentication secret. A non-cryptographic PRNG is not
+  // designed for that use and can make a sequence more predictable than intended.
+  return String(randomInt(100000, 1_000_000));
 }
 
 function signSmsVerification({ phone, purpose, smsCodeId }) {

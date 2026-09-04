@@ -4,8 +4,14 @@ import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
-import { importRegion } from "../../tools/import-addresses.js";
+import { loadHarvestedAddresses } from "../../tools/load-addresses.js";
 import { createRegion, listRegions, publicRegion, setRegionActive, updateRegion } from "../regions/regions.service.js";
+import {
+  createIntercityRoute,
+  listIntercityRoutes,
+  publicIntercityRoute,
+  updateIntercityRoute
+} from "../intercity/intercity-routes.service.js";
 import {
   listDriverRegionApprovals,
   publicDriverRegionApproval,
@@ -88,6 +94,25 @@ const RegionCreate = z.object({
 });
 
 const RegionUpdate = RegionCreate.partial().refine(value => Object.keys(value).length > 0, "at least one field is required");
+
+const IntercityRouteFields = z.object({
+  originRegionId: z.string().uuid(),
+  destinationRegionId: z.string().uuid(),
+  isActive: z.boolean().default(true),
+  maxDistanceKm: z.coerce.number().int().min(1).max(1000).default(350),
+  maxDurationMin: z.coerce.number().int().min(1).max(1440).default(720),
+  baseSurchargeKzt: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  pricePerKmOverride: z.coerce.number().int().min(0).max(100_000).nullable().optional(),
+  minPriceOverride: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
+  requiresDestinationApproval: z.boolean().default(true)
+});
+
+const IntercityRouteCreate = IntercityRouteFields
+  .refine(value => value.originRegionId !== value.destinationRegionId, "origin and destination must differ");
+
+const IntercityRouteUpdate = IntercityRouteFields.omit({ originRegionId: true, destinationRegionId: true })
+  .partial()
+  .refine(value => Object.keys(value).length > 0, "at least one field is required");
 
 const DriverRegionApprovalUpdate = z.object({
   regionId: z.string().uuid(),
@@ -306,10 +331,9 @@ function summarizeTariffAnalytics(analytics) {
   };
 }
 
-// Triggers the OSM address harvest server-side. It lives here rather than
-// staying CLI-only because the production database is not reachable from a
-// developer machine, so there was otherwise no way to populate the
-// gazetteer on the deployed environment.
+// Reloads the committed, validated local address catalogue. Fresh OSM
+// harvesting is an offline maintenance task; production must not query a
+// broad public bounding box during an admin request and risk foreign results.
 //
 // Runs detached and answers immediately: a full pass over 13 regions takes
 // many minutes of deliberately-throttled Overpass calls, far longer than
@@ -354,8 +378,8 @@ router.post("/addresses/import", requireAuth, requireRole("OWNER"), async (req, 
     (async () => {
       for (const region of regions) {
         try {
-          const written = await importRegion(region);
-          console.log(`[addresses] ${region.code}: ${written} rows`);
+          const written = await loadHarvestedAddresses({ wantedCode: region.code });
+          console.log(`[addresses] ${region.code}: ${written} local rows applied`);
         } catch (error) {
           console.error(`[addresses] ${region.code} failed`, error);
         }
@@ -863,6 +887,52 @@ router.delete("/regions/:id", requireAuth, requireRole("OWNER"), async (req, res
       return updated;
     });
     res.json({ region: publicRegion(result.region) });
+  } catch (error) { next(error); }
+});
+
+router.get("/intercity-routes", requireAuth, requireRole("OWNER", "FINANCE"), async (_req, res, next) => {
+  try {
+    const routes = await listIntercityRoutes(query);
+    res.json({ routes: routes.map(publicIntercityRoute) });
+  } catch (error) { next(error); }
+});
+
+router.post("/intercity-routes", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const body = IntercityRouteCreate.parse(req.body);
+    const route = await tx(async client => {
+      const created = await createIntercityRoute(body, client);
+      await writeAudit(client, {
+        action: "intercity_route_created",
+        actorUserId: req.user.id,
+        entityType: "intercity_route",
+        entityId: created.id,
+        metadata: { originRegionId: created.origin_region_id, destinationRegionId: created.destination_region_id, isActive: created.is_active },
+        req
+      });
+      return created;
+    });
+    res.status(201).json({ route: publicIntercityRoute(route) });
+  } catch (error) { next(error); }
+});
+
+router.patch("/intercity-routes/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = IntercityRouteUpdate.parse(req.body);
+    const route = await tx(async client => {
+      const updated = await updateIntercityRoute(id, body, client);
+      await writeAudit(client, {
+        action: "intercity_route_updated",
+        actorUserId: req.user.id,
+        entityType: "intercity_route",
+        entityId: id,
+        metadata: body,
+        req
+      });
+      return updated;
+    });
+    res.json({ route: publicIntercityRoute(route) });
   } catch (error) { next(error); }
 });
 

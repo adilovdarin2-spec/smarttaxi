@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
+import { Icon } from "../../core/icons.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
-import MapView from "../map/MapView.jsx";
+const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
+
+function MapView(props) {
+  return (
+    <React.Suspense fallback={<div className="map-deferred-fallback" role="status">Подготавливаем карту…</div>}>
+      <LazyMapView {...props} />
+    </React.Suspense>
+  );
+}
 import {
   acceptOrder,
   cancelDriverOrder,
@@ -56,11 +65,11 @@ const FINAL_STATUSES = [
 ];
 
 const DRIVER_TABS = [
-  ["line", "Линия"],
-  ["orders", "Заказы"],
-  ["active", "Поездка"],
-  ["road", "Дорога"],
-  ["money", "Доход"]
+  ["line", "Линия", "home"],
+  ["orders", "Заказы", "document"],
+  ["active", "Поездка", "route"],
+  ["road", "Дорога", "shield"],
+  ["money", "Доход", "cash"]
 ];
 
 // Mirrors roadAlertLabel()'s fallback map in the mobile app
@@ -134,7 +143,9 @@ const STATUS_LABELS = {
 const PAYMENT_LABELS = {
   CASH: "Наличные",
   KASPI: "Kaspi перевод",
-  CARD: "Карта"
+  CARD: "Карта",
+  CASHBACK: "Бонусы",
+  MIXED: "Бонусы + карта"
 };
 
 function formatError(error) {
@@ -984,14 +995,16 @@ export default function DriverApp() {
       </section>
 
       <nav className="driver-core-tabs" aria-label="Меню водителя">
-        {DRIVER_TABS.map(([key, label]) => (
+        {DRIVER_TABS.map(([key, label, icon]) => (
           <button
             key={key}
             type="button"
             className={tab === key ? "active" : ""}
             onClick={() => setTab(key)}
+            aria-label={label}
           >
-            {label}
+            <Icon name={icon} size={18} />
+            <span>{label}</span>
           </button>
         ))}
       </nav>

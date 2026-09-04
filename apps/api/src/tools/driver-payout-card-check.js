@@ -99,9 +99,9 @@ const {
   const root = new URL("../", import.meta.url);
   const migrationsSource = fs.readFileSync(new URL("db/migrations.js", root), "utf8");
   const walletRoutesSource = fs.readFileSync(new URL("modules/wallet/wallet.routes.js", root), "utf8");
-  const adminAppSource = fs.readFileSync(
-    new URL("../../../web/src/features/admin/AdminApp.jsx", import.meta.url),
-    "utf8"
+  const adminAppPath = new URL(
+    "../../../web/src/features/admin/AdminApp.jsx",
+    import.meta.url
   );
 
   assert.ok(migrationsSource.includes("ADD COLUMN IF NOT EXISTS payout_method"), "drivers.payout_method migration exists");
@@ -111,7 +111,16 @@ const {
   assert.ok(walletRoutesSource.includes("saveDriverPayoutDetails"), "the save route calls the service function");
   assert.ok(walletRoutesSource.includes("resolveDriverPayoutDetails"), "status + request-creation both resolve saved details");
 
-  assert.ok(adminAppSource.includes("payoutDetails?.cardNumber"), "admin payout list surfaces a saved card number, not just phone");
+  // The production API image deliberately contains only API source. Keep the
+  // cross-client contract check when it runs from the monorepo, but do not
+  // make an API-only container test fail merely because the web source is not
+  // baked into its runtime image.
+  if (fs.existsSync(adminAppPath)) {
+    const adminAppSource = fs.readFileSync(adminAppPath, "utf8");
+    assert.ok(adminAppSource.includes("payoutDetails?.cardNumber"), "admin payout list surfaces a saved card number, not just phone");
+  } else {
+    console.log("Admin payout web-source check skipped: apps/web is not present in this runtime image");
+  }
 }
 
 console.log("Driver payout card checks ok");

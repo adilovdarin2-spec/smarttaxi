@@ -31,7 +31,7 @@ async function login(phone, password) {
 }
 
 async function registerSmokeClient() {
-  const suffix = String(Date.now()).slice(-8);
+  const suffix = String(Date.now()).slice(-7);
   const phone = `+7709${suffix}`;
   await request("/api/auth/phone/check", { method: "POST", body: { phone } });
   const sent = await request("/api/auth/sms/send", { method: "POST", body: { phone, purpose: "REGISTER" } });
@@ -134,7 +134,7 @@ async function main() {
     mark(name, { publicStatus: updated.order.public_status });
   }
 
-  const operator = await login("+77000000098", "123456");
+  const operator = await login("+77000000097", "123456");
   const paid = await request(`/api/orders/${orderId}/mark-paid`, { method: "POST", token: operator.token });
   if (paid.order.public_status !== "PAID") throw new Error("Order did not reach PAID");
   mark("mark_paid", { publicStatus: paid.order.public_status });

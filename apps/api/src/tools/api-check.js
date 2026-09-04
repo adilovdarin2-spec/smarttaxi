@@ -8,6 +8,8 @@ import "./routing-location-check.js";
 import "./admin-tariffs-check.js";
 import "./finance-ledger-check.js";
 import "./road-alerts-check.js";
+import "./official-addresses-check.js";
+import "./service-settings-check.js";
 import fs from "node:fs";
 
 function assert(condition, message) {

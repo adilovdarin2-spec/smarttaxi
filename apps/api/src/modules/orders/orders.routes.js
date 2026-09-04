@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
@@ -8,6 +9,7 @@ import { rateLimit } from "../../common/rateLimit.js";
 import { calculateOrderPrice, offeredPriceBounds, prepareOrderPricing } from "./order-pricing.service.js";
 import {
   acceptOrderForDriver,
+  assertDriverCanServeOrder,
   ACTIVE_ORDER_STATUSES,
   assertDriverHasNoActiveOrder,
   assertStatusTransition,
@@ -36,6 +38,7 @@ import { createOrderCancelledTransaction, createOrderCompletedTransaction, settl
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
+import { spendOrderCashback, trySpendOrderCashback } from "./cashback-payment.service.js";
 
 const router = Router();
 // Anti-fraud: auto-suspend a driver whose rolling average drops below this
@@ -66,7 +69,11 @@ export function publicOrderResponse(order) {
   return { ...order, public_status: event.public_status, search_timed_out: event.search_timed_out };
 }
 
-function shortId() { return Math.random().toString(36).slice(2, 8).toUpperCase(); }
+// This is still a human-readable reference, not an authorization secret, but
+// it must not be predictable or collision-prone when several orders arrive
+// at once. The insert path keeps its unique-constraint retry as a second
+// layer of protection.
+function shortId() { return randomBytes(5).toString("hex").toUpperCase(); }
 
 export function calcPrice(tariff, distanceKm, durationMin) {
   return calculateOrderPrice(tariff, distanceKm, durationMin);
@@ -99,9 +106,13 @@ export const CreateOrder = z.object({
   dropoffLng: z.coerce.number().min(-180).max(180),
   tariffId: z.string().uuid().optional(),
   tariff: z.string().trim().min(2).max(40).default("Economy"),
-  paymentMethod: z.enum(["CASH", "KASPI", "CARD"]).default("CASH"),
-  distanceKm: z.coerce.number().gt(0).max(300),
-  durationMin: z.coerce.number().gt(0).max(600),
+  paymentMethod: z.enum(["CASH", "KASPI", "CARD", "CASHBACK"]).default("CASH"),
+  // The actual cap comes from the selected intercity route inside
+  // prepareOrderPricing().  These broad transport-level limits only keep an
+  // abusive request from reaching routing, while allowing a configured
+  // intercity route to be longer than an in-city trip.
+  distanceKm: z.coerce.number().gt(0).max(600),
+  durationMin: z.coerce.number().gt(0).max(1_440),
   notes: z.string().trim().max(500).optional().default(""),
   // "Своя цена": rider raises/lowers the fare from the estimate via the
   // stepper in the tariff sheet. Bounds are re-checked server-side against
@@ -116,9 +127,7 @@ export const EstimateOrder = CreateOrder.pick({
   dropoffLat: true,
   dropoffLng: true,
   tariffId: true,
-  tariff: true,
-  distanceKm: true,
-  durationMin: true
+  tariff: true
 });
 
 // distanceKm/durationMin arrive from the client alongside pickup/dropoff
@@ -147,8 +156,8 @@ async function insertOrderWithShortId(client, params) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const result = await client.query(`
-        INSERT INTO orders(short_id, status, region_id, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, price, distance_km, duration_min, service_commission, pricing_snapshot, notes, offered_price_kzt, promo_code_id, promo_discount_kzt)
-        VALUES($1,'SEARCHING_DRIVER',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20,$21,$22)
+        INSERT INTO orders(short_id, status, region_id, dropoff_region_id, is_intercity, client_id, rider_name, rider_phone, pickup_text, dropoff_text, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, tariff, payment_method, payment_status, price, distance_km, duration_min, service_commission, cashback_used, pricing_snapshot, notes, offered_price_kzt, promo_code_id, promo_discount_kzt)
+        VALUES($1,'SEARCHING_DRIVER',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23,$24,$25,$26)
         RETURNING *
       `, [shortId(), ...params]);
       return result.rows[0];
@@ -338,6 +347,8 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
 
       const created = await insertOrderWithShortId(client, [
         pricing.regionId,
+        pricing.destinationRegionId,
+        pricing.isIntercity,
         rider.id,
         body.riderName,
         body.riderPhone,
@@ -349,16 +360,27 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         body.dropoffLng,
         pricing.tariff.name,
         body.paymentMethod,
+        body.paymentMethod === "CASHBACK" ? "PAID" : "PENDING",
         finalPrice,
         pricing.pricingSnapshot.distanceKm,
         pricing.pricingSnapshot.durationMin,
         serviceCommission,
+        body.paymentMethod === "CASHBACK" ? finalPrice : 0,
         JSON.stringify(pricing.pricingSnapshot),
         body.notes,
         offeredPriceKzt,
         promo?.id ?? null,
         promoDiscountKzt
       ]);
+
+      if (body.paymentMethod === "CASHBACK") {
+        await spendOrderCashback({
+          clientId: rider.id,
+          orderId: created.id,
+          amountKzt: finalPrice,
+          executor: client
+        });
+      }
 
       if (promo) {
         await recordPromoRedemption({
@@ -373,8 +395,8 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
       await client.query("INSERT INTO order_status_history(order_id,status,message) VALUES($1,'SEARCHING_DRIVER','Order created')", [created.id]);
       await client.query(`
         INSERT INTO payments(order_id, method, status, amount, currency)
-        VALUES($1,$2,'PENDING',$3,'KZT')
-      `, [created.id, body.paymentMethod, finalPrice]);
+        VALUES($1,$2,$3,$4,'KZT')
+      `, [created.id, body.paymentMethod, body.paymentMethod === "CASHBACK" ? "PAID" : "PENDING", finalPrice]);
       await writeAudit(client, {
         action: "order_created",
         entityType: "order",
@@ -382,12 +404,15 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         metadata: {
           shortId: created.short_id,
           regionId: created.region_id,
+          destinationRegionId: created.dropoff_region_id,
+          isIntercity: created.is_intercity,
           tariff: created.tariff,
           paymentMethod: created.payment_method,
           price: created.price,
           offeredPriceKzt,
           promoCode: promo?.code ?? null,
           promoDiscountKzt,
+          cashbackUsedKzt: created.cashback_used,
           estimatedPrice: pricing.estimatedPrice
         },
         req
@@ -400,7 +425,7 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
   } catch (e) { next(e); }
 });
 
-router.post("/:id/cancel-public", async (req, res, next) => {
+router.post("/:id/cancel-public", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-cancel", windowMs: 60_000, max: 10 }), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
     const body = z.object({
@@ -409,6 +434,8 @@ router.post("/:id/cancel-public", async (req, res, next) => {
     const order = await tx(async (client) => {
       const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
       if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
+      const owner = (await client.query("SELECT id FROM clients WHERE id=$1 AND user_id=$2", [existing.client_id, req.user.id])).rows[0];
+      if (!owner) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
       if (normalizePhone(existing.rider_phone) !== normalizePhone(body.riderPhone)) {
         throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
       }
@@ -1047,6 +1074,7 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req,
       if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
       if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) throw new AppError("Order already accepted", 409, "ORDER_ALREADY_ACCEPTED");
       if (existing.region_id !== driver.current_region_id) throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
+      await assertDriverCanServeOrder(driver, existing, client);
 
       await client.query("UPDATE orders SET status='DRIVER_FOUND', driver_id=$1, accepted_at=NOW() WHERE id=$2", [driver.id, existing.id]);
       await client.query("UPDATE drivers SET status='BUSY', last_seen_at=NOW() WHERE id=$1", [driver.id]);
@@ -1076,6 +1104,18 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req,
   } catch (e) { next(e); }
 });
 
+async function moveDriverToIntercityDestination(order, executor) {
+  const requiresDestinationApproval = order?.pricing_snapshot?.intercity?.requiresDestinationApproval !== false;
+  if (!order?.driver_id || !order?.is_intercity || !order?.dropoff_region_id || !requiresDestinationApproval) return;
+  // The driver was checked for this approval at acceptance time.  Moving the
+  // current working region only after completion means dispatch never offers
+  // destination jobs while the driver is still carrying the rider there.
+  await executor.query(
+    "UPDATE drivers SET current_region_id=$1, last_seen_at=NOW() WHERE id=$2",
+    [order.dropoff_region_id, order.driver_id]
+  );
+}
+
 async function updateStatus(req, res, next, status) {
   try {
     IdParam.parse(req.params);
@@ -1094,6 +1134,7 @@ async function updateStatus(req, res, next, status) {
       if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
       if (driver && existing.driver_id !== driver.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
       if (driver && existing.region_id !== driver.current_region_id) throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
+      if (driver) await assertDriverCanServeOrder(driver, existing, client);
       assertTransition(existing, status);
 
       let extra = "";
@@ -1122,7 +1163,7 @@ async function updateStatus(req, res, next, status) {
         extra = ", started_at=NOW(), paid_waiting_started_at=$3, waiting_total=$4";
         extraParams = [paidWaitingStartedAt, waitingTotal];
       }
-      if (status === "TRIP_COMPLETED") extra = ", completed_at=NOW(), payment_status='PENDING'";
+      if (status === "TRIP_COMPLETED") extra = ", completed_at=NOW(), payment_status=CASE WHEN payment_method='CASHBACK' THEN 'PAID' ELSE 'PENDING' END";
       if (status === "PAYMENT_PENDING") extra = ", payment_status='PENDING'";
       if (status === "PAID") extra = ", payment_status='PAID'";
       if (["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "NO_SHOW"].includes(status)) extra = ", cancelled_at=NOW()";
@@ -1131,6 +1172,7 @@ async function updateStatus(req, res, next, status) {
       let updated = u.rows[0];
 
       if (status === "TRIP_COMPLETED") {
+        await moveDriverToIntercityDestination(updated, client);
         const tariff = (await client.query("SELECT * FROM tariffs WHERE region_id=$1 AND name=$2", [updated.region_id, updated.tariff])).rows[0];
         if (!tariff) throw new AppError("Tariff not found", 404, "TARIFF_NOT_FOUND");
 
@@ -1189,7 +1231,47 @@ async function updateStatus(req, res, next, status) {
           }
         }
 
-        const cashback = Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
+        // Cashback prepays the quoted price, while paid waiting is known only
+        // at completion. Reserve that delta from bonuses when possible. If the
+        // balance is no longer sufficient, keep the prepaid part and create a
+        // card payment for only the uncovered delta instead of blocking the
+        // driver's completion flow.
+        if (updated.payment_method === "CASHBACK" && Number(updated.price) > Number(updated.cashback_used)) {
+          const additionalAmount = Number(updated.price) - Number(updated.cashback_used);
+          const balanceAfter = await trySpendOrderCashback({
+            clientId: updated.client_id,
+            orderId: updated.id,
+            amountKzt: additionalAmount,
+            executor: client
+          });
+          if (balanceAfter !== null) {
+            updated = (await client.query(
+              "UPDATE orders SET cashback_used=price WHERE id=$1 RETURNING *",
+              [updated.id]
+            )).rows[0];
+            await client.query(
+              "UPDATE payments SET amount=$1, updated_at=NOW() WHERE order_id=$2 AND method='CASHBACK' AND status='PAID'",
+              [updated.price, updated.id]
+            );
+          } else {
+            updated = (await client.query(`
+              UPDATE orders
+              SET payment_method='MIXED', payment_status='PENDING'
+              WHERE id=$1
+              RETURNING *
+            `, [updated.id])).rows[0];
+            await client.query(`
+              INSERT INTO payments(order_id, method, status, amount, currency)
+              VALUES($1,'CARD','PENDING',$2,'KZT')
+            `, [updated.id, additionalAmount]);
+          }
+        }
+
+        // A ride paid entirely with previously-earned bonuses does not mint
+        // another round of bonuses from the same stored value.
+        const cashback = Number(updated.cashback_used) > 0
+          ? 0
+          : Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
         cashbackEarned = cashback;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
         // Crediting the client's cashback and the driver's balance/debt here
@@ -1217,6 +1299,16 @@ async function updateStatus(req, res, next, status) {
           // same row once the payment actually confirms — see that function
           // for why crediting it now would be premature.
           await createOrderCompletedTransaction(updated, req.user.id, client);
+        } else if (updated.payment_method === "CASHBACK") {
+          const settlement = await settleConfirmedOrderEarnings(updated, client, req.user.id);
+          referralBonusResult = settlement.referralBonusResult;
+          if (updated.driver_id) {
+            await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
+          }
+          updated = (await client.query(
+            "UPDATE orders SET status='PAID', payment_status='PAID' WHERE id=$1 RETURNING *",
+            [updated.id]
+          )).rows[0];
         } else if (updated.driver_id) {
           // Just free the driver up for new orders — no earnings yet.
           await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
@@ -1238,6 +1330,9 @@ async function updateStatus(req, res, next, status) {
         await createOrderCancelledTransaction(updated, req.user.id, client);
       }
       await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,$2,$3,$4)", [existing.id, status, `Status changed to ${status}`, req.user.id]);
+      if (status === "TRIP_COMPLETED" && updated.status === "PAID") {
+        await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'PAID','Cashback payment confirmed',$2)", [existing.id, req.user.id]);
+      }
       await writeAudit(client, {
         action: status === "TRIP_COMPLETED" ? "order_completed" : "order_status_changed",
         actorUserId: req.user.id,

@@ -21,7 +21,8 @@ import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 import { query } from "../db/pool.js";
-import { nearestRegionCode } from "../modules/routing/region-geo.js";
+import { serviceRegionCode } from "../modules/routing/region-geo.js";
+import { OFFICIAL_ADDRESS_TYPE, readOfficialAddressSnapshot } from "./official-addresses.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(HERE, "../../data/addresses");
@@ -84,6 +85,48 @@ async function flush(regionId, batch) {
   return batch.length;
 }
 
+async function flushOfficial(regionId, batch) {
+  if (!batch.length) return 0;
+  const columns = 11;
+  const tuples = [];
+  const params = [];
+  for (const row of batch) {
+    const base = params.length;
+    tuples.push(`(${Array.from({ length: columns }, (_, index) => `$${base + index + 1}`).join(",")})`);
+    params.push(
+      regionId, row.kind, row.label, searchTextFor(row), row.street, row.housenumber,
+      row.name, row.lat, row.lng, OFFICIAL_ADDRESS_TYPE, row.rka
+    );
+  }
+  await query(`
+    INSERT INTO addresses(region_id, kind, label, search_text, street, housenumber, name, lat, lng, osm_type, osm_id)
+    VALUES ${tuples.join(",")}
+    ON CONFLICT (osm_type, osm_id) DO UPDATE SET
+      region_id=EXCLUDED.region_id, kind=EXCLUDED.kind, label=EXCLUDED.label,
+      search_text=EXCLUDED.search_text, street=EXCLUDED.street,
+      housenumber=EXCLUDED.housenumber, name=EXCLUDED.name,
+      lat=EXCLUDED.lat, lng=EXCLUDED.lng, updated_at=NOW()`, params);
+  return batch.length;
+}
+
+async function loadOfficialAddresses(regionId, regionCode, log) {
+  const snapshot = readOfficialAddressSnapshot(regionCode);
+  if (snapshot === null) return 0;
+  const { rows, metadata } = snapshot;
+  const startedAt = new Date().toISOString();
+  let written = 0;
+  for (let start = 0; start < rows.length; start += BATCH_SIZE) {
+    written += await flushOfficial(regionId, rows.slice(start, start + BATCH_SIZE));
+  }
+  const removed = await query(
+    "DELETE FROM addresses WHERE region_id=$1 AND osm_type=$2 AND updated_at < $3",
+    [regionId, OFFICIAL_ADDRESS_TYPE, startedAt]
+  );
+  if (removed.rowCount) log(`[addresses] ${regionCode}: ${removed.rowCount} stale official rows removed`);
+  log(`[addresses] ${regionCode}: ${written} official RKA rows applied from ${metadata.sourceDataset} ${metadata.sourceVersion} (${metadata.checksum.slice(0, 12)})`);
+  return written;
+}
+
 async function loadFile(file, regionId, regionCode) {
   // Harvest files are gzipped (see harvest-addresses.js); a plain .jsonl is
   // still accepted so a file dropped in by hand also loads.
@@ -109,7 +152,7 @@ async function loadFile(file, regionId, regionCode) {
     // is nearest; the rest are left for that region's own file. Without
     // this, `addresses`'s (osm_type, osm_id) key means the last file loaded
     // silently steals the overlap — see region-geo.js.
-    if (nearestRegionCode(row.lat, row.lng) !== regionCode) continue;
+    if (serviceRegionCode(row.lat, row.lng) !== regionCode) continue;
     batch.push(row);
     if (batch.length >= BATCH_SIZE) {
       written += await flush(regionId, batch);
@@ -182,8 +225,8 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
     }
     const fileRows = manifestCountFor(name) ?? countLines(file);
     const existing = await query(
-      "SELECT COUNT(*)::int AS count FROM addresses WHERE region_id=$1",
-      [region.id]
+      "SELECT COUNT(*)::int AS count FROM addresses WHERE region_id=$1 AND osm_type<>$2",
+      [region.id, OFFICIAL_ADDRESS_TYPE]
     );
     const have = existing.rows[0]?.count || 0;
     // Exact equality, not `have >= fileRows`. The count changes whenever the
@@ -193,7 +236,8 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
     // mismatch in either direction means reload; the upsert then rewrites
     // region_id and the two regions converge.
     if (have === fileRows) {
-      log(`[addresses] ${region.name}: ${have} rows already loaded, skipping`);
+      log(`[addresses] ${region.name}: ${have} OSM rows already loaded, skipping`);
+      total += await loadOfficialAddresses(region.id, code, log);
       continue;
     }
     log(`[addresses] ${region.name}: loading ${fileRows} rows (had ${have})`);
@@ -209,14 +253,14 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
     // are not caught here — they carry a fresh stamp under their new
     // region_id, which is exactly right.
     const removed = await query(
-      "DELETE FROM addresses WHERE region_id=$1 AND updated_at < $2",
-      [region.id, startedAt]
+      "DELETE FROM addresses WHERE region_id=$1 AND osm_type<>$3 AND updated_at < $2",
+      [region.id, startedAt, OFFICIAL_ADDRESS_TYPE]
     );
     if (removed.rowCount) {
       log(`[addresses] ${region.name}: ${removed.rowCount} stale rows removed`);
     }
     log(`[addresses] ${region.name}: ${written} rows written`);
-    total += written;
+    total += written + await loadOfficialAddresses(region.id, code, log);
   }
   return total;
 }

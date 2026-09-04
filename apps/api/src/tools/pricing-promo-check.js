@@ -38,10 +38,10 @@ assert.equal(surged.finalPrice, 2000, "surge multiplier must apply to the whole 
 // Flat floor/ceiling regardless of the estimated price — a rider can always
 // drop to 200 KZT or raise with no ceiling of the stepper's own.
 const bounds700 = offeredPriceBounds(700);
-assert.deepEqual(bounds700, { minAllowed: 200, maxAllowed: 1_000_000 }, "bounds are a flat [200, 1_000_000] regardless of estimated price");
+assert.deepEqual(bounds700, { minAllowed: 500, maxAllowed: 1050 }, "a 700 KZT estimate gets a 70–150% negotiation band");
 
 const boundsNearFloor = offeredPriceBounds(150);
-assert.deepEqual(boundsNearFloor, { minAllowed: 200, maxAllowed: 1_000_000 }, "bounds do not shift for a low estimated price either");
+assert.deepEqual(boundsNearFloor, { minAllowed: 200, maxAllowed: 200 }, "a low estimate never drops below the absolute 200 KZT floor");
 
 // --- Promo code discounts ---
 const percentPromo = { discount_type: "PERCENT", discount_value: 20, max_discount_kzt: null };

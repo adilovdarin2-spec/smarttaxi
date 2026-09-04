@@ -30,7 +30,10 @@ async function login(phone, password) {
 }
 
 async function registerSmokeClient() {
-  const suffix = String(Date.now()).slice(-8);
+// KZ mobile contract is +77 followed by nine digits.  The previous
+// eight-digit suffix made this smoke-only generated number one digit too
+// long, so it exercised validation failure instead of the registration flow.
+const suffix = String(Date.now()).slice(-7);
   const phone = `+7701${suffix}`;
   await request("/api/auth/phone/check", { method: "POST", body: { phone } });
   const sent = await request("/api/auth/sms/send", { method: "POST", body: { phone, purpose: "REGISTER" } });
@@ -134,7 +137,10 @@ async function main() {
     mark(name, { status: updated.order.status, publicStatus: updated.order.public_status });
   }
 
-  const operator = await login("+77000000098", "123456");
+  // The seeded finance operator is the account that is authorised to confirm
+  // a cash payment. Keep this aligned with seeds/seed.js; the old ...098
+  // number never existed and made the final lifecycle step fail at login.
+  const operator = await login("+77000000097", "123456");
   const paid = await request(`/api/orders/${orderId}/mark-paid`, { method: "POST", token: operator.token });
   mark("mark_paid", { status: paid.order.status, publicStatus: paid.order.public_status });
 

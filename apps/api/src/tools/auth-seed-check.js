@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const authRoutes = readFileSync(join(root, "modules", "auth", "auth.routes.js"), "utf8");
+const referrals = readFileSync(join(root, "modules", "referrals", "referrals.service.js"), "utf8");
 const seed = readFileSync(join(root, "seeds", "seed.js"), "utf8");
+const envConfig = readFileSync(join(root, "config", "env.js"), "utf8");
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 
@@ -30,6 +32,12 @@ assert.match(migrations, /CREATE TABLE IF NOT EXISTS auth_sms_codes/i, "migratio
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ/i, "migration must add SMS consumed_at");
 assert.match(authRoutes, /consumeSmsVerification/, "auth must consume SMS verification token before registration/reset");
 assert.match(authRoutes, /consumed_at IS NULL/, "auth must reject reused SMS verification tokens");
+assert.match(authRoutes, /import \{ randomInt \} from "node:crypto"/, "SMS codes must use the cryptographic random generator");
+assert.match(authRoutes, /randomInt\(100000, 1_000_000\)/, "SMS codes must use the full six-digit cryptographic range");
+assert.doesNotMatch(authRoutes, /Math\.random/, "SMS codes must never use Math.random");
+assert.match(referrals, /import \{ randomInt \} from "node:crypto"/, "referral codes must use the cryptographic random generator");
+assert.match(referrals, /CODE_ALPHABET\[randomInt\(CODE_ALPHABET\.length\)\]/, "referral codes must sample the full alphabet securely");
+assert.doesNotMatch(referrals, /Math\.random/, "referral codes must never use Math.random");
 
 for (const expected of [
   "Test Client",
@@ -37,9 +45,7 @@ for (const expected of [
   "+77000000001",
   "Test Driver",
   "driver@smarttaxi.local",
-  "+77000000000",
   "SmartTaxi Owner",
-  "admin@smarttaxi.local",
   "+77000000099",
   "Test Finance",
   "finance@smarttaxi.local",
@@ -47,6 +53,10 @@ for (const expected of [
 ]) {
   assert.match(seed, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `seed must include ${expected}`);
 }
+assert.match(seed, /phone:\s*env\.DEFAULT_DRIVER_PHONE/, "driver seed must use the configurable default phone");
+assert.match(envConfig, /DEFAULT_DRIVER_PHONE:\s*process\.env\.DEFAULT_DRIVER_PHONE\s*\|\|\s*"\+77000000000"/, "driver default phone must remain documented in environment config");
+assert.match(seed, /email:\s*env\.DEFAULT_ADMIN_EMAIL/, "owner seed must use the configurable admin email");
+assert.match(envConfig, /DEFAULT_ADMIN_EMAIL:\s*process\.env\.DEFAULT_ADMIN_EMAIL\s*\|\|\s*"admin@smarttaxi\.local"/, "admin email default must remain documented in environment config");
 
 assert.match(seed, /role:\s*"CLIENT"/, "seed must create client role");
 assert.match(seed, /role:\s*"DRIVER"/, "seed must create driver role");

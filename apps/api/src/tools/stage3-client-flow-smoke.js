@@ -30,7 +30,9 @@ async function login(phone, password) {
 }
 
 async function registerClient() {
-  const suffix = String(Date.now()).slice(-8);
+  // +77 plus nine digits is the Kazakhstan mobile contract.  The prefix
+  // below already contains four digits, so the generated tail must be seven.
+  const suffix = String(Date.now()).slice(-7);
   const phone = `+7703${suffix}`;
   const check = await request("/api/auth/phone/check", { method: "POST", body: { phone } });
   if (check.exists) throw new Error("Stage 3 smoke phone unexpectedly exists");

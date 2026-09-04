@@ -1,4 +1,5 @@
 import { query, tx } from "../../db/pool.js";
+import { randomBytes } from "node:crypto";
 import { writeAudit } from "../../common/audit.js";
 import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
 import { emitOrderCreated } from "../orders/order-dispatch.service.js";
@@ -14,7 +15,7 @@ import { assertDriverDispatchReady } from "../driver-region-approvals/driver-reg
 const TRIGGER_WINDOW_MINUTES = 15;
 
 function shortId() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  return randomBytes(5).toString("hex").toUpperCase();
 }
 
 // Records that today's trigger window failed to dispatch and tells the

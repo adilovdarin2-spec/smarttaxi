@@ -6,8 +6,9 @@ import { query as defaultQuery } from "../../db/pool.js";
 import { regionRadiusKmByName } from "./region-geo.js";
 import { orderRoom, dispatchRegionRoom, ACTIVE_ORDER_STATUSES, TO_PICKUP_ORDER_STATUSES, TO_DROPOFF_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 import { prepareOrderPricing } from "../orders/order-pricing.service.js";
+import { publicIntercityRoute, resolveIntercityRoute } from "../intercity/intercity-routes.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
-import { findActiveRegionForPoint, normalizePoint, pointInPolygon, publicRegion } from "../regions/regions.service.js";
+import { findActiveRegionForPoint, listActiveRegions, normalizePoint, pointInPolygon, publicRegion } from "../regions/regions.service.js";
 
 function run(executor, sql, params = []) {
   return executor.query ? executor.query(sql, params) : executor(sql, params);
@@ -658,7 +659,7 @@ function searchLocalAddressHints(query, regionHint, limit = 8) {
     const queryMatches = haystack.includes(normalizedQuery) ||
       (queryParts.length > 0 && queryParts.every(part => haystack.includes(part)));
     return queryMatches && regionMatches;
-  }).map(({ keywords, ...item }) => item);
+  }).map(({ keywords, ...item }) => ({ ...item, source: "local" }));
 
   return matches.slice(0, Math.min(Math.max(Number(limit) || 8, 1), 12));
 }
@@ -1046,13 +1047,22 @@ function publicAddressSuggestion(item) {
     label = compactText(segments.slice(0, 2).join(", ")) || "Точка на карте";
   }
 
+  // `display_name` is useful as a last-resort source for the title, but it
+  // also contains OSM way references (KZ-12, Р-29, etc.). Never mirror it
+  // straight into the passenger UI: build that line from named fields.
+  const subtitle = [locality, city, region, address.country]
+    .map(compactText)
+    .filter((part, index, values) => part && !isCodeLikeToken(part) && values.indexOf(part) === index)
+    .join(", ");
   return {
     label,
-    subtitle: String(item.display_name || "").split(",").slice(1, 5).join(",").trim(),
+    title: label,
+    subtitle,
     city,
     region,
     lat,
-    lng
+    lng,
+    source: "nominatim"
   };
 }
 
@@ -1066,7 +1076,8 @@ function publicPhotonAddressSuggestion(feature) {
   if (properties.countrycode && String(properties.countrycode).toUpperCase() !== "KZ") return null;
   const city = properties.city || properties.town || properties.village || properties.district || properties.county || "";
   const region = properties.state || "";
-  const street = properties.street || "";
+  const rawStreet = properties.street || "";
+  const street = isCodeLikeToken(rawStreet) ? "" : rawStreet;
   const house = properties.housenumber || properties.house_number || "";
   const streetPart = [street, house].filter(Boolean).join(", ");
   // Photon tags a POI's own name (shop/café/business) separately from the
@@ -1075,10 +1086,11 @@ function publicPhotonAddressSuggestion(feature) {
   // people recognize the actual place, not only its bare house number, and
   // keeps the street visible instead of dropping it whenever a POI name
   // exists (the previous name-OR-street behavior did exactly that).
-  const poiName = properties.name && properties.name !== street ? properties.name : null;
+  const rawPoiName = compactText(properties.name);
+  const poiName = rawPoiName && rawPoiName !== street && !isCodeLikeToken(rawPoiName) ? rawPoiName : null;
   const label = poiName
     ? (streetPart ? `${poiName}, ${streetPart}` : poiName)
-    : (streetPart || properties.osm_value || "Точка на карте");
+    : (streetPart || (isCodeLikeToken(properties.osm_value) ? "Точка на карте" : properties.osm_value) || "Точка на карте");
   const subtitle = [
     properties.district,
     city,
@@ -1091,7 +1103,8 @@ function publicPhotonAddressSuggestion(feature) {
     city,
     region,
     lat,
-    lng
+    lng,
+    source: "photon"
   };
 }
 
@@ -1114,8 +1127,24 @@ function publicMapTilerAddressSuggestion(feature) {
   const properties = feature.properties || {};
   const context = Array.isArray(feature.context) ? feature.context : [];
   const contextText = context.map(item => item?.text || item?.text_ru || item?.text_en || "").filter(Boolean);
-  const street = properties.street || properties.road || properties.address || properties.name || "";
-  const houseNumber = properties.housenumber || properties.house_number || properties.houseNumber || "";
+  const rawStreet = properties.street || properties.road || properties.address || properties.name || "";
+  const rawAddress = compactText(properties.address);
+  // MapTiler sometimes puts a complete civic address ("Street, 15") into
+  // `address` instead of splitting it into `street` and `housenumber`.
+  // Split only a final house-number part so it renders once, consistently.
+  const combinedAddress = !properties.street && !properties.road
+    ? rawAddress.match(/^(.+?),\s*(\d+[\p{L}\-/]*)$/u)
+    : null;
+  const rawStreetName = combinedAddress ? combinedAddress[1] : rawStreet;
+  const street = isCodeLikeToken(rawStreetName) ? "" : rawStreetName;
+  // MapTiler places the civic number in `address` for many Kazakhstan
+  // features instead of `housenumber`. Treat a numeric address field as the
+  // house number, otherwise a pin on "Бектасова, 15" degraded to only the
+  // street name in the passenger app.
+  const addressHouseNumber = combinedAddress?.[2] || (/\d/.test(rawAddress) && rawAddress !== compactText(rawStreet)
+    ? rawAddress
+    : "");
+  const houseNumber = properties.housenumber || properties.house_number || properties.houseNumber || addressHouseNumber;
   // context isn't ordered by semantic type -- for a street/address feature
   // contextText[0] is often the postal code entry (no place_designation of
   // its own), not the city, so a bare positional fallback showed "050013,
@@ -1129,7 +1158,8 @@ function publicMapTilerAddressSuggestion(feature) {
   const localityText = localityEntry?.text || localityEntry?.text_ru || localityEntry?.text_en || "";
   const locality = properties.city || properties.town || properties.village || properties.locality || localityText || contextText[0] || "";
   const region = properties.region || properties.state || contextText.find(item => /область|region|turkistan|түркістан/i.test(item)) || "";
-  const name = feature.text_ru || feature.text || feature.place_name_ru || feature.place_name || properties.name || "";
+  const rawName = feature.text_ru || feature.text || feature.place_name_ru || feature.place_name || properties.name || "";
+  const name = isCodeLikeToken(rawName) ? "" : rawName;
   const title = readableAddressTitle({ name, street, houseNumber, locality });
   const subtitle = compactText([
     locality && title !== locality ? locality : "",
@@ -1256,6 +1286,52 @@ async function reverseAddressWithPhoton({ lat, lng }, fetchImpl = fetch) {
 // for these places and free of their rate limits and latency. Returns []
 // while the table is still empty (before the first import run), leaving
 // the existing remote cascade untouched.
+// The harvest uses overlapping circles around nearby settlements so that no
+// local streets get missed. That is deliberately more generous than the
+// actual service areas, though, and can include points across the border.
+// Keep the circles as a cheap SQL pre-filter, then enforce the real booking
+// boundary before returning anything to a rider.
+export function filterGazetteerRowsToServiceArea(rows, regions, regionName) {
+  const activeRegions = Array.isArray(regions)
+    ? regions.filter((region) => region?.is_active !== false && region?.boundary)
+    : [];
+  if (!activeRegions.length) return [];
+
+  const requestedName = normalizedText(regionName);
+  const requestedRegions = requestedName
+    ? activeRegions.filter((region) => normalizedText(region.name) === requestedName)
+    : [];
+  // An unknown/renamed hint must not turn a useful unscoped search into an
+  // empty result page. In that case still return only service-area points.
+  const allowedRegions = requestedRegions.length ? requestedRegions : activeRegions;
+
+  return rows.filter((row) => {
+    const lat = Number(row.lat);
+    const lng = Number(row.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    return allowedRegions.some((region) => pointInPolygon({ lat, lng }, region.boundary));
+  });
+}
+
+async function filterAddressSuggestionsToServiceArea(addresses, regionName) {
+  const requestedRegion = compactText(regionName);
+  // With no user-selected town the existing provider behaviour is preserved:
+  // an unscoped search may intentionally look outside the launch catalogue.
+  if (!requestedRegion) return addresses;
+  try {
+    return filterGazetteerRowsToServiceArea(
+      addresses,
+      await listActiveRegions(),
+      requestedRegion
+    );
+  } catch (error) {
+    // Address search must remain available during a transient database outage.
+    // The providers still enforce Kazakhstan and the usual regional radius;
+    // the hard polygon filter is restored as soon as the DB is reachable.
+    return addresses;
+  }
+}
+
 async function searchGazetteer(text, regionName, limit, executor = defaultQuery) {
   // Scoped by distance from the region's centre, NOT by `r.name = $2`.
   //
@@ -1271,37 +1347,60 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
   // tall or it clips the east and west edges of the region.
   const latDelta = radiusKm == null ? null : radiusKm / 111;
   const lngDelta = radiusKm == null ? null : radiusKm / (111 * Math.cos((40.7 * Math.PI) / 180));
+  // Ask for more than one page. Some harvested candidates can be outside the
+  // polygon and must be discarded after the SQL pre-filter.
+  const candidateLimit = Math.min(Math.max(Number(limit) * 8, Number(limit)), 96);
   const { rows } = await executor(
     `SELECT a.label, a.lat, a.lng, a.kind, r.name AS region_name
        FROM addresses a
        JOIN regions r ON r.id = a.region_id
+       -- Bring the requested service area into the query once.  We need its
+       -- centre not only to clip the broad harvest box, but also to rank the
+       -- candidates *before* LIMIT.  Otherwise a common label such as
+       -- "Школа" fills the first page with objects from neighbouring towns
+       -- and the polygon check below never gets to the rider's real result.
+       LEFT JOIN regions scope ON scope.name = $2
       -- search_text, not label: it carries the label plus every name
       -- spelling the harvest found, so "Бектасова" and "Бектасов көшесі"
       -- both reach the same street — riders here use either form. COALESCE
       -- keeps rows written before that column existed searchable.
       WHERE COALESCE(a.search_text, a.label) ILIKE $1
-        AND ($2::text IS NULL OR EXISTS (
-              SELECT 1 FROM regions scope
-               WHERE scope.name = $2
-                 AND a.lat BETWEEN scope.center_lat - $5 AND scope.center_lat + $5
-                 AND a.lng BETWEEN scope.center_lng - $6 AND scope.center_lng + $6
+        AND ($2::text IS NULL OR (
+              scope.id IS NOT NULL
+              AND a.lat BETWEEN scope.center_lat - $5 AND scope.center_lat + $5
+              AND a.lng BETWEEN scope.center_lng - $6 AND scope.center_lng + $6
             ))
       ORDER BY
         -- Prefix matches first: someone typing "Бекта" wants the street
         -- itself above every shop that merely mentions it.
         (COALESCE(a.search_text, a.label) ILIKE $3) DESC,
+        -- Keep the first candidate page local to the selected region.  The
+        -- exact polygon filter below remains authoritative; this only makes
+        -- sure it receives enough local candidates to do its job.
+        CASE WHEN scope.id IS NULL THEN 0
+             ELSE power(a.lat - scope.center_lat, 2) + power(a.lng - scope.center_lng, 2)
+        END,
         -- Then the classes in the order a rider most likely means.
         CASE a.kind WHEN 'housenumber' THEN 0 WHEN 'poi' THEN 1
                     WHEN 'building' THEN 2 ELSE 3 END,
         length(a.label)
       LIMIT $4`,
-    [`%${text}%`, regionName || null, `${text}%`, limit, latDelta, lngDelta]
+    [`%${text}%`, regionName || null, `${text}%`, candidateLimit, latDelta, lngDelta]
   );
-  return rows.map((row) => ({
+  if (!rows.length) return [];
+
+  const regions = await listActiveRegions(executor);
+  const matchingRegion = regionName
+    ? regions.find((region) => normalizedText(region.name) === normalizedText(regionName))
+    : null;
+  return filterGazetteerRowsToServiceArea(rows, regions, regionName).slice(0, limit).map((row) => ({
     label: row.label,
     lat: Number(row.lat),
     lng: Number(row.lng),
-    region: row.region_name,
+    // Rows are stored under the nearest harvest centre. Show the selected
+    // real service area instead, otherwise a valid border-street can look as
+    // if it belongs to a neighbouring town.
+    region: matchingRegion?.name || row.region_name,
     source: "gazetteer"
   }));
 }
@@ -1318,24 +1417,48 @@ export async function searchAddresses({ q, region, limit = 8, countrycodes = "kz
     // region filter compare r.name against '', matching nothing and
     // silently emptying every unscoped search. Normalise to null here.
     const regionFilter = compactText(region) || null;
-    const local = await searchGazetteer(trimmed, regionFilter, limit);
-    if (local.length >= limit) return local;
+    // Do not let a dense local catalogue consume the entire result page.
+    // A rider searching a well-covered street still needs to see at least one
+    // independent provider result (POI, building entrance or a neighbouring
+    // town) rather than a page of nearly identical road segments.
+    const localLimit = limit > 1 ? limit - 1 : 1;
+    const local = await searchGazetteer(trimmed, regionFilter, localLimit);
     if (local.length) {
-      const remote = await searchAddressesRemote(
-        { q, region, limit: limit - local.length, countrycodes }, fetchImpl
+      const remote = await filterAddressSuggestionsToServiceArea(
+        await searchAddressesRemote(
+          { q, region, limit, countrycodes }, fetchImpl
+        ),
+        regionFilter
       );
       const seen = new Set(local.map((item) => item.label.toLowerCase()));
-      return [
+      const deduped = dedupeAddressSuggestions([
         ...local,
         ...remote.filter((item) => !seen.has(String(item.label).toLowerCase()))
-      ];
+      ]);
+      const merged = sortAddressSuggestions(deduped, regionFilter, trimmed).slice(0, limit);
+      const hasProviderResult = merged.some((item) =>
+        ["nominatim", "photon", "maptiler"].includes(item.source)
+      );
+      const firstProviderResult = deduped.find((item) =>
+        ["nominatim", "photon", "maptiler"].includes(item.source)
+      );
+      // Keep an independently geocoded address visible on a short result
+      // page. The local gazetteer is intentionally exhaustive and otherwise
+      // crowds out POIs and building-level results from real providers.
+      if (!hasProviderResult && firstProviderResult && limit > 1) {
+        return [...merged.slice(0, limit - 1), firstProviderResult];
+      }
+      return merged;
     }
   } catch (error) {
     // A gazetteer problem must never take address search down with it —
     // the remote cascade below is a complete implementation on its own.
     console.error("[addresses] gazetteer lookup failed", error);
   }
-  return searchAddressesRemote({ q, region, limit, countrycodes }, fetchImpl);
+  return filterAddressSuggestionsToServiceArea(
+    await searchAddressesRemote({ q, region, limit, countrycodes }, fetchImpl),
+    compactText(region) || null
+  );
 }
 
 async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz" }, fetchImpl = fetch) {
@@ -1475,35 +1598,53 @@ function looksLikeRoadCode(label) {
 /// The nearest harvested address to a point, for when the geocoders answer
 /// with a road number. Reads from the same gazetteer the search box uses, so
 /// a dropped pin gets named the way a rider would name it.
-async function nearestGazetteerAddress(point, maxMeters = 400, executor = defaultQuery) {
+async function nearestGazetteerAddress(
+  point,
+  maxMeters = 400,
+  executor = defaultQuery,
+  { requireHouseNumber = false } = {}
+) {
   // ~111 km per degree of latitude; longitude shrinks by cos(latitude).
   const latDelta = maxMeters / 111000;
   const lngDelta = maxMeters / (111000 * Math.cos((point.lat * Math.PI) / 180));
   const { rows } = await executor(
-    `SELECT label, lat, lng, kind
-       FROM addresses
+    `SELECT label, lat, lng, kind,
+            (lat - $1) * (lat - $1) + (lng - $2) * (lng - $2) AS distance_squared
+      FROM addresses
       WHERE lat BETWEEN $1 - $3 AND $1 + $3
         AND lng BETWEEN $2 - $4 AND $2 + $4
+        AND ($5::boolean = false OR kind = 'housenumber')
       ORDER BY
-        -- A house number is the most recognisable thing to stand next to;
-        -- a bare street name is the least specific but still far better
-        -- than a road code.
+        CASE WHEN $5 THEN CASE kind WHEN 'housenumber' THEN 0 ELSE 1 END ELSE 0 END,
+        -- Physical proximity comes first: a named shop twenty metres from
+        -- the pin is more truthful than a house number 170 metres away.
+        (lat - $1) * (lat - $1) + (lng - $2) * (lng - $2),
         CASE kind WHEN 'housenumber' THEN 0 WHEN 'building' THEN 1
-                  WHEN 'poi' THEN 2 ELSE 3 END,
-        (lat - $1) * (lat - $1) + (lng - $2) * (lng - $2)
+                  WHEN 'poi' THEN 2 ELSE 3 END
       LIMIT 1`,
-    [point.lat, point.lng, latDelta, lngDelta]
+    [point.lat, point.lng, latDelta, lngDelta, requireHouseNumber]
   );
   const row = rows[0];
   if (!row) return null;
-  return String(row.label || "").trim() || null;
+  const label = String(row.label || "").trim();
+  if (!label || looksLikeRoadCode(label)) return null;
+  return {
+    label,
+    title: label,
+    kind: row.kind || "address",
+    lat: Number(row.lat),
+    lng: Number(row.lng)
+  };
 }
 
 export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
   const point = normalizePoint({ lat, lng });
   const fallbackPoint = {
-    label: "Точка на карте",
-    title: "Точка на карте",
+    // This is deliberately not an address. Clients treat it as a failed
+    // resolution and keep confirmation disabled, rather than saving raw
+    // coordinates or a made-up road reference into an order.
+    label: "Адрес не определён",
+    title: "Адрес не определён",
     subtitle: nearestLocalPlace(point)?.city || env.CITY || "Казахстан",
     city: nearestLocalPlace(point)?.city || env.CITY || "",
     region: nearestLocalPlace(point)?.region || "",
@@ -1517,18 +1658,49 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
   // check three times, each result passes through here first.
   const named = async (suggestion) => {
     if (!suggestion) return null;
-    if (!looksLikeRoadCode(suggestion.label)) return suggestion;
-    const local = await nearestGazetteerAddress(point).catch(() => null);
+    const label = compactText(suggestion.label);
+    const city = compactText(suggestion.city);
+    // A settlement name alone is still not a pickup address. It commonly
+    // appears after stripping a KZ-12 road code from a weak provider result.
+    const generic = !label || looksLikeRoadCode(label) || label === city ||
+      /^(точка на карте|адрес не определ[её]н)$/i.test(label);
+    // A bare street is usable, but a nearby house, building or POI is the
+    // address a rider actually selected. Prefer that concrete local record
+    // when the external provider could resolve only the whole street.
+    const bareStreet = !/\d/.test(label) &&
+      /^(?:ул\.?|улица|проспект|переулок|көшесі|даңғылы|көше)/i.test(label);
+    const local = generic || bareStreet
+      ? await nearestGazetteerAddress(
+        point,
+        400,
+        defaultQuery,
+        { requireHouseNumber: bareStreet }
+      ).catch(() => null)
+      : null;
     if (local) {
-      return { ...suggestion, label: local, title: local, source: "gazetteer_reverse" };
+      return {
+        ...suggestion,
+        label: local.label,
+        title: local.title,
+        subtitle: suggestion.subtitle || nearestLocalPlace(point)?.city || "",
+        source: "gazetteer_reverse"
+      };
     }
+    if (!generic) return suggestion;
     // Nothing harvested within walking distance — much of Мақтаарал district
     // is fields. "Точка на карте" tells the rider exactly as much as the road
     // number did, without pretending to be an address they could give a
     // driver over the phone.
     const place = suggestion.city || nearestLocalPlace(point)?.city || env.CITY || "";
-    const label = place ? `Точка на карте, ${place}` : "Точка на карте";
-    return { ...suggestion, label, title: "Точка на карте", source: "point_on_map" };
+    return {
+      ...suggestion,
+      label: "Адрес не определён",
+      title: "Адрес не определён",
+      subtitle: place ? `Попробуйте передвинуть точку в пределах ${place}` : "Передвиньте точку к ближайшему зданию",
+      source: "point_on_map",
+      fallback: true,
+      confidence: 0
+    };
   };
   const mapTiler = await named(
     await reverseAddressWithMapTiler(point, fetchImpl).catch(() => null)
@@ -1586,8 +1758,19 @@ export async function resolveTripRegion(input, executor = defaultQuery) {
   const dropoff = normalizePoint({ lat: input.dropoffLat, lng: input.dropoffLng });
   const pickupRegion = await resolveActiveRegionForPoint(pickup, "PICKUP_REGION_INACTIVE", executor);
   const dropoffRegion = await resolveActiveRegionForPoint(dropoff, "DROPOFF_REGION_INACTIVE", executor);
-  if (pickupRegion.id !== dropoffRegion.id) throw new AppError("Intercity trips are not supported", 409, "INTERCITY_NOT_SUPPORTED");
-  return { region: pickupRegion, pickup, dropoff };
+  const intercityRoute = await resolveIntercityRoute({
+    originRegionId: pickupRegion.id,
+    destinationRegionId: dropoffRegion.id
+  }, executor);
+  return {
+    region: pickupRegion,
+    pickupRegion,
+    dropoffRegion,
+    intercityRoute,
+    isIntercity: Boolean(intercityRoute),
+    pickup,
+    dropoff
+  };
 }
 
 // OSRM's own maneuver vocabulary (turn/roundabout/merge/fork/depart/arrive,
@@ -1622,12 +1805,30 @@ function parseSteps(route) {
     .filter(Boolean);
 }
 
+function hasUsableRouteGeometry(geometry) {
+  if (geometry?.type !== "LineString" || !Array.isArray(geometry.coordinates) || geometry.coordinates.length < 2) return false;
+  return geometry.coordinates.every((coordinate) => {
+    if (!Array.isArray(coordinate) || coordinate.length < 2) return false;
+    const lng = Number(coordinate[0]);
+    const lat = Number(coordinate[1]);
+    return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+  });
+}
+
+function isUsableRoutePayload(route) {
+  return Number.isFinite(Number(route?.distanceMeters)) && Number(route.distanceMeters) >= 0 &&
+    Number.isFinite(Number(route?.durationSeconds)) && Number(route.durationSeconds) >= 0 &&
+    hasUsableRouteGeometry(route?.geometry);
+}
+
 export async function requestRoute({ from, to, fetchImpl = fetch }) {
+  const origin = normalizePoint(from);
+  const destination = normalizePoint(to);
   if (!env.ROUTING_BASE_URL) throw routeUnavailable("ROUTING_BASE_URL is not configured");
   const base = env.ROUTING_BASE_URL.replace(/\/$/, "");
-  const cacheKey = `route:osrm:steps:${roundedPointKey(from, 5)}:${roundedPointKey(to, 5)}`;
+  const cacheKey = `route:osrm:steps:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}`;
   const cached = await cacheGetJson(cacheKey);
-  if (cached) return cached;
+  if (isUsableRoutePayload(cached)) return cached;
   // A hung/misbehaving OSRM would otherwise be re-hit on every single poll
   // (live driver routes re-fetch every ~8s) — a short negative cache keeps
   // repeat callers failing fast instead of each waiting out the 10s timeout.
@@ -1636,7 +1837,7 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   // steps=true so the client can show a real next-turn instruction (street
   // name + actual maneuver type) instead of guessing one from bearing
   // changes in the plain geometry — see parseSteps above.
-  const url = `${base}/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
+  const url = `${base}/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true`;
   let response;
   try {
     response = await getJson(url, { fetchImpl, timeoutMs: 10_000 });
@@ -1650,7 +1851,9 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   }
   const data = response.data;
   const route = data?.routes?.[0];
-  if (!route || !Number.isFinite(Number(route.distance)) || !Number.isFinite(Number(route.duration)) || !route.geometry) {
+  if (!route || !Number.isFinite(Number(route.distance)) || Number(route.distance) < 0 ||
+    !Number.isFinite(Number(route.duration)) || Number(route.duration) < 0 ||
+    !hasUsableRouteGeometry(route.geometry)) {
     await cacheSetJson(failureKey, { failed: true }, 20);
     throw routeUnavailable();
   }
@@ -1744,7 +1947,7 @@ export async function buildActiveLegRoute({ order, driverLat, driverLng, fetchIm
 }
 
 export async function buildRoutePreview(input, executor = defaultQuery, fetchImpl = fetch) {
-  const { region, pickup, dropoff } = await resolveTripRegion(input, executor);
+  const { region, pickupRegion, dropoffRegion, intercityRoute, isIntercity, pickup, dropoff } = await resolveTripRegion(input, executor);
   const route = await requestRoute({ from: pickup, to: dropoff, fetchImpl });
   let estimate = null;
   if (input.tariffId || input.tariff || input.tariffName) {
@@ -1764,6 +1967,10 @@ export async function buildRoutePreview(input, executor = defaultQuery, fetchImp
   return {
     regionId: region.id,
     region: publicRegion(region),
+    destinationRegionId: dropoffRegion.id,
+    destinationRegion: publicRegion(dropoffRegion),
+    isIntercity,
+    intercity: publicIntercityRoute(intercityRoute),
     distanceMeters: route.distanceMeters,
     durationSeconds: route.durationSeconds,
     geometry: route.geometry,
@@ -1788,7 +1995,24 @@ export async function updateDriverLocation({ userId, location, io = null, execut
 
   const region = (await run(executor, "SELECT * FROM regions WHERE id=$1", [driver.current_region_id])).rows[0];
   if (!region?.is_active) throw new AppError("Region is inactive", 403, "DRIVER_REGION_INACTIVE");
-  if (!pointInPolygon(point, region.boundary)) throw new AppError("Driver location is outside selected region", 403, "DRIVER_LOCATION_OUTSIDE_REGION");
+  let activeOrder = null;
+  if (!pointInPolygon(point, region.boundary)) {
+    // A driver legitimately leaves the pickup region while carrying an
+    // intercity rider.  Keep accepting their live GPS pings for that active
+    // trip; without this exception the passenger map freezes exactly when
+    // the car crosses the regional boundary.  No other out-of-region ping is
+    // accepted, so a free/off-route driver cannot spoof a new work area.
+    activeOrder = (await run(executor, `
+      SELECT id, status, distance_traveled_m, is_intercity
+      FROM orders
+      WHERE driver_id=$1 AND status = ANY($2::text[])
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [driver.id, ACTIVE_ORDER_STATUSES])).rows[0] || null;
+    if (!activeOrder?.is_intercity) {
+      throw new AppError("Driver location is outside selected region", 403, "DRIVER_LOCATION_OUTSIDE_REGION");
+    }
+  }
 
   // Captured before the upsert below overwrites it — the only way to know
   // how far the driver has actually moved since their last ping, for the
@@ -1811,8 +2035,8 @@ export async function updateDriverLocation({ userId, location, io = null, execut
   `, [driver.id, driver.current_region_id, point.lat, point.lng, heading, speed, accuracy, source]);
   await run(executor, "UPDATE drivers SET lat=$1, lng=$2, last_seen_at=NOW() WHERE id=$3", [point.lat, point.lng, driver.id]);
 
-  const activeOrder = (await run(executor, `
-    SELECT id, status, distance_traveled_m
+  activeOrder = activeOrder || (await run(executor, `
+    SELECT id, status, distance_traveled_m, is_intercity
     FROM orders
     WHERE driver_id=$1 AND status = ANY($2::text[])
     ORDER BY created_at DESC

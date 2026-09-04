@@ -41,6 +41,8 @@ function uuidOrNull(value) {
 function normalizePaymentMethod(value) {
   if (value === "CASH") return "CASH";
   if (value === "KASPI" || value === "KASPI_TRANSFER") return "KASPI_TRANSFER";
+  if (value === "CASHBACK") return "CASHBACK";
+  if (value === "MIXED") return "MIXED";
   return "UNKNOWN";
 }
 
@@ -198,7 +200,7 @@ export async function settleConfirmedOrderEarnings(order, executor, actorUserId 
   if (["CASH", "KASPI"].includes(order.payment_method)) return { cashbackCredited: 0, referralBonusResult: null };
 
   if (order.driver_id) {
-    await run(executor, "UPDATE drivers SET balance=balance+($1-$2) WHERE id=$3", [
+    await run(executor, "UPDATE drivers SET balance=balance+($1::integer-$2::integer) WHERE id=$3", [
       roundMoney(order.price),
       roundMoney(order.service_commission),
       order.driver_id
@@ -279,6 +281,7 @@ export async function createOrderCancelledTransaction(order, actorUserId = null,
           INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
           VALUES($1,$2,'ORDER_CANCEL_REFUND',$3,$4)
         `, [order.client_id, order.id, refundedKzt, updatedClient.rows[0].cashback_balance]);
+        await run(executor, "UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE id=$1", [payment.id]);
       }
     } else {
       refundedKzt = 0;

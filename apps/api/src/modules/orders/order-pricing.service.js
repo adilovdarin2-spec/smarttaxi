@@ -1,6 +1,7 @@
 import { AppError } from "../../common/errors.js";
 import { findActiveRegionForPoint, normalizePoint, publicRegion } from "../regions/regions.service.js";
 import { getTariffForRegion, publicTariff } from "../tariffs/tariffs.service.js";
+import { publicIntercityRoute, resolveIntercityRoute } from "../intercity/intercity-routes.service.js";
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {
   const point = normalizePoint(pointInput);
@@ -99,21 +100,54 @@ export function calculateOrderPrice(tariff, distanceKm, durationMin) {
   return calculatePricingComponents(tariff, { distanceKm, durationMin }).finalPrice;
 }
 
+// City tariffs are often deliberately flat for a short ride.  Reusing such
+// a tariff unchanged for a 70 km journey would quote a clearly wrong 700 ₸.
+// The intercity route owns the distance/minimum policy; the regular tariff
+// still supplies its service commission, cashback and waiting rules.
+export function intercityTariff(tariff, intercityRoute) {
+  if (!intercityRoute) return tariff;
+  const routeRate = Number(intercityRoute.price_per_km_override);
+  const tariffRate = Number(tariff.price_per_km);
+  const routeMinimum = Number(intercityRoute.min_price_override);
+  const tariffIntercityMinimum = Number(tariff.intercity_override);
+  const regularMinimum = Number(tariff.min_price);
+  return {
+    ...tariff,
+    base_price: Number(tariff.base_price || 0) + Number(intercityRoute.base_surcharge_kzt || 0),
+    // A route must always be able to quote a distance-based price, even if
+    // its city tariff is flat.  The migration supplies 140 ₸/km as the safe
+    // default and an owner can tune each route later.
+    price_per_km: Number.isFinite(routeRate) && routeRate >= 0
+      ? routeRate
+      : (Number.isFinite(tariffRate) && tariffRate > 0 ? tariffRate : 140),
+    min_price: Number.isFinite(tariffIntercityMinimum) && tariffIntercityMinimum > 0
+      ? tariffIntercityMinimum
+      : (Number.isFinite(routeMinimum) && routeMinimum > 0 ? routeMinimum : Math.max(1800, regularMinimum || 0))
+  };
+}
+
 // Mirrors the mobile app's "своя цена" price-adjuster stepper bounds so the
 // server rejects anything the UI shouldn't have let the rider reach in the
 // first place. Pure function (no DB import) so it can be unit-tested
 // directly instead of only through orders.routes.js.
 //
-// Floor is a flat amount regardless of the estimated price (a rider can
-// always offer down to this), and there's no ceiling of our own — only
-// CreateOrder's zod schema (1,000,000 KZT) still applies as a sanity cap.
-export function offeredPriceBounds(_estimatedPrice) {
-  const minAllowed = 200;
-  const maxAllowed = 1_000_000;
+// Negotiation remains useful without letting a long trip be officially
+// recorded for a token amount.  The bounds move with the server-computed
+// estimate: up to 30% down and 50% up, rounded to a rider-friendly 50 ₸.
+// A small absolute floor still keeps short, low-price trips usable.
+export function offeredPriceBounds(estimatedPrice) {
+  const estimate = Math.max(0, Math.round(Number(estimatedPrice) || 0));
+  const roundUpToStep = (value) => Math.ceil(value / 50) * 50;
+  const roundDownToStep = (value) => Math.floor(value / 50) * 50;
+  const minAllowed = Math.max(200, roundUpToStep(estimate * 0.7));
+  const maxAllowed = Math.max(
+    minAllowed,
+    Math.min(1_000_000, roundDownToStep(estimate * 1.5)),
+  );
   return { minAllowed, maxAllowed };
 }
 
-export function buildPricingSnapshot({ region, tariff, distanceKm, durationMin, waitingMinutes = 0, components }) {
+export function buildPricingSnapshot({ region, destinationRegion = region, tariff, distanceKm, durationMin, waitingMinutes = 0, components, intercityRoute = null }) {
   const basePrice = Number(tariff.base_price);
   const pricePerKm = Number(tariff.price_per_km);
   const pricePerMinute = Number(tariff.price_per_minute);
@@ -123,6 +157,10 @@ export function buildPricingSnapshot({ region, tariff, distanceKm, durationMin, 
     : null;
   return {
     regionId: region.id,
+    destinationRegionId: destinationRegion.id,
+    isIntercity: Boolean(intercityRoute),
+    intercityRouteId: intercityRoute?.id || null,
+    intercity: publicIntercityRoute(intercityRoute),
     tariffId: tariff.id,
     tariffName: tariff.name,
     tariffDisplayName: tariff.display_name || tariff.name,
@@ -164,33 +202,41 @@ export async function prepareOrderPricing(input, executor) {
     lng: input.dropoffLng
   }, "DROPOFF_REGION_INACTIVE", executor);
 
-  if (pickupRegion.id !== dropoffRegion.id) {
-    throw new AppError("Intercity trips are not supported", 409, "INTERCITY_NOT_SUPPORTED");
-  }
+  const intercityRoute = await resolveIntercityRoute({
+    originRegionId: pickupRegion.id,
+    destinationRegionId: dropoffRegion.id
+  }, executor);
 
-  const distanceKm = positiveFinite(input.distanceKm, "distance_km", 300);
-  const durationMin = positiveFinite(input.durationMin, "duration_min", 600);
+  const distanceKm = positiveFinite(input.distanceKm, "distance_km", intercityRoute ? Number(intercityRoute.max_distance_km) : 300);
+  const durationMin = positiveFinite(input.durationMin, "duration_min", intercityRoute ? Number(intercityRoute.max_duration_min) : 600);
   const waitingMinutes = nonNegativeFinite(input.waitingMinutes, "waiting_minutes", 1440);
   const tariff = await getTariffForRegion({
     regionId: pickupRegion.id,
     tariffId: input.tariffId,
     tariffName: input.tariff || input.tariffName
   }, executor);
-  const components = calculatePricingComponents(tariff, { distanceKm, durationMin, waitingMinutes });
+  const pricedTariff = intercityTariff(tariff, intercityRoute);
+  const components = calculatePricingComponents(pricedTariff, { distanceKm, durationMin, waitingMinutes });
   const estimatedPrice = components.finalPrice;
   const pricingSnapshot = buildPricingSnapshot({
     region: pickupRegion,
-    tariff,
+    destinationRegion: dropoffRegion,
+    tariff: pricedTariff,
     distanceKm,
     durationMin,
     waitingMinutes,
-    components
+    components,
+    intercityRoute
   });
 
   return {
     region: pickupRegion,
     regionId: pickupRegion.id,
-    tariff,
+    destinationRegion: dropoffRegion,
+    destinationRegionId: dropoffRegion.id,
+    isIntercity: Boolean(intercityRoute),
+    intercityRoute,
+    tariff: pricedTariff,
     estimatedPrice,
     serviceCommission: components.serviceCommission,
     driverEarning: components.driverEarning,
@@ -198,7 +244,10 @@ export async function prepareOrderPricing(input, executor) {
     publicEstimate: {
       regionId: pickupRegion.id,
       region: publicRegion(pickupRegion),
-      tariff: publicTariff(tariff),
+      destinationRegion: publicRegion(dropoffRegion),
+      isIntercity: Boolean(intercityRoute),
+      intercity: publicIntercityRoute(intercityRoute),
+      tariff: publicTariff(pricedTariff),
       estimatedPrice,
       finalPrice: estimatedPrice,
       pricing: pricingSnapshot

@@ -36,13 +36,13 @@ async function login(phone, password) {
   return request("/api/auth/login/password", { method: "POST", body: { phone, password } });
 }
 
-const ownerLogin = await login("+77000000099", "123456");
+const ownerLogin = await login("+77000000099", "ChangeMe_2026!");
 const ownerToken = ownerLogin.token;
 const driverLogin = await login("+77000000000", "123456");
 const driverToken = driverLogin.token;
 
 // --- unauthenticated application-scoped flow ---
-const suffix = String(Date.now()).slice(-8);
+const suffix = String(Date.now()).slice(-7);
 const application = await request("/api/admin/driver-applications", {
   method: "POST",
   body: {

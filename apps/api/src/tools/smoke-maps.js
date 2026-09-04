@@ -22,7 +22,18 @@ const diagnostics = await request("/api/maps/diagnostics");
 assert.ok(diagnostics.providers?.search, "diagnostics must report search provider");
 assert.ok(diagnostics.providers?.reverse, "diagnostics must report reverse provider");
 
-for (const query of ["Атакент", "Мырзакент", "Жетысай"]) {
+const regionsPayload = await request("/api/regions");
+const activeRegions = Array.isArray(regionsPayload.regions)
+  ? regionsPayload.regions.filter((region) => region?.isActive !== false)
+  : [];
+assert.ok(activeRegions.length > 0, "at least one active region must be available for address search");
+
+// Address quality is a product-wide promise, not a three-city sample.  Every
+// active service region must be able to resolve its own name through the same
+// public endpoint the passenger uses. This catches broken polygons, missing
+// imports and region/code mismatches before release.
+for (const region of activeRegions) {
+  const query = region.name;
   const results = await request(`/api/maps/search?q=${encodeURIComponent(query)}&region=${encodeURIComponent(query)}&limit=5`);
   assert.ok(Array.isArray(results), `search ${query} must return an array`);
   assert.ok(results.length > 0, `search ${query} must return at least one result`);
@@ -58,6 +69,7 @@ assert.ok(estimate.priceKzt > 0, "estimate must return backend price");
 console.log("Smoke maps ok", {
   api: API_URL,
   osrm: diagnostics.osrm?.status,
+  addressRegionsChecked: activeRegions.length,
   routeMeters: route.distanceMeters,
   priceKzt: estimate.priceKzt
 });

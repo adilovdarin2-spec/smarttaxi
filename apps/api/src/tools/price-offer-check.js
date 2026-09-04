@@ -30,17 +30,11 @@ assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer\/driver-respond", 
 assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer", requireAuth, requireRole\("DRIVER"\), rateLimit\(\{ prefix: "orders-price-offer", windowMs: 60_000, max: 20 \}\)/, "price-offer submit route must require DRIVER role and be rate limited 20/min");
 assert.match(ordersRoutes, /router\.post\("\/:id\/price-offer\/respond", requireAuth, requireRole\("CLIENT"\), rateLimit\(\{ prefix: "orders-price-offer-respond", windowMs: 60_000, max: 30 \}\)/, "price-offer respond route must require CLIENT role and be rate limited 30/min");
 
-// Known, deliberately-not-fixed risk (see SECURITY_CHECKLIST.md "New risk
-// areas" / commission bypass): the floor is a flat amount, not a percentage
-// of the order's estimated price, so a driver+client can negotiate the
-// official price down to almost nothing regardless of the real trip cost.
-// This assertion isn't a bug check — it pins the current (risky) behavior so
-// a silent change here (in either direction) gets noticed and cross-checked
-// against the checklist instead of drifting unnoticed.
 const bounds = offeredPriceBounds(50_000);
-assert.equal(bounds.minAllowed, 200, "offered price floor is currently a flat 200 KZT regardless of estimated price — known commission-bypass risk, see SECURITY_CHECKLIST.md");
-assert.equal(bounds.maxAllowed, 1_000_000, "offered price ceiling is currently a flat 1,000,000 KZT cap");
-assert.deepEqual(offeredPriceBounds(1), offeredPriceBounds(999_999), "offered price bounds must not vary with the estimated price (confirms the floor is not proportional)");
+assert.deepEqual(bounds, { minAllowed: 35_000, maxAllowed: 75_000 }, "a 50,000 KZT route may be negotiated only inside its proportional safety band");
+assert.deepEqual(offeredPriceBounds(700), { minAllowed: 500, maxAllowed: 1050 }, "the minimum tariff still has a practical 50 KZT stepper range");
+assert.deepEqual(offeredPriceBounds(1), { minAllowed: 200, maxAllowed: 200 }, "tiny or malformed estimates never create a below-floor offer");
+assert.notDeepEqual(offeredPriceBounds(1), offeredPriceBounds(999_999), "offer bounds must follow the server estimate, not remain flat");
 
 function createExecutor() {
   const state = {

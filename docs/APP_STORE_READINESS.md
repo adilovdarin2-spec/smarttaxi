@@ -57,15 +57,11 @@ keyAlias=upload
 storeFile=C:/secure/smarttaxi-upload.jks
 ```
 
-**Important (2026-07-15): a keystore already exists on this machine.**
-`apps/mobile/smarttaxi_app/android/key.properties` and
-`apps/mobile/smarttaxi_app/android/app/smarttaxi-upload.jks` are both
-present in the working tree (dated 2026-07-05), correctly git-ignored,
-and were not inspected further here (credential files aren't something
-to read/print). This is good — release builds can already be signed —
-but it also means **this keystore has no known backup outside this one
-machine**. See the human-actions doc: back it up immediately, this isn't
-something to defer.
+**Verified 2026-09-01:** a private upload keystore has been connected locally
+through git-ignored `android/key.properties`, and a signed release bundle was
+built successfully at `build/app/outputs/bundle/release/app-release.aab`.
+The key and properties remain untracked; the owner still needs independent
+secure backups and personal recovery verification before uploading to Play.
 
 Build AAB:
 
@@ -77,16 +73,13 @@ flutter build appbundle --release --dart-define=API_BASE_URL=https://api.smartta
 **QA note**: the `--dart-define=API_BASE_URL=...` flag above is
 required, not optional. If a release build is run without it,
 [app_config.dart](../apps/mobile/smarttaxi_app/lib/core/config/app_config.dart)
-falls back to `https://smarttaxi-api-production.up.railway.app` — a
-Railway backend, not `api.smarttaxi.kz`. As of this check, **`api.smarttaxi.kz`
-itself doesn't currently resolve** (see `DEPLOYMENT_VPS.md`) — the
-Railway URL is the only live backend right now. Don't submit a release
-build pointed at a domain that doesn't answer; either finish standing up
-`api.smarttaxi.kz` first, or deliberately release against the Railway URL
-until it's ready, but pick one on purpose rather than by omitted flag.
+falls back to `https://api.smarttaxi.kz`. As of this check, that domain still
+needs production DNS/deployment verification (see `DEPLOYMENT_VPS.md`). Do
+not submit a release build pointed at a domain that does not answer; pass the
+verified production endpoint explicitly and use the same value for
+`SOCKET_URL`.
 
-**Payment methods — a review-honesty note, not a blocker (updated
-2026-07-20, superseding the 2026-07-15 note below)**: `CASH` and `KASPI`
+**Payment methods — a review-honesty note:** `CASH` and `KASPI`
 are both settled directly between rider and driver outside the app
 (confirmed in
 [payment-provider.js](../apps/api/src/modules/payments/payment-provider.js) —
@@ -102,12 +95,11 @@ falls back to `MockKaspiPayProvider`, which fakes a `PROCESSING →
 PAID/FAILED` transition after ~4s with no real gateway behind it — same
 review-honesty concern as before: a reviewer or early tester could
 complete a fake "successful" card payment (not fraudulent, no real charge
-happens, but potentially confusing). The fix is the same either way:
-hide/disable `CARD` until the real credentials are set, or surface the
-mock's `note` field ("Kaspi Pay API is not connected yet...") in the UI so
-it's never silently indistinguishable from a real payment. No code change
-is needed to go live later — setting the 4 env vars is the entire
-cutover.
+happens, but potentially confusing). `CARD` is now hidden by default. It
+becomes available only in an explicit release build with
+`--dart-define=CARD_PAYMENTS_ENABLED=true`, after real merchant credentials
+and the webhook have been verified. This prevents a public passenger from
+seeing a test payment as a successful charge.
 
 Still needed before Play submission (code/config is not ready for these,
 none of them are code changes I made here):

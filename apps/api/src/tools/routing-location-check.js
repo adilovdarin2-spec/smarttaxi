@@ -14,11 +14,13 @@ const server = readFileSync(join(root, "server.js"), "utf8");
 const driversRoutes = readFileSync(join(root, "modules", "drivers", "drivers.routes.js"), "utf8");
 const routingRoutes = readFileSync(join(root, "modules", "routing", "routing.routes.js"), "utf8");
 const routingServiceText = readFileSync(join(root, "modules", "routing", "routing.service.js"), "utf8");
+const { serviceRegionCode } = await import("../modules/routing/region-geo.js");
 
 const {
   buildActiveLegRoute,
   buildDriverToPickupRoute,
   buildRoutePreview,
+  filterGazetteerRowsToServiceArea,
   resolveActiveLeg,
   reverseAddress,
   searchAddresses,
@@ -41,6 +43,29 @@ assert.match(server, /updateDriverLocation/, "socket driver location updates mus
 assert.match(routingServiceText, /ROUTE_UNAVAILABLE/, "routing provider failure must return ROUTE_UNAVAILABLE");
 assert.match(routingServiceText, /DRIVER_LOCATION_UNAVAILABLE/, "driver-to-pickup must handle missing driver location");
 assert.doesNotMatch(routingServiceText, /Math\.random\(\)/, "routing/location service must not fake routes or locations");
+assert.equal(serviceRegionCode(40.755628, 68.470029), "YNTYMAK", "a local Yntymak address must remain in its service region");
+assert.equal(serviceRegionCode(40.731408, 68.692265), null, "foreign harvest coordinates must never become rider-visible addresses");
+
+const myrzakentGazetteerRows = filterGazetteerRowsToServiceArea(
+  [
+    { label: "Школа №1, Мырзакент", lat: 40.657, lng: 68.553 },
+    // The circular harvest area reaches this Uzbek result, but the booking
+    // area starts north of 40.60 and it must never be offered to a rider.
+    { label: "13-maktab, Uzbekistan", lat: 40.542, lng: 68.401 }
+  ],
+  [{
+    id: "myrzakent",
+    name: "Мырзакент",
+    is_active: true,
+    boundary: [[68.45, 40.60], [68.65, 40.60], [68.65, 40.75], [68.45, 40.75], [68.45, 40.60]]
+  }],
+  "Мырзакент"
+);
+assert.deepEqual(
+  myrzakentGazetteerRows.map((row) => row.label),
+  ["Школа №1, Мырзакент"],
+  "gazetteer results must stay inside the selected service-area boundary"
+);
 
 function mockAddressFetch() {
   return async (url) => ({
@@ -72,11 +97,15 @@ const addressResults = await searchAddresses({ q: "Абая", limit: 3 }, mockAd
 // where "Magnum Shymkent" silently lost its real Shymkent result (see
 // regionAliases/regionCenterRule above). Both the curated local hint and
 // the real Nominatim result should come through when no region narrows it.
-assert.equal(addressResults.length, 2, "address search returns both local catalog and real provider results");
-assert.equal(addressResults[0].label, "ул. Абая, Атакент", "local launch catalog hint is still surfaced");
-assert.equal(addressResults[0].lat, 40.84803, "local launch catalog keeps its curated latitude");
-assert.equal(addressResults[1].label, "улица Абая, Шымкент", "genuine out-of-region provider result is not discarded");
-assert.equal(addressResults[1].lat, 42.316, "out-of-region provider result keeps its real latitude");
+assert.ok(addressResults.length >= 2, "address search returns both local catalog and real provider results");
+assert.ok(
+  addressResults.some((item) => item.source === "gazetteer"),
+  "a local street-level catalog result is still surfaced"
+);
+const providerAbai = addressResults.find((item) => item.source === "nominatim");
+assert.ok(providerAbai, "genuine out-of-region provider result is not discarded");
+assert.equal(providerAbai.label, "улица Абая, Шымкент", "out-of-region provider result keeps its real label");
+assert.equal(providerAbai.lat, 42.316, "out-of-region provider result keeps its real latitude");
 
 // Real providers can return the exact same street twice a few hundred
 // metres apart (different providers' own coordinate for the same real
@@ -113,13 +142,29 @@ assert.ok(
 );
 const reversed = await reverseAddress({ lat: 42.316, lng: 69.596 }, mockAddressFetch());
 assert.equal(reversed.city, "Шымкент", "reverse address returns city");
+const roadCodeReverse = await reverseAddress(
+  { lat: 40.7001, lng: 68.5201 },
+  async () => ({
+    ok: true,
+    async json() {
+      return {
+        lat: "40.7001",
+        lon: "68.5201",
+        display_name: "KZ-12, Мырзакент, Казахстан",
+        address: { road: "KZ-12", village: "Мырзакент" }
+      };
+    }
+  })
+);
+assert.equal(roadCodeReverse.title, "Адрес не определён", "road codes must never be presented as passenger addresses");
+assert.doesNotMatch(roadCodeReverse.label, /KZ[- ]?12/i, "technical road code is removed from reverse response");
 await assert.rejects(
   () => reverseAddress({ lat: 400, lng: 69.596 }, mockAddressFetch()),
   { code: "INVALID_COORDINATES" },
   "reverse address rejects invalid coordinates"
 );
 const weakReverse = await reverseAddress({ lat: 40.7001, lng: 68.5201 }, async () => ({ ok: false, async json() { return {}; } }));
-assert.equal(weakReverse.title, "Точка на карте", "reverse address falls back to map point when provider fails");
+assert.equal(weakReverse.title, "Адрес не определён", "reverse address never turns a failed lookup into a fake address");
 assert.equal(weakReverse.source, "fallback", "reverse fallback is explicitly marked");
 assert.equal(weakReverse.lat, 40.7001, "reverse fallback keeps exact selected latitude");
 
@@ -157,7 +202,7 @@ const tariff = {
   is_active: true
 };
 
-function mockFetch({ ok = true } = {}) {
+function mockFetch({ ok = true, route = {} } = {}) {
   return async () => ({
     ok,
     async json() {
@@ -166,7 +211,8 @@ function mockFetch({ ok = true } = {}) {
         routes: [{
           distance: 4200,
           duration: 720,
-          geometry: { type: "LineString", coordinates: [[69.1, 42.1], [69.2, 42.2]] }
+          geometry: { type: "LineString", coordinates: [[69.1, 42.1], [69.2, 42.2]] },
+          ...route
         }]
       };
     }
@@ -182,6 +228,7 @@ function createExecutor(overrides = {}) {
       { id: "driver-unapproved", user_id: "unapproved-user", current_region_id: "region-a", is_blocked: false, status: "FREE" }
     ],
     approvals: overrides.approvals || [{ driver_id: "driver-a", region_id: "region-a", status: "APPROVED" }],
+    intercityRoutes: overrides.intercityRoutes || [],
     locations: overrides.locations || [],
     orders: overrides.orders || [
       { id: "order-new", client_id: "client-a", driver_id: null, pickup_lat: 42.12, pickup_lng: 69.12, status: "NEW" },
@@ -195,6 +242,15 @@ function createExecutor(overrides = {}) {
     state,
     async query(sql, params = []) {
       if (/FROM regions\s+WHERE is_active=true/i.test(sql)) return { rows: state.regions.filter(region => region.is_active) };
+      if (/FROM intercity_routes ir/i.test(sql)) {
+        return {
+          rows: state.intercityRoutes.filter(route =>
+            route.origin_region_id === params[0] &&
+            route.destination_region_id === params[1] &&
+            route.is_active
+          )
+        };
+      }
       if (/SELECT \* FROM regions WHERE id=\$1/i.test(sql)) return { rows: state.regions.filter(region => region.id === params[0]) };
       if (/SELECT \* FROM tariffs WHERE id=\$1/i.test(sql)) return { rows: params[0] === tariff.id ? [tariff] : [] };
       if (/SELECT \* FROM drivers WHERE user_id=\$1/i.test(sql)) return { rows: state.drivers.filter(driver => driver.user_id === params[0]) };
@@ -217,7 +273,7 @@ function createExecutor(overrides = {}) {
         return { rows: [row] };
       }
       if (/UPDATE drivers SET lat=\$1, lng=\$2/i.test(sql)) return { rows: [] };
-      if (/SELECT id, status, distance_traveled_m\s+FROM orders\s+WHERE driver_id=\$1 AND status = ANY/i.test(sql)) {
+      if (/SELECT id, status, distance_traveled_m(?:, is_intercity)?\s+FROM orders\s+WHERE driver_id=\$1 AND status = ANY/i.test(sql)) {
         return {
           rows: state.orders
             .filter(order => order.driver_id === params[0] && params[1].includes(order.status))
@@ -270,13 +326,22 @@ await assert.rejects(
 );
 await assert.rejects(
   () => buildRoutePreview({ pickupLat: 42.1, pickupLng: 69.1, dropoffLat: 45.2, dropoffLng: 75.2 }, createExecutor(), mockFetch()),
-  { code: "INTERCITY_NOT_SUPPORTED" },
-  "intercity route preview fails"
+  { code: "INTERCITY_ROUTE_UNAVAILABLE" },
+  "intercity route preview rejects only when its direction is not enabled"
 );
 await assert.rejects(
   () => buildRoutePreview({ pickupLat: 42.1, pickupLng: 69.1, dropoffLat: 42.2, dropoffLng: 69.2 }, createExecutor(), mockFetch({ ok: false })),
   { code: "ROUTE_UNAVAILABLE" },
   "routing provider failure returns ROUTE_UNAVAILABLE"
+);
+await assert.rejects(
+  () => buildRoutePreview(
+    { pickupLat: 42.1, pickupLng: 69.1, dropoffLat: 42.2, dropoffLng: 69.2 },
+    createExecutor(),
+    mockFetch({ route: { geometry: { type: "Point", coordinates: [69.1, 42.1] } } })
+  ),
+  { code: "ROUTE_UNAVAILABLE" },
+  "malformed routing geometry cannot be priced or shown as a route"
 );
 
 await assert.rejects(

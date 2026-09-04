@@ -13,39 +13,33 @@ For what the *code* is and isn't ready for, see
 
 ---
 
-## 0. Most urgent — a keystore already exists, unbacked-up
+## 0. Most urgent — securely back up the Android upload key
 
-**Do this one first, before anything else on this list.**
+**Do this before submitting the first bundle to Play.**
 
-`apps/mobile/smarttaxi_app/android/key.properties` and
-`apps/mobile/smarttaxi_app/android/app/smarttaxi-upload.jks` already
-exist on this machine (dated 2026-07-05). They are correctly excluded
-from git (`.gitignore`), which is right — but that also means **this is
-currently the only copy**. If this machine's disk is lost, wiped, or this
-working directory is deleted, the signing key that Google Play uses to
-recognize "this is the same app" is gone permanently, and **no future
-update to the published app would ever be installable again** — Play
-does not allow re-signing with a different key for an existing listing.
+As verified on 2026-09-01, a private key has been connected locally and a
+signed `app-release.aab` was built. Both the keystore and `key.properties`
+remain git-ignored by design.
 
 Action:
-1. Copy both files to at least two independent secure locations you
+1. Confirm this is the dedicated SmartTaxi upload keystore rather than a
+   personal or unrelated app key.
+2. Copy both files to at least two independent secure locations you
    control personally — e.g. a password manager that supports file
    attachments (1Password, Bitwarden) *and* an encrypted offline backup
    (encrypted USB drive, hardware security key with storage, or a
    dedicated secrets vault). Do not email them to yourself or put them
    in a general-purpose cloud drive folder in plain form.
-2. Record the store password, key password, and key alias somewhere
+3. Record the store password, key password, and key alias somewhere
    durable and separate from the file itself (e.g. the password manager's
    notes field) — the file alone isn't useful without the passwords.
-3. Confirm you (personally) know these passwords, not just that they
+4. Confirm you (personally) know these passwords, not just that they
    exist in `key.properties` on this machine. If you don't already know
    them, treat this as unresolved until you've retrieved and verified
    them.
 
-This item exists because a keystore was apparently generated during
-earlier work on this machine, not because I'm asking you to generate a
-new one — verify what's there first before assuming you need to start
-over.
+Do not let an automated assistant invent or print the permanent key passwords;
+the business owner must control and recover them.
 
 ---
 
@@ -103,9 +97,9 @@ over.
 
 ## 4. Android release signing
 
-Covered in detail in §0 above (an existing keystore needs backing up
-immediately). For reference, this is what the keystore is used for going
-forward:
+Covered in detail in §0 above (the upload key is connected; its independent
+backup and owner recovery verification remain required). For reference, this
+is what the keystore is used for going forward:
 
 - Every future Play Store update must be signed with the **same**
   keystore. Losing it means the app can never be updated again under the

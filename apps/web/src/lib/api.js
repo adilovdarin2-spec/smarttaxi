@@ -8,7 +8,11 @@ export function getToken(){ return localStorage.getItem("smarttaxi_token") || ""
 export function setToken(token){ localStorage.setItem("smarttaxi_token", token); }
 export function clearToken(){ localStorage.removeItem("smarttaxi_token"); }
 export async function api(path, options = {}) {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  // The browser must set the multipart boundary itself. Keeping the JSON
+  // header here made every file upload look valid in the UI yet arrive at
+  // multer as an empty body.
+  const headers = { ...(isFormData ? {} : { "Content-Type": "application/json" }), ...(options.headers || {}) };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });

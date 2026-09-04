@@ -1,5 +1,5 @@
 import { AppError } from "../../common/errors.js";
-import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
 
 export const ORDER_STATUSES = [
   "SEARCHING_DRIVER",
@@ -177,6 +177,8 @@ export function publicOrderEvent(order) {
     id: order.id,
     short_id: order.short_id,
     region_id: order.region_id,
+    dropoff_region_id: order.dropoff_region_id || null,
+    is_intercity: Boolean(order.is_intercity),
     status: order.status,
     public_status: publicOrderStatus(order.status),
     search_timed_out: isOrderSearchTimedOut(order),
@@ -368,6 +370,19 @@ async function assertClientNotBlockedByDriver(clientId, driverId, executor) {
   if (blocked.rows[0]) throw new AppError("You have blocked this rider", 403, "CLIENT_BLOCKED_BY_DRIVER");
 }
 
+// Intercity orders return a driver to the destination city.  When the route
+// requires it (the default), acceptance is therefore allowed only after the
+// driver has been approved in that destination too.  This protects both the
+// rider and dispatch from an apparently available driver becoming illegal or
+// stranded the moment the trip is completed.
+export async function assertDriverCanServeOrder(driver, order, executor) {
+  if (!order?.is_intercity || !order.dropoff_region_id) return;
+  const requiresDestinationApproval = order.pricing_snapshot?.intercity?.requiresDestinationApproval !== false;
+  if (requiresDestinationApproval) {
+    await assertDriverRegionApproved(driver, order.dropoff_region_id, executor);
+  }
+}
+
 export async function acceptOrderForDriver({ orderId, userId, executor }) {
   const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [userId])).rows[0];
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
@@ -384,6 +399,7 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
   }
+  await assertDriverCanServeOrder(driver, existing, executor);
   if (existing.last_cancelled_by_driver_id === driver.id) {
     throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
   }
@@ -452,6 +468,7 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
   if (existing.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
   }
+  await assertDriverCanServeOrder(driver, existing, executor);
   if (existing.last_cancelled_by_driver_id === driver.id) {
     throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
   }
@@ -632,6 +649,7 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
 
   await assertDriverDispatchReady(driver, executor);
   await assertDriverHasNoActiveOrder(driver, executor);
+  await assertDriverCanServeOrder(driver, existing, executor);
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
   if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
@@ -750,6 +768,7 @@ export async function respondToClientCounterOffer({ orderId, driverUserId, accep
 
   await assertDriverDispatchReady(driver, executor);
   await assertDriverHasNoActiveOrder(driver, executor);
+  await assertDriverCanServeOrder(driver, existing, executor);
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
   if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {

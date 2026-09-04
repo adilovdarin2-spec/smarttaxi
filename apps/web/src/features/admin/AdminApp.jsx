@@ -302,6 +302,8 @@ function paymentMethodLabel(method) {
     KASPI: "Kaspi",
     KASPI_TRANSFER: "Kaspi перевод",
     CARD: "Картой",
+    CASHBACK: "Бонусами",
+    MIXED: "Бонусы + карта",
     UNKNOWN: "Требует проверки"
   }[method] || method || "—";
 }

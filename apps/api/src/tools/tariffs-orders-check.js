@@ -37,11 +37,14 @@ assert.match(schema, /status TEXT NOT NULL DEFAULT 'SEARCHING_DRIVER'/i, "new or
 assert.match(schema, /waiting_started_at TIMESTAMPTZ/i, "orders must store waiting start timestamp");
 assert.match(schema, /free_waiting_until TIMESTAMPTZ/i, "orders must store free waiting deadline");
 assert.match(schema, /CREATE TABLE IF NOT EXISTS payments/i, "schema must include payments foundation");
-assert.match(schema, /method TEXT NOT NULL CHECK \(method IN \('CASH','KASPI'\)\)/i, "payments must support Cash and Kaspi only");
+assert.match(schema, /method TEXT NOT NULL CHECK \(method IN \('CASH','KASPI','CARD','CASHBACK'\)\)/i, "payments must support cash, Kaspi, card, and cashback");
 assert.doesNotMatch(schema, /reject_reason/i, "Milestone 3 must not persist rejected order attempts");
 assert.match(schema, /idx_tariffs_region_id/i, "tariff region index must exist");
 assert.match(schema, /idx_tariffs_region_active/i, "tariff region active index must exist");
 assert.match(schema, /idx_orders_region_id/i, "order region index must exist");
+assert.match(schema, /CREATE TABLE IF NOT EXISTS intercity_routes/i, "schema must define explicit intercity routes");
+assert.match(schema, /dropoff_region_id UUID REFERENCES regions\(id\) ON DELETE RESTRICT/i, "orders must retain destination region");
+assert.match(schema, /is_intercity BOOLEAN NOT NULL DEFAULT false/i, "orders must retain intercity flag");
 
 assert.match(migrations, /ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions\(id\) ON DELETE CASCADE/i, "migration must add tariff region id");
 assert.match(migrations, /DROP CONSTRAINT IF EXISTS tariffs_name_key/i, "migration must remove global tariff name uniqueness");
@@ -57,6 +60,8 @@ assert.match(migrations, /ADD COLUMN IF NOT EXISTS pricing_snapshot JSONB/i, "mi
 assert.match(migrations, /CREATE TABLE IF NOT EXISTS payments/i, "migration must include payments foundation");
 assert.match(migrations, /UPDATE tariffs SET region_id=\(SELECT id FROM regions WHERE code='ATAKENT'\) WHERE region_id IS NULL/i, "migration must attach existing dev tariffs to Atakent");
 assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must upsert by region and name");
+assert.match(migrations, /CREATE TABLE IF NOT EXISTS intercity_routes/i, "migration must add intercity routes");
+assert.match(migrations, /idx_intercity_routes_origin_active/i, "migration must index active intercity routes");
 
 assert.match(ordersRoutes, /router\.post\("\/estimate"/, "estimate endpoint must exist");
 assert.match(tariffsRoutes, /router\.post\("\/estimate"/, "tariff estimate endpoint must exist");
@@ -160,7 +165,8 @@ function createExecutor() {
       { ...formulaTariff, id: "tariff-a-inactive", name: "Inactive", is_active: false },
       { ...formulaTariff, id: "tariff-b", region_id: "region-b", name: "Economy" }
     ],
-    orders: []
+    orders: [],
+    intercityRoutes: []
   };
 
   return {
@@ -168,6 +174,15 @@ function createExecutor() {
     async query(sql, params = []) {
       if (/FROM regions\s+WHERE is_active=true/i.test(sql)) {
         return { rows: state.regions.filter(region => region.is_active).sort((a, b) => a.name.localeCompare(b.name)) };
+      }
+      if (/FROM intercity_routes ir/i.test(sql)) {
+        return {
+          rows: state.intercityRoutes.filter(route =>
+            route.origin_region_id === params[0] &&
+            route.destination_region_id === params[1] &&
+            route.is_active
+          )
+        };
       }
       if (/SELECT \* FROM tariffs WHERE id=\$1/i.test(sql)) {
         return { rows: state.tariffs.filter(tariff => tariff.id === params[0]) };
@@ -239,9 +254,33 @@ await assert.rejects(
 
 await assert.rejects(
   () => prepareOrderPricing({ ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5 }, executor),
-  { code: "INTERCITY_NOT_SUPPORTED" },
-  "pickup/dropoff in different active regions rejects INTERCITY_NOT_SUPPORTED"
+  { code: "INTERCITY_ROUTE_UNAVAILABLE" },
+  "pickup/dropoff in different active regions rejects unless that direction is explicitly enabled"
 );
+
+executor.state.intercityRoutes.push({
+  id: "route-a-to-b",
+  origin_region_id: "region-a",
+  destination_region_id: "region-b",
+  is_active: true,
+  max_distance_km: 350,
+  max_duration_min: 720,
+  base_surcharge_kzt: 0,
+  price_per_km_override: 140,
+  min_price_override: 1800,
+  requires_destination_approval: true
+});
+const intercityPricing = await prepareOrderPricing({
+  ...baseInput,
+  dropoffLat: 2.5,
+  dropoffLng: 2.5,
+  distanceKm: 20,
+  durationMin: 30
+}, executor);
+assert.equal(intercityPricing.isIntercity, true, "enabled directional route creates an intercity estimate");
+assert.equal(intercityPricing.destinationRegionId, "region-b", "intercity estimate retains destination region");
+assert.equal(intercityPricing.estimatedPrice, 3800, "intercity estimate uses route kilometre pricing, not flat city fare");
+assert.equal(intercityPricing.pricingSnapshot.isIntercity, true, "order snapshot retains intercity state");
 
 const overlapExecutor = createExecutor();
 // A second region whose boundary also covers baseInput's pickup/dropoff

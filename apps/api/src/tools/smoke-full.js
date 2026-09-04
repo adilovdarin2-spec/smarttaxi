@@ -1,18 +1,19 @@
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const scripts = [
-  "smoke:health",
-  "smoke:maps",
-  "smoke:stage2",
-  "smoke:stage3",
-  "smoke:stage9"
+  "smoke-health.js",
+  "smoke-maps.js",
+  "stage2-smoke.js",
+  "stage3-client-flow-smoke.js",
+  "stage9-payment-rating-smoke.js",
+  "stage11-driver-core-smoke.js",
+  "driver-documents-smoke.js"
 ];
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-
 for (const script of scripts) {
-  console.log(`\n> npm run ${script}`);
-  const result = spawnSync(npm, ["run", script], {
+  console.log(`\n> node ${script}`);
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL(`./${script}`, import.meta.url))], {
     stdio: "inherit",
     shell: false,
     env: process.env

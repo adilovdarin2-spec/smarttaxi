@@ -22,6 +22,9 @@ dependencies:
   flutter_tts: ^4.2.0
   geolocator: ^13.0.2
   image_picker: ^1.1.2
+  # Keep the 3D MapLibre pilot on the last compatibility line for the
+  # current Java/Android toolchain; the modern line requires JDK 21.
+  maplibre_gl: 0.21.0
   file_picker: ^8.1.4
   latlong2: ^0.9.1
   path_provider: ^2.1.4
@@ -47,6 +50,7 @@ flutter:
     - assets/legal/
     - assets/cars/tariff_comfort_white_sedan_flutter.png
     - assets/cars/tariff_business_white_premium_sedan_flutter.png
+    - assets/cars/tariff_economy_white_sedan_flutter.png
     - assets/cars/tariff_v11_economy.png
     - assets/cars/tariff_v11_delivery.png
     - assets/icons/

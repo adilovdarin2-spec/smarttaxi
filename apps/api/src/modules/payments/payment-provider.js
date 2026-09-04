@@ -59,6 +59,14 @@ export class MockKaspiPayProvider {
 }
 
 function scheduleMockResolution(paymentId) {
+  // The production payments.id column is UUID.  A few isolated unit checks
+  // intentionally pass readable fake ids into the provider; scheduling an
+  // async SQL update for those test-only values used to emit a delayed
+  // Postgres error after an otherwise successful request.  Do not schedule
+  // work that cannot match the database contract in the first place.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(paymentId))) {
+    return;
+  }
   setTimeout(async () => {
     try {
       const outcome = Math.random() < MOCK_FAILURE_RATE

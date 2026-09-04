@@ -57,15 +57,31 @@ async function overpass(body) {
   throw lastError;
 }
 
-function bboxOf(region) {
-  const boundary = typeof region.boundary === "string"
+function boundaryOf(region) {
+  return typeof region.boundary === "string"
     ? JSON.parse(region.boundary)
     : region.boundary;
+}
+
+function bboxOf(region) {
+  const boundary = boundaryOf(region);
   // Boundary points are stored [lng, lat]; Overpass wants
   // south,west,north,east.
   const lats = boundary.map((point) => point[1]);
   const lngs = boundary.map((point) => point[0]);
   return `${Math.min(...lats)},${Math.min(...lngs)},${Math.max(...lats)},${Math.max(...lngs)}`;
+}
+
+function pointInPolygon(lat, lng, boundary) {
+  let inside = false;
+  for (let index = 0, previous = boundary.length - 1; index < boundary.length; previous = index++) {
+    const [x, y] = boundary[index];
+    const [previousX, previousY] = boundary[previous];
+    const crosses = (y > lat) !== (previousY > lat)
+      && lng < ((previousX - x) * (lat - y)) / (previousY - y) + x;
+    if (crosses) inside = !inside;
+  }
+  return inside;
 }
 
 // Four element classes, ordered by how likely a rider is to want them.
@@ -116,6 +132,7 @@ function coordsOf(element) {
 
 export async function importRegion(region) {
   const bbox = bboxOf(region);
+  const boundary = boundaryOf(region);
   let written = 0;
   for (const { kind, body } of queriesFor(bbox)) {
     let payload;
@@ -135,6 +152,10 @@ export async function importRegion(region) {
       if (!label) continue;
       const [lat, lng] = coordsOf(element);
       if (lat == null || lng == null) continue;
+      // Overpass receives a rectangle; do not import a place merely because
+      // it sits in that rectangle. Rider-visible data must be inside the
+      // region polygon selected by operations.
+      if (!pointInPolygon(lat, lng, boundary)) continue;
       await query(
         `INSERT INTO addresses(region_id, kind, label, street, housenumber, name, lat, lng, osm_type, osm_id)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
