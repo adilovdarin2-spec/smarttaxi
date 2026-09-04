@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttaxi_app/core/config/app_config.dart';
 
-String _read(String path) => File(path).readAsStringSync();
+String _read(String path) =>
+    File(path).readAsStringSync().replaceAll('\r\n', '\n');
 
 Iterable<File> _dartFiles(String root) {
   return Directory(root)
@@ -70,6 +71,10 @@ void main() {
       pubspec,
       contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
     );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+    );
     expect(pubspec, contains('assets/map/driver_car_topview_white.png'));
     expect(pubspec, contains('assets/map/marker_my_location_2026.png'));
     expect(pubspec, contains('assets/map/marker_destination_2026.png'));
@@ -88,10 +93,15 @@ void main() {
 
     expect(main, contains('AppSession.splash'));
     expect(main, contains('AppSession.auth'));
+    // This is a source-level guard for the auth flow, not a formatter test:
+    // dart format may legitimately wrap the conditional expression across
+    // lines. Keep accepting whitespace while requiring both branches and
+    // their exact login/register semantics.
     expect(
       main,
-      contains(
-          'final title = _registerMode ? l10n.createPasswordTitle : l10n.authWelcomeTitle'),
+      contains(RegExp(
+        r'final\s+title\s*=\s*_registerMode\s*\?\s*l10n\.createPasswordTitle\s*:\s*l10n\.authWelcomeTitle',
+      )),
     );
     expect(main, contains('l10n.authWelcomeSubtitle'));
     expect(authArb, contains('"authWelcomeTitle": "Вход и регистрация"'));
@@ -167,7 +177,8 @@ void main() {
       expect(passenger, contains('FlutterMap'));
       expect(passenger, contains('_OrderSheet'));
       expect(passenger, contains('_MapOverlayHeader'));
-      expect(passenger, contains('_UnifiedMapHeader'));
+      expect(passenger, contains('_CompactMapHeader'));
+      expect(passenger, contains('_MapRoundButton'));
       expect(passenger, contains('_SheetAddressEntryCard'));
       expect(passenger, isNot(contains('_FloatingAddressCard')));
       expect(passenger, contains('_MapPermissionCard'));
@@ -187,6 +198,9 @@ void main() {
       expect(passenger, contains('l10n.passengerPickPointOnMapButton'));
       expect(passenger, contains('l10n.passengerCtaPickDropoff'));
       expect(passenger, contains('l10n.passengerHomeWhereToTitle'));
+      expect(passenger, contains('l10n.passengerHomeGreeting'));
+      expect(passenger, contains('_QuickAddressChoices'));
+      expect(passenger, contains('l10n.passengerQuickFavorites'));
       expect(passenger, contains('l10n.passengerChooseDropoffLabel'));
       expect(
         passenger,
@@ -211,6 +225,12 @@ void main() {
       expect(passenger, isNot(contains('Координаты выбраны')));
       expect(passenger, contains('l10n.tariffLabel'));
       expect(passenger, contains('_TariffSection'));
+      // The active passenger flow has two bookable tariffs. They are a
+      // paired, compact decision so price, payment and CTA do not fall below
+      // the first viewport on a normal phone.
+      expect(passenger, contains('compact: true'));
+      expect(passenger, contains('_CompactPriceAdjuster'));
+      expect(passenger, contains('_CompactPriceStepButton'));
       // Tariff class titles were localized (tariff*Title arb keys) instead
       // of hardcoded Russian literals matched against the backend name.
       expect(passenger, contains('_TariffVisualClass'));
@@ -220,7 +240,11 @@ void main() {
       expect(passenger, contains('tariffDeliveryTitle'));
       expect(
         passenger,
-        contains('assets/cars/tariff_v11_economy.png'),
+        contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+      );
+      expect(
+        passenger,
+        contains('assets/icons/delivery_van_illustration.svg'),
       );
       expect(
         passenger,
@@ -251,10 +275,13 @@ void main() {
     expect(main, contains('_RuntimeFallbackScreen'));
     expect(main, contains('_RuntimeFallbackLogo'));
     expect(main, contains('l10n.runtimeFallbackAction'));
-    expect(authArb, contains('"runtimeFallbackAction": "Вернуться на главную"'));
+    expect(
+        authArb, contains('"runtimeFallbackAction": "Вернуться на главную"'));
     expect(main, contains('AppSession.passenger => PassengerShell'));
     expect(main, contains('if (!mounted) return;'));
     expect(main, contains('setState(() => _session = AppSession.passenger)'));
+    expect(main, contains('_sessionBootstrapNetworkBudget'));
+    expect(main, contains('error is TimeoutException'));
     expect(passenger, contains('PassengerTab _tab = PassengerTab.home'));
     expect(passenger, isNot(contains('bool _mapReady = false')));
     expect(passenger, contains('final showMapFallback = mapUnavailable'));
@@ -275,8 +302,8 @@ void main() {
     expect(passenger, contains('showMapFallback'));
     expect(passenger, contains('mapUnavailable'));
     expect(passenger, contains('errorTileCallback'));
-    expect(passenger,
-        contains('backgroundColor: context.palette.appBackground'));
+    expect(
+        passenger, contains('backgroundColor: context.palette.appBackground'));
     expect(passenger, isNot(contains('IndexedStack(')));
   });
 
@@ -331,19 +358,29 @@ void main() {
     expect(passenger, contains('CameraFit.coordinates'));
     expect(passenger, contains('if (route.isNotEmpty)'));
     expect(passenger, contains('PolylineLayer'));
-    expect(passenger, contains('assets/map/marker_my_location_2026.png'));
-    expect(passenger, contains('assets/map/marker_destination_2026.png'));
+    expect(passenger, contains('_CurrentLocationMapMarker'));
+    expect(passenger, contains('_FinishFlagMapMarker'));
     expect(passenger, contains('assets/map/driver_car_topview_white.png'));
-    // navigation_button_gold_white.png (an image-based recenter/nav button)
-    // isn't referenced anywhere under lib/ anymore -- the map chrome moved to
-    // icon-only controls (Icons.my_location_rounded / _UnifiedMapHeader,
-    // already covered elsewhere in this file).
+    // The old image-based recenter/nav button asset is gone -- the map
+    // chrome moved to icon-only controls (Icons.my_location_rounded /
+    // _UnifiedMapHeader, already covered elsewhere in this file).
     expect(passenger, contains('_driverPickupRoute'));
     expect(passenger, contains('_driverRouteError'));
     expect(passenger, contains('l10n.routeErrorDriverRouteUnavailable'));
     expect(
       passenger,
       contains('l10n.driverPickupMetaText(label, distance, minutes)'),
+    );
+    // The passenger has to be told when that minute figure came from
+    // straightLineRouteFallback() rather than from OSRM, the same way the
+    // driver already is via liveRouteMeta(). It is the passenger who decides
+    // whether to keep waiting.
+    expect(
+      passenger,
+      contains("""
+  return route.isFallback
+      ? '\$text · \${l10n.driverRouteFallbackNotice}'
+      : text;"""),
     );
     expect(
       passenger,
@@ -430,7 +467,8 @@ void main() {
     // now lives in app_ru.arb rather than passenger_shell.dart's source.
     expect(passenger, contains('l10n.passengerSettingsInterfaceGroup'));
     expect(ruArb, contains('"passengerSettingsInterfaceGroup": "Интерфейс"'));
-    expect(ruArb, contains('"passengerDrawerRecurringBookings": "Регулярные поездки"'));
+    expect(ruArb,
+        contains('"passengerDrawerRecurringBookings": "Регулярные поездки"'));
     // The old standalone "Уведомления о статусе" toggle was replaced by a
     // real OS-permission-backed row (FirebaseMessaging.getNotificationSettings).
     expect(passenger, contains('l10n.passengerSettingsPushLabel'));
@@ -456,9 +494,26 @@ void main() {
     // Profile screen groups were consolidated from 3 (Основное/Приложение/
     // Аккаунт) down to 2 in the later redesign -- "Приложение" no longer
     // exists as its own group.
-    expect(passenger, contains('_ProfileGroupLabel(l10n.passengerQuickActionsGroup)'));
-    expect(passenger, contains('_ProfileGroupLabel(l10n.passengerAccountGroup)'));
+    expect(passenger,
+        contains('_ProfileGroupLabel(l10n.passengerQuickActionsGroup)'));
+    expect(
+        passenger, contains('_ProfileGroupLabel(l10n.passengerAccountGroup)'));
     expect(passenger, contains('action: l10n.passengerGoHomeAction'));
+  });
+
+  test('address search keeps results clear of the map action', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    // A typed address query must show its search results first. The map-point
+    // action remains available before searching and when the catalogue has no
+    // match, but it must not cover an otherwise selectable address.
+    expect(passenger, contains('final showMapPointChoice ='));
+    expect(passenger,
+        contains('!hasTypedQuery || (!_loading && _results.isEmpty)'));
+    expect(passenger, contains('if (showMapPointChoice)'));
+    // Region choices may be numerous for an intercity destination, so they
+    // must remain horizontally reachable rather than wrapping out of view.
+    expect(passenger, contains('scrollDirection: Axis.horizontal'));
   });
 
   test('driver entry is not a public top role switch', () {
@@ -492,6 +547,28 @@ void main() {
     expect(passenger, contains('passengerDrawerBecomeDriver'));
     expect(passenger, contains('onOpenDriverMode'));
     expect(passenger, contains('_SmartDrawer'));
+  });
+
+  test('3D buildings stay under the style label layers on both maps', () {
+    // The driver map passed no anchor at all, so MapLibre put the extrusion
+    // above every style layer and it drew houses over the street names on the
+    // navigation screen. The passenger map hardcoded one style's layer id,
+    // which throws on any other style and was swallowed by the surrounding
+    // catch, losing the buildings entirely.
+    for (final path in [
+      'lib/features/driver/driver_shell.dart',
+      'lib/features/passenger/passenger_shell.dart',
+    ]) {
+      final source = _read(path);
+      expect(source, contains('resolveLabelAnchorLayerId(controller)'));
+      expect(source, contains('belowLayerId: anchorLayerId'));
+      expect(source, isNot(contains("belowLayerId: 'road_one_way_arrow'")));
+    }
+    // The shared resolver keeps the deployed style's QA'd anchor first and
+    // only then falls back to the lowest label layer.
+    final helper = _read('lib/core/utils/map_layers.dart');
+    expect(helper, contains("const preferred = 'road_one_way_arrow'"));
+    expect(helper, contains('await controller.getLayerIds()'));
   });
 
   test('driver drawer keeps driver tabs and adds account/support sections', () {
@@ -598,9 +675,12 @@ void main() {
     expect(arb, contains('"driverLineRegionSectionTitle": "Рабочий регион"'));
     expect(driver, contains('Выйти на линию'));
     expect(lineWidgets, contains('driverGoOfflineButton'));
-    expect(arb,
-        contains('"driverLocationRequiredError": "Для работы на линии нужна геолокация"'));
-    expect(arb, contains('"driverLocationChecking": "Проверяем геолокацию..."'));
+    expect(
+        arb,
+        contains(
+            '"driverLocationRequiredError": "Для работы на линии нужна геолокация"'));
+    expect(
+        arb, contains('"driverLocationChecking": "Проверяем геолокацию..."'));
     expect(arb, contains('"driverLocationActive": "Геолокация активна"'));
     expect(
       arb,
@@ -615,8 +695,10 @@ void main() {
       driver,
       contains('driverNoRegionsMessage'),
     );
-    expect(arb,
-        contains('"driverOrdersGoOnlineText": "После выхода на линию заказы появятся здесь."'));
+    expect(
+        arb,
+        contains(
+            '"driverOrdersGoOnlineText": "После выхода на линию заказы появятся здесь."'));
     expect(
       arb,
       contains(
@@ -716,6 +798,12 @@ void main() {
     expect(driver, contains('_RoadAlertMap'));
     expect(driver, contains('FlutterMap'));
     expect(driver, contains('MarkerLayer'));
+    // Opening the full-screen navigator before going online must explain a
+    // denied/unavailable location permission instead of leaving a perpetual
+    // GPS-searching banner over the map.
+    expect(driver, contains('_gpsStatusMessage'));
+    expect(driver, contains('driverAllowLocationOrPickOnMap'));
+    expect(driver, contains('InlineMessage(text: _gpsStatusMessage!)'));
     expect(driver, contains("label: const Text('GPS')"));
     expect(driver, contains('driverConfirmAlertButton'));
     expect(driver, contains('driverAlertHiddenFromList'));

@@ -249,6 +249,10 @@
   "passengerPromoHowToApplyText": "Осы тексеруден өткен промокодты тариф таңдау қадамында тағы да енгізу керек болады — сонда жеңілдік нақты сапарыңыздың соңғы бағасын бірден қайта есептейді.",
   "passengerHomeWhereToTitle": "Қайда барамыз?",
   "passengerHomeWhereToSubtitle": "Алу нүктесі мен межелі мекенжайды таңдаңыз",
+  "passengerHomeGreeting": "Сәлеметсіз бе!",
+  "passengerQuickHome": "Үй",
+  "passengerQuickWork": "Жұмыс",
+  "passengerQuickFavorites": "Таңдаулылар",
   "passengerHomeSetDestination": "Қайда екенін көрсету",
   "passengerHomeRouteIssueTitle": "Маршрутты нақтылаңыз",
   "passengerHomeRouteIssueText": "Маршрутты құру мүмкін болмады. Мекенжайды өзгертіңіз немесе картадан нүктені таңдаңыз.",
@@ -1699,5 +1703,6 @@
   "roadAlertShortPedestrianCrossing": "ЖЖ",
   "driverRegionsLoadFailedTitle": "Аймақтарды жүктеу мүмкін болмады",
   "driverRegionsLoadFailedMessage": "Байланысты тексеріп, жаңарту үшін экранды төмен қарай тартыңыз. Аймақтарға қолжетімдігіңіз сақталған.",
-  "driverRegionsRetryAction": "Жаңарту"
+  "driverRegionsRetryAction": "Жаңарту",
+  "authTagline": "ҚАЛАЛЫҚ ТАКСИ"
 }

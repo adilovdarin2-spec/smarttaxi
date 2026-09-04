@@ -15,6 +15,7 @@ import 'core/legal/legal_content.dart';
 import 'core/push/push_service.dart';
 import 'core/sockets/socket_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/active_locale.dart';
 import 'core/widgets/brand_logo.dart';
 import 'core/widgets/exit_on_double_back.dart';
 import 'features/driver/driver_shell.dart';
@@ -102,6 +103,12 @@ class SmartTaxiApp extends StatefulWidget {
 }
 
 class _SmartTaxiAppState extends State<SmartTaxiApp> {
+  // Opening the map must never be held hostage by a slow profile response.
+  // The cached session is already protected by secure storage and every
+  // normal API call still validates the token server-side. This is only a
+  // startup responsiveness budget, not a relaxed authentication rule.
+  static const _sessionBootstrapNetworkBudget = Duration(seconds: 2);
+
   AppSession _session = AppSession.splash;
   String _accountLabel = '';
   String _accountPhone = '';
@@ -259,7 +266,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       return;
     }
     try {
-      final me = await widget.api.me();
+      final me = await widget.api.me().timeout(_sessionBootstrapNetworkBudget);
       await _saveUserFromPayload(me);
       final savedMode = await widget.authStore.readMode();
       if (!mounted) return;
@@ -280,14 +287,15 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       // proof the token is invalid — only a real response from the server
       // (e.g. 401) is. Wiping a valid session here meant a flaky network
       // at exactly the wrong moment logged the user out for no reason.
-      final isConnectivityFailure = error is DioException &&
-          error.response == null &&
-          const {
-            DioExceptionType.connectionTimeout,
-            DioExceptionType.sendTimeout,
-            DioExceptionType.receiveTimeout,
-            DioExceptionType.connectionError,
-          }.contains(error.type);
+      final isConnectivityFailure = error is TimeoutException ||
+          (error is DioException &&
+              error.response == null &&
+              const {
+                DioExceptionType.connectionTimeout,
+                DioExceptionType.sendTimeout,
+                DioExceptionType.receiveTimeout,
+                DioExceptionType.connectionError,
+              }.contains(error.type));
       if (isConnectivityFailure) {
         // me() never answered, so there's no fresh payload to save — fall
         // back to whatever account details were cached from the last
@@ -400,6 +408,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           accountId: _accountId,
           onLogout: _logout,
           onOpenDriverMode: _openDriverMode,
+          onRequestNotifications: _pushService.requestPermission,
           currentLocale: _locale,
           onChangeLocale: setLocale,
           themeMode: _themeMode,
@@ -413,6 +422,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           accountLabel: _accountLabel,
           onLogout: _logout,
           onOpenPassengerMode: _openPassengerMode,
+          onRequestNotifications: _pushService.requestPermission,
           currentLocale: _locale,
           onChangeLocale: setLocale,
           themeMode: _themeMode,
@@ -454,9 +464,8 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           screen,
           if (_offline && _session != AppSession.splash)
             _OfflineOverlay(
-              onRetry: () => Connectivity()
-                  .checkConnectivity()
-                  .then(_applyConnectivity),
+              onRetry: () =>
+                  Connectivity().checkConnectivity().then(_applyConnectivity),
             ),
           // Hard update gate — takes over the whole screen, no dismiss, no
           // way to reach the app underneath. Only for updateRequired (below
@@ -499,25 +508,125 @@ class _AuthBackdrop extends StatelessWidget {
     // or visible stretching, cropping evenly from whichever edge is
     // relatively longer instead of skewing the image.
     return Positioned.fill(
-      child: Image.asset(
-        'assets/auth/auth_background_2026.png',
-        fit: BoxFit.cover,
-        alignment: Alignment.topCenter,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (_, __, ___) => const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [SmartTaxiColors.gold, SmartTaxiColors.goldDeep],
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/auth/auth_background_2026.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (_, __, ___) => const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [SmartTaxiColors.brand, SmartTaxiColors.brandDeep],
+                ),
+              ),
             ),
           ),
-        ),
+          // The wordmark and its tagline used to be painted into the PNG.
+          // That made the tagline permanently Russian: this is the first
+          // screen the app ever shows, and on a Kazakh device every other
+          // word on it was Kazakh while "ГОРОДСКОЕ ТАКСИ" sat under the logo
+          // in Russian, with no string for a translator to reach. The app
+          // ships ru/kk/uz/zh, so three of its four audiences saw it.
+          //
+          // Drawing it here also fixes a second, quieter problem: the image
+          // is BoxFit.cover, so the baked text drifted off-centre on any
+          // aspect ratio other than the 1080x1920 it was authored at.
+          //
+          // 0.19 of the height is where the baked wordmark sat on the
+          // reference device, so the layout is unchanged where it was right.
+          const _AuthWordmark(),
+        ],
       ),
     );
   }
 }
 
+/// "SmartTaxi" plus the localised tagline, over the auth backdrop.
+///
+/// The two weights inside the wordmark are the supplied lockup: "Smart" solid
+/// white and bold, "Taxi" the same size in a lighter weight and slightly
+/// dimmed. Reproducing it as text rather than shipping a second PNG keeps it
+/// crisp at every density and lets the tagline under it be translated.
+class _AuthWordmark extends StatelessWidget {
+  const _AuthWordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final size = MediaQuery.sizeOf(context);
+    // 19% of the screen height is exactly where the baked wordmark used to
+    // land: the artwork put it at y=366 of 1920, and the image is drawn
+    // BoxFit.cover anchored topCenter, so on any taller-than-9:16 screen it
+    // scaled to the height and 366/1920 stayed 19%. Measured against the
+    // pre-change build on a Pixel 7a: 19.1%.
+    //
+    // Deliberately MediaQuery and not a LayoutBuilder — the first attempt
+    // read constraints.maxHeight inside the backdrop's Stack and got a box
+    // far shorter than the screen, which put the lockup at 0.7% of the
+    // height, on top of the status bar.
+    final scale = _isCompactAuthViewport(context) ? 0.86 : 1.0;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.only(top: size.height * 0.19),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Smart',
+                    style: TextStyle(
+                      fontSize: 44 * scale,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                      height: 1.05,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'Taxi',
+                    style: TextStyle(
+                      fontSize: 44 * scale,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white.withValues(alpha: 0.92),
+                      letterSpacing: -0.5,
+                      height: 1.05,
+                    ),
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 14 * scale),
+            Container(
+              width: 64 * scale,
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.55),
+            ),
+            SizedBox(height: 12 * scale),
+            Text(
+              l10n.authTagline,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13 * scale,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.86),
+                letterSpacing: 2.4 * scale,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _PhotoAuthBackButton extends StatelessWidget {
   const _PhotoAuthBackButton({required this.onTap});
@@ -558,7 +667,7 @@ class _PhotoAuthLanguageToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final currentCode = currentLocale?.languageCode ?? 'ru';
+    final currentCode = activeLanguageCode(context, currentLocale);
     final options = <MapEntry<String, String>>[
       MapEntry('ru', l10n.languageRussian),
       MapEntry('kk', l10n.languageKazakh),
@@ -1098,7 +1207,7 @@ class _PhotoSmsCodeBox extends StatelessWidget {
               color: hasError
                   ? const Color(0xffffd4d4)
                   : active
-                      ? SmartTaxiColors.gold
+                      ? SmartTaxiColors.brand
                       : SmartTaxiColors.authBorder,
               width: active || hasError ? 1.45 : 1.05,
             ),
@@ -1114,7 +1223,7 @@ class _PhotoSmsCodeBox extends StatelessWidget {
                 : active
                     ? [
                         BoxShadow(
-                          color: SmartTaxiColors.gold.withValues(alpha: 0.24),
+                          color: SmartTaxiColors.brand.withValues(alpha: 0.24),
                           blurRadius: 18,
                           spreadRadius: -5,
                           offset: const Offset(0, 8),
@@ -1229,15 +1338,13 @@ class _PhotoSmsResendRow extends StatelessWidget {
             children: [
               Icon(
                 Icons.schedule_rounded,
-                color: SmartTaxiColors.gold,
+                color: SmartTaxiColors.brand,
                 size: compact ? 18 : 21,
               ),
               SizedBox(width: compact ? 8 : 10),
               Flexible(
                 child: Text(
-                  canResend
-                      ? l10n.smsResendCode
-                      : l10n.smsResendCountdown,
+                  canResend ? l10n.smsResendCode : l10n.smsResendCountdown,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: SmartTaxiColors.authMuted,
@@ -1252,7 +1359,7 @@ class _PhotoSmsResendRow extends StatelessWidget {
                 Text(
                   countdownLabel,
                   style: TextStyle(
-                    color: SmartTaxiColors.gold,
+                    color: SmartTaxiColors.brand,
                     fontSize: compact ? 13.8 : 15.8,
                     height: 1.2,
                     fontWeight: FontWeight.w900,
@@ -1320,7 +1427,7 @@ class _BrandLoaderState extends State<_BrandLoader>
                     width: dotSize,
                     height: dotSize,
                     decoration: const BoxDecoration(
-                      color: SmartTaxiColors.gold,
+                      color: SmartTaxiColors.brand,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1356,12 +1463,12 @@ class _OfflineOverlay extends StatelessWidget {
                   height: 84,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldPale,
+                    color: SmartTaxiColors.brandPale,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.wifi_off_rounded,
-                    color: SmartTaxiColors.goldDeep,
+                    color: SmartTaxiColors.brandDeep,
                     size: 40,
                   ),
                 ),
@@ -1433,12 +1540,12 @@ class _UpdateRequiredScreen extends StatelessWidget {
                     height: 84,
                     alignment: Alignment.center,
                     decoration: const BoxDecoration(
-                      color: SmartTaxiColors.goldPale,
+                      color: SmartTaxiColors.brandPale,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.system_update_rounded,
-                      color: SmartTaxiColors.goldDeep,
+                      color: SmartTaxiColors.brandDeep,
                       size: 40,
                     ),
                   ),
@@ -1506,7 +1613,7 @@ class _UpdateAvailableSheet extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(
-            color: SmartTaxiColors.gold.withValues(alpha: 0.32),
+            color: SmartTaxiColors.brand.withValues(alpha: 0.32),
           ),
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
@@ -1528,12 +1635,12 @@ class _UpdateAvailableSheet extends StatelessWidget {
                   height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: SmartTaxiColors.goldPale,
+                    color: SmartTaxiColors.brandPale,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Icon(
                     Icons.system_update_rounded,
-                    color: SmartTaxiColors.goldDeep,
+                    color: SmartTaxiColors.brandDeep,
                     size: 24,
                   ),
                 ),
@@ -1652,9 +1759,9 @@ class _RuntimeFallbackLogo extends StatelessWidget {
       width: 88,
       height: 88,
       decoration: BoxDecoration(
-        color: SmartTaxiColors.gold,
+        color: SmartTaxiColors.brand,
         shape: BoxShape.circle,
-        border: Border.all(color: SmartTaxiColors.goldDeep, width: 6),
+        border: Border.all(color: SmartTaxiColors.brandDeep, width: 6),
       ),
       child: const Icon(
         Icons.near_me_rounded,
@@ -1679,7 +1786,8 @@ class _ButtonLoader extends StatelessWidget {
         const SizedBox(
           width: 18,
           height: 18,
-          child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+          child:
+              CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
         ),
         const SizedBox(width: 10),
         Text(
@@ -1701,7 +1809,8 @@ class _ButtonLoader extends StatelessWidget {
 /// short drop-in from above, instead of the flat cross-fade AnimatedSwitcher
 /// uses by default. Keeping this in one place means every step (phone, SMS,
 /// password, new-password) presents feedback the same, deliberate way.
-Widget _authFeedbackTransitionBuilder(Widget child, Animation<double> animation) {
+Widget _authFeedbackTransitionBuilder(
+    Widget child, Animation<double> animation) {
   final offset = Tween<Offset>(
     begin: const Offset(0, -0.12),
     end: Offset.zero,
@@ -1730,7 +1839,7 @@ class _SplashScreen extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [
               Colors.white,
-              SmartTaxiColors.goldSurface,
+              SmartTaxiColors.brandSurface,
             ],
           ),
         ),
@@ -1773,10 +1882,8 @@ class _SplashContent extends StatelessWidget {
           // anchored a fixed distance *below* that fixed point instead of
           // living inside a mainAxisAlignment.center Column, so adding the
           // tagline/loader/label never shifts the logo itself.
-          final belowLogoTop =
-              constraints.maxHeight / 2 + _logoSize / 2 + 14;
-          final aboveLogoBottom =
-              constraints.maxHeight / 2 - _logoSize / 2;
+          final belowLogoTop = constraints.maxHeight / 2 + _logoSize / 2 + 14;
+          final aboveLogoBottom = constraints.maxHeight / 2 - _logoSize / 2;
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -1792,8 +1899,8 @@ class _SplashContent extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        SmartTaxiColors.gold.withValues(alpha: 0.16),
-                        SmartTaxiColors.gold.withValues(alpha: 0.0),
+                        SmartTaxiColors.brand.withValues(alpha: 0.16),
+                        SmartTaxiColors.brand.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -1808,7 +1915,7 @@ class _SplashContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(58),
                     boxShadow: [
                       BoxShadow(
-                        color: SmartTaxiColors.goldDeep.withValues(alpha: 0.22),
+                        color: SmartTaxiColors.brandDeep.withValues(alpha: 0.22),
                         blurRadius: 48,
                         offset: const Offset(0, 22),
                       ),
@@ -1828,14 +1935,14 @@ class _SplashContent extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      color: SmartTaxiColors.goldSurface,
+                      color: SmartTaxiColors.brandSurface,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       l10n.appTagline,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: SmartTaxiColors.goldDeep,
+                        color: SmartTaxiColors.brandDeep,
                         fontSize: 12,
                         height: 1.2,
                         fontWeight: FontWeight.w800,
@@ -2153,7 +2260,8 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
     // Kazakhstan mobile numbers only — the SMS provider can't deliver
     // outside Kazakhstan, and the backend rejects anything else anyway, so
     // catch it here before a network round-trip.
-    if (!RegExp(r'^\+77\d{9}$').hasMatch(_normalizePhone(_phoneController.text))) {
+    if (!RegExp(r'^\+77\d{9}$')
+        .hasMatch(_normalizePhone(_phoneController.text))) {
       return _AuthMessageKind.validateCorrectPhone;
     }
     if (!_phoneChecked &&
@@ -2195,7 +2303,8 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
   // Shared by registration and password-reset: both flows are creating a
   // fresh password, so both get the same strength rule. Login keeps the
   // lighter check above since it's just authenticating an existing account.
-  _AuthMessageKind? _newPasswordValidationError(String password, String repeat) {
+  _AuthMessageKind? _newPasswordValidationError(
+      String password, String repeat) {
     if (password.isEmpty) return _AuthMessageKind.validateEnterNewPassword;
     if (password.length < 8) {
       return _AuthMessageKind.passwordHintMinChars;
@@ -2391,8 +2500,11 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
     // back action to the same handler so it doesn't just exit the app. On
     // the true root (phone entry) offer a double-back-to-exit instead of
     // quitting on a single accidental press.
-    final canStepBack =
-        _registerMode || _phoneChecked || _smsStep || _resetSmsStep || _resetPasswordStep;
+    final canStepBack = _registerMode ||
+        _phoneChecked ||
+        _smsStep ||
+        _resetSmsStep ||
+        _resetPasswordStep;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -2426,12 +2538,14 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
         .toDouble();
     final l10n = AppLocalizations.of(context);
     final fieldGap = compact || _registerMode ? 8.0 : 12.0;
-    final title = _registerMode ? l10n.createPasswordTitle : l10n.authWelcomeTitle;
-    final subtitle = _registerMode
-        ? l10n.createPasswordSubtitle
-        : l10n.authWelcomeSubtitle;
-    final buttonLabel = _registerMode ? l10n.createAccountButton : l10n.continueLabel;
-    final loadingLabel = _registerMode ? l10n.creatingLabel : l10n.authCheckingLabel;
+    final title =
+        _registerMode ? l10n.createPasswordTitle : l10n.authWelcomeTitle;
+    final subtitle =
+        _registerMode ? l10n.createPasswordSubtitle : l10n.authWelcomeSubtitle;
+    final buttonLabel =
+        _registerMode ? l10n.createAccountButton : l10n.continueLabel;
+    final loadingLabel =
+        _registerMode ? l10n.creatingLabel : l10n.authCheckingLabel;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -2522,217 +2636,230 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                             child: SingleChildScrollView(
                               physics: const ClampingScrollPhysics(),
                               child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  title,
-                                  style: TextStyle(
-                                    color: SmartTaxiColors.authInk,
-                                    fontSize: compact ? 26.0 : 30.0,
-                                    height: 1.05,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.3,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      color: SmartTaxiColors.authInk,
+                                      fontSize: compact ? 26.0 : 30.0,
+                                      height: 1.05,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.3,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  subtitle,
-                                  style: TextStyle(
-                                    color: SmartTaxiColors.authMuted,
-                                    fontSize: compact ? 13.0 : 15.0,
-                                    height: compact ? 1.25 : 1.35,
-                                    fontWeight: FontWeight.w700,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    subtitle,
+                                    style: TextStyle(
+                                      color: SmartTaxiColors.authMuted,
+                                      fontSize: compact ? 13.0 : 15.0,
+                                      height: compact ? 1.25 : 1.35,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: compact ? 15 : 21),
-                                AutofillGroup(
-                                  child: Column(
-                                    children: [
-                                      AnimatedSwitcher(
-                                        duration:
-                                            const Duration(milliseconds: 220),
-                                        switchInCurve: Curves.easeOutCubic,
-                                        switchOutCurve: Curves.easeInCubic,
-                                        child: _registerMode
-                                            ? Column(
-                                                key: const ValueKey('register'),
-                                                children: [
-                                                  _PhotoAuthTextField(
-                                                    controller: _nameController,
-                                                    label: l10n.nameFieldLabel,
-                                                    icon: Icons.badge_rounded,
-                                                    onChanged:
-                                                        _clearFeedbackOnEdit,
-                                                    autofillHints: const [
-                                                      AutofillHints.name
-                                                    ],
-                                                    keyboardType:
-                                                        TextInputType.name,
-                                                    textCapitalization:
-                                                        TextCapitalization
-                                                            .words,
-                                                  ),
-                                                  SizedBox(height: fieldGap),
-                                                  _PhotoAuthTextField(
-                                                    controller:
-                                                        _referralCodeController,
-                                                    label: l10n
-                                                        .referralCodeFieldLabel,
-                                                    icon: Icons
-                                                        .card_giftcard_rounded,
-                                                    onChanged:
-                                                        _clearFeedbackOnEdit,
-                                                    keyboardType:
-                                                        TextInputType.text,
-                                                    textCapitalization:
-                                                        TextCapitalization
-                                                            .characters,
-                                                  ),
-                                                ],
-                                              )
-                                            : _PhotoPhoneField(
-                                                key: const ValueKey('login'),
-                                                controller: _phoneController,
-                                                onChanged: _clearFeedbackOnEdit,
-                                                onSubmitted: _loading
-                                                    ? null
-                                                    : (_) => _submit(),
+                                  SizedBox(height: compact ? 15 : 21),
+                                  AutofillGroup(
+                                    child: Column(
+                                      children: [
+                                        AnimatedSwitcher(
+                                          duration:
+                                              const Duration(milliseconds: 220),
+                                          switchInCurve: Curves.easeOutCubic,
+                                          switchOutCurve: Curves.easeInCubic,
+                                          child: _registerMode
+                                              ? Column(
+                                                  key: const ValueKey(
+                                                      'register'),
+                                                  children: [
+                                                    _PhotoAuthTextField(
+                                                      controller:
+                                                          _nameController,
+                                                      label:
+                                                          l10n.nameFieldLabel,
+                                                      icon: Icons.badge_rounded,
+                                                      onChanged:
+                                                          _clearFeedbackOnEdit,
+                                                      autofillHints: const [
+                                                        AutofillHints.name
+                                                      ],
+                                                      keyboardType:
+                                                          TextInputType.name,
+                                                      textCapitalization:
+                                                          TextCapitalization
+                                                              .words,
+                                                    ),
+                                                    SizedBox(height: fieldGap),
+                                                    _PhotoAuthTextField(
+                                                      controller:
+                                                          _referralCodeController,
+                                                      label: l10n
+                                                          .referralCodeFieldLabel,
+                                                      icon: Icons
+                                                          .card_giftcard_rounded,
+                                                      onChanged:
+                                                          _clearFeedbackOnEdit,
+                                                      keyboardType:
+                                                          TextInputType.text,
+                                                      textCapitalization:
+                                                          TextCapitalization
+                                                              .characters,
+                                                    ),
+                                                  ],
+                                                )
+                                              : _PhotoPhoneField(
+                                                  key: const ValueKey('login'),
+                                                  controller: _phoneController,
+                                                  onChanged:
+                                                      _clearFeedbackOnEdit,
+                                                  onSubmitted: _loading
+                                                      ? null
+                                                      : (_) => _submit(),
+                                                ),
+                                        ),
+                                        if (_registerMode) ...[
+                                          SizedBox(height: fieldGap),
+                                          _PhotoAuthTextField(
+                                            controller: _passwordController,
+                                            label: l10n.passwordFieldLabel,
+                                            icon: Icons.lock_rounded,
+                                            keyboardType:
+                                                TextInputType.visiblePassword,
+                                            autofillHints: const [
+                                              AutofillHints.newPassword
+                                            ],
+                                            obscureText: !_showPassword,
+                                            textInputAction:
+                                                TextInputAction.next,
+                                            suffixIcon: IconButton(
+                                              tooltip: _showPassword
+                                                  ? l10n.hidePasswordTooltip
+                                                  : l10n.showPasswordTooltip,
+                                              icon: Icon(_showPassword
+                                                  ? Icons
+                                                      .visibility_off_outlined
+                                                  : Icons.visibility_outlined),
+                                              onPressed: () => setState(
+                                                () => _showPassword =
+                                                    !_showPassword,
                                               ),
-                                      ),
-                                      if (_registerMode) ...[
-                                        SizedBox(height: fieldGap),
-                                        _PhotoAuthTextField(
-                                          controller: _passwordController,
-                                          label: l10n.passwordFieldLabel,
-                                          icon: Icons.lock_rounded,
-                                          keyboardType:
-                                              TextInputType.visiblePassword,
-                                          autofillHints: const [
-                                            AutofillHints.newPassword
-                                          ],
-                                          obscureText: !_showPassword,
-                                          textInputAction: TextInputAction.next,
-                                          suffixIcon: IconButton(
-                                            tooltip: _showPassword
-                                                ? l10n.hidePasswordTooltip
-                                                : l10n.showPasswordTooltip,
-                                            icon: Icon(_showPassword
-                                                ? Icons.visibility_off_outlined
-                                                : Icons.visibility_outlined),
-                                            onPressed: () => setState(
-                                              () => _showPassword =
-                                                  !_showPassword,
                                             ),
+                                            onChanged: _clearFeedbackOnEdit,
+                                            onSubmitted: null,
                                           ),
-                                          onChanged: _clearFeedbackOnEdit,
-                                          onSubmitted: null,
-                                        ),
-                                        SizedBox(height: fieldGap),
-                                        _PhotoAuthTextField(
-                                          controller: _passwordRepeatController,
-                                          label: l10n.repeatPasswordLabel,
-                                          icon: Icons.lock_rounded,
-                                          keyboardType:
-                                              TextInputType.visiblePassword,
-                                          autofillHints: const [
-                                            AutofillHints.newPassword
-                                          ],
-                                          obscureText: !_showPasswordRepeat,
-                                          textInputAction: TextInputAction.done,
-                                          suffixIcon: IconButton(
-                                            tooltip: _showPasswordRepeat
-                                                ? l10n.hidePasswordTooltip
-                                                : l10n.showPasswordTooltip,
-                                            icon: Icon(_showPasswordRepeat
-                                                ? Icons.visibility_off_outlined
-                                                : Icons.visibility_outlined),
-                                            onPressed: () => setState(
-                                              () => _showPasswordRepeat =
-                                                  !_showPasswordRepeat,
+                                          SizedBox(height: fieldGap),
+                                          _PhotoAuthTextField(
+                                            controller:
+                                                _passwordRepeatController,
+                                            label: l10n.repeatPasswordLabel,
+                                            icon: Icons.lock_rounded,
+                                            keyboardType:
+                                                TextInputType.visiblePassword,
+                                            autofillHints: const [
+                                              AutofillHints.newPassword
+                                            ],
+                                            obscureText: !_showPasswordRepeat,
+                                            textInputAction:
+                                                TextInputAction.done,
+                                            suffixIcon: IconButton(
+                                              tooltip: _showPasswordRepeat
+                                                  ? l10n.hidePasswordTooltip
+                                                  : l10n.showPasswordTooltip,
+                                              icon: Icon(_showPasswordRepeat
+                                                  ? Icons
+                                                      .visibility_off_outlined
+                                                  : Icons.visibility_outlined),
+                                              onPressed: () => setState(
+                                                () => _showPasswordRepeat =
+                                                    !_showPasswordRepeat,
+                                              ),
                                             ),
-                                          ),
-                                          onChanged: _clearFeedbackOnEdit,
-                                          onSubmitted: _loading
-                                              ? null
-                                              : (_) => _submit(),
-                                        ),
-                                        SizedBox(height: compact ? 12 : 16),
-                                        const _PhotoNewPasswordRuleCard(),
-                                      ],
-                                      if (_registerMode) ...[
-                                        const SizedBox(height: 10),
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: TextButton(
-                                            onPressed: _loading
+                                            onChanged: _clearFeedbackOnEdit,
+                                            onSubmitted: _loading
                                                 ? null
-                                                : () => setState(() {
-                                                      _registerMode = false;
-                                                      _smsStep = true;
-                                                      _error = null;
-                                                      _devCode = null;
-                                                      _passwordController
-                                                          .clear();
-                                                      _passwordRepeatController
-                                                          .clear();
-                                                      _referralCodeController
-                                                          .clear();
-                                                    }),
-                                            style: TextButton.styleFrom(
-                                              foregroundColor:
-                                                  SmartTaxiColors.textSecondary,
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                            child: Text(l10n.backToSmsCode),
+                                                : (_) => _submit(),
                                           ),
-                                        ),
+                                          SizedBox(height: compact ? 12 : 16),
+                                          const _PhotoNewPasswordRuleCard(),
+                                        ],
+                                        if (_registerMode) ...[
+                                          const SizedBox(height: 10),
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: TextButton(
+                                              onPressed: _loading
+                                                  ? null
+                                                  : () => setState(() {
+                                                        _registerMode = false;
+                                                        _smsStep = true;
+                                                        _error = null;
+                                                        _devCode = null;
+                                                        _passwordController
+                                                            .clear();
+                                                        _passwordRepeatController
+                                                            .clear();
+                                                        _referralCodeController
+                                                            .clear();
+                                                      }),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: SmartTaxiColors
+                                                    .textSecondary,
+                                                padding: EdgeInsets.zero,
+                                              ),
+                                              child: Text(l10n.backToSmsCode),
+                                            ),
+                                          ),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
-                                ),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 230),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  transitionBuilder: _authFeedbackTransitionBuilder,
-                                  child: _errorText != null
-                                      ? Padding(
-                                          key: const ValueKey('welcome-error'),
-                                          padding:
-                                              const EdgeInsets.only(top: 10),
-                                          child: _PhotoAuthErrorBanner(
-                                              text: _errorText!),
-                                        )
-                                      : _infoText != null
-                                          ? Padding(
-                                              key: const ValueKey('welcome-info'),
-                                              padding: const EdgeInsets.only(
-                                                  top: 10),
-                                              child: _PhotoAuthInfoLine(
-                                                  text: _infoText!),
-                                            )
-                                          : SizedBox(
-                                              key: const ValueKey('welcome-spacer'),
-                                              height: compact ? 8 : 12),
-                                ),
-                                SizedBox(height: compact ? 3 : 7),
-                                _PhotoAuthPrimaryButton(
-                                  loading: _loading,
-                                  label: buttonLabel,
-                                  loadingLabel: loadingLabel,
-                                  onPressed: _loading ? null : _submit,
-                                ),
-                                if (showDefaultFooter) ...[
-                                  SizedBox(height: compact ? 30 : 24),
-                                  const _PhotoAuthSmsNotice(),
-                                  SizedBox(height: compact ? 22 : 28),
-                                  _PhotoAuthLegalNotice(
-                                    onTerms: _openTermsDocument,
-                                    onPrivacy: _openPrivacyDocument,
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 230),
+                                    switchInCurve: Curves.easeOutCubic,
+                                    switchOutCurve: Curves.easeInCubic,
+                                    transitionBuilder:
+                                        _authFeedbackTransitionBuilder,
+                                    child: _errorText != null
+                                        ? Padding(
+                                            key:
+                                                const ValueKey('welcome-error'),
+                                            padding:
+                                                const EdgeInsets.only(top: 10),
+                                            child: _PhotoAuthErrorBanner(
+                                                text: _errorText!),
+                                          )
+                                        : _infoText != null
+                                            ? Padding(
+                                                key: const ValueKey(
+                                                    'welcome-info'),
+                                                padding: const EdgeInsets.only(
+                                                    top: 10),
+                                                child: _PhotoAuthInfoLine(
+                                                    text: _infoText!),
+                                              )
+                                            : SizedBox(
+                                                key: const ValueKey(
+                                                    'welcome-spacer'),
+                                                height: compact ? 8 : 12),
                                   ),
+                                  SizedBox(height: compact ? 3 : 7),
+                                  _PhotoAuthPrimaryButton(
+                                    loading: _loading,
+                                    label: buttonLabel,
+                                    loadingLabel: loadingLabel,
+                                    onPressed: _loading ? null : _submit,
+                                  ),
+                                  if (showDefaultFooter) ...[
+                                    SizedBox(height: compact ? 30 : 24),
+                                    const _PhotoAuthSmsNotice(),
+                                    SizedBox(height: compact ? 22 : 28),
+                                    _PhotoAuthLegalNotice(
+                                      onTerms: _openTermsDocument,
+                                      onPrivacy: _openPrivacyDocument,
+                                    ),
+                                  ],
                                 ],
-                              ],
                               ),
                             ),
                           ),
@@ -3204,7 +3331,9 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
                 obscureText: !showPassword,
                 textInputAction: TextInputAction.done,
                 suffixIcon: IconButton(
-                  tooltip: showPassword ? l10n.hidePasswordTooltip : l10n.showPasswordTooltip,
+                  tooltip: showPassword
+                      ? l10n.hidePasswordTooltip
+                      : l10n.showPasswordTooltip,
                   icon: Icon(
                     showPassword
                         ? Icons.visibility_off_outlined
@@ -3494,7 +3623,9 @@ class _PhotoPasswordFieldGroup extends StatelessWidget {
           autofillHints: const [AutofillHints.newPassword],
           textInputAction: textInputAction,
           suffixIcon: IconButton(
-            tooltip: showPassword ? l10n.hidePasswordTooltip : l10n.showPasswordTooltip,
+            tooltip: showPassword
+                ? l10n.hidePasswordTooltip
+                : l10n.showPasswordTooltip,
             icon: Icon(
               showPassword
                   ? Icons.visibility_off_outlined
@@ -3542,7 +3673,7 @@ class _PhotoNewPasswordRuleCard extends StatelessWidget {
             width: compact ? 42 : 48,
             height: compact ? 42 : 48,
             decoration: const BoxDecoration(
-              color: SmartTaxiColors.gold,
+              color: SmartTaxiColors.brand,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -3600,12 +3731,12 @@ class _PhotoNewPasswordSafeNote extends StatelessWidget {
           width: compact ? 40 : 46,
           height: compact ? 40 : 46,
           decoration: const BoxDecoration(
-            color: SmartTaxiColors.goldPale,
+            color: SmartTaxiColors.brandPale,
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.lock_outline_rounded,
-            color: SmartTaxiColors.goldDeep,
+            color: SmartTaxiColors.brandDeep,
             size: compact ? 21 : 24,
           ),
         ),
@@ -3837,7 +3968,7 @@ class _PhotoAuthTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       focusNode: focusNode,
-      cursorColor: SmartTaxiColors.gold,
+      cursorColor: SmartTaxiColors.brand,
       style: const TextStyle(
         color: SmartTaxiColors.authInk,
         fontSize: 15.4,
@@ -3863,8 +3994,7 @@ class _PhotoAuthTextField extends StatelessWidget {
         // regardless of that particular glyph's intrinsic bounding box —
         // otherwise badge_rounded vs lock_rounded visibly don't line up
         // with each other or with the label text next to them.
-        prefixIcon: prefix ??
-            (icon == null ? null : Icon(icon, size: 20)),
+        prefixIcon: prefix ?? (icon == null ? null : Icon(icon, size: 20)),
         prefixIconColor: SmartTaxiColors.authIcon,
         suffixIcon: suffixIcon,
         suffixIconColor: SmartTaxiColors.authIcon,
@@ -3881,7 +4011,7 @@ class _PhotoAuthTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: SmartTaxiColors.gold, width: 1.5),
+          borderSide: const BorderSide(color: SmartTaxiColors.brand, width: 1.5),
         ),
       ),
       autofillHints: autofillHints,
@@ -3958,7 +4088,8 @@ class _PhotoAuthErrorBanner extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(width: 3, child: ColoredBox(color: SmartTaxiColors.danger)),
+              const SizedBox(
+                  width: 3, child: ColoredBox(color: SmartTaxiColors.danger)),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(11, 11, 14, 11),
@@ -4014,9 +4145,9 @@ class _PhotoAuthInfoLine extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: SmartTaxiColors.goldPale,
+          color: SmartTaxiColors.brandPale,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: SmartTaxiColors.goldSoft, width: 1),
+          border: Border.all(color: SmartTaxiColors.brandSoft, width: 1),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -4031,7 +4162,7 @@ class _PhotoAuthInfoLine extends StatelessWidget {
               child: const Icon(
                 Icons.check_circle_outline_rounded,
                 size: 17,
-                color: SmartTaxiColors.gold,
+                color: SmartTaxiColors.brand,
               ),
             ),
             const SizedBox(width: 10),
@@ -4041,7 +4172,7 @@ class _PhotoAuthInfoLine extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: SmartTaxiColors.goldDeep,
+                  color: SmartTaxiColors.brandDeep,
                   fontSize: 12.6,
                   height: 1.25,
                   fontWeight: FontWeight.w700,
@@ -4072,7 +4203,7 @@ class _PhotoAuthSmsNotice extends StatelessWidget {
               width: compact ? 32 : 38,
               height: compact ? 32 : 38,
               decoration: const BoxDecoration(
-                color: SmartTaxiColors.goldPale,
+                color: SmartTaxiColors.brandPale,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -4084,7 +4215,7 @@ class _PhotoAuthSmsNotice extends StatelessWidget {
               ),
               child: Icon(
                 Icons.shield_outlined,
-                color: SmartTaxiColors.goldDeep,
+                color: SmartTaxiColors.brandDeep,
                 size: compact ? 18 : 21,
               ),
             ),
@@ -4242,17 +4373,17 @@ class _PhotoAuthPrimaryButton extends StatelessWidget {
           colors: enabled
               ? const [
                   SmartTaxiColors.authGradientStart,
-                  SmartTaxiColors.goldDeep,
+                  SmartTaxiColors.brandDeep,
                 ]
               : [
-                  SmartTaxiColors.goldSoft.withValues(alpha: 0.6),
-                  SmartTaxiColors.goldSoft.withValues(alpha: 0.6),
+                  SmartTaxiColors.brandSoft.withValues(alpha: 0.6),
+                  SmartTaxiColors.brandSoft.withValues(alpha: 0.6),
                 ],
         ),
         boxShadow: enabled
             ? [
                 BoxShadow(
-                  color: SmartTaxiColors.gold.withValues(alpha: 0.32),
+                  color: SmartTaxiColors.brand.withValues(alpha: 0.32),
                   blurRadius: 22,
                   spreadRadius: -4,
                   offset: const Offset(0, 11),
@@ -4404,4 +4535,3 @@ String _maskKazakhstanPhone(String value) {
   if (digits.length < 10) return _formatKazakhstanPhone(value);
   return '+7 ${digits.substring(0, 3)} *** ${digits.substring(6, 8)} ${digits.substring(8, 10)}';
 }
-

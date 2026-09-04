@@ -252,6 +252,10 @@
   "passengerPromoHowToApplyText": "Shu tekshiruvdan o'tgan promokodni tarif tanlash bosqichida yana bir bor kiritish kerak bo'ladi — shunda chegirma haqiqiy safaringizning yakuniy narxini darhol qayta hisoblaydi.",
   "passengerHomeWhereToTitle": "Qayerga boramiz?",
   "passengerHomeWhereToSubtitle": "Olib ketish nuqtasi va manzilni tanlang",
+  "passengerHomeGreeting": "Assalomu alaykum!",
+  "passengerQuickHome": "Uy",
+  "passengerQuickWork": "Ish",
+  "passengerQuickFavorites": "Sevimlilar",
   "passengerHomeSetDestination": "Qayerga ekanini ko'rsatish",
   "passengerHomeRouteIssueTitle": "Marshrutni aniqlashtiring",
   "passengerHomeRouteIssueText": "Marshrutni qurib bo'lmadi. Manzilni o'zgartiring yoki kartadan nuqtani tanlang.",
@@ -1702,5 +1706,6 @@
   "roadAlertShortPedestrianCrossing": "PO",
   "driverRegionsLoadFailedTitle": "Hududlarni yuklab bo'lmadi",
   "driverRegionsLoadFailedMessage": "Aloqani tekshiring va yangilash uchun ekranni pastga torting. Hududlarga ruxsatingiz saqlanib qolgan.",
-  "driverRegionsRetryAction": "Yangilash"
+  "driverRegionsRetryAction": "Yangilash",
+  "authTagline": "SHAHAR TAKSISI"
 }

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' as native_map;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_client.dart';
@@ -15,6 +16,9 @@ import '../../core/config/app_config.dart';
 import '../../core/legal/legal_content.dart';
 import '../../core/sockets/socket_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/active_locale.dart';
+import '../../core/utils/contact_phone.dart';
+import '../../core/utils/map_layers.dart';
 import '../../core/voice/voice_alert_service.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/brand_logo.dart';
@@ -47,10 +51,26 @@ const _appVersion = AppConfig.appVersion;
 // here rather than shared since these are two independent widget trees,
 // not a common map component; keep the two byte-identical.
 const _darkMapTileMatrix = <double>[
-  -0.4275, -0.4750, -0.0475, 0, 246.25,
-  -0.4410, -0.4900, -0.0490, 0, 257.90,
-  -0.4590, -0.5100, -0.0510, 0, 276.10,
-  0, 0, 0, 1, 0,
+  -0.4275,
+  -0.4750,
+  -0.0475,
+  0,
+  246.25,
+  -0.4410,
+  -0.4900,
+  -0.0490,
+  0,
+  257.90,
+  -0.4590,
+  -0.5100,
+  -0.0510,
+  0,
+  276.10,
+  0,
+  0,
+  0,
+  1,
+  0,
 ];
 // Cools the warm stock OSM raster tiles (cream land, beige buildings,
 // yellow roads) so the map stops being the one warm surface under
@@ -59,10 +79,26 @@ const _darkMapTileMatrix = <double>[
 // independent widget trees, not a shared map component. See the fuller
 // note there for the maths.
 const _lightMapTileMatrix = <double>[
-  0.8455, 0.1268, 0.0128, 0, 0,
-  0.0389, 0.9629, 0.0132, 0, 2,
-  0.0406, 0.1364, 0.9041, 0, 10,
-  0, 0, 0, 1, 0,
+  0.8455,
+  0.1268,
+  0.0128,
+  0,
+  0,
+  0.0389,
+  0.9629,
+  0.0132,
+  0,
+  2,
+  0.0406,
+  0.1364,
+  0.9041,
+  0,
+  10,
+  0,
+  0,
+  0,
+  1,
+  0,
 ];
 
 class DriverShell extends StatefulWidget {
@@ -75,6 +111,7 @@ class DriverShell extends StatefulWidget {
     required this.accountLabel,
     required this.onLogout,
     required this.onOpenPassengerMode,
+    this.onRequestNotifications,
     this.currentLocale,
     this.onChangeLocale,
     this.themeMode,
@@ -88,6 +125,7 @@ class DriverShell extends StatefulWidget {
   final String accountLabel;
   final Future<void> Function() onLogout;
   final Future<void> Function() onOpenPassengerMode;
+  final Future<void> Function()? onRequestNotifications;
   // Optional (not required) so this widget stays independently buildable
   // without forcing every call site to be updated in lockstep — main.dart
   // passes the real callback; absent it, the language row degrades to a
@@ -325,9 +363,7 @@ class _DriverShellState extends State<DriverShell> {
     try {
       final contacts = await widget.api.getServiceContacts();
       if (!mounted) return;
-      if (contacts.sosPhone != null) {
-        setState(() => _sosPhone = contacts.sosPhone);
-      }
+      setState(() => _sosPhone = usableServicePhone(contacts.sosPhone));
     } catch (_) {
       // Best-effort — the SOS sheet keeps its 112 fallback if this fails.
     }
@@ -401,10 +437,8 @@ class _DriverShellState extends State<DriverShell> {
         payload.putIfAbsent('dropoff_text', () => known!.dropoff);
         payload.putIfAbsent('pickup_lat', () => known!.pickupCoordinate?.lat);
         payload.putIfAbsent('pickup_lng', () => known!.pickupCoordinate?.lng);
-        payload.putIfAbsent(
-            'dropoff_lat', () => known!.dropoffCoordinate?.lat);
-        payload.putIfAbsent(
-            'dropoff_lng', () => known!.dropoffCoordinate?.lng);
+        payload.putIfAbsent('dropoff_lat', () => known!.dropoffCoordinate?.lat);
+        payload.putIfAbsent('dropoff_lng', () => known!.dropoffCoordinate?.lng);
         payload.putIfAbsent('distance_km', () => known!.distanceKm);
         payload.putIfAbsent('duration_min', () => known!.durationMin);
       }
@@ -473,8 +507,8 @@ class _DriverShellState extends State<DriverShell> {
     } else if (isMyOffer &&
         previousOfferStatus == 'PENDING' &&
         order.driverOfferStatus == 'DECLINED') {
-      AppToast.showError(context,
-          AppLocalizations.of(context).driverClientDeclinedOfferToast);
+      AppToast.showError(
+          context, AppLocalizations.of(context).driverClientDeclinedOfferToast);
     } else if (isMyOffer &&
         previousProposedBy != 'CLIENT' &&
         order.isClientCounterAwaitingDriver) {
@@ -654,7 +688,10 @@ class _DriverShellState extends State<DriverShell> {
       await _loadRoadAlerts();
       unawaited(_loadDemandHint());
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        setState(
+            () => _error = readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -758,16 +795,17 @@ class _DriverShellState extends State<DriverShell> {
           nextOnline && approvalCodes.contains(apiErrorCode(error));
       if (isApprovalBlock) {
         if (mounted) {
-          AppToast.showError(context, readableError(AppLocalizations.of(context), error));
-          _showDriverFullSheet(() =>
-              DriverSupportScreen(
-              api: widget.api,
-              activeOrderId: _activeOrder?.id,
-              pushMessages: widget.pushMessages,
-            ));
+          AppToast.showError(
+              context, readableError(AppLocalizations.of(context), error));
+          _showDriverFullSheet(() => DriverSupportScreen(
+                api: widget.api,
+                activeOrderId: _activeOrder?.id,
+                pushMessages: widget.pushMessages,
+              ));
         }
       } else if (mounted) {
-        setState(() => _error = readableError(AppLocalizations.of(context), error));
+        setState(
+            () => _error = readableError(AppLocalizations.of(context), error));
       }
       if (nextOnline && mounted) setState(() => _locationMessage = null);
     } finally {
@@ -833,7 +871,8 @@ class _DriverShellState extends State<DriverShell> {
         // will never succeed until the driver is actually back in the
         // region.
         if (mounted) {
-          setState(() => _locationMessage = readableError(AppLocalizations.of(context), error));
+          setState(() => _locationMessage =
+              readableError(AppLocalizations.of(context), error));
         }
       }
     }, onError: (_) {
@@ -875,7 +914,8 @@ class _DriverShellState extends State<DriverShell> {
       // readableError, not a hardcoded generic string — same reasoning as
       // the position-stream catch above.
       if (mounted) {
-        setState(() => _error = readableError(AppLocalizations.of(context), error));
+        setState(
+            () => _error = readableError(AppLocalizations.of(context), error));
       }
       return false;
     }
@@ -892,8 +932,9 @@ class _DriverShellState extends State<DriverShell> {
       // still owes the driver an action and blocks the rider until it
       // happens, so it has to survive a cold start too. Ranked below `active`
       // so a genuinely live trip always wins if somehow both exist.
-      final awaitingSettlement =
-          orders.where((order) => order.awaitsSettlement).toList(growable: false);
+      final awaitingSettlement = orders
+          .where((order) => order.awaitsSettlement)
+          .toList(growable: false);
       final current = _activeOrder;
       OrderSummary? retainedTerminal;
       if (current != null && !current.isActive) {
@@ -916,7 +957,8 @@ class _DriverShellState extends State<DriverShell> {
       setState(() {
         _orders = orders;
         _activeOrder = restoredActive;
-        if (restoredActive != null && restoredActive.distanceTraveledM != null) {
+        if (restoredActive != null &&
+            restoredActive.distanceTraveledM != null) {
           _tripDistanceTraveledM = restoredActive.distanceTraveledM;
         }
       });
@@ -925,7 +967,10 @@ class _DriverShellState extends State<DriverShell> {
       // fetched explicitly since nothing else has triggered it yet.
       if (needsRoute) unawaited(_loadDriverRoute(restoredActive.id));
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        setState(
+            () => _error = readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _ordersLoading = false);
     }
@@ -942,7 +987,8 @@ class _DriverShellState extends State<DriverShell> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _navigatorMessage = readableError(AppLocalizations.of(context), error));
+      setState(() => _navigatorMessage =
+          readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _roadAlertsLoading = false);
     }
@@ -959,6 +1005,46 @@ class _DriverShellState extends State<DriverShell> {
             math.sin(dLng / 2) *
             math.sin(dLng / 2);
     return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  // A distance-only camera lookup is not enough on a divided road: the
+  // nearest point can be on the carriageway behind the car or on the
+  // opposite side.  Keep the early-warning layer quiet until the object is
+  // genuinely in front of a moving driver.  At walking/parking speeds GPS
+  // heading is noisy, so deliberately fall back to distance-only behaviour.
+  static double _bearingTo(
+      double fromLat, double fromLng, double toLat, double toLng) {
+    final fromLatRadians = fromLat * math.pi / 180;
+    final toLatRadians = toLat * math.pi / 180;
+    final deltaLngRadians = (toLng - fromLng) * math.pi / 180;
+    final y = math.sin(deltaLngRadians) * math.cos(toLatRadians);
+    final x = math.cos(fromLatRadians) * math.sin(toLatRadians) -
+        math.sin(fromLatRadians) *
+            math.cos(toLatRadians) *
+            math.cos(deltaLngRadians);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+  }
+
+  static double _headingDelta(double first, double second) {
+    final difference = (first - second).abs() % 360;
+    return difference > 180 ? 360 - difference : difference;
+  }
+
+  bool _isAheadOfDriver(Position position, double lat, double lng) {
+    final heading = position.heading;
+    final speed = position.speed;
+    if (!heading.isFinite ||
+        heading < 0 ||
+        heading >= 360 ||
+        !speed.isFinite ||
+        speed < 2.5) {
+      return true;
+    }
+    final targetHeading =
+        _bearingTo(position.latitude, position.longitude, lat, lng);
+    // 100° leaves room for a curved road and normal GPS heading drift while
+    // excluding an alert on the rearward/opposing half of the road.
+    return _headingDelta(heading, targetHeading) <= 100;
   }
 
   Future<void> _maybeFetchOsmNavigation(Position position) async {
@@ -1082,8 +1168,7 @@ class _DriverShellState extends State<DriverShell> {
     double distanceMeters,
     String? streetName,
     LatLng location,
-  })?
-      _nextManeuverHint() {
+  })? _nextManeuverHint() {
     final route = _driverRoute;
     final position = _currentCoordinate;
     if (route == null || position == null) {
@@ -1180,9 +1265,8 @@ class _DriverShellState extends State<DriverShell> {
       );
     }
     final totalMeters = route.distanceMeters;
-    final ratio = totalMeters > 0
-        ? (remainingMeters / totalMeters).clamp(0.0, 1.0)
-        : 0.0;
+    final ratio =
+        totalMeters > 0 ? (remainingMeters / totalMeters).clamp(0.0, 1.0) : 0.0;
     return (
       distanceMeters: remainingMeters,
       durationSeconds: route.durationSeconds * ratio,
@@ -1195,8 +1279,7 @@ class _DriverShellState extends State<DriverShell> {
     double distanceMeters,
     String? streetName,
     LatLng location,
-  })?
-      _computeNextManeuverHint(RoutePreview route, Coordinate position) {
+  })? _computeNextManeuverHint(RoutePreview route, Coordinate position) {
     final geometry = route.geometry;
     if (geometry.length < 3) {
       return null;
@@ -1238,9 +1321,8 @@ class _DriverShellState extends State<DriverShell> {
     double distanceMeters,
     String? streetName,
     LatLng location,
-  })?
-      _nextManeuverFromSteps(List<RouteStep> steps, List<LatLng> geometry,
-          int nearestIndex, LatLng current) {
+  })? _nextManeuverFromSteps(List<RouteStep> steps, List<LatLng> geometry,
+      int nearestIndex, LatLng current) {
     for (final step in steps) {
       // The depart step just marks the trip's starting point, not something
       // to alert the driver about.
@@ -1282,9 +1364,8 @@ class _DriverShellState extends State<DriverShell> {
     double distanceMeters,
     String? streetName,
     LatLng location,
-  })?
-      _nextManeuverFromBearing(
-          List<LatLng> route, int nearestIndex, LatLng current) {
+  })? _nextManeuverFromBearing(
+      List<LatLng> route, int nearestIndex, LatLng current) {
     const lookaheadMeters = 800.0;
     const turnThresholdDegrees = 28.0;
     final baseBearing =
@@ -1398,6 +1479,9 @@ class _DriverShellState extends State<DriverShell> {
         continue;
       }
       final stage = _cameraStage[alert.id] ?? 0;
+      if (stage == 0 && !_isAheadOfDriver(position, alert.lat, alert.lng)) {
+        continue;
+      }
       if (stage >= 3) continue;
       final headingSuffix =
           alert.heading != null ? ', ${compassLabel(alert.heading!)}' : '';
@@ -1420,8 +1504,8 @@ class _DriverShellState extends State<DriverShell> {
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_voice.announce(l10n.driverCameraNowVoice,
             dedupeKey: 'cam-${alert.id}-pass'));
-        _showNavigatorBanner(
-            l10n.driverCameraNowBanner(headingSuffix), const Duration(seconds: 6));
+        _showNavigatorBanner(l10n.driverCameraNowBanner(headingSuffix),
+            const Duration(seconds: 6));
       }
     }
   }
@@ -1449,6 +1533,7 @@ class _DriverShellState extends State<DriverShell> {
       }
       if (distance <= warnAtMeters &&
           !_signAlertedIds.contains(sign.id) &&
+          _isAheadOfDriver(position, sign.lat, sign.lng) &&
           distance < candidateDistance) {
         candidateDistance = distance;
         candidate = sign;
@@ -1502,8 +1587,8 @@ class _DriverShellState extends State<DriverShell> {
       return;
     }
     const nearAtMeters = 40.0;
-    final within = _metersBetween(position.latitude, position.longitude,
-            target.lat, target.lng) <=
+    final within = _metersBetween(
+            position.latitude, position.longitude, target.lat, target.lng) <=
         nearAtMeters;
     if (within && !_arrivalHapticFired) {
       _arrivalHapticFired = true;
@@ -1575,7 +1660,7 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   Future<void> _chooseLanguage() async {
-    final current = widget.currentLocale?.languageCode ?? 'ru';
+    final current = activeLanguageCode(context, widget.currentLocale);
     final code = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -1724,7 +1809,10 @@ class _DriverShellState extends State<DriverShell> {
       await _loadDriverRoute(accepted.id);
       await _loadDriverStats();
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        setState(
+            () => _error = readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _acceptingOrderId = null);
     }
@@ -1748,7 +1836,8 @@ class _DriverShellState extends State<DriverShell> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = readableError(AppLocalizations.of(context), error));
+      setState(
+          () => _error = readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _rejectingOrderId = null);
     }
@@ -1772,11 +1861,12 @@ class _DriverShellState extends State<DriverShell> {
       );
       if (!mounted) return;
       setState(() => _orders = mergeOrder(_orders, updated));
-      AppToast.showSuccess(context,
-          AppLocalizations.of(context).driverPriceOfferSentToast);
+      AppToast.showSuccess(
+          context, AppLocalizations.of(context).driverPriceOfferSentToast);
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _offeringPriceOrderId = null);
     }
@@ -1817,7 +1907,8 @@ class _DriverShellState extends State<DriverShell> {
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _respondingToCounterOrderId = null);
     }
@@ -1844,7 +1935,10 @@ class _DriverShellState extends State<DriverShell> {
       });
       await _loadDriverStats();
     } catch (error) {
-      if (mounted) setState(() => _error = readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        setState(
+            () => _error = readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _tripActionLabel = null);
     }
@@ -1885,8 +1979,9 @@ class _DriverShellState extends State<DriverShell> {
       // leg just finished and would actively point the wrong way, so that
       // one does have to be cleared and surfaced.
       final phaseNow = _routePhaseForStatus(_activeOrder?.status);
-      final staleRouteStillValid =
-          _driverRoute != null && phaseNow != null && phaseNow == _lastRoutePhase;
+      final staleRouteStillValid = _driverRoute != null &&
+          phaseNow != null &&
+          phaseNow == _lastRoutePhase;
       if (staleRouteStillValid) return;
       setState(() {
         _driverRoute = null;
@@ -1896,6 +1991,12 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
+  void _openNotifications() {
+    final request = widget.onRequestNotifications;
+    if (request != null) unawaited(request());
+    _showDriverFullSheet(() => DriverNotificationsScreen(api: widget.api));
+  }
 
   Future<void> _openRoadAlerts() async {
     final scaffold = _scaffoldKey.currentState;
@@ -2055,13 +2156,13 @@ class _DriverShellState extends State<DriverShell> {
                           alignment: Alignment.center,
                           clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
-                            color: context.palette.goldSurface,
+                            color: context.palette.brandSurface,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: context.palette.border),
                           ),
                           child: _avatarUrl == null
                               ? Icon(Icons.person_rounded,
-                                  color: context.palette.goldDeep, size: 26)
+                                  color: context.palette.brandDeep, size: 26)
                               : Image.network(
                                   '${AppConfig.apiBaseUrl}$_avatarUrl',
                                   fit: BoxFit.cover,
@@ -2069,7 +2170,7 @@ class _DriverShellState extends State<DriverShell> {
                                   height: 52,
                                   errorBuilder: (context, error, stackTrace) =>
                                       Icon(Icons.person_rounded,
-                                          color: context.palette.goldDeep,
+                                          color: context.palette.brandDeep,
                                           size: 26),
                                 ),
                         ),
@@ -2081,7 +2182,7 @@ class _DriverShellState extends State<DriverShell> {
                             height: 22,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: context.palette.goldDeep,
+                              color: context.palette.brandDeep,
                               shape: BoxShape.circle,
                               border: Border.all(
                                   color: context.palette.card, width: 2),
@@ -2091,8 +2192,7 @@ class _DriverShellState extends State<DriverShell> {
                                     width: 10,
                                     height: 10,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 1.6,
-                                        color: Colors.white),
+                                        strokeWidth: 1.6, color: Colors.white),
                                   )
                                 : const Icon(Icons.camera_alt_rounded,
                                     size: 12, color: Colors.white),
@@ -2154,8 +2254,7 @@ class _DriverShellState extends State<DriverShell> {
                 DriverProfileRow(
                   label: l10n.driverProfileDebtLabel,
                   value: formatDriverMoney(stats.debt),
-                  valueColor:
-                      stats.debt > 0 ? context.palette.danger : null,
+                  valueColor: stats.debt > 0 ? context.palette.danger : null,
                 ),
               ],
             ],
@@ -2312,7 +2411,7 @@ class _DriverShellState extends State<DriverShell> {
           children: [
             DriverSettingsRow(
               title: l10n.driverSettingsLanguageLabel,
-              text: switch (widget.currentLocale?.languageCode) {
+              text: switch (activeLanguageCode(context, widget.currentLocale)) {
                 'kk' => l10n.languageKazakh,
                 'uz' => l10n.languageUzbek,
                 'zh' => l10n.languageChinese,
@@ -2470,14 +2569,12 @@ class _DriverShellState extends State<DriverShell> {
               _showDriverFullSheet(() => DriverWalletScreen(api: widget.api)),
           onRating: () =>
               _showDriverFullSheet(() => DriverRatingScreen(api: widget.api)),
-          onNotifications: () => _showDriverFullSheet(
-              () => DriverNotificationsScreen(api: widget.api)),
-          onSupport: () => _showDriverFullSheet(() =>
-              DriverSupportScreen(
-              api: widget.api,
-              activeOrderId: _activeOrder?.id,
-              pushMessages: widget.pushMessages,
-            )),
+          onNotifications: _openNotifications,
+          onSupport: () => _showDriverFullSheet(() => DriverSupportScreen(
+                api: widget.api,
+                activeOrderId: _activeOrder?.id,
+                pushMessages: widget.pushMessages,
+              )),
           onFaq: () => _showDriverFullSheet(_driverFaqContent),
           onAbout: () => _showDriverFullSheet(_driverAboutContent),
           onSettings: () => _showDriverFullSheet(_driverSettingsContent),
@@ -2500,6 +2597,7 @@ class _DriverShellState extends State<DriverShell> {
             children: [
               DriverHeader(
                   onMenu: _openDrawer,
+                  onNotifications: _openNotifications,
                   status: _driverStatusLabel(),
                   tone: _driverStatusTone()),
               Expanded(
@@ -2923,7 +3021,7 @@ class _DriverShellState extends State<DriverShell> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: context.palette.goldSurface,
+                          color: context.palette.brandSurface,
                           border:
                               Border.all(color: context.palette.borderStrong),
                           borderRadius: BorderRadius.circular(14),
@@ -2932,7 +3030,7 @@ class _DriverShellState extends State<DriverShell> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Icon(Icons.sticky_note_2_outlined,
-                                size: 17, color: context.palette.goldDeep),
+                                size: 17, color: context.palette.brandDeep),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -3017,7 +3115,8 @@ class _DriverShellState extends State<DriverShell> {
                                         await _confirmDriverAction(
                                       title: l10n.driverNoShowConfirmTitle,
                                       message: l10n.driverNoShowConfirmText,
-                                      confirmLabel: l10n.driverNoShowConfirmButton,
+                                      confirmLabel:
+                                          l10n.driverNoShowConfirmButton,
                                     );
                                     if (confirmed) {
                                       _tripAction(l10n.driverTripNoShowButton,
@@ -3126,13 +3225,17 @@ class _DriverShellState extends State<DriverShell> {
     // support" state for the second or so before _loadRegions() resolves,
     // even for a driver approved everywhere. Keep the toggle disabled either
     // way (nothing to go online with yet), just don't claim it's empty.
-    if (_regionsLoading && _regions.isEmpty) return l10n.driverLineRegionsLoading;
+    if (_regionsLoading && _regions.isEmpty) {
+      return l10n.driverLineRegionsLoading;
+    }
     if (_regions.isEmpty && _regionsLoadFailed) {
       return l10n.driverRegionsLoadFailedTitle;
     }
     if (_regions.isEmpty) return l10n.driverNoApprovedRegionsTitle;
     if (_regionId == null) return l10n.driverChooseWorkingRegionTitle;
-    if (region?.isActive == false) return l10n.driverRegionTemporarilyDisabledTitle;
+    if (region?.isActive == false) {
+      return l10n.driverRegionTemporarilyDisabledTitle;
+    }
     if (region?.status == 'BLOCKED') {
       return l10n.driverRegionWorkBlockedTitle;
     }
@@ -3170,8 +3273,7 @@ class _DriverShellState extends State<DriverShell> {
         title: l10n.driverNoApprovedRegionsTitle,
         message: l10n.driverNoRegionsMessage,
         actionLabel: l10n.driverContactSupportAction,
-        onAction: () => _showDriverFullSheet(() =>
-            DriverSupportScreen(
+        onAction: () => _showDriverFullSheet(() => DriverSupportScreen(
               api: widget.api,
               activeOrderId: _activeOrder?.id,
               pushMessages: widget.pushMessages,
@@ -3208,8 +3310,7 @@ class _DriverShellState extends State<DriverShell> {
             ? l10n.driverRegionBlockedByAdminMessage(region.name)
             : region.blockReason,
         actionLabel: l10n.driverContactSupportAction,
-        onAction: () => _showDriverFullSheet(() =>
-            DriverSupportScreen(
+        onAction: () => _showDriverFullSheet(() => DriverSupportScreen(
               api: widget.api,
               activeOrderId: _activeOrder?.id,
               pushMessages: widget.pushMessages,
@@ -3330,7 +3431,9 @@ class _DriverShellState extends State<DriverShell> {
     final l10n = AppLocalizations.of(context);
     if (_activeOrder?.isActive == true) return l10n.driverStatusBusy;
     if (_regionsLoading && _regions.isEmpty) return l10n.loading;
-    if (!_online && _disabledReason() != null) return l10n.driverStatusUnavailableByRegion;
+    if (!_online && _disabledReason() != null) {
+      return l10n.driverStatusUnavailableByRegion;
+    }
     return _online ? l10n.driverStatusOnline : l10n.driverStatusOffline;
   }
 
@@ -3386,8 +3489,8 @@ class _DriverIssueBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final color = danger ? palette.danger : palette.gold;
-    final background = danger ? palette.dangerSoft : palette.goldSurface;
+    final color = danger ? palette.danger : palette.brand;
+    final background = danger ? palette.dangerSoft : palette.brandSurface;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -3479,7 +3582,7 @@ class _MapChipButton extends StatelessWidget {
               children: [
                 Center(
                     child:
-                        Icon(icon, size: 20, color: context.palette.goldDeep)),
+                        Icon(icon, size: 20, color: context.palette.brandDeep)),
                 if (badge != null)
                   Positioned(
                     top: -3,
@@ -3490,8 +3593,8 @@ class _MapChipButton extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: context.palette.danger,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                            color: context.palette.card, width: 1.4),
+                        border:
+                            Border.all(color: context.palette.card, width: 1.4),
                       ),
                       child: Text(
                         '$badge',
@@ -3535,7 +3638,7 @@ class _RegionPickerRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? palette.goldPale : palette.card,
+          color: selected ? palette.brandPale : palette.card,
           border: Border.all(
               color: selected ? palette.borderStrong : palette.border),
           borderRadius: BorderRadius.circular(18),
@@ -3544,7 +3647,7 @@ class _RegionPickerRow extends StatelessWidget {
           children: [
             Icon(Icons.place_rounded,
                 size: 18,
-                color: selected ? palette.goldDeep : palette.textMuted),
+                color: selected ? palette.brandDeep : palette.textMuted),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -3580,7 +3683,7 @@ class _RegionPickerRow extends StatelessWidget {
             ),
             if (selected) ...[
               const SizedBox(width: 8),
-              Icon(Icons.check_circle_rounded, color: palette.gold, size: 20),
+              Icon(Icons.check_circle_rounded, color: palette.brand, size: 20),
             ],
           ],
         ),
@@ -3726,118 +3829,129 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
             if (widget.mapUnavailable)
               const Positioned.fill(child: _RoadAlertMapFallback())
             else
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom:
-                      widget.current == null && widget.activeOrder == null
-                          ? 13
-                          : 14,
-                  initialCameraFit: fit,
-                  backgroundColor: context.palette.appBackground,
-                ),
-                children: [
-                  ColorFiltered(
-                    colorFilter: ColorFilter.matrix(
-                      isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
-                    ),
-                    child: TileLayer(
-                      urlTemplate: AppConfig.osmTileUrl,
-                      subdomains: const ['a', 'b', 'c', 'd'],
-                      retinaMode: true,
-                      userAgentPackageName: 'com.smarttaxi.app',
-                      errorTileCallback: (_, __, ___) => widget.onTileError(),
-                    ),
-                  ),
-                  if (widget.route.isNotEmpty)
-                    PolylineLayer(
-                      polylines: [
-                        // Dark casing under a bright core — see the navigator
-                        // map for why the white casing had to go.
-                        Polyline(
-                          points: widget.route,
-                          color: SmartTaxiColors.goldDeep,
-                          strokeWidth: 11,
+              AppConfig.useMapLibre3d
+                  ? _NativeDriverNavigatorMap(
+                      center: center,
+                      current: widget.current,
+                      heading: widget.heading,
+                      activeOrder: widget.activeOrder,
+                      route: widget.route,
+                      alerts: widget.alerts,
+                      signs: widget.signs,
+                    )
+                  : FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: center,
+                        initialZoom:
+                            widget.current == null && widget.activeOrder == null
+                                ? 13
+                                : 14,
+                        initialCameraFit: fit,
+                        backgroundColor: context.palette.appBackground,
+                      ),
+                      children: [
+                        ColorFiltered(
+                          colorFilter: ColorFilter.matrix(
+                            isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                          ),
+                          child: TileLayer(
+                            urlTemplate: AppConfig.osmTileUrl,
+                            subdomains: const ['a', 'b', 'c', 'd'],
+                            retinaMode: true,
+                            userAgentPackageName: 'com.smarttaxi.app',
+                            errorTileCallback: (_, __, ___) =>
+                                widget.onTileError(),
+                          ),
                         ),
-                        Polyline(
-                          points: widget.route,
-                          color: SmartTaxiColors.gold,
-                          strokeWidth: 7,
+                        if (widget.route.isNotEmpty)
+                          PolylineLayer(
+                            polylines: [
+                              // Dark casing under a bright core — see the navigator
+                              // map for why the white casing had to go.
+                              Polyline(
+                                points: widget.route,
+                                color: SmartTaxiColors.brandDeep,
+                                strokeWidth: 11,
+                              ),
+                              Polyline(
+                                points: widget.route,
+                                color: SmartTaxiColors.brand,
+                                strokeWidth: 7,
+                              ),
+                            ],
+                          ),
+                        MarkerLayer(
+                          markers: [
+                            if (widget.activeOrder?.pickupCoordinate != null)
+                              Marker(
+                                point: widget.activeOrder!.pickupCoordinate!
+                                    .toLatLng(),
+                                width: 34,
+                                height: 34,
+                                child: const _NavigatorPointMarker(
+                                  // Not navigation_rounded (reads as a heading
+                                  // arrow) and no longer the concentric-ring dot
+                                  // either: on a live map beside the car marker,
+                                  // a ringed blue disc is the universal "you are
+                                  // here" glyph and was being read as a duplicate
+                                  // of the driver's own position. A person icon
+                                  // can only mean the passenger.
+                                  icon: Icons.person_rounded,
+                                  background: SmartTaxiColors.brand,
+                                  foreground: Colors.white,
+                                ),
+                              ),
+                            if (widget.activeOrder?.dropoffCoordinate != null)
+                              Marker(
+                                point: widget.activeOrder!.dropoffCoordinate!
+                                    .toLatLng(),
+                                width: 34,
+                                height: 34,
+                                child: const _NavigatorPointMarker(
+                                  icon: Icons.location_on_rounded,
+                                  background: SmartTaxiColors.brand,
+                                  foreground: SmartTaxiColors.text,
+                                ),
+                              ),
+                            for (final alert in widget.alerts.take(12))
+                              Marker(
+                                point: alert.toLatLng(),
+                                width: 44,
+                                height: 44,
+                                child: _RoadAlertPin(
+                                  label: _alertShortLabel(l10n, alert.type),
+                                  color: _alertColor(alert.type),
+                                  heading: alert.heading,
+                                ),
+                              ),
+                            // Mapped roadside signs (OSM traffic_sign nodes) were
+                            // fetched and voiced (_checkSignProximity) but never
+                            // actually shown on the map — a driver only heard
+                            // about one as they passed it, with no way to see it
+                            // coming the way camera/hazard pins already work.
+                            for (final sign in widget.signs.take(12))
+                              Marker(
+                                point: sign.toLatLng(),
+                                width: 40,
+                                height: 40,
+                                child: _RoadAlertPin(
+                                  label: _signShortLabel(sign),
+                                  color: _signPinColor,
+                                  heading: sign.heading,
+                                ),
+                              ),
+                          ],
                         ),
+                        if (widget.current != null)
+                          _AnimatedSelfMarkerLayer(
+                            point: widget.current!.toLatLng(),
+                            rotationRadians: widget.heading == null
+                                ? null
+                                : widget.heading! * math.pi / 180,
+                          ),
                       ],
                     ),
-                  MarkerLayer(
-                    markers: [
-                      if (widget.activeOrder?.pickupCoordinate != null)
-                        Marker(
-                          point:
-                              widget.activeOrder!.pickupCoordinate!.toLatLng(),
-                          width: 34,
-                          height: 34,
-                          child: const _NavigatorPointMarker(
-                            // Not navigation_rounded (reads as a heading
-                            // arrow) and no longer the concentric-ring dot
-                            // either: on a live map beside the car marker,
-                            // a ringed blue disc is the universal "you are
-                            // here" glyph and was being read as a duplicate
-                            // of the driver's own position. A person icon
-                            // can only mean the passenger.
-                            icon: Icons.person_rounded,
-                            background: SmartTaxiColors.gold,
-                            foreground: Colors.white,
-                          ),
-                        ),
-                      if (widget.activeOrder?.dropoffCoordinate != null)
-                        Marker(
-                          point:
-                              widget.activeOrder!.dropoffCoordinate!.toLatLng(),
-                          width: 34,
-                          height: 34,
-                          child: const _NavigatorPointMarker(
-                            icon: Icons.location_on_rounded,
-                            background: SmartTaxiColors.gold,
-                            foreground: SmartTaxiColors.text,
-                          ),
-                        ),
-                      for (final alert in widget.alerts.take(12))
-                        Marker(
-                          point: alert.toLatLng(),
-                          width: 44,
-                          height: 44,
-                          child: _RoadAlertPin(
-                            label: _alertShortLabel(l10n, alert.type),
-                            color: _alertColor(alert.type),
-                            heading: alert.heading,
-                          ),
-                        ),
-                      // Mapped roadside signs (OSM traffic_sign nodes) were
-                      // fetched and voiced (_checkSignProximity) but never
-                      // actually shown on the map — a driver only heard
-                      // about one as they passed it, with no way to see it
-                      // coming the way camera/hazard pins already work.
-                      for (final sign in widget.signs.take(12))
-                        Marker(
-                          point: sign.toLatLng(),
-                          width: 40,
-                          height: 40,
-                          child: _RoadAlertPin(
-                            label: _signShortLabel(sign),
-                            color: _signPinColor,
-                            heading: sign.heading,
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (widget.current != null)
-                    _AnimatedSelfMarkerLayer(
-                      point: widget.current!.toLatLng(),
-                      rotationRadians: widget.heading == null
-                          ? null
-                          : widget.heading! * math.pi / 180,
-                    ),
-                ],
-              ),
             Positioned(
               left: 14,
               top: 14,
@@ -3861,6 +3975,438 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
   }
 }
 
+// Native vector/3D surface for the driver's line map. It intentionally keeps
+// the same route, alerts, signs and live vehicle state as the established
+// flutter_map implementation above. Rendering may change, but the navigation
+// safety contract does not.
+class _NativeDriverNavigatorMap extends StatefulWidget {
+  const _NativeDriverNavigatorMap({
+    required this.center,
+    required this.current,
+    required this.heading,
+    required this.activeOrder,
+    required this.route,
+    required this.alerts,
+    required this.signs,
+  });
+
+  final LatLng center;
+  final Coordinate? current;
+  final double? heading;
+  final OrderSummary? activeOrder;
+  final List<LatLng> route;
+  final List<RoadAlert> alerts;
+  final List<OsmSign> signs;
+
+  @override
+  State<_NativeDriverNavigatorMap> createState() =>
+      _NativeDriverNavigatorMapState();
+}
+
+class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
+  native_map.MapLibreMapController? _controller;
+  bool _styleReady = false;
+  bool _imagesInstalled = false;
+  String _lastSceneSignature = '';
+  DateTime? _lastSceneSyncAt;
+  Timer? _sceneSyncTimer;
+
+  // Updating a native MapLibre annotation collection is intentionally a
+  // complete operation (the plugin clears and recreates the symbols). GPS
+  // can report several fixes while a rider is moving through an intersection;
+  // doing the whole clear/repaint sequence for each of those fixes made pan
+  // and pinch feel sticky. Keep the latest fix, but draw at a predictable
+  // cadence that is still faster than the location stream used for dispatch.
+  static const _minimumSceneSyncInterval = Duration(milliseconds: 650);
+
+  static const _carImage = 'smarttaxi-driver-navigator-car';
+  static const _finishImage = 'smarttaxi-driver-navigator-finish';
+
+  native_map.LatLng _point(LatLng point) =>
+      native_map.LatLng(point.latitude, point.longitude);
+
+  native_map.LatLng _coordinate(Coordinate point) =>
+      native_map.LatLng(point.lat, point.lng);
+
+  native_map.LatLng _driverPoint(Coordinate point) =>
+      native_map.LatLng(point.lat, point.lng);
+
+  native_map.LatLng _alertPoint(RoadAlert point) =>
+      native_map.LatLng(point.lat, point.lng);
+
+  native_map.LatLng _signPoint(OsmSign point) =>
+      native_map.LatLng(point.lat, point.lng);
+
+  String _sceneSignature() => [
+        widget.current?.lat,
+        widget.current?.lng,
+        widget.heading,
+        widget.activeOrder?.pickupCoordinate?.lat,
+        widget.activeOrder?.pickupCoordinate?.lng,
+        widget.activeOrder?.dropoffCoordinate?.lat,
+        widget.activeOrder?.dropoffCoordinate?.lng,
+        ...widget.route.expand((point) => [point.latitude, point.longitude]),
+        ...widget.alerts.expand((alert) => [alert.lat, alert.lng, alert.type]),
+        ...widget.signs.expand((sign) => [sign.lat, sign.lng, sign.label]),
+      ].join('|');
+
+  @override
+  void didUpdateWidget(covariant _NativeDriverNavigatorMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    unawaited(_followDriverIfNeeded());
+    _scheduleSceneSync();
+  }
+
+  void _scheduleSceneSync({bool immediately = false}) {
+    if (!_styleReady) return;
+    final now = DateTime.now();
+    final last = _lastSceneSyncAt;
+    final elapsed =
+        last == null ? _minimumSceneSyncInterval : now.difference(last);
+    if (immediately || elapsed >= _minimumSceneSyncInterval) {
+      _sceneSyncTimer?.cancel();
+      _sceneSyncTimer = null;
+      unawaited(_syncScene());
+      return;
+    }
+    if (_sceneSyncTimer != null) return;
+    _sceneSyncTimer = Timer(_minimumSceneSyncInterval - elapsed, () {
+      _sceneSyncTimer = null;
+      if (mounted) unawaited(_syncScene());
+    });
+  }
+
+  Future<void> _installImages() async {
+    final controller = _controller;
+    if (controller == null || _imagesInstalled) return;
+    try {
+      Future<void> add(String id, String asset) async {
+        final bytes = await rootBundle.load(asset);
+        await controller.addImage(
+          id,
+          Uint8List.fromList(
+            bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+          ),
+        );
+      }
+
+      await add(_carImage, _driverSelfCarAsset);
+      await add(_finishImage, 'assets/map/marker_destination_2026.png');
+      _imagesInstalled = true;
+    } catch (_) {
+      _imagesInstalled = false;
+    }
+  }
+
+  Future<void> _enable3dBuildings(
+      native_map.MapLibreMapController controller) async {
+    // Without this the extrusion went on top of the whole style, so the
+    // navigation map drew houses over the street names — the one screen where
+    // the name has to stay readable. See resolveLabelAnchorLayerId.
+    final anchorLayerId = await resolveLabelAnchorLayerId(controller);
+    try {
+      await controller.addFillExtrusionLayer(
+        'openmaptiles',
+        'smarttaxi-driver-3d-buildings',
+        const native_map.FillExtrusionLayerProperties(
+          fillExtrusionColor: '#d7e8ff',
+          fillExtrusionHeight: [
+            'coalesce',
+            ['get', 'render_height'],
+            ['get', 'height'],
+            14,
+          ],
+          fillExtrusionBase: [
+            'coalesce',
+            ['get', 'render_min_height'],
+            ['get', 'min_height'],
+            0,
+          ],
+          fillExtrusionOpacity: 0.9,
+        ),
+        sourceLayer: 'building',
+        belowLayerId: anchorLayerId,
+        minzoom: 13,
+        enableInteraction: false,
+      );
+    } catch (_) {
+      // The style's building source is optional. The operational map and all
+      // safety annotations remain available without it.
+    }
+  }
+
+  Future<void> _followDriverIfNeeded() async {
+    final controller = _controller;
+    if (!_styleReady || controller == null) return;
+    final target = widget.current == null
+        ? _point(widget.center)
+        : _driverPoint(widget.current!);
+    final current = controller.cameraPosition;
+    final cameraTarget = current?.target;
+    final moved = cameraTarget == null ||
+        (cameraTarget.latitude - target.latitude).abs() > 0.00002 ||
+        (cameraTarget.longitude - target.longitude).abs() > 0.00002;
+    if (!moved) return;
+    try {
+      await controller.animateCamera(
+        native_map.CameraUpdate.newCameraPosition(
+          native_map.CameraPosition(
+            target: target,
+            zoom: widget.current == null ? 14.2 : 15.4,
+            tilt: 42,
+          ),
+        ),
+        duration: const Duration(milliseconds: 420),
+      );
+    } catch (_) {
+      // Keep the driver workflow available during a transient style reload.
+    }
+  }
+
+  String _alertHex(String type) {
+    switch (type) {
+      case 'SPEED_CAMERA':
+        return '#ef4444';
+      case 'SPEED_LIMIT':
+        return '#f97316';
+      case 'ROAD_HAZARD':
+        return '#ef4444';
+      default:
+        return '#1d6fff';
+    }
+  }
+
+  Future<void> _safetyPin({
+    required native_map.MapLibreMapController controller,
+    required native_map.LatLng point,
+    required String label,
+    required String color,
+  }) async {
+    await controller.addCircle(
+      native_map.CircleOptions(
+        geometry: point,
+        circleRadius: 15,
+        circleColor: color,
+        circleOpacity: 0.98,
+        circleStrokeColor: '#ffffff',
+        circleStrokeWidth: 3,
+      ),
+    );
+    await controller.addSymbol(
+      native_map.SymbolOptions(
+        geometry: point,
+        textField: label,
+        textSize: 11,
+        textColor: '#ffffff',
+        textHaloColor: color,
+        textHaloWidth: 1,
+        textAnchor: 'center',
+      ),
+    );
+  }
+
+  Future<void> _syncScene() async {
+    final controller = _controller;
+    if (!_styleReady || controller == null) return;
+    final l10n = AppLocalizations.of(context);
+    final signature = _sceneSignature();
+    if (signature == _lastSceneSignature) return;
+    _lastSceneSignature = signature;
+    _lastSceneSyncAt = DateTime.now();
+    await _installImages();
+    if (!_imagesInstalled || !mounted) return;
+
+    try {
+      await controller.clearLines();
+      await controller.clearCircles();
+      await controller.clearSymbols();
+      if (widget.route.isNotEmpty) {
+        final route = widget.route.map(_point).toList(growable: false);
+        await controller.addLine(
+          native_map.LineOptions(
+            geometry: route,
+            lineColor: '#0b4fd1',
+            lineWidth: 11,
+            lineOpacity: 0.96,
+          ),
+        );
+        await controller.addLine(
+          native_map.LineOptions(
+            geometry: route,
+            lineColor: '#1d6fff',
+            lineWidth: 7,
+          ),
+        );
+      }
+
+      final pickup = widget.activeOrder?.pickupCoordinate;
+      if (pickup != null) {
+        await _safetyPin(
+          controller: controller,
+          point: _coordinate(pickup),
+          label: '●',
+          color: '#1d6fff',
+        );
+      }
+      final dropoff = widget.activeOrder?.dropoffCoordinate;
+      if (dropoff != null) {
+        await controller.addSymbol(
+          native_map.SymbolOptions(
+            geometry: _coordinate(dropoff),
+            iconImage: _finishImage,
+            iconAnchor: 'bottom',
+            iconSize: 0.62,
+          ),
+        );
+      }
+      for (final alert in widget.alerts.take(12)) {
+        await _safetyPin(
+          controller: controller,
+          point: _alertPoint(alert),
+          label: _alertShortLabel(l10n, alert.type),
+          color: _alertHex(alert.type),
+        );
+      }
+      for (final sign in widget.signs.take(12)) {
+        await _safetyPin(
+          controller: controller,
+          point: _signPoint(sign),
+          label: _signShortLabel(sign),
+          color: '#0b4fd1',
+        );
+      }
+      final current = widget.current;
+      if (current != null) {
+        await controller.addSymbol(
+          native_map.SymbolOptions(
+            geometry: _driverPoint(current),
+            iconImage: _carImage,
+            iconAnchor: 'center',
+            iconSize: 0.23,
+            iconRotate: widget.heading,
+          ),
+        );
+      }
+    } catch (_) {
+      // Annotation managers become temporarily unavailable when Android
+      // reloads a style. The next live GPS/route update retries safely.
+    }
+  }
+
+  void _onStyleLoaded() {
+    // Do not let a half-loaded native style flash below the driver's route
+    // UI. The tiny neutral veil is removed as soon as MapLibre confirms the
+    // first fully styled frame is ready for interaction.
+    if (mounted) {
+      setState(() => _styleReady = true);
+    } else {
+      _styleReady = true;
+    }
+    _lastSceneSignature = '';
+    final controller = _controller;
+    unawaited(_followDriverIfNeeded());
+    _scheduleSceneSync(immediately: true);
+    if (controller != null) {
+      unawaited(Future<void>(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 280));
+        if (mounted && identical(controller, _controller)) {
+          await _enable3dBuildings(controller);
+          await _settle3dCamera(controller);
+        }
+      }));
+    }
+  }
+
+  Future<void> _settle3dCamera(
+      native_map.MapLibreMapController controller) async {
+    final target = widget.current == null
+        ? _point(widget.center)
+        : _driverPoint(widget.current!);
+    try {
+      await controller.animateCamera(
+        native_map.CameraUpdate.newCameraPosition(
+          native_map.CameraPosition(
+            target: target,
+            zoom: widget.current == null ? 15.0 : 15.4,
+            tilt: 55,
+          ),
+        ),
+        duration: const Duration(milliseconds: 320),
+      );
+    } catch (_) {
+      // Camera pitch is a visual enhancement; it must never interrupt the
+      // driver's live order workflow during a transient style reload.
+    }
+  }
+
+  @override
+  void dispose() {
+    _sceneSyncTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = widget.current == null
+        ? _point(widget.center)
+        : _driverPoint(widget.current!);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        native_map.MapLibreMap(
+          styleString: AppConfig.mapLibreStyleUrl,
+          initialCameraPosition: native_map.CameraPosition(
+            target: target,
+            zoom: widget.current == null ? 14.2 : 15.4,
+            tilt: 42,
+          ),
+          compassEnabled: false,
+          trackCameraPosition: true,
+          rotateGesturesEnabled: true,
+          tiltGesturesEnabled: true,
+          onMapCreated: (controller) => _controller = controller,
+          onStyleLoadedCallback: _onStyleLoaded,
+        ),
+        IgnorePointer(
+          child: AnimatedOpacity(
+            opacity: _styleReady ? 0 : 1,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(color: Color(0xfff7fbff)),
+              child: Center(
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x1f1d6fff),
+                        blurRadius: 22,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const SizedBox.square(
+                    dimension: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: SmartTaxiColors.brand,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _NavigatorCurrentMarker extends StatelessWidget {
   const _NavigatorCurrentMarker();
 
@@ -3869,21 +4415,21 @@ class _NavigatorCurrentMarker extends StatelessWidget {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: SmartTaxiColors.gold.withValues(alpha: 0.2),
+        color: SmartTaxiColors.brand.withValues(alpha: 0.2),
         shape: BoxShape.circle,
         border: Border.all(
-            color: SmartTaxiColors.gold.withValues(alpha: 0.13), width: 1),
+            color: SmartTaxiColors.brand.withValues(alpha: 0.13), width: 1),
       ),
       child: Container(
         width: 24,
         height: 24,
         decoration: BoxDecoration(
-          color: SmartTaxiColors.gold,
+          color: SmartTaxiColors.brand,
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 4),
           boxShadow: [
             BoxShadow(
-              color: SmartTaxiColors.gold.withValues(alpha: 0.33),
+              color: SmartTaxiColors.brand.withValues(alpha: 0.33),
               blurRadius: 18,
               offset: const Offset(0, 6),
             ),
@@ -4115,14 +4661,14 @@ class _NavSpeedDial extends StatelessWidget {
     // Round, like the instrument it stands in for. A rectangular card of the
     // same size reads as one more panel among many; the circle is spotted
     // without being looked for, which is the entire point of a speed readout.
-    final tint = speeding ? palette.danger : palette.gold;
+    final tint = speeding ? palette.danger : palette.brand;
     return Container(
       width: 72,
       height: 72,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: speeding ? palette.dangerSoft : palette.goldSurface,
+        color: speeding ? palette.dangerSoft : palette.brandSurface,
         border: Border.all(color: tint.withValues(alpha: 0.45), width: 2),
       ),
       child: Column(
@@ -4181,8 +4727,9 @@ class _NavRouteReadout extends StatelessWidget {
     // Arrival is the question behind "сколько ещё" — a driver answering a
     // passenger says a time, not a duration. Computed off the live remaining
     // duration, so it slides as traffic does.
-    final arrival =
-        seconds == null ? null : DateTime.now().add(Duration(seconds: seconds.round()));
+    final arrival = seconds == null
+        ? null
+        : DateTime.now().add(Duration(seconds: seconds.round()));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4304,6 +4851,11 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   bool _mapUnavailable = false;
   int _tileErrorCount = 0;
   DateTime? _lastFixAt;
+  // Navigator can be opened before the driver goes online.  In that case it
+  // owns a short-lived location stream for map preview, so permission/service
+  // failures must be shown as an actionable state instead of an endless
+  // generic "searching GPS" spinner.
+  String? _gpsStatusMessage;
   // moveAndRotate() used to be called every tick with the raw new
   // point/heading, jumping the whole map frame under the self-marker each
   // time — the marker itself already glides smoothly via
@@ -4360,13 +4912,23 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   Future<void> _startStandalonePositionTracking() async {
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
-      if (!enabled) return;
+      if (!enabled) {
+        if (mounted) {
+          setState(() => _gpsStatusMessage =
+              AppLocalizations.of(context).driverEnableLocationOrPickOnMap);
+        }
+        return;
+      }
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          setState(() => _gpsStatusMessage =
+              AppLocalizations.of(context).driverAllowLocationOrPickOnMap);
+        }
         return;
       }
       // Re-check after the awaits above: the driver may have gone online
@@ -4379,12 +4941,16 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
       ).listen((position) {
         if (!mounted) return;
         widget.shell.setState(() => widget.shell._applyPositionFix(position));
+        setState(() => _gpsStatusMessage = null);
         unawaited(widget.shell._maybeFetchOsmNavigation(position));
       });
     } catch (_) {
-      // Best-effort — the screen still works, just without a live position
-      // until the driver goes online (which starts the shell's real
-      // stream).
+      // The navigator remains usable as a map preview, but the driver needs
+      // an honest explanation rather than a permanent loading message.
+      if (mounted) {
+        setState(() => _gpsStatusMessage =
+            AppLocalizations.of(context).driverLocationFetchFailed);
+      }
     }
   }
 
@@ -4407,8 +4973,8 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
       from.latitude + (to.latitude - from.latitude) * t,
       from.longitude + (to.longitude - from.longitude) * t,
     );
-    final headingDeg =
-        _cameraFromHeadingDeg + (_cameraToHeadingDeg - _cameraFromHeadingDeg) * t;
+    final headingDeg = _cameraFromHeadingDeg +
+        (_cameraToHeadingDeg - _cameraFromHeadingDeg) * t;
     try {
       _mapController.moveAndRotate(
         point,
@@ -4537,8 +5103,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     final current = widget.shell._currentCoordinate;
     if (current != null) {
       final heading = widget.shell._currentHeading;
-      _startCameraGlide(
-          current.toLatLng(), heading == null ? 0.0 : -heading);
+      _startCameraGlide(current.toLatLng(), heading == null ? 0.0 : -heading);
     }
   }
 
@@ -4654,12 +5219,12 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                             // the map instead of one more drawn road.
                             Polyline(
                               points: route,
-                              color: SmartTaxiColors.goldDeep,
+                              color: SmartTaxiColors.brandDeep,
                               strokeWidth: 12,
                             ),
                             Polyline(
                               points: route,
-                              color: SmartTaxiColors.gold,
+                              color: SmartTaxiColors.brand,
                               strokeWidth: 8,
                             ),
                           ],
@@ -4686,7 +5251,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                               // than as the passenger waiting up ahead.
                               child: const _NavigatorPointMarker(
                                 icon: Icons.person_rounded,
-                                background: SmartTaxiColors.gold,
+                                background: SmartTaxiColors.brand,
                                 foreground: Colors.white,
                               ),
                             ),
@@ -4698,7 +5263,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                               height: 34,
                               child: const _NavigatorPointMarker(
                                 icon: Icons.location_on_rounded,
-                                background: SmartTaxiColors.gold,
+                                background: SmartTaxiColors.brand,
                                 foreground: Colors.white,
                               ),
                             ),
@@ -4807,7 +5372,14 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
               right: 14,
               child: _NavigatorVoiceBanner(text: shell._navigatorBannerText!),
             ),
-          if (_gpsLost)
+          if (_gpsStatusMessage != null)
+            Positioned(
+              top: topInset + 66,
+              left: 14,
+              right: 14,
+              child: InlineMessage(text: _gpsStatusMessage!),
+            )
+          else if (_gpsLost)
             Positioned(
               top: topInset + 66,
               left: 14,
@@ -4854,43 +5426,45 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                 border: Border.all(color: context.palette.border),
                 boxShadow: const [
                   BoxShadow(
-                      color: Colors.black26, blurRadius: 18, offset: Offset(0, 8)),
+                      color: Colors.black26,
+                      blurRadius: 18,
+                      offset: Offset(0, 8)),
                 ],
               ),
               child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (targetLabel != null) ...[
-                  _NavTargetStrip(text: targetLabel, icon: targetIcon),
-                  const SizedBox(height: 12),
-                ],
-                // A speedometer dial, then the route figures, then the limit
-                // sign — one continuous row rather than three boxed cells.
-                // The boxed version had to give each number an equal third of
-                // the width, which left "0" swimming in white space while
-                // "2.7" was squeezed until it clipped away entirely.
-                Row(
-                  children: [
-                    _NavSpeedDial(
-                      speedKmh: speedKmh,
-                      speeding: speeding,
-                      label: l10n.driverSpeedLabel,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _NavRouteReadout(
-                        distanceMeters: routeProgress?.distanceMeters,
-                        durationSeconds: routeProgress?.durationSeconds,
-                      ),
-                    ),
-                    if (speedLimit != null) ...[
-                      const SizedBox(width: 10),
-                      _SpeedLimitSign(limitKmh: speedLimit),
-                    ],
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (targetLabel != null) ...[
+                    _NavTargetStrip(text: targetLabel, icon: targetIcon),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              ],
-            ),
+                  // A speedometer dial, then the route figures, then the limit
+                  // sign — one continuous row rather than three boxed cells.
+                  // The boxed version had to give each number an equal third of
+                  // the width, which left "0" swimming in white space while
+                  // "2.7" was squeezed until it clipped away entirely.
+                  Row(
+                    children: [
+                      _NavSpeedDial(
+                        speedKmh: speedKmh,
+                        speeding: speeding,
+                        label: l10n.driverSpeedLabel,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _NavRouteReadout(
+                          distanceMeters: routeProgress?.distanceMeters,
+                          durationSeconds: routeProgress?.durationSeconds,
+                        ),
+                      ),
+                      if (speedLimit != null) ...[
+                        const SizedBox(width: 10),
+                        _SpeedLimitSign(limitKmh: speedLimit),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -4927,7 +5501,7 @@ class _NavCircleButton extends StatelessWidget {
       label: semanticLabel,
       child: Material(
         color: filled
-            ? SmartTaxiColors.gold
+            ? SmartTaxiColors.brand
             : Colors.white.withValues(alpha: 0.94),
         shape: const CircleBorder(),
         elevation: 4,
@@ -4950,7 +5524,7 @@ class _NavCircleButton extends StatelessWidget {
                             strokeWidth: 2,
                             color: filled
                                 ? Colors.white
-                                : SmartTaxiColors.goldDeep,
+                                : SmartTaxiColors.brandDeep,
                           ),
                         )
                       : Icon(icon,
@@ -5008,7 +5582,7 @@ class _NavTargetStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
-          Icon(icon ?? Icons.route_rounded, size: 18, color: palette.goldDeep),
+          Icon(icon ?? Icons.route_rounded, size: 18, color: palette.brandDeep),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -5198,11 +5772,11 @@ class _TripMapState extends State<_TripMap> {
                   PolylineLayer(polylines: [
                     Polyline(
                         points: widget.route,
-                        color: SmartTaxiColors.goldDeep,
+                        color: SmartTaxiColors.brandDeep,
                         strokeWidth: 9),
                     Polyline(
                         points: widget.route,
-                        color: SmartTaxiColors.gold,
+                        color: SmartTaxiColors.brand,
                         strokeWidth: 5.5)
                   ]),
                 MarkerLayer(markers: [
@@ -5210,14 +5784,14 @@ class _TripMapState extends State<_TripMap> {
                     _routePointMarker(
                       pickup,
                       icon: Icons.person_rounded,
-                      background: SmartTaxiColors.gold,
+                      background: SmartTaxiColors.brand,
                       foreground: Colors.white,
                     ),
                   if (dropoff != null)
                     _routePointMarker(
                       dropoff,
                       icon: Icons.location_on_rounded,
-                      background: SmartTaxiColors.gold,
+                      background: SmartTaxiColors.brand,
                       foreground: SmartTaxiColors.text,
                     ),
                 ]),
@@ -5231,7 +5805,7 @@ class _TripMapState extends State<_TripMap> {
               ],
             ),
             // This vignette sits directly on the map and had no dark
-            // branch at all — being `const` it painted the gold theme's
+            // branch at all — being `const` it painted the retired gold theme's
             // creams (fffcf6/fff8e6) in *both* themes, so it hazed the
             // tiles warm in light and washed a cream film over the dark
             // map in dark. Now follows the theme like the tiles do.
@@ -5263,7 +5837,8 @@ class _TripMapState extends State<_TripMap> {
               top: 12,
               child: _DriverMapBadge(
                 text: widget.route.isEmpty
-                    ? AppLocalizations.of(context).driverRouteWillAppearAfterCalc
+                    ? AppLocalizations.of(context)
+                        .driverRouteWillAppearAfterCalc
                     : AppLocalizations.of(context).driverRouteToPickupPoint,
               ),
             ),
@@ -5358,11 +5933,8 @@ class _DriverMapBadge extends StatelessWidget {
   }
 }
 
-// Bottom sheet the driver uses to counter-propose a price on an open order
-// (torg). Server enforces a flat 200–1,000,000 KZT sanity range regardless
-// of the order's own estimate — see offeredPriceBounds() in
-// order-pricing.service.js — so the same bounds are mirrored here just for
-// input validation, not because they're derived from `currentPrice`.
+// Bottom sheet the driver uses to counter-propose a price on an open order.
+// Its proportional range mirrors the API's offeredPriceBounds() guard.
 // Fixed vocabulary mirrored from the backend's QUICK_MESSAGES map
 // (apps/api/src/modules/orders/orders.routes.js) — the server owns the
 // canonical text and rejects any key outside this set.
@@ -5437,25 +6009,26 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
             ),
             const SizedBox(height: 14),
             ..._messages(l10n).entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _sending != null
-                        ? null
-                        : () => _send(entry.key, entry.value),
-                    child: _sending == entry.key
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2.2),
-                          )
-                        : Text(entry.value),
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _sending != null
+                            ? null
+                            : () => _send(entry.key, entry.value),
+                        child: _sending == entry.key
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2.2),
+                              )
+                            : Text(entry.value),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
           ],
         ),
       ),
@@ -5480,6 +6053,13 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
   );
   String? _error;
 
+  int get _basePrice => math.max(0, widget.currentPrice?.round() ?? 0);
+  int get _minPrice => math.max(200, ((_basePrice * 0.7) / 50).ceil() * 50);
+  int get _maxPrice => math.max(
+        _minPrice,
+        math.min(1000000, ((_basePrice * 1.5) / 50).floor() * 50),
+      );
+
   @override
   void dispose() {
     _controller.dispose();
@@ -5488,7 +6068,7 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
 
   void _submit() {
     final value = int.tryParse(_controller.text.trim());
-    if (value == null || value < 200 || value > 1000000) {
+    if (value == null || value < _minPrice || value > _maxPrice) {
       setState(() =>
           _error = AppLocalizations.of(context).driverPriceOfferRangeError);
       return;
@@ -5633,12 +6213,15 @@ class _DriverRecurringBookingsScreenState
         final l10n = AppLocalizations.of(context);
         AppToast.showSuccess(
           context,
-          accept ? l10n.driverRouteAcceptedToast : l10n.driverRouteDeclinedToast,
+          accept
+              ? l10n.driverRouteAcceptedToast
+              : l10n.driverRouteDeclinedToast,
         );
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _updating.remove(booking.id));
     }
@@ -5659,7 +6242,8 @@ class _DriverRecurringBookingsScreenState
       });
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _updating.remove(booking.id));
     }
@@ -5727,7 +6311,8 @@ class _DriverRecurringBookingsScreenState
               const SizedBox(height: 12),
             ],
             if (others.isNotEmpty) ...[
-              SectionLabel(title: l10n.driverRecurringYourRoutesTitle, text: ''),
+              SectionLabel(
+                  title: l10n.driverRecurringYourRoutesTitle, text: ''),
               const SizedBox(height: 8),
               ...others.map(
                 (booking) => Padding(
@@ -5855,7 +6440,7 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: context.palette.goldPale,
+                  color: context.palette.brandPale,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.palette.borderStrong),
                 ),
@@ -6287,7 +6872,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
             ),
             const SizedBox(height: 14),
             // Bare Column, not another PremiumCard -- each _RoadAlertRow
-            // below is already its own bordered, gold-tinted card, so
+            // below is already its own bordered, accent-tinted card, so
             // wrapping the whole section in a second bordered card just
             // nested one box inside another for no visual reason.
             Column(
@@ -6399,7 +6984,7 @@ class _RoadAlertMap extends StatelessWidget {
                           height: 46,
                           child: const _RoadAlertPin(
                             label: '!',
-                            color: SmartTaxiColors.goldDeep,
+                            color: SmartTaxiColors.brandDeep,
                           ),
                         ),
                     ],
@@ -6421,7 +7006,7 @@ class _RoadAlertMap extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.shield_outlined,
-                        color: context.palette.goldDeep, size: 18),
+                        color: context.palette.brandDeep, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -6463,7 +7048,7 @@ class _RoadAlertMapFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: SmartTaxiColors.goldSurface,
+      color: SmartTaxiColors.brandSurface,
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(18),
@@ -6475,7 +7060,7 @@ class _RoadAlertMapFallback extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.map_outlined, color: SmartTaxiColors.goldDeep),
+              const Icon(Icons.map_outlined, color: SmartTaxiColors.brandDeep),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -6577,7 +7162,7 @@ class _RoadAlertRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.palette.goldSurface,
+        color: context.palette.brandSurface,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -6631,8 +7216,7 @@ class _RoadAlertRow extends StatelessWidget {
                 if (alert.heading != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    l10n.driverAlertHeadingDetail(
-                        compassLabel(alert.heading!)),
+                    l10n.driverAlertHeadingDetail(compassLabel(alert.heading!)),
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12,
@@ -6646,7 +7230,8 @@ class _RoadAlertRow extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: updating ? null : onConfirm,
-                        child: Text(updating ? '...' : l10n.driverConfirmAlertButton),
+                        child: Text(
+                            updating ? '...' : l10n.driverConfirmAlertButton),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -6717,16 +7302,16 @@ Color _alertColor(String type) {
   return const {
         'ROAD_HAZARD': SmartTaxiColors.warning,
         'ACCIDENT': SmartTaxiColors.danger,
-        'ROAD_WORK': SmartTaxiColors.goldDeep,
+        'ROAD_WORK': SmartTaxiColors.brandDeep,
         'SPEED_CAMERA': SmartTaxiColors.text,
         'POLICE': SmartTaxiColors.text,
-        'TRAFFIC_JAM': SmartTaxiColors.gold,
+        'TRAFFIC_JAM': SmartTaxiColors.brand,
         'ROAD_CLOSED': SmartTaxiColors.danger,
         'BAD_ROAD': SmartTaxiColors.warning,
         'POTHOLE': SmartTaxiColors.warning,
-        'SPEED_BUMP': SmartTaxiColors.goldDeep,
+        'SPEED_BUMP': SmartTaxiColors.brandDeep,
         'ICY_ROAD': Color(0xff0284c7),
-        'SCHOOL_ZONE': SmartTaxiColors.gold,
+        'SCHOOL_ZONE': SmartTaxiColors.brand,
         'TEMPORARY_SPEED_LIMIT': SmartTaxiColors.text,
         'DANGEROUS_TURN': SmartTaxiColors.warning,
         'RAILROAD_CROSSING': SmartTaxiColors.textSecondary,
@@ -6773,19 +7358,19 @@ class _NextManeuverBanner extends StatelessWidget {
         ? '${(rounded / 1000).toStringAsFixed(1)} км'
         : '$rounded м';
     final tier = _urgencyTier();
-    final gold = context.palette.gold;
+    final brand = context.palette.brand;
     // Plain navy far away; as the turn gets close the card and icon circle
-    // pick up the app's gold accent and grow slightly, then go fully gold
+    // pick up the app's accent and grow slightly, then go fully accent
     // right at the turn — an AnimatedContainer/AnimatedScale eases each tier
     // change instead of the size/color jumping in a single frame.
     final cardColor = switch (tier) {
-      2 => Color.lerp(const Color(0xff10192e), gold, 0.22)!,
-      1 => Color.lerp(const Color(0xff10192e), gold, 0.10)!,
+      2 => Color.lerp(const Color(0xff10192e), brand, 0.22)!,
+      1 => Color.lerp(const Color(0xff10192e), brand, 0.10)!,
       _ => const Color(0xff10192e),
     };
     final iconCircleColor = switch (tier) {
-      2 => gold,
-      1 => gold.withValues(alpha: 0.35),
+      2 => brand,
+      1 => brand.withValues(alpha: 0.35),
       _ => Colors.white.withValues(alpha: 0.14),
     };
     final iconColor = tier == 2 ? const Color(0xff10192e) : Colors.white;
@@ -6820,7 +7405,8 @@ class _NextManeuverBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppLocalizations.of(context).driverInDistanceLabel(distanceLabel),
+                  AppLocalizations.of(context)
+                      .driverInDistanceLabel(distanceLabel),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -6883,8 +7469,8 @@ class _NavigatorVoiceBanner extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: palette.goldPale,
-          border: Border.all(color: palette.gold.withValues(alpha: 0.4)),
+          color: palette.brandPale,
+          border: Border.all(color: palette.brand.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -6905,7 +7491,7 @@ class _NavigatorVoiceBanner extends StatelessWidget {
               child: Text(
                 text,
                 style: TextStyle(
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),

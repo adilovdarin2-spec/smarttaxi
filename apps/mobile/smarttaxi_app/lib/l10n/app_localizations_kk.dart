@@ -630,6 +630,18 @@ class AppLocalizationsKk extends AppLocalizations {
       'Алу нүктесі мен межелі мекенжайды таңдаңыз';
 
   @override
+  String get passengerHomeGreeting => 'Сәлеметсіз бе!';
+
+  @override
+  String get passengerQuickHome => 'Үй';
+
+  @override
+  String get passengerQuickWork => 'Жұмыс';
+
+  @override
+  String get passengerQuickFavorites => 'Таңдаулылар';
+
+  @override
   String get passengerHomeSetDestination => 'Қайда екенін көрсету';
 
   @override
@@ -3976,4 +3988,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverRegionsRetryAction => 'Жаңарту';
+
+  @override
+  String get authTagline => 'ҚАЛАЛЫҚ ТАКСИ';
 }

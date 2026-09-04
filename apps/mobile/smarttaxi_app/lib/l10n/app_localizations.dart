@@ -765,7 +765,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerAboutRegionalModelText.
   ///
   /// In ru, this message translates to:
-  /// **'Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.'**
+  /// **'Поездки доступны в активных регионах. Межгород доступен только по направлениям, включённым оператором.'**
   String get passengerAboutRegionalModelText;
 
   /// No description provided for @passengerAboutContactTitle.
@@ -1212,6 +1212,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выберите точку подачи и адрес назначения'**
   String get passengerHomeWhereToSubtitle;
+
+  /// No description provided for @passengerHomeGreeting.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здравствуйте!'**
+  String get passengerHomeGreeting;
+
+  /// No description provided for @passengerQuickHome.
+  ///
+  /// In ru, this message translates to:
+  /// **'Дом'**
+  String get passengerQuickHome;
+
+  /// No description provided for @passengerQuickWork.
+  ///
+  /// In ru, this message translates to:
+  /// **'Работа'**
+  String get passengerQuickWork;
+
+  /// No description provided for @passengerQuickFavorites.
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранное'**
+  String get passengerQuickFavorites;
 
   /// No description provided for @passengerHomeSetDestination.
   ///
@@ -2650,7 +2674,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorIntercityNotSupported.
   ///
   /// In ru, this message translates to:
-  /// **'Межгород пока не поддерживается'**
+  /// **'Выбранное направление межгорода временно недоступно'**
   String get errorIntercityNotSupported;
 
   /// No description provided for @errorTariffInactive.
@@ -7188,6 +7212,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Обновить'**
   String get driverRegionsRetryAction;
+
+  /// No description provided for @authTagline.
+  ///
+  /// In ru, this message translates to:
+  /// **'ГОРОДСКОЕ ТАКСИ'**
+  String get authTagline;
 }
 
 class _AppLocalizationsDelegate

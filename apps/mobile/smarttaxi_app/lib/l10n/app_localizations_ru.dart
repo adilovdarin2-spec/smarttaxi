@@ -364,7 +364,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerAboutRegionalModelText =>
-      'Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.';
+      'Поездки доступны в активных регионах. Межгород доступен только по направлениям, включённым оператором.';
 
   @override
   String get passengerAboutContactTitle => 'Связь';
@@ -622,6 +622,18 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get passengerHomeWhereToSubtitle =>
       'Выберите точку подачи и адрес назначения';
+
+  @override
+  String get passengerHomeGreeting => 'Здравствуйте!';
+
+  @override
+  String get passengerQuickHome => 'Дом';
+
+  @override
+  String get passengerQuickWork => 'Работа';
+
+  @override
+  String get passengerQuickFavorites => 'Избранное';
 
   @override
   String get passengerHomeSetDestination => 'Указать куда';
@@ -1429,7 +1441,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Точка назначения вне активного региона';
 
   @override
-  String get errorIntercityNotSupported => 'Межгород пока не поддерживается';
+  String get errorIntercityNotSupported =>
+      'Выбранное направление межгорода временно недоступно';
 
   @override
   String get errorTariffInactive => 'Этот тариф временно недоступен';
@@ -3971,4 +3984,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverRegionsRetryAction => 'Обновить';
+
+  @override
+  String get authTagline => 'ГОРОДСКОЕ ТАКСИ';
 }

@@ -583,6 +583,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerHomeWhereToSubtitle => '请选择上车点和目的地';
 
   @override
+  String get passengerHomeGreeting => '您好！';
+
+  @override
+  String get passengerQuickHome => '家';
+
+  @override
+  String get passengerQuickWork => '工作';
+
+  @override
+  String get passengerQuickFavorites => '收藏';
+
+  @override
   String get passengerHomeSetDestination => '设置目的地';
 
   @override
@@ -3727,4 +3739,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get driverRegionsRetryAction => '刷新';
+
+  @override
+  String get authTagline => '城市出租车';
 }

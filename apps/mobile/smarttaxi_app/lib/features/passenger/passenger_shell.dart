@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' as native_map;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,6 +23,9 @@ import '../../core/config/app_config.dart';
 import '../../core/legal/legal_content.dart';
 import '../../core/sockets/socket_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/active_locale.dart';
+import '../../core/utils/contact_phone.dart';
+import '../../core/utils/map_layers.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
@@ -32,12 +37,15 @@ import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/models.dart';
 import 'screens/wallet/client_wallet_screen.dart';
 
-const _tariffEconomyAsset = 'assets/cars/tariff_v11_economy.png';
+// Product-owned illustrations keep the premium card presentation distinct
+// without copying artwork from the visual references.
+const _tariffEconomyAsset =
+    'assets/cars/tariff_economy_white_sedan_flutter.png';
 const _tariffComfortAsset =
     'assets/cars/tariff_comfort_white_sedan_flutter.png';
 const _tariffBusinessAsset =
     'assets/cars/tariff_business_white_premium_sedan_flutter.png';
-const _tariffDeliveryAsset = 'assets/cars/tariff_v11_delivery.png';
+const _tariffDeliveryAsset = 'assets/icons/delivery_van_illustration.svg';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One fixed size for the car icon everywhere it appears on this map --
 // nearby free drivers before a match, and the specific driver being
@@ -52,15 +60,12 @@ const _driverCarMarkerSize = 40.0;
 // style while actively choosing an address (pickup or dropoff — same
 // pin, the field label is what tells them apart), and a checkered-flag
 // pin for a confirmed/selected address.
-const _userLocationMarkerAsset = 'assets/map/marker_my_location_2026.png';
-const _destinationMarkerAsset = 'assets/map/marker_destination_2026.png';
-const _addressPickMarkerAsset = 'assets/map/marker_address_pick_2026.png';
-const _addressPickMarkerColor = SmartTaxiColors.gold;
+const _addressPickMarkerColor = SmartTaxiColors.brand;
 // Blue/white design system tokens (docs/design/
 // BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md) — used only in the trip-search/
 // driver-found flow below, migrated opportunistically while redesigning
 // that specific screen per the doc's own "migrate as you touch a screen,
-// not a blanket repaint" guidance. Not a replacement for SmartTaxiColors.gold
+// not a blanket repaint" guidance. Not a replacement for SmartTaxiColors.brand
 // used everywhere else in this file.
 // Aliases for the real brand tokens, kept only because a few uses below sit
 // inside const constructors that context.palette cannot reach.
@@ -71,14 +76,14 @@ const _addressPickMarkerColor = SmartTaxiColors.gold;
 // #1d6fff. So the screen a rider stares at while waiting for a driver was
 // painted in a blue subtly unlike the rest of the app — the kind of mismatch
 // that reads as cheap without ever being nameable.
-const _blueAccent = SmartTaxiColors.gold;
-const _blueSurface = SmartTaxiColors.goldSurface;
+const _blueAccent = SmartTaxiColors.brand;
+const _blueSurface = SmartTaxiColors.brandSurface;
 const _blueBorder = SmartTaxiColors.border;
 // One consistent neutral card shadow, applied opportunistically as screens
 // get touched (design doc: "one consistent card shadow", same
 // migrate-don't-blanket-repaint policy as the color tokens above). Does not
 // replace the deliberately different colored glows on selected/accent
-// states (_TariffCard selected, _GoldCtaButton) — those are a different,
+// states (_TariffCard selected, _BrandCtaButton) — those are a different,
 // intentional visual language, not an inconsistency to fix.
 const _cardShadow = <BoxShadow>[
   BoxShadow(color: Color(0x22102a52), blurRadius: 36, offset: Offset(0, 16)),
@@ -111,10 +116,26 @@ const _cardShadow = <BoxShadow>[
 // Kept as a flat list rather than chained ColorFilter.matrix calls since
 // ColorFiltered composes only one matrix per widget.
 const _darkMapTileMatrix = <double>[
-  -0.4275, -0.4750, -0.0475, 0, 246.25,
-  -0.4410, -0.4900, -0.0490, 0, 257.90,
-  -0.4590, -0.5100, -0.0510, 0, 276.10,
-  0, 0, 0, 1, 0,
+  -0.4275,
+  -0.4750,
+  -0.0475,
+  0,
+  246.25,
+  -0.4410,
+  -0.4900,
+  -0.0490,
+  0,
+  257.90,
+  -0.4590,
+  -0.5100,
+  -0.0510,
+  0,
+  276.10,
+  0,
+  0,
+  0,
+  1,
+  0,
 ];
 // Standard OSM raster tiles are warm — cream landmass, beige buildings,
 // yellow roads. Dropped unfiltered into this app they were the single
@@ -129,19 +150,30 @@ const _darkMapTileMatrix = <double>[
 // constraint as _darkMapTileMatrix, so it's pre-composed here rather
 // than chained.
 const _lightMapTileMatrix = <double>[
-  0.8455, 0.1268, 0.0128, 0, 0,
-  0.0389, 0.9629, 0.0132, 0, 2,
-  0.0406, 0.1364, 0.9041, 0, 10,
-  0, 0, 0, 1, 0,
+  0.8455,
+  0.1268,
+  0.0128,
+  0,
+  0,
+  0.0389,
+  0.9629,
+  0.0132,
+  0,
+  2,
+  0.0406,
+  0.1364,
+  0.9041,
+  0,
+  10,
+  0,
+  0,
+  0,
+  1,
+  0,
 ];
-const _iconMenu = 'assets/icons/menu.svg';
-const _iconBell = 'assets/icons/bell.svg';
 const _iconChevronRight = 'assets/icons/chevron_right.svg';
 const _iconBanknote = 'assets/icons/banknote.svg';
 const _iconCreditCard = 'assets/icons/credit_card.svg';
-const _iconCar = 'assets/icons/car.svg';
-const _iconDelivery = 'assets/icons/delivery.svg';
-const _iconDeliveryVan = 'assets/icons/delivery_van_illustration.svg';
 const _atakentFallbackCenter = LatLng(40.84719, 68.503834);
 const _appVersion = AppConfig.appVersion;
 
@@ -157,6 +189,7 @@ class PassengerShell extends StatefulWidget {
     this.accountId = '',
     required this.onLogout,
     required this.onOpenDriverMode,
+    this.onRequestNotifications,
     required this.currentLocale,
     required this.onChangeLocale,
     this.themeMode = ThemeMode.light,
@@ -172,6 +205,7 @@ class PassengerShell extends StatefulWidget {
   final String accountId;
   final Future<void> Function() onLogout;
   final Future<bool> Function() onOpenDriverMode;
+  final Future<void> Function()? onRequestNotifications;
   final Locale? currentLocale;
   final ValueChanged<Locale> onChangeLocale;
   final ThemeMode themeMode;
@@ -204,6 +238,7 @@ class _PassengerShellState extends State<PassengerShell>
   String? _error;
   List<RegionOption> _regions = const [];
   RegionOption? _selectedRegion;
+  List<IntercityRouteOption> _intercityRoutes = const [];
   List<TariffOption> _tariffs = const [];
   String? _tariffId;
   Map<String, RoutePreview> _tariffEstimates = const {};
@@ -218,8 +253,7 @@ class _PassengerShellState extends State<PassengerShell>
   final _promoCheckController = TextEditingController();
   bool _promoCheckLoading = false;
   String? _promoCheckError;
-  ({String code, int discountAmountKzt, int finalPriceKzt})?
-      _promoCheckResult;
+  ({String code, int discountAmountKzt, int finalPriceKzt})? _promoCheckResult;
   String? _sosPhone;
   String? _supportPhone;
   List<AddressSuggestion> _recentAddresses = const [];
@@ -429,8 +463,8 @@ class _PassengerShellState extends State<PassengerShell>
       widget.sockets.onOrderUpdate(_handleOrderUpdate);
       widget.sockets.onDriverLocation(_handleDriverLocation);
       widget.sockets.onQueuedPriceOffer(_handleQueuedPriceOffer);
-      _socketConnectionSub =
-          widget.sockets.connectionChanges.listen(_handleSocketConnectionChange);
+      _socketConnectionSub = widget.sockets.connectionChanges
+          .listen(_handleSocketConnectionChange);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -569,7 +603,8 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _creatingRecurringBooking = false);
     }
@@ -603,7 +638,8 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) {
         setState(() => _recurringBookingStatusUpdating.remove(booking.id));
@@ -645,14 +681,14 @@ class _PassengerShellState extends State<PassengerShell>
         lng: coordinate.lng,
       );
       if (!mounted) return;
-      setState(
-          () => _favoriteAddresses = [address, ..._favoriteAddresses]);
+      setState(() => _favoriteAddresses = [address, ..._favoriteAddresses]);
       if (mounted) Navigator.of(context).pop();
-      AppToast.showSuccess(
-          context, AppLocalizations.of(context).passengerAddressAddedToFavoritesToast);
+      AppToast.showSuccess(context,
+          AppLocalizations.of(context).passengerAddressAddedToFavoritesToast);
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _creatingFavoriteAddress = false);
     }
@@ -667,10 +703,13 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() => _favoriteAddresses =
           _favoriteAddresses.where((item) => item.id != address.id).toList());
       AppToast.showSuccess(
-          context, AppLocalizations.of(context).passengerAddressRemovedFromFavoritesToast);
+          context,
+          AppLocalizations.of(context)
+              .passengerAddressRemovedFromFavoritesToast);
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) {
         setState(() => _favoriteAddressDeleting.remove(address.id));
@@ -723,7 +762,8 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _settingDriverPreference = false);
     }
@@ -742,11 +782,11 @@ class _PassengerShellState extends State<PassengerShell>
           context, AppLocalizations.of(context).passengerEntryDeletedToast);
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) {
-        setState(
-            () => _driverPreferenceRemoving.remove(preference.driverId));
+        setState(() => _driverPreferenceRemoving.remove(preference.driverId));
       }
     }
   }
@@ -810,10 +850,8 @@ class _PassengerShellState extends State<PassengerShell>
       final contacts = await widget.api.getServiceContacts();
       if (!mounted) return;
       setState(() {
-        if (contacts.sosPhone != null) _sosPhone = contacts.sosPhone;
-        if (contacts.supportPhone != null) {
-          _supportPhone = contacts.supportPhone;
-        }
+        _sosPhone = usableServicePhone(contacts.sosPhone);
+        _supportPhone = usableServicePhone(contacts.supportPhone);
       });
     } catch (_) {
       // Best-effort — Safety sheet keeps its 112 fallback if this fails.
@@ -846,6 +884,9 @@ class _PassengerShellState extends State<PassengerShell>
             ? _atakentFallbackCenter
             : (activeRegion.center?.toLatLng() ?? _atakentFallbackCenter);
       });
+      if (activeRegion != null) {
+        unawaited(_loadIntercityRoutes(activeRegion.id));
+      }
       _maybeAskLocationOnStart();
     } catch (_) {
       if (!mounted) return;
@@ -857,6 +898,20 @@ class _PassengerShellState extends State<PassengerShell>
       _maybeAskLocationOnStart();
     }
     unawaited(_refreshNearbyDrivers(silent: true));
+  }
+
+  Future<void> _loadIntercityRoutes(String originRegionId) async {
+    try {
+      final routes = await widget.api.getIntercityRoutes(originRegionId);
+      if (!mounted || _selectedRegion?.id != originRegionId) return;
+      setState(() => _intercityRoutes = routes);
+    } catch (_) {
+      // Fail closed: city rides remain usable, but no cross-region direction
+      // is advertised until operations availability can be verified.
+      if (mounted && _selectedRegion?.id == originRegionId) {
+        setState(() => _intercityRoutes = const []);
+      }
+    }
   }
 
   void _startNearbyDriverPolling() {
@@ -976,6 +1031,7 @@ class _PassengerShellState extends State<PassengerShell>
       }
       _error = null;
     });
+    unawaited(_loadIntercityRoutes(selected.id));
     unawaited(_refreshNearbyDrivers(silent: true));
   }
 
@@ -1002,13 +1058,60 @@ class _PassengerShellState extends State<PassengerShell>
     return null;
   }
 
+  List<RegionOption> _destinationSearchRegions() {
+    final selected = _selectedRegion;
+    if (selected == null) return const [];
+    final allowedIds = _intercityRoutes
+        .where((route) => route.isActive)
+        .map((route) => route.destinationRegionId)
+        .toSet();
+    return [
+      selected,
+      ..._regions.where((region) => allowedIds.contains(region.id)),
+    ];
+  }
+
   bool _shouldBlockPointByRegion(
     RegionOption? selectedRegion,
     Coordinate coordinate,
   ) {
-    return selectedRegion != null &&
-        coordinate.lat.isNaN &&
-        coordinate.lng.isNaN;
+    if (selectedRegion == null) {
+      return false;
+    }
+    if (_target == PointTarget.pickup) {
+      return !selectedRegion.contains(coordinate);
+    }
+    final destinationRegion = _regionForPoint(coordinate);
+    if (destinationRegion == null) {
+      return true;
+    }
+    if (destinationRegion.id == selectedRegion.id) {
+      return false;
+    }
+    return !_intercityRoutes.any((route) =>
+        route.isActive && route.destinationRegionId == destinationRegion.id);
+  }
+
+  bool _isUsablePassengerAddressLabel(String value) {
+    final label = value.trim();
+    if (label.isEmpty) return false;
+    if (RegExp(r'^(?:точка на карте|адрес не определ[её]н)$',
+            caseSensitive: false)
+        .hasMatch(label)) {
+      return false;
+    }
+    // KZ-12 / AH5 / Р-29 and similar OSM way references are not addresses a
+    // passenger or driver can recognise. The API filters them, but retaining
+    // this client guard prevents an old cached response from becoming an
+    // order address.
+    final bareStreet = RegExp(
+      r'^(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+',
+      caseSensitive: false,
+    ).hasMatch(label);
+    if (bareStreet && !RegExp(r'\d').hasMatch(label)) return false;
+    return !RegExp(r'^(?:kz|ah|[а-яa-z]{1,3})[\s-]?\d+[а-яa-z]?$',
+            caseSensitive: false)
+        .hasMatch(label);
   }
 
   void _maybeAskLocationOnStart() {
@@ -1208,13 +1311,15 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   // CASH/KASPI are settled directly between rider and driver and confirmed
-  // by an operator (no electronic step to kick off). CARD is the one method
-  // that goes through the payments module's provider abstraction, so it's
-  // the only one that needs an automatic initiate + poll here.
+  // by an operator (no electronic step to kick off). CARD and a MIXED
+  // cashback-plus-card waiting surcharge go through the provider abstraction.
   void _maybeStartPaymentFlow(OrderSummary order) {
     final awaitingPayment =
         const {'TRIP_COMPLETED', 'PAYMENT_PENDING'}.contains(order.status);
-    if (!awaitingPayment || order.paymentMethod != 'CARD') return;
+    if (!awaitingPayment ||
+        !const {'CARD', 'MIXED'}.contains(order.paymentMethod)) {
+      return;
+    }
     if (_paymentInitiatedForOrderId == order.id) return;
     _paymentInitiatedForOrderId = order.id;
     unawaited(_initiatePayment(order.id));
@@ -1261,8 +1366,8 @@ class _PassengerShellState extends State<PassengerShell>
             method: 'CARD',
             provider: 'KASPI_PAY',
             status: 'FAILED',
-            failureReason:
-                AppLocalizations.of(context).passengerPaymentInitiateFailedError,
+            failureReason: AppLocalizations.of(context)
+                .passengerPaymentInitiateFailedError,
           ));
     }
   }
@@ -1290,7 +1395,7 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _retryPayment() async {
-    // Both _GoldCtaButton call sites for this hardcoded enabled:true,
+    // Both _BrandCtaButton call sites for this hardcoded enabled:true,
     // loading:false regardless of state, so a fast double-tap could fire
     // two concurrent initiatePayment calls — guard here instead.
     if (_retryingPayment) return;
@@ -1342,6 +1447,21 @@ class _PassengerShellState extends State<PassengerShell>
   // last-known fix (if any and not stale) is a better outcome than an
   // indefinite spinner or a hard failure.
   Future<Coordinate> _getPreciseLocation() async {
+    // The fused provider often already has a high-quality location from the
+    // phone's Maps/GPS service. Use a very recent fix immediately instead of
+    // making the rider wait for a new cold-GPS fix and seeing a misleading
+    // "enable location" state even though Android location is enabled.
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      final fresh = last != null &&
+          DateTime.now().difference(last.timestamp).inMinutes < 5;
+      if (fresh) {
+        return Coordinate(lat: last.latitude, lng: last.longitude);
+      }
+    } catch (_) {
+      // Fall through to a live provider request. A missing cached location is
+      // normal on a first launch and must not block the GPS path.
+    }
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -1487,13 +1607,17 @@ class _PassengerShellState extends State<PassengerShell>
           return;
         }
       }
-      var label = l10n.passengerCurrentLocationLabel;
+      var label = '';
       try {
         final address = await widget.api.reverseAddress(point);
-        if (address != null && address.label.trim().isNotEmpty) {
+        if (address != null && _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
         }
       } catch (_) {}
+      if (!_isUsablePassengerAddressLabel(label)) {
+        setState(() => _error = l10n.passengerLocationFailedPickManuallyError);
+        return;
+      }
       if (!mounted) return;
       setState(() {
         _pickup = point;
@@ -1527,8 +1651,20 @@ class _PassengerShellState extends State<PassengerShell>
   Future<void> _selectPoint({required PointTarget target}) async {
     final l10n = AppLocalizations.of(context);
     setState(() => _target = target);
+    // The initial region request and the first destination tap can race on a
+    // cold launch.  Resolve the enabled directions before taking the sheet's
+    // immutable region snapshot, otherwise a rider briefly sees only their
+    // current city even though intercity service is available.
+    final selectedRegion = _selectedRegion;
+    if (target == PointTarget.dropoff && selectedRegion != null) {
+      await _loadIntercityRoutes(selectedRegion.id);
+      if (!mounted) return;
+    }
     final sheetAddresses = _recentAddresses;
     final sheetAddressTitle = l10n.passengerRecentAddressesTitle;
+    final searchRegions = target == PointTarget.dropoff
+        ? _destinationSearchRegions()
+        : [_selectedRegion].whereType<RegionOption>().toList();
     // Near-opaque barrier so the map fades almost entirely to the app
     // background behind this sheet (a much softer look than the default
     // dark scrim) — needs its own dark-mode color or the light cream tint
@@ -1537,18 +1673,17 @@ class _PassengerShellState extends State<PassengerShell>
     final selected = await showModalBottomSheet<_PointResult>(
       context: context,
       isScrollControlled: true,
-      // The light value was 0xf6fffcf6 — the gold theme's cream. Because
+      // The light value was 0xf6fffcf6 — the brand theme's cream. Because
       // this barrier is near-opaque it effectively repaints the whole
       // upper half of the screen, so it was the largest warm surface left
       // in the app once the map tiles were cooled: opening the address
       // sheet turned the backdrop ivory. Now the app's own cool
       // background, which is what "fades to the app background" meant.
-      barrierColor:
-          isDark ? const Color(0xf6071426) : const Color(0xf6f7fbff),
+      barrierColor: isDark ? const Color(0xf6071426) : const Color(0xf6f7fbff),
       backgroundColor: Colors.transparent,
       builder: (context) => _AddressSearchSheet(
         api: widget.api,
-        region: _selectedRegion?.name,
+        regions: searchRegions,
         suggestedAddresses: sheetAddresses,
         suggestionTitle: sheetAddressTitle,
         favoriteAddresses: _favoriteAddresses,
@@ -1602,6 +1737,13 @@ class _PassengerShellState extends State<PassengerShell>
         : _mapPickerAddressLabel.trim().isEmpty
             ? null
             : _mapPickerAddressLabel.trim();
+    if (knownLabel == null || !_isUsablePassengerAddressLabel(knownLabel)) {
+      if (mounted) {
+        setState(() => _error =
+            'Не удалось определить адрес. Передвиньте карту к ближайшему дому или объекту.');
+      }
+      return;
+    }
     if (mounted) {
       setState(() {
         _mapPointPickerActive = false;
@@ -1651,7 +1793,7 @@ class _PassengerShellState extends State<PassengerShell>
     } else {
       try {
         final address = await widget.api.reverseAddress(coordinate);
-        if (address != null && address.label.trim().isNotEmpty) {
+        if (address != null && _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
         }
       } catch (_) {}
@@ -1685,12 +1827,19 @@ class _PassengerShellState extends State<PassengerShell>
       resolvedLabel = l10n.passengerMapPointLabel;
       try {
         final address = await widget.api.reverseAddress(coordinate);
-        if (address != null && address.label.trim().isNotEmpty) {
+        if (address != null && _isUsablePassengerAddressLabel(address.label)) {
           resolvedLabel = address.label.trim();
         }
       } catch (_) {}
     }
     final label = resolvedLabel ?? l10n.passengerMapPointLabel;
+    if (!_isUsablePassengerAddressLabel(label)) {
+      if (mounted) {
+        setState(() => _error =
+            'Не удалось определить адрес. Передвиньте карту к ближайшему дому или объекту.');
+      }
+      return;
+    }
     await _applyPoint(
       target,
       coordinate,
@@ -1735,7 +1884,7 @@ class _PassengerShellState extends State<PassengerShell>
     // confusing "tariffs not configured" + "outside region" pair of
     // messages, and going back from it reset the whole destination pick
     // instead of just letting the rider try a different address.
-    if (selectedRegion != null && !selectedRegion.contains(coordinate)) {
+    if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
       if (!mounted) return;
       AppToast.showError(
         context,
@@ -1866,7 +2015,8 @@ class _PassengerShellState extends State<PassengerShell>
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = _readableError(AppLocalizations.of(context), error));
+      setState(
+          () => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _previewLoading = false);
     }
@@ -1982,7 +2132,8 @@ class _PassengerShellState extends State<PassengerShell>
       _startNewPassengerTrip();
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = _readableError(AppLocalizations.of(context), error));
+      setState(
+          () => _error = _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -2005,15 +2156,18 @@ class _PassengerShellState extends State<PassengerShell>
         AppToast.showSuccess(
           context,
           AppLocalizations.of(context).passengerAcceptedNewPriceToast(
-              _formatTenge(updated.driverOfferPriceKzt?.toDouble() ?? updated.price ?? 0)),
+              _formatTenge(updated.driverOfferPriceKzt?.toDouble() ??
+                  updated.price ??
+                  0)),
         );
       } else {
-        AppToast.showInfo(
-            context, AppLocalizations.of(context).passengerDeclinedOfferedPriceToast);
+        AppToast.showInfo(context,
+            AppLocalizations.of(context).passengerDeclinedOfferedPriceToast);
       }
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _respondingToPriceOffer = false);
     }
@@ -2037,7 +2191,8 @@ class _PassengerShellState extends State<PassengerShell>
       );
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _respondingToPriceOffer = false);
     }
@@ -2080,8 +2235,8 @@ class _PassengerShellState extends State<PassengerShell>
     });
     AppToast.showInfo(
       context,
-      AppLocalizations.of(context)
-          .passengerQueuedOfferArrivedToast(_formatTenge(offer.priceKzt.toDouble())),
+      AppLocalizations.of(context).passengerQueuedOfferArrivedToast(
+          _formatTenge(offer.priceKzt.toDouble())),
     );
   }
 
@@ -2102,7 +2257,8 @@ class _PassengerShellState extends State<PassengerShell>
       });
     } catch (error) {
       if (!mounted) return;
-      AppToast.showError(context, _readableError(AppLocalizations.of(context), error));
+      AppToast.showError(
+          context, _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _promotingQueuedOfferId = null);
     }
@@ -2170,9 +2326,8 @@ class _PassengerShellState extends State<PassengerShell>
       // trip is heading to the dropoff, so a stale one there has to go.
       final expectedPhase = _expectedRoutePhase(_order?.status);
       final held = _driverPickupRoute;
-      final staleRouteStillValid = held != null &&
-          expectedPhase != null &&
-          held.phase == expectedPhase;
+      final staleRouteStillValid =
+          held != null && expectedPhase != null && held.phase == expectedPhase;
       if (staleRouteStillValid) return;
       setState(() {
         _driverPickupRoute = null;
@@ -2267,7 +2422,10 @@ class _PassengerShellState extends State<PassengerShell>
         );
       }
     } catch (error) {
-      if (mounted) setState(() => _error = _readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        setState(
+            () => _error = _readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -2493,6 +2651,8 @@ class _PassengerShellState extends State<PassengerShell>
             center: _mapCenter ?? _atakentFallbackCenter,
             zoom: _mapZoom,
             pickup: _pickup,
+            pickupIsCurrentLocation:
+                _pickupLabel == l10n.passengerMyLocationLabel,
             dropoff: _dropoff,
             driver: _order?.driverId == null ? null : _driverLocation,
             nearbyDrivers: _order?.driverId == null ? _nearbyDrivers : const [],
@@ -2570,6 +2730,10 @@ class _PassengerShellState extends State<PassengerShell>
                         _selectPoint(target: PointTarget.dropoff),
                     onUseLocation: _usePhoneLocation,
                     onPaymentTap: _choosePaymentMethod,
+                    onFavoriteTap: () {
+                      setState(() => _tab = PassengerTab.favoriteAddresses);
+                      unawaited(_loadFavoriteAddresses());
+                    },
                     orderNote: _orderNote,
                     onNoteTap: _editOrderNote,
                     tariffs: _tariffs,
@@ -2619,10 +2783,25 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _choosePaymentMethod() async {
+    int? cashbackBalanceKzt;
+    try {
+      cashbackBalanceKzt =
+          (await widget.api.getMyClientBalance()).cashbackBalanceKzt;
+    } catch (_) {
+      // Payment remains selectable; the atomic API guard is authoritative.
+    }
+    if (!mounted) return;
+    final selectedMethod =
+        !AppConfig.cardPaymentsEnabled && _paymentMethod == 'CARD'
+            ? 'CASH'
+            : _paymentMethod;
     final selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => _PaymentMethodSheet(selected: _paymentMethod),
+      builder: (context) => _PaymentMethodSheet(
+        selected: selectedMethod,
+        cashbackBalanceKzt: cashbackBalanceKzt,
+      ),
     );
     if (!mounted || selected == null) return;
     setState(() => _paymentMethod = selected);
@@ -2640,11 +2819,13 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   void _openNotifications() {
+    final request = widget.onRequestNotifications;
+    if (request != null) unawaited(request());
     setState(() => _tab = PassengerTab.notifications);
   }
 
   Future<void> _chooseLanguage() async {
-    final current = widget.currentLocale?.languageCode ?? 'ru';
+    final current = activeLanguageCode(context, widget.currentLocale);
     final code = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -2683,7 +2864,8 @@ class _PassengerShellState extends State<PassengerShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).languageChangedNote)),
+        SnackBar(
+            content: Text(AppLocalizations.of(context).languageChangedNote)),
       );
     });
   }
@@ -2764,9 +2946,10 @@ class _PassengerShellState extends State<PassengerShell>
     final error = _error;
     if (error == null) return null;
     final l10n = AppLocalizations.of(context);
-    final isLocationError = error == l10n.passengerLocationServiceDisabledError ||
-        error == l10n.passengerLocationDeniedManualPickError ||
-        error == l10n.passengerLocationFailedPickManuallyError;
+    final isLocationError =
+        error == l10n.passengerLocationServiceDisabledError ||
+            error == l10n.passengerLocationDeniedManualPickError ||
+            error == l10n.passengerLocationFailedPickManuallyError;
     if (!isLocationError) return null;
     return l10n.passengerGpsOrMapHintText;
   }
@@ -2817,7 +3000,7 @@ class _PassengerShellState extends State<PassengerShell>
     if (_order == null) {
       final groups = _groupTripsByDay(l10n, _tripHistory);
       return RefreshIndicator(
-        color: context.palette.goldDeep,
+        color: context.palette.brandDeep,
         onRefresh: _loadTripHistory,
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -2916,8 +3099,7 @@ class _PassengerShellState extends State<PassengerShell>
             showLocationButton: false,
             showCenterMarker: false,
             activeTarget: PointTarget.dropoff,
-            searching: const {'SEARCHING_DRIVER', 'NEW'}
-                .contains(order.status),
+            searching: const {'SEARCHING_DRIVER', 'NEW'}.contains(order.status),
           ),
         ),
         Align(
@@ -2939,58 +3121,58 @@ class _PassengerShellState extends State<PassengerShell>
                 opacity: animation,
                 child: SizeTransition(
                   sizeFactor: animation,
-                  axisAlignment: -1,
+                  alignment: Alignment.topCenter,
                   child: child,
                 ),
               ),
               child: _TripStatusPanel(
-              key: ValueKey('trip-status-${order.status}'),
-              api: widget.api,
-              order: order,
-              statusText: _statusLabel(l10n, order.status),
-              statusTone: _statusTone(order.status),
-              driverText: driverText,
-              driverRouteText: routeMeta,
-              nearbyDriverCount:
-                  order.driverId == null ? _nearbyDrivers.length : 0,
-              loading: _loading,
-              canCancel: _canCancelPassengerOrder(order.status),
-              isTerminal: _isPassengerOrderTerminal(order.status),
-              tripElapsedListenable: _tripElapsed,
-              tripElapsedReliable: _tripElapsedReliable,
-              tripDistanceTraveledM: _tripDistanceTraveledM,
-              ratingStars: _ratingStars,
-              ratingTags: _ratingTags,
-              ratingCommentController: _ratingCommentController,
-              ratingSubmitting: _ratingSubmitting,
-              ratingJustSubmitted: _ratingJustSubmitted,
-              receiptAcknowledged: _receiptAcknowledged,
-              noDriversFound: _noDriversFound,
-              payment: _payment,
-              paymentTimedOut: _paymentTimedOut,
-              retryingPayment: _retryingPayment,
-              sosPhone: _sosPhone,
-              error: _error,
-              onRatingStarsChanged: (value) => setState(() {
-                if ((_ratingStars >= 4) != (value >= 4)) {
-                  _ratingTags.clear();
-                }
-                _ratingStars = value;
-              }),
-              onRatingTagToggle: _toggleRatingTag,
-              onSubmitRating: _submitRating,
-              onAcknowledgeReceipt: () =>
-                  setState(() => _receiptAcknowledged = true),
-              onRetrySearch: _retryDriverSearch,
-              onRetryPayment: _retryPayment,
-              onCancel: _confirmCancelOrder,
-              onNewTrip: _startNewPassengerTrip,
-              respondingToPriceOffer: _respondingToPriceOffer,
-              onRespondToPriceOffer: _respondToDriverPriceOffer,
-              onSubmitCounterOffer: _submitClientCounterOffer,
-              queuedPriceOffers: _queuedPriceOffers,
-              promotingQueuedOfferId: _promotingQueuedOfferId,
-              onPromoteQueuedOffer: _promoteQueuedPriceOffer,
+                key: ValueKey('trip-status-${order.status}'),
+                api: widget.api,
+                order: order,
+                statusText: _statusLabel(l10n, order.status),
+                statusTone: _statusTone(order.status),
+                driverText: driverText,
+                driverRouteText: routeMeta,
+                nearbyDriverCount:
+                    order.driverId == null ? _nearbyDrivers.length : 0,
+                loading: _loading,
+                canCancel: _canCancelPassengerOrder(order.status),
+                isTerminal: _isPassengerOrderTerminal(order.status),
+                tripElapsedListenable: _tripElapsed,
+                tripElapsedReliable: _tripElapsedReliable,
+                tripDistanceTraveledM: _tripDistanceTraveledM,
+                ratingStars: _ratingStars,
+                ratingTags: _ratingTags,
+                ratingCommentController: _ratingCommentController,
+                ratingSubmitting: _ratingSubmitting,
+                ratingJustSubmitted: _ratingJustSubmitted,
+                receiptAcknowledged: _receiptAcknowledged,
+                noDriversFound: _noDriversFound,
+                payment: _payment,
+                paymentTimedOut: _paymentTimedOut,
+                retryingPayment: _retryingPayment,
+                sosPhone: _sosPhone,
+                error: _error,
+                onRatingStarsChanged: (value) => setState(() {
+                  if ((_ratingStars >= 4) != (value >= 4)) {
+                    _ratingTags.clear();
+                  }
+                  _ratingStars = value;
+                }),
+                onRatingTagToggle: _toggleRatingTag,
+                onSubmitRating: _submitRating,
+                onAcknowledgeReceipt: () =>
+                    setState(() => _receiptAcknowledged = true),
+                onRetrySearch: _retryDriverSearch,
+                onRetryPayment: _retryPayment,
+                onCancel: _confirmCancelOrder,
+                onNewTrip: _startNewPassengerTrip,
+                respondingToPriceOffer: _respondingToPriceOffer,
+                onRespondToPriceOffer: _respondToDriverPriceOffer,
+                onSubmitCounterOffer: _submitClientCounterOffer,
+                queuedPriceOffers: _queuedPriceOffers,
+                promotingQueuedOfferId: _promotingQueuedOfferId,
+                onPromoteQueuedOffer: _promoteQueuedPriceOffer,
               ),
             ),
           ),
@@ -3147,9 +3329,49 @@ class _PassengerShellState extends State<PassengerShell>
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _TitleBlock(
-          title: l10n.profile,
-          text: l10n.passengerProfileSubtitle,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _TitleBlock(
+                title: l10n.profile,
+                text: l10n.passengerProfileSubtitle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Tooltip(
+              message: l10n.settings,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(() => _tab = PassengerTab.settings),
+                  borderRadius: BorderRadius.circular(17),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: palette.card,
+                      border: Border.all(color: palette.borderStrong),
+                      borderRadius: BorderRadius.circular(17),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x16102a52),
+                          blurRadius: 14,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.settings_outlined,
+                      color: palette.brandDeep,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         _PremiumCard(
@@ -3167,14 +3389,14 @@ class _PassengerShellState extends State<PassengerShell>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          palette.gold,
-                          palette.goldDeep,
+                          palette.brand,
+                          palette.brandDeep,
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: palette.gold.withValues(alpha: 0.32),
+                          color: palette.brand.withValues(alpha: 0.32),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -3245,7 +3467,8 @@ class _PassengerShellState extends State<PassengerShell>
                     Expanded(
                       child: _ProfileStatTile(
                         icon: Icons.star_rounded,
-                        value: ratedTrips.isEmpty ? '—' : '${ratedTrips.length}',
+                        value:
+                            ratedTrips.isEmpty ? '—' : '${ratedTrips.length}',
                         label: l10n.passengerStatRatedLabel,
                       ),
                     ),
@@ -3280,9 +3503,8 @@ class _PassengerShellState extends State<PassengerShell>
                 icon: Icons.history_rounded,
                 title: l10n.passengerDrawerTrips,
                 subtitle: l10n.passengerMyTripsMenuSubtitle,
-                badge: completedTrips.isEmpty
-                    ? null
-                    : '${completedTrips.length}',
+                badge:
+                    completedTrips.isEmpty ? null : '${completedTrips.length}',
                 onTap: () => setState(() => _tab = PassengerTab.trips),
               ),
               const Divider(height: 20),
@@ -3304,8 +3526,7 @@ class _PassengerShellState extends State<PassengerShell>
                 icon: Icons.notifications_outlined,
                 title: l10n.notifications,
                 subtitle: l10n.passengerNotificationsMenuSubtitle,
-                onTap: () =>
-                    setState(() => _tab = PassengerTab.notifications),
+                onTap: () => setState(() => _tab = PassengerTab.notifications),
               ),
               const Divider(height: 20),
               _MenuLine(
@@ -3408,7 +3629,8 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() => _promoCheckResult = result);
     } catch (error) {
       if (!mounted) return;
-      setState(() => _promoCheckError = _readableError(AppLocalizations.of(context), error));
+      setState(() => _promoCheckError =
+          _readableError(AppLocalizations.of(context), error));
     } finally {
       if (mounted) setState(() => _promoCheckLoading = false);
     }
@@ -3437,12 +3659,12 @@ class _PassengerShellState extends State<PassengerShell>
                     height: 44,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: palette.goldSurface,
+                      color: palette.brandSurface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.confirmation_number_rounded,
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                       size: 22,
                     ),
                   ),
@@ -3483,7 +3705,7 @@ class _PassengerShellState extends State<PassengerShell>
                 onSubmitted: (_) => unawaited(_checkPromoCode()),
               ),
               const SizedBox(height: 12),
-              _GoldCtaButton(
+              _BrandCtaButton(
                 enabled: !_promoCheckLoading,
                 loading: _promoCheckLoading,
                 text: l10n.checkButton,
@@ -3660,13 +3882,13 @@ class _PassengerShellState extends State<PassengerShell>
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: palette.goldSurface,
+                    color: palette.brandSurface,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.headset_mic_outlined,
-                          size: 16, color: palette.goldDeep),
+                          size: 16, color: palette.brandDeep),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -3700,9 +3922,8 @@ class _PassengerShellState extends State<PassengerShell>
                   label: l10n.phoneLabel,
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
-                  initialValue: _driverPhone.isEmpty
-                      ? widget.accountPhone
-                      : _driverPhone,
+                  initialValue:
+                      _driverPhone.isEmpty ? widget.accountPhone : _driverPhone,
                   onChanged: (value) => _driverPhone = value,
                 ),
               ],
@@ -3779,7 +4000,7 @@ class _PassengerShellState extends State<PassengerShell>
                             TextSpan(
                               text: l10n.passengerDriverTermsLink,
                               style: TextStyle(
-                                color: palette.goldDeep,
+                                color: palette.brandDeep,
                                 fontWeight: FontWeight.w800,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -3791,7 +4012,7 @@ class _PassengerShellState extends State<PassengerShell>
                             TextSpan(
                               text: l10n.passengerDriverSafetyRulesLink,
                               style: TextStyle(
-                                color: palette.goldDeep,
+                                color: palette.brandDeep,
                                 fontWeight: FontWeight.w800,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -3818,7 +4039,7 @@ class _PassengerShellState extends State<PassengerShell>
             ),
           ],
           const SizedBox(height: 14),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !_loading,
             loading: _loading,
             text: l10n.passengerDriverSubmitButton,
@@ -3868,258 +4089,261 @@ class _PassengerShellState extends State<PassengerShell>
     // service-wide one from /api/regions/service-settings is the primary
     // source — a per-region override still wins if one is ever added.
     final palette = context.palette;
-    final supportPhone =
-        (_selectedRegion?.supportPhone ?? _supportPhone ?? '').trim();
+    final supportPhone = usableServicePhone(
+      _selectedRegion?.supportPhone ?? _supportPhone,
+    );
     return RefreshIndicator(
-      color: palette.goldDeep,
+      color: palette.brandDeep,
       onRefresh: _loadMySupportMessages,
       child: ListView(
-      padding: const EdgeInsets.all(20),
-      physics: const AlwaysScrollableScrollPhysics(
-        parent: BouncingScrollPhysics(),
-      ),
-      children: [
-        _TitleBlock(
-          title: l10n.support,
-          text: l10n.passengerSupportSubtitle,
+        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
         ),
-        const SizedBox(height: 16),
-        if (supportPhone.isNotEmpty) ...[
-          _PremiumCard(
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: palette.goldSurface,
-                    border: Border.all(color: palette.border),
-                    borderRadius: BorderRadius.circular(16),
+        children: [
+          _TitleBlock(
+            title: l10n.support,
+            text: l10n.passengerSupportSubtitle,
+          ),
+          const SizedBox(height: 16),
+          if (supportPhone != null) ...[
+            _PremiumCard(
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: palette.brandSurface,
+                      border: Border.all(color: palette.border),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.call_rounded,
+                      color: palette.brandDeep,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.call_rounded,
-                    color: palette.goldDeep,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.passengerSupportUrgentTitle,
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n.passengerSupportCallDirectly(supportPhone),
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.passengerSupportUrgentTitle,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.passengerSupportCallDirectly(supportPhone),
+                          style: TextStyle(
+                            color: palette.textSecondary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 10),
+                  // Outlined, not filled — "Отправить" further down is the
+                  // one filled accent action on this screen; a direct-call
+                  // shortcut is a secondary escape hatch, not the primary flow.
+                  OutlinedButton(
+                    onPressed: () => unawaited(_callSupportPhone(supportPhone)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: Text(l10n.callButton),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          _PremiumCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionLabel(
+                  title: l10n.passengerSupportTopicSectionTitle,
+                  text: l10n.passengerSupportTopicSectionText,
                 ),
-                const SizedBox(width: 10),
-                // Outlined, not filled — "Отправить" further down is the
-                // one filled accent action on this screen; a direct-call
-                // shortcut is a secondary escape hatch, not the primary flow.
-                OutlinedButton(
-                  onPressed: () => unawaited(_callSupportPhone(supportPhone)),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 44),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  child: Text(l10n.callButton),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: topics
+                      .map(
+                        (topic) => _SupportTopicChip(
+                          label: topicLabel(topic),
+                          selected: _supportTopic == topic,
+                          onTap: () => setState(() {
+                            _supportTopic = topic;
+                            // A previously-picked trip only makes sense for
+                            // "Забыл вещь" — switching to a different topic
+                            // (or re-picking the same one) shouldn't carry a
+                            // stale selection into a fresh report.
+                            _lostItemOrderId = null;
+                          }),
+                        ),
+                      )
+                      .toList(),
+                ),
+                // Step 2 only appears once a topic is chosen — reads as a
+                // flow (topic -> trip if lost item -> message) instead of
+                // one flat form with every field visible from the start.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topLeft,
+                  child: _supportTopic == null
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            l10n.passengerSupportChooseTopicFirst,
+                            style: TextStyle(
+                              color: palette.textSecondary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_supportTopic == 'lost_item') ...[
+                              const SizedBox(height: 14),
+                              _LostItemOrderPicker(
+                                activeOrder: _order,
+                                tripHistory: _tripHistory,
+                                selectedOrderId: _lostItemOrderId,
+                                onChanged: (id) =>
+                                    setState(() => _lostItemOrderId = id),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _supportController,
+                              minLines: 5,
+                              maxLines: 7,
+                              decoration: InputDecoration(
+                                labelText: l10n.messageLabel,
+                                hintText: l10n.passengerSupportMessageHint,
+                                alignLabelWithHint: true,
+                              ),
+                            ),
+                            if (_supportMessage != null) ...[
+                              const SizedBox(height: 12),
+                              _InlineMessage(
+                                text: _supportMessage!,
+                                danger: _supportMessageDanger,
+                                dark: Theme.of(context).brightness ==
+                                    Brightness.dark,
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            _BrandCtaButton(
+                              enabled: !_supportSending,
+                              loading: _supportSending,
+                              text: l10n.sendButton,
+                              loadingText: l10n.sendingButton,
+                              onTap: () async {
+                                final topic = _supportTopic;
+                                if (topic == null) return;
+                                final text = _supportController.text.trim();
+                                if (text.length < 8) {
+                                  setState(() {
+                                    _supportMessageDanger = true;
+                                    _supportMessage =
+                                        l10n.passengerSupportMessageTooShort;
+                                  });
+                                  return;
+                                }
+                                final isLostItem = topic == 'lost_item';
+                                if (isLostItem && _lostItemOrderId == null) {
+                                  setState(() {
+                                    _supportMessageDanger = true;
+                                    _supportMessage =
+                                        l10n.passengerSupportLostItemNeedsTrip;
+                                  });
+                                  return;
+                                }
+                                setState(() => _supportSending = true);
+                                try {
+                                  await widget.api.submitSupportMessage(
+                                    // The backend matches this literal string
+                                    // (not the Russian label) to trigger a
+                                    // push straight to the trip's driver —
+                                    // see support.routes.js.
+                                    topic: isLostItem
+                                        ? 'LOST_ITEM'
+                                        : topicRuLabel(topic),
+                                    message: text,
+                                    orderId: isLostItem
+                                        ? _lostItemOrderId
+                                        : _order?.id,
+                                  );
+                                  if (!mounted) return;
+                                  _supportController.clear();
+                                  setState(() {
+                                    _supportMessageDanger = false;
+                                    _lostItemOrderId = null;
+                                    _supportMessage = isLostItem
+                                        ? l10n.passengerSupportLostItemSent
+                                        : l10n.passengerSupportMessageSent;
+                                  });
+                                  unawaited(_loadMySupportMessages());
+                                } catch (error) {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _supportMessageDanger = true;
+                                    _supportMessage = _readableError(
+                                        AppLocalizations.of(context), error);
+                                  });
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _supportSending = false);
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
-        ],
-        _PremiumCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SectionLabel(
-                title: l10n.passengerSupportTopicSectionTitle,
-                text: l10n.passengerSupportTopicSectionText,
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: topics
-                    .map(
-                      (topic) => _SupportTopicChip(
-                        label: topicLabel(topic),
-                        selected: _supportTopic == topic,
-                        onTap: () => setState(() {
-                          _supportTopic = topic;
-                          // A previously-picked trip only makes sense for
-                          // "Забыл вещь" — switching to a different topic
-                          // (or re-picking the same one) shouldn't carry a
-                          // stale selection into a fresh report.
-                          _lostItemOrderId = null;
-                        }),
-                      ),
-                    )
-                    .toList(),
-              ),
-              // Step 2 only appears once a topic is chosen — reads as a
-              // flow (topic -> trip if lost item -> message) instead of
-              // one flat form with every field visible from the start.
-              AnimatedSize(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topLeft,
-                child: _supportTopic == null
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          l10n.passengerSupportChooseTopicFirst,
-                          style: TextStyle(
-                            color: palette.textSecondary,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_supportTopic == 'lost_item') ...[
-                            const SizedBox(height: 14),
-                            _LostItemOrderPicker(
-                              activeOrder: _order,
-                              tripHistory: _tripHistory,
-                              selectedOrderId: _lostItemOrderId,
-                              onChanged: (id) =>
-                                  setState(() => _lostItemOrderId = id),
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _supportController,
-                            minLines: 5,
-                            maxLines: 7,
-                            decoration: InputDecoration(
-                              labelText: l10n.messageLabel,
-                              hintText: l10n.passengerSupportMessageHint,
-                              alignLabelWithHint: true,
-                            ),
-                          ),
-                          if (_supportMessage != null) ...[
-                            const SizedBox(height: 12),
-                            _InlineMessage(
-                              text: _supportMessage!,
-                              danger: _supportMessageDanger,
-                              dark: Theme.of(context).brightness ==
-                                  Brightness.dark,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          _GoldCtaButton(
-                            enabled: !_supportSending,
-                            loading: _supportSending,
-                            text: l10n.sendButton,
-                            loadingText: l10n.sendingButton,
-                            onTap: () async {
-                              final topic = _supportTopic;
-                              if (topic == null) return;
-                              final text = _supportController.text.trim();
-                              if (text.length < 8) {
-                                setState(() {
-                                  _supportMessageDanger = true;
-                                  _supportMessage =
-                                      l10n.passengerSupportMessageTooShort;
-                                });
-                                return;
-                              }
-                              final isLostItem = topic == 'lost_item';
-                              if (isLostItem && _lostItemOrderId == null) {
-                                setState(() {
-                                  _supportMessageDanger = true;
-                                  _supportMessage =
-                                      l10n.passengerSupportLostItemNeedsTrip;
-                                });
-                                return;
-                              }
-                              setState(() => _supportSending = true);
-                              try {
-                                await widget.api.submitSupportMessage(
-                                  // The backend matches this literal string
-                                  // (not the Russian label) to trigger a
-                                  // push straight to the trip's driver —
-                                  // see support.routes.js.
-                                  topic: isLostItem
-                                      ? 'LOST_ITEM'
-                                      : topicRuLabel(topic),
-                                  message: text,
-                                  orderId:
-                                      isLostItem ? _lostItemOrderId : _order?.id,
-                                );
-                                if (!mounted) return;
-                                _supportController.clear();
-                                setState(() {
-                                  _supportMessageDanger = false;
-                                  _lostItemOrderId = null;
-                                  _supportMessage = isLostItem
-                                      ? l10n.passengerSupportLostItemSent
-                                      : l10n.passengerSupportMessageSent;
-                                });
-                                unawaited(_loadMySupportMessages());
-                              } catch (error) {
-                                if (!mounted) return;
-                                setState(() {
-                                  _supportMessageDanger = true;
-                                  _supportMessage = _readableError(AppLocalizations.of(context), error);
-                                });
-                              } finally {
-                                if (mounted) {
-                                  setState(() => _supportSending = false);
-                                }
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-              ),
+          if (_mySupportMessages.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _ProfileGroupLabel(l10n.passengerSupportYourRequests),
+            const SizedBox(height: 8),
+            for (final item in _mySupportMessages) ...[
+              _SupportHistoryCard(item: item),
+              const SizedBox(height: 10),
             ],
-          ),
-        ),
-        if (_mySupportMessages.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          _ProfileGroupLabel(l10n.passengerSupportYourRequests),
-          const SizedBox(height: 8),
-          for (final item in _mySupportMessages) ...[
-            _SupportHistoryCard(item: item),
-            const SizedBox(height: 10),
+          ] else if (_supportHistoryLoading) ...[
+            const SizedBox(height: 14),
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+            ),
+          ] else if (_supportHistoryError) ...[
+            const SizedBox(height: 14),
+            _PremiumCard(
+              child: _CompactNotice(
+                icon: Icons.wifi_off_rounded,
+                title: l10n.passengerSupportLoadError,
+                text: l10n.pullToRetry,
+                dark: Theme.of(context).brightness == Brightness.dark,
+              ),
+            ),
           ],
-        ] else if (_supportHistoryLoading) ...[
-          const SizedBox(height: 14),
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(strokeWidth: 2.4),
-            ),
-          ),
-        ] else if (_supportHistoryError) ...[
-          const SizedBox(height: 14),
-          _PremiumCard(
-            child: _CompactNotice(
-              icon: Icons.wifi_off_rounded,
-              title: l10n.passengerSupportLoadError,
-              text: l10n.pullToRetry,
-              dark: Theme.of(context).brightness == Brightness.dark,
-            ),
-          ),
         ],
-      ],
       ),
     );
   }
@@ -4156,7 +4380,7 @@ class _PassengerShellState extends State<PassengerShell>
   Widget _recurringBookingsScreen() {
     final l10n = AppLocalizations.of(context);
     return RefreshIndicator(
-      color: context.palette.goldDeep,
+      color: context.palette.brandDeep,
       onRefresh: _loadRecurringBookings,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -4169,7 +4393,7 @@ class _PassengerShellState extends State<PassengerShell>
             text: l10n.passengerRecurringSubtitle,
           ),
           const SizedBox(height: 16),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !_creatingRecurringBooking,
             loading: false,
             text: l10n.passengerRecurringNewRoute,
@@ -4287,7 +4511,7 @@ class _PassengerShellState extends State<PassengerShell>
   Widget _favoriteAddressesScreen() {
     final l10n = AppLocalizations.of(context);
     return RefreshIndicator(
-      color: context.palette.goldDeep,
+      color: context.palette.brandDeep,
       onRefresh: _loadFavoriteAddresses,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -4300,7 +4524,7 @@ class _PassengerShellState extends State<PassengerShell>
             text: l10n.passengerFavoritesSubtitle,
           ),
           const SizedBox(height: 16),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !_creatingFavoriteAddress,
             loading: false,
             text: l10n.passengerFavoritesAddButton,
@@ -4367,7 +4591,7 @@ class _PassengerShellState extends State<PassengerShell>
     final blocked =
         _driverPreferences.where((p) => p.isBlocked).toList(growable: false);
     return RefreshIndicator(
-      color: context.palette.goldDeep,
+      color: context.palette.brandDeep,
       onRefresh: _loadDriverPreferences,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -4380,7 +4604,7 @@ class _PassengerShellState extends State<PassengerShell>
             text: l10n.passengerDriverPrefsSubtitle,
           ),
           const SizedBox(height: 16),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !_settingDriverPreference,
             loading: false,
             text: l10n.passengerDriverPrefsAddButton,
@@ -4415,8 +4639,8 @@ class _PassengerShellState extends State<PassengerShell>
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _DriverPreferenceCard(
                     preference: preference,
-                    removing: _driverPreferenceRemoving
-                        .contains(preference.driverId),
+                    removing:
+                        _driverPreferenceRemoving.contains(preference.driverId),
                     onRemove: () => _removeDriverPreference(preference),
                   ),
                 ),
@@ -4434,8 +4658,8 @@ class _PassengerShellState extends State<PassengerShell>
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _DriverPreferenceCard(
                     preference: preference,
-                    removing: _driverPreferenceRemoving
-                        .contains(preference.driverId),
+                    removing:
+                        _driverPreferenceRemoving.contains(preference.driverId),
                     onRemove: () => _removeDriverPreference(preference),
                   ),
                 ),
@@ -4452,7 +4676,7 @@ class _PassengerShellState extends State<PassengerShell>
     final l10n = AppLocalizations.of(context);
     final summary = _referralSummary;
     return RefreshIndicator(
-      color: context.palette.goldDeep,
+      color: context.palette.brandDeep,
       onRefresh: _loadReferralSummary,
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -4522,7 +4746,7 @@ class _PassengerShellState extends State<PassengerShell>
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: _GoldCtaButton(
+                    child: _BrandCtaButton(
                       enabled: true,
                       loading: false,
                       text: l10n.passengerReferralsShareCode,
@@ -4652,7 +4876,7 @@ class _PassengerShellState extends State<PassengerShell>
           children: [
             _SettingsRow(
               title: l10n.passengerSettingsLanguageLabel,
-              text: switch (widget.currentLocale?.languageCode) {
+              text: switch (activeLanguageCode(context, widget.currentLocale)) {
                 'kk' => l10n.languageKazakh,
                 'uz' => l10n.languageUzbek,
                 'zh' => l10n.languageChinese,
@@ -4864,13 +5088,13 @@ class _PassengerShellState extends State<PassengerShell>
                   Icon(
                     Icons.arrow_back_rounded,
                     size: 18,
-                    color: context.palette.goldDeep,
+                    color: context.palette.brandDeep,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     AppLocalizations.of(context).passengerAllDocumentsButton,
                     style: TextStyle(
-                      color: context.palette.goldDeep,
+                      color: context.palette.brandDeep,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
@@ -4931,9 +5155,7 @@ class _SupportHistoryCard extends StatelessWidget {
                 label: item.isResolved
                     ? l10n.passengerSupportStatusResolved
                     : l10n.passengerSupportStatusPending,
-                tone: item.isResolved
-                    ? StatusTone.success
-                    : StatusTone.neutral,
+                tone: item.isResolved ? StatusTone.success : StatusTone.neutral,
               ),
             ],
           ),
@@ -4955,7 +5177,7 @@ class _SupportHistoryCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: palette.goldSurface,
+                color: palette.brandSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -4964,7 +5186,7 @@ class _SupportHistoryCard extends StatelessWidget {
                   Text(
                     l10n.passengerSupportResponseLabel,
                     style: TextStyle(
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                     ),
@@ -5085,9 +5307,9 @@ class _SupportTopicChip extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: selected ? palette.goldPale : palette.card,
+        color: selected ? palette.brandPale : palette.card,
         border: Border.all(
-          color: selected ? palette.gold : palette.border,
+          color: selected ? palette.brand : palette.border,
           width: selected ? 1.6 : 1,
         ),
         borderRadius: BorderRadius.circular(999),
@@ -5125,6 +5347,7 @@ class _MapCanvas extends StatefulWidget {
     required this.center,
     this.zoom,
     required this.pickup,
+    this.pickupIsCurrentLocation = false,
     required this.dropoff,
     required this.driver,
     required this.nearbyDrivers,
@@ -5156,6 +5379,7 @@ class _MapCanvas extends StatefulWidget {
   // Home tab re-entry). Null only on the very first mount of the app.
   final double? zoom;
   final Coordinate? pickup;
+  final bool pickupIsCurrentLocation;
   final Coordinate? dropoff;
   final DriverLocation? driver;
   final List<NearbyDriver> nearbyDrivers;
@@ -5204,6 +5428,7 @@ class _MapCanvasState extends State<_MapCanvas> {
   @override
   void didUpdateWidget(covariant _MapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (AppConfig.useMapLibre3d) return;
     final signature = _refitSignature(widget);
     if (signature != _lastRefitSignature) {
       _lastRefitSignature = signature;
@@ -5332,116 +5557,125 @@ class _MapCanvasState extends State<_MapCanvas> {
             const Positioned.fill(child: _MapFallbackSurface())
           else
             Positioned.fill(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom:
-                      zoom ?? (pickup == null && dropoff == null ? 12 : 14),
-                  initialCameraFit: initialFit,
-                  onTap: (_, point) => onTap(point),
-                  onPositionChanged: (camera, hasGesture) {
-                    if (hasGesture) {
-                      onCenterChanged(camera.center, camera.zoom);
-                    }
-                  },
-                  backgroundColor: context.palette.appBackground,
-                ),
-                children: [
-                  ColorFiltered(
-                    colorFilter: ColorFilter.matrix(
-                      isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
-                    ),
-                    child: TileLayer(
-                      urlTemplate: AppConfig.osmTileUrl,
-                      subdomains: const ['a', 'b', 'c', 'd'],
-                      retinaMode: true,
-                      userAgentPackageName: 'com.smarttaxi.app',
-                      errorTileCallback: (_, __, ___) => onTileError(),
-                    ),
-                  ),
-                  if (route.isNotEmpty)
-                    PolylineLayer(
-                      polylines: [
-                        // Dark blue casing under the bright blue core. The
-                        // casing used to be white, which against a near-white
-                        // map is invisible: the route read as a thin blue
-                        // stroke that the street grid kept cutting through.
-                        Polyline(
-                          points: route,
-                          color: SmartTaxiColors.goldDeep,
-                          strokeWidth: 11,
+              child: AppConfig.useMapLibre3d
+                  ? _NativeMapLibreSurface(
+                      center: center,
+                      // A vector map needs a street-level opening frame: at
+                      // zoom 12 the 3D building layer technically loads but
+                      // is too distant to communicate depth. Keep the
+                      // raster compatibility view at its broad city framing,
+                      // while the native 3D view opens at a useful street
+                      // scale. A chosen pickup/dropoff keeps the closer
+                      // route-focused framing below.
+                      zoom: zoom ??
+                          (pickup == null && dropoff == null ? 15.0 : 15.2),
+                      pickup: pickup,
+                      pickupIsCurrentLocation: widget.pickupIsCurrentLocation,
+                      dropoff: dropoff,
+                      driver: driver,
+                      nearbyDrivers: nearbyDrivers,
+                      route: route,
+                      onTap: onTap,
+                      onCenterChanged: onCenterChanged,
+                    )
+                  : FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: center,
+                        initialZoom: zoom ??
+                            (pickup == null && dropoff == null ? 12 : 14),
+                        initialCameraFit: initialFit,
+                        onTap: (_, point) => onTap(point),
+                        onPositionChanged: (camera, hasGesture) {
+                          if (hasGesture) {
+                            onCenterChanged(camera.center, camera.zoom);
+                          }
+                        },
+                        backgroundColor: context.palette.appBackground,
+                      ),
+                      children: [
+                        ColorFiltered(
+                          colorFilter: ColorFilter.matrix(
+                            isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                          ),
+                          child: TileLayer(
+                            urlTemplate: AppConfig.osmTileUrl,
+                            subdomains: const ['a', 'b', 'c', 'd'],
+                            retinaMode: true,
+                            userAgentPackageName: 'com.smarttaxi.app',
+                            errorTileCallback: (_, __, ___) => onTileError(),
+                          ),
                         ),
-                        Polyline(
-                          points: route,
-                          color: SmartTaxiColors.gold,
-                          strokeWidth: 7,
+                        if (route.isNotEmpty)
+                          PolylineLayer(
+                            polylines: [
+                              // Dark blue casing under the bright blue core. The
+                              // casing used to be white, which against a near-white
+                              // map is invisible: the route read as a thin blue
+                              // stroke that the street grid kept cutting through.
+                              Polyline(
+                                points: route,
+                                color: SmartTaxiColors.brandDeep,
+                                strokeWidth: 11,
+                              ),
+                              Polyline(
+                                points: route,
+                                color: SmartTaxiColors.brand,
+                                strokeWidth: 7,
+                              ),
+                            ],
+                          ),
+                        MarkerLayer(
+                          markers: [
+                            if (pickup != null)
+                              widget.pickupIsCurrentLocation
+                                  ? _currentLocationMapMarker(
+                                      point: pickup.toLatLng(),
+                                      semanticLabel: l10n
+                                          .passengerPickupPointSemanticLabel,
+                                      pulse: searching,
+                                    )
+                                  : searching
+                                      ? _approvedMapMarker(
+                                          point: pickup.toLatLng(),
+                                          semanticLabel: l10n
+                                              .passengerPickupPointSemanticLabel,
+                                          pulse: true,
+                                        )
+                                      : _approvedMapMarker(
+                                          point: pickup.toLatLng(),
+                                          semanticLabel: l10n
+                                              .passengerPickupPointSemanticLabel,
+                                        ),
+                            if (dropoff != null)
+                              _finishFlagMapMarker(
+                                point: dropoff.toLatLng(),
+                                semanticLabel:
+                                    l10n.passengerDropoffPointSemanticLabel,
+                              ),
+                            if (driver == null)
+                              for (final nearby in nearbyDrivers.take(5))
+                                _assetMarker(
+                                  point: nearby.toLatLng(),
+                                  asset: _driverCarMarkerAsset,
+                                  semanticLabel: l10n
+                                      .passengerNearbyFreeDriverSemanticLabel(
+                                          nearby.etaMin),
+                                  size: _driverCarMarkerSize,
+                                  rotationRadians:
+                                      (nearby.bearing ?? 0) * math.pi / 180,
+                                  fallbackIcon: Icons.local_taxi_rounded,
+                                ),
+                          ],
                         ),
+                        if (driver != null)
+                          _AnimatedDriverMarkerLayer(
+                            point: driver.toLatLng(),
+                            rotationRadians:
+                                (driver.heading ?? 0) * math.pi / 180,
+                          ),
                       ],
                     ),
-                  MarkerLayer(
-                    markers: [
-                      if (pickup != null)
-                        searching
-                            ? Marker(
-                                point: pickup.toLatLng(),
-                                width: 72,
-                                height: 72,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const _MarkerRadarPulse(
-                                      color: _blueAccent,
-                                      baseSize: 60,
-                                    ),
-                                    _assetMarkerContent(
-                                      asset: _userLocationMarkerAsset,
-                                      semanticLabel: l10n.passengerPickupPointSemanticLabel,
-                                      size: 14,
-                                      fallbackIcon: Icons
-                                          .radio_button_checked_rounded,
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : _assetMarker(
-                                point: pickup.toLatLng(),
-                                asset: _userLocationMarkerAsset,
-                                semanticLabel: l10n.passengerPickupPointSemanticLabel,
-                                size: 14,
-                                fallbackIcon:
-                                    Icons.radio_button_checked_rounded,
-                              ),
-                      if (dropoff != null)
-                        _assetMarker(
-                          point: dropoff.toLatLng(),
-                          asset: _destinationMarkerAsset,
-                          semanticLabel: l10n.passengerDropoffPointSemanticLabel,
-                          size: 16,
-                          fallbackIcon: Icons.location_on_rounded,
-                        ),
-                      if (driver == null)
-                        for (final nearby in nearbyDrivers.take(5))
-                          _assetMarker(
-                            point: nearby.toLatLng(),
-                            asset: _driverCarMarkerAsset,
-                            semanticLabel: l10n
-                                .passengerNearbyFreeDriverSemanticLabel(nearby.etaMin),
-                            size: _driverCarMarkerSize,
-                            rotationRadians:
-                                (nearby.bearing ?? 0) * math.pi / 180,
-                            fallbackIcon: Icons.local_taxi_rounded,
-                          ),
-                    ],
-                  ),
-                  if (driver != null)
-                    _AnimatedDriverMarkerLayer(
-                      point: driver.toLatLng(),
-                      rotationRadians: (driver.heading ?? 0) * math.pi / 180,
-                    ),
-                ],
-              ),
             ),
           // Fades the map to the app background at the top/bottom edges so
           // the floating header and sheet read clearly over busy map tiles.
@@ -5463,7 +5697,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                             Color(0x08071426),
                             Color(0xaa071426),
                           ]
-                        // Was the gold theme's cream (fffcf6). It is laid
+                        // Was the brand theme's cream (fffcf6). It is laid
                         // straight over the map, so it tinted the tiles
                         // warm from the top and bottom edges even after
                         // the tiles themselves were cooled.
@@ -5493,6 +5727,8 @@ class _MapCanvasState extends State<_MapCanvas> {
               onMenu: onMenu,
               onNotifications: onNotifications,
               unreadNotificationCount: unreadNotificationCount,
+              onUseLocation: onUseLocation,
+              showLocationButton: widget.showLocationButton,
               routeSummaryLabel: routeSummaryLabel,
               onRouteBack: onRouteBack,
             ),
@@ -5543,6 +5779,508 @@ class _MapCanvasState extends State<_MapCanvas> {
   }
 }
 
+// Vector/3D implementation of the rider map.  It deliberately receives the
+// same domain state as the established flutter_map surface above: one routing
+// result from the API remains the sole source of truth, and the rendering
+// backend can be switched without changing address selection or trip logic.
+//
+// USE_MAPLIBRE_3D=false preserves the established raster surface for a
+// problematic legacy device without changing any rider-flow logic.
+class _NativeMapLibreSurface extends StatefulWidget {
+  const _NativeMapLibreSurface({
+    required this.center,
+    required this.zoom,
+    required this.pickup,
+    required this.pickupIsCurrentLocation,
+    required this.dropoff,
+    required this.driver,
+    required this.nearbyDrivers,
+    required this.route,
+    required this.onTap,
+    required this.onCenterChanged,
+  });
+
+  final LatLng center;
+  final double zoom;
+  final Coordinate? pickup;
+  final bool pickupIsCurrentLocation;
+  final Coordinate? dropoff;
+  final DriverLocation? driver;
+  final List<NearbyDriver> nearbyDrivers;
+  final List<LatLng> route;
+  final ValueChanged<LatLng> onTap;
+  final void Function(LatLng center, double zoom) onCenterChanged;
+
+  @override
+  State<_NativeMapLibreSurface> createState() => _NativeMapLibreSurfaceState();
+}
+
+class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
+  native_map.MapLibreMapController? _controller;
+  bool _styleReady = false;
+  bool _imagesInstalled = false;
+  bool _ignoreNextCameraIdle = false;
+  String _lastSceneSignature = '';
+
+  static const _pickupImage = 'smarttaxi-pickup-marker';
+  static const _currentImage = 'smarttaxi-current-location-marker';
+  static const _finishImage = 'smarttaxi-finish-marker';
+  static const _carImage = 'smarttaxi-driver-car-marker';
+
+  @override
+  void didUpdateWidget(covariant _NativeMapLibreSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // `initialCameraPosition` is read only while the platform view is
+    // created. Unlike flutter_map, rebuilding the widget after GPS, address
+    // search, or region selection does not automatically recenter MapLibre.
+    // Keep the visual camera in lock-step with the same shell state, while
+    // leaving an already-completed user pan untouched.
+    unawaited(_syncCameraToWidget());
+    unawaited(_syncScene());
+  }
+
+  Future<void> _installImages() async {
+    final controller = _controller;
+    if (controller == null || _imagesInstalled) return;
+
+    Future<void> add(String name, String asset) async {
+      final bytes = await rootBundle.load(asset);
+      final raw =
+          bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes);
+      await controller.addImage(name, Uint8List.fromList(raw));
+    }
+
+    try {
+      // Render the same blue square-and-tail marker used by the Flutter and
+      // web maps. This prevents the old brand PNG from returning in 3D mode.
+      await controller.addImage(
+        _pickupImage,
+        await _approvedAddressMarkerPng(),
+      );
+      await controller.addImage(
+        _currentImage,
+        await _currentLocationMarkerPng(),
+      );
+      await add(_finishImage, 'assets/map/marker_destination_2026.png');
+      await add(_carImage, _driverCarMarkerAsset);
+      _imagesInstalled = true;
+    } catch (_) {
+      // A missing marker must not make the map or an address selection
+      // unusable. The marker layer is retried after the next style reload.
+      _imagesInstalled = false;
+    }
+  }
+
+  Future<Uint8List> _approvedAddressMarkerPng() async {
+    const width = 128.0;
+    const height = 168.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final outer = ui.RRect.fromRectAndRadius(
+      const ui.Rect.fromLTWH(16, 4, 96, 96),
+      const ui.Radius.circular(30),
+    );
+    final shadowPaint = ui.Paint()
+      ..color = const Color(0x381d6fff)
+      ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 12);
+    canvas.drawRRect(outer.shift(const ui.Offset(0, 14)), shadowPaint);
+    final gradient = ui.Gradient.linear(
+      const ui.Offset(16, 4),
+      const ui.Offset(112, 100),
+      const [Color(0xff63a0ff), Color(0xff0b4fd1)],
+    );
+    canvas.drawRRect(outer, ui.Paint()..shader = gradient);
+    final inner = ui.RRect.fromRectAndRadius(
+      const ui.Rect.fromLTWH(22, 10, 84, 84),
+      const ui.Radius.circular(24),
+    );
+    canvas.drawRRect(inner, ui.Paint()..color = const Color(0xe6ffffff));
+    final blueLight = ui.Paint()..color = const Color(0x8c63a0ff);
+    final blue = ui.Paint()..color = const Color(0xe61d6fff);
+    canvas.drawRect(const ui.Rect.fromLTWH(38, 42, 10, 10), blueLight);
+    canvas.drawRect(const ui.Rect.fromLTWH(52, 42, 10, 10), blue);
+    canvas.drawRect(const ui.Rect.fromLTWH(44, 56, 10, 10), blueLight);
+    final text = TextPainter(
+      text: const TextSpan(
+        text: 'S',
+        style: TextStyle(
+          color: Color(0xff1d6fff),
+          fontSize: 50,
+          height: 1,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    text.paint(canvas, const ui.Offset(70, 17));
+    final tail = ui.Path()
+      ..moveTo(52, 98)
+      ..lineTo(76, 98)
+      ..lineTo(68, 130)
+      ..lineTo(64, 140)
+      ..lineTo(60, 130)
+      ..close();
+    canvas.drawPath(tail, ui.Paint()..color = const Color(0xff0b4fd1));
+    final image =
+        await recorder.endRecording().toImage(width.toInt(), height.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    return bytes!.buffer.asUint8List();
+  }
+
+  Future<Uint8List> _currentLocationMarkerPng() async {
+    const size = 96;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    const center = ui.Offset(48, 48);
+    canvas.drawCircle(
+      center,
+      34,
+      ui.Paint()..color = const Color(0x331d6fff),
+    );
+    canvas.drawCircle(
+      center,
+      25,
+      ui.Paint()..color = const Color(0xff1d6fff),
+    );
+    canvas.drawCircle(center, 17, ui.Paint()..color = Colors.white);
+    canvas.drawCircle(
+      center,
+      10,
+      ui.Paint()..color = const Color(0xff1d6fff),
+    );
+    final image = await recorder.endRecording().toImage(size, size);
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    return bytes!.buffer.asUint8List();
+  }
+
+  String _sceneSignature() => [
+        widget.pickup?.lat,
+        widget.pickup?.lng,
+        widget.pickupIsCurrentLocation,
+        widget.dropoff?.lat,
+        widget.dropoff?.lng,
+        widget.driver?.lat,
+        widget.driver?.lng,
+        ...widget.nearbyDrivers
+            .take(5)
+            .expand((driver) => [driver.lat, driver.lng]),
+        ...widget.route.expand((point) => [point.latitude, point.longitude]),
+      ].join('|');
+
+  native_map.LatLng _nativePoint(LatLng point) =>
+      native_map.LatLng(point.latitude, point.longitude);
+
+  Future<void> _syncCameraToWidget() async {
+    final controller = _controller;
+    if (!_styleReady || controller == null) return;
+    final current = controller.cameraPosition;
+    final target = _nativePoint(widget.center);
+    final currentTarget = current?.target;
+    final targetChanged = currentTarget == null ||
+        (currentTarget.latitude - target.latitude).abs() > 0.00002 ||
+        (currentTarget.longitude - target.longitude).abs() > 0.00002;
+    final zoomChanged =
+        current == null || (current.zoom - widget.zoom).abs() > 0.08;
+    if (!targetChanged && !zoomChanged) return;
+
+    try {
+      // MapLibre also emits an idle event for the old camera while a style
+      // finishes loading. Do not let that late event overwrite a GPS/address
+      // center we have just deliberately applied in the shell.
+      _ignoreNextCameraIdle = true;
+      await controller.animateCamera(
+        native_map.CameraUpdate.newCameraPosition(
+          native_map.CameraPosition(
+            target: target,
+            zoom: widget.zoom,
+            tilt: 38,
+          ),
+        ),
+        duration: const Duration(milliseconds: 380),
+      );
+    } catch (_) {
+      // Camera synchronization is presentational. A transient style reload
+      // must not break address selection or order creation.
+    }
+  }
+
+  Future<void> _enable3dBuildings(
+      native_map.MapLibreMapController controller) async {
+    // OpenFreeMap's Liberty style is built from OpenMapTiles. If a style does
+    // not expose that source/layer, MapLibre rejects this optional layer; the
+    // base vector map remains completely usable, so this is intentionally a
+    // best-effort enhancement rather than a hard dependency.
+    final anchorLayerId = await resolveLabelAnchorLayerId(controller);
+    try {
+      await controller.addFillExtrusionLayer(
+        'openmaptiles',
+        'smarttaxi-3d-buildings',
+        const native_map.FillExtrusionLayerProperties(
+          // Buildings should add quiet depth to the map, not compete with
+          // the selected route or the blue SmartTaxi marker.
+          fillExtrusionColor: '#edf4fc',
+          fillExtrusionHeight: [
+            'coalesce',
+            ['get', 'render_height'],
+            ['get', 'height'],
+            // Small cities often omit a measured height in OSM. A modest
+            // fallback keeps the 3D surface dimensional instead of silently
+            // degrading into a flat plan outside major cities.
+            14,
+          ],
+          fillExtrusionBase: [
+            'coalesce',
+            ['get', 'render_min_height'],
+            ['get', 'min_height'],
+            0,
+          ],
+          fillExtrusionOpacity: 0.76,
+        ),
+        sourceLayer: 'building',
+        // MapLibre adds a runtime layer above every existing style layer by
+        // default. Put buildings below the lowest label layer so street, POI
+        // and city labels remain readable above the 3D geometry. Symbols and
+        // map annotations (our pickup/dropoff/driver markers) then always
+        // stay on top of houses as they do in the reference.
+        belowLayerId: anchorLayerId,
+        minzoom: 13,
+        enableInteraction: false,
+      );
+    } catch (_) {
+      // See the note above: source/layer names are style-specific.
+    }
+  }
+
+  Future<void> _syncScene() async {
+    final controller = _controller;
+    if (!_styleReady || controller == null) return;
+    final signature = _sceneSignature();
+    if (signature == _lastSceneSignature) return;
+    _lastSceneSignature = signature;
+
+    await _installImages();
+    if (!_imagesInstalled || !mounted) return;
+
+    try {
+      await controller.clearLines();
+      await controller.clearSymbols();
+      if (widget.route.isNotEmpty) {
+        final geometry = widget.route.map(_nativePoint).toList(growable: false);
+        await controller.addLine(
+          native_map.LineOptions(
+            geometry: geometry,
+            lineColor: '#0b4fd1',
+            lineWidth: 11,
+            lineOpacity: 0.95,
+          ),
+        );
+        await controller.addLine(
+          native_map.LineOptions(
+            geometry: geometry,
+            lineColor: '#1d6fff',
+            lineWidth: 7,
+          ),
+        );
+      }
+
+      Future<void> symbol(LatLng point, String image, {double size = 0.65}) =>
+          controller.addSymbol(
+            native_map.SymbolOptions(
+              geometry: _nativePoint(point),
+              iconImage: image,
+              iconAnchor: 'bottom',
+              iconSize: size,
+            ),
+          );
+
+      final pickup = widget.pickup;
+      if (pickup != null) {
+        await symbol(
+          pickup.toLatLng(),
+          widget.pickupIsCurrentLocation ? _currentImage : _pickupImage,
+          // A selected address must remain legible without covering street
+          // names, route geometry or the building volume beneath it.
+          size: widget.pickupIsCurrentLocation ? 0.40 : 0.54,
+        );
+      }
+      final dropoff = widget.dropoff;
+      if (dropoff != null) {
+        // The destination flag is a confirmation detail, not the dominant
+        // object on the map. Keep it in the same visual weight as the
+        // address marker and never let it cover the route near its finish.
+        await symbol(dropoff.toLatLng(), _finishImage, size: 0.40);
+      }
+      final driver = widget.driver;
+      if (driver != null) {
+        await symbol(driver.toLatLng(), _carImage, size: 0.23);
+      } else {
+        for (final nearby in widget.nearbyDrivers.take(5)) {
+          await symbol(nearby.toLatLng(), _carImage, size: 0.2);
+        }
+      }
+    } catch (_) {
+      // A style reload can race an annotation update. The next model state
+      // change will rebuild the scene; never surface a map renderer error as
+      // an order-flow error to the rider.
+    }
+  }
+
+  void _onStyleLoaded() {
+    // The native view paints before its style, glyphs and vector tiles are
+    // ready.  Keep that implementation detail behind a very small branded
+    // loading veil instead of briefly exposing a grey/half-rendered map.
+    if (mounted) {
+      setState(() => _styleReady = true);
+    } else {
+      _styleReady = true;
+    }
+    _lastSceneSignature = '';
+    final controller = _controller;
+    unawaited(_syncCameraToWidget());
+    unawaited(_syncScene());
+    if (controller != null) {
+      // Draw an interactive base vector map first. Building extrusion is a
+      // visual enhancement and used to compete with the first pan/zoom after
+      // every style reload on mid-range Android phones.
+      unawaited(Future<void>(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 280));
+        if (mounted && identical(controller, _controller)) {
+          await _enable3dBuildings(controller);
+          // Android applies the style's own initial camera after its first
+          // frame. Re-apply the intended pitch only after that point; without
+          // this, the vector map was live but visibly flat on a fresh launch.
+          await _settle3dCamera(controller);
+        }
+      }));
+    }
+  }
+
+  Future<void> _settle3dCamera(
+      native_map.MapLibreMapController controller) async {
+    try {
+      await controller.animateCamera(
+        native_map.CameraUpdate.newCameraPosition(
+          native_map.CameraPosition(
+            target: _nativePoint(widget.center),
+            zoom: widget.zoom,
+            tilt: 55,
+          ),
+        ),
+        duration: const Duration(milliseconds: 320),
+      );
+    } catch (_) {
+      // The map remains usable if a style reload wins this best-effort
+      // presentational update.
+    }
+  }
+
+  void _onCameraIdle() {
+    if (_ignoreNextCameraIdle) {
+      _ignoreNextCameraIdle = false;
+      return;
+    }
+    final camera = _controller?.cameraPosition;
+    final target = camera?.target;
+    final zoom = camera?.zoom;
+    if (target != null && zoom != null) {
+      widget.onCenterChanged(LatLng(target.latitude, target.longitude), zoom);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        native_map.MapLibreMap(
+          styleString: AppConfig.mapLibreStyleUrl,
+          initialCameraPosition: native_map.CameraPosition(
+            target: _nativePoint(widget.center),
+            zoom: widget.zoom,
+            tilt: 38,
+          ),
+          compassEnabled: false,
+          trackCameraPosition: true,
+          rotateGesturesEnabled: true,
+          tiltGesturesEnabled: true,
+          onMapCreated: (controller) {
+            _controller = controller;
+          },
+          onStyleLoadedCallback: _onStyleLoaded,
+          onMapClick: (_, coordinates) => widget.onTap(
+            LatLng(coordinates.latitude, coordinates.longitude),
+          ),
+          onCameraIdle: _onCameraIdle,
+        ),
+        IgnorePointer(
+          child: AnimatedOpacity(
+            opacity: _styleReady ? 0 : 1,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(color: Color(0xfff7fbff)),
+              // The former centre spinner sat underneath the order sheet on
+              // a phone, making a slow vector-style fetch look like a blank,
+              // frozen map. Keep a compact status pill in the visible map
+              // area instead; it disappears the moment the style is ready.
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 94),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.96),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: SmartTaxiColors.brand.withValues(alpha: 0.20),
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1f1d6fff),
+                          blurRadius: 22,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.25,
+                            color: SmartTaxiColors.brand,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          AppLocalizations.of(context).passengerMapLoadingTitle,
+                          style: const TextStyle(
+                            color: SmartTaxiColors.text,
+                            fontSize: 13,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 Widget _assetMarkerContent({
   required String asset,
   required String semanticLabel,
@@ -5577,10 +6315,10 @@ Widget _assetMarkerContent({
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
-            border: Border.all(color: SmartTaxiColors.gold, width: 2),
+            border: Border.all(color: SmartTaxiColors.brand, width: 2),
             boxShadow: [
               BoxShadow(
-                color: SmartTaxiColors.gold.withValues(alpha: 0.18),
+                color: SmartTaxiColors.brand.withValues(alpha: 0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -5588,7 +6326,7 @@ Widget _assetMarkerContent({
           ),
           child: Icon(
             fallbackIcon,
-            color: SmartTaxiColors.goldDeep,
+            color: SmartTaxiColors.brandDeep,
             size: size * 0.48,
           ),
         ),
@@ -5638,8 +6376,7 @@ class _AnimatedDriverMarkerLayer extends StatefulWidget {
       _AnimatedDriverMarkerLayerState();
 }
 
-class _AnimatedDriverMarkerLayerState
-    extends State<_AnimatedDriverMarkerLayer>
+class _AnimatedDriverMarkerLayerState extends State<_AnimatedDriverMarkerLayer>
     with SingleTickerProviderStateMixin {
   static const _glideDuration = Duration(milliseconds: 900);
   // Jumps bigger than this (cold start, order reassigned to another driver)
@@ -5750,7 +6487,8 @@ double _metersBetweenLatLng(LatLng a, LatLng b) {
   final h = sinLat * sinLat +
       math.cos(a.latitude * math.pi / 180) *
           math.cos(b.latitude * math.pi / 180) *
-          sinLng * sinLng;
+          sinLng *
+          sinLng;
   return earthRadius * 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
 }
 
@@ -5904,7 +6642,6 @@ class _SvgIcon extends StatelessWidget {
   }
 }
 
-
 class _MarkerRadarPulse extends StatefulWidget {
   const _MarkerRadarPulse({required this.color, this.baseSize = 54});
 
@@ -5965,25 +6702,17 @@ class _MarkerRadarPulseState extends State<_MarkerRadarPulse>
 // destination glyph on the map-picker card turned orange and was the
 // one warm thing on that screen. It was borrowing `warning` as a colour
 // slot, never as a semantic: picking a destination is not a warning.
-const _pickupMarkerColorDeep = SmartTaxiColors.goldDeep;
-const _dropoffMarkerColorDeep = SmartTaxiColors.gold;
+const _pickupMarkerColorDeep = SmartTaxiColors.brandDeep;
+const _dropoffMarkerColorDeep = SmartTaxiColors.brand;
 
 class _CenterMapMarker extends StatelessWidget {
   const _CenterMapMarker({required this.target});
 
   // Kept so callers don't need to change, but deliberately unused for
   // choosing an asset/color below: pickup and dropoff selection must look
-  // identical (see the marker-unification note above _addressPickMarkerAsset)
+  // identical; the field label communicates the current target.
   // — which point is being chosen comes from the field label, not the pin.
   final PointTarget target;
-
-  // Canvas is 1000x1120; the pin's visual tip (where it touches the map's
-  // exact center point) sits at 79.7% down the canvas — measured via an
-  // alpha-channel column scan, not the canvas edge (there's a separate
-  // soft ground-shadow dot further below that isn't part of the pin
-  // itself and must not be included in the tip calibration).
-  static const _assetAspect = 1120 / 1000;
-  static const _tipFraction = 0.797;
 
   @override
   Widget build(BuildContext context) {
@@ -5994,33 +6723,26 @@ class _CenterMapMarker extends StatelessWidget {
     // needs to clearly see which exact spot the pin's tip is over while
     // dragging the map under it, so this one stays bigger even as the
     // confirmed-route pins below get smaller.
-    // Note: the source PNG has real transparent padding (content bbox is
-    // ~77% of canvas width, ~91% of height — measured directly off the
-    // asset), so the visually solid part of the pin is noticeably smaller
-    // than pinWidth itself; sized up further to compensate.
-    const pinWidth = 75.0;
-    const pinHeight = pinWidth * _assetAspect;
-    const tipShift = pinHeight * (_tipFraction - 0.5);
     return SizedBox(
-      width: 189,
-      height: 189,
+      width: 156,
+      height: 156,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Transform.translate(
-            offset: const Offset(0, 7.5),
+            offset: const Offset(0, 6),
             child: const _MarkerRadarPulse(
               color: _addressPickMarkerColor,
-              baseSize: 52.5,
+              baseSize: 44,
             ),
           ),
           // Ground-contact shadow directly under the pin's tip.
           Transform.translate(
-            offset: const Offset(0, 13.5),
+            offset: const Offset(0, 6),
             child: Container(
-              width: 33,
-              height: 10.5,
+              width: 28,
+              height: 9,
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(6),
@@ -6028,27 +6750,311 @@ class _CenterMapMarker extends StatelessWidget {
             ),
           ),
           Transform.translate(
-            offset: const Offset(0, -tipShift),
-            // Same oversized-source-asset issue as the other map markers
-            // (see _assetMarkerContent) -- the plain Image(image:) constructor
-            // has no cacheWidth/cacheHeight of its own (only Image.asset/
-            // network/file/memory do), so ResizeImage wraps the provider to
-            // get the same decode-at-a-reasonable-size effect.
-            child: Image(
-              image: ResizeImage(
-                const AssetImage(_addressPickMarkerAsset),
-                width: (pinWidth * 3).round(),
-                height: (pinHeight * 3).round(),
+            offset: const Offset(0, -28),
+            child: const _ApprovedMapPickerMarker(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Mirrors the approved web marker: a white square badge with blue outline
+// and a precisely anchored downward pointer. It is drawn locally so both
+// Flutter and the web can retain their native rendering without a raster
+// asset drifting out of date.
+class _ApprovedMapPickerMarker extends StatelessWidget {
+  const _ApprovedMapPickerMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    const blueLight = Color(0xff63a0ff);
+    const blue = Color(0xff1d6fff);
+    const blueDeep = Color(0xff0b4fd1);
+    return SizedBox(
+      width: 48,
+      height: 60,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [blueLight, blueDeep],
               ),
-              width: pinWidth,
-              height: pinHeight,
-              fit: BoxFit.contain,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x381d6fff),
+                  blurRadius: 12,
+                  offset: Offset(0, 7),
+                ),
+              ],
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .9),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 7,
+                    top: 15,
+                    child: Container(
+                        width: 4.5,
+                        height: 4.5,
+                        color: blueLight.withValues(alpha: .55)),
+                  ),
+                  Positioned(
+                    left: 13.5,
+                    top: 15,
+                    child: Container(
+                        width: 4.5,
+                        height: 4.5,
+                        color: blue.withValues(alpha: .9)),
+                  ),
+                  Positioned(
+                    left: 10,
+                    top: 21.5,
+                    child: Container(
+                        width: 4.5,
+                        height: 4.5,
+                        color: blueLight.withValues(alpha: .35)),
+                  ),
+                  const Positioned(
+                    right: 6,
+                    top: 4,
+                    child: Text(
+                      'S',
+                      style: TextStyle(
+                        color: blue,
+                        fontSize: 23,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 41,
+            child: CustomPaint(
+              size: const Size(44, 17),
+              painter: const _MapPickerTailPainter(),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+// The address marker is deliberately identical for pickup and destination.
+// The field label supplies that meaning; a second visual language made the
+// same location look different across the picker, route preview and tracking
+// screens. Driver vehicles retain their dedicated car marker.
+Marker _approvedMapMarker({
+  required LatLng point,
+  required String semanticLabel,
+  bool pulse = false,
+}) {
+  return Marker(
+    point: point,
+    width: 72,
+    height: 80,
+    child: Semantics(
+      label: semanticLabel,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        children: [
+          if (pulse)
+            const Positioned(
+              top: 9,
+              child: _MarkerRadarPulse(color: _blueAccent, baseSize: 52),
+            ),
+          const Positioned(top: 3, child: _ApprovedMapPickerMarker()),
+        ],
+      ),
+    ),
+  );
+}
+
+Marker _currentLocationMapMarker({
+  required LatLng point,
+  required String semanticLabel,
+  bool pulse = false,
+}) {
+  return Marker(
+    point: point,
+    width: 56,
+    height: 56,
+    child: Semantics(
+      label: semanticLabel,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          if (pulse) const _MarkerRadarPulse(color: _blueAccent, baseSize: 48),
+          const _CurrentLocationMapMarker(),
+        ],
+      ),
+    ),
+  );
+}
+
+Marker _finishFlagMapMarker({
+  required LatLng point,
+  required String semanticLabel,
+}) {
+  return Marker(
+    point: point,
+    width: 70,
+    height: 88,
+    child: Semantics(
+      label: semanticLabel,
+      child: const _FinishFlagMapMarker(),
+    ),
+  );
+}
+
+class _CurrentLocationMapMarker extends StatelessWidget {
+  const _CurrentLocationMapMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _blueAccent.withValues(alpha: 0.34),
+                width: 2,
+              ),
+            ),
+          ),
+          Container(
+            width: 19,
+            height: 19,
+            decoration: BoxDecoration(
+              color: _blueAccent,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  color: _blueAccent.withValues(alpha: 0.32),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinishFlagMapMarker extends StatelessWidget {
+  const _FinishFlagMapMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(58, 76),
+      painter: const _FinishFlagPainter(),
+    );
+  }
+}
+
+class _FinishFlagPainter extends CustomPainter {
+  const _FinishFlagPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const deepBlue = Color(0xff0b4fd1);
+    const blue = Color(0xff1d6fff);
+    final stroke = Paint()
+      ..color = deepBlue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final fill = Paint()..color = Colors.white;
+    final blueFill = Paint()..color = blue;
+    final flag = ui.Path()
+      ..moveTo(19, 11)
+      ..quadraticBezierTo(27, 6, 35, 11)
+      ..quadraticBezierTo(41, 15, 47, 10)
+      ..lineTo(47, 42)
+      ..quadraticBezierTo(41, 47, 35, 43)
+      ..quadraticBezierTo(27, 38, 19, 44)
+      ..close();
+    canvas.drawLine(const Offset(17, 68), const Offset(17, 10), stroke);
+    canvas.drawPath(flag, fill);
+    canvas.save();
+    canvas.clipPath(flag);
+    const cell = 6.5;
+    for (var row = 0; row < 4; row++) {
+      for (var column = 0; column < 4; column++) {
+        if ((row + column).isEven) {
+          canvas.drawRect(
+            Rect.fromLTWH(20 + column * cell, 14 + row * cell, cell, cell),
+            blueFill,
+          );
+        }
+      }
+    }
+    canvas.restore();
+    canvas.drawPath(flag, stroke);
+    canvas.drawCircle(const Offset(17, 69), 6.5, fill);
+    canvas.drawCircle(const Offset(17, 69), 6.5, stroke);
+    canvas.drawCircle(const Offset(17, 69), 2.5, blueFill);
+  }
+
+  @override
+  bool shouldRepaint(covariant _FinishFlagPainter oldDelegate) => false;
+}
+
+class _MapPickerTailPainter extends CustomPainter {
+  const _MapPickerTailPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = ui.Path()
+      ..moveTo(size.width * (26 / 64), 0)
+      ..lineTo(size.width * (38 / 64), 0)
+      ..lineTo(size.width * (38 / 64), size.height * (6 / 22))
+      ..lineTo(size.width * .5, size.height)
+      ..lineTo(size.width * (26 / 64), size.height * (6 / 22))
+      ..close();
+    final paint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xff1d6fff), Color(0xff0b4fd1)],
+      ).createShader(Offset.zero & size);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MapPickerTailPainter oldDelegate) => false;
 }
 
 class _MapFallbackSurface extends StatelessWidget {
@@ -6064,7 +7070,7 @@ class _MapFallbackSurface extends StatelessWidget {
           center: const Alignment(0.25, -0.35),
           radius: 1.1,
           colors: [
-            palette.goldPale,
+            palette.brandPale,
             palette.appBackground,
             palette.card,
           ],
@@ -6076,7 +7082,7 @@ class _MapFallbackSurface extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.map_outlined, color: palette.gold, size: 38),
+              Icon(Icons.map_outlined, color: palette.brand, size: 38),
               const SizedBox(height: 12),
               Text(
                 l10n.passengerMapLoadingTitle,
@@ -6092,8 +7098,7 @@ class _MapFallbackSurface extends StatelessWidget {
                 l10n.passengerMapLoadingSubtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: palette.textSecondary,
-                    fontWeight: FontWeight.w700),
+                    color: palette.textSecondary, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -6130,7 +7135,7 @@ class _MapUnavailableCard extends StatelessWidget {
         children: [
           Icon(
             Icons.map_outlined,
-            color: palette.goldDeep,
+            color: palette.brandDeep,
             size: 24,
           ),
           const SizedBox(width: 10),
@@ -6163,8 +7168,7 @@ class _MapUnavailableCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetry,
-            style:
-                TextButton.styleFrom(foregroundColor: palette.goldDeep),
+            style: TextButton.styleFrom(foregroundColor: palette.brandDeep),
             child: Text(l10n.retry),
           ),
         ],
@@ -6206,7 +7210,7 @@ class _MapPermissionCard extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.gold,
+              color: palette.brand,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -6229,9 +7233,9 @@ class _MapPermissionCard extends StatelessWidget {
           ),
           IconButton(
             onPressed: onUseLocation,
-            tooltip: AppLocalizations.of(context).passengerAllowGeolocationTooltip,
-            icon: Icon(Icons.my_location_rounded,
-                color: palette.gold),
+            tooltip:
+                AppLocalizations.of(context).passengerAllowGeolocationTooltip,
+            icon: Icon(Icons.my_location_rounded, color: palette.brand),
           ),
         ],
       ),
@@ -6257,8 +7261,9 @@ class _MapRouteState extends StatelessWidget {
     }
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    final text =
-        loading ? l10n.passengerCalculatingRouteText : error ?? l10n.passengerRouteReadyText;
+    final text = loading
+        ? l10n.passengerCalculatingRouteText
+        : error ?? l10n.passengerRouteReadyText;
     final icon = loading
         ? null
         : error == null
@@ -6305,16 +7310,14 @@ class _MapRouteState extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: palette.gold,
+                    color: palette.brand,
                   ),
                 )
               else
                 Icon(
                   icon,
                   size: 17,
-                  color: danger
-                      ? palette.danger
-                      : palette.gold,
+                  color: danger ? palette.danger : palette.brand,
                 ),
               const SizedBox(width: 8),
               Flexible(
@@ -6323,9 +7326,7 @@ class _MapRouteState extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: danger
-                        ? palette.danger
-                        : palette.text,
+                    color: danger ? palette.danger : palette.text,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -6379,10 +7380,15 @@ class _HomeOrderPanel extends StatelessWidget {
 }
 
 class _OrderSheetHeading extends StatelessWidget {
-  const _OrderSheetHeading({required this.title, required this.text});
+  const _OrderSheetHeading({
+    required this.title,
+    required this.text,
+    this.eyebrow,
+  });
 
   final String title;
   final String text;
+  final String? eyebrow;
 
   @override
   Widget build(BuildContext context) {
@@ -6390,6 +7396,20 @@ class _OrderSheetHeading extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (eyebrow != null) ...[
+          Text(
+            eyebrow!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 13,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+        ],
         Text(
           title,
           maxLines: 1,
@@ -6419,6 +7439,90 @@ class _OrderSheetHeading extends StatelessWidget {
   }
 }
 
+// The first booking decision is also where riders most often reuse a saved
+// place.  Keep those shortcuts in the main sheet (as on the web/PWA home
+// screen) instead of making the user open the drawer just to reach Favorites.
+class _QuickAddressChoices extends StatelessWidget {
+  const _QuickAddressChoices({
+    required this.onHome,
+    required this.onWork,
+    required this.onFavorite,
+  });
+
+  final VoidCallback onHome;
+  final VoidCallback onWork;
+  final VoidCallback onFavorite;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final choices = <({IconData icon, String label, VoidCallback onTap})>[
+      (
+        icon: Icons.home_outlined,
+        label: l10n.passengerQuickHome,
+        onTap: onHome
+      ),
+      (
+        icon: Icons.work_outline_rounded,
+        label: l10n.passengerQuickWork,
+        onTap: onWork
+      ),
+      (
+        icon: Icons.favorite_border_rounded,
+        label: l10n.passengerQuickFavorites,
+        onTap: onFavorite
+      ),
+    ];
+    return Row(
+      children: [
+        for (var index = 0; index < choices.length; index++) ...[
+          if (index > 0) const SizedBox(width: 8),
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(15),
+              child: InkWell(
+                onTap: choices[index].onTap,
+                borderRadius: BorderRadius.circular(15),
+                child: Container(
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: palette.brandSurface,
+                    border: Border.all(color: palette.border),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(choices[index].icon,
+                          size: 16, color: palette.brandDeep),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          choices[index].label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: palette.brandDeep,
+                            fontSize: 12.2,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _TrustRow extends StatelessWidget {
   const _TrustRow();
 
@@ -6435,8 +7539,8 @@ class _TrustRow extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                palette.gold.withValues(alpha: 0.16),
-                palette.gold.withValues(alpha: 0.05),
+                palette.brand.withValues(alpha: 0.16),
+                palette.brand.withValues(alpha: 0.05),
               ],
             ),
             shape: BoxShape.circle,
@@ -6444,7 +7548,7 @@ class _TrustRow extends StatelessWidget {
           child: Icon(
             Icons.verified_rounded,
             size: 13,
-            color: palette.goldDeep,
+            color: palette.brandDeep,
           ),
         ),
         const SizedBox(width: 7),
@@ -6578,7 +7682,7 @@ class _SwapPointsButton extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [palette.goldSurface, palette.goldPale],
+              colors: [palette.brandSurface, palette.brandPale],
             ),
             shape: BoxShape.circle,
             boxShadow: [
@@ -6592,7 +7696,7 @@ class _SwapPointsButton extends StatelessWidget {
           child: Icon(
             Icons.swap_vert_rounded,
             size: 18,
-            color: palette.goldDeep,
+            color: palette.brandDeep,
           ),
         ),
       ),
@@ -6648,7 +7752,7 @@ class _SheetAddressRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: active ? palette.goldDeep : palette.text,
+                        color: active ? palette.brandDeep : palette.text,
                         fontSize: 14.4,
                         height: 1.12,
                         fontWeight: active ? FontWeight.w900 : FontWeight.w700,
@@ -6689,13 +7793,13 @@ class _CurrentLocationButton extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [palette.goldSurface, palette.goldPale],
+              colors: [palette.brandSurface, palette.brandPale],
             ),
             shape: BoxShape.circle,
             border: Border.all(color: palette.card, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: palette.gold.withValues(alpha: 0.16),
+                color: palette.brand.withValues(alpha: 0.16),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -6707,12 +7811,12 @@ class _CurrentLocationButton extends StatelessWidget {
                     dimension: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                     ),
                   )
                 : Icon(
                     Icons.my_location_rounded,
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     size: 18,
                   ),
           ),
@@ -6743,13 +7847,13 @@ class _RouteDotsColumn extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [const Color(0xff6fa8ff), palette.gold],
+                colors: [const Color(0xff6fa8ff), palette.brand],
               ),
               shape: BoxShape.circle,
               border: Border.all(color: palette.card, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: palette.gold.withValues(alpha: 0.38),
+                  color: palette.brand.withValues(alpha: 0.38),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -6849,9 +7953,11 @@ class _RouteSummaryCard extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                _RouteSummaryLine(title: l10n.passengerFromLabel, value: pickupLabel),
+                _RouteSummaryLine(
+                    title: l10n.passengerFromLabel, value: pickupLabel),
                 Divider(height: 9, color: palette.border),
-                _RouteSummaryLine(title: l10n.passengerToLabel, value: dropoffLabel),
+                _RouteSummaryLine(
+                    title: l10n.passengerToLabel, value: dropoffLabel),
               ],
             ),
           ),
@@ -6927,32 +8033,24 @@ class _RouteSummaryLine extends StatelessWidget {
 // optional, switches to showing the saved text once set so it's clear the
 // note is actually attached to the order.
 class _OrderNoteRow extends StatelessWidget {
-  const _OrderNoteRow({
-    required this.note,
-    this.onTap,
-  });
+  const _OrderNoteRow({required this.note});
 
   final String? note;
-  // Null once the order exists — the backend has no endpoint to edit an
-  // order's note after creation, so this becomes a plain read-only display
-  // (no chevron, no InkWell) rather than a tappable row that does nothing.
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final hasNote = (note ?? '').isNotEmpty;
-    final editable = onTap != null;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
+        onTap: null,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: hasNote ? palette.goldSurface : palette.card,
+            color: hasNote ? palette.brandSurface : palette.card,
             border: Border.all(
               color: hasNote ? palette.borderStrong : palette.border,
             ),
@@ -6961,11 +8059,9 @@ class _OrderNoteRow extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                hasNote
-                    ? Icons.edit_note_rounded
-                    : Icons.add_comment_outlined,
+                hasNote ? Icons.edit_note_rounded : Icons.add_comment_outlined,
                 size: 18,
-                color: hasNote ? palette.goldDeep : palette.textSecondary,
+                color: hasNote ? palette.brandDeep : palette.textSecondary,
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -6989,14 +8085,6 @@ class _OrderNoteRow extends StatelessWidget {
                   ),
                 ),
               ),
-              if (editable) ...[
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: palette.textMuted,
-                ),
-              ],
             ],
           ),
         ),
@@ -7021,6 +8109,7 @@ class _OrderSheet extends StatelessWidget {
     required this.onDropoffTap,
     required this.onUseLocation,
     required this.onPaymentTap,
+    required this.onFavoriteTap,
     required this.orderNote,
     required this.onNoteTap,
     required this.tariffs,
@@ -7051,6 +8140,7 @@ class _OrderSheet extends StatelessWidget {
   final VoidCallback onDropoffTap;
   final VoidCallback onUseLocation;
   final VoidCallback onPaymentTap;
+  final VoidCallback onFavoriteTap;
   final String? orderNote;
   final VoidCallback onNoteTap;
   final List<TariffOption> tariffs;
@@ -7083,7 +8173,10 @@ class _OrderSheet extends StatelessWidget {
     if (routeSelected && !routeError) {
       final screen = MediaQuery.sizeOf(context);
       final compact = screen.height < 740 || screen.width < 390;
-      final maxRouteSheetHeight = screen.height * (compact ? 0.66 : 0.60);
+      // The selected-route sheet is deliberately tall enough to show the
+      // complete decision at once: route, tariff, car, offered price, payment
+      // and order action. At 60% the speed hint was below the initial fold.
+      final maxRouteSheetHeight = screen.height * (compact ? 0.72 : 0.70);
       return TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.96, end: 1),
         duration: const Duration(milliseconds: 260),
@@ -7116,9 +8209,45 @@ class _OrderSheet extends StatelessWidget {
                             dropoffLabel: dropoffLabel,
                             onEdit: onDropoffTap,
                           ),
-                          const SizedBox(height: 8),
-                          _OrderNoteRow(note: orderNote, onTap: onNoteTap),
                           const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  l10n.passengerTariffSectionTitle,
+                                  style: TextStyle(
+                                    color: context.palette.text,
+                                    fontSize: 25,
+                                    height: 1,
+                                    letterSpacing: -0.4,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: context.palette.brand,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  'Фикс. цена',
+                                  style: TextStyle(
+                                    color: context.palette.brandDeep,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
                           _TariffSection(
                             tariffs: tariffs,
                             selectedId: selectedTariffId,
@@ -7133,7 +8262,7 @@ class _OrderSheet extends StatelessWidget {
                               selectedTariffId != null &&
                               estimatedPrice != null) ...[
                             const SizedBox(height: 10),
-                            _PriceAdjuster(
+                            _CompactPriceAdjuster(
                               basePrice: estimatedPrice.round(),
                               currentPrice:
                                   offeredPriceKzt ?? estimatedPrice.round(),
@@ -7148,6 +8277,13 @@ class _OrderSheet extends StatelessWidget {
                               dark: isDark,
                             ),
                           ],
+                          // Trust needs to be visible at the exact moment the
+                          // rider decides on a tariff and price, not only on
+                          // the empty address screen.  This is deliberately
+                          // compact so the payment action remains above the
+                          // fold on smaller phones.
+                          const SizedBox(height: 10),
+                          const _TrustRow(),
                         ],
                       ),
                     ),
@@ -7160,7 +8296,7 @@ class _OrderSheet extends StatelessWidget {
                     onTap: onPaymentTap,
                   ),
                   const SizedBox(height: 10),
-                  _GoldCtaButton(
+                  _BrandCtaButton(
                     enabled: canSubmit,
                     loading: loading,
                     text: cta,
@@ -7199,6 +8335,7 @@ class _OrderSheet extends StatelessWidget {
                   _OrderSheetHeading(
                     title: l10n.passengerHomeWhereToTitle,
                     text: l10n.passengerHomeWhereToSubtitle,
+                    eyebrow: l10n.passengerHomeGreeting,
                   ),
                   const SizedBox(height: 12),
                   _SheetAddressEntryCard(
@@ -7214,7 +8351,13 @@ class _OrderSheet extends StatelessWidget {
                     onSwap: onSwap,
                   ),
                   const SizedBox(height: 14),
-                  _GoldCtaButton(
+                  _QuickAddressChoices(
+                    onHome: onDropoffTap,
+                    onWork: onDropoffTap,
+                    onFavorite: onFavoriteTap,
+                  ),
+                  const SizedBox(height: 12),
+                  _BrandCtaButton(
                     enabled: true,
                     loading: false,
                     text: l10n.passengerHomeSetDestination,
@@ -7258,6 +8401,8 @@ class _MapPointPickerSheet extends StatelessWidget {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     final isPickup = target == PointTarget.pickup;
+    final canConfirm =
+        !addressLoading && _isUsablePassengerAddressLabel(addressLabel);
     return _HomeOrderPanel(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.98, end: 1),
@@ -7273,10 +8418,39 @@ class _MapPointPickerSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
+              _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [palette.brandDeep, palette.brand],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: palette.brand.withValues(alpha: 0.24),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isPickup
+                          ? Icons.my_location_rounded
+                          : Icons.location_on_rounded,
+                      color: Colors.white,
+                      size: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
                   Expanded(
                     child: Text(
                       isPickup
@@ -7329,12 +8503,12 @@ class _MapPointPickerSheet extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 padding: const EdgeInsets.fromLTRB(13, 13, 12, 13),
                 decoration: BoxDecoration(
-                  color: palette.goldSurface,
-                  border: Border.all(color: palette.goldPale),
+                  color: palette.brandSurface,
+                  border: Border.all(color: palette.brandPale),
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: palette.gold.withValues(alpha: 0.09),
+                      color: palette.brand.withValues(alpha: 0.09),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -7404,8 +8578,8 @@ class _MapPointPickerSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              _GoldCtaButton(
-                enabled: true,
+              _BrandCtaButton(
+                enabled: canConfirm,
                 loading: false,
                 text: l10n.passengerConfirmAddressButton,
                 onTap: onConfirm,
@@ -7416,6 +8590,28 @@ class _MapPointPickerSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isUsablePassengerAddressLabel(String value) {
+  final label = value.trim();
+  if (label.isEmpty) return false;
+  if (RegExp(r'^(?:точка на карте|адрес не определ[её]н)$',
+          caseSensitive: false)
+      .hasMatch(label)) {
+    return false;
+  }
+  // A bare street tells the driver neither which entrance nor which house
+  // the passenger selected. Map picking must resolve to a real address
+  // such as "улица Бектасова, 15"; a named POI remains valid, but a street
+  // label without a house number must make the rider move the pin instead.
+  final bareStreet = RegExp(
+    r'^(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+',
+    caseSensitive: false,
+  ).hasMatch(label);
+  if (bareStreet && !RegExp(r'\d').hasMatch(label)) return false;
+  return !RegExp(r'^(?:kz|ah|[а-яa-z]{1,3})[\s-]?\d+[а-яa-z]?$',
+          caseSensitive: false)
+      .hasMatch(label);
 }
 
 class _PanelEntrance extends StatelessWidget {
@@ -7478,7 +8674,7 @@ class _TripHistoryCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Icon(Icons.radio_button_checked_rounded,
-                    size: 14, color: palette.gold),
+                    size: 14, color: palette.brand),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -7657,8 +8853,7 @@ class _TripDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: l10n.passengerTripShareTooltip,
-            onPressed: () =>
-                unawaited(Share.share(_tripShareText(l10n, trip))),
+            onPressed: () => unawaited(Share.share(_tripShareText(l10n, trip))),
           ),
         ],
       ),
@@ -8008,7 +9203,8 @@ class _TripStatusPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
+                _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -8096,7 +9292,8 @@ class _TripStatusPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
+                _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -8171,7 +9368,8 @@ class _TripStatusPanel extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                       foregroundColor: palette.danger,
-                      side: BorderSide(color: palette.danger.withValues(alpha: 0.3)),
+                      side: BorderSide(
+                          color: palette.danger.withValues(alpha: 0.3)),
                       backgroundColor: palette.dangerSoft,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
@@ -8196,75 +9394,76 @@ class _TripStatusPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SheetHandle(dark: Theme.of(context).brightness == Brightness.dark),
+              _SheetHandle(
+                  dark: Theme.of(context).brightness == Brightness.dark),
               Builder(builder: (context) {
-              final activeTitleText = order.driverId == null
-                  ? l10n.passengerTripWithIdTitle(orderShortId)
-                  : l10n.passengerDriverFoundTitle;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          activeTitleText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: palette.text,
-                            fontSize: 22,
-                            height: 1.02,
-                            fontWeight: FontWeight.w900,
+                final activeTitleText = order.driverId == null
+                    ? l10n.passengerTripWithIdTitle(orderShortId)
+                    : l10n.passengerDriverFoundTitle;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            activeTitleText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontSize: 22,
+                              height: 1.02,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                        // The subtitle is meant to add specifics beyond the
-                        // headline ("Водитель едет к вам", "Водитель
-                        // приехал"...) — right at DRIVER_FOUND/DRIVER_ASSIGNED
-                        // though, _statusLabel resolves to the exact same
-                        // string as the title above, so this would render
-                        // "Водитель найден" twice in a row. Skip it only in
-                        // that one case rather than showing a redundant line.
-                        if (statusText != activeTitleText) ...[
-                        const SizedBox(height: 5),
-                        Text(
-                          statusText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: palette.textSecondary,
-                            fontSize: 13,
-                            height: 1.1,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                          // The subtitle is meant to add specifics beyond the
+                          // headline ("Водитель едет к вам", "Водитель
+                          // приехал"...) — right at DRIVER_FOUND/DRIVER_ASSIGNED
+                          // though, _statusLabel resolves to the exact same
+                          // string as the title above, so this would render
+                          // "Водитель найден" twice in a row. Skip it only in
+                          // that one case rather than showing a redundant line.
+                          if (statusText != activeTitleText) ...[
+                            const SizedBox(height: 5),
+                            Text(
+                              statusText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: palette.textSecondary,
+                                fontSize: 13,
+                                height: 1.1,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  // No StatusPill here (unlike the searching/in-progress
-                  // headers' own accent widgets, this one used to duplicate
-                  // the subtitle text verbatim) — on real device widths it
-                  // squeezed the Expanded title/subtitle column down to
-                  // ~85dp, truncating "Водитель найден" to "Водит..." and
-                  // the subtitle even harder. The stepper right below
-                  // already shows progress; the subtitle already shows the
-                  // specific status text, so the pill added crowding
-                  // without adding information.
-                  if (order.driverId != null) ...[
-                    const SizedBox(width: 10),
-                    _ShareTripButton(
-                      shareToken: order.shareToken,
-                      pickup: order.pickup,
-                      dropoff: order.dropoff,
-                    ),
-                    const SizedBox(width: 8),
-                    _SafetyButton(
-                        sosPhone: sosPhone, api: api, orderId: order.id),
+                    // No StatusPill here (unlike the searching/in-progress
+                    // headers' own accent widgets, this one used to duplicate
+                    // the subtitle text verbatim) — on real device widths it
+                    // squeezed the Expanded title/subtitle column down to
+                    // ~85dp, truncating "Водитель найден" to "Водит..." and
+                    // the subtitle even harder. The stepper right below
+                    // already shows progress; the subtitle already shows the
+                    // specific status text, so the pill added crowding
+                    // without adding information.
+                    if (order.driverId != null) ...[
+                      const SizedBox(width: 10),
+                      _ShareTripButton(
+                        shareToken: order.shareToken,
+                        pickup: order.pickup,
+                        dropoff: order.dropoff,
+                      ),
+                      const SizedBox(width: 8),
+                      _SafetyButton(
+                          sosPhone: sosPhone, api: api, orderId: order.id),
+                    ],
                   ],
-                ],
-              );
+                );
               }),
               const SizedBox(height: 12),
               _StatusStepper(status: order.status),
@@ -8335,7 +9534,7 @@ class _TripStatusPanel extends StatelessWidget {
               if ((canCancel && order.driverId == null) || isTerminal) ...[
                 const SizedBox(height: 12),
                 if (isTerminal)
-                  _GoldCtaButton(
+                  _BrandCtaButton(
                     enabled: true,
                     loading: false,
                     text: l10n.passengerNewTripButton,
@@ -8347,7 +9546,8 @@ class _TripStatusPanel extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                       foregroundColor: palette.danger,
-                      side: BorderSide(color: palette.danger.withValues(alpha: 0.3)),
+                      side: BorderSide(
+                          color: palette.danger.withValues(alpha: 0.3)),
                       backgroundColor: palette.dangerSoft,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
@@ -8389,9 +9589,7 @@ class _StarRatingSelector extends StatelessWidget {
               curve: Curves.easeOutBack,
               child: Icon(
                 filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                color: filled
-                    ? context.palette.star
-                    : context.palette.border,
+                color: filled ? context.palette.star : context.palette.border,
                 size: 38,
               ),
             ),
@@ -8429,14 +9627,18 @@ class _RateDriverPanel extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onSkip;
 
-  static List<(String key, String label)> _positiveTags(AppLocalizations l10n) => [
+  static List<(String key, String label)> _positiveTags(
+          AppLocalizations l10n) =>
+      [
         ('polite_driver', l10n.ratingTagPoliteDriver),
         ('clean_car', l10n.ratingTagCleanCar),
         ('safe_driving', l10n.ratingTagSafeDriving),
         ('on_time', l10n.ratingTagOnTime),
       ];
 
-  static List<(String key, String label)> _negativeTags(AppLocalizations l10n) => [
+  static List<(String key, String label)> _negativeTags(
+          AppLocalizations l10n) =>
+      [
         ('late', l10n.ratingTagLate),
         ('rude', l10n.ratingTagRude),
         ('unsafe_driving', l10n.ratingTagUnsafeDriving),
@@ -8517,7 +9719,7 @@ class _RateDriverPanel extends StatelessWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: const BorderRadius.all(Radius.circular(16)),
-                    borderSide: BorderSide(color: palette.gold, width: 1.8),
+                    borderSide: BorderSide(color: palette.brand, width: 1.8),
                   ),
                 ),
               ),
@@ -8527,7 +9729,7 @@ class _RateDriverPanel extends StatelessWidget {
               _InlineMessage(text: error!, danger: true, dark: isDark),
             ],
             const SizedBox(height: 16),
-            _GoldCtaButton(
+            _BrandCtaButton(
               enabled: stars > 0 && !submitting,
               loading: submitting,
               text: l10n.passengerSubmitRatingButton,
@@ -8604,7 +9806,7 @@ class _RatedThankYouPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: true,
             loading: false,
             text: l10n.passengerOrderAgainButton,
@@ -8754,8 +9956,7 @@ class _TripReceiptPanel extends StatelessWidget {
               ),
               _TripInfoPill(
                 label: l10n.passengerTripTotalLabel,
-                value:
-                    order.price == null ? '—' : _formatTenge(order.price!),
+                value: order.price == null ? '—' : _formatTenge(order.price!),
                 emphasis: true,
               ),
             ]),
@@ -8769,7 +9970,7 @@ class _TripReceiptPanel extends StatelessWidget {
 
   Widget _buildPaymentState(SmartTaxiPalette palette, AppLocalizations l10n) {
     if (paid) {
-      return _GoldCtaButton(
+      return _BrandCtaButton(
         enabled: true,
         loading: false,
         text: l10n.passengerRateTripButton,
@@ -8811,7 +10012,7 @@ class _TripReceiptPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !retryingPayment,
             loading: retryingPayment,
             text: l10n.passengerRetryPaymentButton,
@@ -8828,7 +10029,7 @@ class _TripReceiptPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(18),
             ),
@@ -8836,7 +10037,7 @@ class _TripReceiptPanel extends StatelessWidget {
               children: [
                 Icon(
                   Icons.schedule_rounded,
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -8844,7 +10045,7 @@ class _TripReceiptPanel extends StatelessWidget {
                   child: Text(
                     l10n.passengerPaymentSlowText,
                     style: TextStyle(
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -8854,7 +10055,7 @@ class _TripReceiptPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !retryingPayment,
             loading: retryingPayment,
             text: l10n.passengerRetryPaymentButton,
@@ -8866,7 +10067,7 @@ class _TripReceiptPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -8877,7 +10078,7 @@ class _TripReceiptPanel extends StatelessWidget {
             height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2.2,
-              color: palette.goldDeep,
+              color: palette.brandDeep,
             ),
           ),
           const SizedBox(width: 10),
@@ -8887,7 +10088,7 @@ class _TripReceiptPanel extends StatelessWidget {
                   ? l10n.passengerPaymentProcessingText
                   : l10n.passengerPaymentAwaitingText,
               style: TextStyle(
-                color: palette.goldDeep,
+                color: palette.brandDeep,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
@@ -8929,12 +10130,12 @@ class _NoDriversFoundPanel extends StatelessWidget {
             height: 64,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldPale,
+              color: palette.brandPale,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.person_search_rounded,
-              color: palette.goldDeep,
+              color: palette.brandDeep,
               size: 30,
             ),
           ),
@@ -8964,7 +10165,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
             _InlineMessage(text: error!, danger: true, dark: isDark),
           ],
           const SizedBox(height: 18),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !loading,
             loading: loading,
             text: l10n.passengerRetrySearchButton,
@@ -9011,14 +10212,25 @@ class _DriverPriceOfferPanel extends StatefulWidget {
   final ValueChanged<QueuedPriceOffer>? onPromoteOffer;
 
   @override
-  State<_DriverPriceOfferPanel> createState() =>
-      _DriverPriceOfferPanelState();
+  State<_DriverPriceOfferPanel> createState() => _DriverPriceOfferPanelState();
 }
 
 class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
   static const _stepKzt = 100;
-  static const _floorKzt = 200;
   late int _counterKzt;
+
+  int get _basePrice => math.max(
+        0,
+        widget.order.price?.round() ?? widget.order.driverOfferPriceKzt ?? 0,
+      );
+  int get _minPrice => math.max(
+        200,
+        ((_basePrice * 0.7) / 50).ceil() * 50,
+      );
+  int get _maxPrice => math.max(
+        _minPrice,
+        math.min(1000000, ((_basePrice * 1.5) / 50).floor() * 50),
+      );
 
   @override
   void initState() {
@@ -9033,7 +10245,8 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
     // rider's own counter got declined) resets the starting point for the
     // stepper — otherwise it would keep showing a number the rider set
     // against a now-stale driver price.
-    if (oldWidget.order.driverOfferPriceKzt != widget.order.driverOfferPriceKzt) {
+    if (oldWidget.order.driverOfferPriceKzt !=
+        widget.order.driverOfferPriceKzt) {
       setState(() => _counterKzt = _initialCounter());
     }
   }
@@ -9044,14 +10257,15 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
     // Starting point for the rider's own counter: halfway between what the
     // driver asked for and the rider's original price — a neutral opening
     // move rather than either side's number, rounded to a clean step.
-    if (offered == null) return _floorKzt;
+    if (offered == null) return _minPrice;
     if (current == null) return offered;
     final midpoint = ((offered + current) / 2 / _stepKzt).round() * _stepKzt;
-    return midpoint.clamp(_floorKzt, 1000000);
+    return midpoint.clamp(_minPrice, _maxPrice);
   }
 
   void _adjust(int delta) {
-    setState(() => _counterKzt = (_counterKzt + delta).clamp(_floorKzt, 1000000));
+    setState(
+        () => _counterKzt = (_counterKzt + delta).clamp(_minPrice, _maxPrice));
   }
 
   @override
@@ -9073,7 +10287,8 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
       // wraps _TripStatusPanel in on shorter/compact screens -- without a
       // scroll view here, that overflow rendered as a hazard-striped
       // "BOTTOM OVERFLOWED" bar instead of the decline button.
-      child: SingleChildScrollView(child: Column(
+      child: SingleChildScrollView(
+          child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -9111,7 +10326,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.star_rounded, color: palette.gold, size: 16),
+                Icon(Icons.star_rounded, color: palette.brand, size: 16),
                 const SizedBox(width: 3),
                 Text(
                   order.offerDriverRating!.toStringAsFixed(1),
@@ -9141,7 +10356,8 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
               Expanded(
                 child: _PriceCompareTile(
                   label: l10n.passengerDriverPriceLabel,
-                  value: offered == null ? '—' : _formatTenge(offered.toDouble()),
+                  value:
+                      offered == null ? '—' : _formatTenge(offered.toDouble()),
                   palette: palette,
                   emphasize: true,
                 ),
@@ -9149,7 +10365,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
             ],
           ),
           const SizedBox(height: 18),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: !responding,
             loading: responding,
             text: l10n.passengerAcceptOfferButton,
@@ -9171,7 +10387,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
@@ -9179,7 +10395,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
               children: [
                 _StepperCircleButton(
                   icon: Icons.remove_rounded,
-                  enabled: !responding && _counterKzt > _floorKzt,
+                  enabled: !responding && _counterKzt > _minPrice,
                   onTap: () => _adjust(-_stepKzt),
                 ),
                 Text(
@@ -9205,8 +10421,8 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
               onPressed:
                   responding ? null : () => widget.onSubmitCounter(_counterKzt),
               style: OutlinedButton.styleFrom(
-                foregroundColor: palette.goldDeep,
-                side: BorderSide(color: palette.gold),
+                foregroundColor: palette.brandDeep,
+                side: BorderSide(color: palette.brand),
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -9269,7 +10485,7 @@ class _QueuedPriceOfferBanner extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.notifications_active_rounded,
-                  color: palette.gold, size: 16),
+                  color: palette.brand, size: 16),
               const SizedBox(width: 6),
               Text(
                 l10n.passengerQueuedOffersTitle,
@@ -9286,7 +10502,8 @@ class _QueuedPriceOfferBanner extends StatelessWidget {
             _QueuedPriceOfferRow(
               offer: offer,
               promoting: promotingOfferId == offer.id,
-              disabled: promotingOfferId != null && promotingOfferId != offer.id,
+              disabled:
+                  promotingOfferId != null && promotingOfferId != offer.id,
               onTap: onPromote == null ? null : () => onPromote!(offer),
             ),
             if (offer != offers.last) const SizedBox(height: 6),
@@ -9320,7 +10537,7 @@ class _QueuedPriceOfferRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -9349,7 +10566,7 @@ class _QueuedPriceOfferRow extends StatelessWidget {
                 Text(
                   _formatTenge(offer.priceKzt.toDouble()),
                   style: TextStyle(
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     fontSize: 13.5,
                     fontWeight: FontWeight.w900,
                   ),
@@ -9363,8 +10580,8 @@ class _QueuedPriceOfferRow extends StatelessWidget {
             child: OutlinedButton(
               onPressed: disabled ? null : onTap,
               style: OutlinedButton.styleFrom(
-                foregroundColor: palette.goldDeep,
-                side: BorderSide(color: palette.gold),
+                foregroundColor: palette.brandDeep,
+                side: BorderSide(color: palette.brand),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -9376,7 +10593,7 @@ class _QueuedPriceOfferRow extends StatelessWidget {
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: palette.goldDeep,
+                        color: palette.brandDeep,
                       ),
                     )
                   : Text(
@@ -9412,10 +10629,11 @@ class _PriceCompareTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: emphasize ? palette.goldSurface : palette.card,
+        color: emphasize ? palette.brandSurface : palette.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: emphasize ? palette.gold.withValues(alpha: 0.4) : palette.border,
+          color:
+              emphasize ? palette.brand.withValues(alpha: 0.4) : palette.border,
         ),
       ),
       child: Column(
@@ -9435,7 +10653,7 @@ class _PriceCompareTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: emphasize ? palette.goldDeep : palette.text,
+              color: emphasize ? palette.brandDeep : palette.text,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
@@ -9472,7 +10690,7 @@ class _StepperCircleButton extends StatelessWidget {
           child: SizedBox(
             width: 40,
             height: 40,
-            child: Icon(icon, color: palette.goldDeep, size: 22),
+            child: Icon(icon, color: palette.brandDeep, size: 22),
           ),
         ),
       ),
@@ -9524,7 +10742,8 @@ class _ClientCounterPendingPanel extends StatelessWidget {
           Text(
             myOffer == null
                 ? l10n.passengerOfferSentText
-                : l10n.passengerYouOfferedText(_formatTenge(myOffer.toDouble())),
+                : l10n
+                    .passengerYouOfferedText(_formatTenge(myOffer.toDouble())),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.textSecondary,
@@ -9551,7 +10770,8 @@ class _TripCancelledPanel extends StatelessWidget {
   final String status;
   final VoidCallback onNewTrip;
 
-  ({IconData icon, String title, String subtitle}) _copy(AppLocalizations l10n) {
+  ({IconData icon, String title, String subtitle}) _copy(
+      AppLocalizations l10n) {
     switch (status) {
       case 'CANCELLED_BY_DRIVER':
         return (
@@ -9629,7 +10849,7 @@ class _TripCancelledPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          _GoldCtaButton(
+          _BrandCtaButton(
             enabled: true,
             loading: false,
             text: l10n.passengerOrderAgainButton,
@@ -9676,8 +10896,8 @@ class _CancelConfirmSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 12),
             Container(
               width: 52,
@@ -9764,8 +10984,8 @@ class _ConfirmSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final accent = danger ? palette.danger : palette.goldDeep;
-    final accentSoft = danger ? palette.dangerSoft : palette.goldSurface;
+    final accent = danger ? palette.danger : palette.brandDeep;
+    final accentSoft = danger ? palette.dangerSoft : palette.brandSurface;
     return SafeArea(
       top: false,
       child: Container(
@@ -9786,8 +11006,8 @@ class _ConfirmSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 12),
             Container(
               width: 52,
@@ -9797,8 +11017,7 @@ class _ConfirmSheet extends StatelessWidget {
                 color: accentSoft,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(Icons.error_outline_rounded,
-                  color: accent, size: 26),
+              child: Icon(Icons.error_outline_rounded, color: accent, size: 26),
             ),
             const SizedBox(height: 14),
             Text(
@@ -9883,7 +11102,10 @@ class _RecurringBookingCard extends StatelessWidget {
       case 'CANCELLED':
         return (StatusTone.neutral, l10n.passengerRecurringStatusCancelled);
       default:
-        return (StatusTone.neutral, l10n.passengerRecurringStatusAwaitingDriver);
+        return (
+          StatusTone.neutral,
+          l10n.passengerRecurringStatusAwaitingDriver
+        );
     }
   }
 
@@ -9958,7 +11180,7 @@ class _RecurringBookingCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: palette.goldPale,
+                  color: palette.brandPale,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: palette.borderStrong),
                 ),
@@ -10041,13 +11263,13 @@ class _RecurringBookingChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: palette.goldDeep),
+          Icon(icon, size: 14, color: palette.brandDeep),
           const SizedBox(width: 5),
           Text(
             label,
@@ -10097,11 +11319,11 @@ class _FavoriteAddressCard extends StatelessWidget {
             height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: palette.goldDeep),
+            child: Icon(icon, color: palette.brandDeep),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -10114,8 +11336,7 @@ class _FavoriteAddressCard extends StatelessWidget {
                       address.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
                     // The chip repeats the category name (Дом/Работа/Другое)
                     // for context — but the create sheet pre-fills the title
@@ -10190,13 +11411,13 @@ class _DriverPreferenceCard extends StatelessWidget {
             height: 44,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: blocked ? palette.dangerSoft : palette.goldSurface,
+              color: blocked ? palette.dangerSoft : palette.brandSurface,
               border: Border.all(color: palette.border),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               blocked ? Icons.block_rounded : Icons.star_rounded,
-              color: blocked ? palette.danger : palette.goldDeep,
+              color: blocked ? palette.danger : palette.brandDeep,
             ),
           ),
           const SizedBox(width: 12),
@@ -10265,8 +11486,7 @@ class _AddDriverPreferenceSheet extends StatefulWidget {
       _AddDriverPreferenceSheetState();
 }
 
-class _AddDriverPreferenceSheetState
-    extends State<_AddDriverPreferenceSheet> {
+class _AddDriverPreferenceSheetState extends State<_AddDriverPreferenceSheet> {
   String? _driverId;
   String _type = 'FAVORITE';
 
@@ -10295,8 +11515,8 @@ class _AddDriverPreferenceSheetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             Text(
               l10n.passengerMarkDriverTitle,
@@ -10348,7 +11568,7 @@ class _AddDriverPreferenceSheetState
                 ],
               ),
               const SizedBox(height: 16),
-              _GoldCtaButton(
+              _BrandCtaButton(
                 enabled: !widget.submitting && _driverId != null,
                 loading: widget.submitting,
                 text: l10n.save,
@@ -10427,8 +11647,8 @@ class _CreateFavoriteAddressSheetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             Text(
               l10n.passengerAddToFavoritesTitle,
@@ -10485,9 +11705,9 @@ class _CreateFavoriteAddressSheetState
               ),
             ),
             const SizedBox(height: 16),
-            _GoldCtaButton(
-              enabled: !widget.submitting &&
-                  _titleController.text.trim().isNotEmpty,
+            _BrandCtaButton(
+              enabled:
+                  !widget.submitting && _titleController.text.trim().isNotEmpty,
               loading: widget.submitting,
               text: l10n.save,
               loadingText: l10n.savingLabel,
@@ -10518,8 +11738,7 @@ class _SimpleAddressSearchSheet extends StatefulWidget {
       _SimpleAddressSearchSheetState();
 }
 
-class _SimpleAddressSearchSheetState
-    extends State<_SimpleAddressSearchSheet> {
+class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
   final _query = TextEditingController();
   Timer? _debounce;
   bool _loading = false;
@@ -10586,8 +11805,8 @@ class _SimpleAddressSearchSheetState
           child: Column(
             children: [
               Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                  child: _SheetHandle(
+                      dark: Theme.of(context).brightness == Brightness.dark)),
               Text(
                 widget.title,
                 style: const TextStyle(
@@ -10648,7 +11867,7 @@ class _SimpleAddressSearchSheetState
                                   return ListTile(
                                     leading: Icon(
                                       Icons.place_rounded,
-                                      color: palette.goldDeep,
+                                      color: palette.brandDeep,
                                     ),
                                     title: Text(
                                       item.label,
@@ -10847,7 +12066,8 @@ class _CreateRecurringBookingSheetState
                 ),
                 Text(
                   l10n.passengerNewRecurringRouteTitle,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -10860,7 +12080,8 @@ class _CreateRecurringBookingSheetState
                 ),
                 const SizedBox(height: 16),
                 Text(l10n.driverProfileNameFallback,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 if (widget.knownDrivers.isEmpty)
                   _CompactNotice(
@@ -10881,7 +12102,8 @@ class _CreateRecurringBookingSheetState
                     items: widget.knownDrivers
                         .map((driver) => DropdownMenuItem(
                               value: driver.$1,
-                              child: Text(driver.$2, overflow: TextOverflow.ellipsis),
+                              child: Text(driver.$2,
+                                  overflow: TextOverflow.ellipsis),
                             ))
                         .toList(),
                     onChanged: (value) => setState(() => _driverId = value),
@@ -10900,7 +12122,8 @@ class _CreateRecurringBookingSheetState
                 ),
                 const SizedBox(height: 14),
                 Text(l10n.passengerDaysOfWeekLabel,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -10921,7 +12144,8 @@ class _CreateRecurringBookingSheetState
                 ),
                 const SizedBox(height: 14),
                 Text(l10n.passengerPickupTimeLabel,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 13)),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _pickTime,
@@ -10963,7 +12187,7 @@ class _CreateRecurringBookingSheetState
                   ),
                 ],
                 const SizedBox(height: 18),
-                _GoldCtaButton(
+                _BrandCtaButton(
                   enabled: !widget.submitting && widget.knownDrivers.isNotEmpty,
                   loading: widget.submitting,
                   text: l10n.passengerSendToDriverButton,
@@ -11008,7 +12232,7 @@ class _RecurringAddressField extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.place_outlined, size: 18, color: palette.goldDeep),
+              Icon(Icons.place_outlined, size: 18, color: palette.brandDeep),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -11027,9 +12251,7 @@ class _RecurringAddressField extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: value == null
-                            ? palette.textMuted
-                            : palette.text,
+                        color: value == null ? palette.textMuted : palette.text,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -11037,8 +12259,7 @@ class _RecurringAddressField extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: palette.textSecondary),
+              Icon(Icons.chevron_right_rounded, color: palette.textSecondary),
             ],
           ),
         ),
@@ -11079,14 +12300,14 @@ class _InitialsAvatar extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [palette.gold, palette.goldDeep],
+              colors: [palette.brand, palette.brandDeep],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(size * 0.34),
             boxShadow: [
               BoxShadow(
-                color: palette.gold.withValues(alpha: 0.30),
+                color: palette.brand.withValues(alpha: 0.30),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -11281,11 +12502,11 @@ class _TripProgressCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            palette.gold.withValues(alpha: 0.12),
-            palette.gold.withValues(alpha: 0.02),
+            palette.brand.withValues(alpha: 0.12),
+            palette.brand.withValues(alpha: 0.02),
           ],
         ),
-        border: Border.all(color: palette.gold.withValues(alpha: 0.30)),
+        border: Border.all(color: palette.brand.withValues(alpha: 0.30)),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -11295,7 +12516,7 @@ class _TripProgressCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.directions_car_filled_rounded,
-                color: palette.goldDeep,
+                color: palette.brandDeep,
                 size: 19,
               ),
               const SizedBox(width: 7),
@@ -11305,7 +12526,7 @@ class _TripProgressCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
@@ -11325,11 +12546,12 @@ class _TripProgressCard extends StatelessWidget {
             child: ValueListenableBuilder<Duration>(
               valueListenable: elapsedListenable,
               builder: (context, elapsed, _) => Text(
-                _progressLabel(l10n, elapsed, elapsedReliable, distanceTraveledM),
+                _progressLabel(
+                    l10n, elapsed, elapsedReliable, distanceTraveledM),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -11426,7 +12648,7 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: palette.gold,
+                    color: palette.brand,
                     shape: BoxShape.circle,
                     border: Border.all(color: palette.card, width: 2),
                   ),
@@ -11436,7 +12658,7 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                   bottom: 10,
                   child: Container(
                     width: 2,
-                    color: palette.gold.withValues(alpha: 0.25),
+                    color: palette.brand.withValues(alpha: 0.25),
                   ),
                 ),
                 TweenAnimationBuilder<double>(
@@ -11451,11 +12673,11 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                     width: dotSize,
                     height: dotSize,
                     decoration: BoxDecoration(
-                      color: palette.gold,
+                      color: palette.brand,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: palette.gold.withValues(alpha: 0.45),
+                          color: palette.brand.withValues(alpha: 0.45),
                           blurRadius: 6,
                         ),
                       ],
@@ -11468,12 +12690,12 @@ class _LiveRouteProgressColumn extends StatelessWidget {
                     width: 13,
                     height: 13,
                     decoration: BoxDecoration(
-                      color: palette.gold,
+                      color: palette.brand,
                       shape: BoxShape.circle,
                       border: Border.all(color: palette.card, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: palette.gold.withValues(alpha: 0.25),
+                          color: palette.brand.withValues(alpha: 0.25),
                           blurRadius: 8,
                         ),
                       ],
@@ -11511,7 +12733,7 @@ class _ShareTripButton extends StatelessWidget {
           ? l10n.passengerShareTripTooltipEnabled
           : l10n.passengerShareTripTooltipDisabled,
       child: Material(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -11532,7 +12754,7 @@ class _ShareTripButton extends StatelessWidget {
             height: 34,
             child: Icon(
               Icons.ios_share_rounded,
-              color: enabled ? palette.goldDeep : palette.textMuted,
+              color: enabled ? palette.brandDeep : palette.textMuted,
               size: 16,
             ),
           ),
@@ -11543,7 +12765,8 @@ class _ShareTripButton extends StatelessWidget {
 }
 
 class _SafetyButton extends StatelessWidget {
-  const _SafetyButton({this.sosPhone, required this.api, required this.orderId});
+  const _SafetyButton(
+      {this.sosPhone, required this.api, required this.orderId});
 
   final String? sosPhone;
   final ApiClient api;
@@ -11718,7 +12941,8 @@ class _SafetySheet extends StatelessWidget {
 //    the sheet (just not a fresh app cold-start, since sent-side still
 //    isn't stored).
 class _ChatEntry {
-  const _ChatEntry({required this.text, required this.fromMe, required this.at});
+  const _ChatEntry(
+      {required this.text, required this.fromMe, required this.at});
   final String text;
   final bool fromMe;
   final DateTime at;
@@ -11773,8 +12997,10 @@ class _ChatSheetState extends State<_ChatSheet> {
       if (!mounted) return;
       setState(() {
         _received = result.notifications
-            .where((n) => n.type == 'QUICK_MESSAGE' && n.orderId == widget.orderId)
-            .map((n) => _ChatEntry(text: n.body, fromMe: false, at: n.createdAt))
+            .where(
+                (n) => n.type == 'QUICK_MESSAGE' && n.orderId == widget.orderId)
+            .map(
+                (n) => _ChatEntry(text: n.body, fromMe: false, at: n.createdAt))
             .toList();
         _loading = false;
       });
@@ -11829,8 +13055,8 @@ class _ChatSheetState extends State<_ChatSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 10),
             Text(
               widget.peerName.trim().isEmpty
@@ -11878,8 +13104,9 @@ class _ChatSheetState extends State<_ChatSheet> {
               children: quickMessages.entries.map((entry) {
                 final sending = _sendingKey == entry.key;
                 return OutlinedButton(
-                  onPressed:
-                      _sendingKey != null ? null : () => _send(entry.key, entry.value),
+                  onPressed: _sendingKey != null
+                      ? null
+                      : () => _send(entry.key, entry.value),
                   style: OutlinedButton.styleFrom(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -11892,7 +13119,8 @@ class _ChatSheetState extends State<_ChatSheet> {
                           height: 14,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(entry.value, style: const TextStyle(fontSize: 12.5)),
+                      : Text(entry.value,
+                          style: const TextStyle(fontSize: 12.5)),
                 );
               }).toList(),
             ),
@@ -11922,7 +13150,7 @@ class _ChatBubble extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
         decoration: BoxDecoration(
-          color: entry.fromMe ? palette.gold : palette.goldPale,
+          color: entry.fromMe ? palette.brand : palette.brandPale,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -12055,7 +13283,7 @@ class _DriverContactCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Icon(
                           Icons.star_rounded,
-                          color: palette.gold,
+                          color: palette.brand,
                           size: 14,
                         ),
                         Text(
@@ -12153,7 +13381,7 @@ class _DriverContactCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Icon(
                             Icons.star_rounded,
-                            color: palette.gold,
+                            color: palette.brand,
                             size: 16,
                           ),
                           const SizedBox(width: 2),
@@ -12189,7 +13417,7 @@ class _DriverContactCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: palette.goldSurface,
+                          color: palette.brandSurface,
                           border: Border.all(color: palette.border),
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -12289,13 +13517,13 @@ class _TripActionButton extends StatelessWidget {
     final iconBg = danger
         ? palette.dangerSoft
         : primary
-            ? palette.gold
-            : palette.goldSurface;
+            ? palette.brand
+            : palette.brandSurface;
     final iconColor = danger
         ? palette.danger
         : primary
             ? Colors.white
-            : palette.goldDeep;
+            : palette.brandDeep;
     final textColor = danger ? palette.danger : palette.text;
     return InkWell(
       onTap: onTap,
@@ -12354,7 +13582,7 @@ class _RoundIconButton extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: filled ? palette.gold : palette.goldSurface,
+        color: filled ? palette.brand : palette.brandSurface,
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -12365,7 +13593,7 @@ class _RoundIconButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 17,
-              color: filled ? Colors.white : palette.goldDeep,
+              color: filled ? Colors.white : palette.brandDeep,
             ),
           ),
         ),
@@ -12592,7 +13820,7 @@ class _TripRouteMiniCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         border: Border.all(color: palette.border),
         borderRadius: BorderRadius.circular(22),
       ),
@@ -12604,9 +13832,11 @@ class _TripRouteMiniCard extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                _TripRouteMiniLine(label: l10n.passengerFromLabel, value: pickup),
+                _TripRouteMiniLine(
+                    label: l10n.passengerFromLabel, value: pickup),
                 Divider(height: 15, color: palette.border),
-                _TripRouteMiniLine(label: l10n.passengerToLabel, value: dropoff),
+                _TripRouteMiniLine(
+                    label: l10n.passengerToLabel, value: dropoff),
               ],
             ),
           ),
@@ -12703,7 +13933,7 @@ class _TripInfoPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: emphasis ? palette.goldDeep : palette.text,
+              color: emphasis ? palette.brandDeep : palette.text,
               fontSize: 13.5,
               height: 1,
               fontWeight: FontWeight.w900,
@@ -12748,7 +13978,8 @@ class _TripInfoRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: cells),
+        child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch, children: cells),
       ),
     );
   }
@@ -12757,7 +13988,7 @@ class _TripInfoRow extends StatelessWidget {
 class _AddressSearchSheet extends StatefulWidget {
   const _AddressSearchSheet({
     required this.api,
-    required this.region,
+    required this.regions,
     required this.suggestedAddresses,
     required this.suggestionTitle,
     this.favoriteAddresses = const [],
@@ -12767,7 +13998,7 @@ class _AddressSearchSheet extends StatefulWidget {
   });
 
   final ApiClient api;
-  final String? region;
+  final List<RegionOption> regions;
   final List<AddressSuggestion> suggestedAddresses;
   final String suggestionTitle;
   // Saved Дом/Работа/other places (see _favoriteAddressesScreen) — shown as
@@ -12789,6 +14020,13 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
   bool _loading = false;
   String? _error;
   List<AddressSuggestion> _results = const [];
+  RegionOption? _searchRegion;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchRegion = widget.regions.isEmpty ? null : widget.regions.first;
+  }
 
   @override
   void dispose() {
@@ -12823,7 +14061,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
     try {
       final results = await widget.api.searchAddresses(
         query,
-        region: widget.region,
+        region: _searchRegion?.name,
       );
       if (!mounted) return;
       setState(() => _results = results);
@@ -12850,6 +14088,9 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasTypedQuery = _query.text.trim().length >= 2;
+    final showMapPointChoice =
+        !hasTypedQuery || (!_loading && _results.isEmpty);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: ColoredBox(
@@ -12888,7 +14129,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
-                          foregroundColor: palette.goldDeep,
+                          foregroundColor: palette.brandDeep,
                         ),
                         child: Text(
                           l10n.cancel,
@@ -12898,32 +14139,27 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  if ((widget.region ?? '').trim().isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: palette.goldPale,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: palette.border),
-                      ),
+                  if (widget.regions.isNotEmpty) ...[
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.location_city_rounded,
-                            size: 16,
-                            color: palette.goldDeep,
-                          ),
-                          const SizedBox(width: 7),
-                          Text(
-                            widget.region!,
-                            style: TextStyle(
-                              color: palette.text,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
+                        children: widget.regions
+                            .map((region) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _SupportTopicChip(
+                                    label: region.name,
+                                    selected: region.id == _searchRegion?.id,
+                                    onTap: () => setState(() {
+                                      _searchRegion = region;
+                                      _results = const [];
+                                      _error = null;
+                                      if (_query.text.trim().length >= 2) {
+                                        unawaited(_search(_query.text));
+                                      }
+                                    }),
+                                  ),
+                                ))
+                            .toList(growable: false),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -12947,22 +14183,25 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                       ),
                       prefixIcon: Icon(
                         Icons.search_rounded,
-                        color: palette.textSecondary,
+                        color: palette.brandDeep,
                       ),
                       filled: true,
-                      fillColor: palette.appBackground,
+                      fillColor: palette.brandSurface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: palette.border),
+                        borderSide: BorderSide(
+                          color: palette.brand.withValues(alpha: 0.22),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: palette.border),
+                        borderSide: BorderSide(
+                          color: palette.brand.withValues(alpha: 0.22),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide:
-                            BorderSide(color: palette.gold, width: 1.8),
+                        borderSide: BorderSide(color: palette.brand, width: 1.8),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 15),
@@ -12974,7 +14213,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: palette.goldDeep,
+                                  color: palette.brandDeep,
                                 ),
                               ),
                             )
@@ -12995,14 +14234,15 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _MapPointChoiceButton(
-                    onTap: () {
-                      Navigator.pop(
-                        context,
-                        _PointResult.openMapPicker(),
-                      );
-                    },
-                  ),
+                  if (showMapPointChoice)
+                    _MapPointChoiceButton(
+                      onTap: () {
+                        Navigator.pop(
+                          context,
+                          _PointResult.openMapPicker(),
+                        );
+                      },
+                    ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
                     _InlineMessage(text: _error!, danger: true, dark: isDark),
@@ -13078,7 +14318,7 @@ class _MapPointChoiceButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
-            color: palette.goldSurface,
+            color: palette.brandSurface,
             border: Border.all(color: palette.border),
             borderRadius: BorderRadius.circular(18),
           ),
@@ -13094,7 +14334,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.add_location_alt_rounded,
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                   size: 19,
                 ),
               ),
@@ -13132,7 +14372,7 @@ class _MapPointChoiceButton extends StatelessWidget {
               _SvgIcon(
                 _iconChevronRight,
                 size: 16,
-                color: palette.goldDeep,
+                color: palette.brandDeep,
               ),
             ],
           ),
@@ -13192,8 +14432,8 @@ TextSpan _highlightedLabelSpan(
   final matchIndex = label.toLowerCase().indexOf(query.toLowerCase());
   if (matchIndex < 0) return TextSpan(text: label, style: baseStyle);
   final matchStyle = baseStyle.copyWith(
-    color: palette.goldDeep,
-    backgroundColor: palette.goldPale,
+    color: palette.brandDeep,
+    backgroundColor: palette.brandPale,
   );
   return TextSpan(
     style: baseStyle,
@@ -13314,12 +14554,12 @@ class _AddressResultTile extends StatelessWidget {
                   height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: palette.goldPale,
+                    color: palette.brandPale,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     size: 20,
                   ),
                 ),
@@ -13358,7 +14598,7 @@ class _AddressResultTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: palette.goldDeep),
+                Icon(Icons.chevron_right_rounded, color: palette.brandDeep),
               ],
             ),
           ),
@@ -13397,12 +14637,12 @@ class _AddressEmptyHint extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldPale,
+              color: palette.brandPale,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.manage_search_rounded,
-              color: palette.goldDeep,
+              color: palette.brandDeep,
               size: 18,
             ),
           ),
@@ -13473,14 +14713,14 @@ class _LocationRequiredScreen extends StatelessWidget {
                   height: 88,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: palette.goldPale,
+                    color: palette.brandPale,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     serviceDisabled
                         ? Icons.location_disabled_rounded
                         : Icons.location_off_rounded,
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     size: 42,
                   ),
                 ),
@@ -13549,7 +14789,7 @@ class _LocationPermissionSheet extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
         decoration: BoxDecoration(
           color: palette.card,
-          border: Border.all(color: palette.gold.withValues(alpha: 0.30)),
+          border: Border.all(color: palette.brand.withValues(alpha: 0.30)),
           borderRadius: BorderRadius.circular(28),
           boxShadow: const [
             BoxShadow(
@@ -13573,15 +14813,15 @@ class _LocationPermissionSheet extends StatelessWidget {
                   height: 46,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: palette.gold.withValues(alpha: 0.14),
+                    color: palette.brand.withValues(alpha: 0.14),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: palette.gold.withValues(alpha: 0.34),
+                      color: palette.brand.withValues(alpha: 0.34),
                     ),
                   ),
                   child: Icon(
                     Icons.my_location_rounded,
-                    color: palette.gold,
+                    color: palette.brand,
                     size: 23,
                   ),
                 ),
@@ -13610,7 +14850,7 @@ class _LocationPermissionSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _GoldCtaButton(
+            _BrandCtaButton(
               enabled: true,
               loading: false,
               text: l10n.passengerAllowLocationButton,
@@ -13761,6 +15001,7 @@ String _paymentLabel(AppLocalizations l10n, String method) {
         'CASH': l10n.paymentCash,
         'KASPI': l10n.paymentKaspi,
         'CARD': l10n.paymentCard,
+        'CASHBACK': l10n.driverPaymentCashback,
       }[method.toUpperCase()] ??
       l10n.paymentCash;
 }
@@ -13823,23 +15064,6 @@ class _TariffSection extends StatelessWidget {
             text: l10n.passengerTariffSectionText,
           ),
           const SizedBox(height: 10),
-        ] else ...[
-          // No "фикс. цена" pill here any more: it sat a finger's width above
-          // the adjuster that exists to change the fare, and the two
-          // contradicted each other. What the badge really promises — no
-          // surge — is carried by the speed hint under the amount.
-          Padding(
-            padding: const EdgeInsets.only(left: 2, right: 2, bottom: 8),
-            child: Text(
-              l10n.passengerTariffSectionTitle,
-              style: TextStyle(
-                color: context.palette.text,
-                fontSize: 15.4,
-                height: 1,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
         ],
         if (tariffs.isEmpty)
           _CompactNotice(
@@ -13856,63 +15080,55 @@ class _TariffSection extends StatelessWidget {
             dark: dark,
           )
         else ...[
-          // A segmented switch over a single large card, rather than one card
-          // per tariff. Two equally-weighted cards split the rider's attention
-          // and left the white car photo on a near-white card, where it was
-          // barely visible; the switch also survives a region gaining a third
-          // or fourth tariff without the sheet growing.
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: dark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : const Color(0xffeff1f5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
+          // The passenger flow deliberately offers two bookable choices.
+          // Present them as a paired decision so tariff, price, payment and
+          // the order action all stay in one immediate viewport.
+          if (visibleTariffs.length == 1)
+            _TariffComparisonCard(
+              item: visibleTariffs.first,
+              selected: visibleTariffs.first.tariff.id == selectedId,
+              estimate: estimates[visibleTariffs.first.tariff.id],
+              onTap: () => onSelect(visibleTariffs.first.tariff.id),
+              dark: dark,
+              bestValue: visibleTariffs.first.tariff.id == bestValueTariffId,
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (var index = 0; index < visibleTariffs.length; index++) ...[
-                  if (index != 0) const SizedBox(width: 4),
                   Expanded(
-                    child: _TariffCard(
+                    child: _TariffComparisonCard(
                       item: visibleTariffs[index],
-                      selected:
-                          visibleTariffs[index].tariff.id == selectedId,
+                      selected: visibleTariffs[index].tariff.id == selectedId,
                       estimate: estimates[visibleTariffs[index].tariff.id],
                       onTap: () => onSelect(visibleTariffs[index].tariff.id),
                       dark: dark,
                       bestValue:
                           visibleTariffs[index].tariff.id == bestValueTariffId,
-                      stretch: true,
+                      compact: true,
                     ),
                   ),
+                  if (index < visibleTariffs.length - 1)
+                    const SizedBox(width: 10),
                 ],
               ],
             ),
-          ),
-          const SizedBox(height: 10),
-          _TariffHero(
-            item: visibleTariffs.firstWhere(
-              (item) => item.tariff.id == selectedId,
-              orElse: () => visibleTariffs.first,
-            ),
-            dark: dark,
-          ),
         ],
       ],
     );
   }
 }
 
-class _TariffCard extends StatelessWidget {
-  const _TariffCard({
+class _TariffComparisonCard extends StatelessWidget {
+  const _TariffComparisonCard({
     required this.item,
     required this.selected,
     required this.estimate,
     required this.onTap,
     required this.dark,
     this.bestValue = false,
-    this.stretch = false,
+    this.compact = false,
   });
 
   final _PassengerTariffVisual item;
@@ -13921,125 +15137,264 @@ class _TariffCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool dark;
   final bool bestValue;
-  final bool stretch;
+  final bool compact;
+
+  Widget _compactContent(BuildContext context, Widget art, double? price) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final isDelivery = item.classId == _TariffVisualClass.delivery;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 52,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                  child: Align(alignment: Alignment.centerLeft, child: art)),
+              if (selected)
+                Container(
+                  width: 25,
+                  height: 25,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: palette.brandDeep,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: palette.brand.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.check_rounded,
+                      color: Colors.white, size: 16),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _tariffTitleFor(l10n, item.classId),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.text,
+            fontSize: 16,
+            height: 1.04,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isDelivery
+                  ? Icons.inventory_2_outlined
+                  : Icons.person_outline_rounded,
+              color: palette.textSecondary,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isDelivery ? '20 kg' : '4',
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontSize: 11,
+                height: 1,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        // This card sits inside a row whose height is determined by the
+        // bottom sheet. A Spacer would require a bounded height and can make
+        // the entire tariff list disappear during the first layout pass.
+        const SizedBox(height: 16),
+        Text(
+          price == null ? '...' : _formatTenge(price),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.text,
+            fontSize: 19,
+            height: 1,
+            letterSpacing: -0.35,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        if (bestValue) ...[
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome_rounded,
+                  color: palette.brandDeep, size: 11),
+              const SizedBox(width: 4),
+              Text(
+                'Выгодно',
+                style: TextStyle(
+                  color: palette.brandDeep,
+                  fontSize: 10,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    final accent = dark ? palette.goldSky : palette.goldDeep;
-    // A segment shows the tariff name only. The car moved to _TariffHero,
-    // and the price to the single "your price" field below the switch —
-    // it used to be written three times on one screen.
-    final content = Text(
-      _tariffTitleFor(l10n, item.classId),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: selected ? accent : palette.textSecondary,
-        fontSize: 14.5,
-        height: 1.1,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.1,
-      ),
+    final isDelivery = item.classId == _TariffVisualClass.delivery;
+    final price = estimate?.estimatedPrice;
+    final fallback = Icon(
+      isDelivery ? Icons.local_shipping_rounded : Icons.local_taxi_rounded,
+      color: palette.brandDeep,
+      size: 50,
     );
+    // Delivery is an actual van, while a ride is a side-view sedan. This
+    // makes the two choices instantly distinguishable at a glance instead of
+    // presenting the same car twice with different labels.
+    final art = item.asset.isEmpty
+        ? fallback
+        : item.asset.endsWith('.svg')
+            ? SvgPicture.asset(
+                item.asset,
+                width: 78,
+                height: 54,
+                fit: BoxFit.contain,
+                placeholderBuilder: (_) => fallback,
+              )
+            : Image.asset(
+                item.asset,
+                width: 82,
+                height: 56,
+                cacheWidth: 164,
+                cacheHeight: 112,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (_, __, ___) => fallback,
+              );
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(compact ? 22 : 26),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(compact ? 22 : 26),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+          constraints: BoxConstraints(minHeight: compact ? 148 : 118),
+          padding: EdgeInsets.fromLTRB(
+            compact ? 11 : 14,
+            compact ? 10 : 12,
+            compact ? 11 : 14,
+            compact ? 10 : 12,
+          ),
           decoration: BoxDecoration(
-            // A pill inside the switch track: the selected one lifts off the
-            // track in white, the others stay flat on it. No borders — two
-            // ringed cards side by side were the noisiest thing on the sheet.
-            color: selected
-                ? (dark ? palette.cardWarm : Colors.white)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            color: selected ? null : palette.card,
+            gradient: selected
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [palette.brandSurface, palette.brandPale],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(compact ? 22 : 26),
+            border: Border.all(
+              color: selected ? palette.brand : palette.border,
+              width: selected ? 2.5 : 1,
+            ),
             boxShadow: [
-              if (selected)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.45 : 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+              BoxShadow(
+                color: palette.brand.withValues(alpha: selected ? 0.18 : 0.06),
+                blurRadius: selected ? 18 : 10,
+                offset: Offset(0, selected ? 8 : 4),
+              ),
             ],
           ),
-          child: content,
+          child: compact
+              ? _compactContent(context, art, price)
+              : Row(
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 82,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: palette.brandSurface.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: art,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _tariffTitleFor(l10n, item.classId),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontSize: 17,
+                              height: 1.05,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            isDelivery ? 'до 20 кг' : 'до 4 пассажиров',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: palette.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            price == null ? 'Расчёт' : _formatTenge(price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontSize: 22,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          if (bestValue) ...[
+                            const SizedBox(height: 5),
+                            Text(
+                              'Выгодный',
+                              style: TextStyle(
+                                color: palette.brandDeep,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
-    );
-  }
-}
-
-/// The one large view of the chosen car. A photo shown at 78px on a white card
-/// was indistinguishable between tariffs; at full sheet width, on a tinted
-/// ground, it is the thing the rider actually looks at.
-class _TariffHero extends StatelessWidget {
-  const _TariffHero({required this.item, required this.dark});
-
-  final _PassengerTariffVisual item;
-  final bool dark;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final isDelivery = item.classId == _TariffVisualClass.delivery;
-    const artWidth = 208.0;
-    const artHeight = 96.0;
-    final Widget art = item.asset.isEmpty
-        ? (isDelivery
-            ? SvgPicture.asset(
-                _iconDeliveryVan,
-                width: artWidth,
-                height: artHeight,
-                fit: BoxFit.contain,
-              )
-            : _SvgIcon(_iconCar, size: 64, color: palette.goldDeep))
-        : Image.asset(
-            item.asset,
-            width: artWidth,
-            height: artHeight,
-            // Same reasoning as the old thumbnails: the source exports run to
-            // over a megabyte, so decode at ~2x the rendered size rather than
-            // at full camera resolution.
-            cacheWidth: (artWidth * 2).round(),
-            cacheHeight: (artHeight * 2).round(),
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (_, __, ___) => _SvgIcon(
-              isDelivery ? _iconDelivery : _iconCar,
-              size: 64,
-              color: palette.goldDeep,
-            ),
-          );
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: dark
-              ? [palette.goldSurface, palette.card]
-              : [Colors.white, palette.goldPale],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: dark
-              ? Colors.white.withValues(alpha: 0.08)
-              : palette.gold.withValues(alpha: 0.18),
-        ),
-      ),
-      child: art,
     );
   }
 }
@@ -14051,53 +15406,44 @@ class _TariffSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            l10n.passengerTariffSectionTitle,
-            style: TextStyle(
-              color: palette.text,
-              fontSize: 14.2,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 132,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 3,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (context, i) => Container(
-              width: 118,
-              padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-              decoration: BoxDecoration(
-                color: dark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white,
-                border: Border.all(
-                  color: dark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : SmartTaxiColors.border,
+        // _TariffSection already owns the heading. Keep this loading state
+        // structurally identical to the final two-choice layout so it never
+        // flashes a third, clipped tariff or repeats "Выберите тариф".
+        Row(
+          children: List.generate(
+            2,
+            (index) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: index == 0 ? 10 : 0),
+                child: Container(
+                  height: 148,
+                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+                  decoration: BoxDecoration(
+                    color: dark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.white,
+                    border: Border.all(
+                      color: dark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : SmartTaxiColors.border,
+                    ),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SkeletonLine(
+                          width: double.infinity, height: 54, radius: 15),
+                      SizedBox(height: 11),
+                      _SkeletonLine(width: 70, height: 13),
+                      SizedBox(height: 7),
+                      _SkeletonLine(width: 54, height: 12),
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SkeletonLine(
-                      width: double.infinity, height: 44, radius: 13),
-                  SizedBox(height: 9),
-                  _SkeletonLine(width: 70, height: 12),
-                  SizedBox(height: 6),
-                  _SkeletonLine(width: 56, height: 12),
-                ],
               ),
             ),
           ),
@@ -14107,6 +15453,126 @@ class _TariffSkeleton extends StatelessWidget {
   }
 }
 
+/// A single-line price control keeps the two tariffs, payment choice and
+/// primary CTA visible together on ordinary phones. It retains exactly the
+/// same server-aligned bidding bounds as the expanded legacy control below.
+class _CompactPriceAdjuster extends StatelessWidget {
+  const _CompactPriceAdjuster({
+    required this.basePrice,
+    required this.currentPrice,
+    required this.onChanged,
+  });
+
+  static const _step = 50;
+
+  final int basePrice;
+  final int currentPrice;
+  final ValueChanged<int?> onChanged;
+
+  int get _minPrice =>
+      math.max(200, ((basePrice * 0.7) / _step).ceil() * _step);
+  int get _maxPrice => math.max(_minPrice,
+      math.min(1000000, ((basePrice * 1.5) / _step).floor() * _step));
+
+  void _adjust(int delta) {
+    final next = (currentPrice + delta).clamp(_minPrice, _maxPrice);
+    onChanged(next == basePrice ? null : next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
+      decoration: BoxDecoration(
+        color: palette.brandSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.brand.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.passengerYourPriceLabel,
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _CompactPriceStepButton(
+            icon: Icons.remove_rounded,
+            onTap: currentPrice > _minPrice ? () => _adjust(-_step) : null,
+          ),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 110),
+            child: Text(
+              _formatTenge(currentPrice),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 22,
+                height: 1,
+                letterSpacing: -0.55,
+                fontWeight: FontWeight.w900,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _CompactPriceStepButton(
+            icon: Icons.add_rounded,
+            onTap: currentPrice < _maxPrice ? () => _adjust(_step) : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactPriceStepButton extends StatelessWidget {
+  const _CompactPriceStepButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final enabled = onTap != null;
+    return Material(
+      color: enabled ? palette.brandDeep : palette.card.withValues(alpha: 0.55),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon,
+              size: 20, color: enabled ? Colors.white : palette.textMuted),
+        ),
+      ),
+    );
+  }
+}
+
+// Retained as a fallback implementation for narrow legacy embeds. The order
+// sheet uses _CompactPriceAdjuster, which keeps the complete decision visible.
+// ignore: unused_element
 class _PriceAdjuster extends StatelessWidget {
   const _PriceAdjuster({
     required this.basePrice,
@@ -14115,15 +15581,25 @@ class _PriceAdjuster extends StatelessWidget {
   });
 
   static const _step = 50;
-  // Flat bounds regardless of the estimated price — matches
-  // offeredPriceBounds() on the backend, which is what actually enforces
-  // this; keep the two in sync if either changes.
-  static const _minPrice = 200;
-  static const _maxPrice = 1000000;
 
   final int basePrice;
   final int currentPrice;
   final ValueChanged<int?> onChanged;
+
+  // Must mirror offeredPriceBounds() in the API: bidding stays useful, but
+  // never turns an expensive route into a token-price order.
+  int get _minPrice => math.max(
+        200,
+        ((basePrice * 0.7) / _step).ceil() * _step,
+      );
+
+  int get _maxPrice => math.max(
+        _minPrice,
+        math.min(
+          1000000,
+          ((basePrice * 1.5) / _step).floor() * _step,
+        ),
+      );
 
   void _adjust(int delta) {
     final next = (currentPrice + delta).clamp(_minPrice, _maxPrice);
@@ -14141,10 +15617,11 @@ class _PriceAdjuster extends StatelessWidget {
             : l10n.passengerPriceHintNormal;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
       decoration: BoxDecoration(
-        color: palette.goldPale,
-        borderRadius: const BorderRadius.all(Radius.circular(20)),
+        color: palette.brandSurface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: palette.brand.withValues(alpha: 0.16)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -14176,7 +15653,7 @@ class _PriceAdjuster extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: palette.text,
-                    fontSize: 30,
+                    fontSize: 38,
                     height: 1.05,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -1.2,
@@ -14196,7 +15673,7 @@ class _PriceAdjuster extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               borderRadius: BorderRadius.circular(999),
             ),
             child: Row(
@@ -14206,7 +15683,7 @@ class _PriceAdjuster extends StatelessWidget {
                   width: 7,
                   height: 7,
                   decoration: BoxDecoration(
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -14217,7 +15694,7 @@ class _PriceAdjuster extends StatelessWidget {
                     maxLines: 2,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                       fontSize: 12,
                       height: 1.15,
                       fontWeight: FontWeight.w700,
@@ -14246,10 +15723,10 @@ class _PriceStepButton extends StatelessWidget {
     // 44dp round targets: at 30dp square these sat below the recommended
     // minimum tap size, on the one control a rider presses repeatedly.
     return Material(
-      color: palette.card.withValues(alpha: enabled ? 1 : 0.5),
+      color: enabled ? palette.brandDeep : palette.card.withValues(alpha: 0.5),
       shape: const CircleBorder(),
       elevation: enabled ? 2 : 0,
-      shadowColor: Colors.black.withValues(alpha: 0.25),
+      shadowColor: palette.brand.withValues(alpha: 0.30),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
@@ -14259,7 +15736,7 @@ class _PriceStepButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 22,
-            color: enabled ? palette.goldDeep : palette.textMuted,
+            color: enabled ? Colors.white : palette.textMuted,
           ),
         ),
       ),
@@ -14288,15 +15765,19 @@ class _PaymentMethodRow extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       opacity: enabled ? 1 : 0.56,
       child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 13),
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: palette.card,
-          border: Border.fromBorderSide(
-            BorderSide(color: palette.borderStrong),
-          ),
-          borderRadius: const BorderRadius.all(Radius.circular(18)),
-          boxShadow: _cardShadow,
+          border: Border.all(color: palette.border),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: SmartTaxiColors.authInk.withValues(alpha: 0.035),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -14362,11 +15843,11 @@ class _PaymentIcon extends StatelessWidget {
       height: 32,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         border: Border.all(color: palette.borderStrong),
         borderRadius: BorderRadius.circular(13),
       ),
-      child: _SvgIcon(icon, color: palette.goldDeep, size: 18),
+      child: _SvgIcon(icon, color: palette.brandDeep, size: 18),
     );
   }
 }
@@ -14387,7 +15868,7 @@ class _RegionConfirmSheet extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
         decoration: BoxDecoration(
           color: palette.card,
-          border: Border.all(color: palette.gold.withValues(alpha: 0.32)),
+          border: Border.all(color: palette.brand.withValues(alpha: 0.32)),
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
@@ -14402,8 +15883,8 @@ class _RegionConfirmSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -14413,13 +15894,13 @@ class _RegionConfirmSheet extends StatelessWidget {
                   height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: palette.goldPale,
+                    color: palette.brandPale,
                     border: Border.all(color: palette.borderStrong),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Icon(
                     Icons.near_me_rounded,
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     size: 24,
                   ),
                 ),
@@ -14545,8 +16026,8 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: _SheetHandle(
-                  dark: Theme.of(context).brightness == Brightness.dark)),
+                child: _SheetHandle(
+                    dark: Theme.of(context).brightness == Brightness.dark)),
             const SizedBox(height: 14),
             Text(
               widget.title,
@@ -14583,85 +16064,84 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                 text: l10n.passengerNoRegionFoundText,
               ),
             if (regions.isNotEmpty)
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: regions.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final region = regions[index];
-                  final selected = region.id == widget.selectedId;
-                  return Material(
-                    color: selected ? palette.goldPale : palette.cardWarm,
-                    borderRadius: BorderRadius.circular(18),
-                    child: InkWell(
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: regions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final region = regions[index];
+                    final selected = region.id == widget.selectedId;
+                    return Material(
+                      color: selected ? palette.brandPale : palette.cardWarm,
                       borderRadius: BorderRadius.circular(18),
-                      onTap: () => Navigator.pop(context, region),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 58),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: selected ? palette.gold : palette.border,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => Navigator.pop(context, region),
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 58),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: selected ? palette.brand : palette.border,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: selected ? palette.brand : palette.card,
+                                  borderRadius: BorderRadius.circular(15),
+                                  border: Border.all(
+                                    color: palette.borderStrong,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.location_city_rounded,
+                                  color: selected
+                                      ? palette.text
+                                      : palette.brandDeep,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  region.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: palette.text,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              if (selected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: palette.success,
+                                )
+                              else
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: palette.textSecondary,
+                                ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color:
-                                    selected ? palette.gold : palette.card,
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(
-                                  color: palette.borderStrong,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.location_city_rounded,
-                                color: selected
-                                    ? palette.text
-                                    : palette.goldDeep,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                region.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: palette.text,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            if (selected)
-                              Icon(
-                                Icons.check_circle_rounded,
-                                color: palette.success,
-                              )
-                            else
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: palette.textSecondary,
-                              ),
-                          ],
-                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -14670,9 +16150,13 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
 }
 
 class _PaymentMethodSheet extends StatelessWidget {
-  const _PaymentMethodSheet({required this.selected});
+  const _PaymentMethodSheet({
+    required this.selected,
+    required this.cashbackBalanceKzt,
+  });
 
   final String selected;
+  final int? cashbackBalanceKzt;
 
   @override
   Widget build(BuildContext context) {
@@ -14681,7 +16165,15 @@ class _PaymentMethodSheet extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final items = [
       ('CASH', l10n.paymentCash, l10n.passengerPaymentCashDescription),
-      ('CARD', l10n.paymentCard, l10n.passengerPaymentCardDescription),
+      if (AppConfig.cardPaymentsEnabled)
+        ('CARD', l10n.paymentCard, l10n.passengerPaymentCardDescription),
+      (
+        'CASHBACK',
+        l10n.driverPaymentCashback,
+        cashbackBalanceKzt == null
+            ? l10n.passengerBonusBalanceLabel
+            : '${l10n.passengerBonusBalanceLabel}: ${_formatTenge(cashbackBalanceKzt!)}'
+      ),
     ];
     return SafeArea(
       child: Container(
@@ -14742,23 +16234,23 @@ class _PaymentMethodSheet extends StatelessWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  palette.gold
+                                  palette.brand
                                       .withValues(alpha: isDark ? 0.22 : 0.12),
-                                  palette.gold
+                                  palette.brand
                                       .withValues(alpha: isDark ? 0.06 : 0.03),
                                 ],
                               )
                             : null,
                         color: active ? null : palette.appBackground,
                         border: Border.all(
-                          color: active ? palette.gold : palette.border,
+                          color: active ? palette.brand : palette.border,
                           width: active ? 1.8 : 1,
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: active
                             ? [
                                 BoxShadow(
-                                  color: palette.gold
+                                  color: palette.brand
                                       .withValues(alpha: isDark ? 0.30 : 0.20),
                                   blurRadius: 18,
                                   offset: const Offset(0, 7),
@@ -14777,17 +16269,17 @@ class _PaymentMethodSheet extends StatelessWidget {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: active
-                                    ? [palette.gold, palette.goldDeep]
+                                    ? [palette.brand, palette.brandDeep]
                                     : [
-                                        palette.goldSurface,
-                                        palette.goldSurface,
+                                        palette.brandSurface,
+                                        palette.brandSurface,
                                       ],
                               ),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: active
                                   ? [
                                       BoxShadow(
-                                        color: palette.gold
+                                        color: palette.brand
                                             .withValues(alpha: 0.35),
                                         blurRadius: 10,
                                         offset: const Offset(0, 4),
@@ -14796,8 +16288,10 @@ class _PaymentMethodSheet extends StatelessWidget {
                                   : null,
                             ),
                             child: _SvgIcon(
-                              item.$1 == 'CASH' ? _iconBanknote : _iconCreditCard,
-                              color: active ? Colors.white : palette.goldDeep,
+                              item.$1 == 'CASH' || item.$1 == 'CASHBACK'
+                                  ? _iconBanknote
+                                  : _iconCreditCard,
+                              color: active ? Colors.white : palette.brandDeep,
                               size: 22,
                             ),
                           ),
@@ -14832,7 +16326,7 @@ class _PaymentMethodSheet extends StatelessWidget {
                             scale: active ? 1 : 0,
                             child: Icon(
                               Icons.check_circle_rounded,
-                              color: palette.gold,
+                              color: palette.brand,
                               size: 26,
                             ),
                           ),
@@ -14897,7 +16391,8 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
               const _SheetHandle(),
               Text(
                 l10n.passengerOrderNoteSheetTitle,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 4),
               Text(
@@ -14922,12 +16417,11 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
                 ),
               ),
               const SizedBox(height: 6),
-              _GoldCtaButton(
+              _BrandCtaButton(
                 enabled: true,
                 loading: false,
                 text: l10n.save,
-                onTap: () =>
-                    Navigator.pop(context, _controller.text.trim()),
+                onTap: () => Navigator.pop(context, _controller.text.trim()),
               ),
               if (hasInitialNote) ...[
                 const SizedBox(height: 8),
@@ -14992,14 +16486,17 @@ class _SmartDrawer extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
               decoration: BoxDecoration(
-                color: palette.card,
-                border: Border.all(color: palette.border),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [palette.brandDeep, palette.brand, palette.brandSky],
+                ),
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x10102a52),
-                    blurRadius: 24,
-                    offset: Offset(0, 10),
+                    color: palette.brand.withValues(alpha: 0.28),
+                    blurRadius: 28,
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
@@ -15024,13 +16521,12 @@ class _SmartDrawer extends StatelessWidget {
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [palette.gold, palette.goldDeep],
+                                  colors: [palette.brand, palette.brandDeep],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        palette.gold.withValues(alpha: 0.32),
+                                    color: palette.brand.withValues(alpha: 0.32),
                                     blurRadius: 14,
                                     offset: const Offset(0, 6),
                                   ),
@@ -15061,7 +16557,7 @@ class _SmartDrawer extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: palette.text,
+                                      color: Colors.white,
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w900,
                                     ),
@@ -15074,7 +16570,8 @@ class _SmartDrawer extends StatelessWidget {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                          color: palette.textSecondary,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.78),
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -15085,7 +16582,7 @@ class _SmartDrawer extends StatelessWidget {
                             ),
                             Icon(
                               Icons.chevron_right_rounded,
-                              color: palette.textSecondary,
+                              color: Colors.white.withValues(alpha: 0.92),
                               size: 20,
                             ),
                           ],
@@ -15100,13 +16597,16 @@ class _SmartDrawer extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: palette.goldSurface,
+                      color: Colors.white.withValues(alpha: 0.16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.20),
+                      ),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       l10n.passengerDrawerRegionalBadge,
                       style: TextStyle(
-                        color: palette.goldDeep,
+                        color: Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                       ),
@@ -15273,12 +16773,12 @@ class _DrawerItem extends StatelessWidget {
     final iconTone = danger
         ? palette.danger
         : active
-            ? palette.goldDeep
+            ? palette.brandDeep
             : palette.text;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 1.5),
       child: Material(
-        color: active ? palette.goldSurface : Colors.transparent,
+        color: active ? palette.brandSurface : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -15289,7 +16789,7 @@ class _DrawerItem extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 50),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: active ? palette.goldSurface : Colors.transparent,
+              color: active ? palette.brandSurface : Colors.transparent,
               border: Border.all(
                 color: active ? palette.borderStrong : Colors.transparent,
               ),
@@ -15314,7 +16814,7 @@ class _DrawerItem extends StatelessWidget {
                     color: danger
                         ? palette.dangerSoft
                         : active
-                            ? palette.goldSurface
+                            ? palette.brandSurface
                             : palette.card,
                     border: Border.all(
                       color: danger
@@ -15349,7 +16849,7 @@ class _DrawerItem extends StatelessWidget {
                   color: danger
                       ? palette.danger
                       : active
-                          ? palette.goldDeep
+                          ? palette.brandDeep
                           : palette.textSecondary,
                   size: 22,
                 ),
@@ -15419,7 +16919,7 @@ class _AppHeader extends StatelessWidget {
       child: Row(
         children: [
           Material(
-            color: palette.goldSurface,
+            color: palette.brandSurface,
             borderRadius: BorderRadius.circular(14),
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
@@ -15431,7 +16931,7 @@ class _AppHeader extends StatelessWidget {
                       ? Icons.arrow_back_ios_new_rounded
                       : Icons.menu_rounded,
                   size: 20,
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                 ),
               ),
             ),
@@ -15473,11 +16973,11 @@ class _ActiveOrderBanner extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  palette.gold.withValues(alpha: 0.16),
-                  palette.gold.withValues(alpha: 0.06),
+                  palette.brand.withValues(alpha: 0.16),
+                  palette.brand.withValues(alpha: 0.06),
                 ],
               ),
-              border: Border.all(color: palette.goldPale),
+              border: Border.all(color: palette.brandPale),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -15488,11 +16988,11 @@ class _ActiveOrderBanner extends StatelessWidget {
                   child: _searching
                       ? CircularProgressIndicator(
                           strokeWidth: 2.4,
-                          color: palette.goldDeep,
+                          color: palette.brandDeep,
                         )
                       : Icon(
                           Icons.directions_car_filled_rounded,
-                          color: palette.goldDeep,
+                          color: palette.brandDeep,
                           size: 20,
                         ),
                 ),
@@ -15532,7 +17032,7 @@ class _ActiveOrderBanner extends StatelessWidget {
                 const SizedBox(width: 8),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                   size: 20,
                 ),
               ],
@@ -15549,6 +17049,8 @@ class _MapOverlayHeader extends StatelessWidget {
     required this.onMenu,
     required this.onNotifications,
     required this.unreadNotificationCount,
+    required this.onUseLocation,
+    required this.showLocationButton,
     required this.routeSummaryLabel,
     required this.onRouteBack,
   });
@@ -15556,12 +17058,13 @@ class _MapOverlayHeader extends StatelessWidget {
   final VoidCallback onMenu;
   final VoidCallback onNotifications;
   final int unreadNotificationCount;
+  final VoidCallback onUseLocation;
+  final bool showLocationButton;
   final String? routeSummaryLabel;
   final VoidCallback onRouteBack;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final summary = routeSummaryLabel;
     if (summary != null) {
       return SizedBox(
@@ -15581,11 +17084,12 @@ class _MapOverlayHeader extends StatelessWidget {
         ),
       );
     }
-    return _UnifiedMapHeader(
+    return _CompactMapHeader(
       onMenu: onMenu,
       onNotifications: onNotifications,
       unreadNotificationCount: unreadNotificationCount,
-      menuLabel: l10n.driverDrawerMenuTooltip,
+      onUseLocation: onUseLocation,
+      showLocationButton: showLocationButton,
     );
   }
 }
@@ -15597,99 +17101,62 @@ class _MapOverlayHeader extends StatelessWidget {
 // about this screen. Thin vertical dividers keep the three zones legible
 // without needing three separate glass containers each casting their own
 // shadow.
-class _UnifiedMapHeader extends StatelessWidget {
-  const _UnifiedMapHeader({
+class _CompactMapHeader extends StatelessWidget {
+  const _CompactMapHeader({
     required this.onMenu,
     required this.onNotifications,
     required this.unreadNotificationCount,
-    required this.menuLabel,
+    required this.onUseLocation,
+    required this.showLocationButton,
   });
 
   final VoidCallback onMenu;
   final VoidCallback onNotifications;
   final int unreadNotificationCount;
-  final String menuLabel;
+  final VoidCallback onUseLocation;
+  final bool showLocationButton;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dividerColor =
-        isDark ? Colors.white.withValues(alpha: 0.10) : palette.border;
-    return _MapGlassChrome(
-      borderRadius: 20,
-      child: SizedBox(
-        height: 56,
-        child: Row(
-          children: [
-            _HeaderIconSlot(
-              iconAsset: _iconMenu,
-              label: menuLabel,
-              onTap: onMenu,
-            ),
-            Container(width: 1, height: 26, color: dividerColor),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(9)),
-                      child: SizedBox.square(
-                        dimension: 26,
-                        child: Image.asset(
-                          BrandLogo.iconAssetPath,
-                          fit: BoxFit.cover,
-                          cacheWidth: 78,
-                          cacheHeight: 78,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'SmartTaxi',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: palette.text,
-                          fontSize: 15,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Container(width: 1, height: 26, color: dividerColor),
-            _HeaderIconSlot(
-              iconAsset: _iconBell,
-              label: AppLocalizations.of(context).notifications,
-              onTap: onNotifications,
-              badgeVisible: unreadNotificationCount > 0,
-            ),
-          ],
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _MapRoundButton(
+          icon: Icons.menu_rounded,
+          label: l10n.driverDrawerMenuTooltip,
+          onTap: onMenu,
         ),
-      ),
+        _MapRoundButton(
+          icon: showLocationButton
+              ? Icons.my_location_rounded
+              : Icons.notifications_none_rounded,
+          label: showLocationButton
+              ? l10n.passengerAllowGeolocationTooltip
+              : l10n.notifications,
+          onTap: showLocationButton ? onUseLocation : onNotifications,
+          badgeVisible: !showLocationButton && unreadNotificationCount > 0,
+          prominent: showLocationButton,
+        ),
+      ],
     );
   }
 }
 
-class _HeaderIconSlot extends StatelessWidget {
-  const _HeaderIconSlot({
-    required this.iconAsset,
+class _MapRoundButton extends StatelessWidget {
+  const _MapRoundButton({
+    required this.icon,
     required this.label,
     required this.onTap,
     this.badgeVisible = false,
+    this.prominent = false,
   });
 
-  final String iconAsset;
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool badgeVisible;
+  final bool prominent;
 
   @override
   Widget build(BuildContext context) {
@@ -15700,28 +17167,51 @@ class _HeaderIconSlot extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                _SvgIcon(iconAsset, color: palette.goldDeep, size: 20),
-                if (badgeVisible)
-                  Positioned(
-                    right: 13,
-                    top: 13,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: palette.gold,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: palette.card, width: 1.5),
+          borderRadius: BorderRadius.circular(18),
+          child: _MapGlassChrome(
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: prominent
+                    ? palette.brand
+                    : palette.card.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: prominent ? palette.brand : palette.borderStrong,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1a102a52),
+                    blurRadius: 16,
+                    offset: Offset(0, 7),
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: prominent ? Colors.white : palette.brandDeep,
+                    size: 23,
+                  ),
+                  if (badgeVisible)
+                    Positioned(
+                      right: 9,
+                      top: 9,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: palette.brand,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: palette.card, width: 1.5),
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -15821,26 +17311,22 @@ class _RouteSummaryPill extends StatelessWidget {
 // reference mockups' glassmorphism header instead of looking like flat
 // white buttons sitting on top of the map.
 class _MapGlassChrome extends StatelessWidget {
-  const _MapGlassChrome({
-    required this.child,
-    this.borderRadius = 18,
-  });
+  const _MapGlassChrome({required this.child});
 
   final Widget child;
-  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           decoration: BoxDecoration(
             color: palette.card.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(borderRadius),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.12)
@@ -16008,7 +17494,8 @@ class _NotificationsScreenState extends State<_NotificationsScreen> {
           ),
           const SizedBox(height: 16),
           if (_category == NotificationCategory.bonus &&
-              (_cashbackBalanceKzt != null || _cheapestTariffPriceKzt != null)) ...[
+              (_cashbackBalanceKzt != null ||
+                  _cheapestTariffPriceKzt != null)) ...[
             _BonusBalanceCard(
               balanceKzt: _cashbackBalanceKzt,
               cheapestTariffPriceKzt: _cheapestTariffPriceKzt,
@@ -16072,7 +17559,8 @@ class _BonusBalanceCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final balance = balanceKzt ?? 0;
     final price = cheapestTariffPriceKzt;
-    final rides = (price != null && price > 0) ? (balance / price).floor() : null;
+    final rides =
+        (price != null && price > 0) ? (balance / price).floor() : null;
     return _PremiumCard(
       child: Row(
         children: [
@@ -16081,12 +17569,12 @@ class _BonusBalanceCard extends StatelessWidget {
             height: 46,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.savings_rounded,
-              color: palette.goldDeep,
+              color: palette.brandDeep,
               size: 22,
             ),
           ),
@@ -16219,7 +17707,9 @@ class _NotificationTile extends StatelessWidget {
   static String _timeAgo(AppLocalizations l10n, DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
     if (diff.inMinutes < 1) return l10n.passengerTimeAgoJustNow;
-    if (diff.inMinutes < 60) return l10n.passengerTimeAgoMinutes(diff.inMinutes);
+    if (diff.inMinutes < 60) {
+      return l10n.passengerTimeAgoMinutes(diff.inMinutes);
+    }
     if (diff.inHours < 24) return l10n.passengerTimeAgoHours(diff.inHours);
     return l10n.passengerTimeAgoDays(diff.inDays);
   }
@@ -16238,12 +17728,12 @@ class _NotificationTile extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               shape: BoxShape.circle,
             ),
             child: Icon(
               _iconFor(notification.type),
-              color: palette.goldDeep,
+              color: palette.brandDeep,
               size: 18,
             ),
           ),
@@ -16272,7 +17762,7 @@ class _NotificationTile extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: palette.gold,
+                          color: palette.brand,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -16423,8 +17913,8 @@ class _SkeletonLineState extends State<_SkeletonLine>
             height: widget.height,
             decoration: BoxDecoration(
               color: Color.lerp(
-                palette.goldSurface,
-                palette.goldPale.withValues(alpha: 0.75),
+                palette.brandSurface,
+                palette.brandPale.withValues(alpha: 0.75),
                 t,
               ),
               borderRadius: BorderRadius.circular(widget.radius),
@@ -16565,8 +18055,8 @@ class _PressScaleState extends State<_PressScale> {
   }
 }
 
-class _GoldCtaButton extends StatelessWidget {
-  const _GoldCtaButton({
+class _BrandCtaButton extends StatelessWidget {
+  const _BrandCtaButton({
     required this.enabled,
     required this.loading,
     required this.text,
@@ -16588,102 +18078,102 @@ class _GoldCtaButton extends StatelessWidget {
         loadingText ?? AppLocalizations.of(context).passengerCtaCreatingOrder;
     // Reads the palette rather than the raw SmartTaxiColors constants: this
     // gradient used to be `const`, which froze the primary CTA at the light
-    // theme's blues even in dark mode (goldDeep differs per theme).
+    // theme's blues even in dark mode (brandDeep differs per theme).
     final palette = context.palette;
     return _PressScale(
       enabled: enabled && !loading,
       child: Opacity(
-      opacity: enabled ? 1 : 0.52,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              palette.goldSky,
-              palette.gold,
-              palette.goldDeep,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: palette.gold.withValues(alpha: 0.34),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          child: InkWell(
+        opacity: enabled ? 1 : 0.52,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                palette.brandSky,
+                palette.brand,
+                palette.brandDeep,
+              ],
+            ),
             borderRadius: BorderRadius.circular(20),
-            onTap: enabled ? onTap : null,
-            child: SizedBox(
-              height: 54,
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: loading
-                    ? Center(child: _ButtonSpinner(text: resolvedLoadingText))
-                    // Label and fare read as one phrase — "Заказать Эконом
-                    // · 700 ₸" — instead of the label centred and the price
-                    // pinned to the far edge, which read as two unrelated
-                    // things. The round arrow stays in both cases.
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(text: text),
-                                    if ((trailingText ?? '').isNotEmpty)
-                                      TextSpan(
-                                        text: '  ·  $trailingText',
-                                        style: const TextStyle(
-                                          fontFeatures: [
-                                            FontFeature.tabularFigures(),
-                                          ],
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: palette.brand.withValues(alpha: 0.34),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: enabled ? onTap : null,
+              child: SizedBox(
+                height: 54,
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: loading
+                      ? Center(child: _ButtonSpinner(text: resolvedLoadingText))
+                      // Label and fare read as one phrase — "Заказать Эконом
+                      // · 700 ₸" — instead of the label centred and the price
+                      // pinned to the far edge, which read as two unrelated
+                      // things. The round arrow stays in both cases.
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(text: text),
+                                      if ((trailingText ?? '').isNotEmpty)
+                                        TextSpan(
+                                          text: '  ·  $trailingText',
+                                          style: const TextStyle(
+                                            fontFeatures: [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
+                                    ],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            width: 34,
-                            height: 34,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.22),
-                              shape: BoxShape.circle,
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 34,
+                              height: 34,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white,
+                                size: 19,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 19,
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -16855,13 +18345,13 @@ class _FaqTileState extends State<_FaqTile> {
                       height: 26,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: palette.goldSurface,
+                        color: palette.brandSurface,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
                         size: 18,
-                        color: palette.goldDeep,
+                        color: palette.brandDeep,
                       ),
                     ),
                   ),
@@ -16951,12 +18441,12 @@ class _LegalDocumentTile extends StatelessWidget {
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: palette.goldSurface,
+                  color: palette.brandSurface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   document.icon,
-                  color: palette.goldDeep,
+                  color: palette.brandDeep,
                   size: 21,
                 ),
               ),
@@ -17005,7 +18495,7 @@ class _CompactNotice extends StatelessWidget {
       decoration: BoxDecoration(
         color: dark
             ? Colors.white.withValues(alpha: 0.06)
-            : SmartTaxiColors.goldSurface,
+            : SmartTaxiColors.brandSurface,
         border: Border.all(
           color: dark
               ? Colors.white.withValues(alpha: 0.08)
@@ -17022,11 +18512,11 @@ class _CompactNotice extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: dark
-                  ? SmartTaxiColors.gold.withValues(alpha: 0.16)
+                  ? SmartTaxiColors.brand.withValues(alpha: 0.16)
                   : Colors.white.withValues(alpha: 0.72),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: context.palette.goldDeep, size: 17),
+            child: Icon(icon, color: context.palette.brandDeep, size: 17),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -17079,7 +18569,7 @@ class _InlineMessage extends StatelessWidget {
         ? (danger
             ? SmartTaxiColors.danger.withValues(alpha: 0.14)
             : Colors.white.withValues(alpha: 0.06))
-        : (danger ? const Color(0xfffff7f7) : SmartTaxiColors.goldSurface);
+        : (danger ? const Color(0xfffff7f7) : SmartTaxiColors.brandSurface);
     final border = dark
         ? (danger
             ? SmartTaxiColors.danger.withValues(alpha: 0.28)
@@ -17087,7 +18577,7 @@ class _InlineMessage extends StatelessWidget {
         : (danger ? const Color(0xffffd7d7) : SmartTaxiColors.borderStrong);
     final tone = danger
         ? (dark ? const Color(0xffffb4b4) : SmartTaxiColors.danger)
-        : (dark ? Colors.white70 : SmartTaxiColors.goldDeep);
+        : (dark ? Colors.white70 : SmartTaxiColors.brandDeep);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(11, 9, 12, 9),
@@ -17168,7 +18658,7 @@ class _ProfileStatTile extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: palette.goldDeep),
+          Icon(icon, size: 18, color: palette.brandDeep),
           const SizedBox(height: 6),
           Text(
             value,
@@ -17351,7 +18841,7 @@ class _SettingsRow extends StatelessWidget {
             if (onTap != null)
               Icon(
                 Icons.chevron_right_rounded,
-                color: palette.goldDeep,
+                color: palette.brandDeep,
               ),
           ],
         ),
@@ -17414,7 +18904,7 @@ class _MenuLine extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: danger ? palette.dangerSoft : palette.goldSurface,
+                color: danger ? palette.dangerSoft : palette.brandSurface,
                 border: Border.all(
                   color: danger
                       ? palette.danger.withValues(alpha: 0.3)
@@ -17450,13 +18940,13 @@ class _MenuLine extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: palette.goldSurface,
+                            color: palette.brandSurface,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             badge!,
                             style: TextStyle(
-                              color: palette.goldDeep,
+                              color: palette.brandDeep,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w900,
                             ),
@@ -17517,13 +19007,13 @@ class _DriverStepRow extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: palette.goldSurface,
+            color: palette.brandSurface,
             shape: BoxShape.circle,
           ),
           child: Text(
             number,
             style: TextStyle(
-              color: palette.goldDeep,
+              color: palette.brandDeep,
               fontSize: 13,
               fontWeight: FontWeight.w900,
             ),
@@ -17781,17 +19271,16 @@ class _StatusStepper extends StatelessWidget {
                       width: done ? 12 : 9,
                       height: done ? 12 : 9,
                       decoration: BoxDecoration(
-                        color: done ? palette.gold : palette.card,
+                        color: done ? palette.brand : palette.card,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: done ? palette.gold : palette.borderStrong,
+                          color: done ? palette.brand : palette.borderStrong,
                           width: 1.5,
                         ),
                         boxShadow: done
                             ? [
                                 BoxShadow(
-                                  color:
-                                      palette.gold.withValues(alpha: 0.25),
+                                  color: palette.brand.withValues(alpha: 0.25),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -17820,7 +19309,7 @@ class _StatusStepper extends StatelessWidget {
                     height: 2,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: stepIndex < index ? palette.gold : palette.border,
+                      color: stepIndex < index ? palette.brand : palette.border,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -17942,7 +19431,18 @@ String _driverPickupMeta(AppLocalizations l10n, RoutePreview route) {
   final label = route.isToDropoff
       ? l10n.driverPickupMetaToDropoff
       : l10n.driverPickupMetaToPickup;
-  return l10n.driverPickupMetaText(label, distance, minutes);
+  final text = l10n.driverPickupMetaText(label, distance, minutes);
+  // Same "приблизительно" suffix the driver already gets from
+  // liveRouteMeta(). Both screens read the same response — when OSRM is
+  // unreachable the backend answers with straightLineRouteFallback(), whose
+  // distance is a great-circle guess padded by 1.3 and whose ETA assumes a
+  // flat 28 km/h. The driver was told; the passenger watching the same car
+  // approach was shown the identical sentence with no hint it was a guess,
+  // which is the wrong way round — the passenger is the one deciding whether
+  // to keep waiting.
+  return route.isFallback
+      ? '$text · ${l10n.driverRouteFallbackNotice}'
+      : text;
 }
 
 String _readableDriverRouteError(AppLocalizations l10n, Object error) {
@@ -17968,6 +19468,7 @@ String _readableError(AppLocalizations l10n, Object error) {
       'PICKUP_REGION_INACTIVE': l10n.errorPickupRegionInactive,
       'DROPOFF_REGION_INACTIVE': l10n.errorDropoffRegionInactive,
       'INTERCITY_NOT_SUPPORTED': l10n.errorIntercityNotSupported,
+      'INTERCITY_ROUTE_UNAVAILABLE': l10n.errorIntercityNotSupported,
       'TARIFF_INACTIVE': l10n.errorTariffInactive,
       'TARIFF_REGION_MISMATCH': l10n.errorTariffRegionMismatch,
       'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,
@@ -17990,12 +19491,18 @@ String _readableError(AppLocalizations l10n, Object error) {
       message.contains('timed out')) {
     return l10n.errorServerUnavailable;
   }
-  if (message.contains('DRIVER_NAME_REQUIRED')) return l10n.errorDriverNameRequired;
-  if (message.contains('DRIVER_PHONE_REQUIRED')) return l10n.errorDriverPhoneRequired;
+  if (message.contains('DRIVER_NAME_REQUIRED')) {
+    return l10n.errorDriverNameRequired;
+  }
+  if (message.contains('DRIVER_PHONE_REQUIRED')) {
+    return l10n.errorDriverPhoneRequired;
+  }
   if (message.contains('DRIVER_CAR_REQUIRED')) {
     return l10n.errorDriverCarRequired;
   }
-  if (message.contains('DRIVER_PLATE_REQUIRED')) return l10n.errorDriverPlateRequired;
+  if (message.contains('DRIVER_PLATE_REQUIRED')) {
+    return l10n.errorDriverPlateRequired;
+  }
   if (message.contains('DRIVER_TERMS_REQUIRED')) {
     return l10n.errorDriverTermsRequired;
   }
@@ -18003,6 +19510,7 @@ String _readableError(AppLocalizations l10n, Object error) {
     'PICKUP_REGION_INACTIVE': l10n.errorPickupRegionInactive,
     'DROPOFF_REGION_INACTIVE': l10n.errorDropoffRegionInactive,
     'INTERCITY_NOT_SUPPORTED': l10n.errorIntercityNotSupported,
+    'INTERCITY_ROUTE_UNAVAILABLE': l10n.errorIntercityNotSupported,
     'TARIFF_INACTIVE': l10n.errorTariffInactive,
     'TARIFF_REGION_MISMATCH': l10n.errorTariffRegionMismatch,
     'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,

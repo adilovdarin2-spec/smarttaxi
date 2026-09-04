@@ -631,6 +631,18 @@ class AppLocalizationsUz extends AppLocalizations {
       'Olib ketish nuqtasi va manzilni tanlang';
 
   @override
+  String get passengerHomeGreeting => 'Assalomu alaykum!';
+
+  @override
+  String get passengerQuickHome => 'Uy';
+
+  @override
+  String get passengerQuickWork => 'Ish';
+
+  @override
+  String get passengerQuickFavorites => 'Sevimlilar';
+
+  @override
   String get passengerHomeSetDestination => 'Qayerga ekanini ko\'rsatish';
 
   @override
@@ -4012,4 +4024,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverRegionsRetryAction => 'Yangilash';
+
+  @override
+  String get authTagline => 'SHAHAR TAKSISI';
 }

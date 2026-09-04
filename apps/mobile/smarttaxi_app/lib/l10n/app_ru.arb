@@ -120,7 +120,7 @@
   "passengerSupportLoadError": "Не удалось загрузить обращения",
   "passengerAboutDescription": "SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.",
   "passengerAboutRegionalModelTitle": "Региональная модель",
-  "passengerAboutRegionalModelText": "Поездки доступны только внутри регионов, включённых администратором. Межгород не поддерживается.",
+  "passengerAboutRegionalModelText": "Поездки доступны в активных регионах. Межгород доступен только по направлениям, включённым оператором.",
   "passengerAboutContactTitle": "Связь",
   "passengerAboutContactText": "Если нужна помощь, откройте поддержку в левом меню.",
   "passengerAboutSupportSubtitle": "Есть вопрос? Мы ответим",
@@ -252,6 +252,10 @@
   "passengerPromoHowToApplyText": "Промокод из этой проверки нужно будет ещё раз ввести на шаге выбора тарифа — тогда скидка сразу пересчитает итоговую цену вашей реальной поездки.",
   "passengerHomeWhereToTitle": "Куда едем?",
   "passengerHomeWhereToSubtitle": "Выберите точку подачи и адрес назначения",
+  "passengerHomeGreeting": "Здравствуйте!",
+  "passengerQuickHome": "Дом",
+  "passengerQuickWork": "Работа",
+  "passengerQuickFavorites": "Избранное",
   "passengerHomeSetDestination": "Указать куда",
   "passengerHomeRouteIssueTitle": "Уточните маршрут",
   "passengerHomeRouteIssueText": "Не удалось построить маршрут. Измените адрес или выберите точку на карте.",
@@ -598,7 +602,7 @@
   "errorRateLimited": "Слишком много запросов. Попробуйте чуть позже.",
   "errorPickupRegionInactive": "В этом месте сервис пока недоступен",
   "errorDropoffRegionInactive": "Точка назначения вне активного региона",
-  "errorIntercityNotSupported": "Межгород пока не поддерживается",
+  "errorIntercityNotSupported": "Выбранное направление межгорода временно недоступно",
   "errorTariffInactive": "Этот тариф временно недоступен",
   "errorTariffRegionMismatch": "Тариф недоступен для выбранного региона",
   "errorRouteUnavailable": "Маршрут временно недоступен.",
@@ -1702,5 +1706,6 @@
   "roadAlertShortPedestrianCrossing": "ПЕШ",
   "driverRegionsLoadFailedTitle": "Не удалось загрузить регионы",
   "driverRegionsLoadFailedMessage": "Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.",
-  "driverRegionsRetryAction": "Обновить"
+  "driverRegionsRetryAction": "Обновить",
+  "authTagline": "ГОРОДСКОЕ ТАКСИ"
 }

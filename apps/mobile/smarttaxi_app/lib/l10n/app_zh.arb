@@ -252,6 +252,10 @@
   "passengerPromoHowToApplyText": "此次查询的优惠码需要在选择车型时再次输入,系统才会按实际行程重新计算最终价格。",
   "passengerHomeWhereToTitle": "要去哪里?",
   "passengerHomeWhereToSubtitle": "请选择上车点和目的地",
+  "passengerHomeGreeting": "您好！",
+  "passengerQuickHome": "家",
+  "passengerQuickWork": "工作",
+  "passengerQuickFavorites": "收藏",
   "passengerHomeSetDestination": "设置目的地",
   "passengerHomeRouteIssueTitle": "请确认路线",
   "passengerHomeRouteIssueText": "无法规划路线。请更改地址或在地图上选择一个点。",
@@ -1702,5 +1706,6 @@
   "roadAlertShortPedestrianCrossing": "行",
   "driverRegionsLoadFailedTitle": "无法加载区域",
   "driverRegionsLoadFailedMessage": "请检查网络连接，然后下拉刷新。您的区域权限没有变化。",
-  "driverRegionsRetryAction": "刷新"
+  "driverRegionsRetryAction": "刷新",
+  "authTagline": "城市出租车"
 }
