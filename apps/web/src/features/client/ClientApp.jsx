@@ -5121,13 +5121,9 @@ function SupportSection({ activeOrderId, authenticated }) {
     let ignore = false;
     getServiceSettings()
       .then(settings => {
-        const phone = String(settings?.supportPhone || "").trim();
-        const digits = phone.replace(/\D/g, "");
-        // Seed/demo numbers are never a valid support action. Do not show a
-        // tappable call button until the owner configures a plausible number.
-        const isPlaceholder = /^\d{7,}$/.test(digits)
-          && (/^(\d)\1+$/.test(digits) || /0{6,}|123456|765432/.test(digits));
-        if (!ignore && digits.length >= 7 && !isPlaceholder) setSupportPhone(phone);
+        // Seed/demo numbers are never a valid support action; see
+        // configuredServicePhone, which the safety screen shares.
+        if (!ignore) setSupportPhone(configuredServicePhone(settings?.supportPhone));
       })
       .catch(() => {});
     return () => { ignore = true; };
@@ -5394,7 +5390,44 @@ function InfoLineClient({ label, value }) {
   return <div className="info-line-client"><span>{label}</span><b>{value}</b></div>;
 }
 
+// A phone number the owner has actually configured, or "" for a seed value.
+//
+// Same rule as the support screen applies, and for the same reason: a demo
+// number must never become a tappable emergency action. Hoisted out of that
+// screen so the safety section can reuse it rather than grow a second copy
+// that drifts. The Flutter client's usableServicePhone() is the sibling of
+// this, and is stricter - it also rejects ascending and descending runs.
+function configuredServicePhone(raw) {
+  const phone = String(raw || "").trim();
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  const isPlaceholder = /^(\d)+$/.test(digits) || /0{6,}|123456|765432/.test(digits);
+  return isPlaceholder ? "" : phone;
+}
+
 function LegalSection({ type }) {
+  // The operator's own emergency number, shown only on the safety screen and
+  // only once it is real.
+  //
+  // The API has served sosPhone all along and the admin console lets the owner
+  // set it, but no web screen ever asked for it - the support screen reads
+  // supportPhone and nothing reads this. So a rider in the Flutter app got a
+  // tap-to-call SOS while the same rider on the web PWA, which the handoff
+  // calls a first-class alternative, got a paragraph. It is invisible today
+  // because the configured value is +77000000000, which every client correctly
+  // suppresses; it would have appeared the day the owner set a real number.
+  const [sosPhone, setSosPhone] = useState("");
+  useEffect(() => {
+    if (type !== "safety") return undefined;
+    let ignore = false;
+    getServiceSettings()
+      .then(settings => {
+        if (!ignore) setSosPhone(configuredServicePhone(settings?.sosPhone));
+      })
+      .catch(() => {});
+    return () => { ignore = true; };
+  }, [type]);
+
   const meta = {
     terms: {
       title: "Пользовательское соглашение",
@@ -5475,6 +5508,20 @@ function LegalSection({ type }) {
       <section className="app-card drawer-linked-card legal-card">
         {meta.documentHref && <a className="menu-secondary-link legal-open-link" href={meta.documentHref} target="_blank" rel="noreferrer"><Icon name="document" size={18} /> {meta.documentLabel}</a>}
         {meta.points.map(([title, text]) => <SettingsRow key={title} icon="shield" title={title} text={text} />)}
+        {type === "safety" && (
+          <>
+            {/* 112 was already the advice here, as prose. On a phone browser
+                advice to call a number should be the call. */}
+            <a className="menu-secondary-link legal-open-link" href="tel:112">
+              <Icon name="support" size={18} /> Экстренные службы — 112
+            </a>
+            {sosPhone && (
+              <a className="menu-secondary-link legal-open-link" href={`tel:${sosPhone}`}>
+                <Icon name="support" size={18} /> Служба безопасности SmartTaxi — {sosPhone}
+              </a>
+            )}
+          </>
+        )}
         <p className="legal-disclaimer">Важно: этот раздел не является юридической консультацией. Перед публикацией сервиса документы и реквизиты должны быть утверждены владельцем и юристом.</p>
       </section>
     </section>
