@@ -5664,18 +5664,12 @@ class _MapCanvasState extends State<_MapCanvas> {
                                           .passengerPickupPointSemanticLabel,
                                       pulse: searching,
                                     )
-                                  : searching
-                                      ? _approvedMapMarker(
-                                          point: pickup.toLatLng(),
-                                          semanticLabel: l10n
-                                              .passengerPickupPointSemanticLabel,
-                                          pulse: true,
-                                        )
-                                      : _approvedMapMarker(
-                                          point: pickup.toLatLng(),
-                                          semanticLabel: l10n
-                                              .passengerPickupPointSemanticLabel,
-                                        ),
+                                  : _approvedMapMarker(
+                                      point: pickup.toLatLng(),
+                                      semanticLabel: l10n
+                                          .passengerPickupPointSemanticLabel,
+                                      pulse: searching,
+                                    ),
                             if (dropoff != null)
                               _finishFlagMapMarker(
                                 point: dropoff.toLatLng(),
