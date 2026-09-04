@@ -1,3 +1,27 @@
+-- Base schema. This file is only half the story; read this before treating it
+-- as the shape of the database.
+--
+-- It is applied once, by Postgres itself, when the data directory is empty:
+-- docker-compose.yml mounts it at /docker-entrypoint-initdb.d/001-schema.sql,
+-- and docs/DEPLOYMENT_VPS.md brings the database up through that same compose
+-- file. Nothing re-runs it afterwards.
+--
+-- Everything since lives in migrations.js, which runMigrations() executes on
+-- every API start. That is where the five core tables below get most of their
+-- later columns, and where twelve further tables exist that are not described
+-- here at all - addresses, promo_codes, promo_code_redemptions, notifications,
+-- device_tokens, recurring_bookings, raffles, client_favorite_addresses,
+-- client_driver_preferences, driver_client_preferences, driver_avatars,
+-- order_price_offer_queue. migrations.js does not create users, clients,
+-- drivers, orders or tariffs; it assumes this file already did.
+--
+-- So: fresh volume = this file, then migrations. Existing volume = migrations
+-- only. Both end up correct, and neither file alone describes the result.
+--
+-- Fourteen check tools read this file as their source of truth about the
+-- database. They can only assert about the subset it still describes; anything
+-- migrations added is invisible to them. Worth knowing when writing one.
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS users (
