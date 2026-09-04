@@ -159,6 +159,33 @@ drops everything when the region list is empty.
 Noted, not changed: CI pins Flutter 3.41.9 while this machine has 3.47.2.
 Everything here was analysed and tested on 3.47.2 only.
 
+## Known gap, deliberately not fixed blind: the native route line
+
+On the web the route line now sits below the style's label layers, so street
+names stay readable along the path a rider is following. On the Flutter native
+map it does not, and cannot as written: both shells draw it with
+`controller.addLine(LineOptions(...))`, which goes through the annotation
+manager, and annotation layers are added above the whole style. `annotationOrder`
+only orders annotation types against each other, not against style layers.
+
+The fix is mechanical and the API is present in `maplibre_gl` 0.21.0:
+
+1. `addGeoJsonSource('smarttaxi-route', …)` once, when the style loads;
+2. `addLineLayer('smarttaxi-route', 'smarttaxi-route-line', LineLayerProperties(…),
+   belowLayerId: await resolveLabelAnchorLayerId(controller))` — the same helper
+   the 3D buildings already use;
+3. `setGeoJsonSource(...)` in `_syncScene` instead of `clearLines()` +
+   `addLine(...)`;
+4. leave the markers as annotations, so they stay above everything, which is
+   what the web does too.
+
+Not done here because the route line is the single most important thing on both
+of those screens and **it cannot be looked at from this session** — the
+passenger map and the driver navigator are both behind login, and SMS delivery
+is blocked. A silent regression in the route rendering would be worse than the
+label overlap it fixes. Ten minutes for whoever can sign in and watch it
+redraw.
+
 ## Still open
 
 - **Not confirmed on a device.** The picker and the search sheets sit behind
