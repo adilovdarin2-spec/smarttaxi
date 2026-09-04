@@ -158,6 +158,13 @@ const roadCodeReverse = await reverseAddress(
 );
 assert.equal(roadCodeReverse.title, "Адрес не определён", "road codes must never be presented as passenger addresses");
 assert.doesNotMatch(roadCodeReverse.label, /KZ[- ]?12/i, "technical road code is removed from reverse response");
+// The label was asserted here from the start; the flag beside it was not, and
+// it disagreed. reverseAddress stamped `fallback: false` onto the very object
+// that says the address could not be determined, on both the MapTiler and the
+// Nominatim path — so the response told a client to block confirmation and to
+// allow it at the same time. See address-selection-check.js for the full path.
+assert.equal(roadCodeReverse.fallback, true, "an undetermined address is flagged as a fallback");
+assert.equal(roadCodeReverse.confidence, 0, "and carries no confidence");
 await assert.rejects(
   () => reverseAddress({ lat: 400, lng: 69.596 }, mockAddressFetch()),
   { code: "INVALID_COORDINATES" },

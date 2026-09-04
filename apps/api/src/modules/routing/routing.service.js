@@ -1637,7 +1637,12 @@ async function nearestGazetteerAddress(
   };
 }
 
-export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
+// `executor` is threaded through to the local-gazetteer step below so the
+// whole map-pick path can be exercised against fixtures instead of a live
+// database. It had no seam at all before, which is why the flag bug fixed in
+// this function survived: routing-location-check.js could assert the label a
+// rider sees but never the flag the client is told to gate on.
+export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor = defaultQuery) {
   const point = normalizePoint({ lat, lng });
   const fallbackPoint = {
     // This is deliberately not an address. Clients treat it as a failed
@@ -1664,16 +1669,23 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
     // appears after stripping a KZ-12 road code from a weak provider result.
     const generic = !label || looksLikeRoadCode(label) || label === city ||
       /^(точка на карте|адрес не определ[её]н)$/i.test(label);
-    // A bare street is usable, but a nearby house, building or POI is the
-    // address a rider actually selected. Prefer that concrete local record
-    // when the external provider could resolve only the whole street.
+    // A street with no house number is not something a rider can give a
+    // driver, and both clients already refuse it: passenger_shell.dart's
+    // _isUsablePassengerAddressLabel and ClientApp.jsx's technicalAddress
+    // both reject a street label containing no digit. So the nearby house is
+    // not merely preferable here, it is the only usable answer.
+    //
+    // Kept in step with those two guards, бульвар and шоссе included —
+    // returning a label the client is about to reject is how the rider ended
+    // up looking at "улица Абая" on the card with the confirm button dead and
+    // nothing on screen explaining why.
     const bareStreet = !/\d/.test(label) &&
-      /^(?:ул\.?|улица|проспект|переулок|көшесі|даңғылы|көше)/i.test(label);
+      /^(?:ул\.?|улица|проспект|переулок|бульвар|шоссе|көшесі|даңғылы|көше)/i.test(label);
     const local = generic || bareStreet
       ? await nearestGazetteerAddress(
         point,
         400,
-        defaultQuery,
+        executor,
         { requireHouseNumber: bareStreet }
       ).catch(() => null)
       : null;
@@ -1686,7 +1698,10 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
         source: "gazetteer_reverse"
       };
     }
-    if (!generic) return suggestion;
+    // A bare street that found no house falls through to the guidance state
+    // rather than being handed back: an honest "move the pin" beats a label
+    // the client will silently refuse.
+    if (!generic && !bareStreet) return suggestion;
     // Nothing harvested within walking distance — much of Мақтаарал district
     // is fields. "Точка на карте" tells the rider exactly as much as the road
     // number did, without pretending to be an address they could give a
@@ -1705,7 +1720,12 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
   const mapTiler = await named(
     await reverseAddressWithMapTiler(point, fetchImpl).catch(() => null)
   );
-  if (mapTiler) return { ...mapTiler, fallback: false };
+  // fallback first, so a point_on_map result keeps its own `fallback: true`.
+  // Stamping it last overwrote exactly the flag the fallbackPoint comment
+  // above promises clients can gate confirmation on — the response said
+  // "Адрес не определён", source "point_on_map", confidence 0, and
+  // fallback false all at once.
+  if (mapTiler) return { fallback: false, ...mapTiler };
   const url = new URL("https://nominatim.openstreetmap.org/reverse");
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("addressdetails", "1");
@@ -1737,7 +1757,7 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch) {
     if (fallback) return fallback;
     return fallbackPoint;
   }
-  return { source: "nominatim", ...suggestion, fallback: false };
+  return { source: "nominatim", fallback: false, ...suggestion };
 }
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {
