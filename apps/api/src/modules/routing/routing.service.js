@@ -1362,9 +1362,17 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
        LEFT JOIN regions scope ON scope.name = $2
       -- search_text, not label: it carries the label plus every name
       -- spelling the harvest found, so "Бектасова" and "Бектасов көшесі"
-      -- both reach the same street — riders here use either form. COALESCE
-      -- keeps rows written before that column existed searchable.
-      WHERE COALESCE(a.search_text, a.label) ILIKE $1
+      -- both reach the same street — riders here use either form.
+      --
+      -- Named plainly, not wrapped in COALESCE(search_text, label). Postgres
+      -- can only use idx_addresses_search_trgm for a query that says
+      -- search_text; the COALESCE turned every keystroke into a sequential
+      -- scan of 121 000 rows with both trigram indexes sitting unused. It was
+      -- there because import-addresses.js inserted without the column - that
+      -- is fixed at the source now, and runMigrations() backfills
+      -- search_text = label WHERE search_text IS NULL on every boot, so the
+      -- column is never null by the time a query runs.
+      WHERE a.search_text ILIKE $1
         AND ($2::text IS NULL OR (
               scope.id IS NOT NULL
               AND a.lat BETWEEN scope.center_lat - $5 AND scope.center_lat + $5
@@ -1373,7 +1381,7 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
       ORDER BY
         -- Prefix matches first: someone typing "Бекта" wants the street
         -- itself above every shop that merely mentions it.
-        (COALESCE(a.search_text, a.label) ILIKE $3) DESC,
+        (a.search_text ILIKE $3) DESC,
         -- Keep the first candidate page local to the selected region.  The
         -- exact polygon filter below remains authoritative; this only makes
         -- sure it receives enough local candidates to do its job.

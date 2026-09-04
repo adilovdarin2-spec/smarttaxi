@@ -107,6 +107,32 @@ function queriesFor(bbox) {
   ];
 }
 
+// Mirrors searchTextFor() in load-addresses.js: the label plus every other
+// spelling OSM carries for the same place, joined so one trigram index answers
+// a query in either language.
+//
+// This tool used to skip the column entirely, and skip it again in the
+// ON CONFLICT set. So a row it inserted had search_text NULL, and a row it
+// re-imported kept whatever search_text an earlier load had written - text
+// describing the previous label. That NULL is also why searchGazetteer wraps
+// the column in COALESCE, which costs both trigram indexes on every keystroke,
+// since Postgres can only use gin(search_text) for a query that says
+// search_text.
+function searchTextFor(label, tags) {
+  const parts = [label, tags.name, tags["name:ru"], tags["name:kk"], tags["int_name"]];
+  const seen = new Set();
+  const unique = [];
+  for (const part of parts) {
+    const text = String(part || "").trim();
+    if (!text) continue;
+    const key = text.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(text);
+  }
+  return unique.join(" · ");
+}
+
 function labelFor(kind, tags) {
   const street = tags["addr:street"];
   const housenumber = tags["addr:housenumber"];
@@ -157,14 +183,15 @@ export async function importRegion(region) {
       // region polygon selected by operations.
       if (!pointInPolygon(lat, lng, boundary)) continue;
       await query(
-        `INSERT INTO addresses(region_id, kind, label, street, housenumber, name, lat, lng, osm_type, osm_id)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        `INSERT INTO addresses(region_id, kind, label, search_text, street, housenumber, name, lat, lng, osm_type, osm_id)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
          ON CONFLICT (osm_type, osm_id) DO UPDATE SET
            region_id=EXCLUDED.region_id, kind=EXCLUDED.kind, label=EXCLUDED.label,
+           search_text=EXCLUDED.search_text,
            street=EXCLUDED.street, housenumber=EXCLUDED.housenumber, name=EXCLUDED.name,
            lat=EXCLUDED.lat, lng=EXCLUDED.lng, updated_at=NOW()`,
         [
-          region.id, kind, label,
+          region.id, kind, label, searchTextFor(label, tags),
           tags["addr:street"] || null,
           tags["addr:housenumber"] || null,
           tags.name || null,

@@ -14,6 +14,7 @@
 // must be left alone.
 
 import assert from "node:assert/strict";
+import fs from "node:fs";
 
 import {
   reverseAddress,
@@ -300,4 +301,38 @@ const tooShort = await searchAddresses(
 );
 assert.deepEqual(tooShort, [], "a one-character query short-circuits");
 
-console.log(`Address selection checks ok: 7 map-pick cases, 3 search cases, ${REGION_SEED.length} region radii`);
+// 12. Both loaders must write search_text, and the query must name it plainly.
+//
+// searchGazetteer matches on search_text, which is covered by
+// idx_addresses_search_trgm. Postgres can only use that index for a query that
+// says search_text - the predicate used to read COALESCE(search_text, label),
+// which no index matches, so every keystroke was a sequential scan of 121 000
+// rows with both trigram indexes idle.
+//
+// The COALESCE was there for a reason: import-addresses.js inserted without
+// the column at all, and did not refresh it on conflict either, so a
+// re-imported row kept search text describing its previous label. Fixed at the
+// source, which is what makes naming the column safe. This asserts the two
+// halves stay together - dropping either one silently returns the sequential
+// scan or the stale text.
+const routingSource = fs.readFileSync(
+  new URL("../modules/routing/routing.service.js", import.meta.url),
+  "utf8"
+);
+assert.match(
+  routingSource,
+  /WHERE a\.search_text ILIKE \$1/,
+  "the gazetteer predicate must name search_text so its trigram index applies"
+);
+assert.doesNotMatch(
+  routingSource,
+  /COALESCE\(a\.search_text/,
+  "wrapping the column defeats idx_addresses_search_trgm"
+);
+for (const loader of ["load-addresses.js", "import-addresses.js"]) {
+  const source = fs.readFileSync(new URL(loader, import.meta.url), "utf8");
+  assert.match(source, /INSERT INTO addresses\([^)]*search_text/, `${loader} must write search_text`);
+  assert.match(source, /search_text=EXCLUDED\.search_text/, `${loader} must refresh search_text on conflict`);
+}
+
+console.log(`Address selection checks ok: 7 map-pick cases, 3 search cases, ${REGION_SEED.length} region radii, catalogue index invariants`);
