@@ -12,7 +12,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
-import { nearestRegionCode } from "../modules/routing/region-geo.js";
+import { REGION_GEO, serviceBoundaryForCode, serviceRegionCode } from "../modules/routing/region-geo.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.resolve(HERE, "../../data/addresses");
@@ -44,6 +44,12 @@ if (!fs.existsSync(DATA_DIR)) fail(`no data directory at ${DATA_DIR}`);
 
 const files = fs.readdirSync(DATA_DIR).filter((name) => name.endsWith(".jsonl.gz"));
 if (!files.length) fail("no harvested address files found");
+for (const region of REGION_GEO) {
+  const expectedFile = `${region.code}.jsonl.gz`;
+  if (!files.includes(expectedFile)) {
+    fail(`active region ${region.code} has no local address catalogue`);
+  }
+}
 
 let manifest;
 try {
@@ -55,6 +61,10 @@ try {
 const KINDS = new Set(["housenumber", "poi", "building", "street"]);
 let total = 0;
 let multiVariant = 0;
+// Harvest boxes overlap, so the same object appears in several files. Keyed
+// by OSM identity so the cross-border check below counts objects, not copies.
+const seenObjects = new Set();
+const allRows = [];
 
 for (const name of files) {
   const file = path.join(DATA_DIR, name);
@@ -91,7 +101,12 @@ for (const name of files) {
       fail(`${name} line ${rows + 1}: search text does not contain the label`);
     }
     if (Array.isArray(row.variants) && row.variants.length > 1) multiVariant += 1;
-    if (nearestRegionCode(row.lat, row.lng) === code) owned += 1;
+    const identity = `${row.osmType}:${row.osmId}`;
+    if (!seenObjects.has(identity)) {
+      seenObjects.add(identity);
+      allRows.push(row);
+    }
+    if (serviceRegionCode(row.lat, row.lng) === code) owned += 1;
     rows += 1;
   }
   if (!rows) fail(`${name} is empty`);
@@ -115,6 +130,52 @@ for (const name of files) {
 
 for (const name of Object.keys(manifest.counts || {})) {
   if (!files.includes(name)) fail(`manifest lists ${name}, which is not on disk`);
+}
+
+// No service area may reach across the state border.
+//
+// Атамекен's polygon used to run to 68.62 and so lay mostly inside
+// Uzbekistan: 40% of everything harvested inside it was Uzbek ("Sirdaryo
+// tumani 10-maktab", "Marxamat ko'chasi"), and a rider selecting Атамекен
+// was offered destinations no driver can reach. Every other region measured
+// 0-2%, so the two cases are far apart and a blunt threshold separates them.
+//
+// Latin-only labels are the signal, not proof of nationality — Kazakhstan has
+// Latin-named businesses, and the Uzbek side has Cyrillic ones ("Заправка" at
+// 68.5955). It does not need to classify a single row correctly; it needs to
+// notice when a whole box moves onto the wrong side of a border.
+function pointInServicePolygon(lat, lng, ring) {
+  let inside = false;
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+    const [x, y] = ring[index];
+    const [previousX, previousY] = ring[previous];
+    const crosses = (y > lat) !== (previousY > lat)
+      && lng < ((previousX - x) * (lat - y)) / (previousY - y) + x;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+const FOREIGN_SHARE_LIMIT = 0.1;
+const hasLatin = /[a-zA-Z]/;
+const hasCyrillic = /[Ѐ-ӿ]/;
+
+for (const region of REGION_GEO) {
+  const ring = serviceBoundaryForCode(region.code);
+  if (!ring) fail(`${region.code} has no service boundary`);
+  const inside = allRows.filter((row) => pointInServicePolygon(row.lat, row.lng, ring));
+  if (!inside.length) continue;
+  const foreign = inside.filter(
+    (row) => hasLatin.test(row.label) && !hasCyrillic.test(row.label)
+  ).length;
+  const share = foreign / inside.length;
+  if (share > FOREIGN_SHARE_LIMIT) {
+    fail(
+      `${region.code}: ${foreign} of ${inside.length} objects inside the service area `
+      + `carry Latin-only names (${Math.round(share * 100)}%) — the polygon looks like `
+      + "it crosses the state border"
+    );
+  }
 }
 
 if (!multiVariant) {

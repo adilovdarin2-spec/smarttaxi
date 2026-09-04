@@ -1,4 +1,11 @@
 import { query } from "./pool.js";
+import { REGION_SEED } from "../modules/routing/region-geo.js";
+
+// These statements are executed as plain strings, so the seed values are
+// inlined rather than bound. They come from REGION_SEED, not from a request,
+// but the quote doubling stays: a region name is the kind of value that
+// eventually gets edited by a person.
+const sqlText = (value) => `'${String(value).replace(/'/g, "''")}'`;
 
 const statements = [
   `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
@@ -26,125 +33,21 @@ const statements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  // Built from REGION_SEED, not hand-written: the same 13 regions used to be
+  // spelled out again here and had already drifted from the code that reads
+  // them (Мырзакент's centre by 600 m, Мақтаарал's name by one letter, which
+  // silently doubled its address-search radius).
   `INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
    VALUES
-     (
-       'ATAKENT',
-       'Атакент',
-       '[[68.4750,40.8200],[68.5350,40.8200],[68.5350,40.8750],[68.4750,40.8750],[68.4750,40.8200]]'::jsonb,
-       40.844435,
-       68.509021,
-       'KZT',
-       true
-     ),
-     (
-       'MYRZAKENT',
-       'Мырзакент',
-       '[[68.4700,40.6000],[68.6000,40.6000],[68.6000,40.7300],[68.4700,40.7300],[68.4700,40.6000]]'::jsonb,
-       40.666108,
-       68.543090,
-       'KZT',
-       true
-     ),
-     (
-       'ZHETYSAY',
-       'Жетысай',
-       '[[68.0500,40.8000],[68.3300,40.8000],[68.3300,41.0000],[68.0500,41.0000],[68.0500,40.8000]]'::jsonb,
-       40.884303,
-       68.212621,
-       'KZT',
-       true
-     ),
-     (
-       'SHYMKENT',
-       'Шымкент',
-       '[[69.3000,42.1000],[69.8500,42.1000],[69.8500,42.4800],[69.3000,42.4800],[69.3000,42.1000]]'::jsonb,
-       42.314696,
-       69.588328,
-       'KZT',
-       true
-     ),
-     (
-       'KIROV',
-       'Киров',
-       '[[68.5000,40.7500],[68.5700,40.7500],[68.5700,40.8200],[68.5000,40.8200],[68.5000,40.7500]]'::jsonb,
-       40.786900,
-       68.534400,
-       'KZT',
-       true
-     ),
-     (
-       'ASYKATA',
-       'Асыката',
-       '[[68.3200,40.8600],[68.4100,40.8600],[68.4100,40.9300],[68.3200,40.9300],[68.3200,40.8600]]'::jsonb,
-       40.894700,
-       68.363500,
-       'KZT',
-       true
-     ),
-     (
-       'DOSTYK',
-       'Достык',
-       '[[68.4200,40.7800],[68.4900,40.7800],[68.4900,40.8400],[68.4200,40.8400],[68.4200,40.7800]]'::jsonb,
-       40.807200,
-       68.459200,
-       'KZT',
-       true
-     ),
-     (
-       'YNTYMAK',
-       'Ынтымак',
-       '[[68.4600,40.7300],[68.5300,40.7300],[68.5300,40.7900],[68.4600,40.7900],[68.4600,40.7300]]'::jsonb,
-       40.760600,
-       68.497900,
-       'KZT',
-       true
-     ),
-     (
-       'BIRLIK',
-       'Бирлик',
-       '[[68.3700,40.7900],[68.4350,40.7900],[68.4350,40.8550],[68.3700,40.8550],[68.3700,40.7900]]'::jsonb,
-       40.822500,
-       68.401800,
-       'KZT',
-       true
-     ),
-     (
-       'FIRDOUSI',
-       'Фирдоуси',
-       '[[68.4700,40.6900],[68.5350,40.6900],[68.5350,40.7550],[68.4700,40.7550],[68.4700,40.6900]]'::jsonb,
-       40.723100,
-       68.501600,
-       'KZT',
-       true
-     ),
-     (
-       'ZHANA_ZHOL',
-       'Жана Жол',
-       '[[68.5300,40.7250],[68.6000,40.7250],[68.6000,40.7900],[68.5300,40.7900],[68.5300,40.7250]]'::jsonb,
-       40.756700,
-       68.566100,
-       'KZT',
-       true
-     ),
-     (
-       'MAKTAARAL',
-       'Мақтаарал',
-       '[[68.5050,40.7050],[68.5700,40.7050],[68.5700,40.7650],[68.5050,40.7650],[68.5050,40.7050]]'::jsonb,
-       40.735800,
-       68.536400,
-       'KZT',
-       true
-     ),
-     (
-       'ATAMEKEN',
-       'Атамекен',
-       '[[68.5450,40.7800],[68.6200,40.7800],[68.6200,40.8450],[68.5450,40.8450],[68.5450,40.7800]]'::jsonb,
-       40.812100,
-       68.583900,
-       'KZT',
-       true
-     )
+     ${REGION_SEED.map((region) => [
+       sqlText(region.code),
+       sqlText(region.name),
+       `${sqlText(JSON.stringify(region.boundary))}::jsonb`,
+       region.centerLat.toFixed(6),
+       region.centerLng.toFixed(6),
+       sqlText(region.currency),
+       String(region.isActive)
+     ].join(", ")).map((values) => `(${values})`).join(",\n     ")}
    ON CONFLICT (code) DO UPDATE
    SET name=EXCLUDED.name,
        boundary=EXCLUDED.boundary,
@@ -232,6 +135,7 @@ const statements = [
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_waiting_started_at TIMESTAMPTZ",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS waiting_price_per_minute INTEGER",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS waiting_total INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS cashback_used INTEGER NOT NULL DEFAULT 0",
   `CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -294,8 +198,8 @@ const statements = [
     default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
     auto_approve_drivers BOOLEAN NOT NULL DEFAULT false,
     auto_assign_orders BOOLEAN NOT NULL DEFAULT false,
-    support_phone TEXT NOT NULL DEFAULT '+77000000000',
-    sos_phone TEXT NOT NULL DEFAULT '+77000000000',
+    support_phone TEXT NOT NULL DEFAULT '',
+    sos_phone TEXT NOT NULL DEFAULT '112',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT service_settings_singleton CHECK (id = 1)
   )`,
@@ -346,7 +250,7 @@ const statements = [
     region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
     tariff_id UUID REFERENCES tariffs(id) ON DELETE SET NULL,
     type TEXT NOT NULL CHECK (type IN ('ORDER_COMPLETED','ORDER_CANCELLED','DRIVER_DEBT_CREATED','DRIVER_DEBT_ADJUSTED','MANUAL_ADJUSTMENT')),
-    payment_method TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (payment_method IN ('CASH','KASPI_TRANSFER','UNKNOWN')),
+    payment_method TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK (payment_method IN ('CASH','KASPI_TRANSFER','CASHBACK','UNKNOWN')),
     gross_amount NUMERIC NOT NULL DEFAULT 0,
     service_commission NUMERIC NOT NULL DEFAULT 0,
     driver_earning NUMERIC NOT NULL DEFAULT 0,
@@ -495,7 +399,9 @@ const statements = [
   "ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider_payload JSONB NOT NULL DEFAULT '{}'::jsonb",
   "ALTER TABLE payments ADD COLUMN IF NOT EXISTS failure_reason TEXT",
   "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_method_check",
-  "ALTER TABLE payments ADD CONSTRAINT payments_method_check CHECK (method IN ('CASH','KASPI','CARD'))",
+  "ALTER TABLE payments ADD CONSTRAINT payments_method_check CHECK (method IN ('CASH','KASPI','CARD','CASHBACK'))",
+  "ALTER TABLE financial_transactions DROP CONSTRAINT IF EXISTS financial_transactions_payment_method_check",
+  "ALTER TABLE financial_transactions ADD CONSTRAINT financial_transactions_payment_method_check CHECK (payment_method IN ('CASH','KASPI_TRANSFER','CASHBACK','MIXED','UNKNOWN'))",
   "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check",
   "ALTER TABLE payments ADD CONSTRAINT payments_status_check CHECK (status IN ('PENDING','PROCESSING','PAID','FAILED','CANCELLED'))",
   `DO $$
@@ -723,6 +629,14 @@ const statements = [
   END $$`,
   "ALTER TABLE clients ADD COLUMN IF NOT EXISTS referred_by_client_id UUID REFERENCES clients(id) ON DELETE SET NULL",
   "ALTER TABLE service_settings ADD COLUMN IF NOT EXISTS referral_bonus_kzt INTEGER NOT NULL DEFAULT 500",
+  // Never ship a generated number as an operator or emergency contact.  An
+  // empty support number makes clients use the in-app support form, while 112
+  // remains a safe emergency fallback until an operator configures a local
+  // service number in the admin panel.
+  "ALTER TABLE service_settings ALTER COLUMN support_phone SET DEFAULT ''",
+  "ALTER TABLE service_settings ALTER COLUMN sos_phone SET DEFAULT '112'",
+  "UPDATE service_settings SET support_phone='' WHERE support_phone='+77000000000'",
+  "UPDATE service_settings SET sos_phone='112' WHERE sos_phone='+77000000000'",
 
   // --- Stage: recurring bookings ("школьный маршрут") ---
   // last_triggered_date isn't in the original spec but is required to
@@ -989,7 +903,45 @@ const statements = [
   // so a single index answers a query in either language.
   "ALTER TABLE addresses ADD COLUMN IF NOT EXISTS search_text TEXT",
   "UPDATE addresses SET search_text = label WHERE search_text IS NULL",
-  "CREATE INDEX IF NOT EXISTS idx_addresses_search_trgm ON addresses USING gin(search_text gin_trgm_ops)"
+  "CREATE INDEX IF NOT EXISTS idx_addresses_search_trgm ON addresses USING gin(search_text gin_trgm_ops)",
+
+  // --- Intercity routes ---
+  // Explicit, directional route configuration makes a cross-region booking
+  // safe to price and dispatch.  The initial active pairs cover all current
+  // service regions; operations can pause/tune a direction without disabling
+  // either city itself.
+  `CREATE TABLE IF NOT EXISTS intercity_routes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    origin_region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+    destination_region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    max_distance_km INTEGER NOT NULL DEFAULT 350 CHECK (max_distance_km BETWEEN 1 AND 1000),
+    max_duration_min INTEGER NOT NULL DEFAULT 720 CHECK (max_duration_min BETWEEN 1 AND 1440),
+    base_surcharge_kzt INTEGER NOT NULL DEFAULT 0 CHECK (base_surcharge_kzt >= 0),
+    price_per_km_override INTEGER,
+    min_price_override INTEGER,
+    requires_destination_approval BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CHECK (origin_region_id <> destination_region_id),
+    CHECK (price_per_km_override IS NULL OR price_per_km_override >= 0),
+    CHECK (min_price_override IS NULL OR min_price_override >= 0),
+    UNIQUE(origin_region_id, destination_region_id)
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_intercity_routes_origin_active ON intercity_routes(origin_region_id, is_active)",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS dropoff_region_id UUID REFERENCES regions(id) ON DELETE RESTRICT",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_intercity BOOLEAN NOT NULL DEFAULT false",
+  "CREATE INDEX IF NOT EXISTS idx_orders_dropoff_region_id ON orders(dropoff_region_id)",
+  `INSERT INTO intercity_routes(
+      origin_region_id, destination_region_id, is_active, max_distance_km,
+      max_duration_min, base_surcharge_kzt, price_per_km_override,
+      min_price_override, requires_destination_approval
+    )
+    SELECT origin.id, destination.id, true, 350, 720, 0, 140, 1800, true
+    FROM regions origin
+    CROSS JOIN regions destination
+    WHERE origin.is_active=true AND destination.is_active=true AND origin.id <> destination.id
+    ON CONFLICT (origin_region_id, destination_region_id) DO NOTHING`
 ];
 
 export async function runMigrations() {

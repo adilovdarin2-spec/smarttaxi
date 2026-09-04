@@ -23,13 +23,14 @@
 // Usage:
 //   node src/tools/harvest-addresses.js            # every region below
 //   node src/tools/harvest-addresses.js MYRZAKENT  # one region by code
+//   node src/tools/harvest-addresses.js --manifest-only
 
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
-import { nearestRegionCode } from "../modules/routing/region-geo.js";
+import { serviceBoundaryForCode, serviceRegionCode } from "../modules/routing/region-geo.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.resolve(HERE, "../../data/addresses");
@@ -40,6 +41,9 @@ const REGIONS = [
   { code: "ATAKENT", name: "Атакент", lat: 40.844435, lng: 68.509021, radiusKm: 14 },
   { code: "MYRZAKENT", name: "Мырзакент", lat: 40.665495, lng: 68.549994, radiusKm: 22 },
   { code: "ZHETYSAY", name: "Жетысай", lat: 40.777134, lng: 68.324677, radiusKm: 16 },
+  // Covers the complete active service polygon from migrations.js with a
+  // small margin, without querying the whole Turkistan oblast on every run.
+  { code: "SHYMKENT", name: "Шымкент", lat: 42.314696, lng: 69.588328, radiusKm: 34 },
   { code: "KIROV", name: "Киров", lat: 40.7869, lng: 68.5344, radiusKm: 12 },
   { code: "ASYKATA", name: "Асыката", lat: 40.8947, lng: 68.3635, radiusKm: 12 },
   { code: "DOSTYK", name: "Достык", lat: 40.8072, lng: 68.4592, radiusKm: 12 },
@@ -61,6 +65,10 @@ const ENDPOINTS = [
 ];
 const PAUSE_BETWEEN_QUERIES_MS = 4_000;
 const MAX_ATTEMPTS = 4;
+// A stalled mirror used to leave this process waiting forever.  Harvesting is
+// deliberately a best-effort maintenance task: a timed-out class is retained
+// from the previous catalogue and the next mirror gets a chance to answer.
+const REQUEST_TIMEOUT_MS = 45_000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -75,7 +83,8 @@ async function overpass(body) {
           "Content-Type": "application/x-www-form-urlencoded",
           "User-Agent": "SmartTaxi/1.0 (address harvest)"
         },
-        body: new URLSearchParams({ data: body })
+        body: new URLSearchParams({ data: body }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
@@ -91,6 +100,14 @@ async function overpass(body) {
 // with the cosine of the latitude. At ~40.7°N that is ~84km, so ignoring it
 // would make every box ~25% too narrow east-west.
 function bboxOf(region) {
+  const boundary = serviceBoundaryForCode(region.code);
+  if (boundary) {
+    const lats = boundary.map((point) => point[1]);
+    const lngs = boundary.map((point) => point[0]);
+    return [Math.min(...lats), Math.min(...lngs), Math.max(...lats), Math.max(...lngs)]
+      .map((value) => value.toFixed(5))
+      .join(",");
+  }
   const latDelta = region.radiusKm / 111;
   const lngDelta = region.radiusKm / (111 * Math.cos((region.lat * Math.PI) / 180));
   return [
@@ -211,10 +228,15 @@ function labelFor(kind, tags) {
   const street = tags["addr:street"];
   const housenumber = tags["addr:housenumber"];
   if (kind === "housenumber") {
-    // A bare number with no street is unsearchable — skip it rather than
-    // store "12" on its own.
-    if (!street) return null;
-    return housenumber ? `${street}, ${housenumber}` : street;
+    // Rural addresses here are often filed against the settlement rather than
+    // a street — addr:place ("4 mavze") or addr:city ("Мырзакент") with no
+    // addr:street at all. Requiring a street threw 472 such houses away in
+    // Мырзакент's box alone; any of the three gives a rider something to
+    // recognise next to the number.
+    const where = street || tags["addr:place"] || tags["addr:city"] || tags.name;
+    // A bare number really is unsearchable — "12" on its own is skipped.
+    if (!where) return null;
+    return housenumber ? `${where}, ${housenumber}` : where;
   }
   // An unnamed place keeps its category as the label: "Аптека" is a
   // destination a rider can say out loud, "amenity=pharmacy" is not.
@@ -269,6 +291,10 @@ async function harvestRegion(region) {
       if (!label) continue;
       const [lat, lng] = coordsOf(element);
       if (lat == null || lng == null) continue;
+      // A collection rectangle can overlap a neighbouring launch region.
+      // Keep each point only in the real service area that owns it; otherwise
+      // the same point can overwrite a neighbour during a later reload.
+      if (serviceRegionCode(lat, lng) !== region.code) continue;
       const key = `${element.type}/${element.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -324,12 +350,21 @@ function rowsOfKindFrom(file, kinds) {
   return kept;
 }
 
-function existingRowCount(file) {
+function existingRowCount(file, regionCode) {
   if (!fs.existsSync(file)) return 0;
   try {
     const text = zlib.gunzipSync(fs.readFileSync(file)).toString("utf8");
     let rows = 0;
-    for (const line of text.split("\n")) if (line.trim()) rows += 1;
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const row = JSON.parse(line);
+        if (serviceRegionCode(row.lat, row.lng) === regionCode) rows += 1;
+      } catch {
+        // A malformed legacy line is not a reason to preserve an entire
+        // polluted file; the regular data check will still report it.
+      }
+    }
     return rows;
   } catch {
     // An unreadable file is not worth protecting.
@@ -346,9 +381,23 @@ function existingRowCount(file) {
 /// sitting in the directory unreachable for exactly that reason. Copying
 /// them into the owner's file costs a few kilobytes and makes "harvested"
 /// and "loadable" the same set.
+///
+/// The other half of that equality is the pruning below. A row outside every
+/// service polygon has no owner, so the loader never writes it and search
+/// never returns it — dead weight that only makes the files bigger and the
+/// data harder to reason about. The harvest boxes are circles drawn around
+/// settlements, so most of that weight was another country: of the 21 355
+/// unowned rows removed on 2026-09-03, 11 060 carried Latin-only Uzbek names
+/// (`Sirdaryo tumani 10-maktab`, `Marxamat ko'chasi`). Nothing rider-visible
+/// changes — see docs/status/address-region-geometry-2026-09-03.md.
+///
+/// It does mean widening a service polygon now needs a re-harvest rather than
+/// just a reload. That is the honest trade: the files describe what the
+/// product actually serves.
 function redistributeOwnedRows() {
   const byFile = new Map();
   const owners = new Map();
+  let pruned = 0;
   for (const name of fs.readdirSync(OUT_DIR)) {
     if (!name.endsWith(".jsonl.gz")) continue;
     const code = name.replace(/\.jsonl\.gz$/, "");
@@ -362,30 +411,43 @@ function redistributeOwnedRows() {
       } catch {
         continue;
       }
+      const owner = serviceRegionCode(row.lat, row.lng);
+      if (!owner) {
+        pruned += 1;
+        continue;
+      }
       rows.push(row);
-      const owner = nearestRegionCode(row.lat, row.lng);
-      if (!owner) continue;
       const key = `${row.osmType}/${row.osmId}`;
       if (!owners.has(key)) owners.set(key, { owner, row });
     }
     byFile.set(code, rows);
   }
 
+  // Key set per file rather than a linear scan of the target array. The scan
+  // made this quadratic — 106 000 Шымкент owners each walked a 114 000-row
+  // array — which took long enough that the pass looked hung rather than slow.
+  const keysByFile = new Map();
+  for (const [code, rows] of byFile) {
+    keysByFile.set(code, new Set(rows.map((row) => `${row.osmType}/${row.osmId}`)));
+  }
+
   let moved = 0;
   for (const [key, { owner, row }] of owners) {
     const target = byFile.get(owner);
-    if (!target) continue;
-    if (target.some((existing) => `${existing.osmType}/${existing.osmId}` === key)) continue;
+    const present = keysByFile.get(owner);
+    if (!target || !present) continue;
+    if (present.has(key)) continue;
     target.push(row);
+    present.add(key);
     moved += 1;
   }
-  if (!moved) return 0;
+  if (!moved && !pruned) return { moved: 0, pruned: 0 };
 
   for (const [code, rows] of byFile) {
     const text = rows.map((row) => JSON.stringify(row)).join("\n") + (rows.length ? "\n" : "");
     fs.writeFileSync(path.join(OUT_DIR, `${code}.jsonl.gz`), zlib.gzipSync(Buffer.from(text, "utf8"), { level: 9 }));
   }
-  return moved;
+  return { moved, pruned };
 }
 
 // Rebuilt from whatever files are on disk rather than from this run's
@@ -411,7 +473,7 @@ function writeManifest() {
       // settlements; the loader drops those, and if this counted them the
       // "already loaded?" check could never be satisfied and every boot
       // would re-upsert the lot.
-      if (nearestRegionCode(row.lat, row.lng) !== code) continue;
+      if (serviceRegionCode(row.lat, row.lng) !== code) continue;
       rows += 1;
     }
     counts[name] = rows;
@@ -424,6 +486,21 @@ function writeManifest() {
 }
 
 async function main() {
+  // Re-files and prunes the committed catalogue against the current service
+  // polygons, without re-downloading anything. This is what to run after a
+  // boundary or centre changes.
+  if (process.argv.includes("--prune")) {
+    const { moved, pruned } = redistributeOwnedRows();
+    console.log(`Moved ${moved} row(s); dropped ${pruned} row(s) outside every service area`);
+    writeManifest();
+    return;
+  }
+  if (process.argv.includes("--manifest-only")) {
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+    writeManifest();
+    console.log("Address manifest rebuilt");
+    return;
+  }
   const wanted = process.argv[2];
   const regions = wanted
     ? REGIONS.filter((region) => region.code === wanted.toUpperCase())
@@ -467,7 +544,7 @@ async function main() {
       );
     }
 
-    const existing = existingRowCount(file);
+    const existing = existingRowCount(file, region.code);
     if (existing && rows.length < existing * 0.8) {
       console.error(
         `  ${region.name}: REFUSING to overwrite — harvested ${rows.length} rows, ` +
@@ -490,9 +567,10 @@ async function main() {
   // Only meaningful once every region has been written, so it runs after the
   // loop rather than per region.
   if (regions.length === REGIONS.length) {
-    const moved = redistributeOwnedRows();
-    if (moved) {
-      console.log(`Moved ${moved} row(s) into the file of the region that owns them`);
+    const { moved, pruned } = redistributeOwnedRows();
+    if (moved || pruned) {
+      if (moved) console.log(`Moved ${moved} row(s) into the file of the region that owns them`);
+      if (pruned) console.log(`Dropped ${pruned} row(s) outside every service area`);
       writeManifest();
     }
   }

@@ -19,6 +19,7 @@ export const REGION_GEO = [
   { code: "ATAKENT", name: "Атакент", lat: 40.844435, lng: 68.509021, radiusKm: 14 },
   { code: "MYRZAKENT", name: "Мырзакент", lat: 40.665495, lng: 68.549994, radiusKm: 22 },
   { code: "ZHETYSAY", name: "Жетысай", lat: 40.777134, lng: 68.324677, radiusKm: 16 },
+  { code: "SHYMKENT", name: "Шымкент", lat: 42.314696, lng: 69.588328, radiusKm: 34 },
   { code: "KIROV", name: "Киров", lat: 40.7869, lng: 68.5344, radiusKm: 12 },
   { code: "ASYKATA", name: "Асыката", lat: 40.8947, lng: 68.3635, radiusKm: 12 },
   { code: "DOSTYK", name: "Достык", lat: 40.8072, lng: 68.4592, radiusKm: 12 },
@@ -30,10 +31,88 @@ export const REGION_GEO = [
   // one, every address nearest to Жана Жол was harvested, filed under
   // "ZHANAZHOL", matched no region and was dropped: the settlement had zero
   // addresses in the database.
-  { code: "ZHANA_ZHOL", name: "Жана жол", lat: 40.7567, lng: 68.5661, radiusKm: 12 },
-  { code: "MAKTAARAL", name: "Мактаарал", lat: 40.7358, lng: 68.5364, radiusKm: 12 },
-  { code: "ATAMEKEN", name: "Атамекен", lat: 40.8121, lng: 68.5839, radiusKm: 12 }
+  { code: "ZHANA_ZHOL", name: "Жана Жол", lat: 40.7567, lng: 68.5661, radiusKm: 12 },
+  // "Мақтаарал", with қ — the spelling the regions table stores and therefore
+  // the one the address-search API is called with. This read "Мактаарал" with
+  // a plain к, which matches nothing: regionRadiusKmByName() fell through to
+  // its 25 km default, so Мақтаарал searched a box twice its working radius
+  // and filled the 96-candidate page with Мырзакент and Жетысай before the
+  // polygon filter ever saw a local row.
+  { code: "MAKTAARAL", name: "Мақтаарал", lat: 40.7358, lng: 68.5364, radiusKm: 12 },
+  // Was 40.8121, 68.5839 — a point in Uzbekistan, 1 km from Paxtakor jom'e
+  // masjidi and 2.4 km outside Атамекен's own service area. Nearest-centre
+  // ownership was therefore measured from a foreign village. This is the
+  // median of the Kazakh cluster inside the boundary below (улица Абая,
+  // улица Сатпаева, улица Жамбыла, школа № 35, сш им Болашақ).
+  { code: "ATAMEKEN", name: "Атамекен", lat: 40.8155, lng: 68.5488, radiusKm: 12 }
 ];
+
+// Harvesting needs the same service polygons that are enforced by the API,
+// but it runs without a database.  Keep this compact code-keyed mirror next
+// to the harvest centres rather than letting broad collection circles decide
+// which country a rider-visible address belongs to.
+const SERVICE_BOUNDARIES = {
+  ATAKENT: [[68.475, 40.82], [68.535, 40.82], [68.535, 40.875], [68.475, 40.875]],
+  MYRZAKENT: [[68.47, 40.6], [68.6, 40.6], [68.6, 40.73], [68.47, 40.73]],
+  ZHETYSAY: [[68.28, 40.735], [68.37, 40.735], [68.37, 40.815], [68.28, 40.815]],
+  SHYMKENT: [[69.3, 42.1], [69.85, 42.1], [69.85, 42.48], [69.3, 42.48]],
+  KIROV: [[68.5, 40.75], [68.57, 40.75], [68.57, 40.82], [68.5, 40.82]],
+  ASYKATA: [[68.32, 40.86], [68.41, 40.86], [68.41, 40.93], [68.32, 40.93]],
+  DOSTYK: [[68.42, 40.78], [68.49, 40.78], [68.49, 40.84], [68.42, 40.84]],
+  YNTYMAK: [[68.46, 40.73], [68.53, 40.73], [68.53, 40.79], [68.46, 40.79]],
+  BIRLIK: [[68.37, 40.79], [68.435, 40.79], [68.435, 40.855], [68.37, 40.855]],
+  FIRDOUSI: [[68.47, 40.69], [68.535, 40.69], [68.535, 40.755], [68.47, 40.755]],
+  ZHANA_ZHOL: [[68.53, 40.725], [68.6, 40.725], [68.6, 40.79], [68.53, 40.79]],
+  MAKTAARAL: [[68.505, 40.705], [68.57, 40.705], [68.57, 40.765], [68.505, 40.765]],
+  // Eastern edge is the Kazakhstan/Uzbekistan border, not a round number.
+  // This box used to reach 68.62 and so lay mostly inside Uzbekistan: 40% of
+  // everything harvested inside it was Uzbek ("Sirdaryo tumani 10-maktab",
+  // "Paxtakor jom'e masjidi", "Marxamat ko'chasi"), against 0-2% in every
+  // other region. A rider selecting Атамекен was being offered destinations
+  // in another country, which no driver can serve.
+  //
+  // The border is located from the harvest itself — the two customs pairs it
+  // contains. At 40.836 "Customs Kazakhstan" sits at 68.5604 and "Customs
+  // Uzbekistan" at 68.5644; at 40.79 "Сырдария шекаралық кеден бекеті" sits
+  // at 68.5769 and "Malik chegara bojxona posti" at 68.5814. 68.562 is east
+  // of the Kazakh post at the northern crossing and west of every Uzbek
+  // object in the box, and the Kazakh cluster it must keep (улица Абая,
+  // улица Сатпаева, школа № 35) ends at 68.5551. The line slopes east going
+  // south, so a straight edge here gives up ~1 km of empty Kazakh land in
+  // the south rather than risk claiming Uzbek streets.
+  //
+  // Script alone cannot be the test: "махалла" (68.5735) and "Заправка"
+  // (68.5955) are Cyrillic labels on the Uzbek side.
+  ATAMEKEN: [[68.545, 40.78], [68.562, 40.78], [68.562, 40.845], [68.545, 40.845]]
+};
+
+export function serviceBoundaryForCode(code) {
+  return SERVICE_BOUNDARIES[String(code || "").trim().toUpperCase()] || null;
+}
+
+/// The rows the `regions` table is seeded with, joined from the two tables
+/// above so the database cannot disagree with the code that reads it.
+///
+/// These used to be a second, hand-written copy inside migrations.js, and
+/// they had already drifted: Мырзакент's centre differed by 600 m, and the
+/// name mismatch above meant the search radius for Мақтаарал was wrong in
+/// production. One border edit had to be made in two files by hand.
+///
+/// `boundary` is closed here (first point repeated) because that is the form
+/// the column has always held; pointInPolygon accepts either.
+export const REGION_SEED = REGION_GEO.map((region) => {
+  const ring = SERVICE_BOUNDARIES[region.code];
+  if (!ring) throw new Error(`region ${region.code} has no service boundary`);
+  return {
+    code: region.code,
+    name: region.name,
+    boundary: [...ring, ring[0]],
+    centerLat: region.lat,
+    centerLng: region.lng,
+    currency: "KZT",
+    isActive: true
+  };
+});
 
 /// Working radius for a region given its display name, for callers that only
 /// have the name (the address search API takes one). Falls back to the
@@ -58,6 +137,29 @@ export function distanceKm(aLat, aLng, bLat, bLng) {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRadians(aLat)) * Math.cos(toRadians(bLat)) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function pointInBoundary(lat, lng, boundary) {
+  let inside = false;
+  for (let index = 0, previous = boundary.length - 1; index < boundary.length; previous = index++) {
+    const [x, y] = boundary[index];
+    const [previousX, previousY] = boundary[previous];
+    const crosses = (y > lat) !== (previousY > lat)
+      && lng < ((previousX - x) * (lat - y)) / (previousY - y) + x;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+/// Returns the configured service area that physically contains a point.
+/// Collection circles overlap and reach outside Kazakhstan, so they cannot
+/// be used for rider-visible address ownership.  Border overlaps are resolved
+/// by the nearest configured centre to keep the result deterministic.
+export function serviceRegionCode(lat, lng) {
+  const candidates = REGION_GEO.filter((region) => pointInBoundary(lat, lng, SERVICE_BOUNDARIES[region.code]));
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => distanceKm(lat, lng, a.lat, a.lng) - distanceKm(lat, lng, b.lat, b.lng));
+  return candidates[0].code;
 }
 
 /// The region whose centre is closest to this point, or null when the point
