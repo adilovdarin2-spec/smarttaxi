@@ -138,11 +138,33 @@ The owner confirmed on 2026-09-04 that the SVG is correct, so the PNG has moved
 to `design-reference/rejected/` and `design-reference/README.md` now records
 which file is the specification and which two implementations must follow it.
 
+## CI's api job was red, so none of this gated anything
+
+`npm test` stopped at `routing-location-check.js:101` — "a local street-level
+catalog result is still surfaced". That assertion needed a live Postgres, and
+the CI api job declares a `DATABASE_URL` with no postgres service behind it.
+The chain is `&&`-joined, so the twenty-nine checks after it never ran, the
+address checks among them. Confirmed against `c7ac03e` that it predates this
+week's work.
+
+Nothing else in the suite needs a database — `addresses-data-check.js` states
+that convention in its own header. This one assertion was the exception, and it
+made the whole gate depend on the environment. With the executor seam it is a
+fixture now: one street row plus one active region whose boundary contains it.
+Both statements must be answered, because `filterGazetteerRowsToServiceArea`
+drops everything when the region list is empty.
+
+`npm test` exits 0 with all 35 checks reporting ok.
+
+Noted, not changed: CI pins Flutter 3.41.9 while this machine has 3.47.2.
+Everything here was analysed and tested on 3.47.2 only.
+
 ## Still open
 
 - **Not confirmed on a device.** The picker and the search sheets sit behind
   login, and SMS is still blocked on the Infobip sender ID. Everything here is
-  verified by `flutter analyze`, `flutter test` (42), `npm test` additions and
-  reading; none of it has been seen on the emulator.
+  verified by `flutter analyze`, `flutter test` (42), `npm test` (35 checks, now
+  green) and reading. The app launches on the emulator with no exceptions, but
+  no screen past the auth step has been seen.
 - Five regions still have no house-level data at all. That is the RKA import.
 - 17 pairs of service polygons overlap; trimming them needs local knowledge.
