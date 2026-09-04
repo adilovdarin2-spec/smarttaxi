@@ -134,10 +134,19 @@ exact fix; none should be done without being able to look at the result.
 
 ## Waiting on the owner
 
-- **Log in on the emulator.** It is running with the app on the auth screen.
-  Everything in the picker, search, tariff and trip flows is verified by
-  analyzer, tests and reading only — **none of it has been seen on screen**.
-  This one unblocks most of the rest.
+- **Log in on an emulator.** Everything in the picker, search, tariff and trip
+  flows is verified by analyzer, tests and reading only — **none of it has been
+  seen on screen**. This one unblocks most of the rest.
+
+  ```bash
+  "$LOCALAPPDATA/Android/Sdk/emulator/emulator.exe" -avd Pixel_7a -gpu auto &
+  cd apps/mobile/smarttaxi_app && /c/dev/flutter-sdk/bin/flutter.bat run -d emulator-5554
+  ```
+
+  The AVD is `Pixel_7a`; the debug build talks to `api.smarttaxi.kz`, which is
+  live. Registration is SMS-only and Infobip returns 403, so an existing account
+  and its password are the only way in — `POST /auth/login/password` exists for
+  that. An assistant should not be typing the password; a person has to.
 - **RKA address import.** Киров, Ынтымак, Бирлик, Жана Жол and Атамекен have
   zero house numbers within 3 km of their centres. Not fixable from OSM.
 - **Infobip sender ID** — 403, so no OTP, so no login.
