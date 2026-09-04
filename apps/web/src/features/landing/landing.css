@@ -2,8 +2,7 @@
   --lp-blue: #1d6fff;
   --lp-blue-deep: #0b4fd1;
   --lp-blue-light: #4f7fff;
-  --lp-gold: #d89a05;
-  --lp-gold-soft: #fff3d6;
+  --lp-blue-pale: #eaf3ff;
   --lp-ink: #0f172a;
   --lp-muted: #5b6474;
   --lp-line: rgba(15, 23, 42, .08);
@@ -83,8 +82,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--lp-gold-soft);
-  color: #916b00;
+  background: var(--lp-blue-pale);
+  color: var(--lp-blue-deep);
   font-weight: 700;
   font-size: 13px;
   padding: 7px 14px;
@@ -114,7 +113,7 @@
   flex-wrap: wrap;
 }
 .landing-trust div { display: flex; align-items: center; gap: 8px; color: var(--lp-muted); font-size: 14px; font-weight: 600; }
-.landing-trust svg { color: var(--lp-gold); flex: 0 0 auto; }
+.landing-trust svg { color: var(--lp-blue); flex: 0 0 auto; }
 
 /* Hero mock phone */
 .landing-mock-wrap { display: flex; justify-content: center; }
@@ -171,8 +170,8 @@
 }
 .landing-mock-sheet .row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--lp-line); }
 .landing-mock-sheet .row:last-of-type { border-bottom: none; }
-.landing-mock-sheet .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lp-blue); flex: 0 0 auto; }
-.landing-mock-sheet .dot.sq { border-radius: 3px; background: var(--lp-gold); }
+.landing-mock-sheet .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lp-ink); flex: 0 0 auto; }
+.landing-mock-sheet .dot.sq { border-radius: 3px; background: var(--lp-blue); }
 .landing-mock-sheet .txt { font-size: 12.5px; font-weight: 700; color: var(--lp-ink); }
 .landing-mock-sheet .txt small { display: block; font-weight: 600; color: var(--lp-muted); font-size: 10.5px; }
 .landing-mock-cta {

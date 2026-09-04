@@ -223,6 +223,19 @@ class ApiClient {
         .toList(growable: false);
   }
 
+  Future<List<IntercityRouteOption>> getIntercityRoutes(
+    String originRegionId,
+  ) async {
+    final response = await _dio.get<dynamic>(
+      '/api/regions/intercity',
+      queryParameters: {'originRegionId': originRegionId},
+    );
+    final items = _extractList(response.data, 'routes');
+    return items
+        .map((item) => IntercityRouteOption.fromJson(item))
+        .toList(growable: false);
+  }
+
   Future<List<TariffOption>> getTariffs(String regionId) async {
     final response = await _dio
         .get<dynamic>('/api/tariffs', queryParameters: {'regionId': regionId});

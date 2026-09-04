@@ -56,7 +56,7 @@ class EmptyState extends StatelessWidget {
                   ],
                 ),
                 child: Icon(icon ?? Icons.route_outlined,
-                    color: context.palette.goldDeep, size: 31),
+                    color: context.palette.brandDeep, size: 31),
               ),
               const SizedBox(height: 16),
               Text(title,

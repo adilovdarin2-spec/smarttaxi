@@ -10,40 +10,72 @@ class DriverHeader extends StatelessWidget {
   const DriverHeader(
       {super.key,
       required this.onMenu,
+      required this.onNotifications,
       required this.status,
       required this.tone});
 
   final VoidCallback onMenu;
+  final VoidCallback onNotifications;
   final String status;
   final StatusTone tone;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 62,
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: context.palette.card.withValues(alpha: 0.96),
-        border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x10102a52), blurRadius: 22, offset: Offset(0, 10))
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-              onPressed: onMenu,
-              icon: Icon(Icons.menu_rounded, color: context.palette.text),
-              tooltip: l10n.driverDrawerMenuTooltip),
-          const SizedBox(width: 4),
-          const BrandLogo(),
-          const Spacer(),
-          StatusPill(label: status, tone: tone),
-        ],
+    final palette = context.palette;
+    Widget roundAction({
+      required IconData icon,
+      required String tooltip,
+      required VoidCallback onTap,
+    }) =>
+        Tooltip(
+          message: tooltip,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: palette.card.withValues(alpha: 0.94),
+                  border: Border.all(color: palette.borderStrong),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x16102a52),
+                      blurRadius: 16,
+                      offset: Offset(0, 7),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: palette.brandDeep, size: 23),
+              ),
+            ),
+          ),
+        );
+    return SizedBox(
+      height: 60,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            roundAction(
+              icon: Icons.menu_rounded,
+              tooltip: l10n.driverDrawerMenuTooltip,
+              onTap: onMenu,
+            ),
+            StatusPill(label: status, tone: tone),
+            roundAction(
+              icon: Icons.notifications_none_rounded,
+              tooltip: l10n.notifications,
+              onTap: onNotifications,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -93,7 +125,8 @@ class DriverDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final name = accountLabel.isEmpty ? l10n.driverDrawerNameFallback : accountLabel;
+    final name =
+        accountLabel.isEmpty ? l10n.driverDrawerNameFallback : accountLabel;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'S';
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.84,
@@ -111,8 +144,8 @@ class DriverDrawer extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    palette.goldSurface,
-                    palette.goldSurface.withValues(alpha: 0.4),
+                    palette.brandSurface,
+                    palette.brandSurface.withValues(alpha: 0.4),
                   ],
                 ),
               ),
@@ -126,12 +159,12 @@ class DriverDrawer extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [palette.gold, palette.goldDeep],
+                        colors: [palette.brand, palette.brandDeep],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: palette.gold.withValues(alpha: 0.28),
+                          color: palette.brand.withValues(alpha: 0.28),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -166,8 +199,9 @@ class DriverDrawer extends StatelessWidget {
                               height: 7,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color:
-                                    online ? palette.success : palette.textMuted,
+                                color: online
+                                    ? palette.success
+                                    : palette.textMuted,
                               ),
                             ),
                             const SizedBox(width: 5),

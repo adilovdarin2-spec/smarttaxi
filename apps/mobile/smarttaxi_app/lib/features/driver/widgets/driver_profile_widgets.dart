@@ -127,7 +127,7 @@ class DriverSupportTopicChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? context.palette.gold : context.palette.goldSurface,
+      color: selected ? context.palette.brand : context.palette.brandSurface,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),

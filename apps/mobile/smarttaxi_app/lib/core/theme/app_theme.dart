@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class SmartTaxiColors {
-  static const gold = Color(0xff1d6fff);
-  static const goldDeep = Color(0xff0b4fd1);
+  static const brand = Color(0xff1d6fff);
+  static const brandDeep = Color(0xff0b4fd1);
   // The lighter blue that tops every primary-CTA / hero gradient. Was
   // hardcoded as 0xff5b9dff separately in the passenger and driver CTA
   // buttons before being named here; the value matches the web panels'
-  // --gold-light so the two products' CTAs are the same ramp.
-  static const goldSky = Color(0xff65a3ff);
-  static const goldSoft = Color(0xffb9d6ff);
-  static const goldPale = Color(0xffeaf3ff);
-  static const goldSurface = Color(0xfff2f7ff);
+  // --brand-light so the two products' CTAs are the same ramp.
+  static const brandSky = Color(0xff65a3ff);
+  static const brandSoft = Color(0xffb9d6ff);
+  static const brandPale = Color(0xffeaf3ff);
+  static const brandSurface = Color(0xfff2f7ff);
   // Kept in sync with SmartTaxiPalette.dark.appBackground below -- this is
   // the only remaining consumer (main.dart's system nav-bar color), but it
   // must match or the Android gesture bar shows a seam against the app's
@@ -177,11 +177,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     required this.warning,
     required this.warningSoft,
     required this.star,
-    required this.gold,
-    required this.goldDeep,
-    required this.goldSky,
-    required this.goldPale,
-    required this.goldSurface,
+    required this.brand,
+    required this.brandDeep,
+    required this.brandSky,
+    required this.brandPale,
+    required this.brandSurface,
   });
 
   final Color appBackground;
@@ -199,11 +199,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
   final Color warning;
   final Color warningSoft;
   final Color star;
-  final Color gold;
-  final Color goldDeep;
-  final Color goldSky;
-  final Color goldPale;
-  final Color goldSurface;
+  final Color brand;
+  final Color brandDeep;
+  final Color brandSky;
+  final Color brandPale;
+  final Color brandSurface;
 
   static const light = SmartTaxiPalette(
     appBackground: SmartTaxiColors.appBackground,
@@ -221,17 +221,17 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     warning: SmartTaxiColors.warning,
     warningSoft: SmartTaxiColors.warningSoft,
     star: SmartTaxiColors.star,
-    gold: SmartTaxiColors.gold,
-    goldDeep: SmartTaxiColors.goldDeep,
-    goldSky: SmartTaxiColors.goldSky,
-    goldPale: SmartTaxiColors.goldPale,
-    goldSurface: SmartTaxiColors.goldSurface,
+    brand: SmartTaxiColors.brand,
+    brandDeep: SmartTaxiColors.brandDeep,
+    brandSky: SmartTaxiColors.brandSky,
+    brandPale: SmartTaxiColors.brandPale,
+    brandSurface: SmartTaxiColors.brandSurface,
   );
 
   // True black-and-blue dark theme, not navy: near-black surfaces with the
   // brand blue reserved for accents/glow, matching the reference direction
   // the user asked for (2026-07-29) over the earlier dark-navy palette.
-  // Brand hues (gold/success/danger) stay identical to light — only neutral
+  // Brand hues (accent/success/danger) stay identical to light — only neutral
   // surfaces, text and soft/surface washes change for dark backgrounds.
   static const dark = SmartTaxiPalette(
     appBackground: Color(0xff05070c),
@@ -241,7 +241,7 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     textSecondary: Color(0xff9aa4ba),
     textMuted: Color(0xff6b7488),
     border: Color(0xff1f2740),
-    borderStrong: SmartTaxiColors.gold,
+    borderStrong: SmartTaxiColors.brand,
     success: SmartTaxiColors.success,
     successSoft: Color(0xff123222),
     danger: Color(0xffef4444),
@@ -249,11 +249,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     warning: Color(0xffe0a93a),
     warningSoft: Color(0xff2e2210),
     star: Color(0xffffc043),
-    gold: SmartTaxiColors.gold,
-    goldDeep: Color(0xff5b9bff),
-    goldSky: Color(0xff93c5ff),
-    goldPale: Color(0xff16223e),
-    goldSurface: Color(0xff101b33),
+    brand: SmartTaxiColors.brand,
+    brandDeep: Color(0xff5b9bff),
+    brandSky: Color(0xff93c5ff),
+    brandPale: Color(0xff16223e),
+    brandSurface: Color(0xff101b33),
   );
 
   @override
@@ -273,11 +273,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
     Color? warning,
     Color? warningSoft,
     Color? star,
-    Color? gold,
-    Color? goldDeep,
-    Color? goldSky,
-    Color? goldPale,
-    Color? goldSurface,
+    Color? brand,
+    Color? brandDeep,
+    Color? brandSky,
+    Color? brandPale,
+    Color? brandSurface,
   }) {
     return SmartTaxiPalette(
       appBackground: appBackground ?? this.appBackground,
@@ -295,11 +295,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
       warning: warning ?? this.warning,
       warningSoft: warningSoft ?? this.warningSoft,
       star: star ?? this.star,
-      gold: gold ?? this.gold,
-      goldDeep: goldDeep ?? this.goldDeep,
-      goldSky: goldSky ?? this.goldSky,
-      goldPale: goldPale ?? this.goldPale,
-      goldSurface: goldSurface ?? this.goldSurface,
+      brand: brand ?? this.brand,
+      brandDeep: brandDeep ?? this.brandDeep,
+      brandSky: brandSky ?? this.brandSky,
+      brandPale: brandPale ?? this.brandPale,
+      brandSurface: brandSurface ?? this.brandSurface,
     );
   }
 
@@ -322,11 +322,11 @@ class SmartTaxiPalette extends ThemeExtension<SmartTaxiPalette> {
       warning: Color.lerp(warning, other.warning, t)!,
       warningSoft: Color.lerp(warningSoft, other.warningSoft, t)!,
       star: Color.lerp(star, other.star, t)!,
-      gold: Color.lerp(gold, other.gold, t)!,
-      goldDeep: Color.lerp(goldDeep, other.goldDeep, t)!,
-      goldSky: Color.lerp(goldSky, other.goldSky, t)!,
-      goldPale: Color.lerp(goldPale, other.goldPale, t)!,
-      goldSurface: Color.lerp(goldSurface, other.goldSurface, t)!,
+      brand: Color.lerp(brand, other.brand, t)!,
+      brandDeep: Color.lerp(brandDeep, other.brandDeep, t)!,
+      brandSky: Color.lerp(brandSky, other.brandSky, t)!,
+      brandPale: Color.lerp(brandPale, other.brandPale, t)!,
+      brandSurface: Color.lerp(brandSurface, other.brandSurface, t)!,
     );
   }
 }
@@ -340,8 +340,8 @@ ThemeData buildSmartTaxiTheme() {
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: SmartTaxiColors.gold,
-      primary: SmartTaxiColors.gold,
+      seedColor: SmartTaxiColors.brand,
+      primary: SmartTaxiColors.brand,
       surface: SmartTaxiColors.card,
     ),
   );
@@ -366,10 +366,31 @@ ThemeData buildSmartTaxiTheme() {
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
     ),
+    // The product uses blue action glyphs consistently: a map pin, payment
+    // method and profile affordance should feel like parts of the same UI,
+    // rather than inheriting arbitrary Material defaults from each screen.
+    iconTheme: const IconThemeData(
+      color: SmartTaxiColors.brandDeep,
+      size: 22,
+    ),
+    primaryIconTheme: const IconThemeData(
+      color: Colors.white,
+      size: 22,
+    ),
+    cardTheme: CardThemeData(
+      color: SmartTaxiColors.card,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: SmartTaxiColors.border),
+      ),
+    ),
     textSelectionTheme: TextSelectionThemeData(
-      cursorColor: SmartTaxiColors.goldDeep,
-      selectionColor: SmartTaxiColors.gold.withValues(alpha: 0.22),
-      selectionHandleColor: SmartTaxiColors.goldDeep,
+      cursorColor: SmartTaxiColors.brandDeep,
+      selectionColor: SmartTaxiColors.brand.withValues(alpha: 0.22),
+      selectionHandleColor: SmartTaxiColors.brandDeep,
     ),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: SmartTaxiColors.background,
@@ -403,7 +424,7 @@ ThemeData buildSmartTaxiTheme() {
         fontWeight: FontWeight.w700,
       ),
       floatingLabelStyle: const TextStyle(
-        color: SmartTaxiColors.goldDeep,
+        color: SmartTaxiColors.brandDeep,
         fontSize: 13,
         fontWeight: FontWeight.w800,
       ),
@@ -418,7 +439,7 @@ ThemeData buildSmartTaxiTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
-        borderSide: const BorderSide(color: SmartTaxiColors.gold, width: 1.8),
+        borderSide: const BorderSide(color: SmartTaxiColors.brand, width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
@@ -436,16 +457,16 @@ ThemeData buildSmartTaxiTheme() {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        backgroundColor: SmartTaxiColors.gold,
+        backgroundColor: SmartTaxiColors.brand,
         // White, not ink. Dark text on the accent is a holdover from the
-        // gold theme, where near-black on gold was right; on this blue it
+        // retired gold theme, where near-black on gold was right; on this blue it
         // reads muddy and disagrees with the app's own primary CTAs, which
         // already draw their label white.
         foregroundColor: Colors.white,
-        disabledBackgroundColor: SmartTaxiColors.gold.withValues(alpha: 0.45),
+        disabledBackgroundColor: SmartTaxiColors.brand.withValues(alpha: 0.45),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
         elevation: 0,
-        shadowColor: SmartTaxiColors.gold.withValues(alpha: 0.24),
+        shadowColor: SmartTaxiColors.brand.withValues(alpha: 0.24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
       ),
@@ -463,10 +484,31 @@ ThemeData buildSmartTaxiTheme() {
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       ),
     ),
+    // Some newer screens use Material's FilledButton while older ones use
+    // ElevatedButton. Keep both primary actions visually identical so a
+    // wallet, support or permission screen never feels like another app.
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(56),
+        backgroundColor: SmartTaxiColors.brand,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: SmartTaxiColors.brand.withValues(alpha: 0.45),
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: SmartTaxiColors.brandDeep,
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       height: 74,
       backgroundColor: Colors.transparent,
-      indicatorColor: SmartTaxiColors.goldSurface,
+      indicatorColor: SmartTaxiColors.brandSurface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -508,9 +550,9 @@ ThemeData buildSmartTaxiDarkTheme() {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: SmartTaxiColors.gold,
+      seedColor: SmartTaxiColors.brand,
       brightness: Brightness.dark,
-      primary: palette.gold,
+      primary: palette.brand,
       surface: palette.card,
     ),
   );
@@ -530,10 +572,22 @@ ThemeData buildSmartTaxiDarkTheme() {
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
     ),
+    iconTheme: IconThemeData(color: palette.brandDeep, size: 22),
+    primaryIconTheme: const IconThemeData(color: Colors.white, size: 22),
+    cardTheme: CardThemeData(
+      color: palette.card,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: palette.border),
+      ),
+    ),
     textSelectionTheme: TextSelectionThemeData(
-      cursorColor: palette.goldDeep,
-      selectionColor: palette.gold.withValues(alpha: 0.28),
-      selectionHandleColor: palette.goldDeep,
+      cursorColor: palette.brandDeep,
+      selectionColor: palette.brand.withValues(alpha: 0.28),
+      selectionHandleColor: palette.brandDeep,
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: palette.appBackground,
@@ -567,7 +621,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         fontWeight: FontWeight.w700,
       ),
       floatingLabelStyle: TextStyle(
-        color: palette.goldDeep,
+        color: palette.brandDeep,
         fontSize: 13,
         fontWeight: FontWeight.w800,
       ),
@@ -582,7 +636,7 @@ ThemeData buildSmartTaxiDarkTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
-        borderSide: BorderSide(color: palette.gold, width: 1.8),
+        borderSide: BorderSide(color: palette.brand, width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
@@ -598,12 +652,12 @@ ThemeData buildSmartTaxiDarkTheme() {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        backgroundColor: palette.gold,
+        backgroundColor: palette.brand,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: palette.gold.withValues(alpha: 0.35),
+        disabledBackgroundColor: palette.brand.withValues(alpha: 0.35),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
         elevation: 0,
-        shadowColor: palette.gold.withValues(alpha: 0.24),
+        shadowColor: palette.brand.withValues(alpha: 0.24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
       ),
@@ -617,10 +671,28 @@ ThemeData buildSmartTaxiDarkTheme() {
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       ),
     ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(56),
+        backgroundColor: palette.brand,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: palette.brand.withValues(alpha: 0.35),
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: palette.brandDeep,
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       height: 74,
       backgroundColor: Colors.transparent,
-      indicatorColor: palette.goldSurface,
+      indicatorColor: palette.brandSurface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {

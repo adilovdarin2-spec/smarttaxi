@@ -3,18 +3,18 @@
   <filter id="softShadow" x="-20%" y="-40%" width="140%" height="180%">
     <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.12"/>
   </filter>
-  <linearGradient id="routeGold" x1="80" y1="230" x2="640" y2="65" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#F6B800"/>
-    <stop offset="1" stop-color="#FFD65C"/>
+  <linearGradient id="routeBrand" x1="80" y1="230" x2="640" y2="65" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#1D6FFF"/>
+    <stop offset="1" stop-color="#65A3FF"/>
   </linearGradient>
 </defs>
-<path d="M90 236 L170 232 L260 158 L375 170 L465 95 L575 94 L640 62" stroke="url(#routeGold)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="90" cy="236" r="36" fill="#FFF5D6" opacity="0.72"/>
-<circle cx="90" cy="236" r="15" fill="white" stroke="#F6B800" stroke-width="8"/>
-<circle cx="640" cy="62" r="42" fill="#FFF5D6" opacity="0.72"/>
-<circle cx="640" cy="62" r="11" fill="#F6B800"/>
+<path d="M90 236 L170 232 L260 158 L375 170 L465 95 L575 94 L640 62" stroke="url(#routeBrand)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="90" cy="236" r="36" fill="#EAF3FF" opacity="0.72"/>
+<circle cx="90" cy="236" r="15" fill="white" stroke="#1D6FFF" stroke-width="8"/>
+<circle cx="640" cy="62" r="42" fill="#EAF3FF" opacity="0.72"/>
+<circle cx="640" cy="62" r="11" fill="#1D6FFF"/>
 <g filter="url(#softShadow)">
-  <path d="M640 5C613 5 591 27 591 54C591 91 640 144 640 144C640 144 689 91 689 54C689 27 667 5 640 5Z" fill="#F6B800"/>
+  <path d="M640 5C613 5 591 27 591 54C591 91 640 144 640 144C640 144 689 91 689 54C689 27 667 5 640 5Z" fill="#1D6FFF"/>
   <circle cx="640" cy="54" r="18" fill="white"/>
 </g>
 </svg>

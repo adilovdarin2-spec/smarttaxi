@@ -192,12 +192,12 @@ class _DriverNotificationTile extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               shape: BoxShape.circle,
             ),
             child: Icon(
               _iconFor(notification.type),
-              color: palette.goldDeep,
+              color: palette.brandDeep,
               size: 18,
             ),
           ),
@@ -226,7 +226,7 @@ class _DriverNotificationTile extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: palette.gold,
+                          color: palette.brand,
                           shape: BoxShape.circle,
                         ),
                       ),

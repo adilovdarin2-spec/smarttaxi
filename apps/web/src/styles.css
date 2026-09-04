@@ -1,28 +1,25 @@
 :root {
   /* Canonical blue/white tokens — kept in lockstep with
      docs/design/BLUE_WHITE_DESIGN_SYSTEM_2026-07-15.md and the mobile
-     app's SmartTaxiColors. Variable names kept as --gold-* / --bg-deep for
-     backward compatibility with the ~21k lines below that already
-     reference them — only the values changed, not the names (a full
-     rename would touch every rule in this file for no visual gain). */
+     app's SmartTaxiColors. */
   --bg: #f7fbff;
   --bg-deep: #eef6ff;
   --surface: #ffffff;
   --surface-2: #f2f7ff;
   --surface-3: #eaf3ff;
-  --gold: #1d6fff;
-  --gold-light: #65a3ff;
-  --gold-dark: #0b4fd1;
+  --brand: #1d6fff;
+  --brand-light: #65a3ff;
+  --brand-dark: #0b4fd1;
   --text: #10192e;
   --muted: #5b6b8c;
   --border: #e1e7f5;
-  --gold-border: rgba(29, 111, 255, .35);
+  --brand-border: rgba(29, 111, 255, .35);
   --danger: #dc2626;
   --danger-dark: #7a1f1f;
   --success: #16a34a;
   --warning: #c98a12;
   --shadow: 0 22px 60px rgba(16, 25, 46, .12);
-  --gold-shadow: 0 14px 34px rgba(29, 111, 255, .22);
+  --brand-shadow: 0 14px 34px rgba(29, 111, 255, .22);
   font-family: Inter, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -53,7 +50,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .smart-logo.compact { width: 34px; height: 34px; }
 .smart-logo svg { width: 100%; height: 100%; display: block; }
-.vehicle-icon { width: 72px; height: 34px; color: var(--gold); }
+.vehicle-icon { width: 72px; height: 34px; color: var(--brand); }
 
 .phone-frame {
   position: relative;
@@ -83,22 +80,22 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border-radius: 18px;
   padding: 0 18px;
   font-weight: 900;
-  color: #111827;
-  background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 55%, var(--gold-dark) 100%);
-  box-shadow: var(--gold-shadow), inset 0 1px 0 rgba(255, 255, 255, .45);
+  color: #ffffff;
+  background: linear-gradient(180deg, var(--brand-light) 0%, var(--brand) 55%, var(--brand-dark) 100%);
+  box-shadow: var(--brand-shadow), inset 0 1px 0 rgba(255, 255, 255, .45);
   transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
 }
 .app-button.secondary {
   color: var(--text);
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--surface-2), #171b22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+  background: linear-gradient(180deg, #ffffff, var(--surface-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
 }
 
-/* Operator workspace: light gold/white production console */
+/* Operator workspace: light blue/white production console */
 .operator-shell {
-  --operator-gold: #1d6fff;
-  --operator-gold-dark: #0b4fd1;
+  --operator-brand: #1d6fff;
+  --operator-brand-dark: #0b4fd1;
   --operator-ink: #111827;
   --operator-muted: #6b7280;
   --operator-line: rgba(29, 111, 255, .16);
@@ -179,7 +176,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .operator-sidebar button .icon {
-  color: var(--operator-gold-dark);
+  color: var(--operator-brand-dark);
 }
 
 .operator-sidebar button.active {
@@ -233,7 +230,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .operator-login-eyebrow {
-  color: var(--operator-gold-dark, #0b4fd1);
+  color: var(--operator-brand-dark, #0b4fd1);
   font-size: 11px;
   font-weight: 880;
   letter-spacing: .08em;
@@ -326,7 +323,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .operator-header small {
   display: block;
   margin-bottom: 4px;
-  color: var(--operator-gold-dark);
+  color: var(--operator-brand-dark);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -756,7 +753,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 0 12px;
   border: 1px solid rgba(29, 111, 255, .22);
   border-radius: 999px;
-  color: var(--operator-gold-dark);
+  color: var(--operator-brand-dark);
   background: #eef6ff;
   font-weight: 900;
 }
@@ -861,13 +858,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* Ultimate gold/white visual QA lock.
+/* Ultimate blue/white visual QA lock.
    Keep this as the last product UI layer: it intentionally overrides older
    experimental blocks so client/driver/operator/admin feel like one app. */
 :root {
-  --st-ui-gold: #1d6fff;
-  --st-ui-gold-bright: #65a3ff;
-  --st-ui-gold-dark: #0b4fd1;
+  --st-ui-brand: #1d6fff;
+  --st-ui-brand-bright: #65a3ff;
+  --st-ui-brand-dark: #0b4fd1;
   --st-ui-paper: #ffffff;
   --st-ui-cream: #eef6ff;
   --st-ui-ink: #10192e;
@@ -979,12 +976,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 30px !important;
   height: 30px !important;
   border-radius: 13px !important;
-  color: var(--st-ui-gold) !important;
+  color: var(--st-ui-brand) !important;
   background: rgba(5, 86, 216, .12) !important;
 }
 
 .taxi-client-shell .reference-point-icon.destination {
-  color: var(--st-ui-gold-bright) !important;
+  color: var(--st-ui-brand-bright) !important;
   background: #111827 !important;
 }
 
@@ -1047,7 +1044,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-section-head button {
-  color: var(--st-ui-gold-dark) !important;
+  color: var(--st-ui-brand-dark) !important;
   font-size: 14px !important;
   font-weight: 760 !important;
 }
@@ -1063,7 +1060,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-recent-icon {
   width: 30px !important;
   height: 30px !important;
-  color: var(--st-ui-gold-dark) !important;
+  color: var(--st-ui-brand-dark) !important;
   background: rgba(5, 86, 216, .10) !important;
 }
 
@@ -1265,7 +1262,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .driver-core-eyebrow {
-  color: var(--st-ui-gold-dark) !important;
+  color: var(--st-ui-brand-dark) !important;
   font-size: 11px !important;
   line-height: 14px !important;
   font-weight: 880 !important;
@@ -1308,8 +1305,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .operator-shell {
-  --operator-gold: #1d6fff !important;
-  --operator-gold-dark: #0b4fd1 !important;
+  --operator-brand: #1d6fff !important;
+  --operator-brand-dark: #0b4fd1 !important;
   --operator-ink: var(--st-ui-ink) !important;
   --operator-muted: var(--st-ui-muted) !important;
 }
@@ -1423,15 +1420,15 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-size: clamp(16px, 4.3vw, 19px) !important;
 }
 
-/* Final gold/white product polish lock.
+/* Final blue/white product polish lock.
    This block intentionally lives at the end so older experimental CSS cannot
    overpower the approved premium SmartTaxi direction after auth. */
 .taxi-client-shell {
   --gw-ink: #111827;
   --gw-muted: #6d7482;
   --gw-line: rgba(0, 64, 168, .16);
-  --gw-gold: #0556d8;
-  --gw-gold-soft: #ddeaff;
+  --gw-brand: #0556d8;
+  --gw-brand-soft: #ddeaff;
   --gw-shadow: 0 14px 34px rgba(0, 13, 35, .08);
 }
 
@@ -1513,7 +1510,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 0 !important;
   border-radius: 13px !important;
   color: var(--gw-ink) !important;
-  background: var(--gw-gold-soft) !important;
+  background: var(--gw-brand-soft) !important;
 }
 
 .taxi-client-shell .reference-address-state .reference-section-head strong {
@@ -1688,11 +1685,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: linear-gradient(180deg, rgba(255,255,255,.97), #ffffff) !important;
 }
 
-/* SmartTaxi gold/white visual lock — keeps post-auth product screens coherent. */
+/* SmartTaxi blue/white visual lock — keeps post-auth product screens coherent. */
 :root {
-  --st-premium-gold: #1d6fff;
-  --st-premium-gold-2: #65a3ff;
-  --st-premium-gold-dark: #0b4fd1;
+  --st-premium-brand: #1d6fff;
+  --st-premium-brand-2: #65a3ff;
+  --st-premium-brand-dark: #0b4fd1;
   --st-premium-cream: #eef6ff;
   --st-premium-paper: #ffffff;
   --st-premium-ink: #10192e;
@@ -1806,12 +1803,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 38px !important;
   border-radius: 16px !important;
   background: rgba(5, 86, 216, .12) !important;
-  color: var(--st-premium-gold) !important;
+  color: var(--st-premium-brand) !important;
 }
 
 .taxi-client-shell .reference-point-icon.destination {
   background: #111827 !important;
-  color: var(--st-premium-gold-2) !important;
+  color: var(--st-premium-brand-2) !important;
 }
 
 .taxi-client-shell .reference-address-text strong {
@@ -1840,7 +1837,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-address-state .reference-recent-icon {
-  color: var(--st-premium-gold-dark) !important;
+  color: var(--st-premium-brand-dark) !important;
   background: rgba(5, 86, 216, .1) !important;
 }
 
@@ -2100,7 +2097,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* Gold/white refinement: calmer, more premium hierarchy after visual QA. */
+/* Blue/white refinement: calmer, more premium hierarchy after visual QA. */
 .taxi-client-shell .reference-address-state .reference-address-sheet {
   padding-top: 22px !important;
 }
@@ -2588,7 +2585,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: var(--admin-gold-deep);
+  color: var(--admin-brand-deep);
 }
 
 .admin-document-card-body {
@@ -2730,10 +2727,10 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   line-height: 1;
   letter-spacing: -.045em;
 }
-.welcome-screen h1 span { color: var(--gold); }
+.welcome-screen h1 span { color: var(--brand); }
 .welcome-screen p {
   margin: 10px 0 18px;
-  color: var(--gold-light);
+  color: var(--brand-light);
   font-size: 19px;
   line-height: 1.18;
   font-weight: 800;
@@ -2779,7 +2776,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 34px;
   height: 34px;
   padding: 8px;
-  color: var(--gold);
+  color: var(--brand);
   border: 1px solid rgba(0, 98, 255, .35);
   border-radius: 50%;
   background: rgba(0, 98, 255, .08);
@@ -2847,7 +2844,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .route-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .route-svg path {
   fill: none;
-  stroke: var(--gold);
+  stroke: var(--brand);
   stroke-width: 4.6;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2870,7 +2867,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: #46b7ff;
   box-shadow: 0 0 0 12px rgba(70, 183, 255, .2), 0 12px 24px rgba(0, 0, 0, .3);
 }
-.map-marker.destination { background: var(--gold); }
+.map-marker.destination { background: var(--brand); }
 .car-marker {
   position: absolute;
   z-index: 4;
@@ -2903,8 +2900,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border-radius: 16px;
   color: #111827;
   font-weight: 900;
-  background: var(--gold);
-  box-shadow: var(--gold-shadow);
+  background: var(--brand);
+  box-shadow: var(--brand-shadow);
 }
 
 .ride-sheet {
@@ -2955,7 +2952,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border-radius: 50%;
 }
 .dot.blue { background: #248ceb; }
-.dot.gold { background: var(--gold); }
+.dot.brand { background: var(--brand); }
 
 .quick-grid {
   display: grid;
@@ -2975,7 +2972,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-size: 11px;
   font-weight: 800;
 }
-.quick-grid .icon { color: var(--gold); }
+.quick-grid .icon { color: var(--brand); }
 .section-title { margin: 8px 0; font-size: 15px; }
 
 .tariff-carousel {
@@ -3008,8 +3005,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
 }
 .tariff-card.active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold), 0 18px 38px rgba(0, 98, 255, .13);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand), 0 18px 38px rgba(0, 98, 255, .13);
 }
 .tariff-card .vehicle-icon { width: 54px; height: 25px; }
 .tariff-card strong { font-size: 12px; }
@@ -3026,7 +3023,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   place-items: center;
   border-radius: 50%;
   color: #111827;
-  background: var(--gold);
+  background: var(--brand);
 }
 
 .bottom-nav {
@@ -3055,15 +3052,15 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-size: 10px;
   font-weight: 800;
 }
-.bottom-nav button.active { color: var(--gold); }
+.bottom-nav button.active { color: var(--brand); }
 .bottom-nav button.center { transform: translateY(-18px); }
 .bottom-nav button.center .smart-logo {
   width: 62px;
   height: 62px;
-  border: 1px solid var(--gold-border);
+  border: 1px solid var(--brand-border);
   border-radius: 50%;
   background: #11151a;
-  box-shadow: var(--gold-shadow);
+  box-shadow: var(--brand-shadow);
 }
 .bottom-nav span { display: block; margin-top: 2px; }
 
@@ -3113,8 +3110,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .tabs button.active {
   color: #111827;
-  border-color: var(--gold);
-  background: var(--gold);
+  border-color: var(--brand);
+  background: var(--brand);
 }
 .address-group h3 { margin: 18px 0 8px; font-size: 15px; }
 .address-group button,
@@ -3177,7 +3174,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .summary-card { display: grid; gap: 6px; margin: 16px 0; padding: 14px; }
 .summary-card span { font-size: 22px; font-weight: 900; }
 .inline-error { margin: 8px 0; color: var(--danger); font-weight: 800; }
-.inline-status { margin: 10px 0; color: var(--gold-light); font-size: 13px; font-weight: 800; }
+.inline-status { margin: 10px 0; color: var(--brand-light); font-size: 13px; font-weight: 800; }
 .muted-note { color: var(--muted); font-size: 13px; }
 .auth-inline,
 .region-selector {
@@ -3192,7 +3189,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: block;
   margin-bottom: 8px;
   font-size: 13px;
-  color: var(--gold-light);
+  color: var(--brand-light);
 }
 .region-selector {
   margin-inline: 18px;
@@ -3250,7 +3247,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-weight: 900;
 }
 .driver-found small { color: var(--muted); }
-.driver-found strong { display: flex; align-items: center; gap: 4px; color: var(--gold); }
+.driver-found strong { display: flex; align-items: center; gap: 4px; color: var(--brand); }
 .trip-metrics,
 .button-row,
 .trip-actions,
@@ -3272,14 +3269,14 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 14px;
   text-align: center;
 }
-.complete-card h1 { margin: 8px 0; color: var(--gold); font-size: 42px; }
+.complete-card h1 { margin: 8px 0; color: var(--brand); font-size: 42px; }
 .rating-card { padding: 14px; text-align: center; }
 .rating-card button {
   border: 0;
   color: #4b5563;
   background: transparent;
 }
-.rating-card button.active { color: var(--gold); }
+.rating-card button.active { color: var(--brand); }
 
 .bonus-card {
   position: relative;
@@ -3304,7 +3301,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: linear-gradient(180deg, var(--surface), #15191f);
   font-weight: 800;
 }
-.bonus-actions .icon { color: var(--gold); }
+.bonus-actions .icon { color: var(--brand); }
 .referral-card { padding: 14px; }
 .referral-card p {
   display: grid;
@@ -3317,9 +3314,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 28px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--gold);
+  border: 1px solid var(--brand);
   border-radius: 50%;
-  color: var(--gold);
+  color: var(--brand);
 }
 .trip-list article {
   display: grid;
@@ -3340,7 +3337,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .profile-card button {
   padding: 0;
   border: 0;
-  color: var(--gold);
+  color: var(--brand);
   background: transparent;
   font-weight: 800;
 }
@@ -3361,7 +3358,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   justify-self: end;
   border-radius: 18px 18px 6px 18px;
   color: #111827;
-  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  background: linear-gradient(180deg, var(--brand-light), var(--brand));
 }
 .chat-box small { display: block; text-align: right; opacity: .58; }
 .chat-input {
@@ -3388,7 +3385,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 0;
   border-radius: 50%;
   color: #111827;
-  background: var(--gold);
+  background: var(--brand);
 }
 
 .driver-hero { padding: 20px; text-align: center; }
@@ -3400,7 +3397,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: var(--muted);
   text-align: left;
 }
-.driver-hero p .icon { color: var(--gold); }
+.driver-hero p .icon { color: var(--brand); }
 .form-stack { display: grid; gap: 10px; }
 .form-stack input,
 .auth-screen input {
@@ -3440,7 +3437,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 12px;
   border-radius: 16px;
 }
-.stat-card .icon { color: var(--gold); }
+.stat-card .icon { color: var(--brand); }
 .stat-card strong { display: block; margin-top: 8px; font-size: 20px; }
 .stat-card span { color: var(--muted); font-size: 12px; }
 .driver-app > .app-button { width: calc(100% - 36px); margin: 0 18px 14px; }
@@ -3481,7 +3478,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .dashboard-sidebar button.active {
   color: #111827;
-  background: var(--gold);
+  background: var(--brand);
   font-weight: 900;
 }
 .dashboard-main { padding: 24px; }
@@ -3518,11 +3515,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .chart { width: 100%; height: 190px; }
 .chart path {
   fill: none;
-  stroke: var(--gold);
+  stroke: var(--brand);
   stroke-width: 4;
   stroke-linecap: round;
 }
-.chart circle { fill: var(--gold); }
+.chart circle { fill: var(--brand); }
 .status {
   padding: 4px 8px;
   border-radius: 999px;
@@ -3530,7 +3527,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: rgba(255, 255, 255, .08);
 }
 .status.free { color: var(--success); }
-.status.busy { color: var(--gold); }
+.status.busy { color: var(--brand); }
 .status.blocked { color: #ff8b8b; }
 
 .operator-shell { padding: 22px; }
@@ -3567,7 +3564,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .operator-sidebar button.active {
   color: #111827;
-  background: var(--gold);
+  background: var(--brand);
 }
 .operator-header {
   padding: 16px;
@@ -3603,7 +3600,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .operator-tabs button.active {
   color: #111827;
-  background: var(--gold);
+  background: var(--brand);
   font-weight: 900;
 }
 .operator-grid {
@@ -3625,8 +3622,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   text-align: left;
 }
 .ticket-list button.active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
 }
 .ticket-detail { padding: 16px; }
 .ticket-detail .map-view { height: 300px; margin-bottom: 16px; }
@@ -3708,7 +3705,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* SmartTaxi final mobile shell: white/gold, scoped away from admin/operator UI. */
+/* SmartTaxi final mobile shell: white/blue, scoped away from admin/operator UI. */
 .smarttaxi-logo {
   width: 36px;
   height: 36px;
@@ -3727,15 +3724,15 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
    layer near the end of the file no matter which comes last — and
    ClientApp.jsx really does render `taxi-pwa` on the client shell. It
    therefore has to carry the canonical ramp itself, not a near-miss of
-   it (it was #2e69c9 on a warm cream, a leftover of the gold theme). */
+   it (it was #2e69c9 on a warm cream, a leftover of the retired gold theme). */
 .phone-frame.taxi-pwa {
   --taxi-bg: #ffffff;
   --taxi-app: #f7fbff;
   --taxi-card: #ffffff;
   --taxi-card-warm: #f2f7ff;
-  --taxi-gold: #1d6fff;
-  --taxi-gold-deep: #0b4fd1;
-  --taxi-gold-soft: #dcebff;
+  --taxi-brand: #1d6fff;
+  --taxi-brand-deep: #0b4fd1;
+  --taxi-brand-soft: #dcebff;
   --taxi-text: #141414;
   --taxi-secondary: #666666;
   --taxi-muted: #9a9a9a;
@@ -3877,7 +3874,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   letter-spacing: 0;
   border: 1px solid #2463c9;
   color: var(--taxi-text);
-  background: var(--taxi-gold);
+  background: var(--taxi-brand);
   box-shadow: 0 12px 24px rgba(65, 123, 217, 0.22);
 }
 
@@ -3930,7 +3927,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-pwa select:focus,
 .taxi-pwa .route-input:focus,
 .taxi-pwa .single-input:focus {
-  border-color: var(--taxi-gold);
+  border-color: var(--taxi-brand);
   box-shadow: 0 0 0 4px rgba(65, 123, 217, 0.18);
 }
 
@@ -3991,7 +3988,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-pwa .route-dot.dropoff {
   align-self: end;
-  background: var(--taxi-gold);
+  background: var(--taxi-brand);
 }
 
 .taxi-pwa .route-inputs {
@@ -4045,7 +4042,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-pwa .tariff-card-clean.active {
   background: var(--taxi-card-warm);
-  border: 2px solid var(--taxi-gold);
+  border: 2px solid var(--taxi-brand);
   padding: 13px;
 }
 
@@ -4092,7 +4089,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-pwa .payment-strip button.active {
   color: var(--taxi-text);
-  background: var(--taxi-gold-soft);
+  background: var(--taxi-brand-soft);
   border-color: var(--taxi-border-strong);
 }
 
@@ -4123,7 +4120,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-pwa .status-badge-clean.warning,
 .taxi-pwa .status-pill.warning {
   color: var(--taxi-warning);
-  background: var(--taxi-gold-soft);
+  background: var(--taxi-brand-soft);
   border-color: var(--taxi-border-strong);
 }
 
@@ -4179,7 +4176,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-pwa .status-stepper-clean span.done {
   color: var(--taxi-text);
-  background: var(--taxi-gold-soft);
+  background: var(--taxi-brand-soft);
   border-color: var(--taxi-border-strong);
 }
 
@@ -4228,7 +4225,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 24px;
   height: 24px;
   border-radius: 9px;
-  border: 2px solid var(--taxi-gold);
+  border: 2px solid var(--taxi-brand);
   background: #ffffff;
 }
 
@@ -4262,14 +4259,14 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-pwa .message.warning {
   color: var(--taxi-warning);
-  background: var(--taxi-gold-soft);
+  background: var(--taxi-brand-soft);
   border: 1px solid var(--taxi-border-strong);
 }
 
 .taxi-pwa .text-action {
   padding: 0;
   border: 0;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: transparent;
   font-size: 13px;
   line-height: 18px;
@@ -4348,7 +4345,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-pwa .mobile-bottom-tabs button.active {
   color: var(--taxi-text);
-  background: var(--taxi-gold-soft);
+  background: var(--taxi-brand-soft);
   border-color: var(--taxi-border-strong);
 }
 
@@ -4419,9 +4416,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   --admin-bg: #f7fbff;
   --admin-surface: #ffffff;
   --admin-warm: #eef6ff;
-  --admin-gold: #1d6fff;
-  --admin-gold-deep: #0b4fd1;
-  --admin-gold-soft: #eaf3ff;
+  --admin-brand: #1d6fff;
+  --admin-brand-deep: #0b4fd1;
+  --admin-brand-soft: #eaf3ff;
   --admin-text: #141414;
   --admin-secondary: #666666;
   --admin-muted: #9a9a9a;
@@ -4517,7 +4514,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .admin-control-sidebar nav button.active {
   color: var(--admin-text);
-  background: var(--admin-gold-soft);
+  background: var(--admin-brand-soft);
   border-color: var(--admin-border-strong);
   box-shadow: 0 14px 32px rgba(29, 111, 255, .14);
 }
@@ -4536,7 +4533,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-topbar small {
-  color: var(--admin-gold-deep);
+  color: var(--admin-brand-deep);
   font-size: 12px;
   line-height: 16px;
   font-weight: 900;
@@ -4607,7 +4604,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   padding: 0;
   border: none;
   background: none;
-  color: var(--admin-gold);
+  color: var(--admin-brand);
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
@@ -4666,7 +4663,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-control-select:focus {
-  border-color: var(--admin-gold);
+  border-color: var(--admin-brand);
   box-shadow: 0 0 0 4px rgba(29, 111, 255, .16);
 }
 
@@ -4677,7 +4674,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-page-toolbar input:focus {
-  border-color: var(--admin-gold);
+  border-color: var(--admin-brand);
   box-shadow: 0 0 0 4px rgba(29, 111, 255, .16);
 }
 
@@ -4686,7 +4683,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   min-height: 48px;
   padding: 0 18px;
   color: var(--admin-text);
-  background: var(--admin-gold);
+  background: var(--admin-brand);
   border: 1px solid #0b4fd1;
   border-radius: 16px;
   font-size: 14px;
@@ -5135,8 +5132,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 58px;
   border-radius: 20px;
   background:
-    radial-gradient(circle at 50% 50%, var(--admin-gold) 0 7px, transparent 8px),
-    var(--admin-gold-soft);
+    radial-gradient(circle at 50% 50%, var(--admin-brand) 0 7px, transparent 8px),
+    var(--admin-brand-soft);
   border: 1px solid var(--admin-border-strong);
 }
 
@@ -5587,7 +5584,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-field select:focus,
 .admin-textarea-field textarea:focus,
 .admin-approval-card input:focus {
-  border-color: var(--admin-gold);
+  border-color: var(--admin-brand);
   box-shadow: 0 0 0 4px rgba(46, 105, 201, .16);
 }
 
@@ -5622,7 +5619,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-inline-form-row input[type="number"]:focus {
-  border-color: var(--admin-gold);
+  border-color: var(--admin-brand);
   box-shadow: 0 0 0 4px rgba(46, 105, 201, .16);
 }
 
@@ -5773,7 +5770,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-live-map-dot.busy {
-  background: var(--admin-gold);
+  background: var(--admin-brand);
 }
 
 .admin-map-driver-marker {
@@ -5790,7 +5787,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-map-driver-marker.busy {
-  background: var(--admin-gold);
+  background: var(--admin-brand);
 }
 
 .admin-detail-hero {
@@ -5817,8 +5814,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-inline-message {
   margin-bottom: 14px;
   padding: 12px 14px;
-  color: var(--admin-gold-deep);
-  background: var(--admin-gold-soft);
+  color: var(--admin-brand-deep);
+  background: var(--admin-brand-soft);
   border: 1px solid var(--admin-border-strong);
   border-radius: 16px;
   font-size: 13px;
@@ -5985,8 +5982,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell {
   --taxi-bg: #f7fbff;
   --taxi-card-warm: #e8f1ff;
-  --taxi-gold: #0556d8;
-  --taxi-gold-deep: #0041a9;
+  --taxi-brand: #0556d8;
+  --taxi-brand-deep: #0041a9;
   --taxi-text: #141414;
   --taxi-secondary: #626262;
   --taxi-muted: #929292;
@@ -6056,7 +6053,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .driver-core-auth-card .auth-logo { width: 66px; height: 66px; }
 .driver-core-eyebrow {
   margin: 0 0 8px;
-  color: var(--gold);
+  color: var(--brand);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: .08em;
@@ -6128,7 +6125,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   place-items: center;
   padding: 0 12px;
   color: #111827;
-  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  background: linear-gradient(180deg, var(--brand-light), var(--brand));
   font-size: 11px;
   font-weight: 950;
   white-space: nowrap;
@@ -6260,13 +6257,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 28px;
   border-radius: 999px;
   color: #111827;
-  background: var(--gold);
+  background: var(--brand);
   font-weight: 950;
 }
 .driver-core-order-card,
 .driver-core-active { display: grid; gap: 13px; padding: 15px; border-radius: 22px; }
 .driver-core-order-top strong,
-.driver-core-active-head strong { color: var(--gold-light); font-size: 20px; }
+.driver-core-active-head strong { color: var(--brand-light); font-size: 20px; }
 .driver-core-route-lines { display: grid; gap: 12px; }
 .driver-core-route-lines.large { padding: 4px 0; }
 .driver-core-route-lines > div { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; }
@@ -6278,7 +6275,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: 0 0 0 5px rgba(255, 255, 255, .055);
 }
 .driver-core-route-lines .pickup-dot { background: #22c55e; }
-.driver-core-route-lines .dropoff-dot { background: var(--gold); }
+.driver-core-route-lines .dropoff-dot { background: var(--brand); }
 .driver-core-route-lines span { min-width: 0; }
 .driver-core-route-lines b {
   display: block;
@@ -6298,7 +6295,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid rgba(40, 122, 255, .28);
 }
 .driver-core-live-eta span {
-  color: var(--gold, #277aff);
+  color: var(--brand, #277aff);
   font-size: 12.5px;
   font-weight: 850;
 }
@@ -6330,7 +6327,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .driver-core-active .map-view { height: 148px; border-radius: 20px; }
 .driver-core-money-card { display: grid; gap: 6px; padding: 17px; border-radius: 22px; }
-.driver-core-money-card strong { color: var(--gold-light); font-size: 31px; letter-spacing: -.04em; }
+.driver-core-money-card strong { color: var(--brand-light); font-size: 31px; letter-spacing: -.04em; }
 .driver-core-money-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .driver-core-money-grid > div { display: grid; gap: 5px; padding: 14px; border-radius: 18px; }
 .driver-core-money-grid b { font-size: 18px; }
@@ -6357,7 +6354,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-size: 12px;
   font-weight: 900;
 }
-.driver-core-tabs button.active { color: #111827; background: linear-gradient(180deg, var(--gold-light), var(--gold)); }
+.driver-core-tabs button.active { color: #111827; background: linear-gradient(180deg, var(--brand-light), var(--brand)); }
 
 @media (max-width: 370px) {
   .driver-core-header { grid-template-columns: minmax(0, 1fr) auto; }
@@ -6417,7 +6414,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 8px;
   height: 8px;
   border-radius: 99px;
-  background: var(--taxi-gold);
+  background: var(--taxi-brand);
   border: 1px solid #fff;
 }
 
@@ -6516,7 +6513,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .map-view.live-osm .route-svg { pointer-events: none; }
 .map-view.live-osm .route-svg path {
-  stroke: var(--taxi-gold);
+  stroke: var(--taxi-brand);
   stroke-width: 3.8;
   filter: drop-shadow(0 2px 4px rgba(20, 72, 155, .22));
 }
@@ -6584,7 +6581,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .map-view.live-osm .map-controls button {
   width: 52px;
   height: 52px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #fff;
   border-color: var(--taxi-border);
   border-radius: 20px;
@@ -6778,7 +6775,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .sheet-title-row > div > span {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   font-size: 12px;
   line-height: 15px;
   font-weight: 950;
@@ -6889,7 +6886,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .premium-tariff-row button.selected {
-  border-color: var(--taxi-gold);
+  border-color: var(--taxi-brand);
   box-shadow: 0 0 0 2px rgba(47, 110, 212, .28), 0 18px 38px rgba(15, 27, 45, .12);
 }
 
@@ -6898,7 +6895,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: var(--taxi-card-warm);
   border-radius: 999px;
   font-size: 12px;
@@ -6915,7 +6912,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .premium-tariff-row b {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   font-size: 18px;
   line-height: 22px;
   font-weight: 950;
@@ -7213,7 +7210,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 38px;
   height: 38px;
   padding: 9px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #fff;
   border: 1px solid var(--taxi-border);
   border-radius: 15px;
@@ -7475,7 +7472,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 42px;
   height: 42px;
   padding: 10px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #fff;
   border-radius: 16px;
 }
@@ -7548,7 +7545,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   cursor: pointer;
 }
 
-.quick-message-toast svg { flex-shrink: 0; color: var(--taxi-gold, #0062ff); }
+.quick-message-toast svg { flex-shrink: 0; color: var(--taxi-brand, #0062ff); }
 .quick-message-toast span { font-size: 14px; font-weight: 700; line-height: 19px; }
 
 .quick-message-bar {
@@ -7604,7 +7601,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .price-offer-accept {
-  background: var(--taxi-gold-deep, #0050d1);
+  background: var(--taxi-brand-deep, #0050d1);
   border: 1px solid transparent;
   color: #fff;
 }
@@ -7640,7 +7637,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .region-chip-list span {
   padding: 7px 10px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: var(--taxi-card-warm);
   border: 1px solid var(--taxi-border);
   border-radius: 999px;
@@ -7682,7 +7679,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .admin-region-presets button.active {
   color: var(--admin-text);
-  background: var(--admin-gold-soft);
+  background: var(--admin-brand-soft);
   border-color: var(--admin-border-strong);
 }
 
@@ -7703,9 +7700,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 100%;
 }
 
-.taxi-client-shell .primary-gold,
-.taxi-client-shell .app-button.primary-gold,
-.primary-gold {
+.taxi-client-shell .primary-brand,
+.taxi-client-shell .app-button.primary-brand,
+.primary-brand {
   min-height: 54px;
   color: #141414;
   border: 0;
@@ -7715,11 +7712,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-weight: 900;
 }
 
-.taxi-client-shell .primary-gold:hover:not(:disabled) {
+.taxi-client-shell .primary-brand:hover:not(:disabled) {
   filter: saturate(1.05) brightness(1.03);
 }
 
-.taxi-client-shell .primary-gold:active:not(:disabled) {
+.taxi-client-shell .primary-brand:active:not(:disabled) {
   transform: translateY(1px) scale(0.995);
 }
 
@@ -7777,7 +7774,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-brand-chip svg {
   width: 16px;
   height: 16px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
 }
 
 .taxi-client-shell .reference-brand-chip svg:last-child {
@@ -7866,7 +7863,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-hero h1 span {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
 }
 
 .taxi-client-shell .reference-hero p {
@@ -7928,7 +7925,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #e8f1ff;
   border: 1px solid var(--taxi-border);
   border-radius: 50%;
@@ -7968,7 +7965,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: var(--taxi-card-warm);
 }
 
@@ -7997,7 +7994,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-quick-card svg {
   width: 26px;
   height: 26px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
 }
 
 .taxi-client-shell .reference-quick-card strong {
@@ -8031,7 +8028,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-section-head button {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: none;
   border: 0;
   font-size: 13px;
@@ -8062,7 +8059,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #e8f1ff;
   border: 1px solid var(--taxi-border);
   border-radius: 12px;
@@ -8127,21 +8124,21 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--taxi-gold);
+  background: var(--taxi-brand);
 }
 
 .taxi-client-shell .reference-route-line i {
   width: 4px;
   height: 100%;
   margin-inline: auto;
-  background: linear-gradient(180deg, var(--taxi-gold-deep), rgba(0, 65, 170, .25));
+  background: linear-gradient(180deg, var(--taxi-brand-deep), rgba(0, 65, 170, .25));
 }
 
 .taxi-client-shell .reference-route-line b {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--taxi-gold-deep);
+  background: var(--taxi-brand-deep);
 }
 
 .taxi-client-shell .reference-route-copy {
@@ -8340,7 +8337,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   flex: 0 0 auto;
   font-size: 10px;
   line-height: 13px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   font-weight: 900;
   background: var(--taxi-card-warm);
   border: 1px solid var(--taxi-border-strong);
@@ -8364,7 +8361,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-tariff-copy i {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   font-style: normal;
   font-size: 11px;
   line-height: 15px;
@@ -8395,7 +8392,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   border: 1.5px solid rgba(0, 65, 169, .28);
   border-radius: 999px;
   background: #f7fbff;
@@ -8437,7 +8434,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 32px;
   border-radius: 12px;
   background: #e8f1ff;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8734,7 +8731,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .client-region-list button.selected {
-  border-color: var(--taxi-gold);
+  border-color: var(--taxi-brand);
   background: #fffdf4;
 }
 
@@ -8754,7 +8751,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 34px;
   border-radius: 10px;
   border: 1px solid var(--taxi-border);
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #e8f1ff;
   display: inline-flex;
   align-items: center;
@@ -8872,8 +8869,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 /* Fixed price tariff screen, scoped to the passenger client only. */
 .taxi-client-shell .reference-tariff-state {
-  --tariff-gold: #0556d9;
-  --tariff-gold-dark: #0041a9;
+  --tariff-brand: #0556d9;
+  --tariff-brand-dark: #0041a9;
   --tariff-ink: #111827;
   --tariff-muted: #6b7280;
   --tariff-line: rgba(17, 24, 39, 0.1);
@@ -8951,7 +8948,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-route-line b {
   box-shadow: 0 0 0 2px rgba(5, 86, 217, 0.95);
-  background: var(--tariff-gold);
+  background: var(--tariff-brand);
 }
 
 .taxi-client-shell .reference-route-line i {
@@ -9004,7 +9001,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid rgba(5, 86, 217, 0.18);
   border-radius: 999px;
   background: #e8f1ff;
-  color: var(--tariff-gold-dark);
+  color: var(--tariff-brand-dark);
   font-size: 12px;
   font-weight: 900;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -9040,7 +9037,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .reference-route-metrics img {
   width: 18px;
   height: 18px;
-  color: var(--tariff-gold);
+  color: var(--tariff-brand);
   object-fit: contain;
 }
 
@@ -9283,7 +9280,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   place-items: center;
   border-radius: 14px;
   background: #e8f1ff;
-  color: var(--tariff-gold-dark);
+  color: var(--tariff-brand-dark);
 }
 
 .taxi-client-shell .reference-payment-row .payment-icon img,
@@ -9501,17 +9498,17 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* SmartTaxi final gold/white visual lock.
+/* SmartTaxi final blue/white visual lock.
    Scoped overrides keep the existing flow intact while normalizing the visible client UI. */
 .taxi-client-shell {
-  --st-gold: #0a64f5;
-  --st-gold-deep: #0041a9;
-  --st-gold-soft: #dfebff;
+  --st-brand: #0a64f5;
+  --st-brand-deep: #0041a9;
+  --st-brand-soft: #dfebff;
   --st-ink: #101827;
   --st-muted: #6c7482;
   --st-line: rgba(225, 229, 236, .92);
   --st-shadow-soft: 0 18px 42px rgba(16, 24, 39, .10);
-  --st-shadow-gold: 0 16px 30px rgba(5, 86, 216, .24);
+  --st-shadow-brand: 0 16px 30px rgba(5, 86, 216, .24);
 }
 
 .taxi-client-shell .reference-address-state {
@@ -9665,7 +9662,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-address-sheet .reference-section-head button {
-  color: var(--st-gold-deep);
+  color: var(--st-brand-deep);
   font-size: 15px;
 }
 
@@ -9700,8 +9697,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   margin-top: 16px;
   border-radius: 20px;
   color: #111827;
-  background: linear-gradient(180deg, #4d91ff 0%, var(--st-gold) 52%, #0059e7 100%);
-  box-shadow: var(--st-shadow-gold), inset 0 1px 0 rgba(255, 255, 255, .48);
+  background: linear-gradient(180deg, #4d91ff 0%, var(--st-brand) 52%, #0059e7 100%);
+  box-shadow: var(--st-shadow-brand), inset 0 1px 0 rgba(255, 255, 255, .48);
   font-size: 18px;
   line-height: 22px;
   font-weight: 940;
@@ -9870,8 +9867,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .reference-order-button {
   border-radius: 20px;
-  background: linear-gradient(180deg, #4d91ff 0%, var(--st-gold) 52%, #0059e7 100%);
-  box-shadow: var(--st-shadow-gold), inset 0 1px 0 rgba(255, 255, 255, .45);
+  background: linear-gradient(180deg, #4d91ff 0%, var(--st-brand) 52%, #0059e7 100%);
+  box-shadow: var(--st-shadow-brand), inset 0 1px 0 rgba(255, 255, 255, .45);
 }
 
 .taxi-client-shell .reference-tariff-state {
@@ -10006,7 +10003,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .client-drawer-brand-lockup strong span {
-  color: var(--st-gold);
+  color: var(--st-brand);
 }
 
 .taxi-client-shell .client-drawer-brand-lockup small {
@@ -10062,7 +10059,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .client-drawer-nav button.active .drawer-menu-icon {
-  color: var(--st-gold-deep);
+  color: var(--st-brand-deep);
   border-color: rgba(5, 86, 216, .3);
   background: #dfebff;
 }
@@ -10171,7 +10168,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 1px solid rgba(5, 86, 216, .28);
   border-radius: 16px;
   background: linear-gradient(180deg, #f7fbff 0%, #dfebff 100%);
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   font-weight: 800;
   box-shadow: 0 10px 22px rgba(0, 65, 169, .08);
 }
@@ -11371,7 +11368,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .search-driver-head small {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   font-size: 11px;
   line-height: 14px;
   font-weight: 950;
@@ -12394,7 +12391,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .trip-driver-avatar.neutral {
   width: 48px;
   height: 48px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background:
     radial-gradient(circle at 35% 22%, rgba(255, 255, 255, .92), transparent 34%),
     linear-gradient(180deg, #dfebff, #a3c6ff);
@@ -12484,7 +12481,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 5px;
   padding: 8px 10px;
   border-radius: 999px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #fff;
   border: 1px solid rgba(5, 86, 216, .16);
   box-shadow: 0 8px 18px rgba(15, 27, 45, .08);
@@ -12575,7 +12572,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .driver-found-car b {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
 }
 
 .driver-found-meta {
@@ -12638,7 +12635,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   align-items: center;
   justify-content: center;
   border-radius: 15px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #fff;
   box-shadow: inset 0 0 0 1px rgba(5, 86, 216, .14);
 }
@@ -12669,7 +12666,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   margin-top: 5px;
   padding: 4px 8px;
   border-radius: 999px;
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: rgba(5, 86, 216, .1);
   font-size: 11px;
   line-height: 13px;
@@ -12761,7 +12758,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .trip-rating-tags button.selected {
-  color: var(--taxi-gold-deep);
+  color: var(--taxi-brand-deep);
   background: #e8f1ff;
   border-color: rgba(5, 86, 216, .25);
 }
@@ -17445,8 +17442,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 /* Operator final overrides must stay after legacy dashboard rules. */
 .operator-shell {
-  --operator-gold: #1d6fff;
-  --operator-gold-dark: #0b4fd1;
+  --operator-brand: #1d6fff;
+  --operator-brand-dark: #0b4fd1;
   --operator-ink: #111827;
   --operator-muted: #6b7280;
   --operator-line: rgba(29, 111, 255, .16);
@@ -17532,7 +17529,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .operator-sidebar button .icon {
-  color: var(--operator-gold-dark);
+  color: var(--operator-brand-dark);
 }
 
 .operator-sidebar button.active {
@@ -17554,7 +17551,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .operator-header small {
   display: block;
   margin-bottom: 4px;
-  color: var(--operator-gold-dark);
+  color: var(--operator-brand-dark);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: .06em;
@@ -17792,7 +17789,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* Absolute EOF gold/white mobile visual lock. */
+/* Absolute EOF blue/white mobile visual lock. */
 .taxi-client-shell .reference-address-state .reference-map-ambient {
   height: clamp(348px, 46svh, 430px) !important;
   min-height: 348px !important;
@@ -18382,7 +18379,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* Final gold-white client polish pass: keep controls independent from the map header. */
+/* Final blue-white client polish pass: keep controls independent from the map header. */
 .taxi-client-shell .reference-client-header.address-mode,
 .taxi-client-shell .address-selection-header {
   background: transparent !important;
@@ -19520,7 +19517,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 11px !important;
   height: 11px !important;
   border-radius: 3px !important;
-  background: linear-gradient(135deg, var(--final10-accent-light), var(--final10-accent-deep)) !important;
+  background: linear-gradient(135deg, #ff7b5c, #ff4d35) !important;
   transform: rotate(45deg) !important;
 }
 
@@ -19601,6 +19598,25 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .final10-chip span {
   color: var(--final10-accent-light) !important;
   font-weight: 900 !important;
+}
+
+.taxi-client-shell .final10-gift-btn {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2b87ff, #0b62e8) !important;
+  border-color: rgba(255, 255, 255, .72) !important;
+  box-shadow: 0 10px 20px rgba(29, 111, 255, .28) !important;
+}
+
+.taxi-client-shell .final10-sheet-heading {
+  display: grid !important;
+  gap: 2px !important;
+}
+
+.taxi-client-shell .final10-sheet-heading small {
+  color: var(--final10-muted) !important;
+  font-size: 12px !important;
+  line-height: 15px !important;
+  font-weight: 700 !important;
 }
 
 .taxi-client-shell .final10-note {
@@ -19749,9 +19765,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .app-button,
-.taxi-client-shell .primary-gold,
-.taxi-client-shell .app-button.primary-gold,
-.primary-gold {
+.taxi-client-shell .primary-brand,
+.taxi-client-shell .app-button.primary-brand,
+.primary-brand {
   color: #ffffff !important;
   background: linear-gradient(180deg, #4d95ff 0%, #1d6fff 54%, #0b4fd1 100%) !important;
   box-shadow: 0 14px 32px rgba(29, 111, 255, .24), inset 0 1px 0 rgba(255, 255, 255, .42) !important;
@@ -19763,14 +19779,342 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: linear-gradient(180deg, #ffffff, #f2f7ff) !important;
 }
 
+.card-payment-state {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(29, 111, 255, .18);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f8fbff, #edf5ff);
+}
+
+.card-payment-state.failed {
+  border-color: rgba(220, 38, 38, .22);
+  background: linear-gradient(135deg, #fff8f8, #fff0f0);
+}
+
+.card-payment-state-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #0b4fd1;
+  border-radius: 13px;
+  background: #ddecff;
+}
+
+.card-payment-state.failed .card-payment-state-icon {
+  color: #c62828;
+  background: #ffe2e2;
+}
+
+.card-payment-state strong,
+.card-payment-state small {
+  display: block;
+}
+
+.card-payment-state strong {
+  color: #10213d;
+  font-size: 13px;
+}
+
+.card-payment-state small {
+  margin-top: 3px;
+  color: #60708a;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.card-payment-state button {
+  min-height: 34px;
+  padding: 0 11px;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  border: 0;
+  border-radius: 11px;
+  background: #1d6fff;
+}
+
+.card-payment-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(29, 111, 255, .22);
+  border-top-color: #1d6fff;
+  border-radius: 50%;
+  animation: card-payment-spin .78s linear infinite;
+}
+
+@keyframes card-payment-spin {
+  to { transform: rotate(360deg); }
+}
+
+.region-selection-screen {
+  align-content: start;
+}
+
+.region-selection-card {
+  padding: 18px;
+}
+
+.region-selection-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.region-selection-list button {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  width: 100%;
+  min-height: 66px;
+  padding: 10px;
+  color: #10213d;
+  text-align: left;
+  border: 1px solid rgba(29, 111, 255, .13);
+  border-radius: 17px;
+  background: #fff;
+}
+
+.region-selection-list button.selected {
+  border-color: #1d6fff;
+  background: linear-gradient(135deg, #f8fbff, #eaf3ff);
+  box-shadow: 0 8px 20px rgba(29, 111, 255, .12);
+}
+
+.region-selection-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #0b4fd1;
+  border-radius: 14px;
+  background: #eaf3ff;
+}
+
+.region-selection-list strong,
+.region-selection-list small {
+  display: block;
+}
+
+.region-selection-list strong {
+  font-size: 14px;
+}
+
+.region-selection-list small {
+  margin-top: 3px;
+  color: #65758c;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.region-selection-current {
+  padding: 6px 8px;
+  color: #0b4fd1;
+  font-size: 10px;
+  font-weight: 850;
+  border-radius: 9px;
+  background: #ddecff;
+}
+
+.active-order-banner {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  color: #10213d;
+  text-align: left;
+  border: 1px solid rgba(29, 111, 255, .2);
+  border-radius: 17px;
+  background: linear-gradient(135deg, #f7fbff, #e6f1ff);
+  box-shadow: 0 9px 22px rgba(29, 111, 255, .12);
+}
+
+.active-order-banner > span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #fff;
+  border-radius: 13px;
+  background: linear-gradient(160deg, #4d95ff, #0b4fd1);
+}
+
+.active-order-banner strong,
+.active-order-banner small {
+  display: block;
+}
+
+.active-order-banner strong {
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.active-order-banner small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #60708a;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tariff-parity-control {
+  display: grid;
+  gap: 10px;
+}
+
+.tariff-parity-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  border-radius: 16px;
+  background: #eff1f5;
+  scrollbar-width: none;
+}
+
+.tariff-parity-switch::-webkit-scrollbar { display: none; }
+
+.tariff-parity-switch button {
+  flex: 1 0 max-content;
+  min-height: 42px;
+  padding: 0 12px;
+  color: #657187;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.tariff-parity-switch button.selected {
+  color: #fff;
+  background: linear-gradient(135deg, #0b4fd1, #1d6fff);
+  box-shadow: 0 4px 14px rgba(29, 111, 255, .3);
+}
+
+.tariff-parity-hero {
+  display: grid;
+  grid-template-columns: 142px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  min-height: 104px;
+  padding: 11px 14px;
+  border: 1px solid rgba(29, 111, 255, .18);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff, #eaf3ff);
+}
+
+.tariff-parity-hero img {
+  width: 142px;
+  height: 76px;
+  object-fit: contain;
+}
+
+.tariff-parity-hero strong,
+.tariff-parity-hero small { display: block; }
+
+.tariff-parity-hero strong {
+  color: #10213d;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.tariff-parity-hero small {
+  margin-top: 7px;
+  color: #657187;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.tariff-parity-price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  padding: 10px 12px 10px 15px;
+  border: 1.5px solid #1d6fff;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.tariff-parity-price small,
+.tariff-parity-price b { display: block; }
+.tariff-parity-price small { color: #657187; font-size: 12px; font-weight: 750; }
+.tariff-parity-price b { margin-top: 2px; color: #10213d; font-size: 21px; font-weight: 900; }
+.tariff-parity-price > div { display: flex; gap: 8px; }
+
+.tariff-parity-price button {
+  width: 40px;
+  height: 40px;
+  color: #0b4fd1;
+  font: inherit;
+  font-size: 25px;
+  line-height: 1;
+  border: 0;
+  border-radius: 14px;
+  background: #eef4ff;
+}
+
+/* Approved address marker: white-blue square badge with a downward tail.
+   It is shared by the map picker overlay and the native MapLibre marker. */
+.smarttaxi-map-marker {
+  display: block;
+  width: 52px !important;
+  height: 68px !important;
+  filter: drop-shadow(0 9px 13px rgba(12, 57, 130, .22));
+}
+
+.approved-address-marker-badge {
+  display: grid;
+  width: 52px;
+  height: 68px;
+  place-items: start center;
+}
+
+.approved-address-marker-badge > svg:first-child {
+  display: block;
+  width: 52px;
+  height: 52px;
+}
+
+.approved-address-marker-tail {
+  display: block;
+  width: 52px;
+  height: 18px;
+  margin-top: -2px;
+}
+
+.smarttaxi-center-picker .smarttaxi-map-marker {
+  position: relative;
+  z-index: 2;
+}
+
+.map-view.pickable::after {
+  display: none;
+}
+
 .operator-shell,
 .admin-control-shell {
-  --operator-gold: #1d6fff;
-  --operator-gold-dark: #0b4fd1;
+  --operator-brand: #1d6fff;
+  --operator-brand-dark: #0b4fd1;
   --operator-line: rgba(29, 111, 255, .14);
-  --admin-gold: #1d6fff;
-  --admin-gold-deep: #0b4fd1;
-  --admin-gold-soft: #eaf3ff;
+  --admin-brand: #1d6fff;
+  --admin-brand-deep: #0b4fd1;
+  --admin-brand-soft: #eaf3ff;
   --admin-bg: #f7fbff;
   --admin-warm: #eef6ff;
   background:
@@ -19794,18 +20138,18 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell,
 .driver-shell {
-  --st-ui-gold: #1d6fff;
-  --st-ui-gold-bright: #65a3ff;
-  --st-ui-gold-dark: #0b4fd1;
+  --st-ui-brand: #1d6fff;
+  --st-ui-brand-bright: #65a3ff;
+  --st-ui-brand-dark: #0b4fd1;
   --st-ui-cream: #eef6ff;
   --st-ui-paper: #ffffff;
   --st-ui-line: rgba(29, 111, 255, .14);
   --gw-line: rgba(29, 111, 255, .14);
-  --gw-gold: #1d6fff;
-  --gw-gold-soft: #eaf3ff;
-  --st-premium-gold: #1d6fff;
-  --st-premium-gold-2: #65a3ff;
-  --st-premium-gold-dark: #0b4fd1;
+  --gw-brand: #1d6fff;
+  --gw-brand-soft: #eaf3ff;
+  --st-premium-brand: #1d6fff;
+  --st-premium-brand-2: #65a3ff;
+  --st-premium-brand-dark: #0b4fd1;
   --st-premium-cream: #eef6ff;
   --st-premium-paper: #ffffff;
   --st-premium-line: rgba(29, 111, 255, .14);
@@ -19813,9 +20157,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   --taxi-app: #f7fbff;
   --taxi-card: #ffffff;
   --taxi-card-warm: #f2f7ff;
-  --taxi-gold: #1d6fff;
-  --taxi-gold-deep: #0b4fd1;
-  --taxi-gold-soft: #dcebff;
+  --taxi-brand: #1d6fff;
+  --taxi-brand-deep: #0b4fd1;
+  --taxi-brand-soft: #dcebff;
 }
 
 .taxi-client-shell.phone-frame,
@@ -20183,9 +20527,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .reference-tariff-state .map-marker.destination img,
-.taxi-client-shell .reference-tariff-state img[src*="destination_pin_gold"],
-.taxi-client-shell img[src*="destination_pin_gold"],
-.taxi-client-shell img[src*="pickup_pin_gold"] {
+.taxi-client-shell .reference-tariff-state img[src*="destination_pin_brand"],
+.taxi-client-shell img[src*="destination_pin_brand"],
+.taxi-client-shell img[src*="pickup_pin_brand"] {
   filter: hue-rotate(190deg) saturate(1.35) brightness(1.04) !important;
 }
 
@@ -21025,4 +21369,2711 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .operator-shell .operator-header input::placeholder {
   color: #8a98ad !important;
   opacity: 1 !important;
+}
+
+/* Passenger web parity lock.
+   The browser is another surface for the passenger app, not a separate
+   desktop product. Keep the same phone-sized canvas, map-first layout and
+   bottom-sheet proportions as passenger_shell.dart at every viewport. */
+.phone-frame.taxi-client-shell {
+  width: min(100vw, 390px) !important;
+  max-width: 390px !important;
+  margin-inline: auto !important;
+}
+
+.taxi-client-shell .final10-sheet-heading {
+  margin: 0 0 12px !important;
+}
+
+.taxi-client-shell .final10-sheet-heading h1 {
+  margin: 0 !important;
+  color: #0f172a !important;
+  font-size: 25px !important;
+  line-height: 1.06 !important;
+  font-weight: 900 !important;
+  letter-spacing: -.035em !important;
+}
+
+.taxi-client-shell .final10-sheet-heading p {
+  margin: 5px 0 0 !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.28 !important;
+  font-weight: 650 !important;
+}
+
+@media (min-width: 760px) {
+  .phone-frame.taxi-client-shell {
+    min-height: min(844px, calc(100svh - 36px)) !important;
+    max-height: calc(100svh - 36px) !important;
+    margin-block: 18px !important;
+    border: 1px solid rgba(29, 111, 255, .16) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, .16) !important;
+  }
+}
+
+/* Passenger tariff screen — mirrors the mobile bottom sheet. */
+.taxi-client-shell .tariff-v12-state {
+  padding: 0 0 calc(18px + env(safe-area-inset-bottom)) !important;
+  background: #f7faff !important;
+}
+
+.taxi-client-shell .tariff-v12-state .reference-map-ghost {
+  height: clamp(116px, 19svh, 164px) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .tariff-v12-sheet {
+  position: relative;
+  margin: -20px 12px 0;
+  padding: 17px 16px 16px;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 18px 38px rgba(22, 60, 116, .15);
+}
+
+.taxi-client-shell .tariff-v12-sheet::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 5px;
+  margin: -5px auto 16px;
+  border-radius: 99px;
+  background: #d8e1ee;
+}
+
+.taxi-client-shell .tariff-v12-route { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.taxi-client-shell .tariff-v12-route > svg { color: #1d6fff; }
+.taxi-client-shell .tariff-v12-route strong, .taxi-client-shell .tariff-v12-route small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.taxi-client-shell .tariff-v12-route strong { color: #111b2f; font-size: 18px; line-height: 22px; font-weight: 800; }
+.taxi-client-shell .tariff-v12-route small { margin-top: 3px; color: #71819a; font-size: 12px; font-weight: 600; }
+.taxi-client-shell .tariff-v12-route-time { text-align: right; }
+.taxi-client-shell .tariff-v12-route-time b { display: block; color: #14213a; font-size: 15px; line-height: 19px; font-weight: 800; }
+.taxi-client-shell .tariff-v12-route-time small { margin-top: 2px; }
+
+.taxi-client-shell .tariff-v12-picker { margin-top: 18px; }
+.taxi-client-shell .tariff-v12-switch { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; padding: 5px; border-radius: 17px; background: #edf1f7; }
+.taxi-client-shell .tariff-v12-switch button { min-height: 48px; border: 0; border-radius: 13px; background: transparent; color: #65728a; font-size: 16px; font-weight: 750; cursor: pointer; }
+.taxi-client-shell .tariff-v12-switch button.selected { color: #075bd8; background: #fff; box-shadow: 0 4px 12px rgba(25, 62, 117, .13); }
+.taxi-client-shell .tariff-v12-switch button:disabled { opacity: .45; cursor: not-allowed; }
+.taxi-client-shell .tariff-v12-car-card { display: grid; place-items: center; min-height: 192px; margin-top: 16px; padding: 11px 16px 14px; border: 1px solid #cfe0ff; border-radius: 27px; background: linear-gradient(180deg, #fff 0%, #e5efff 100%); }
+.taxi-client-shell .tariff-v12-car-card img { width: min(100%, 306px); height: 116px; object-fit: contain; filter: drop-shadow(0 12px 13px rgba(19, 53, 103, .18)); }
+.taxi-client-shell .tariff-v12-car-card span { color: #62718a; font-size: 14px; font-weight: 650; }
+
+.taxi-client-shell .tariff-v12-price { margin-top: 20px; text-align: center; }
+.taxi-client-shell .tariff-v12-price > span { display: block; color: #74819a; font-size: 13px; font-weight: 650; }
+.taxi-client-shell .tariff-v12-price > div { display: grid; grid-template-columns: 52px minmax(0, 1fr) 52px; gap: 20px; align-items: center; margin-top: 8px; }
+.taxi-client-shell .tariff-v12-price button { width: 52px; height: 52px; border: 1px solid #dce5f2; border-radius: 50%; background: #fff; color: #1d6fff; font-size: 31px; line-height: 1; box-shadow: 0 7px 14px rgba(24, 53, 101, .12); }
+.taxi-client-shell .tariff-v12-price button:disabled { opacity: 1; }
+.taxi-client-shell .tariff-v12-price strong { overflow: hidden; color: #0f1726; font-size: clamp(38px, 11vw, 50px); line-height: 1; font-weight: 850; letter-spacing: -.045em; white-space: nowrap; }
+.taxi-client-shell .tariff-v12-price > small { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; padding: 7px 13px; border-radius: 999px; background: #e9f2ff; color: #2466cc; font-size: 12px; font-weight: 650; }
+.taxi-client-shell .tariff-v12-price i { width: 8px; height: 8px; border-radius: 50%; background: #4c8dff; box-shadow: 0 0 0 4px rgba(76, 141, 255, .14); }
+
+.taxi-client-shell .tariff-v12-state .reference-payment-row { min-height: 54px; margin-top: 16px; padding: 0 2px; border: 0; border-top: 1px solid #e6edf6; border-radius: 0; background: transparent; box-shadow: none; }
+.taxi-client-shell .tariff-v12-state .reference-payment-value { display: none; }
+.taxi-client-shell .tariff-v12-state .reference-payment-copy small { display: none; }
+.taxi-client-shell .tariff-v12-state .reference-payment-copy strong { color: #4d5d75; font-size: 15px; }
+.taxi-client-shell .tariff-v12-state .payment-icon { width: 30px; height: 30px; border: 0; background: transparent; }
+
+.taxi-client-shell .tariff-v12-order { display: grid; grid-template-columns: 1fr auto 38px; gap: 8px; align-items: center; width: 100%; min-height: 62px; margin-top: 12px; padding: 0 13px 0 20px; border: 0; border-radius: 19px; background: linear-gradient(135deg, #5699ff, #0b50d9); color: #fff; box-shadow: 0 13px 24px rgba(20, 91, 216, .28); font-size: 17px; font-weight: 780; cursor: pointer; }
+.taxi-client-shell .tariff-v12-order b { font-size: 18px; font-weight: 820; white-space: nowrap; }
+.taxi-client-shell .tariff-v12-order svg { width: 38px; height: 38px; padding: 8px; border-radius: 50%; background: rgba(255,255,255,.18); }
+.taxi-client-shell .tariff-v12-order:disabled { opacity: .52; cursor: not-allowed; }
+
+@media (max-width: 360px) {
+  .taxi-client-shell .tariff-v12-sheet { margin-inline: 7px; padding-inline: 12px; }
+  .taxi-client-shell .tariff-v12-car-card { min-height: 172px; }
+  .taxi-client-shell .tariff-v12-price > div { gap: 10px; }
+}
+.app-loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  color: #0f172a;
+  font: 800 16px/1.2 Inter, system-ui, sans-serif;
+  background: radial-gradient(circle at 50% 0, rgba(29, 111, 255, .12), transparent 28rem), #f7fbff;
+}
+
+/* SmartTaxi Urban Flow.
+   One design language for the passenger journey: map first, one clear next
+   action, and white surfaces that carry the information rather than compete
+   with it. This layer intentionally stays scoped to the passenger shell. */
+.taxi-client-shell {
+  --st-blue: #1d6fff;
+  --st-blue-deep: #0b4fd1;
+  --st-blue-pale: #eaf3ff;
+  --st-surface: #ffffff;
+  --st-ink: #111827;
+  --st-muted: #64748b;
+  --st-line: rgba(29, 111, 255, .14);
+  --st-shadow: 0 20px 48px rgba(20, 55, 112, .16);
+}
+
+.taxi-client-shell .final10-exact-state {
+  background: linear-gradient(180deg, #eaf3ff 0%, #f7fbff 44%, #ffffff 100%) !important;
+}
+
+.taxi-client-shell .final10-map-wrap {
+  background: #eaf3ff !important;
+}
+
+.taxi-client-shell .final10-map-placeholder {
+  opacity: .88 !important;
+}
+
+.taxi-client-shell .final10-map-fade-top {
+  background: linear-gradient(180deg, rgba(234, 243, 255, .72) 0%, rgba(234, 243, 255, 0) 100%) !important;
+}
+
+.taxi-client-shell .final10-map-fade-bottom {
+  background: linear-gradient(180deg, rgba(247, 251, 255, 0) 0%, #f7fbff 100%) !important;
+}
+
+.taxi-client-shell .final10-icon-btn,
+.taxi-client-shell .final10-locate-btn {
+  border: 1px solid rgba(255, 255, 255, .8) !important;
+  background: rgba(255, 255, 255, .94) !important;
+  box-shadow: 0 10px 24px rgba(20, 55, 112, .14) !important;
+  backdrop-filter: blur(12px);
+}
+
+.taxi-client-shell .final10-icon-btn {
+  color: var(--st-blue-deep) !important;
+}
+
+.taxi-client-shell .final10-locate-btn {
+  color: var(--st-blue) !important;
+}
+
+.taxi-client-shell .final10-wordmark {
+  color: #0b4fd1 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+.taxi-client-shell .final10-wordmark span:not(.final10-dot) {
+  color: #111827 !important;
+}
+
+.taxi-client-shell .final10-nearby-pill {
+  color: #0b4fd1 !important;
+  border: 1px solid rgba(29, 111, 255, .14) !important;
+  background: rgba(255, 255, 255, .92) !important;
+  box-shadow: 0 10px 22px rgba(20, 55, 112, .1) !important;
+  backdrop-filter: blur(12px);
+}
+
+.taxi-client-shell .final10-nearby-pill span {
+  background: #20b76b !important;
+  box-shadow: 0 0 0 4px rgba(32, 183, 107, .12) !important;
+}
+
+.taxi-client-shell .final10-address-tag {
+  color: #17365f !important;
+  border: 1px solid rgba(29, 111, 255, .14) !important;
+  background: rgba(255, 255, 255, .94) !important;
+  box-shadow: 0 10px 24px rgba(20, 55, 112, .12) !important;
+}
+
+.taxi-client-shell .final10-panel {
+  border: 1px solid rgba(255, 255, 255, .96) !important;
+  border-bottom: 0 !important;
+  border-radius: 32px 32px 0 0 !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .98), #ffffff 42%) !important;
+  box-shadow: 0 -18px 48px rgba(20, 55, 112, .16) !important;
+}
+
+.taxi-client-shell .final10-grabber {
+  width: 42px !important;
+  background: #c9d7e9 !important;
+}
+
+.taxi-client-shell .final10-sheet-heading h1,
+.taxi-client-shell .address-picker-title-row h1 {
+  letter-spacing: -.045em !important;
+}
+
+.taxi-client-shell .final10-sheet-heading p,
+.taxi-client-shell .address-picker-title-row p {
+  color: var(--st-muted) !important;
+}
+
+.taxi-client-shell .final10-addr-group {
+  border: 1px solid var(--st-line) !important;
+  border-radius: 22px !important;
+  background: #f8fbff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 8px 20px rgba(20, 55, 112, .05) !important;
+}
+
+.taxi-client-shell .final10-addr-row {
+  min-height: 63px !important;
+}
+
+.taxi-client-shell .final10-addr-row + .final10-connector-row + .final10-addr-row {
+  border-top: 1px solid rgba(29, 111, 255, .1) !important;
+}
+
+.taxi-client-shell .final10-txt small {
+  color: #75849a !important;
+  font-weight: 750 !important;
+}
+
+.taxi-client-shell .final10-txt strong {
+  color: var(--st-ink) !important;
+  font-weight: 850 !important;
+}
+
+.taxi-client-shell .final10-dot-from {
+  background: #58a0ff !important;
+  box-shadow: 0 0 0 4px rgba(88, 160, 255, .13) !important;
+}
+
+.taxi-client-shell .final10-dot-to {
+  background: var(--st-blue-deep) !important;
+  box-shadow: 0 0 0 4px rgba(11, 79, 209, .12) !important;
+}
+
+.taxi-client-shell .final10-cta,
+.taxi-client-shell .tariff-v12-order {
+  background: linear-gradient(135deg, #4d95ff 0%, #1d6fff 52%, #0b4fd1 100%) !important;
+  box-shadow: 0 15px 28px rgba(29, 111, 255, .3) !important;
+}
+
+.taxi-client-shell .final10-trust-row {
+  color: #70819a !important;
+}
+
+.taxi-client-shell .tariff-v12-state {
+  background: linear-gradient(180deg, #eaf3ff 0%, #f7fbff 24%, #ffffff 100%) !important;
+}
+
+.taxi-client-shell .tariff-v12-sheet {
+  border: 1px solid rgba(255, 255, 255, .96) !important;
+  border-radius: 30px !important;
+  box-shadow: var(--st-shadow) !important;
+}
+
+.taxi-client-shell .tariff-v12-switch {
+  padding: 4px !important;
+  background: #edf4ff !important;
+}
+
+.taxi-client-shell .tariff-v12-switch button.selected {
+  color: var(--st-blue-deep) !important;
+  box-shadow: 0 4px 12px rgba(29, 111, 255, .16) !important;
+}
+
+.taxi-client-shell .tariff-v12-car-card {
+  border-color: rgba(29, 111, 255, .18) !important;
+  background: linear-gradient(150deg, #ffffff 8%, #edf5ff 100%) !important;
+}
+
+.taxi-client-shell .tariff-v12-price > small {
+  color: #175fc8 !important;
+  background: #eaf3ff !important;
+}
+
+.taxi-client-shell .address-map-selection-screen,
+.taxi-client-shell .address-picker-map-layer {
+  background: #eaf3ff !important;
+}
+
+.taxi-client-shell .address-picker-back-button {
+  color: var(--st-blue-deep) !important;
+  border-color: rgba(255, 255, 255, .9) !important;
+  box-shadow: 0 10px 26px rgba(20, 55, 112, .14) !important;
+}
+
+.taxi-client-shell .address-picker-sheet {
+  border-color: rgba(255, 255, 255, .96) !important;
+  border-radius: 32px 32px 0 0 !important;
+  box-shadow: 0 -20px 52px rgba(20, 55, 112, .17) !important;
+}
+
+.taxi-client-shell .address-picker-searchbar {
+  border-color: var(--st-line) !important;
+  background: #f8fbff !important;
+}
+
+.taxi-client-shell .address-picker-searchbar:focus-within {
+  border-color: rgba(29, 111, 255, .55) !important;
+  box-shadow: 0 0 0 4px rgba(29, 111, 255, .1), 0 12px 26px rgba(20, 55, 112, .09) !important;
+}
+
+.taxi-client-shell .address-map-point-card {
+  border-color: rgba(29, 111, 255, .22) !important;
+  background: linear-gradient(135deg, #f8fbff, #eaf3ff) !important;
+}
+
+.taxi-client-shell button:focus-visible,
+.taxi-client-shell input:focus-visible {
+  outline: 3px solid rgba(29, 111, 255, .42) !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taxi-client-shell *,
+  .taxi-client-shell *::before,
+  .taxi-client-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Urban Flow v2 — the passenger home is intentionally composed as a single
+   calm decision surface, rather than a stack of decorative cards. */
+.taxi-client-shell .final10-exact-state {
+  background: #eef5ff !important;
+}
+
+/* The desktop phone frame is deliberately shorter than the browser viewport.
+   Keep the map screen inside that frame so its primary action is never cut off. */
+.phone-frame.taxi-client-shell:has(.final10-exact-state) .passenger-content.taxi-home-layout {
+  position: absolute !important;
+  inset: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.phone-frame.taxi-client-shell:has(.final10-exact-state) .final10-exact-state {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.taxi-client-shell .final10-map-wrap {
+  height: 68% !important;
+  background: #eaf3ff !important;
+}
+
+.taxi-client-shell .final10-map-wrap .map-view,
+.taxi-client-shell .final10-map-wrap .map-view.live-osm {
+  opacity: .82 !important;
+  filter: saturate(.54) brightness(1.08) contrast(.84) !important;
+}
+
+.taxi-client-shell .final10-map-wrap::before {
+  background:
+    linear-gradient(180deg, rgba(238, 245, 255, .4), rgba(238, 245, 255, 0) 33%),
+    radial-gradient(circle at 50% 49%, rgba(23, 105, 255, .08), transparent 24%),
+    rgba(238, 245, 255, .08) !important;
+}
+
+.taxi-client-shell .final10-map-fade-bottom {
+  height: 182px !important;
+  background: linear-gradient(180deg, rgba(238, 245, 255, 0), #eef5ff 88%) !important;
+}
+
+.taxi-client-shell .final10-top-controls {
+  top: max(18px, env(safe-area-inset-top)) !important;
+  left: 18px !important;
+  right: 18px !important;
+}
+
+.taxi-client-shell .final10-icon-btn,
+.taxi-client-shell .final10-locate-btn {
+  width: 52px !important;
+  height: 52px !important;
+  flex-basis: 52px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  color: #1769ff !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 28px rgba(31, 75, 145, .16) !important;
+}
+
+.taxi-client-shell .final10-wordmark {
+  height: 45px !important;
+  padding: 0 15px !important;
+  border: 0 !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, .92) !important;
+  box-shadow: 0 10px 24px rgba(31, 75, 145, .1) !important;
+  font-size: 17px !important;
+}
+
+.taxi-client-shell .final10-locate-btn {
+  top: 98px !important;
+  right: 18px !important;
+}
+
+.taxi-client-shell .final10-map-wrap .map-zoom-stack {
+  right: 18px !important;
+  bottom: 310px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 28px rgba(31, 75, 145, .14) !important;
+}
+
+.taxi-client-shell .final10-marker-wrap {
+  top: 37% !important;
+}
+
+.taxi-client-shell .final10-badge-svg {
+  width: 58px !important;
+  height: 58px !important;
+}
+
+.taxi-client-shell .final10-radar {
+  width: 88px !important;
+  height: 88px !important;
+  background: radial-gradient(circle, rgba(23, 105, 255, .18), rgba(23, 105, 255, 0) 68%) !important;
+}
+
+.taxi-client-shell .final10-address-tag {
+  display: none !important;
+}
+
+.taxi-client-shell .final10-panel {
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  gap: 12px !important;
+  padding: 10px 20px max(20px, env(safe-area-inset-bottom)) !important;
+  border: 0 !important;
+  border-radius: 36px 36px 0 0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 -18px 48px rgba(33, 73, 137, .15) !important;
+}
+
+.taxi-client-shell .final10-grabber {
+  width: 44px !important;
+  height: 5px !important;
+  margin: 1px auto 6px !important;
+  background: #d4e0ef !important;
+}
+
+.taxi-client-shell .final10-sheet-heading {
+  margin: 0 !important;
+}
+
+.taxi-client-shell .final10-nearby-pill.exact {
+  position: static !important;
+  width: fit-content !important;
+  min-height: 34px !important;
+  margin: 0 0 12px !important;
+  padding: 0 13px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #163b72 !important;
+  background: #edf9f2 !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+.taxi-client-shell .final10-nearby-pill.exact span {
+  width: 9px !important;
+  height: 9px !important;
+  background: #28c76f !important;
+  box-shadow: 0 0 0 4px rgba(40, 199, 111, .11) !important;
+  animation: none !important;
+}
+
+.taxi-client-shell .final10-sheet-heading h1 {
+  color: #10213d !important;
+  font-size: clamp(31px, 9vw, 36px) !important;
+  line-height: .98 !important;
+  font-weight: 900 !important;
+  letter-spacing: -.065em !important;
+}
+
+.taxi-client-shell .final10-sheet-heading p {
+  margin-top: 7px !important;
+  color: #7890ad !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+}
+
+.taxi-client-shell .final10-addr-group {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .final10-connector-row {
+  display: none !important;
+}
+
+.taxi-client-shell .final10-addr-row,
+.taxi-client-shell .final10-addr-row + .final10-connector-row + .final10-addr-row {
+  min-height: 65px !important;
+  padding: 11px 15px !important;
+  border: 1.5px solid #d7e6fb !important;
+  border-radius: 20px !important;
+  background: #fbfdff !important;
+}
+
+.taxi-client-shell .final10-addr-row:focus-visible {
+  border-color: #1769ff !important;
+}
+
+.taxi-client-shell .final10-txt small {
+  color: #8ba0bb !important;
+  font-size: 10px !important;
+  line-height: 13px !important;
+  font-weight: 850 !important;
+  letter-spacing: .08em !important;
+}
+
+.taxi-client-shell .final10-txt strong,
+.taxi-client-shell .final10-txt strong.placeholder {
+  color: #486483 !important;
+  font-size: 16px !important;
+  line-height: 20px !important;
+  font-weight: 760 !important;
+}
+
+.taxi-client-shell .final10-txt strong:not(.placeholder) {
+  color: #10213d !important;
+  font-weight: 850 !important;
+}
+
+.taxi-client-shell .final10-dot-from,
+.taxi-client-shell .final10-dot-to {
+  width: 13px !important;
+  height: 13px !important;
+  border-radius: 50% !important;
+  background: #1769ff !important;
+  box-shadow: 0 0 0 5px rgba(23, 105, 255, .11) !important;
+  transform: none !important;
+}
+
+.taxi-client-shell .final10-cta {
+  min-height: 60px !important;
+  margin-top: 1px !important;
+  padding: 0 14px 0 21px !important;
+  border-radius: 21px !important;
+  background: #1769ff !important;
+  box-shadow: 0 16px 28px rgba(23, 105, 255, .28) !important;
+  font-size: 17px !important;
+  font-weight: 850 !important;
+}
+
+.taxi-client-shell .final10-cta b {
+  width: 35px !important;
+  height: 35px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, .17) !important;
+}
+
+.taxi-client-shell .final10-cta b svg {
+  margin: 0 !important;
+}
+
+.taxi-client-shell .final10-trust-row.exact {
+  display: none !important;
+}
+
+@media (max-height: 720px) {
+  .taxi-client-shell .final10-map-wrap { height: 61% !important; }
+  .taxi-client-shell .final10-panel { padding-top: 7px !important; }
+  .taxi-client-shell .final10-nearby-pill.exact { margin-bottom: 7px !important; }
+  .taxi-client-shell .final10-sheet-heading h1 { font-size: 29px !important; }
+  .taxi-client-shell .final10-sheet-heading p { display: none !important; }
+  .taxi-client-shell .final10-addr-row { min-height: 57px !important; }
+  .taxi-client-shell .final10-cta { min-height: 55px !important; }
+}
+
+/* Standard taxi home — a practical, familiar ordering surface. */
+.taxi-client-shell .final10-standard-home .final10-map-wrap {
+  height: 61% !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-map-wrap .map-view,
+.taxi-client-shell .final10-standard-home .final10-map-wrap .map-view.live-osm {
+  opacity: .93 !important;
+  filter: saturate(.72) brightness(1.04) contrast(.93) !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-map-fade-bottom {
+  height: 125px !important;
+  background: linear-gradient(180deg, rgba(238, 245, 255, 0), #f7fbff 94%) !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-marker-wrap {
+  top: 34% !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-badge-svg {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-tail-svg {
+  width: 48px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-radar {
+  width: 62px !important;
+  height: 62px !important;
+  opacity: .55 !important;
+  animation: none !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-panel {
+  gap: 10px !important;
+  padding: 9px 16px max(16px, env(safe-area-inset-bottom)) !important;
+  border-radius: 28px 28px 0 0 !important;
+  box-shadow: 0 -12px 34px rgba(29, 64, 119, .13) !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-grabber {
+  width: 38px !important;
+  height: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-sheet-heading h1 {
+  font-size: 25px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.045em !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-sheet-heading p {
+  margin-top: 4px !important;
+  font-size: 13px !important;
+  line-height: 17px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-addr-group {
+  gap: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #d9e5f4 !important;
+  border-radius: 17px !important;
+  background: #ffffff !important;
+  box-shadow: 0 5px 14px rgba(30, 69, 125, .04) !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-addr-row,
+.taxi-client-shell .final10-standard-home .final10-addr-row + .final10-connector-row + .final10-addr-row {
+  min-height: 56px !important;
+  padding: 8px 13px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-addr-row + .final10-connector-row + .final10-addr-row {
+  background: #f8fbff !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-connector-row {
+  display: flex !important;
+  height: 1px !important;
+  padding: 0 13px 0 39px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-connector-row i {
+  width: 100% !important;
+  height: 1px !important;
+  margin: 0 !important;
+  background: #e5edf7 !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-marker-col {
+  width: 15px !important;
+  flex-basis: 15px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-dot-from {
+  width: 10px !important;
+  height: 10px !important;
+  background: #52a0ff !important;
+  box-shadow: 0 0 0 3px rgba(82, 160, 255, .13) !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-dot-to {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 3px !important;
+  background: #1769ff !important;
+  box-shadow: none !important;
+  transform: rotate(45deg) !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-txt {
+  gap: 1px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-txt small {
+  font-size: 9px !important;
+  line-height: 12px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-txt strong,
+.taxi-client-shell .final10-standard-home .final10-txt strong.placeholder {
+  font-size: 15px !important;
+  line-height: 19px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-nearby-pill.exact {
+  min-height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #5d748f !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-nearby-pill.exact span {
+  width: 7px !important;
+  height: 7px !important;
+  margin-left: 3px !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-cta {
+  min-height: 56px !important;
+  margin-top: 0 !important;
+  border-radius: 17px !important;
+  background: linear-gradient(180deg, #2d7aff, #1769ff) !important;
+  box-shadow: 0 12px 22px rgba(23, 105, 255, .25) !important;
+  font-size: 16px !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-cta b {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+@media (max-height: 720px) {
+  .taxi-client-shell .final10-standard-home .final10-map-wrap { height: 57% !important; }
+  .taxi-client-shell .final10-standard-home .final10-panel { gap: 7px !important; }
+  .taxi-client-shell .final10-standard-home .final10-sheet-heading h1 { font-size: 23px !important; }
+  .taxi-client-shell .final10-standard-home .final10-sheet-heading p { display: block !important; }
+  .taxi-client-shell .final10-standard-home .final10-addr-row,
+  .taxi-client-shell .final10-standard-home .final10-addr-row + .final10-connector-row + .final10-addr-row { min-height: 51px !important; }
+  .taxi-client-shell .final10-standard-home .final10-cta { min-height: 52px !important; }
+}
+
+/* Blue Motion product rollout — passenger screens only. Authentication flows
+   intentionally keep their own visual language. */
+.taxi-client-shell .screen-grid:not(.auth-profile-screen),
+.taxi-client-shell .drawer-linked-screen,
+.taxi-client-shell .menu-screen,
+.taxi-client-shell .trip-stage-screen {
+  color: #10213d !important;
+  background:
+    radial-gradient(circle at 100% 0, rgba(23, 105, 255, .1), transparent 18rem),
+    #f5f9ff !important;
+}
+
+.taxi-client-shell .screen-grid:not(.auth-profile-screen) .screen-intro {
+  margin-bottom: 2px !important;
+}
+
+.taxi-client-shell .screen-grid:not(.auth-profile-screen) .screen-intro h1 {
+  color: #10213d !important;
+  font-size: 29px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.05em !important;
+  font-weight: 900 !important;
+}
+
+.taxi-client-shell .screen-grid:not(.auth-profile-screen) .screen-intro p {
+  color: #6e829e !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.taxi-client-shell .profile-screen:not(.auth-profile-screen) .premium-profile-card,
+.taxi-client-shell .drawer-linked-screen .drawer-linked-card,
+.taxi-client-shell .menu-screen .premium-support-card,
+.taxi-client-shell .menu-screen .settings-list-premium,
+.taxi-client-shell .menu-screen .about-card-premium,
+.taxi-client-shell .menu-screen .faq-list-premium .app-card,
+.taxi-client-shell .trip-stage-screen .trip-search-card,
+.taxi-client-shell .trip-stage-screen .driver-found-reference-sheet {
+  border: 1px solid rgba(23, 105, 255, .12) !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 32px rgba(34, 77, 141, .09) !important;
+}
+
+.taxi-client-shell .profile-screen:not(.auth-profile-screen) .premium-profile-card,
+.taxi-client-shell .drawer-linked-screen .drawer-linked-card,
+.taxi-client-shell .menu-screen .premium-support-card,
+.taxi-client-shell .menu-screen .settings-list-premium,
+.taxi-client-shell .menu-screen .about-card-premium {
+  padding: 16px !important;
+}
+
+.taxi-client-shell .profile-screen:not(.auth-profile-screen) .profile-avatar-row,
+.taxi-client-shell .drawer-linked-screen .favorite-row-premium,
+.taxi-client-shell .settings-row-premium {
+  border-color: rgba(23, 105, 255, .1) !important;
+}
+
+.taxi-client-shell .profile-screen:not(.auth-profile-screen) label input,
+.taxi-client-shell .drawer-linked-screen input,
+.taxi-client-shell .menu-screen textarea,
+.taxi-client-shell .menu-screen input {
+  color: #10213d !important;
+  border: 1px solid #d7e5f7 !important;
+  border-radius: 16px !important;
+  background: #fbfdff !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .profile-screen:not(.auth-profile-screen) label input:focus,
+.taxi-client-shell .drawer-linked-screen input:focus,
+.taxi-client-shell .menu-screen textarea:focus,
+.taxi-client-shell .menu-screen input:focus {
+  border-color: #1769ff !important;
+  box-shadow: 0 0 0 4px rgba(23, 105, 255, .1) !important;
+}
+
+.taxi-client-shell .drawer-linked-screen .primary-brand,
+.taxi-client-shell .menu-screen .primary-brand,
+.taxi-client-shell .trip-stage-screen .trip-home-button,
+.taxi-client-shell .trip-stage-screen .driver-found-contact-button,
+.taxi-client-shell .trip-stage-screen .search-cancel-button,
+.taxi-client-shell .trip-stage-screen .lifecycle-new-trip-button,
+.taxi-client-shell .trip-stage-screen .driver-found-details-button:not(.lifecycle-cancel-button) {
+  min-height: 54px !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 17px !important;
+  background: linear-gradient(180deg, #2877ff, #0b5fff) !important;
+  box-shadow: 0 13px 24px rgba(11, 95, 255, .24) !important;
+  font-weight: 800 !important;
+}
+
+.taxi-client-shell .drawer-linked-screen .primary-brand:disabled,
+.taxi-client-shell .menu-screen .primary-brand:disabled,
+.taxi-client-shell .trip-stage-screen button:disabled {
+  opacity: .55 !important;
+}
+
+.taxi-client-shell .drawer-linked-screen .menu-secondary-link,
+.taxi-client-shell .trip-stage-screen .lifecycle-cancel-button,
+.taxi-client-shell .trip-stage-screen .driver-found-details-button {
+  color: #0b5fff !important;
+  border: 1px solid rgba(11, 95, 255, .26) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+}
+
+.taxi-client-shell .support-topic-row button,
+.taxi-client-shell .profile-actions-grid article,
+.taxi-client-shell .settings-row-premium,
+.taxi-client-shell .favorite-row-premium,
+.taxi-client-shell .info-line-client,
+.taxi-client-shell .legal-card .settings-row-premium {
+  border-color: rgba(23, 105, 255, .12) !important;
+  background: #fbfdff !important;
+}
+
+.taxi-client-shell .support-topic-row button.selected {
+  color: #ffffff !important;
+  border-color: #0b5fff !important;
+  background: #0b5fff !important;
+  box-shadow: 0 9px 18px rgba(11, 95, 255, .2) !important;
+}
+
+.taxi-client-shell .reference-bottom-nav {
+  border: 1px solid rgba(23, 105, 255, .12) !important;
+  border-bottom: 0 !important;
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: 0 -10px 30px rgba(34, 77, 141, .08) !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+.taxi-client-shell .reference-nav-item.active {
+  color: #0b5fff !important;
+}
+
+.taxi-client-shell .reference-nav-item.active .ui-asset-icon {
+  filter: none !important;
+}
+
+/* Address flow: same search + map-point mechanics, now matching the approved
+   3D blue-and-white surface system. */
+.taxi-client-shell .address-map-selection-screen .map-view,
+.taxi-client-shell .trip-stage-screen .map-view,
+.taxi-client-shell .reference-tariff-state .map-view {
+  filter: saturate(.78) brightness(1.04) contrast(.94) !important;
+}
+
+.taxi-client-shell .address-picker-sheet {
+  border-radius: 30px 30px 0 0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 -18px 44px rgba(33, 73, 137, .15) !important;
+}
+
+.taxi-client-shell .address-picker-searchbar,
+.taxi-client-shell .address-map-point-card,
+.taxi-client-shell .address-picker-results > div > button {
+  border-color: #d7e5f7 !important;
+  background: #fbfdff !important;
+}
+
+.taxi-client-shell .address-map-point-card {
+  border-radius: 18px !important;
+}
+
+.taxi-client-shell .address-picker-results > div > button:hover,
+.taxi-client-shell .address-map-point-card:hover {
+  border-color: rgba(11, 95, 255, .42) !important;
+  background: #f2f7ff !important;
+}
+
+.taxi-client-shell .address-picker-confirm,
+.taxi-client-shell .reference-address-cta {
+  color: #ffffff !important;
+  background: #0b5fff !important;
+  box-shadow: 0 13px 24px rgba(11, 95, 255, .24) !important;
+}
+
+/* Tariff state retains the real two-option business model: Economy and
+   Delivery. The price control is visually first-class and remains functional. */
+.taxi-client-shell .tariff-v12-state {
+  background: #eef5ff !important;
+}
+
+.taxi-client-shell .tariff-v12-sheet {
+  margin-inline: 0 !important;
+  padding: 16px 16px max(18px, env(safe-area-inset-bottom)) !important;
+  border: 0 !important;
+  border-radius: 30px 30px 0 0 !important;
+  box-shadow: 0 -16px 40px rgba(33, 73, 137, .14) !important;
+}
+
+.taxi-client-shell .tariff-v12-switch {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  padding: 4px !important;
+  border: 1px solid #d7e5f7 !important;
+  border-radius: 17px !important;
+  background: #f6faff !important;
+}
+
+.taxi-client-shell .tariff-v12-switch button {
+  min-height: 48px !important;
+  border-radius: 13px !important;
+}
+
+.taxi-client-shell .tariff-v12-switch button.selected {
+  color: #ffffff !important;
+  background: #0b5fff !important;
+  box-shadow: 0 8px 16px rgba(11, 95, 255, .22) !important;
+}
+
+.taxi-client-shell .tariff-v12-car-card {
+  min-height: 156px !important;
+  border-color: rgba(11, 95, 255, .18) !important;
+  background: linear-gradient(145deg, #ffffff, #edf5ff) !important;
+}
+
+.taxi-client-shell .tariff-v12-price {
+  padding: 14px 0 4px !important;
+  border-top: 1px solid #e3ecf8 !important;
+  border-bottom: 1px solid #e3ecf8 !important;
+}
+
+.taxi-client-shell .tariff-v12-price > div {
+  grid-template-columns: 52px minmax(0, 1fr) 52px !important;
+  gap: 18px !important;
+}
+
+.taxi-client-shell .tariff-v12-price button {
+  color: #ffffff !important;
+  border: 0 !important;
+  background: #0b5fff !important;
+  box-shadow: 0 9px 18px rgba(11, 95, 255, .22) !important;
+}
+
+.taxi-client-shell .tariff-v12-price strong {
+  color: #10213d !important;
+  font-size: clamp(38px, 11vw, 48px) !important;
+}
+
+.taxi-client-shell .tariff-v12-price > small {
+  color: #687f9d !important;
+  background: transparent !important;
+}
+
+.taxi-client-shell .tariff-v12-order {
+  min-height: 58px !important;
+  border-radius: 18px !important;
+  background: #0b5fff !important;
+  box-shadow: 0 13px 24px rgba(11, 95, 255, .25) !important;
+}
+
+/* Active trip and driver flows. */
+.taxi-client-shell .trip-stage-screen {
+  overflow: hidden !important;
+}
+
+.taxi-client-shell .trip-stage-screen .trip-map-card,
+.taxi-client-shell .trip-stage-screen .reference-map-ghost {
+  border-radius: 0 !important;
+}
+
+.taxi-client-shell .trip-search-card,
+.taxi-client-shell .driver-found-reference-sheet {
+  border-radius: 30px 30px 0 0 !important;
+}
+
+.taxi-client-shell .search-driver-head h1,
+.taxi-client-shell .driver-found-reference-head h1,
+.taxi-client-shell .lifecycle-reference-head h1 {
+  color: #10213d !important;
+  letter-spacing: -.045em !important;
+}
+
+.taxi-client-shell .search-driver-nearby-pill,
+.taxi-client-shell .driver-found-verified,
+.taxi-client-shell .status-badge-clean {
+  color: #0b5fff !important;
+  border-color: rgba(11, 95, 255, .14) !important;
+  background: #edf5ff !important;
+}
+
+.taxi-client-shell .driver-found-call-round,
+.taxi-client-shell .quick-message-button {
+  color: #ffffff !important;
+  border-color: #0b5fff !important;
+  background: #0b5fff !important;
+}
+
+.taxi-client-shell .driver-found-info-list,
+.taxi-client-shell .trip-car-plate-row,
+.taxi-client-shell .search-route-card,
+.taxi-client-shell .searching-order-meta {
+  border-color: #d9e6f6 !important;
+  background: #fbfdff !important;
+}
+
+.taxi-client-shell .trip-cancelled-card .cancelled-mark,
+.taxi-client-shell .lifecycle-status-icon {
+  color: #0b5fff !important;
+  background: #edf5ff !important;
+}
+
+/* Keep map-first subflows inside the responsive phone canvas on the web.
+   Without this, the bottom confirmation action could sit below the visible
+   frame on short desktop viewports. */
+.phone-frame.taxi-client-shell:has(.address-map-selection-screen) .app-content.address-map-selection-screen,
+.phone-frame.taxi-client-shell:has(.tariff-v12-state) .passenger-content.taxi-home-layout {
+  position: absolute !important;
+  inset: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.phone-frame.taxi-client-shell:has(.address-map-selection-screen) .address-map-selection-screen,
+.phone-frame.taxi-client-shell:has(.tariff-v12-state) .tariff-v12-state {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+/* Passenger experience refresh: less dashboard, more polished ride product. */
+.taxi-client-shell .client-drawer-backdrop.open {
+  display: block !important;
+  background: rgba(13, 31, 58, .42) !important;
+  backdrop-filter: blur(11px) saturate(1.08) !important;
+}
+
+.taxi-client-shell .client-drawer {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(90vw, 386px) !important;
+  padding: 18px 14px 14px !important;
+  color: #10213d !important;
+  border: 1px solid rgba(255, 255, 255, .82) !important;
+  border-radius: 0 30px 30px 0 !important;
+  background:
+    radial-gradient(circle at 15% -10%, rgba(76, 145, 255, .2), transparent 13rem),
+    linear-gradient(180deg, #fafdff 0%, #f4f8ff 100%) !important;
+  box-shadow: 22px 0 56px rgba(13, 36, 77, .22) !important;
+}
+
+.taxi-client-shell .client-drawer-brand-row {
+  min-height: 46px !important;
+  padding: 0 4px 12px !important;
+}
+
+.taxi-client-shell .client-drawer-brand-lockup {
+  gap: 9px !important;
+}
+
+.taxi-client-shell .client-drawer-mark {
+  display: grid !important;
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  background: linear-gradient(145deg, #0a5ee9, #58a0ff) !important;
+  box-shadow: 0 8px 16px rgba(11, 95, 255, .22) !important;
+  filter: none !important;
+  font-size: 19px !important;
+  font-weight: 900 !important;
+  letter-spacing: -.08em !important;
+  line-height: 1 !important;
+}
+
+.taxi-client-shell .client-drawer-brand-lockup strong {
+  color: #10213d !important;
+  font-size: 18px !important;
+  letter-spacing: -.045em !important;
+}
+
+.taxi-client-shell .client-drawer-brand-lockup strong span { color: #1671ff !important; }
+.taxi-client-shell .client-drawer-brand-lockup small { color: #6f849f !important; font-size: 10px !important; font-weight: 760 !important; }
+
+.taxi-client-shell .client-drawer-close {
+  width: 42px !important;
+  height: 42px !important;
+  color: #33445f !important;
+  border: 1px solid #dce8f7 !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, .85) !important;
+  box-shadow: 0 6px 14px rgba(32, 70, 122, .08) !important;
+}
+
+.taxi-client-shell .client-drawer-account-row {
+  display: grid !important;
+  grid-template-columns: 44px minmax(0, 1fr) 22px !important;
+  align-items: center !important;
+  gap: 11px !important;
+  min-height: 82px !important;
+  margin: 0 3px 13px !important;
+  padding: 12px !important;
+  color: #fff !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, #0a55dc 0%, #1575ff 58%, #63a2ff 100%) !important;
+  box-shadow: 0 14px 25px rgba(11, 95, 255, .24) !important;
+  text-align: left !important;
+}
+
+.taxi-client-shell .client-drawer-account-avatar {
+  display: grid !important;
+  width: 44px !important;
+  height: 44px !important;
+  place-items: center !important;
+  border: 1px solid rgba(255, 255, 255, .3) !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, .18) !important;
+}
+
+.taxi-client-shell .client-drawer-account-copy { display: grid !important; gap: 1px !important; min-width: 0 !important; }
+.taxi-client-shell .client-drawer-account-copy small,
+.taxi-client-shell .client-drawer-account-copy em { color: rgba(255, 255, 255, .76) !important; font-size: 11px !important; font-style: normal !important; font-weight: 650 !important; }
+.taxi-client-shell .client-drawer-account-copy strong { color: #fff !important; font-size: 16px !important; font-weight: 850 !important; letter-spacing: -.025em !important; }
+.taxi-client-shell .client-drawer-account-row > svg { color: #fff !important; }
+
+.taxi-client-shell .client-drawer-nav {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding: 0 2px !important;
+  scrollbar-width: none !important;
+}
+
+.taxi-client-shell .client-drawer-group { padding: 0 0 11px !important; }
+.taxi-client-shell .client-drawer-group + .client-drawer-group { margin-top: 4px !important; padding-top: 13px !important; border-top: 1px solid #e2ebf6 !important; }
+.taxi-client-shell .client-drawer-group-title { margin: 0 8px 7px !important; color: #7b8da7 !important; font-size: 10px !important; font-weight: 850 !important; letter-spacing: .09em !important; text-transform: uppercase !important; }
+
+.taxi-client-shell .client-drawer-nav button,
+.taxi-client-shell .client-drawer .drawer-logout,
+.taxi-client-shell .client-drawer .drawer-login-action {
+  min-height: 53px !important;
+  margin: 2px 0 !important;
+  padding: 7px 8px !important;
+  border: 1px solid transparent !important;
+  border-radius: 16px !important;
+  background: transparent !important;
+}
+
+.taxi-client-shell .client-drawer-nav button:hover { background: #edf5ff !important; }
+.taxi-client-shell .client-drawer-nav button.active {
+  color: #0b5fff !important;
+  border-color: #cde0ff !important;
+  background: linear-gradient(90deg, #e8f2ff, #f6faff) !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .client-drawer .drawer-menu-icon {
+  width: 35px !important;
+  height: 35px !important;
+  color: #1b70ed !important;
+  border: 1px solid #d9e8ff !important;
+  border-radius: 12px !important;
+  background: #f1f7ff !important;
+}
+
+.taxi-client-shell .client-drawer-nav button.active .drawer-menu-icon { color: #fff !important; border-color: transparent !important; background: linear-gradient(145deg, #0d66f7, #4a94ff) !important; box-shadow: 0 7px 13px rgba(13, 102, 247, .2) !important; }
+.taxi-client-shell .client-drawer .drawer-menu-copy { gap: 0 !important; }
+.taxi-client-shell .client-drawer .drawer-menu-copy b { color: #1b2a42 !important; font-size: 14px !important; font-weight: 780 !important; }
+.taxi-client-shell .client-drawer .drawer-menu-copy small { color: #8493a9 !important; font-size: 11px !important; font-weight: 620 !important; }
+.taxi-client-shell .client-drawer-nav button.active .drawer-menu-copy b { color: #0b5fff !important; }
+.taxi-client-shell .client-drawer-nav button > svg,
+.taxi-client-shell .client-drawer .drawer-logout > svg,
+.taxi-client-shell .client-drawer .drawer-login-action > svg { color: #8ea0b7 !important; }
+
+.taxi-client-shell .client-drawer .drawer-login-action {
+  flex: 0 0 auto !important;
+  min-height: 58px !important;
+  margin-top: 10px !important;
+  color: #fff !important;
+  border: 0 !important;
+  background: linear-gradient(135deg, #0c61ee, #247dff) !important;
+  box-shadow: 0 12px 22px rgba(11, 95, 255, .22) !important;
+}
+.taxi-client-shell .client-drawer .drawer-login-action .drawer-menu-icon { color: #fff !important; border-color: rgba(255,255,255,.25) !important; background: rgba(255,255,255,.16) !important; }
+.taxi-client-shell .client-drawer .drawer-login-action .drawer-menu-copy b,
+.taxi-client-shell .client-drawer .drawer-login-action .drawer-menu-copy small,
+.taxi-client-shell .client-drawer .drawer-login-action > svg { color: #fff !important; }
+
+.taxi-client-shell .address-map-selection-screen {
+  overflow: hidden !important;
+  background: #e9f3ff !important;
+}
+
+.taxi-client-shell .address-picker-map-layer {
+  height: 40% !important;
+  background: linear-gradient(180deg, #dcecff, #eef6ff) !important;
+}
+
+.taxi-client-shell .address-picker-back-button {
+  top: 16px !important;
+  left: 16px !important;
+  width: 44px !important;
+  height: 44px !important;
+  color: #17355e !important;
+  border: 1px solid rgba(255, 255, 255, .82) !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, .94) !important;
+  box-shadow: 0 9px 20px rgba(42, 79, 130, .17) !important;
+}
+
+.taxi-client-shell .address-picker-sheet {
+  position: absolute !important;
+  inset: auto 0 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 72% !important;
+  padding: 13px 16px max(15px, env(safe-area-inset-bottom)) !important;
+  border: 1px solid rgba(255,255,255,.92) !important;
+  border-radius: 30px 30px 0 0 !important;
+  background: rgba(252, 254, 255, .98) !important;
+  box-shadow: 0 -16px 38px rgba(23, 58, 105, .16) !important;
+  overflow-y: auto !important;
+}
+
+.taxi-client-shell .address-picker-grip { width: 38px !important; height: 4px !important; margin: 0 auto 11px !important; border-radius: 999px !important; background: #c7d8ed !important; }
+.taxi-client-shell .address-picker-eyebrow { display: inline-flex !important; align-items: center !important; gap: 6px !important; margin-bottom: 5px !important; color: #1670f6 !important; font-size: 11px !important; font-weight: 830 !important; letter-spacing: .035em !important; text-transform: uppercase !important; }
+.taxi-client-shell .address-picker-eyebrow i { width: 7px !important; height: 7px !important; border-radius: 50% !important; background: #1575ff !important; box-shadow: 0 0 0 4px rgba(21,117,255,.12) !important; }
+.taxi-client-shell .address-picker-title-row h1 { color: #10213d !important; font-size: 28px !important; font-weight: 880 !important; letter-spacing: -.045em !important; }
+.taxi-client-shell .address-picker-title-row p { color: #72849e !important; font-size: 13px !important; font-weight: 650 !important; }
+
+.taxi-client-shell .address-picker-searchbar {
+  min-height: 56px !important;
+  margin: 13px 0 10px !important;
+  padding: 0 16px !important;
+  color: #1b70ed !important;
+  border: 1px solid #cbdff7 !important;
+  border-radius: 18px !important;
+  background: #f6faff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8) !important;
+}
+.taxi-client-shell .address-picker-searchbar input { color: #142641 !important; font-size: 15px !important; font-weight: 680 !important; }
+.taxi-client-shell .address-picker-searchbar input::placeholder { color: #8294ab !important; font-weight: 570 !important; }
+
+.taxi-client-shell .address-map-point-card {
+  min-height: 66px !important;
+  padding: 10px 11px !important;
+  color: #16345b !important;
+  border: 1px solid #c9defb !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, #ebf4ff, #f8fbff) !important;
+}
+.taxi-client-shell .address-map-point-icon,
+.taxi-client-shell .address-result-icon { width: 39px !important; height: 39px !important; border-radius: 13px !important; background: #fff !important; box-shadow: 0 5px 11px rgba(38, 83, 143, .1) !important; }
+.taxi-client-shell .address-map-point-card strong { color: #123463 !important; font-size: 14px !important; }
+.taxi-client-shell .address-map-point-card small { color: #71849e !important; font-size: 12px !important; }
+.taxi-client-shell .address-picker-results { margin-top: 13px !important; }
+.taxi-client-shell .address-picker-results > header { margin: 0 4px 7px !important; }
+.taxi-client-shell .address-picker-results > header strong { color: #334864 !important; font-size: 12px !important; font-weight: 820 !important; }
+.taxi-client-shell .address-picker-results > header span { color: #1771fa !important; background: #e7f1ff !important; }
+.taxi-client-shell .address-picker-results button { min-height: 61px !important; padding: 8px 6px !important; border-color: #e6eef8 !important; }
+.taxi-client-shell .address-picker-results button + button { border-top-color: #e6eef8 !important; }
+.taxi-client-shell .address-picker-results button b { color: #1a2c46 !important; font-size: 14px !important; }
+.taxi-client-shell .address-picker-results button small { color: #7b8ea8 !important; font-size: 11px !important; }
+.taxi-client-shell .address-picker-confirm { position: sticky !important; bottom: 0 !important; flex: 0 0 auto !important; min-height: 58px !important; margin-top: 12px !important; border-radius: 18px !important; }
+
+.taxi-client-shell .tariff-v12-state {
+  background: linear-gradient(180deg, #dcecff 0%, #eff6ff 27%, #f9fbff 100%) !important;
+}
+.taxi-client-shell .tariff-v12-state .reference-map-ghost { height: 29% !important; min-height: 148px !important; }
+.taxi-client-shell .tariff-v12-sheet {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 71% !important;
+  margin: -24px 0 0 !important;
+  padding: 15px 16px max(16px, env(safe-area-inset-bottom)) !important;
+  border-radius: 30px 30px 0 0 !important;
+  background: rgba(253,254,255,.98) !important;
+  box-shadow: 0 -14px 34px rgba(38, 72, 126, .14) !important;
+}
+.taxi-client-shell .tariff-v12-route { min-height: 63px !important; padding: 10px 11px !important; color: #123867 !important; border: 1px solid #d7e7fb !important; border-radius: 18px !important; background: #f4f8ff !important; }
+.taxi-client-shell .tariff-v12-route > svg { width: 38px !important; height: 38px !important; padding: 9px !important; color: #fff !important; border-radius: 13px !important; background: linear-gradient(145deg, #0d66f7, #4a97ff) !important; }
+.taxi-client-shell .tariff-v12-route strong { color: #16355f !important; font-size: 14px !important; }
+.taxi-client-shell .tariff-v12-route small { color: #7a8ea9 !important; font-size: 11px !important; }
+.taxi-client-shell .tariff-v12-route-time { min-width: 58px !important; padding-left: 8px !important; border-left: 1px solid #d8e7f8 !important; }
+.taxi-client-shell .tariff-v12-route-time b { color: #0b5fff !important; font-size: 16px !important; }
+
+.taxi-client-shell .tariff-v12-picker { margin-top: 13px !important; }
+.taxi-client-shell .tariff-v12-picker-heading { display: flex !important; align-items: baseline !important; justify-content: space-between !important; margin: 0 3px 8px !important; }
+.taxi-client-shell .tariff-v12-picker-heading span { color: #233650 !important; font-size: 14px !important; font-weight: 830 !important; }
+.taxi-client-shell .tariff-v12-picker-heading small { color: #7e90a8 !important; font-size: 11px !important; font-weight: 650 !important; }
+.taxi-client-shell .tariff-v12-switch { display: grid !important; grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 9px !important; padding: 0 !important; background: transparent !important; }
+.taxi-client-shell .tariff-v12-switch button { display: grid !important; grid-template-columns: 38px minmax(0,1fr) 18px !important; align-items: center !important; gap: 7px !important; min-height: 62px !important; padding: 8px !important; color: #35475f !important; border: 1px solid #dce7f5 !important; border-radius: 18px !important; background: #fff !important; text-align: left !important; }
+.taxi-client-shell .tariff-v12-switch button > img { width: 38px !important; height: 27px !important; object-fit: contain !important; filter: drop-shadow(0 4px 5px rgba(28,78,145,.16)) !important; }
+.taxi-client-shell .tariff-v12-switch button span { display: grid !important; gap: 1px !important; }
+.taxi-client-shell .tariff-v12-switch button b { color: #273a55 !important; font-size: 14px !important; font-weight: 830 !important; }
+.taxi-client-shell .tariff-v12-switch button small { color: #8293a9 !important; font-size: 10px !important; font-weight: 650 !important; }
+.taxi-client-shell .tariff-v12-switch button i { display: grid !important; width: 18px !important; height: 18px !important; place-items: center !important; color: #fff !important; border-radius: 50% !important; background: #0b63ef !important; }
+.taxi-client-shell .tariff-v12-switch button.selected { border-color: #2a7cff !important; background: linear-gradient(145deg, #ebf4ff, #f8fbff) !important; box-shadow: 0 8px 16px rgba(30, 111, 255, .13) !important; }
+.taxi-client-shell .tariff-v12-switch button.selected b { color: #0b5fff !important; }
+
+.taxi-client-shell .tariff-v12-car-card { position: relative !important; display: grid !important; grid-template-columns: minmax(0,1fr) 142px !important; min-height: 119px !important; margin-top: 10px !important; padding: 15px 14px !important; overflow: hidden !important; color: #fff !important; border: 0 !important; border-radius: 21px !important; background: linear-gradient(125deg, #063a9c 0%, #0d66eb 60%, #5da3ff 100%) !important; box-shadow: 0 12px 22px rgba(12, 89, 218, .23) !important; }
+.taxi-client-shell .tariff-v12-car-card::after { position: absolute !important; right: -45px !important; bottom: -64px !important; width: 180px !important; height: 180px !important; content: "" !important; border-radius: 50% !important; background: rgba(255,255,255,.11) !important; }
+.taxi-client-shell .tariff-v12-car-card > div { position: relative !important; z-index: 1 !important; display: grid !important; align-content: center !important; gap: 3px !important; }
+.taxi-client-shell .tariff-v12-car-kicker { color: rgba(255,255,255,.72) !important; font-size: 10px !important; font-weight: 780 !important; letter-spacing: .055em !important; text-transform: uppercase !important; }
+.taxi-client-shell .tariff-v12-car-card strong { color: #fff !important; font-size: 18px !important; font-weight: 850 !important; letter-spacing: -.035em !important; }
+.taxi-client-shell .tariff-v12-car-card small { color: rgba(255,255,255,.8) !important; font-size: 11px !important; font-weight: 620 !important; }
+.taxi-client-shell .tariff-v12-car-card em { display: inline-flex !important; width: fit-content !important; margin-top: 6px !important; padding: 4px 8px !important; color: #eaf3ff !important; border: 1px solid rgba(255,255,255,.19) !important; border-radius: 999px !important; background: rgba(0,36,105,.16) !important; font-size: 10px !important; font-style: normal !important; font-weight: 730 !important; }
+.taxi-client-shell .tariff-v12-car-card > img { position: relative !important; z-index: 1 !important; align-self: center !important; width: 150px !important; max-width: 100% !important; height: auto !important; transform: translate(8px, 5px) scale(1.14) !important; filter: drop-shadow(0 13px 10px rgba(0,26,80,.28)) !important; }
+
+.taxi-client-shell .tariff-v12-price { margin-top: 14px !important; padding: 12px 10px 10px !important; border: 1px solid #e0ebf7 !important; border-radius: 20px !important; background: #f8fbff !important; }
+.taxi-client-shell .tariff-v12-price > span { color: #6f829c !important; font-size: 11px !important; font-weight: 760 !important; }
+.taxi-client-shell .tariff-v12-price > div { grid-template-columns: 46px minmax(0,1fr) 46px !important; gap: 10px !important; margin-top: 6px !important; }
+.taxi-client-shell .tariff-v12-price button { width: 46px !important; height: 46px !important; color: #0b63ef !important; border: 1px solid #cde0fa !important; background: #fff !important; box-shadow: 0 6px 13px rgba(40,76,127,.11) !important; }
+.taxi-client-shell .tariff-v12-price button:disabled { color: #a6b4c8 !important; border-color: #e1e9f3 !important; background: #f5f7fa !important; }
+.taxi-client-shell .tariff-v12-price strong { color: #112945 !important; font-size: clamp(33px, 9vw, 43px) !important; }
+.taxi-client-shell .tariff-v12-price > small { margin-top: 7px !important; padding: 5px 9px !important; color: #1b6de8 !important; background: #e9f3ff !important; font-size: 10px !important; }
+.taxi-client-shell .tariff-v12-state .reference-payment-row { margin-top: 7px !important; min-height: 48px !important; }
+.taxi-client-shell .tariff-v12-order { min-height: 59px !important; margin-top: 9px !important; border-radius: 18px !important; }
+
+@media (max-height: 720px) {
+  .taxi-client-shell .client-drawer { padding-top: 12px !important; }
+  .taxi-client-shell .client-drawer-account-row { min-height: 70px !important; margin-bottom: 8px !important; }
+  .taxi-client-shell .client-drawer-nav button { min-height: 47px !important; }
+  .taxi-client-shell .client-drawer-group { padding-bottom: 5px !important; }
+  .taxi-client-shell .address-picker-sheet { max-height: 68% !important; }
+  .taxi-client-shell .tariff-v12-state .reference-map-ghost { min-height: 112px !important; }
+  .taxi-client-shell .tariff-v12-car-card { min-height: 102px !important; }
+  .taxi-client-shell .tariff-v12-price { margin-top: 8px !important; }
+}
+
+/* Approved passenger reference — keep these rules last: this is the visual
+   source of truth for the web shell before it is ported to Flutter. */
+.taxi-client-shell .final10-dot-to {
+  background: linear-gradient(135deg, #ff7b5c, #ff4d35) !important;
+  box-shadow: 0 0 0 4px rgba(255, 77, 53, .12) !important;
+}
+
+.taxi-client-shell .final10-gift-btn {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2b87ff, #0b62e8) !important;
+  border-color: rgba(255, 255, 255, .72) !important;
+  box-shadow: 0 10px 20px rgba(29, 111, 255, .28) !important;
+}
+
+.taxi-client-shell .final10-sheet-heading {
+  display: grid !important;
+  gap: 1px !important;
+}
+
+/* Native mobile map assets: reuse the exact marker artwork from Flutter. */
+.taxi-client-shell .map-view.live-osm .native-map-marker {
+  display: block !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .map-view.live-osm .native-map-marker > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.taxi-client-shell .map-view.live-osm .native-map-marker.pickup {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.taxi-client-shell .map-view.live-osm .native-map-marker.destination {
+  width: 30px !important;
+  height: 34px !important;
+}
+
+.taxi-client-shell .map-view.live-osm .native-map-marker.driver-marker {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker {
+  filter: drop-shadow(0 12px 18px rgba(15, 23, 42, .22)) !important;
+}
+
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker span {
+  width: 75px !important;
+  height: 85px !important;
+  display: block !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker span::after {
+  display: none !important;
+}
+
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+
+/* Full web-client parity screens: notifications, regular rides, preferences
+   and wallet follow the same compact white-card language as the mobile app. */
+.taxi-client-shell .client-data-screen .drawer-linked-card {
+  display: grid;
+  gap: 14px;
+}
+
+.taxi-client-shell .client-data-toolbar,
+.taxi-client-shell .client-recurring-card,
+.taxi-client-shell .client-inline-actions,
+.taxi-client-shell .client-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.taxi-client-shell .client-data-toolbar,
+.taxi-client-shell .client-card-heading {
+  justify-content: space-between;
+}
+
+.taxi-client-shell .client-data-toolbar button,
+.taxi-client-shell .client-inline-actions button,
+.taxi-client-shell .client-text-button {
+  border: 0;
+  background: transparent;
+  color: #1269ea;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.taxi-client-shell .client-inline-actions .danger,
+.taxi-client-shell .client-text-button.danger,
+.taxi-client-shell .danger-text { color: #e44040; }
+.taxi-client-shell .success-text { color: #15995d; }
+
+.taxi-client-shell .client-data-list {
+  display: grid;
+  gap: 9px;
+}
+
+.taxi-client-shell .client-notification-row,
+.taxi-client-shell .client-recurring-card {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e4edfb;
+  border-radius: 17px;
+  background: #fff;
+  text-align: left;
+}
+
+.taxi-client-shell .client-notification-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 8px;
+  gap: 10px;
+  color: #135fcb;
+  cursor: pointer;
+}
+
+.taxi-client-shell .client-notification-row > span,
+.taxi-client-shell .client-recurring-card > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.taxi-client-shell .client-notification-row b,
+.taxi-client-shell .client-recurring-card b { color: #14233d; font-size: 14px; }
+.taxi-client-shell .client-notification-row small,
+.taxi-client-shell .client-recurring-card small,
+.taxi-client-shell .client-recurring-card em,
+.taxi-client-shell .client-card-heading small { color: #71809a; font-size: 12px; font-style: normal; line-height: 1.35; }
+.taxi-client-shell .client-notification-row em { color: #8a97ad; font-size: 11px; font-style: normal; }
+.taxi-client-shell .client-notification-row.unread { background: #f4f8ff; border-color: #b7d2ff; }
+.taxi-client-shell .client-notification-row i { width: 8px; height: 8px; border-radius: 999px; background: #176df0; align-self: start; margin-top: 5px; }
+
+.taxi-client-shell .client-recurring-card { justify-content: space-between; }
+.taxi-client-shell .client-inline-actions { flex-wrap: wrap; justify-content: flex-end; }
+
+.taxi-client-shell .wallet-client-card { gap: 18px; }
+.taxi-client-shell .wallet-balance {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #0a55d6, #2787fb);
+  box-shadow: 0 16px 30px rgba(21, 104, 226, .22);
+}
+.taxi-client-shell .wallet-balance span,
+.taxi-client-shell .wallet-balance small { color: rgba(255,255,255,.78); font-size: 12px; }
+.taxi-client-shell .wallet-balance b { font-size: 29px; letter-spacing: -.8px; }
+
+.taxi-client-shell .client-mini-form { display: grid; gap: 10px; }
+.taxi-client-shell .recurring-create-form { padding: 14px; border: 1px solid #d8e6fb; border-radius: 18px; background: #f8fbff; }
+.taxi-client-shell .client-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.taxi-client-shell .weekday-picker { display: flex; gap: 7px; }
+.taxi-client-shell .weekday-picker button { min-width: 38px; padding: 8px 5px; border: 1px solid #d4e1f5; border-radius: 10px; color: #5f6f89; background: #fff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.taxi-client-shell .weekday-picker button.selected { border-color: #176df0; color: #fff; background: #176df0; }
+.taxi-client-shell .client-mini-form label { display: grid; gap: 6px; color: #50617e; font-size: 12px; font-weight: 700; }
+.taxi-client-shell .client-mini-form input,
+.taxi-client-shell .client-mini-form select { width: 100%; box-sizing: border-box; padding: 12px 13px; border: 1px solid #d6e3f7; border-radius: 13px; color: #17233b; background: #fbfdff; font: inherit; outline: none; }
+.taxi-client-shell .client-mini-form input:focus,
+.taxi-client-shell .client-mini-form select:focus { border-color: #2177f0; box-shadow: 0 0 0 3px rgba(33,119,240,.12); }
+
+.taxi-client-shell .trip-history-card { display: grid; gap: 14px; }
+.taxi-client-shell .support-history-list { display: grid; gap: 9px; padding-top: 4px; color: #1b2c48; }
+.taxi-client-shell .support-history-row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid #e7eef9; }
+.taxi-client-shell .support-history-row span { display: grid; gap: 3px; min-width: 0; }
+.taxi-client-shell .support-history-row strong { font-size: 13px; }
+.taxi-client-shell .support-history-row small, .taxi-client-shell .support-history-row em { color: #77859d; font-size: 11px; font-style: normal; line-height: 1.35; }
+.taxi-client-shell .support-history-row em { flex: 0 0 auto; }
+
+@media (max-width: 420px) {
+  .taxi-client-shell .client-recurring-card { align-items: flex-start; flex-direction: column; }
+  .taxi-client-shell .client-inline-actions { justify-content: flex-start; }
+}
+
+.taxi-client-shell .final10-sheet-heading small {
+  color: #75849a !important;
+  font-size: 12px !important;
+  line-height: 15px !important;
+  font-weight: 700 !important;
+}
+
+.taxi-client-shell .final10-sheet-heading h1 {
+  margin-top: 0 !important;
+}
+
+.taxi-client-shell .tariff-v13-state {
+  padding: 0 0 max(16px, env(safe-area-inset-bottom)) !important;
+  background: #ffffff !important;
+}
+
+.taxi-client-shell .tariff-v13-topbar {
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: center;
+  padding: 8px 16px 4px;
+  background: #ffffff;
+}
+
+.taxi-client-shell .tariff-v13-topbar button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e6edf5;
+  border-radius: 50%;
+  color: #10192e;
+  background: #ffffff;
+  box-shadow: 0 5px 12px rgba(20, 55, 112, .08);
+}
+
+.taxi-client-shell .tariff-v13-topbar h1 {
+  margin: 0;
+  color: #10192e;
+  font-size: 17px;
+  line-height: 1.15;
+  font-weight: 850;
+  text-align: center;
+  letter-spacing: -.025em;
+}
+
+.taxi-client-shell .tariff-v13-topbar > span { width: 38px; height: 38px; }
+
+.taxi-client-shell .tariff-v13-state .tariff-v12-sheet {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 14px 16px 16px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .tariff-v13-state .tariff-v12-sheet::before { display: none !important; }
+
+.taxi-client-shell .tariff-v13-list {
+  display: grid;
+  gap: 12px;
+}
+
+.taxi-client-shell .tariff-v13-card {
+  min-height: 110px;
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 10px;
+  border: 1px solid #e0e8f2;
+  border-radius: 18px;
+  color: #10192e;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(20, 55, 112, .07);
+  cursor: pointer;
+}
+
+.taxi-client-shell .tariff-v13-card.selected {
+  border: 1.5px solid #1673ff;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 9px 22px rgba(29, 111, 255, .13);
+}
+
+.taxi-client-shell .tariff-v13-card > img {
+  width: 76px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 8px rgba(25, 50, 85, .16));
+}
+
+.taxi-client-shell .tariff-v13-copy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.taxi-client-shell .tariff-v13-copy b {
+  overflow: hidden;
+  color: #121b2d;
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .tariff-v13-copy small {
+  overflow: hidden;
+  color: #71819a;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .tariff-v13-actions {
+  min-width: 90px;
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.taxi-client-shell .tariff-v13-actions > i {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  border-radius: 50%;
+  background: #1673ff;
+}
+
+.taxi-client-shell .tariff-v13-actions > strong {
+  color: #10192e;
+  font-size: 16px;
+  line-height: 18px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.taxi-client-shell .tariff-v13-stepper {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #e1e9f2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.taxi-client-shell .tariff-v13-stepper button {
+  width: 30px;
+  height: 27px;
+  border: 0;
+  color: #111827;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.taxi-client-shell .tariff-v13-stepper button + button { border-left: 1px solid #e7edf4; }
+
+.taxi-client-shell .tariff-v13-state .reference-payment-row {
+  min-height: 58px !important;
+  margin-top: 14px !important;
+  padding: 0 12px !important;
+  border: 1px solid #e1e9f2 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 7px 15px rgba(20, 55, 112, .05) !important;
+}
+
+.taxi-client-shell .tariff-v13-state .tariff-v12-order {
+  min-height: 54px !important;
+  margin-top: 14px !important;
+  grid-template-columns: 1fr !important;
+  justify-items: center;
+  border-radius: 14px !important;
+}
+
+.taxi-client-shell .tariff-v13-state .tariff-v12-order b,
+.taxi-client-shell .tariff-v13-state .tariff-v12-order svg { display: none !important; }
+
+/* Passenger → driver application: same compact, blue-white card language as
+   the Flutter passenger flow. Kept isolated so it cannot change booking UI. */
+.taxi-client-shell .driver-application-section { padding: 24px 20px calc(28px + env(safe-area-inset-bottom)); color: #10213d; }
+.taxi-client-shell .driver-application-section h1 { margin: 0; font-size: 29px; line-height: 1.05; letter-spacing: -.04em; }
+.taxi-client-shell .driver-application-section > p { margin: 9px 0 18px; color: #627793; font-size: 14px; line-height: 1.45; }
+.taxi-client-shell .driver-application-steps, .taxi-client-shell .driver-application-form, .taxi-client-shell .driver-document-upload, .taxi-client-shell .driver-document-list { margin: 0 0 16px; padding: 16px; border: 1px solid #d9e5f4; border-radius: 20px; background: #fff; box-shadow: 0 10px 28px rgba(30, 69, 125, .08); }
+.taxi-client-shell .driver-application-steps { padding-left: 36px; color: #335273; font-size: 14px; font-weight: 700; line-height: 2; }
+.taxi-client-shell .driver-application-form { display: grid; gap: 12px; }
+.taxi-client-shell .driver-application-form label { display: grid; gap: 6px; color: #294666; font-size: 12px; font-weight: 850; }
+.taxi-client-shell .driver-application-form input:not([type="checkbox"]), .taxi-client-shell .driver-application-form textarea, .taxi-client-shell .driver-document-upload select { width: 100%; box-sizing: border-box; padding: 12px 13px; border: 1px solid #cfe0f5; border-radius: 13px; outline: none; color: #10213d; background: #f8fbff; font: inherit; }
+.taxi-client-shell .driver-application-form input:focus, .taxi-client-shell .driver-application-form textarea:focus, .taxi-client-shell .driver-document-upload select:focus { border-color: #1d6fff; box-shadow: 0 0 0 3px rgba(29, 111, 255, .12); }
+.taxi-client-shell .driver-terms { display: flex !important; align-items: flex-start; gap: 9px; color: #526b89 !important; line-height: 1.35; }
+.taxi-client-shell .driver-terms input { margin-top: 2px; accent-color: #1d6fff; }
+.taxi-client-shell .driver-application-form .app-button, .taxi-client-shell .driver-document-upload .app-button { width: 100%; justify-content: center; }
+.taxi-client-shell .driver-document-upload { display: grid; gap: 10px; }
+.taxi-client-shell .driver-document-upload label { margin: 0; cursor: pointer; }
+.taxi-client-shell .driver-document-upload .disabled { pointer-events: none; opacity: .65; }
+.taxi-client-shell .driver-document-list { padding: 12px 16px 12px 34px; color: #335273; font-size: 13px; line-height: 1.8; }
+.taxi-client-shell .driver-application-success { width: 54px; height: 54px; display: grid; place-items: center; margin-bottom: 14px; border-radius: 50%; color: #fff; background: #25b872; box-shadow: 0 10px 22px rgba(37, 184, 114, .22); font-size: 28px; font-weight: 900; }
+
+/* Map endpoint semantics: a precise live GPS dot, the saved address-picker
+   badge, and a readable checkered flag for the finish. These are vectors so
+   they remain crisp on high-density mobile displays and desktop browsers. */
+.taxi-client-shell .current-location-map-marker {
+  display: block;
+  width: 50px;
+  height: 50px;
+  pointer-events: none;
+}
+
+.taxi-client-shell .current-location-marker-badge {
+  position: relative;
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+}
+
+.taxi-client-shell .current-location-marker-badge::before {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(29, 111, 255, .16);
+  content: "";
+  animation: smarttaxi-location-pulse 2.2s ease-out infinite;
+}
+
+.taxi-client-shell .current-location-marker-badge i {
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: #1d6fff;
+  box-shadow: 0 2px 9px rgba(9, 62, 163, .34);
+}
+
+.taxi-client-shell .current-location-marker-badge b {
+  position: absolute;
+  width: 29px;
+  height: 29px;
+  border: 2px solid rgba(29, 111, 255, .32);
+  border-radius: 50%;
+}
+
+.taxi-client-shell .finish-flag-map-marker {
+  display: block;
+  width: 58px;
+  height: 76px;
+  pointer-events: none;
+  filter: drop-shadow(0 9px 12px rgba(12, 57, 130, .24));
+}
+
+.taxi-client-shell .finish-flag-marker-badge,
+.taxi-client-shell .finish-flag-marker-badge svg {
+  display: block;
+  width: 58px;
+  height: 76px;
+}
+
+@keyframes smarttaxi-location-pulse {
+  0% { transform: scale(.42); opacity: .9; }
+  70%, 100% { transform: scale(1); opacity: 0; }
+}
+
+/* Passenger tariff sheet: mirrors the approved map-first mobile reference.
+   These rules intentionally replace the earlier tab/hero experiment with
+   tangible tariff cards, a route card and one calm, primary action. */
+.taxi-client-shell .tariff-v14-state {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background: #edf6ff !important;
+}
+
+.taxi-client-shell .tariff-v14-map {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+}
+
+.taxi-client-shell .tariff-v14-map .map-view,
+.taxi-client-shell .tariff-v14-map .maplibre-canvas-host {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border-radius: 0;
+}
+
+.taxi-client-shell .tariff-v14-map-scrim {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(244, 250, 255, .56) 0%, rgba(244, 250, 255, .06) 34%, rgba(244, 250, 255, .18) 57%, rgba(244, 250, 255, .78) 100%);
+}
+
+.taxi-client-shell .tariff-v14-topbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(20px, env(safe-area-inset-top)) 20px 0;
+}
+
+.taxi-client-shell .tariff-v14-topbar button {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #101b31;
+  border: 2px solid #1d6fff;
+  border-radius: 23px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 10px 24px rgba(13, 69, 158, .12);
+}
+
+.taxi-client-shell .tariff-v14-topbar > span {
+  min-width: 178px;
+  padding: 15px 18px;
+  color: #111b2d;
+  border: 2px solid #1d6fff;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 10px 24px rgba(13, 69, 158, .1);
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 22px;
+  text-align: center;
+}
+
+.taxi-client-shell .tariff-v14-sheet {
+  position: relative;
+  z-index: 1;
+  margin: max(210px, 31svh) 0 0 !important;
+  padding: 15px 20px calc(18px + env(safe-area-inset-bottom)) !important;
+  border: 0 !important;
+  border-radius: 34px 34px 0 0 !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .985), #fff 82%) !important;
+  box-shadow: 0 -18px 46px rgba(10, 53, 117, .14) !important;
+}
+
+.taxi-client-shell .tariff-v14-sheet::before { display: none !important; }
+.taxi-client-shell .tariff-v14-grip { width: 46px; height: 6px; margin: 0 auto 18px; border-radius: 999px; background: #1d6fff; }
+
+.taxi-client-shell .tariff-v14-route-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 15px 16px;
+  border: 2px solid #1d6fff;
+  border-radius: 27px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(17, 61, 127, .08);
+}
+
+.taxi-client-shell .tariff-v14-route-copy { min-width: 0; display: grid; gap: 5px; }
+.taxi-client-shell .tariff-v14-route-row { position: relative; display: grid; grid-template-columns: 25px auto minmax(0, 1fr); align-items: baseline; gap: 8px; min-width: 0; }
+.taxi-client-shell .tariff-v14-route-row i { width: 14px; height: 14px; box-sizing: border-box; border: 4px solid #fff; border-radius: 50%; background: #5b99ff; box-shadow: 0 0 0 3px #5b99ff; }
+.taxi-client-shell .tariff-v14-route-row.destination i { border-radius: 3px; background: #12213b; box-shadow: 0 0 0 3px #e9eff8; transform: rotate(45deg); }
+.taxi-client-shell .tariff-v14-route-line { width: 2px; height: 11px; margin-left: 6px; border-left: 2px dotted #8bb4ff; }
+.taxi-client-shell .tariff-v14-route-row b { color: #172136; font-size: 16px; font-weight: 850; }
+.taxi-client-shell .tariff-v14-route-row strong { overflow: hidden; color: #68758a; font-size: 15px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.taxi-client-shell .tariff-v14-route-card > button { align-self: start; padding: 11px 13px; color: #125bd9; border: 1px solid #d7e3f5; border-radius: 999px; background: #f2f6fc; font: 850 14px/1 Manrope, Inter, sans-serif; }
+
+.taxi-client-shell .tariff-v14-section-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 22px 4px 14px; }
+.taxi-client-shell .tariff-v14-section-title h1 { margin: 0; color: #111b2d; font-size: 28px; line-height: 1; font-weight: 900; letter-spacing: -.04em; }
+.taxi-client-shell .tariff-v14-section-title span { padding: 8px 12px; color: #125bd9; border: 2px solid #1d6fff; border-radius: 999px; font-size: 13px; font-weight: 850; white-space: nowrap; }
+
+.taxi-client-shell .tariff-v14-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.taxi-client-shell .tariff-v14-card { min-height: 118px; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 14px; color: #172136; border: 1px solid #d9e2ef; border-radius: 26px; background: #fff; box-shadow: 0 7px 18px rgba(18, 48, 93, .06); text-align: left; }
+.taxi-client-shell .tariff-v14-card.selected { border: 3px solid #1d6fff; padding: 10px 12px; background: linear-gradient(140deg, #edf5ff 0%, #c9dfff 100%); box-shadow: 0 13px 24px rgba(29, 111, 255, .18); }
+.taxi-client-shell .tariff-v14-car { width: 96px; height: 82px; display: grid; place-items: center; border: 0; border-radius: 20px; background: #edf5ff; }
+.taxi-client-shell .tariff-v14-car img { width: 94px; max-width: 112%; height: 66px; object-fit: contain; filter: drop-shadow(0 8px 7px rgba(22, 43, 76, .18)); }
+.taxi-client-shell .tariff-v14-card-copy { min-width: 0; display: grid; gap: 5px; }
+.taxi-client-shell .tariff-v14-card-copy b { overflow: hidden; font-size: 17px; line-height: 19px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.taxi-client-shell .tariff-v14-card-copy small { overflow: hidden; color: #68758a; font-size: 11px; font-weight: 760; text-overflow: ellipsis; white-space: nowrap; }
+.taxi-client-shell .tariff-v14-card-copy strong { color: #101b2d; font-size: 24px; line-height: 26px; font-weight: 900; white-space: nowrap; }
+
+.taxi-client-shell .tariff-v14-price { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-top: 18px; padding: 15px 16px; border: 2px solid #1d6fff; border-radius: 25px; background: #fff; }
+.taxi-client-shell .tariff-v14-price > span { min-width: 0; display: grid; gap: 4px; }
+.taxi-client-shell .tariff-v14-price small { color: #172136; font-size: 18px; font-weight: 850; }
+.taxi-client-shell .tariff-v14-price em { overflow: hidden; color: #68758a; font-size: 13px; font-style: normal; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.taxi-client-shell .tariff-v14-price > div { display: grid; grid-template-columns: 48px auto 48px; gap: 8px; align-items: center; }
+.taxi-client-shell .tariff-v14-price button { width: 48px; height: 48px; padding: 0; color: #125bd9; border: 0; border-radius: 17px; background: #edf4ff; font-size: 30px; line-height: 1; }
+.taxi-client-shell .tariff-v14-price b { min-width: 82px; color: #101b2d; font-size: 25px; font-weight: 900; text-align: center; white-space: nowrap; }
+
+.taxi-client-shell .tariff-v14-state .reference-payment-row { min-height: 74px !important; margin-top: 14px !important; padding: 0 16px !important; border: 2px solid #1d6fff !important; border-radius: 25px !important; background: #fff !important; box-shadow: none !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-copy small { display: block !important; color: #68758a !important; font-size: 11px !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-copy strong { color: #172136 !important; font-size: 18px !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-value { display: none !important; }
+.taxi-client-shell .tariff-v14-state .payment-icon { width: 42px !important; height: 42px !important; border: 2px solid #1d6fff !important; border-radius: 15px !important; background: #edf4ff !important; }
+.taxi-client-shell .tariff-v14-state .tariff-v12-order { min-height: 70px !important; margin-top: 18px !important; padding-inline: 22px 13px !important; border-radius: 25px !important; background: linear-gradient(135deg, #63a0ff 0%, #1d6fff 56%, #0b4fd1 100%) !important; font-size: 18px !important; font-weight: 900 !important; }
+
+@media (max-width: 370px) {
+  .taxi-client-shell .tariff-v14-sheet { padding-inline: 14px !important; }
+  .taxi-client-shell .tariff-v14-card { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; }
+  .taxi-client-shell .tariff-v14-car { width: 72px; }
+  .taxi-client-shell .tariff-v14-card-copy strong { font-size: 20px; }
+  .taxi-client-shell .tariff-v14-topbar > span { min-width: 152px; font-size: 16px; }
+}
+
+/* Address search is treated as a focused map task: the map stays visible,
+   while the sheet makes one address result easy to scan and confirm. */
+.taxi-client-shell .address-map-selection-screen {
+  min-height: 100svh;
+  background: #edf6ff !important;
+}
+
+.taxi-client-shell .address-picker-map-layer,
+.taxi-client-shell .address-picker-map-layer .map-view,
+.taxi-client-shell .address-picker-map-layer .maplibre-canvas-host {
+  min-height: 100svh !important;
+  height: 100svh !important;
+  border-radius: 0 !important;
+}
+
+.taxi-client-shell .address-picker-back-button {
+  width: 56px !important;
+  height: 56px !important;
+  top: max(18px, env(safe-area-inset-top)) !important;
+  left: 18px !important;
+  color: #111b2d !important;
+  border: 2px solid #1d6fff !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: 0 11px 24px rgba(13, 69, 158, .13) !important;
+}
+
+.taxi-client-shell .address-picker-sheet {
+  padding: 15px 20px calc(18px + env(safe-area-inset-bottom)) !important;
+  border: 1px solid rgba(255, 255, 255, .96) !important;
+  border-bottom: 0 !important;
+  border-radius: 34px 34px 0 0 !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .99), #fff 78%) !important;
+  box-shadow: 0 -20px 48px rgba(10, 53, 117, .16) !important;
+}
+
+.taxi-client-shell .address-picker-grip { width: 46px !important; height: 6px !important; margin-bottom: 18px !important; background: #1d6fff !important; }
+.taxi-client-shell .address-picker-eyebrow { color: #125bd9 !important; font-size: 12px !important; font-weight: 850 !important; }
+.taxi-client-shell .address-picker-eyebrow i { background: #1d6fff !important; box-shadow: 0 0 0 4px rgba(29, 111, 255, .13) !important; }
+.taxi-client-shell .address-picker-title-row h1 { color: #111b2d !important; font-size: 29px !important; font-weight: 900 !important; }
+.taxi-client-shell .address-picker-title-row p { color: #68758a !important; font-size: 14px !important; font-weight: 680 !important; }
+
+.taxi-client-shell .address-picker-searchbar {
+  min-height: 58px !important;
+  margin-top: 16px !important;
+  color: #1d6fff !important;
+  border: 2px solid #d8e6f7 !important;
+  border-radius: 19px !important;
+  background: #f8fbff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9) !important;
+}
+
+.taxi-client-shell .address-picker-searchbar:focus-within {
+  border-color: #1d6fff !important;
+  box-shadow: 0 0 0 4px rgba(29, 111, 255, .12) !important;
+}
+
+.taxi-client-shell .address-picker-searchbar input { color: #172136 !important; font-size: 15px !important; font-weight: 730 !important; }
+.taxi-client-shell .address-picker-searchbar input::placeholder { color: #8491a5 !important; opacity: 1 !important; }
+
+.taxi-client-shell .address-map-point-card {
+  min-height: 74px !important;
+  margin-top: 12px !important;
+  padding: 11px 13px !important;
+  border: 2px solid #1d6fff !important;
+  border-radius: 23px !important;
+  background: linear-gradient(135deg, #fff 0%, #edf5ff 100%) !important;
+  box-shadow: 0 10px 22px rgba(14, 64, 149, .09) !important;
+}
+
+.taxi-client-shell .address-map-point-card:disabled { border-color: #d8e3f1 !important; opacity: 1 !important; }
+.taxi-client-shell .address-map-point-icon { width: 44px !important; height: 44px !important; border: 2px solid #1d6fff !important; border-radius: 15px !important; background: #eaf3ff !important; }
+.taxi-client-shell .address-map-point-card strong { color: #172136 !important; font-size: 15px !important; font-weight: 900 !important; }
+.taxi-client-shell .address-map-point-card small { color: #68758a !important; font-size: 12px !important; font-weight: 700 !important; }
+
+.taxi-client-shell .address-picker-results { margin-top: 15px !important; }
+.taxi-client-shell .address-picker-results header strong { color: #172136 !important; font-size: 16px !important; font-weight: 900 !important; }
+.taxi-client-shell .address-picker-results header span { color: #125bd9 !important; background: #eaf3ff !important; }
+.taxi-client-shell .address-picker-results button { min-height: 62px !important; border-radius: 19px !important; }
+.taxi-client-shell .address-picker-results button:hover { background: #f3f8ff !important; }
+.taxi-client-shell .address-picker-results button strong { color: #172136 !important; font-weight: 820 !important; }
+.taxi-client-shell .address-picker-results button small { color: #718099 !important; font-weight: 680 !important; }
+.taxi-client-shell .address-picker-confirm { min-height: 62px !important; margin-top: 14px !important; border-radius: 21px !important; background: linear-gradient(135deg, #63a0ff 0%, #1d6fff 56%, #0b4fd1 100%) !important; box-shadow: 0 14px 26px rgba(29, 111, 255, .26) !important; font-size: 16px !important; font-weight: 900 !important; }
+
+/* Active ride states keep the exact same map-and-sheet hierarchy as tariff
+   selection, but make the next ride status unmistakable at a glance. */
+.taxi-client-shell .trip-searching-screen,
+.taxi-client-shell .trip-driver-found-screen {
+  background: #edf6ff !important;
+}
+
+.taxi-client-shell .trip-searching-screen .trip-map-card,
+.taxi-client-shell .trip-driver-found-screen .trip-map-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.taxi-client-shell .search-driver-sheet,
+.taxi-client-shell .driver-found-reference-sheet {
+  border: 1px solid rgba(255, 255, 255, .96) !important;
+  border-bottom: 0 !important;
+  border-radius: 34px 34px 0 0 !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .99), #fff 80%) !important;
+  box-shadow: 0 -18px 46px rgba(10, 53, 117, .15) !important;
+}
+
+.taxi-client-shell .search-driver-grip,
+.taxi-client-shell .driver-found-grip { width: 46px !important; height: 6px !important; background: #1d6fff !important; }
+.taxi-client-shell .search-driver-head h1,
+.taxi-client-shell .driver-found-reference-head h1 { color: #111b2d !important; font-size: 29px !important; font-weight: 900 !important; letter-spacing: -.04em !important; }
+.taxi-client-shell .search-driver-head p,
+.taxi-client-shell .driver-found-reference-head p { color: #68758a !important; font-size: 15px !important; font-weight: 700 !important; }
+.taxi-client-shell .search-driver-nearby-pill { color: #125bd9 !important; border: 1px solid rgba(29,111,255,.2) !important; background: #eaf3ff !important; }
+.taxi-client-shell .search-driver-nearby-pill::before { background: #1d6fff !important; box-shadow: 0 0 0 4px rgba(29,111,255,.12) !important; }
+
+.taxi-client-shell .search-progress,
+.taxi-client-shell .search-notice,
+.taxi-client-shell .search-route-card,
+.taxi-client-shell .driver-found-route-card,
+.taxi-client-shell .driver-found-info-list,
+.taxi-client-shell .driver-found-driver-card,
+.taxi-client-shell .ride-status-rail {
+  border-color: rgba(29,111,255,.18) !important;
+  background: #f5f9ff !important;
+}
+
+.taxi-client-shell .search-progress .active,
+.taxi-client-shell .ride-status-rail .active,
+.taxi-client-shell .lifecycle-status-icon { color: #fff !important; background: #1d6fff !important; box-shadow: 0 8px 18px rgba(29,111,255,.2) !important; }
+.taxi-client-shell .search-progress i,
+.taxi-client-shell .ride-status-rail i { background: #b8d4ff !important; }
+.taxi-client-shell .driver-found-avatar { border: 3px solid #eaf3ff !important; box-shadow: 0 9px 18px rgba(17, 53, 110, .12) !important; }
+.taxi-client-shell .driver-found-rating-line svg { color: #1d6fff !important; }
+.taxi-client-shell .driver-found-verified { color: #125bd9 !important; background: #eaf3ff !important; }
+.taxi-client-shell .driver-found-call-round,
+.taxi-client-shell .driver-found-contact-button { color: #fff !important; border-color: #1d6fff !important; background: linear-gradient(135deg, #63a0ff, #0b4fd1) !important; }
+.taxi-client-shell .driver-found-details-button { color: #125bd9 !important; border: 2px solid #1d6fff !important; border-radius: 18px !important; background: #fff !important; }
+.taxi-client-shell .search-cancel-button,
+.taxi-client-shell .lifecycle-cancel-button { color: #b42318 !important; border-color: rgba(180,35,24,.22) !important; background: #fff7f6 !important; }
+
+/* Account data screens use calm stacked cards rather than a generic form
+   page, so history, recurring trips, wallet and notifications remain easy to
+   scan with one hand on a phone. */
+.taxi-client-shell .client-data-screen,
+.taxi-client-shell .drawer-linked-screen {
+  min-height: 100%;
+  padding: 26px 18px calc(26px + env(safe-area-inset-bottom)) !important;
+  color: #172136;
+  background: linear-gradient(180deg, #f3f8ff 0%, #fff 46%, #f8fbff 100%) !important;
+}
+
+.taxi-client-shell .client-data-screen .screen-intro,
+.taxi-client-shell .drawer-linked-screen .screen-intro { margin-bottom: 18px !important; }
+.taxi-client-shell .client-data-screen .screen-intro h1,
+.taxi-client-shell .drawer-linked-screen .screen-intro h1 { color: #111b2d !important; font-size: 31px !important; font-weight: 900 !important; letter-spacing: -.045em !important; }
+.taxi-client-shell .client-data-screen .screen-intro p,
+.taxi-client-shell .drawer-linked-screen .screen-intro p { color: #68758a !important; font-size: 14px !important; font-weight: 680 !important; }
+
+.taxi-client-shell .client-data-screen .drawer-linked-card,
+.taxi-client-shell .trip-history-card {
+  padding: 16px !important;
+  border: 1px solid rgba(29,111,255,.14) !important;
+  border-radius: 26px !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 18px 42px rgba(17,57,114,.09) !important;
+}
+
+.taxi-client-shell .client-data-toolbar,
+.taxi-client-shell .client-card-heading { min-height: 42px; margin-bottom: 12px; }
+.taxi-client-shell .client-data-toolbar b,
+.taxi-client-shell .client-card-heading b { color: #172136 !important; font-size: 17px !important; font-weight: 900 !important; }
+.taxi-client-shell .client-data-toolbar button,
+.taxi-client-shell .client-text-button { padding: 9px 12px; color: #125bd9; border: 1px solid rgba(29,111,255,.18); border-radius: 14px; background: #eaf3ff; font: 850 12px/1 Manrope, Inter, sans-serif; }
+
+.taxi-client-shell .client-notification-row,
+.taxi-client-shell .client-recurring-card { min-height: 76px; padding: 13px !important; border: 1px solid #dce6f3 !important; border-radius: 20px !important; background: #fff !important; box-shadow: 0 7px 16px rgba(17,57,114,.04); }
+.taxi-client-shell .client-notification-row.unread { border-color: rgba(29,111,255,.35) !important; background: linear-gradient(135deg, #f7fbff, #eaf3ff) !important; }
+.taxi-client-shell .client-notification-row > svg { color: #1d6fff !important; }
+.taxi-client-shell .client-notification-row b,
+.taxi-client-shell .client-recurring-card b { color: #172136 !important; font-size: 14px !important; font-weight: 850 !important; }
+.taxi-client-shell .client-notification-row small,
+.taxi-client-shell .client-recurring-card small { color: #718099 !important; font-size: 12px !important; font-weight: 650 !important; }
+.taxi-client-shell .client-recurring-card em { color: #125bd9 !important; font-size: 12px !important; font-style: normal !important; font-weight: 800 !important; }
+.taxi-client-shell .client-inline-actions button { min-height: 34px; padding: 0 10px; color: #125bd9; border: 1px solid #cee0f8; border-radius: 12px; background: #f4f8ff; font: 800 12px/1 Manrope, Inter, sans-serif; }
+
+.taxi-client-shell .client-mini-form { gap: 12px !important; padding: 14px !important; border: 1px solid rgba(29,111,255,.16) !important; border-radius: 21px !important; background: #f7fbff !important; }
+.taxi-client-shell .client-mini-form label { color: #314765 !important; font-size: 12px !important; font-weight: 850 !important; }
+.taxi-client-shell .client-mini-form input,
+.taxi-client-shell .client-mini-form select { min-height: 47px !important; border: 1px solid #d6e4f5 !important; border-radius: 14px !important; background: #fff !important; }
+.taxi-client-shell .weekday-picker button { min-width: 41px; min-height: 38px; color: #526984; border-color: #d6e4f5; border-radius: 13px; background: #fff; }
+.taxi-client-shell .weekday-picker button.selected { color: #fff; border-color: #1d6fff; background: #1d6fff; }
+
+.taxi-client-shell .wallet-balance { padding: 20px !important; border: 0 !important; border-radius: 24px !important; background: linear-gradient(135deg, #63a0ff 0%, #1d6fff 56%, #0b4fd1 100%) !important; box-shadow: 0 16px 30px rgba(29,111,255,.24) !important; }
+.taxi-client-shell .wallet-balance span,
+.taxi-client-shell .wallet-balance small { color: rgba(255,255,255,.78) !important; font-weight: 720 !important; }
+.taxi-client-shell .wallet-balance b { color: #fff !important; font-size: 33px !important; font-weight: 900 !important; letter-spacing: -.04em !important; }
+
+/* The last non-map surfaces: profile, region choice, support and driver
+   onboarding use the same trustworthy blue-white hierarchy. */
+.taxi-client-shell .profile-screen,
+.taxi-client-shell .menu-screen,
+.taxi-client-shell .driver-application-section { background: linear-gradient(180deg, #f3f8ff 0%, #fff 52%) !important; }
+.taxi-client-shell .premium-profile-card,
+.taxi-client-shell .region-selection-card,
+.taxi-client-shell .premium-support-card,
+.taxi-client-shell .driver-application-steps,
+.taxi-client-shell .driver-application-form,
+.taxi-client-shell .driver-document-upload { border-color: rgba(29,111,255,.16) !important; border-radius: 26px !important; box-shadow: 0 18px 42px rgba(17,57,114,.09) !important; }
+.taxi-client-shell .profile-avatar-row h2,
+.taxi-client-shell .region-selection-card h1,
+.taxi-client-shell .driver-application-section h1 { color: #111b2d !important; font-weight: 900 !important; letter-spacing: -.04em !important; }
+.taxi-client-shell .profile-actions-grid article,
+.taxi-client-shell .region-selection-row,
+.taxi-client-shell .support-topic-row button { border-color: #d9e5f3 !important; border-radius: 18px !important; background: #fff !important; }
+.taxi-client-shell .region-selection-row.selected,
+.taxi-client-shell .support-topic-row button.selected { color: #fff !important; border-color: #1d6fff !important; background: linear-gradient(135deg,#63a0ff,#0b4fd1) !important; }
+.taxi-client-shell .driver-application-form input,
+.taxi-client-shell .driver-application-form textarea,
+.taxi-client-shell .driver-document-upload select { border-color: #d5e3f5 !important; border-radius: 15px !important; background: #f8fbff !important; }
+
+/* Intercity remains part of the familiar address sheet: city chips are
+   compact, horizontally scrollable and never turn the picker into a second
+   settings screen. */
+.taxi-client-shell .address-picker-region-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 2px -2px 12px;
+  padding: 2px;
+  scrollbar-width: none;
+}
+.taxi-client-shell .address-picker-region-tabs::-webkit-scrollbar { display: none; }
+.taxi-client-shell .address-picker-region-tabs button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 13px;
+  color: #41617f;
+  border: 1px solid #d5e4f4;
+  border-radius: 12px;
+  background: #f7fbff;
+  font: 800 12px/1 Manrope, Inter, sans-serif;
+}
+.taxi-client-shell .address-picker-region-tabs button.active {
+  color: #fff;
+  border-color: #1562e7;
+  background: linear-gradient(135deg, #3d8dff, #0d55d7);
+  box-shadow: 0 7px 15px rgba(23, 98, 231, .22);
+}
+
+.taxi-client-shell .tariff-v14-section-title > div { display: grid; gap: 6px; }
+
+/* Order-flow refinement: selection should feel deliberate, not like a list
+   of outlined demo cards.  The calm surface, clear selected state and a real
+   payment sheet are shared with the mobile visual language. */
+.taxi-client-shell .tariff-v14-route-card,
+.taxi-client-shell .tariff-v14-price,
+.taxi-client-shell .tariff-v14-state .reference-payment-row {
+  border: 1px solid #dbe6f2 !important;
+  box-shadow: 0 10px 28px rgba(24, 65, 119, .07) !important;
+}
+
+.taxi-client-shell .tariff-v14-section-title span {
+  border: 0 !important;
+  background: #eaf3ff;
+}
+
+.taxi-client-shell .tariff-v14-card {
+  position: relative;
+  min-height: 104px;
+  border-color: #e0e8f2;
+  border-radius: 22px;
+  box-shadow: 0 6px 16px rgba(24, 65, 119, .045);
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.taxi-client-shell .tariff-v14-card:hover { transform: translateY(-1px); }
+
+.taxi-client-shell .tariff-v14-card.selected {
+  border: 1px solid #2f7cf3 !important;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #f7fbff 0%, #e7f1ff 100%);
+  box-shadow: 0 12px 28px rgba(32, 110, 231, .16);
+}
+
+.taxi-client-shell .tariff-v14-card.selected::after {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: #fff;
+  border-radius: 50%;
+  background: #1d6fff;
+  box-shadow: 0 4px 10px rgba(29, 111, 255, .28);
+  content: "✓";
+  font: 900 13px/1 Inter, sans-serif;
+}
+
+.taxi-client-shell .tariff-v14-car { width: 86px; height: 72px; border-radius: 18px; }
+.taxi-client-shell .tariff-v14-car img { width: 86px; height: 60px; }
+.taxi-client-shell .tariff-v14-card-copy strong { font-size: 22px; line-height: 24px; }
+.taxi-client-shell .tariff-v14-price { border-radius: 22px; background: #f9fbfe; }
+.taxi-client-shell .tariff-v14-price button { width: 44px; height: 44px; border-radius: 14px; }
+.taxi-client-shell .tariff-v14-price > div { grid-template-columns: 44px auto 44px; }
+.taxi-client-shell .tariff-v14-state .reference-payment-row { border-radius: 22px !important; }
+.taxi-client-shell .tariff-v14-state .payment-icon { border: 0 !important; background: #eaf3ff !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-value { display: block !important; color: #2871e6; font-size: 12px; font-weight: 800; }
+
+.reference-payment-picker-backdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(10, 24, 47, .36);
+  backdrop-filter: blur(9px);
+  animation: smarttaxi-sheet-fade .18s ease-out;
+}
+
+.reference-payment-picker {
+  width: min(100%, 430px);
+  padding: 12px 18px calc(20px + env(safe-area-inset-bottom));
+  border: 1px solid rgba(255,255,255,.75);
+  border-radius: 30px;
+  background: #fff;
+  box-shadow: 0 22px 56px rgba(5, 25, 57, .28);
+  animation: smarttaxi-sheet-rise .22s cubic-bezier(.2,.8,.2,1);
+}
+
+.reference-payment-picker-grip { width: 42px; height: 5px; margin: 0 auto 16px; border-radius: 999px; background: #d5e0ed; }
+.reference-payment-picker header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.reference-payment-picker header small { display: block; margin-bottom: 4px; color: #718099; font-size: 12px; font-weight: 750; }
+.reference-payment-picker header h2 { margin: 0; color: #111b2d; font-size: 26px; letter-spacing: -.04em; }
+.reference-payment-picker header button { display: grid; width: 40px; height: 40px; place-items: center; color: #4c6381; border: 0; border-radius: 14px; background: #f1f5fa; }
+.reference-payment-options { display: grid; gap: 9px; }
+.reference-payment-options > button { display: grid; grid-template-columns: 46px minmax(0, 1fr) 24px; gap: 12px; align-items: center; min-height: 74px; padding: 10px 12px; color: #172136; border: 1px solid #dce6f1; border-radius: 20px; background: #fff; text-align: left; }
+.reference-payment-options > button.selected { border-color: #2c78ee; background: linear-gradient(135deg, #f7fbff, #eaf3ff); box-shadow: 0 8px 18px rgba(29,111,255,.11); }
+.reference-payment-option-icon { display: grid; width: 46px; height: 46px; place-items: center; color: #1d6fff; border-radius: 15px; background: #eaf3ff; }
+.reference-payment-options b { display: block; font-size: 16px; font-weight: 850; }
+.reference-payment-options small { display: block; margin-top: 3px; color: #718099; font-size: 12px; font-weight: 650; line-height: 1.3; }
+.reference-payment-option-check { display: grid; width: 22px; height: 22px; place-items: center; color: #fff; border: 1px solid #cbd8e6; border-radius: 50%; background: #fff; font-size: 13px; font-weight: 900; }
+.reference-payment-options .selected .reference-payment-option-check { border-color: #1d6fff; background: #1d6fff; }
+
+.taxi-client-shell .address-picker-region-tabs {
+  margin: 4px -20px 14px;
+  padding: 2px 20px 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.taxi-client-shell .address-picker-region-tabs button { min-height: 38px; border-radius: 14px; scroll-snap-align: start; }
+.taxi-client-shell .address-picker-results button { min-height: 68px !important; border: 1px solid transparent; background: #fff; }
+.taxi-client-shell .address-picker-results button:hover { border-color: #d9e7f6; background: #f8fbff !important; }
+
+.taxi-client-shell .maplibre-canvas-host {
+  touch-action: none;
+  overscroll-behavior: contain;
+  will-change: transform;
+}
+
+.map-deferred-fallback {
+  display: grid;
+  width: 100%;
+  min-height: 100%;
+  place-items: center;
+  color: #4d6b91;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255,255,255,.95) 0 7%, transparent 28%),
+    linear-gradient(145deg, #dceeff, #f8fbff 62%, #d7e9ff);
+  font: 750 14px/1.3 Manrope, Inter, sans-serif;
+}
+
+@keyframes smarttaxi-sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes smarttaxi-sheet-rise { from { transform: translateY(28px); } to { transform: translateY(0); } }
+
+@media (max-width: 370px) {
+  .taxi-client-shell .tariff-v14-card { grid-template-columns: 76px minmax(0, 1fr); }
+  .taxi-client-shell .tariff-v14-car { width: 76px; }
+  .taxi-client-shell .tariff-v14-card-copy strong { font-size: 20px; }
+}
+.taxi-client-shell .tariff-v14-intercity-pill {
+  width: max-content;
+  padding: 5px 8px;
+  color: #125bd9;
+  border: 1px solid rgba(29,111,255,.18);
+  border-radius: 9px;
+  background: #eaf3ff;
+  font: 850 10px/1 Manrope, Inter, sans-serif;
+  letter-spacing: .015em;
+  text-transform: uppercase;
+}
+
+/* The address sheet has a fixed action row.  Earlier theme overrides made
+   it sticky while the parent intentionally clips overflow, which let the
+   CTA overlap the map-point card on short phone viewports.  Keep it inside
+   the flex flow and give the list the remaining scrollable space. */
+.taxi-client-shell .address-picker-sheet {
+  height: clamp(470px, 62svh, 540px) !important;
+}
+.taxi-client-shell .address-picker-confirm {
+  position: relative !important;
+  bottom: auto !important;
+  min-height: 54px !important;
+  margin-top: 0 !important;
+}
+
+/* A typed address should be a results-first task.  Hiding the map CTA while
+   there are matches gives the list room on a 390px phone; the map CTA returns
+   automatically when a search has no usable result. */
+.taxi-client-shell .address-picker-sheet.address-picker-sheet--searching {
+  height: clamp(500px, 68svh, 590px) !important;
+}
+
+.taxi-client-shell .address-picker-sheet--searching .address-picker-results {
+  padding-bottom: 2px;
+}
+
+@media (max-width: 430px) {
+  .taxi-client-shell .address-picker-sheet.address-picker-sheet--searching {
+    height: min(68svh, 540px) !important;
+  }
+
+  .taxi-client-shell .address-picker-sheet--searching .address-picker-region-tabs {
+    margin-bottom: 7px;
+  }
+}
+
+/* Driver web navigation follows the same compact, touch-first information
+   hierarchy as the native driver shell. It used to reserve four columns for
+   five text-only actions, forcing the final action onto a second row. */
+.phone-frame.driver-core-phone .driver-core-tabs {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 3px !important;
+  padding: 6px !important;
+  border-radius: 22px !important;
+}
+
+.phone-frame.driver-core-phone .driver-core-tabs button {
+  min-width: 0;
+  min-height: 54px !important;
+  display: grid !important;
+  grid-template-rows: 20px minmax(12px, auto);
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 5px 2px !important;
+  border-radius: 16px !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+}
+
+.phone-frame.driver-core-phone .driver-core-tabs button .icon {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2;
+}
+
+.phone-frame.driver-core-phone .driver-core-tabs button span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-frame.driver-core-phone .driver-core-tabs button.active {
+  transform: translateY(-1px);
+}
+
+/* The quote is a decision screen, not a long form.  Keep every decision the
+   rider needs (tariff, offered price, payment and the final CTA) inside one
+   phone viewport.  The old vertical tariff cards pushed the actionable rows
+   outside a parent that intentionally clips its overflow. */
+.taxi-client-shell .tariff-v14-state .tariff-v14-sheet {
+  position: absolute !important;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 10px 16px max(12px, env(safe-area-inset-bottom)) !important;
+  border: 1px solid rgba(255, 255, 255, .96) !important;
+  border-bottom: 0 !important;
+  border-radius: 30px 30px 0 0 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.99), #fff 74%, #f8fbff) !important;
+  box-shadow: 0 -18px 44px rgba(10, 53, 117, .15) !important;
+}
+
+.taxi-client-shell .tariff-v14-state .tariff-v14-grip {
+  width: 42px !important;
+  height: 5px !important;
+  margin: 0 auto 9px !important;
+}
+
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-card {
+  min-height: 70px;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 20px;
+}
+
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-copy { gap: 2px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row { grid-template-columns: 18px auto minmax(0, 1fr); gap: 5px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row i { width: 10px; height: 10px; border-width: 3px; box-shadow: 0 0 0 2px #5b99ff; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row.destination i { box-shadow: 0 0 0 2px #e9eff8; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-line { height: 6px; margin-left: 4px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row b { font-size: 12px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row strong { font-size: 12px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-card > button { padding: 8px 10px; font-size: 12px; }
+
+.taxi-client-shell .tariff-v14-state .tariff-v14-section-title {
+  margin: 11px 3px 8px;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-section-title h1 { font-size: 23px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-section-title > span { padding: 6px 9px; font-size: 11px; }
+
+.taxi-client-shell .tariff-v14-state .tariff-v14-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-card,
+.taxi-client-shell .tariff-v14-state .tariff-v14-card.selected {
+  min-height: 82px;
+  grid-template-columns: 63px minmax(0, 1fr);
+  gap: 7px;
+  padding: 8px;
+  border-width: 1px;
+  border-radius: 18px;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-card.selected::after {
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-car {
+  width: 63px;
+  height: 56px;
+  border-radius: 14px;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-car img { width: 66px; height: 48px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy { gap: 1px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy b { font-size: 14px; line-height: 16px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy small { font-size: 10px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy strong { font-size: 18px; line-height: 20px; }
+
+.taxi-client-shell .tariff-v14-state .tariff-v14-price {
+  gap: 8px;
+  margin-top: 9px;
+  padding: 9px 10px;
+  border-radius: 18px;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-price > span { gap: 1px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-price small { font-size: 14px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-price em { font-size: 10px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-price > div { grid-template-columns: 34px auto 34px; gap: 5px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-price button { width: 34px; height: 34px; border-radius: 11px; font-size: 24px; }
+.taxi-client-shell .tariff-v14-state .tariff-v14-price b { min-width: 70px; font-size: 19px; }
+
+.taxi-client-shell .tariff-v14-state .reference-payment-row {
+  min-height: 56px !important;
+  grid-template-columns: 34px minmax(0, 1fr) auto 16px !important;
+  gap: 8px !important;
+  margin-top: 9px !important;
+  padding: 0 11px !important;
+  border-radius: 18px !important;
+}
+.taxi-client-shell .tariff-v14-state .payment-icon { width: 34px !important; height: 34px !important; border-radius: 11px !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-copy small { font-size: 10px !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-copy strong { font-size: 14px !important; }
+.taxi-client-shell .tariff-v14-state .reference-payment-value { font-size: 10px !important; }
+.taxi-client-shell .tariff-v14-state .tariff-v12-order {
+  min-height: 58px !important;
+  margin-top: 10px !important;
+  padding-inline: 16px 10px !important;
+  border-radius: 19px !important;
+  font-size: 15px !important;
+}
+
+@media (max-width: 370px) {
+  .taxi-client-shell .tariff-v14-state .tariff-v14-sheet { padding-inline: 12px !important; }
+  .taxi-client-shell .tariff-v14-state .tariff-v14-card,
+  .taxi-client-shell .tariff-v14-state .tariff-v14-card.selected { grid-template-columns: 53px minmax(0, 1fr); padding: 7px; }
+  .taxi-client-shell .tariff-v14-state .tariff-v14-car { width: 53px; height: 52px; }
+  .taxi-client-shell .tariff-v14-state .tariff-v14-car img { width: 58px; }
+  .taxi-client-shell .tariff-v14-state .tariff-v14-card-copy strong { font-size: 16px; }
+}
+
+/* Address search is the primary task on this sheet.  These compact spacings
+   keep the search field and three useful nearby addresses on screen before a
+   rider needs to scroll, while map confirmation still receives the larger
+   searching-state sheet declared above. */
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-grip {
+  margin-bottom: 11px !important;
+}
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-region-tabs {
+  margin-top: 2px;
+  margin-bottom: 8px;
+}
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-region-tabs button {
+  min-height: 34px;
+  border-radius: 12px;
+}
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-searchbar {
+  min-height: 54px !important;
+  margin-top: 8px !important;
+  margin-bottom: 6px;
+}
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-searchbar input {
+  height: 52px;
+}
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-results {
+  margin-top: 8px !important;
+}
+.taxi-client-shell .address-picker-sheet:not(.address-picker-sheet--searching) .address-picker-results button {
+  min-height: 58px !important;
+}
+
+/* This page lives inside the phone-width shell.  A desktop two-column grid
+   collapsed its intro to a zero-width first column and painted the region
+   list over the heading.  Keep it intentionally single-column and let the
+   normal application scroller handle the complete service-area catalogue. */
+.taxi-client-shell .region-selection-screen {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 16px !important;
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom)) !important;
+}
+.taxi-client-shell .region-selection-screen .screen-intro {
+  width: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+}
+.taxi-client-shell .region-selection-screen .screen-intro h1 {
+  margin: 0 !important;
+  color: #111b2d !important;
+  font-size: 29px !important;
+  font-weight: 900 !important;
+  letter-spacing: -.04em !important;
+}
+.taxi-client-shell .region-selection-screen .screen-intro p {
+  margin: 7px 0 0 !important;
+  color: #68758a !important;
+  font-size: 14px !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+}
+.taxi-client-shell .region-selection-screen .region-selection-card {
+  width: auto !important;
+  min-height: 0 !important;
+  padding: 15px !important;
+}
+.taxi-client-shell .region-selection-screen .region-selection-list {
+  gap: 8px;
+  margin-top: 11px;
+}
+.taxi-client-shell .region-selection-screen .region-selection-list button {
+  min-height: 62px;
+}
+
+/* All client linked screens render inside a 390px phone surface.  Their base
+   desktop grid reserved an empty first column, causing an intro and its card
+   to occupy the same row.  One column is the correct responsive model for
+   history, favourites, wallet, support, profile and region screens alike. */
+.taxi-client-shell .screen-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: none !important;
+  align-items: start !important;
+  align-content: start !important;
+}
+.taxi-client-shell .screen-grid > .screen-intro {
+  grid-column: 1 !important;
+  width: auto !important;
+  min-height: 0 !important;
+  align-self: start !important;
 }

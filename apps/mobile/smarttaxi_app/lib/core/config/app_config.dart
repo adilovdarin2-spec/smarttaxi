@@ -11,6 +11,14 @@ class AppConfig {
     'SOCKET_URL',
     defaultValue: apiBaseUrl,
   );
+  // A checkout must never silently lead a passenger into the development
+  // payment provider. This remains off until the production merchant
+  // credentials and webhook are verified; enable it only in an explicit
+  // release build with --dart-define=CARD_PAYMENTS_ENABLED=true.
+  static const cardPaymentsEnabled = bool.fromEnvironment(
+    'CARD_PAYMENTS_ENABLED',
+    defaultValue: false,
+  );
   // Public web app used for the "поделиться поездкой" tracking link. Must be
   // www (not the bare apex) -- ps.kz's panel can't put a CNAME on the apex
   // record (it already carries the zone's NS/MX/TXT records), so the apex
@@ -22,24 +30,32 @@ class AppConfig {
   // Crash/error monitoring (Sentry). Empty disables reporting entirely —
   // see main.dart's SentryFlutter.init call.
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
-  // CARTO's Voyager basemap instead of raw tile.openstreetmap.org: it serves
-  // real @2x tiles via the {r} placeholder (see the TileLayer retinaMode:
-  // true call sites), so the map actually looks sharp on modern high-DPI
-  // phone screens instead of upscaled/blurry 256px OSM tiles. Also avoids
-  // hotlinking OSM's own tile server, which its usage policy asks apps not
-  // to do.
+  // MapTiler Streets is the production basemap. Keep the API key restricted
+  // to this app's Android package in the MapTiler dashboard: keys embedded in
+  // mobile builds are necessarily visible to clients.
   static const osmTileUrl = String.fromEnvironment(
     'OSM_TILE_URL',
-    defaultValue:
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   );
 
   static const osmFallbackTileUrl = String.fromEnvironment(
     'OSM_FALLBACK_TILE_URL',
     defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   );
+  // Native vector map is the default passenger experience. A build can still
+  // explicitly set USE_MAPLIBRE_3D=false for compatibility investigation on
+  // a particular legacy device; address and routing logic is shared.
+  static const useMapLibre3d = bool.fromEnvironment(
+    'USE_MAPLIBRE_3D',
+    defaultValue: true,
+  );
+  static const mapLibreStyleUrl = String.fromEnvironment(
+    'MAPLIBRE_STYLE_URL',
+    defaultValue: 'https://tiles.openfreemap.org/styles/liberty',
+  );
+
   static const mapAttribution = String.fromEnvironment(
     'MAP_ATTRIBUTION_TEXT',
-    defaultValue: '© OpenStreetMap contributors © CARTO',
+    defaultValue: '© OpenFreeMap © OpenStreetMap contributors',
   );
 }

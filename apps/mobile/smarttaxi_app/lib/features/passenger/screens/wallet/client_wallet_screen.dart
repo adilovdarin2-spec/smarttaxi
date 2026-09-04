@@ -303,12 +303,12 @@ class _WalletCtaButton extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [palette.gold, palette.goldDeep],
+                colors: [palette.brand, palette.brandDeep],
               ),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: palette.gold.withValues(alpha: 0.32),
+                  color: palette.brand.withValues(alpha: 0.32),
                   blurRadius: 18,
                   offset: const Offset(0, 8),
                 ),
@@ -350,7 +350,7 @@ class _WalletBalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         borderRadius: BorderRadius.circular(SmartTaxiRadius.lg),
         border: Border.all(color: palette.border),
         boxShadow: SmartTaxiShadows.card,
@@ -486,11 +486,11 @@ class _ClientCardRow extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.credit_card_rounded,
-                size: 18, color: palette.goldDeep),
+                size: 18, color: palette.brandDeep),
           ),
           const SizedBox(width: 12),
           Expanded(

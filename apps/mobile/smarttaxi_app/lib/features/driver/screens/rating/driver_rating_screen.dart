@@ -105,7 +105,7 @@ class _DriverRatingScreenState extends State<DriverRatingScreen> {
                     Chip(
                       label: Text(l10n.driverTopTagLabel(
                           _ratingTagLabel(l10n, tag.tag), tag.count)),
-                      backgroundColor: palette.goldSurface,
+                      backgroundColor: palette.brandSurface,
                       side: BorderSide.none,
                     ),
                 ],
@@ -141,7 +141,7 @@ class _RatingHeroCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         borderRadius: BorderRadius.circular(SmartTaxiRadius.lg),
         border: Border.all(color: palette.border),
         boxShadow: SmartTaxiShadows.card,
@@ -234,7 +234,7 @@ class _BreakdownBar extends StatelessWidget {
                   color: palette.text)),
         ),
         const SizedBox(width: 4),
-        Icon(Icons.star_rounded, size: 14, color: palette.gold),
+        Icon(Icons.star_rounded, size: 14, color: palette.brand),
         const SizedBox(width: 8),
         Expanded(
           child: ClipRRect(
@@ -243,7 +243,7 @@ class _BreakdownBar extends StatelessWidget {
               value: ratio,
               minHeight: 8,
               backgroundColor: palette.card,
-              valueColor: AlwaysStoppedAnimation(palette.gold),
+              valueColor: AlwaysStoppedAnimation(palette.brand),
             ),
           ),
         ),
@@ -289,7 +289,7 @@ class _ReviewRow extends StatelessWidget {
                   (index) => Icon(
                     index < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
                     size: 16,
-                    color: palette.gold,
+                    color: palette.brand,
                   ),
                 ),
               ),

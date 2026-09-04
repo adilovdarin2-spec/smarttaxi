@@ -17,6 +17,7 @@ class PushService {
 
   final ApiClient _api;
   bool _initialized = false;
+  bool _permissionGranted = false;
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
 
   /// Emits the `data` payload of every push notification received while the
@@ -26,6 +27,9 @@ class PushService {
   /// of waiting for a manual pull-to-refresh.
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
 
+  /// Starts the Firebase message listeners without interrupting first-run
+  /// address selection with an operating-system permission dialog. The
+  /// dialog is requested later from an intentional notifications action.
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
@@ -38,13 +42,14 @@ class PushService {
 
     try {
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
-
-      final token = await messaging.getToken();
-      if (token != null && token.isNotEmpty) {
-        unawaited(_registerToken(token));
+      final settings = await messaging.getNotificationSettings();
+      _permissionGranted = _isGranted(settings.authorizationStatus);
+      if (_permissionGranted) {
+        unawaited(_registerCurrentToken(messaging));
       }
-      messaging.onTokenRefresh.listen(_registerToken);
+      messaging.onTokenRefresh.listen((token) {
+        if (_permissionGranted) unawaited(_registerToken(token));
+      });
 
       FirebaseMessaging.onMessage.listen((message) {
         _messageController.add(message.data);
@@ -54,6 +59,42 @@ class PushService {
       });
     } catch (_) {
       // Push setup failing must not crash the app; silently stay disabled.
+    }
+  }
+
+  /// Requests notification access only after a person explicitly opens the
+  /// notifications area. This avoids stacking Android's prompt over the
+  /// location explanation shown on the first map screen.
+  Future<void> requestPermission() async {
+    await initialize();
+    try {
+      final messaging = FirebaseMessaging.instance;
+      var settings = await messaging.getNotificationSettings();
+      if (!_isGranted(settings.authorizationStatus)) {
+        settings = await messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
+      _permissionGranted = _isGranted(settings.authorizationStatus);
+      if (_permissionGranted) {
+        await _registerCurrentToken(messaging);
+      }
+    } catch (_) {
+      // Push remains optional. A denied or unavailable permission must not
+      // interrupt the map, navigation or order flows.
+    }
+  }
+
+  bool _isGranted(AuthorizationStatus status) =>
+      status == AuthorizationStatus.authorized ||
+      status == AuthorizationStatus.provisional;
+
+  Future<void> _registerCurrentToken(FirebaseMessaging messaging) async {
+    final token = await messaging.getToken();
+    if (token != null && token.isNotEmpty) {
+      await _registerToken(token);
     }
   }
 

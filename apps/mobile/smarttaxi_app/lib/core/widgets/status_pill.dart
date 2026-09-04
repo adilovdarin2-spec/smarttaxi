@@ -21,7 +21,7 @@ class StatusPill extends StatelessWidget {
       // warning tone, which went unnoticed while `warning` was itself a
       // near-blue and turned loudly amber the day that token became a real
       // amber.
-      StatusTone.info => (palette.goldDeep, palette.goldSurface, palette.gold.withValues(alpha: 0.35)),
+      StatusTone.info => (palette.brandDeep, palette.brandSurface, palette.brand.withValues(alpha: 0.35)),
       StatusTone.neutral => (palette.textSecondary, palette.card, palette.border),
     };
 

@@ -159,7 +159,7 @@ class _ToastCardState extends State<_ToastCard>
           Icons.check_circle_rounded
         );
       case AppToastType.info:
-        return (palette.goldDeep, palette.goldSurface, Icons.info_rounded);
+        return (palette.brandDeep, palette.brandSurface, Icons.info_rounded);
     }
   }
 

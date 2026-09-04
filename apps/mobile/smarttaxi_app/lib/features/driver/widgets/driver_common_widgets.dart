@@ -81,7 +81,7 @@ class _DriverPressScaleState extends State<DriverPressScale> {
 
 /// Full-width primary CTA with a blue gradient, press-scale and a matching
 /// glow shadow — the driver-side equivalent of the passenger's
-/// `_GoldCtaButton`. Used for the one action per screen that should read as
+/// `_BrandCtaButton`. Used for the one action per screen that should read as
 /// unmistakably "the main button" (going online, confirming a step), not for
 /// every button on the page.
 class DriverGradientButton extends StatelessWidget {
@@ -125,23 +125,23 @@ class DriverGradientButton extends StatelessWidget {
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            // gold itself is identical in both palettes, but goldDeep isn't
+            // brand itself is identical in both palettes, but brandDeep isn't
             // (light 0xff0b4fd1 vs dark 0xff5b9bff) — this was const, so it
             // could never pick up the dark-theme value at all.
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                context.palette.goldSky,
-                context.palette.gold,
-                context.palette.goldDeep,
+                context.palette.brandSky,
+                context.palette.brand,
+                context.palette.brandDeep,
               ],
             ),
             borderRadius: BorderRadius.circular(18),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: context.palette.gold
+                      color: context.palette.brand
                           .withValues(alpha: highlighted ? 0.55 : 0.32),
                       blurRadius: highlighted ? 28 : 20,
                       spreadRadius: highlighted ? 2 : 0,
@@ -246,7 +246,7 @@ class LineGlyph extends StatelessWidget {
     // driver on a job is working normally, not in a warning state. The
     // borrowing went unnoticed while `warning` was itself a near-blue.
     final color = busy
-        ? context.palette.gold
+        ? context.palette.brand
         : online
             ? context.palette.success
             : context.palette.textMuted;
@@ -281,7 +281,7 @@ class LoadingStrip extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.palette.goldSurface,
+        color: context.palette.brandSurface,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -291,7 +291,7 @@ class LoadingStrip extends StatelessWidget {
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
-                strokeWidth: 2.2, color: context.palette.goldDeep),
+                strokeWidth: 2.2, color: context.palette.brandDeep),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -367,18 +367,14 @@ class DrawerItem extends StatelessWidget {
     // Coloring the Icon/Text widgets directly rather than relying on
     // ListTile's selected/selectedColor plumbing, which doesn't reliably
     // reach the title/leading widgets in practice.
-    // Note: "gold"/"goldDeep" are this app's actual brand-blue accent
-    // tokens (0xff1d6fff/0xff0b4fd1) — a legacy name from an earlier
-    // palette, not literal gold. Nothing wrong with the color you'll see
-    // here; the name is just misleading.
-    final tint = danger ? palette.danger : (active ? palette.goldDeep : palette.text);
+    final tint = danger ? palette.danger : (active ? palette.brandDeep : palette.text);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: ListTile(
         minTileHeight: 52,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         selected: active,
-        selectedTileColor: palette.goldSurface,
+        selectedTileColor: palette.brandSurface,
         leading: Icon(icon, size: 22, color: tint),
         title: Text(label,
             style: TextStyle(fontWeight: FontWeight.w800, color: tint)),
@@ -670,7 +666,7 @@ class InlineMessage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: danger ? context.palette.dangerSoft : context.palette.goldSurface,
+        color: danger ? context.palette.dangerSoft : context.palette.brandSurface,
         border: Border.all(
             color: danger
                 ? context.palette.danger.withValues(alpha: 0.3)

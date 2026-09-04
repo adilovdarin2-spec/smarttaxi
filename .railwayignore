@@ -11,7 +11,6 @@ data
 .codex_tmp_auth_refs
 .codex_tmp_client_pack
 .codex_tmp_client_pack_latest
-.codex_tmp_darkgold_handoff
 .codex_tmp_design_zip
 .playwright-cli
 .tmp_address_reference_pack

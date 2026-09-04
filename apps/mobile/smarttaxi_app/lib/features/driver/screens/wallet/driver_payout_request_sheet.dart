@@ -189,7 +189,7 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
           ),
           const SizedBox(height: 12),
           Material(
-            color: hasDestination ? palette.card : palette.goldSurface,
+            color: hasDestination ? palette.card : palette.brandSurface,
             borderRadius: BorderRadius.circular(16),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
@@ -199,7 +199,7 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: hasDestination ? palette.border : palette.gold,
+                    color: hasDestination ? palette.border : palette.brand,
                   ),
                 ),
                 child: Row(
@@ -208,7 +208,7 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
                       hasDestination
                           ? Icons.account_balance_wallet_rounded
                           : Icons.add_card_rounded,
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -227,7 +227,7 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
                     Text(
                       hasDestination ? l10n.passengerChangeButton : l10n.addButton,
                       style: TextStyle(
-                        color: palette.goldDeep,
+                        color: palette.brandDeep,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w800,
                       ),

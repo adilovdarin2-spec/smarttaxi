@@ -109,7 +109,7 @@ class _MethodChoiceButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Material(
-      color: selected ? palette.goldSurface : palette.card,
+      color: selected ? palette.brandSurface : palette.card,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -120,14 +120,14 @@ class _MethodChoiceButton extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? palette.gold : palette.border,
+              color: selected ? palette.brand : palette.border,
               width: selected ? 1.6 : 1,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? palette.goldDeep : palette.textSecondary,
+              color: selected ? palette.brandDeep : palette.textSecondary,
               fontSize: 13.5,
               fontWeight: FontWeight.w800,
             ),

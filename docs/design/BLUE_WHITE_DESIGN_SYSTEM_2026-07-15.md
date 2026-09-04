@@ -1,10 +1,10 @@
 # SmartTaxi — Blue/White Design System (canonical, 2026-07-15)
 
-Decided by the product owner on 2026-07-15. This **supersedes the color direction** in:
-- `docs/design/DESIGN_AUDIT.md` (dark graphite + gold) — structural notes (radius, spacing, icon style) still apply, colors do not.
-- `docs/SMARTTAXI_CLIENT_GOLD_WHITE_UX_BLUEPRINT.md` (gold + white) — same: structure fine, colors superseded.
-
-Any screen currently built in dark-graphite-gold or gold-white should be migrated to the tokens below when touched. Don't do a blanket repaint pass unless explicitly asked — migrate opportunistically as you work on a screen.
+Decided by the product owner on 2026-07-15, and the only colour direction in
+the repository since 2026-09-03: the dark-graphite-gold and gold-white
+packages that this used to supersede have been deleted, along with every gold
+pigment and every `gold`-named token in the Flutter app and the web PWA.
+See `docs/design/DESIGN_AUDIT.md` for what was removed.
 
 Reference mockup (tokens + key screens + toast + admin table): see the artifact built alongside this doc, or regenerate from the tokens below — the values here are the source of truth, not the artifact.
 
@@ -55,7 +55,7 @@ No custom webfont — use the system stack (renders Cyrillic correctly on every 
 
 - Radius: 14px cards, 12px controls/inputs, 18-20px phone-frame-style sheets, full pill (999px) for chips/badges.
 - Borders: 0.5-1px hairline in `border` token, not heavier — this is a light, airy system, not a heavy-outlined one.
-- One accent per screen. Don't mix accent-filled buttons with gold/other brand colors left over from the old systems.
+- One accent per screen. Don't mix accent-filled buttons with other brand colors.
 - Semantic colors (`success`/`danger`/`warning`) are separate from `accent` — never repurpose accent for status.
 - Map markers: "моё местоположение" = solid accent dot with soft pulsing ring (`accent` at low opacity, `scale` animation, respects `prefers-reduced-motion`); "выбранный адрес" / "выбор адреса" = single accent teardrop pin, IDENTICAL shape for pickup and dropoff (see [[feedback_map_marker_consistency]] equivalent — only the field label differs, never the marker art).
 - Toast/notification: top-center, slides down from above the screen, auto-dismiss (longer for errors), stacks up to ~3.
@@ -66,6 +66,11 @@ Splash/auth, order creation with price-negotiation slider, active trip with driv
 
 Cross-checked against `docs/status/*-overnight-2026-07-15.md` this pass: no `mobile-overnight` status file exists yet (mobile session hasn't landed a fresh commit since the last check) — nothing to reconcile yet, will re-check next cycle. `routing-overnight` shows a straight-line fallback route mode (1.3x road-distance factor) with no UI badge for "приблизительно" — worth a small `warning`-token badge on the trip card if a route is ever in fallback mode, using the existing map-mock/card pattern above rather than a new component.
 
-## Known deviation
+## Migration status
 
-Three chats (mobile/web) started tonight's work referencing the old gold-based docs before this decision was made. Sections already built there may still be gold-themed — that's expected technical debt, not a bug to panic about. Fix opportunistically per the migration note above.
+Closed on 2026-09-03. The gold theme is gone from the product: no gold hex
+survives in `apps/web/public/ui`, `apps/web/public/legal`, the landing page or
+`apps/mobile/smarttaxi_app/assets` (the Kazakhstan flag keeps its yellow), and
+the `gold*` token names in `styles.css` and `SmartTaxiColors` are now `brand*`.
+The only remaining mentions are historical notes in `docs/status/` and three
+source comments that explain why a value changed.

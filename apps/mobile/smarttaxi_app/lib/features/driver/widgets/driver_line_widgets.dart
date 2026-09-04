@@ -53,7 +53,7 @@ class DriverShiftHero extends StatelessWidget {
         // heavy and slightly cheap — a card lit from two directions at once.
         boxShadow: [
           BoxShadow(
-            color: (online ? palette.success : palette.gold)
+            color: (online ? palette.success : palette.brand)
                 .withValues(alpha: online ? 0.16 : 0.11),
             blurRadius: 26,
             offset: const Offset(0, 12),
@@ -128,13 +128,13 @@ class DriverShiftHero extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: palette.goldSurface,
+              color: palette.brandSurface,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
                 Icon(Icons.account_balance_wallet_rounded,
-                    size: 18, color: palette.goldDeep),
+                    size: 18, color: palette.brandDeep),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -155,7 +155,7 @@ class DriverShiftHero extends StatelessWidget {
                   todayEarnings ?? '—',
                   maxLines: 1,
                   style: TextStyle(
-                    color: palette.goldDeep,
+                    color: palette.brandDeep,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
@@ -220,7 +220,7 @@ class DriverTodayStrip extends StatelessWidget {
   (String, Color) _demandMeta(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (demandLevel >= 1.5) return (l10n.driverDemandHigh, context.palette.danger);
-    if (demandLevel > 1.0) return (l10n.driverDemandAboveNormal, context.palette.goldDeep);
+    if (demandLevel > 1.0) return (l10n.driverDemandAboveNormal, context.palette.brandDeep);
     return (l10n.driverDemandNormal, context.palette.textSecondary);
   }
 
@@ -275,7 +275,7 @@ class DriverTodayStrip extends StatelessWidget {
                 // caution — this was tinted with the warning token purely
                 // because it happened to look right back when that token was
                 // a near-blue.
-                tone: palette.gold,
+                tone: palette.brand,
               ),
             ),
             _StatDivider(color: palette.border),
@@ -409,7 +409,7 @@ class LocationNotice extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.palette.goldSurface,
+        color: context.palette.brandSurface,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -429,10 +429,10 @@ class LocationNotice extends StatelessWidget {
                     height: 17,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      color: context.palette.goldDeep,
+                      color: context.palette.brandDeep,
                     ),
                   )
-                : Icon(icon, size: 20, color: context.palette.goldDeep),
+                : Icon(icon, size: 20, color: context.palette.brandDeep),
           ),
           const SizedBox(width: 12),
           Expanded(

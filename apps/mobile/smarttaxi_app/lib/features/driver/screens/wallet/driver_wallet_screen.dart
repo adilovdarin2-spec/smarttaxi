@@ -257,7 +257,7 @@ class _WalletBalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: palette.goldSurface,
+        color: palette.brandSurface,
         borderRadius: BorderRadius.circular(SmartTaxiRadius.lg),
         border: Border.all(color: palette.border),
         boxShadow: SmartTaxiShadows.card,
@@ -536,7 +536,7 @@ class _WalletTransactionRow extends StatelessWidget {
     // Treating it as an unconditional credit like EARNING double-signed
     // negative amounts ("+-500 ₸") and painted debt increases green like a
     // real earning. Neither direction is a real earning or a real debt
-    // charge, so it gets its own neutral (gold) styling and the amount is
+    // charge, so it gets its own neutral (accent) styling and the amount is
     // shown with its own already-correct sign from _money(), not a
     // hardcoded prefix.
     final isAdjustment = transaction.kind == 'ADJUSTMENT';
@@ -552,7 +552,7 @@ class _WalletTransactionRow extends StatelessWidget {
               color: isCharge
                   ? palette.dangerSoft
                   : isAdjustment
-                      ? palette.goldSurface
+                      ? palette.brandSurface
                       : palette.successSoft,
               shape: BoxShape.circle,
             ),
@@ -566,7 +566,7 @@ class _WalletTransactionRow extends StatelessWidget {
               color: isCharge
                   ? palette.danger
                   : isAdjustment
-                      ? palette.goldDeep
+                      ? palette.brandDeep
                       : palette.success,
             ),
           ),
@@ -608,7 +608,7 @@ class _WalletTransactionRow extends StatelessWidget {
               color: isCharge
                   ? palette.danger
                   : isAdjustment
-                      ? palette.goldDeep
+                      ? palette.brandDeep
                       : palette.success,
             ),
           ),

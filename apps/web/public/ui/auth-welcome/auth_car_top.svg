@@ -19,8 +19,8 @@
   <circle cx="33" cy="70" r="4" fill="#F8FAFC"/>
   <circle cx="117" cy="70" r="9" fill="#111827"/>
   <circle cx="117" cy="70" r="4" fill="#F8FAFC"/>
-  <rect x="16" y="44" width="14" height="8" rx="4" fill="#F6B800"/>
-  <rect x="120" y="44" width="14" height="8" rx="4" fill="#F6B800"/>
-  <path d="M65 8H85" stroke="#F6B800" stroke-width="6" stroke-linecap="round"/>
+  <rect x="16" y="44" width="14" height="8" rx="4" fill="#1D6FFF"/>
+  <rect x="120" y="44" width="14" height="8" rx="4" fill="#1D6FFF"/>
+  <path d="M65 8H85" stroke="#1D6FFF" stroke-width="6" stroke-linecap="round"/>
 </g>
 </svg>

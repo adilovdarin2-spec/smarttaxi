@@ -5,5 +5,5 @@
 <path d="M83 24H104C113 24 119 28 123 35L128 43H83V24Z" fill="#111827" fill-opacity=".14"/>
 <circle cx="43" cy="62" r="9.5" fill="#111827"/><circle cx="115" cy="62" r="9.5" fill="#111827"/>
 <circle cx="43" cy="62" r="4.2" fill="#E5E7EB"/><circle cx="115" cy="62" r="4.2" fill="#E5E7EB"/>
-<path d="M23 50H38" stroke="#FFB800" stroke-width="3" stroke-linecap="round"/>
+<path d="M23 50H38" stroke="#1D6FFF" stroke-width="3" stroke-linecap="round"/>
 </svg>

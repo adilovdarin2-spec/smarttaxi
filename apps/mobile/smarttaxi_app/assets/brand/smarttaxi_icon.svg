@@ -18,7 +18,7 @@
         <stop offset="58%" stop-color="#1D6FFF"/>
         <stop offset="100%" stop-color="#0B4FD1"/>
       </linearGradient>
-      <radialGradient id="goldGlowIcon" cx="50%" cy="38%" r="65%">
+      <radialGradient id="brandGlowIcon" cx="50%" cy="38%" r="65%">
         <stop offset="0%" stop-color="#4F94FF" stop-opacity="0.24"/>
         <stop offset="45%" stop-color="#4F94FF" stop-opacity="0.07"/>
         <stop offset="100%" stop-color="#4F94FF" stop-opacity="0"/>
@@ -33,7 +33,7 @@
 
       <title>SmartTaxi app icon</title>
       <rect width="1024" height="1024" rx="220" fill="#050505"/>
-      <rect width="1024" height="1024" rx="220" fill="url(#goldGlowIcon)"/>
+      <rect width="1024" height="1024" rx="220" fill="url(#brandGlowIcon)"/>
       <path d="M162 765 C290 860, 695 860, 862 748" fill="none" stroke="#4F94FF" stroke-opacity="0.24" stroke-width="24" stroke-linecap="round"/>
 
     <g filter="url(#softShadowIcon)">

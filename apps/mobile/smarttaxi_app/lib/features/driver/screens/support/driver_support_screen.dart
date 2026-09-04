@@ -283,7 +283,7 @@ class _DriverSupportHistoryCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: palette.goldSurface,
+                color: palette.brandSurface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -292,7 +292,7 @@ class _DriverSupportHistoryCard extends StatelessWidget {
                   Text(
                     l10n.driverSupportResponseLabel,
                     style: TextStyle(
-                      color: palette.goldDeep,
+                      color: palette.brandDeep,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                     ),

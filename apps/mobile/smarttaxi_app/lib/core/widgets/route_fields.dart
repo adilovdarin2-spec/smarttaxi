@@ -66,7 +66,7 @@ class RouteFields extends StatelessWidget {
                 // mode instead of turning into white-on-white.
                 _RouteMarker(
                     icon: Icons.radio_button_checked_rounded,
-                    background: palette.gold,
+                    background: palette.brand,
                     foreground: palette.card),
                 Expanded(
                   child: Container(
@@ -156,9 +156,9 @@ class _RouteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final background = dark
-        ? (active ? palette.gold.withValues(alpha: 0.15) : palette.card)
-        : (active ? palette.goldPale : palette.card);
-    final border = active ? palette.gold : palette.border;
+        ? (active ? palette.brand.withValues(alpha: 0.15) : palette.card)
+        : (active ? palette.brandPale : palette.card);
+    final border = active ? palette.brand : palette.border;
     final labelColor = palette.textSecondary;
     final valueColor = palette.text;
     final content = AnimatedContainer(
@@ -173,7 +173,7 @@ class _RouteButton extends StatelessWidget {
         boxShadow: active
             ? [
                 BoxShadow(
-                    color: palette.gold.withValues(alpha: 0.18),
+                    color: palette.brand.withValues(alpha: 0.18),
                     blurRadius: 18,
                     offset: const Offset(0, 8))
               ]

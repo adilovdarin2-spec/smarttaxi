@@ -69,16 +69,16 @@ class DriverStatusStepper extends StatelessWidget {
                       width: done ? 12 : 9,
                       height: done ? 12 : 9,
                       decoration: BoxDecoration(
-                        color: done ? palette.gold : palette.card,
+                        color: done ? palette.brand : palette.card,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: done ? palette.gold : palette.borderStrong,
+                          color: done ? palette.brand : palette.borderStrong,
                           width: 1.5,
                         ),
                         boxShadow: done
                             ? [
                                 BoxShadow(
-                                  color: palette.gold.withValues(alpha: 0.25),
+                                  color: palette.brand.withValues(alpha: 0.25),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -113,7 +113,7 @@ class DriverStatusStepper extends StatelessWidget {
                     height: 2,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: stepIndex < index ? palette.gold : palette.border,
+                      color: stepIndex < index ? palette.brand : palette.border,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -193,7 +193,7 @@ class OrderCard extends StatelessWidget {
                 height: 32,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: context.palette.gold,
+                  color: context.palette.brand,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.local_taxi_rounded,
@@ -222,7 +222,7 @@ class OrderCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: context.palette.goldSurface,
+              color: context.palette.brandSurface,
               border: Border.all(color: context.palette.borderStrong),
               borderRadius: BorderRadius.circular(18),
             ),
@@ -323,7 +323,7 @@ class OrderCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 _CompactRouteRow(
                   icon: Icons.location_on_rounded,
-                  iconColor: context.palette.gold,
+                  iconColor: context.palette.brand,
                   label: order.dropoff,
                 ),
               ],
@@ -387,7 +387,7 @@ class OrderCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: context.palette.goldSurface,
+                  color: context.palette.brandSurface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -464,7 +464,7 @@ class OrderCard extends StatelessWidget {
                   icon: const Icon(Icons.local_offer_outlined, size: 17),
                   label: Text(l10n.driverOfferCustomPriceButton),
                   style: TextButton.styleFrom(
-                    foregroundColor: context.palette.goldDeep,
+                    foregroundColor: context.palette.brandDeep,
                   ),
                 ),
               ),
@@ -532,7 +532,7 @@ class DriverOrderChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: context.palette.goldDeep),
+          Icon(icon, size: 15, color: context.palette.brandDeep),
           const SizedBox(width: 6),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 180),
@@ -616,7 +616,7 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isPaid ? context.palette.dangerSoft : context.palette.goldSurface,
+        color: isPaid ? context.palette.dangerSoft : context.palette.brandSurface,
         border: Border.all(
             color: isPaid ? context.palette.danger : context.palette.border),
         borderRadius: BorderRadius.circular(18),
@@ -625,7 +625,7 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
         children: [
           Icon(
             isPaid ? Icons.timer_outlined : Icons.hourglass_top_rounded,
-            color: isPaid ? context.palette.danger : context.palette.goldDeep,
+            color: isPaid ? context.palette.danger : context.palette.brandDeep,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -690,13 +690,13 @@ class DriverTripDistanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.palette.goldSurface,
+        color: context.palette.brandSurface,
         border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
-          Icon(Icons.route_rounded, color: context.palette.goldDeep),
+          Icon(Icons.route_rounded, color: context.palette.brandDeep),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -1074,7 +1074,7 @@ class _DriverStarSelector extends StatelessWidget {
                 star <= value ? Icons.star_rounded : Icons.star_border_rounded,
                 size: 34,
                 color: star <= value
-                    ? context.palette.goldDeep
+                    ? context.palette.brandDeep
                     : context.palette.textMuted,
               ),
             ),
@@ -1101,10 +1101,10 @@ class _DriverTagChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? context.palette.goldSurface : context.palette.card,
+          color: selected ? context.palette.brandSurface : context.palette.card,
           border: Border.all(
               color: selected
-                  ? context.palette.goldDeep
+                  ? context.palette.brandDeep
                   : context.palette.border),
           borderRadius: BorderRadius.circular(999),
         ),
@@ -1113,7 +1113,7 @@ class _DriverTagChip extends StatelessWidget {
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: selected
-                    ? context.palette.goldDeep
+                    ? context.palette.brandDeep
                     : context.palette.textSecondary)),
       ),
     );

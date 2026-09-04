@@ -398,6 +398,32 @@ class RegionOption {
   }
 }
 
+// A directed, operations-controlled product route.  This is intentionally
+// separate from RegionOption: a destination can be active for local rides
+// while a particular origin → destination direction is paused.
+class IntercityRouteOption {
+  const IntercityRouteOption({
+    required this.id,
+    required this.originRegionId,
+    required this.destinationRegionId,
+    required this.isActive,
+  });
+
+  final String id;
+  final String originRegionId;
+  final String destinationRegionId;
+  final bool isActive;
+
+  factory IntercityRouteOption.fromJson(Map<String, dynamic> json) {
+    return IntercityRouteOption(
+      id: '${json['id'] ?? ''}',
+      originRegionId: '${json['originRegionId'] ?? json['origin_region_id'] ?? ''}',
+      destinationRegionId: '${json['destinationRegionId'] ?? json['destination_region_id'] ?? ''}',
+      isActive: json['isActive'] != false && json['is_active'] != false,
+    );
+  }
+}
+
 class DriverRegion {
   const DriverRegion(
       {required this.id,
