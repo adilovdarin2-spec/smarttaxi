@@ -1621,11 +1621,15 @@ class _PassengerShellState extends State<PassengerShell>
           label = address.label.trim();
         }
       } catch (_) {}
+      if (!mounted) return;
       if (!_isUsablePassengerAddressLabel(label)) {
+        // The mounted check used to sit *below* this branch, so a rider who
+        // left the screen while reverseAddress was in flight and came back to
+        // an unusable label got setState() on a disposed State. The success
+        // path was guarded; this one was not.
         setState(() => _error = l10n.passengerLocationFailedPickManuallyError);
         return;
       }
-      if (!mounted) return;
       setState(() {
         _pickup = point;
         _pickupLabel = label;
