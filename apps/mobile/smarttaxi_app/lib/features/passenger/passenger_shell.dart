@@ -6768,11 +6768,32 @@ class _CenterMapMarker extends StatelessWidget {
 class _ApprovedMapPickerMarker extends StatelessWidget {
   const _ApprovedMapPickerMarker();
 
+  // Geometry comes from the approved artwork,
+  // design-reference/web-approved/assets/map-initial-square-tail-marker.svg,
+  // which the web renders verbatim (approvedAddressMarkerMarkup in
+  // MapView.jsx). That file is a 64-unit viewBox whose badge sits at (2,2) and
+  // is 60 units across, so every number below is stated in the badge's own
+  // coordinate space and scaled once. Written this way the two clients are
+  // provably the same drawing rather than two hand-tuned approximations.
+  //
+  // They were not. This marker placed its three squares 1-2 px off, sized them
+  // 4.5 instead of 5.1, drew the "S" flat blue where the reference fills it
+  // with the badge gradient, and omitted the white highlight arc in the
+  // top-left corner entirely.
+  static const _badgeSize = 44.0;
+  static const _unit = _badgeSize / 60;
+  static const _innerInset = 4 * _unit;
+
+  static const _blueLight = Color(0xff63a0ff);
+  static const _blueDeep = Color(0xff0b4fd1);
+  static const _badgeGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [_blueLight, _blueDeep],
+  );
+
   @override
   Widget build(BuildContext context) {
-    const blueLight = Color(0xff63a0ff);
-    const blue = Color(0xff1d6fff);
-    const blueDeep = Color(0xff0b4fd1);
     return SizedBox(
       width: 48,
       height: 60,
@@ -6781,16 +6802,12 @@ class _ApprovedMapPickerMarker extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 44,
-            height: 44,
-            padding: const EdgeInsets.all(3),
+            width: _badgeSize,
+            height: _badgeSize,
+            padding: const EdgeInsets.all(_innerInset),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [blueLight, blueDeep],
-              ),
+              borderRadius: BorderRadius.circular(20 * _unit),
+              gradient: _badgeGradient,
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x381d6fff),
@@ -6802,44 +6819,37 @@ class _ApprovedMapPickerMarker extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: .9),
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(16 * _unit),
               ),
               child: Stack(
                 children: [
-                  Positioned(
-                    left: 7,
-                    top: 15,
-                    child: Container(
-                        width: 4.5,
-                        height: 4.5,
-                        color: blueLight.withValues(alpha: .55)),
+                  const Positioned.fill(
+                    child: CustomPaint(painter: _MarkerBadgePainter()),
                   ),
-                  Positioned(
-                    left: 13.5,
-                    top: 15,
-                    child: Container(
-                        width: 4.5,
-                        height: 4.5,
-                        color: blue.withValues(alpha: .9)),
-                  ),
-                  Positioned(
-                    left: 10,
-                    top: 21.5,
-                    child: Container(
-                        width: 4.5,
-                        height: 4.5,
-                        color: blueLight.withValues(alpha: .35)),
-                  ),
-                  const Positioned(
-                    right: 6,
-                    top: 4,
-                    child: Text(
-                      'S',
-                      style: TextStyle(
-                        color: blue,
-                        fontSize: 23,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
+                  // The reference fills the glyph with the same gradient as
+                  // the badge rim. A Text cannot take a shader directly, so
+                  // the mask paints it over the glyph's own coverage.
+                  Positioned.fill(
+                    child: Center(
+                      child: Transform.translate(
+                        // Reference centres the glyph at (40, 33) in badge
+                        // space; the inner box starts at 4, and its own centre
+                        // is (26, 26).
+                        offset: const Offset(10 * _unit, 3 * _unit),
+                        child: ShaderMask(
+                          blendMode: BlendMode.srcIn,
+                          shaderCallback: (bounds) =>
+                              _badgeGradient.createShader(bounds),
+                          child: const Text(
+                            'S',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 29 * _unit,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -6859,6 +6869,52 @@ class _ApprovedMapPickerMarker extends StatelessWidget {
     );
   }
 }
+
+/// The speed marks and the corner highlight inside the marker badge.
+///
+/// Coordinates are the reference file's, expressed relative to the inner white
+/// square (badge space minus its 4-unit inset) and scaled by the painter's own
+/// size, so this stays correct if the badge is ever resized.
+class _MarkerBadgePainter extends CustomPainter {
+  const _MarkerBadgePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final unit = size.width / 52;
+
+    // M10 22 C10 14 16.5 8 24 6.5 in viewBox space, less the badge's (2,2)
+    // origin and the inner square's 4-unit inset.
+    final highlight = ui.Path()
+      ..moveTo(4 * unit, 16 * unit)
+      ..cubicTo(4 * unit, 8 * unit, 10.5 * unit, 2 * unit, 18 * unit, 0.5 * unit);
+    canvas.drawPath(
+      highlight,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5 * unit
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withValues(alpha: .55),
+    );
+
+    const light = Color(0xff63a0ff);
+    const mid = Color(0xff1d6fff);
+    const marks = <(double, double, Color, double)>[
+      (8, 18, light, .55),
+      (17, 18, mid, .9),
+      (12, 27, light, .35),
+    ];
+    for (final (x, y, color, alpha) in marks) {
+      canvas.drawRect(
+        Rect.fromLTWH(x * unit, y * unit, 7 * unit, 7 * unit),
+        Paint()..color = color.withValues(alpha: alpha),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MarkerBadgePainter oldDelegate) => false;
+}
+
 
 // The address marker is deliberately identical for pickup and destination.
 // The field label supplies that meaning; a second visual language made the

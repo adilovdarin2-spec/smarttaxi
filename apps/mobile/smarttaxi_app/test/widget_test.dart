@@ -549,6 +549,46 @@ void main() {
     expect(passenger, contains('_SmartDrawer'));
   });
 
+  test('the map picker marker is drawn from the approved reference geometry', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final reference =
+        _read('../../../design-reference/web-approved/assets/map-initial-square-tail-marker.svg');
+    final web = _read('../../../apps/web/src/features/map/MapView.jsx');
+
+    // The reference is a 64-unit viewBox with the badge at (2,2), 60 across.
+    // The web renders it verbatim; Flutter used to approximate it by hand and
+    // drifted - squares 1-2px out and sized 4.5 rather than 5.1, a flat blue
+    // "S" where the reference fills it with the badge gradient, and no white
+    // highlight arc at all. Flutter now states the same numbers and scales
+    // them once, so this pins the three that were wrong.
+    expect(reference, contains('M10 22C10 14 16.5 8 24 6.5'));
+    expect(web, contains('M10 22C10 14 16.5 8 24 6.5'));
+    expect(
+      passenger,
+      contains('..cubicTo(4 * unit, 8 * unit, 10.5 * unit, 2 * unit, 18 * unit, 0.5 * unit)'),
+      reason: 'the corner highlight arc is the reference curve, less the insets',
+    );
+    expect(passenger, contains('static const _unit = _badgeSize / 60;'));
+    expect(passenger, contains('fontSize: 29 * _unit'), reason: 'glyph size is the reference 29 units');
+    expect(
+      passenger,
+      contains('shaderCallback: (bounds) =>'),
+      reason: 'and the glyph takes the badge gradient, not a flat fill',
+    );
+    for (final mark in ['(8, 18, light, .55)', '(17, 18, mid, .9)', '(12, 27, light, .35)']) {
+      expect(passenger, contains(mark), reason: 'speed marks sit on reference coordinates');
+    }
+    // Same three squares, same opacities, in the reference and the web.
+    for (final rect in [
+      'x="14" y="24" width="7" height="7" fill="#63A0FF" fill-opacity=".55"',
+      'x="23" y="24" width="7" height="7" fill="#1D6FFF" fill-opacity=".9"',
+      'x="18" y="33" width="7" height="7" fill="#63A0FF" fill-opacity=".35"',
+    ]) {
+      expect(reference, contains(rect));
+      expect(web, contains(rect));
+    }
+  });
+
   test('address search discards stale responses and stays region scoped', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
