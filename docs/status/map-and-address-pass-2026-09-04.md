@@ -130,10 +130,13 @@ viewBox whose badge starts at (2,2) and is 60 across — and scaled once through
 a single `_unit`. The tail already worked that way. A test pins the three
 details against both the reference file and the web markup.
 
-Note for whoever picks this up: `map-address-picker.png` in the same folder
-shows a *different* marker — speed lines rather than squares, a needle tail.
-The status doc names the HTML as the approved one, and the HTML matches the
-SVG, so the PNG is the odd one out. Worth deciding which is actually wanted.
+The folder held a second, contradictory marker: `map-address-picker.png`, with
+tapering speed lines instead of the three squares and a thin needle tail instead
+of the wide one. Sitting in `web-approved/assets/` beside the real thing, it is
+a plausible explanation for how one client ended up part-way between the two.
+The owner confirmed on 2026-09-04 that the SVG is correct, so the PNG has moved
+to `design-reference/rejected/` and `design-reference/README.md` now records
+which file is the specification and which two implementations must follow it.
 
 ## Still open
 
