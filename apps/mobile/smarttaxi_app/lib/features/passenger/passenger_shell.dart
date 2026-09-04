@@ -375,6 +375,13 @@ class _PassengerShellState extends State<PassengerShell>
   int _nearbyDriversRequest = 0;
   int _mapPickerReverseRequest = 0;
   String _mapPickerAddressLabel = 'Точка на карте';
+  // What to tell the rider when the pin resolves to nothing. reverseAddress()
+  // already answers an unresolvable pin with guidance naming their town
+  // ("Попробуйте передвинуть точку в пределах Мырзакент"); the picker used to
+  // drop it and print the heading a second time, so the card read
+  // "Точка на карте" over "Точка на карте" with the confirm button dead and
+  // nothing on screen explaining why.
+  String? _mapPickerAddressHint;
   bool _mapPickerAddressLoading = false;
 
   @override
@@ -1705,6 +1712,7 @@ class _PassengerShellState extends State<PassengerShell>
         _mapPointPickerActive = true;
         _mapCenter = center;
         _mapPickerAddressLabel = l10n.passengerResolvingAddressLabel;
+        _mapPickerAddressHint = null;
         _mapPickerAddressLoading = true;
         _error = null;
       });
@@ -1759,6 +1767,7 @@ class _PassengerShellState extends State<PassengerShell>
     _mapPickerReverseDebounce?.cancel();
     setState(() {
       _mapPointPickerActive = false;
+      _mapPickerAddressHint = null;
       _mapPickerAddressLoading = false;
     });
   }
@@ -1772,8 +1781,14 @@ class _PassengerShellState extends State<PassengerShell>
 
   void _scheduleMapPickerReverse(LatLng point, {bool immediate = false}) {
     _mapPickerReverseDebounce?.cancel();
-    if (!_mapPickerAddressLoading && mounted) {
-      setState(() => _mapPickerAddressLoading = true);
+    if (mounted && (!_mapPickerAddressLoading || _mapPickerAddressHint != null)) {
+      // Clearing the hint as the map starts moving matters: leaving the old
+      // "move the pin" line up while a new point resolves reads as advice
+      // about where the pin is now.
+      setState(() {
+        _mapPickerAddressLoading = true;
+        _mapPickerAddressHint = null;
+      });
     }
     final delay = immediate ? Duration.zero : const Duration(milliseconds: 340);
     _mapPickerReverseDebounce = Timer(
@@ -1787,6 +1802,7 @@ class _PassengerShellState extends State<PassengerShell>
     final requestId = ++_mapPickerReverseRequest;
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
     var label = l10n.passengerMapPointLabel;
+    String? hint;
     final selectedRegion = _selectedRegion;
     if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
       label = l10n.passengerRegionNotServedYetLabel;
@@ -1795,8 +1811,17 @@ class _PassengerShellState extends State<PassengerShell>
         final address = await widget.api.reverseAddress(coordinate);
         if (address != null && _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
+        } else {
+          // Prefer the server's own wording: it names the rider's town, which
+          // a generic string here cannot.
+          final serverHint = address?.subtitle?.trim();
+          hint = serverHint == null || serverHint.isEmpty
+              ? l10n.passengerMapPointNoAddressHint
+              : serverHint;
         }
-      } catch (_) {}
+      } catch (_) {
+        hint = l10n.passengerMapPointNoAddressHint;
+      }
     }
     if (!mounted ||
         !_mapPointPickerActive ||
@@ -1805,6 +1830,7 @@ class _PassengerShellState extends State<PassengerShell>
     }
     setState(() {
       _mapPickerAddressLabel = label;
+      _mapPickerAddressHint = hint;
       _mapPickerAddressLoading = false;
     });
   }
@@ -2706,6 +2732,7 @@ class _PassengerShellState extends State<PassengerShell>
                 ? _MapPointPickerSheet(
                     target: _target,
                     addressLabel: _mapPickerAddressLabel,
+                    addressHint: _mapPickerAddressHint,
                     addressLoading: _mapPickerAddressLoading,
                     onCancel: _cancelMapPointSelection,
                     onConfirm: _confirmMapPointSelection,
@@ -8443,6 +8470,7 @@ class _MapPointPickerSheet extends StatelessWidget {
   const _MapPointPickerSheet({
     required this.target,
     required this.addressLabel,
+    this.addressHint,
     required this.addressLoading,
     required this.onCancel,
     required this.onConfirm,
@@ -8450,6 +8478,9 @@ class _MapPointPickerSheet extends StatelessWidget {
 
   final PointTarget target;
   final String addressLabel;
+  // Set only when the pin resolved to nothing usable; carries the server's
+  // "move the pin" guidance, or a localised stand-in when it had none.
+  final String? addressHint;
   final bool addressLoading;
   final VoidCallback onCancel;
   final VoidCallback onConfirm;
@@ -8613,11 +8644,15 @@ class _MapPointPickerSheet extends StatelessWidget {
                           Text(
                             addressLoading
                                 ? l10n.passengerResolvingAddressLabel
-                                : addressLabel,
+                                : canConfirm
+                                    ? addressLabel
+                                    : addressHint ?? addressLabel,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: palette.textSecondary,
+                              color: canConfirm || addressLoading
+                                  ? palette.textSecondary
+                                  : palette.warning,
                               fontSize: 12.5,
                               height: 1.15,
                               fontWeight: FontWeight.w700,

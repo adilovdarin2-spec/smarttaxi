@@ -1707,5 +1707,6 @@
   "driverRegionsLoadFailedTitle": "Hududlarni yuklab bo'lmadi",
   "driverRegionsLoadFailedMessage": "Aloqani tekshiring va yangilash uchun ekranni pastga torting. Hududlarga ruxsatingiz saqlanib qolgan.",
   "driverRegionsRetryAction": "Yangilash",
-  "authTagline": "SHAHAR TAKSISI"
+  "authTagline": "SHAHAR TAKSISI",
+  "passengerMapPointNoAddressHint": "Nuqtani eng yaqin uy yoki obyektga suring"
 }

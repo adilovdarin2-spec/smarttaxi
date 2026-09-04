@@ -7218,6 +7218,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'ГОРОДСКОЕ ТАКСИ'**
   String get authTagline;
+
+  /// No description provided for @passengerMapPointNoAddressHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Передвиньте точку к ближайшему дому или объекту'**
+  String get passengerMapPointNoAddressHint;
 }
 
 class _AppLocalizationsDelegate

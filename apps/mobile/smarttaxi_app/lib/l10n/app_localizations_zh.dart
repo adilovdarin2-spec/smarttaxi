@@ -3742,4 +3742,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authTagline => '城市出租车';
+
+  @override
+  String get passengerMapPointNoAddressHint => '请将标记移到最近的建筑或地点';
 }

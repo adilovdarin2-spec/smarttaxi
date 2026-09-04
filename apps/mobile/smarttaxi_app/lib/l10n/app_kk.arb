@@ -1704,5 +1704,6 @@
   "driverRegionsLoadFailedTitle": "Аймақтарды жүктеу мүмкін болмады",
   "driverRegionsLoadFailedMessage": "Байланысты тексеріп, жаңарту үшін экранды төмен қарай тартыңыз. Аймақтарға қолжетімдігіңіз сақталған.",
   "driverRegionsRetryAction": "Жаңарту",
-  "authTagline": "ҚАЛАЛЫҚ ТАКСИ"
+  "authTagline": "ҚАЛАЛЫҚ ТАКСИ",
+  "passengerMapPointNoAddressHint": "Нүктені жақын үйге немесе нысанға жылжытыңыз"
 }

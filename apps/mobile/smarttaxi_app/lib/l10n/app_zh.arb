@@ -1707,5 +1707,6 @@
   "driverRegionsLoadFailedTitle": "无法加载区域",
   "driverRegionsLoadFailedMessage": "请检查网络连接，然后下拉刷新。您的区域权限没有变化。",
   "driverRegionsRetryAction": "刷新",
-  "authTagline": "城市出租车"
+  "authTagline": "城市出租车",
+  "passengerMapPointNoAddressHint": "请将标记移到最近的建筑或地点"
 }

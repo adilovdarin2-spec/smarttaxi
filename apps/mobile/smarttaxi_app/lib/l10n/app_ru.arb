@@ -1707,5 +1707,6 @@
   "driverRegionsLoadFailedTitle": "Не удалось загрузить регионы",
   "driverRegionsLoadFailedMessage": "Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.",
   "driverRegionsRetryAction": "Обновить",
-  "authTagline": "ГОРОДСКОЕ ТАКСИ"
+  "authTagline": "ГОРОДСКОЕ ТАКСИ",
+  "passengerMapPointNoAddressHint": "Передвиньте точку к ближайшему дому или объекту"
 }

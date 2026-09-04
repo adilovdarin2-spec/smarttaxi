@@ -3991,4 +3991,8 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get authTagline => 'ҚАЛАЛЫҚ ТАКСИ';
+
+  @override
+  String get passengerMapPointNoAddressHint =>
+      'Нүктені жақын үйге немесе нысанға жылжытыңыз';
 }

@@ -4027,4 +4027,8 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get authTagline => 'SHAHAR TAKSISI';
+
+  @override
+  String get passengerMapPointNoAddressHint =>
+      'Nuqtani eng yaqin uy yoki obyektga suring';
 }

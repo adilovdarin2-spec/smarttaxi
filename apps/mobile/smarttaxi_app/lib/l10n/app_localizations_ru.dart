@@ -3987,4 +3987,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get authTagline => 'ГОРОДСКОЕ ТАКСИ';
+
+  @override
+  String get passengerMapPointNoAddressHint =>
+      'Передвиньте точку к ближайшему дому или объекту';
 }

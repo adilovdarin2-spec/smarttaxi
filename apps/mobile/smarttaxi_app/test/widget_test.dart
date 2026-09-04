@@ -549,6 +549,39 @@ void main() {
     expect(passenger, contains('_SmartDrawer'));
   });
 
+  test('the map picker explains itself when the pin resolves to nothing', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    // The card printed its own heading twice - "Точка на карте" over "Точка на
+    // карте" - with the confirm button dead and nothing saying why, while
+    // reverseAddress() was already returning guidance naming the rider's town.
+    expect(passenger, contains('_mapPickerAddressHint'));
+    expect(
+      passenger,
+      contains('final serverHint = address?.subtitle?.trim();'),
+      reason: "the server's wording wins: it names the town, a local string cannot",
+    );
+    expect(
+      passenger,
+      contains('l10n.passengerMapPointNoAddressHint'),
+      reason: 'with a localised stand-in when the server sent none',
+    );
+    expect(
+      passenger,
+      contains('''                                : canConfirm
+                                    ? addressLabel
+                                    : addressHint ?? addressLabel,'''),
+      reason: 'and the card shows the hint precisely when confirmation is blocked',
+    );
+    // A stale hint must not survive the pin moving, being cancelled, or the
+    // picker being reopened.
+    expect(
+      RegExp(r'_mapPickerAddressHint = null').allMatches(passenger).length,
+      greaterThanOrEqualTo(3),
+      reason: 'the hint is cleared on open, on cancel and when a new point resolves',
+    );
+  });
+
   test('the map picker marker is drawn from the approved reference geometry', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
     final reference =
