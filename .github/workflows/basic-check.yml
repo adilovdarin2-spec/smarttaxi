@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm install
+      - run: npm ci
       - run: npm run syntax
       - run: npm test
 
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm install
+      - run: npm ci
       - run: npm run build
 
   mobile:
