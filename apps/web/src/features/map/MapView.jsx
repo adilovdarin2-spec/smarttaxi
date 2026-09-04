@@ -139,28 +139,25 @@ function routeGeoJson(routePoints) {
   };
 }
 
-function markerElement(type) {
-  // Address points deliberately share the approved marker. Keep this guard
-  // so a future caller cannot accidentally restore one of the retired pins.
-  if (type !== "driver") return smartTaxiMarkerElement();
-
+// The only raster marker left. Every other pin on the map is inline SVG:
+// smartTaxiMarkerElement for an address point and the picker cursor,
+// currentLocationMarkerElement for the rider's own position,
+// finishFlagMarkerElement for a confirmed destination.
+//
+// This used to be markerElement(type) with branches for "pickup" and
+// "destination" and a guard returning the approved marker for anything that
+// was not a driver. Both branches were unreachable - the sole call site passes
+// "driver" - so all the guard protected was two PNGs of retired pins that
+// nothing could render. Those are gone with it.
+function driverMarkerElement() {
   const element = document.createElement("span");
-  element.className = `map-marker native-map-marker ${type} ${type}-marker`;
+  element.className = "car-marker maplibre-car-marker native-map-marker driver-marker";
+  element.setAttribute("aria-label", "Водитель");
   const image = document.createElement("img");
   image.alt = "";
   image.decoding = "async";
   image.loading = "eager";
-  if (type === "pickup") {
-    image.src = "/map/marker_my_location_2026.png";
-    element.setAttribute("aria-label", "Точка подачи");
-  } else if (type === "driver") {
-    element.className = "car-marker maplibre-car-marker native-map-marker driver-marker";
-    element.setAttribute("aria-label", "Водитель");
-    image.src = "/map/driver_car_topview_white.png";
-  } else {
-    element.setAttribute("aria-label", "Точка назначения");
-    image.src = "/map/marker_destination_2026.png";
-  }
+  image.src = "/map/driver_car_topview_white.png";
   element.appendChild(image);
   return element;
 }
@@ -519,7 +516,7 @@ export default function MapView({
       driverMarkerElRef.current = null;
       driverMarkerPointRef.current = null;
     } else if (!driverMarkerElRef.current) {
-      driverMarkerElRef.current = new maplibregl.Marker({ element: markerElement("driver"), anchor: "center" })
+      driverMarkerElRef.current = new maplibregl.Marker({ element: driverMarkerElement(), anchor: "center" })
         .setLngLat([driverPoint.lng, driverPoint.lat])
         .addTo(map);
       driverMarkerPointRef.current = driverPoint;
