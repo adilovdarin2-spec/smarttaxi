@@ -27,7 +27,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 | Item | What closes it | Current constraint |
 |---|---|---|
-| Current Android APK on the physical phone | Install the explicit localhost build; verify its endpoint and local login | Phone is visible to ADB, but the previous installs were rejected by the device; installation approval has not been confirmed |
+| Current Android APK on the physical phone | Restore normal device confirmation flow, then approve/install the localhost build and verify local login | USB switches are enabled, but Xiaomi's confirmation activity logs an exception and exits before the failed install; the owner reports no prompt. See the phone-install diagnostic |
 | Passenger/driver visual parity | Capture the full current Android state sequence and compare with web/reference boards | Native snapshots from older builds are not acceptance of the current APK |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
 | Native driver route layer | First inspect the active route on-device; implement the documented annotation-to-style-layer plan only if needed | Renderer must not be changed blindly |
@@ -62,6 +62,7 @@ these warnings did not prevent the current builds.
 ## Evidence index
 
 - [Current continuation](SESSION-2026-09-05-CONTINUATION.md)
+- [Phone installation diagnostic](phone-install-diagnostics-2026-09-05.md)
 - [Presentation/screenshots](visual-refinement-2026-09-05.md)
 - [Route/GPS ordering](gps-publication-ordering-2026-09-05.md)
 - [GPS failure recovery](driver-gps-feedback-2026-09-05.md)

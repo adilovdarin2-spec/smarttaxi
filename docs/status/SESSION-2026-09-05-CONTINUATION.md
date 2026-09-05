@@ -100,10 +100,16 @@ evidence and the resolved write-before-route regression.
 ## Device blocker — action required
 
 The physical `2409BRN2CY` Android phone is connected and authorized for ADB.
-USB reverse ports 4001 and 5175 are configured. However, both attempts to
-install the debug APK returned `INSTALL_FAILED_USER_RESTRICTED: Install
-canceled by user`. Device-side USB installation approval is required. No
-security setting was bypassed, no app was uninstalled and no app data cleared.
+USB reverse ports 4001 and 5175 are configured. Repeated owner-requested
+installation attempts returned `INSTALL_FAILED_USER_RESTRICTED: Install
+canceled by user`, but the owner reports no confirmation window appeared.
+Further inspection confirms USB installation/debugging switches are already
+enabled. Xiaomi's confirmation activity logs an exception during creation,
+finishes, and is followed by the refusal. This is not proof that the owner
+pressed Cancel. See `phone-install-diagnostics-2026-09-05.md` for the exact
+evidence and uncertainty. An owner-controlled restart/reconnection is the
+next diagnostic. No security setting was bypassed, no app was uninstalled
+and no app data cleared.
 
 A separate attempt to open local web in the phone browser was rejected by
 the available automation channel. No phone-browser screenshots or native
@@ -116,7 +122,7 @@ and app-resume behavior, then the already-documented native driver route
 annotation-to-style-layer migration if confirmed visually.
 
 APK: `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk`.
-After device approval, install with `adb install -r`, verify localhost build,
+After the confirmation flow works and device approval, install with `adb install -r`, verify localhost build,
 and use only local test accounts/dev SMS. Do not switch to an emulator or use
 production auth to work around this blocker.
 
