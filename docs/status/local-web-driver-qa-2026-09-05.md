@@ -39,12 +39,12 @@ third-party vehicle photo, taxi brand, or reference artwork was copied.
    `meta.json` checksum.  The supplied `s_buildings-data.xlsx` cannot supply
    this: it contains Pavlodar-only rows without coordinates.  See
    `rka-input-audit-2026-09-04.md`.
-2. A legitimate vector-map style/source credential is needed for the full 3D
-   building treatment from the design reference.  The local product continues
-   to use its legal OpenStreetMap fallback; it does not pretend raster tiles
-   are 3D.  The API reports this explicitly as `maptiler: not_configured`.
+2. Correction after inspecting the actual web renderer: the web already uses
+   OpenFreeMap's vector style when MapTiler is not configured, and adds real
+   building-footprint extrusions. `maptiler: not_configured` in API readiness
+   therefore does **not** mean that web 3D is blocked. Building coverage still
+   depends on the source data; the reference's city geometry is not our town.
 3. No physical Android device was visible to ADB during this pass.  No emulator
-   was substituted.  Native route-line ordering must stay unchanged until it
-   can receive the visual device QA described in
+   was substituted. The remaining native driver route-line ordering needs
+   the visual device QA described in
    `map-and-address-pass-2026-09-04.md`.
-

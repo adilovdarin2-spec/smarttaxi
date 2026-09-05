@@ -22075,8 +22075,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .final10-standard-home .final10-map-wrap .map-view,
 .taxi-client-shell .final10-standard-home .final10-map-wrap .map-view.live-osm {
-  opacity: .93 !important;
-  filter: saturate(.64) brightness(1.05) contrast(.88) !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 /* The live map remains the source of roads, labels and interaction. This
@@ -22096,7 +22096,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .final10-standard-home .final10-map-fade-bottom {
-  height: 125px !important;
+  height: 42px !important;
   background: linear-gradient(180deg, rgba(238, 245, 255, 0), #f7fbff 94%) !important;
 }
 
@@ -22134,9 +22134,10 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .final10-standard-home .final10-sheet-heading h1 {
-  font-size: 25px !important;
-  line-height: 1.05 !important;
-  letter-spacing: -.045em !important;
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+  font-weight: 650 !important;
+  letter-spacing: -.025em !important;
 }
 
 .taxi-client-shell .final10-standard-home .final10-sheet-heading p {
@@ -22206,14 +22207,44 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .final10-standard-home .final10-txt small {
-  font-size: 9px !important;
+  font-size: 10px !important;
   line-height: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #65748b !important;
 }
 
 .taxi-client-shell .final10-standard-home .final10-txt strong,
 .taxi-client-shell .final10-standard-home .final10-txt strong.placeholder {
   font-size: 15px !important;
   line-height: 19px !important;
+  font-weight: 500 !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-txt strong:not(.placeholder) {
+  font-weight: 550 !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-sheet-heading small {
+  font-weight: 450 !important;
+  color: #65748b !important;
+}
+
+.taxi-client-shell .final10-standard-home .final10-chip {
+  color: #26364d !important;
+  background: #fff !important;
+  border-color: #e4eaf2 !important;
+  box-shadow: 0 2px 5px rgba(22, 42, 75, .05) !important;
+  font-weight: 500 !important;
+}
+
+.taxi-client-shell .final10-address-guidance {
+  margin: 0;
+  color: #65748b;
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.4;
 }
 
 .taxi-client-shell .final10-standard-home .final10-nearby-pill.exact {
@@ -22236,15 +22267,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .final10-standard-home .final10-cta {
   min-height: 56px !important;
   margin-top: 0 !important;
-  border-radius: 17px !important;
-  background: linear-gradient(180deg, #2d7aff, #1769ff) !important;
-  box-shadow: 0 12px 22px rgba(23, 105, 255, .25) !important;
+  border-radius: 15px !important;
+  background: #1d6fff !important;
+  box-shadow: 0 6px 16px rgba(29, 111, 255, .18) !important;
   font-size: 16px !important;
+  font-weight: 600 !important;
+  justify-content: center !important;
 }
 
 .taxi-client-shell .final10-standard-home .final10-cta b {
-  width: 32px !important;
-  height: 32px !important;
+  display: none !important;
 }
 
 @media (max-height: 720px) {
@@ -23358,16 +23390,21 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
    tangible tariff cards, a route card and one calm, primary action. */
 .taxi-client-shell .tariff-v14-state {
   position: relative;
+  display: grid !important;
+  grid-template-rows: minmax(180px, 1fr) auto !important;
+  height: 100svh !important;
   min-height: 100%;
-  overflow: hidden;
+  padding: 0 !important;
+  overflow-y: auto !important;
   isolation: isolate;
   background: #edf6ff !important;
 }
 
 .taxi-client-shell .tariff-v14-map {
-  position: absolute;
-  z-index: -2;
-  inset: 0;
+  position: relative;
+  grid-row: 1;
+  min-height: 0;
+  z-index: 0;
 }
 
 .taxi-client-shell .tariff-v14-map .map-view,
@@ -23383,11 +23420,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   z-index: -1;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(244, 250, 255, .56) 0%, rgba(244, 250, 255, .06) 34%, rgba(244, 250, 255, .18) 57%, rgba(244, 250, 255, .78) 100%);
+  display: none;
 }
 
 .taxi-client-shell .tariff-v14-topbar {
-  position: relative;
+  position: absolute;
+  inset: 0 0 auto;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -23396,28 +23434,28 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .tariff-v14-topbar button {
-  width: 60px;
-  height: 60px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   padding: 0;
   color: #101b31;
-  border: 2px solid #1d6fff;
-  border-radius: 23px;
+  border: 1px solid #e4eaf2;
+  border-radius: 16px;
   background: rgba(255, 255, 255, .94);
   box-shadow: 0 10px 24px rgba(13, 69, 158, .12);
 }
 
 .taxi-client-shell .tariff-v14-topbar > span {
-  min-width: 178px;
-  padding: 15px 18px;
+  min-width: 0;
+  padding: 11px 16px;
   color: #111b2d;
-  border: 2px solid #1d6fff;
+  border: 1px solid #e4eaf2;
   border-radius: 999px;
   background: rgba(255, 255, 255, .94);
   box-shadow: 0 10px 24px rgba(13, 69, 158, .1);
-  font-size: 18px;
-  font-weight: 850;
+  font-size: 15px;
+  font-weight: 600;
   line-height: 22px;
   text-align: center;
 }
@@ -23971,7 +24009,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
    phone viewport.  The old vertical tariff cards pushed the actionable rows
    outside a parent that intentionally clips its overflow. */
 .taxi-client-shell .tariff-v14-state .tariff-v14-sheet {
-  position: absolute !important;
+  position: relative !important;
+  grid-row: 2;
   right: 0;
   bottom: 0;
   left: 0;
@@ -24178,4 +24217,49 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: auto !important;
   min-height: 0 !important;
   align-self: start !important;
+}
+
+/* Reference-aligned type hierarchy: ordinary labels remain ordinary text;
+   headings and actual prices carry emphasis. */
+.taxi-client-shell .address-picker-title-row h1,
+.taxi-client-shell .tariff-v14-state .tariff-v14-section-title h1 {
+  font-size: 24px !important;
+  font-weight: 650 !important;
+  letter-spacing: -.025em !important;
+}
+.taxi-client-shell .address-picker-title-row p,
+.taxi-client-shell .address-picker-results button small {
+  font-weight: 450 !important;
+  line-height: 1.4 !important;
+}
+.taxi-client-shell .address-picker-eyebrow,
+.taxi-client-shell .address-picker-region-tabs button,
+.taxi-client-shell .address-picker-results header strong,
+.taxi-client-shell .address-picker-results button strong {
+  font-weight: 550 !important;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy b,
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row b,
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-card > button,
+.taxi-client-shell .tariff-v14-state .reference-payment-copy strong {
+  font-weight: 600 !important;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy small,
+.taxi-client-shell .tariff-v14-state .tariff-v14-route-row strong,
+.taxi-client-shell .tariff-v14-state .tariff-v14-price small,
+.taxi-client-shell .tariff-v14-state .reference-payment-copy small {
+  font-weight: 450 !important;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v14-card-copy strong,
+.taxi-client-shell .tariff-v14-state .tariff-v14-price b {
+  font-weight: 650 !important;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v12-order {
+  background: #1d6fff !important;
+  border-radius: 15px !important;
+  box-shadow: 0 6px 16px rgba(29, 111, 255, .18) !important;
+  font-weight: 600 !important;
+}
+.taxi-client-shell .tariff-v14-state .tariff-v12-order b {
+  font-weight: 650 !important;
 }

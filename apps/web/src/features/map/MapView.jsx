@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Icon } from "../../core/icons.jsx";
 
 const DEFAULT_CENTER = { lat: 40.844435, lng: 68.509021 };
-const DEFAULT_ZOOM = 15;
+const DEFAULT_ZOOM = 16;
 const OSM_TILE_URL = import.meta.env.VITE_OSM_TILE_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY || "";
 const MAPTILER_STYLE_URL = import.meta.env.VITE_MAPTILER_STYLE_URL || "";
@@ -247,14 +247,14 @@ function fitMap(map, points, compact) {
       new maplibregl.LngLatBounds([valid[0].lng, valid[0].lat], [valid[0].lng, valid[0].lat])
     );
     map.fitBounds(bounds, {
-      padding: compact ? 52 : { top: 90, right: 46, bottom: 110, left: 46 },
+      padding: compact ? { top: 82, right: 52, bottom: 52, left: 52 } : { top: 90, right: 46, bottom: 110, left: 46 },
       maxZoom: 16,
       duration: 650
     });
     return;
   }
   if (valid[0]) {
-    map.easeTo({ center: [valid[0].lng, valid[0].lat], zoom: compact ? 14 : DEFAULT_ZOOM, duration: 550 });
+    map.easeTo({ center: [valid[0].lng, valid[0].lat], zoom: DEFAULT_ZOOM, duration: 550 });
   }
 }
 
@@ -307,7 +307,7 @@ export default function MapView({
       container: containerRef.current,
       style,
       center: [centerPoint.lng, centerPoint.lat],
-      zoom: compact ? 14 : DEFAULT_ZOOM,
+      zoom: DEFAULT_ZOOM,
       // Slightly more perspective on the rider's map matches the approved
       // navigation reference while retaining enough top-down context to pick
       // an exact entrance or house.
@@ -417,6 +417,10 @@ export default function MapView({
       }, 180);
     };
     const markChanging = () => {
+      // A new gesture must settle even when zooming leaves the centre
+      // unchanged. Deduplication only applies to its paired end events.
+      lastPublishedCenter = "";
+      window.clearTimeout(timer);
       onCenterChangingRef.current?.();
       window.clearTimeout(fallbackTimer);
       fallbackTimer = window.setTimeout(emitCenter, 760);
@@ -531,7 +535,20 @@ export default function MapView({
     if (!map || !mapReady) return;
     if (centerMarker && !routePoints.length && !pickupPoint && !destinationPoint && !driverPoint) return;
     fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
-  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, centerPoint.lat, centerPoint.lng, routePoints.length, compact]);
+  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, centerPoint.lat, centerPoint.lng, route, compact]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !containerRef.current) return undefined;
+    const observer = new ResizeObserver(() => {
+      map.resize();
+      if (!centerMarker) {
+        fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, centerPoint.lat, centerPoint.lng, route, compact]);
 
   useEffect(() => {
     const map = mapRef.current;

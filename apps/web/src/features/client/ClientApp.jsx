@@ -1605,6 +1605,10 @@ export default function ClientApp() {
       // the paired moveend/zoomend events, so this is never a request storm.
     }
     const candidatePoint = { lat: Number(point.lat), lng: Number(point.lng) };
+    // Every new camera position invalidates the previous reverse lookup,
+    // including cached points and points outside the operating region.
+    const seq = ++mainMapReverseSeqRef.current;
+    window.clearTimeout(mainMapReverseDebounceRef.current);
     if (!pointInRegion(candidatePoint, selectedRegion)) {
       setMainMapCandidate({
         title: "Точка вне зоны обслуживания",
@@ -1625,8 +1629,6 @@ export default function ClientApp() {
       setMainMapPickLoading(false);
       return;
     }
-    const seq = mainMapReverseSeqRef.current + 1;
-    mainMapReverseSeqRef.current = seq;
     setMainMapCandidate(fallback);
     setMainMapCandidateReady(false);
     setMainMapPickLoading(true);
@@ -1660,6 +1662,7 @@ export default function ClientApp() {
   function markMainMapMoving() {
     if (destination || pickup) return;
     if (mainMapSkipInitialCenterRef.current) return;
+    ++mainMapReverseSeqRef.current;
     window.clearTimeout(mainMapReverseDebounceRef.current);
     setMainMapCandidateReady(false);
     setMainMapPickLoading(true);
@@ -2205,11 +2208,12 @@ function ReferenceHomeSection(props) {
     ? activePickup.title
     : markerAddressSubtitle;
   const destinationDisabled = !pickup && (mainMapPickLoading || !mainMapCandidateReady);
-  const primaryActionLabel = destinationDisabled
+  const needsManualPickup = !pickup && !mainMapPickLoading && (!mainMapCandidateReady || !mainMapCandidate);
+  const primaryActionLabel = !pickup && mainMapPickLoading
     ? "Определяем адрес"
-    : pickup
-      ? "Выбрать пункт назначения"
-      : "Указать место подачи";
+    : needsManualPickup
+      ? "Выбрать адрес подачи"
+      : "Выбрать пункт назначения";
   const recentPlaces = popularAddressesForRegion(selectedRegion, 6)
     .filter(place => !normalizeText(place.title).includes("местоположение"))
     .slice(0, 3);
@@ -2228,7 +2232,7 @@ function ReferenceHomeSection(props) {
   if (routeReady) {
     return (
       <section className="client-reference-screen reference-tariff-state tariff-v12-state tariff-v14-state">
-        <div className="tariff-v14-map" aria-hidden="true">
+        <div className="tariff-v14-map">
           <MapView
             pickup={pickup}
             destination={destination}
@@ -2299,38 +2303,7 @@ function ReferenceHomeSection(props) {
       <div className="final10-glow-b" aria-hidden="true" />
       <div className="final10-glow-c" aria-hidden="true" />
 
-      <div className="final10-map-wrap" aria-hidden="true">
-        <div className="final10-map-placeholder">
-          <svg viewBox="0 0 390 490" preserveAspectRatio="none">
-            <rect x="0" y="0" width="390" height="490" fill="#eaf3ff" />
-            <rect x="16" y="26" width="120" height="140" rx="10" fill="#ffffff" />
-            <rect x="252" y="16" width="122" height="100" rx="10" fill="#ffffff" />
-            <rect x="248" y="148" width="126" height="140" rx="10" fill="#ffffff" />
-            <rect x="16" y="270" width="140" height="78" rx="10" fill="#ffffff" />
-            <rect x="26" y="360" width="330" height="110" rx="16" fill="#dff2fb" />
-            <path d="M50 378L330 448M330 378L50 448" stroke="#b9dcf0" strokeWidth="1.2" />
-            <rect x="0" y="198" width="390" height="14" fill="#cfdef2" />
-            <rect x="176" y="0" width="14" height="490" fill="#cfdef2" />
-            <path d="M60 40Q150 100 176 198T195 400" stroke="#1d6fff" strokeWidth="2.4" strokeDasharray="1 8" strokeLinecap="round" fill="none" opacity=".8" />
-            <circle cx="60" cy="40" r="5" fill="#1d6fff" />
-            <text x="52" y="192" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#7186a3">ул. Амангелды</text>
-            <text x="196" y="110" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#7186a3" transform="rotate(90 196 110)">ул. Жамбыла</text>
-            <g opacity=".85">
-              <rect x="222" y="192" width="9" height="5.5" rx="2" fill="#7cabff" />
-              <rect x="100" y="272" width="9" height="5.5" rx="2" fill="#7cabff" opacity=".7" />
-              <rect x="260" y="330" width="9" height="5.5" rx="2" fill="#7cabff" opacity=".55" />
-            </g>
-            <g opacity=".8">
-              <rect x="30" y="40" width="4" height="4" fill="#a4c6ff" />
-              <rect x="42" y="40" width="4" height="4" fill="#a4c6ff" opacity=".5" />
-              <rect x="30" y="50" width="4" height="4" fill="#a4c6ff" opacity=".7" />
-              <rect x="270" y="34" width="4" height="4" fill="#a4c6ff" opacity=".6" />
-              <rect x="282" y="44" width="4" height="4" fill="#a4c6ff" opacity=".4" />
-              <rect x="266" y="168" width="4" height="4" fill="#a4c6ff" opacity=".5" />
-              <rect x="278" y="178" width="4" height="4" fill="#a4c6ff" opacity=".7" />
-            </g>
-          </svg>
-        </div>
+      <div className="final10-map-wrap">
         <MapView
           pickup={null}
           destination={destination}
@@ -2432,11 +2405,14 @@ function ReferenceHomeSection(props) {
           </button>
         </div>
 
+        {needsManualPickup && mainMapCandidate?.subtitle && (
+          <p className="final10-address-guidance" role="status">{mainMapCandidate.subtitle}</p>
+        )}
         {routeLoading && <p className="final10-note">Определяем адрес и маршрут...</p>}
         {routeError && <p className="final10-note danger">{routeError}</p>}
         {message && <p className="final10-note">{message}</p>}
 
-        <button type="button" className="final10-cta tappable tap-soft" onClick={onDestination} disabled={destinationDisabled}>
+        <button type="button" className="final10-cta tappable tap-soft" onClick={needsManualPickup ? onPickup : onDestination} disabled={!pickup && mainMapPickLoading}>
           <span>{primaryActionLabel}</span>
           <b><Icon name="chevron" size={18} /></b>
         </button>
