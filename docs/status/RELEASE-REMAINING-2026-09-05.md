@@ -17,7 +17,8 @@ does not replace the September evidence. Work and QA remain local on `dev`.
   active/unpaid-trip restoration and stale-session isolation.
 - Native GPS queue/route ordering, presentation, transport and creation
   reconciliation plus passenger route framing and socket session isolation:
-  95 tests, clean analysis and a verified installed localhost debug APK.
+  96 tests and clean analysis. The first localhost candidate was installed and
+  hash-verified; the subsequent home-camera candidate awaits device reconnection.
 - Physical Android passenger pre-order screens and the driver lifecycle through
   manual local CASH receipt were exercised. The revised route/flag and home
   footer are visually confirmed; this does not close all native acceptance.
@@ -31,8 +32,8 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 | Item | What closes it | Current constraint |
 |---|---|---|
-| Passenger/driver visual parity | Complete current native state coverage and compare with web/reference boards | Sep 6 route/picker/footer fixes were inspected on the installed candidate. Home pickup occlusion, stale picker route pill, driver Line-map marker sizing and native passenger trip states remain; see physical QA |
-| Native automatic dispatch after account switch | Observe the new order without manual refresh on the revised APK | A library-level stale-session reproduction fails before the fix and passes after it; device verification is next |
+| Passenger/driver visual parity | Complete current native state coverage and compare with web/reference boards | Sep 6 route/picker/footer fixes and passenger searching/assigned states were inspected. Home/picker follow-up candidate needs installation; driver Line-map sizing and native passenger waiting/active/receipt remain. The phone disconnected during QA |
+| Native automatic dispatch after account switch | Observe the new driver order without manual refresh on the revised APK | The library-level stale-session reproduction fails before and passes after the fix. Native passenger assignment updates were received, but native driver incoming after account switch still needs its device check |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
 | Native driver route layer | First inspect the active route on-device; implement the documented annotation-to-style-layer plan only if needed | Renderer must not be changed blindly |
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |

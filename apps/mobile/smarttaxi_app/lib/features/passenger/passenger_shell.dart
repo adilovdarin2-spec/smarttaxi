@@ -2752,7 +2752,7 @@ class _PassengerShellState extends State<PassengerShell>
             onMenu: _openDrawer,
             onNotifications: _openNotifications,
             unreadNotificationCount: _unreadNotificationCount,
-            routeSummaryLabel: routeSummaryLabel,
+            routeSummaryLabel: pickingMapPoint ? null : routeSummaryLabel,
             onRouteBack: _backToAddressSelection,
             controlsBottom: mapControlsBottom,
             showLocationButton: !routeComplete,
@@ -5931,6 +5931,8 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   bool _ignoreNextCameraIdle = false;
   String _lastSceneSignature = '';
   String _lastRouteFitSignature = '';
+  String _lastHomeFitSignature = '';
+  int _homeCameraMoves = 0;
   Size _viewportSize = Size.zero;
   Timer? _cameraSyncTimer;
 
@@ -5945,6 +5947,12 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   @override
   void didUpdateWidget(covariant _NativeMapLibreSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // A deliberate new GPS/address selection may have the same coordinates.
+    // It still needs to recenter after a user pan; ordinary rebuilds retain
+    // the same immutable Coordinate instance and must not steal the camera.
+    if (!identical(oldWidget.pickup, widget.pickup)) {
+      _lastHomeFitSignature = '';
+    }
     // `initialCameraPosition` is read only while the platform view is
     // created. Unlike flutter_map, rebuilding the widget after GPS, address
     // search, or region selection does not automatically recenter MapLibre.
@@ -6136,6 +6144,46 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       return;
     }
     _lastRouteFitSignature = '';
+    final pickup = widget.pickup;
+    if (!widget.pickingPoint && pickup != null && widget.dropoff == null) {
+      if (_viewportSize.isEmpty) return;
+      final signature = '${_pointKey(pickup.toLatLng())}|'
+          '${widget.panelHeight.toStringAsFixed(1)}|$_viewportSize';
+      if (_lastHomeFitSignature == signature) return;
+      _lastHomeFitSignature = signature;
+      _homeCameraMoves++;
+      try {
+        _ignoreNextCameraIdle = true;
+        final moved = await controller.animateCamera(
+          native_map.CameraUpdate.newCameraPosition(
+            native_map.CameraPosition(
+              target: _nativePoint(pickup.toLatLng()),
+              zoom: widget.zoom,
+              tilt: 55,
+            ),
+          ),
+          duration: const Duration(milliseconds: 220),
+        );
+        // A gesture, newer GPS selection or resized panel cancels this fit.
+        if (!mounted || moved == false || _lastHomeFitSignature != signature) {
+          return;
+        }
+        _ignoreNextCameraIdle = true;
+        await controller.animateCamera(
+          native_map.CameraUpdate.scrollBy(
+            0,
+            passengerPointScrollY(_viewportSize, widget.panelHeight),
+          ),
+          duration: const Duration(milliseconds: 220),
+        );
+      } catch (_) {
+        _lastHomeFitSignature = '';
+      } finally {
+        _homeCameraMoves--;
+      }
+      return;
+    }
+    _lastHomeFitSignature = '';
     final current = controller.cameraPosition;
     final target = _nativePoint(widget.center);
     final currentTarget = current?.target;
@@ -6352,6 +6400,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     }
     _lastSceneSignature = '';
     _lastRouteFitSignature = '';
+    _lastHomeFitSignature = '';
     _imagesInstalled = false;
     _routeLayersInstalled = false;
     final controller = _controller;
@@ -6376,10 +6425,13 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
 
   Future<void> _settle3dCamera(
       native_map.MapLibreMapController controller) async {
-    if (!widget.pickingPoint && widget.route.length >= 2) {
-      // A route overview is fitted above the sheet. Do not overwrite that fit
-      // with the street-level opening camera after the first style frame.
+    if (!widget.pickingPoint &&
+        (widget.route.length >= 2 ||
+            (widget.pickup != null && widget.dropoff == null))) {
+      // The route or home pickup is framed above the sheet. Do not overwrite
+      // that fit with the opening camera after the first style frame.
       _lastRouteFitSignature = '';
+      _lastHomeFitSignature = '';
       await _syncCameraToWidget();
       return;
     }
@@ -6401,6 +6453,10 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   }
 
   void _onCameraIdle() {
+    if (_homeCameraMoves > 0) {
+      _ignoreNextCameraIdle = false;
+      return;
+    }
     if (_ignoreNextCameraIdle) {
       _ignoreNextCameraIdle = false;
       return;

@@ -15,6 +15,13 @@ EdgeInsets passengerRouteInsets(Size viewport, double panelHeight) {
   return EdgeInsets.fromLTRB(side, top, side, bottom);
 }
 
+/// Move the map's center point into the unobscured area, retaining native
+/// projection/zoom/pitch. Positive screen scroll moves the point upward.
+double passengerPointScrollY(Size viewport, double panelHeight) {
+  final padding = passengerRouteInsets(viewport, panelHeight);
+  return (padding.bottom - padding.top) / 2;
+}
+
 native_map.LatLngBounds passengerRouteBounds(Iterable<LatLng> points) {
   final valid = points
       .where((point) =>

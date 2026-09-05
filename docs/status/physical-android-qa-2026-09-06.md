@@ -56,9 +56,9 @@ The public client active-order response is now null; read-only database checks
 confirm that exact order is `PAID`/`PAID` and the seeded driver is `OFFLINE`.
 The rating was skipped, and the completion card was dismissed normally.
 
-Native **passenger searching/assigned/active/receipt screens were not exercised
-in this pass**. API counterpart checks and earlier paired-browser coverage
-must not be described as screenshots of those native passenger states.
+The first pass did not exercise native passenger trip screens. The later
+candidate follow-up below adds searching and assigned-driver evidence only;
+API counterpart checks and browser coverage are not native screenshots.
 
 ## Confirmed defects and scoped candidate fixes
 
@@ -124,3 +124,47 @@ controlled physical test. Do not replace the value with an invented speed.
 The driver renderer is deliberately unchanged pending its dedicated visual
 before/after pass. Legal, official RKA, merchant/SMS and provider/store inputs
 remain external; see the [release list](RELEASE-REMAINING-2026-09-05.md).
+
+## Follow-up after `ec9523f`
+
+On the installed `4a2432...17feeb` APK, the seeded passenger created a second
+isolated local order from the actual native UI:
+`d7a72dcf-703b-49ff-9bb9-d4b5f35ef6cd`. A normal password-authenticated seeded
+driver acted as the API counterpart, with the existing real-device location;
+no location was fabricated. The native passenger screen changed automatically
+from searching to driver found after acceptance, without manual refresh.
+
+- [Native searching](evidence/android-2026-09-06/passenger-searching.png).
+- [Native assigned](evidence/android-2026-09-06/passenger-assigned.png).
+- [Driver/car details](evidence/android-2026-09-06/passenger-driver-details.png):
+  the seeded driver's name, Toyota Camry, plate, CASH and 700 ₸ are displayed;
+  the detail card scrolls to its contact/cancel controls. No call was made.
+
+The device then disappeared from `adb devices -l` (empty list), preventing
+further screenshots and installation. Going-to-pickup, arrived and waiting
+were accepted by the counterpart API, **but their native passenger screens
+were not observed**. To avoid leaving an outstanding test, the exact bound
+order was cancelled through a fresh ordinary login to the same seeded client
+and its public cancellation endpoint. The active-order read returned null;
+the counterpart driver was set offline. That cleanup login supersedes the
+phone's seeded passenger session, so expect normal reauthentication on resume.
+No other order was cancelled, no data was deleted and no merchant was used.
+
+### Next candidate, not installed or visually accepted
+
+- Home camera now uses the measured unobscured map area to scroll the pickup
+  above the sheet while retaining the native zoom and 55-degree pitch. Only a
+  changed pickup, deliberate new GPS selection or changed panel/viewport
+  reframes it; ordinary rebuilds retain a user pan. Programmatic camera-idle
+  events do not overwrite the chosen location between the two camera moves.
+- The outdated route summary is hidden while choosing a new map point.
+- Files: `passenger_shell.dart`, `passenger_map_viewport.dart`, and
+  `passenger_map_viewport_test.dart`. Driver renderer/artwork remain unchanged.
+- Analyzer: no issues; full Flutter suite **96 passed**; explicit localhost
+  debug APK built. SHA-256:
+  `5c207440a8dea8c25afd339f1db29a7747f883f64a3d406268bf0278c85bbd4f`.
+  This hash is a **candidate**, not the hash currently verified on the phone.
+- Next: reconnect the phone, restore both reverse ports, install this candidate
+  normally, log in to local dev, inspect home/collapse/recenter/picker and
+  repeat native passenger waiting/active/completion plus automatic native
+  driver dispatch after an account switch. Preserve all external boundaries.

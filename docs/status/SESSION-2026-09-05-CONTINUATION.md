@@ -3,9 +3,13 @@
 **Sep 6 update:** the owner's restart allowed installation, and the latest
 localhost candidate was subsequently installed and hash-verified too. See
 [physical Android QA](physical-android-qa-2026-09-06.md) for actual native
-screens, the driver lifecycle, 95 passing Flutter tests and current open
+screens, the driver lifecycle, 96 passing Flutter tests and current open
 acceptance items. The historical device-blocker section below is superseded
 by that report; do not repeat its installation diagnosis as current state.
+The phone later disconnected completely. The installed candidate's route and
+flag are inspected; a newer home-camera candidate remains uninstalled. Local
+QA orders are closed and the test driver is offline. Use the Sep 6 report's
+latest hash and follow-up steps, not the historical blocked-install advice.
 
 Work is on `dev`. Existing work and Docker data were retained; no reset,
 clean, volume removal, production test account or external SMS was used.
