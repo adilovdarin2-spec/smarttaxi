@@ -9,9 +9,9 @@ COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 
 FROM workspace-manifests AS api-dependencies
-# Preserve the existing local proxy override. Deployments can pass true, as
-# .env.example already does; no TLS setting is changed as part of lock adoption.
-ARG NPM_STRICT_SSL=false
+# Verify registry certificates by default, including when no .env is present.
+# A corporate TLS proxy needs its trusted CA, not a production TLS bypass.
+ARG NPM_STRICT_SSL=true
 # Firebase is used only for Messaging; omit its unused optional Firestore and
 # Storage SDKs (including their legacy UUID dependency tree).
 RUN npm config set strict-ssl ${NPM_STRICT_SSL} \

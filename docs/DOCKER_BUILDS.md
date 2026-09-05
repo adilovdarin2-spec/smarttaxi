@@ -45,9 +45,17 @@ map settings. Public browser map keys are intentionally compiled into the web
 bundle; never supply a private server credential through a `VITE_*` argument.
 Card payments and OpenFreeMap keep their existing application defaults.
 
-`NPM_STRICT_SSL` is preserved as the existing API build override; this change
-does not alter the local proxy/TLS setup. `.env.example` supplies `true` for a
-configured deployment. The prior Compose fallback remains unchanged.
+`NPM_STRICT_SSL` defaults to `true` in Compose and both API Dockerfiles, matching
+`.env.example`. A missing environment file no longer disables npm registry
+certificate validation. The explicit build argument remains for compatibility;
+do not set it to `false` for production. A TLS-intercepting corporate proxy
+requires a deliberately configured, trusted CA, not disabled validation. This
+change does not install certificates or modify the host trust store.
+
+`node infra/scripts/tests/docker-build-policy-check.mjs` guards these defaults
+in CI before dependency installation. See the
+[TLS validation follow-up](status/docker-tls-defaults-2026-09-05.md) for the
+local build evidence.
 
 This locks npm dependencies, not every image byte: Node/nginx base tags can
 receive platform/security updates that change image digests.

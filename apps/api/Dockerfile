@@ -1,7 +1,8 @@
 # railway-deploy-cache-bust: 2026-07-15
 FROM node:22-bookworm-slim
 WORKDIR /app
-ARG NPM_STRICT_SSL=false
+# Keep registry certificate verification enabled in service-local builds too.
+ARG NPM_STRICT_SSL=true
 RUN npm config set strict-ssl ${NPM_STRICT_SSL}
 COPY package*.json ./
 # Messaging does not need Firebase's optional Firestore/Storage SDKs. This

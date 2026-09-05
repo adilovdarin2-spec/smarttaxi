@@ -57,7 +57,7 @@ services:
       dockerfile: infra/docker/Dockerfile
       target: api
       args:
-        NPM_STRICT_SSL: ${NPM_STRICT_SSL:-false}
+        NPM_STRICT_SSL: ${NPM_STRICT_SSL:-true}
     restart: always
     env_file:
       - path: .env

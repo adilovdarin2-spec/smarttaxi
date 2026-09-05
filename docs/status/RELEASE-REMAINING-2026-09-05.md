@@ -9,6 +9,8 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 - API dependency policy and 36 checks; web 46 tests and production build.
 - Standard root-lock Docker images, healthy local API/web/PostgreSQL/Redis,
   actual isolated backup restoration. No database volume was removed.
+- npm TLS validation enabled by default in both API build contexts and Compose;
+  verified root-lock rebuild, offline API checks and local runtime readiness.
 - Browser passenger address/map selection, Economy/Delivery KZT estimates,
   payment selection and complete paired driver/passenger trip lifecycle.
 - Browser delayed/trailing GPS recovery, permission loss, failed actions,
@@ -66,4 +68,5 @@ these warnings did not prevent the current builds.
 - [Web session isolation](web-session-isolation-2026-09-05.md)
 - [Transport and cross-client booking recovery](transport-and-order-recovery-2026-09-05.md)
 - [Regional routing and provider validation](regional-routing-2026-09-05.md)
+- [Docker TLS defaults and verified rebuild](docker-tls-defaults-2026-09-05.md)
 - [Docker build boundary](../DOCKER_BUILDS.md)

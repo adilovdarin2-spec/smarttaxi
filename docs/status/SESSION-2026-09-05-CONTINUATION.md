@@ -48,6 +48,11 @@ clean, volume removal, production test account or external SMS was used.
   previews across 13 regions and four intercity directions pass, followed by
   the complete paired browser lifecycle. An unusual Maktaaral detour is
   explicitly retained for road-access review. See `regional-routing-2026-09-05.md`.
+- Docker TLS follow-up: npm certificate verification defaults to true in both
+  API Dockerfiles and Compose, guarded by a new CI policy check. The local
+  locked API rebuilt with verified TLS, passed its full offline test suite,
+  and was recreated successfully without touching database volumes. See
+  `docker-tls-defaults-2026-09-05.md`.
 
 Web code/evidence is described in `web-picker-and-trip-recovery-2026-09-05.md`
 and `web-driver-lifecycle-2026-09-05.md`. API-backed browser scenarios are not
