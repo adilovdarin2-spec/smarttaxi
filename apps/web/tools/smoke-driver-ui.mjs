@@ -82,6 +82,7 @@ async function shot(name) {
     for (const width of [390, 360]) {
       await passenger.setViewportSize({ width, height: width === 390 ? 844 : 740 });
       await passenger.waitForTimeout(300);
+      await passenger.locator('.map-loading-chip').waitFor({ state: 'hidden', timeout: 30000 });
       assert.equal(await passenger.locator(".search-nearby-driver, .driver-found-map-layer, .search-map-radar-marker").count(), 0, "Only real map markers/ETA may represent the live trip");
       if (await passenger.locator(".search-driver-head").count()) {
         assert.doesNotMatch(await passenger.locator(".search-driver-head").innerText(), /3 водител|1[–-]3 минут/, "Search must not promise an invented nearby count or ETA");
@@ -91,7 +92,7 @@ async function shot(name) {
         if (box) assert(box.x >= -1 && box.x + box.width <= width + 1, `Passenger element overflows ${width}px: ${JSON.stringify(box)}`);
       }
       const passengerName = name.replace("driver-", "passenger-") + (width === 360 ? "-360" : "");
-      await passenger.screenshot({ path: path.join(output, `${passengerName}.png`) });
+      await passenger.screenshot({ path: path.join(output, `${passengerName}.png`), animations: 'disabled' });
     }
     await passenger.setViewportSize({ width: 390, height: 844 });
   }
@@ -401,6 +402,31 @@ try {
   assert.equal((await request("/api/driver/orders/active")).activeOrder, null);
   newOrder = null;
   mark("successful_accept_through_payment");
+  // Read-only account surfaces of this run's own locally registered client.
+  await passenger.getByRole('button', { name: 'Открыть меню', exact: true }).click();
+  await passenger.locator('.client-drawer.open').waitFor();
+  assert.equal(await passenger.locator('.client-drawer-account-copy strong').evaluate(element => getComputedStyle(element).color), 'rgb(21, 34, 56)', 'Account identity keeps dark text on the light drawer card');
+  await passenger.screenshot({ path: path.join(output, 'passenger-menu.png'), animations: 'disabled' });
+  await passenger.locator('.client-drawer-account-row').click();
+  await passenger.getByRole('heading', { name: 'Профиль', exact: true }).waitFor();
+  assert.equal(await passenger.locator('.screen-intro h1').evaluate(element => getComputedStyle(element).fontWeight), '600', 'Profile follows the same restrained heading hierarchy');
+  await passenger.screenshot({ path: path.join(output, 'passenger-profile.png'), animations: 'disabled' });
+  for (const [label, heading, file] of [
+    ['Избранные адреса', 'Избранное', 'favorites'],
+    ['Поддержка', 'Поддержка', 'support'],
+    ['Настройки', 'Настройки', 'settings'],
+  ]) {
+    await passenger.getByRole('button', { name: 'Открыть меню', exact: true }).click();
+    await passenger.getByRole('navigation', { name: 'Меню клиента', exact: true }).getByRole('button', { name: new RegExp(`^${label}`) }).click();
+    await passenger.getByRole('heading', { name: heading, exact: true }).waitFor();
+    assert.equal(await passenger.locator('.screen-intro h1').evaluate(element => getComputedStyle(element).fontWeight), '600', `${heading}: shared readable heading hierarchy`);
+    await passenger.screenshot({ path: path.join(output, `passenger-${file}.png`), animations: 'disabled' });
+    await passenger.setViewportSize({ width: 360, height: 740 });
+    assert(await passenger.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${heading}: no horizontal overflow at 360px`);
+    await passenger.screenshot({ path: path.join(output, `passenger-${file}-360.png`), animations: 'disabled' });
+    await passenger.setViewportSize({ width: 390, height: 844 });
+  }
+  mark('passenger_account_surfaces_read_only');
   assert.deepEqual(errors, [], "No uncaught browser errors");
   mark("passed");
 } catch (error) {

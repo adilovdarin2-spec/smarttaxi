@@ -15502,56 +15502,49 @@ class _TariffComparisonCard extends StatelessWidget {
         : item.asset.endsWith('.svg')
             ? SvgPicture.asset(
                 item.asset,
-                width: 58,
-                height: 40,
+                width: compact ? 58 : 82,
+                height: compact ? 40 : 64,
                 fit: BoxFit.contain,
                 placeholderBuilder: (_) => fallback,
               )
             : Image.asset(
                 item.asset,
-                width: 60,
-                height: 42,
-                cacheWidth: 120,
-                cacheHeight: 84,
+                width: compact ? 60 : 82,
+                height: compact ? 42 : 64,
+                cacheWidth: 164,
+                cacheHeight: 128,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 errorBuilder: (_, __, ___) => fallback,
               );
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(compact ? 22 : 22),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(compact ? 22 : 22),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          constraints: BoxConstraints(minHeight: compact ? 148 : 72),
+          constraints: BoxConstraints(minHeight: compact ? 148 : 88),
           padding: EdgeInsets.fromLTRB(
             compact ? 11 : 11,
-            compact ? 10 : 7,
+            10,
             compact ? 11 : 11,
-            compact ? 10 : 7,
+            10,
           ),
           decoration: BoxDecoration(
-            color: selected ? null : palette.card,
-            gradient: selected
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [palette.brandSurface, palette.brandPale],
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(compact ? 22 : 22),
+            color: selected ? palette.brandSurface : palette.card,
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected ? palette.brand : palette.border,
-              width: selected ? 2.5 : 1,
+              width: selected ? 1.25 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: palette.brand.withValues(alpha: selected ? 0.18 : 0.06),
-                blurRadius: selected ? 18 : 10,
-                offset: Offset(0, selected ? 8 : 4),
+                color: palette.brand.withValues(alpha: selected ? 0.07 : 0.035),
+                blurRadius: 14,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -15560,11 +15553,11 @@ class _TariffComparisonCard extends StatelessWidget {
               : Row(
                   children: [
                     Container(
-                      width: 64,
-                      height: 54,
+                      width: 82,
+                      height: 64,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: palette.brandSurface.withValues(alpha: 0.72),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: art,
@@ -15585,8 +15578,8 @@ class _TariffComparisonCard extends StatelessWidget {
                                   style: TextStyle(
                                     color: palette.text,
                                     fontSize: 15.5,
-                                    height: 1.05,
-                                    fontWeight: FontWeight.w900,
+                                    height: 1.2,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -15598,8 +15591,8 @@ class _TariffComparisonCard extends StatelessWidget {
                                 style: TextStyle(
                                   color: palette.text,
                                   fontSize: 18.5,
-                                  height: 1,
-                                  fontWeight: FontWeight.w900,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w600,
                                   letterSpacing: -0.4,
                                 ),
                               ),
@@ -15612,8 +15605,8 @@ class _TariffComparisonCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: palette.textSecondary,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (bestValue) ...[
@@ -15632,8 +15625,8 @@ class _TariffComparisonCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      width: 26,
-                      height: 26,
+                      width: 18,
+                      height: 18,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: selected ? palette.brandDeep : palette.card,
@@ -18347,27 +18340,26 @@ class _BrandCtaButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                palette.brandSky,
                 palette.brand,
                 palette.brandDeep,
               ],
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: enabled
                 ? [
                     BoxShadow(
-                      color: palette.brand.withValues(alpha: 0.34),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      color: palette.brand.withValues(alpha: 0.16),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
                     ),
                   ]
                 : null,
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             child: InkWell(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               onTap: enabled ? onTap : null,
               child: SizedBox(
                 height: 54,
@@ -18406,7 +18398,7 @@ class _BrandCtaButton extends StatelessWidget {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),

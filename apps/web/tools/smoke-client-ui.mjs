@@ -53,6 +53,8 @@ try {
   const destination = page.getByRole("button", { name: "Выбрать пункт назначения", exact: true });
   await destination.waitFor({ timeout: 30000 });
   assert(await destination.isEnabled());
+  assert.equal(await page.locator('.final10-sheet-heading h1').evaluate(element => getComputedStyle(element).fontWeight), '600', 'Heading uses the restrained presentation hierarchy');
+  assert.equal(await page.locator('.final10-chip span').first().evaluate(element => getComputedStyle(element).color), 'rgb(66, 81, 106)', 'Quick actions remain readable neutral text');
   assert.equal(await page.locator('.smarttaxi-center-picker').count(), 1);
   assert.equal(await page.locator('.final10-marker-wrap').count(), 0, 'No decorative duplicate pickup pin');
   await assertOnScreen(destination, 844);
@@ -138,6 +140,12 @@ try {
     return button && !button.disabled;
   }, null, { timeout: 30000 });
   assert.equal(await page.getByRole("tab").count(), 2, "Exactly the two supported tariffs");
+  for (const car of await page.locator('.tariff-v14-car img').all()) {
+    const box = await car.boundingBox();
+    assert(box.width >= 76 && box.height >= 60, 'Original vehicle art stays large enough to identify');
+  }
+  assert.equal(await page.locator('.tariff-v14-card-fare strong').count(), 2, 'Both tariffs keep their real right-aligned fare');
+  await page.waitForFunction(() => [...document.querySelectorAll('.tariff-v14-card-fare strong')].every(element => element.textContent.includes('₸')));
   await page.locator(".tariff-v14-map .maplibregl-marker").first().waitFor();
   await waitForVisibleRoute(page);
   await assertOnScreen(order, 844);
@@ -152,6 +160,12 @@ try {
   assert(await page.getByRole("button", { name: /^Наличные/ }).isVisible());
   assert(await page.getByRole("button", { name: /^Бонусами/ }).isVisible());
   await page.screenshot({ path: path.join(output, "payment.png"), animations: "disabled" });
+  const paymentDialog = page.getByRole('dialog', { name: 'Способ оплаты', exact: true });
+  await page.keyboard.press('Shift+Tab');
+  assert(await paymentDialog.evaluate(dialog => dialog.contains(document.activeElement)), 'Keyboard focus stays within payment choices');
+  await page.keyboard.press('Escape');
+  assert.equal(await paymentDialog.count(), 0, 'Escape closes the payment sheet');
+  assert(await page.getByRole('button', { name: /Способ оплаты/ }).evaluate(button => button === document.activeElement), 'Closing payment restores focus to the opening control');
   assert.deepEqual(errors, [], "No uncaught browser errors");
   await context.close();
 

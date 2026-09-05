@@ -84,7 +84,7 @@ class SmartTaxiRadius {
   static const md = 16.0;
   static const lg = 20.0;
   static const xl = 24.0;
-  static const sheet = 34.0;
+  static const sheet = 28.0;
 }
 
 /// One shadow per surface.
@@ -98,18 +98,18 @@ class SmartTaxiRadius {
 class SmartTaxiShadows {
   /// An ordinary content card resting on the page.
   static const card = <BoxShadow>[
-    BoxShadow(color: Color(0x14102a52), blurRadius: 26, offset: Offset(0, 12)),
+    BoxShadow(color: Color(0x0e1a3153), blurRadius: 18, offset: Offset(0, 4)),
   ];
 
   /// A card that should read as lifted above its neighbours — a balance
   /// panel, a summary hero. Same light, held a little higher.
   static const raised = <BoxShadow>[
-    BoxShadow(color: Color(0x1e102a52), blurRadius: 34, offset: Offset(0, 16)),
+    BoxShadow(color: Color(0x141a3153), blurRadius: 28, offset: Offset(0, 8)),
   ];
 
   /// Bottom sheets and bottom bars, which cast upward onto the page behind.
   static const sheet = <BoxShadow>[
-    BoxShadow(color: Color(0x1e102a52), blurRadius: 36, offset: Offset(0, -12)),
+    BoxShadow(color: Color(0x141a3153), blurRadius: 24, offset: Offset(0, -4)),
   ];
 }
 
@@ -119,34 +119,34 @@ class SmartTaxiShadows {
 class SmartTaxiTextStyles {
   static const title = TextStyle(
     color: SmartTaxiColors.text,
-    fontSize: 30,
-    height: 1.05,
-    letterSpacing: -0.3,
-    fontWeight: FontWeight.w900,
+    fontSize: 26,
+    height: 1.2,
+    letterSpacing: -0.5,
+    fontWeight: FontWeight.w600,
   );
   static const subtitle = TextStyle(
     color: SmartTaxiColors.textSecondary,
     fontSize: 14,
     height: 1.3,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w500,
   );
   static const body = TextStyle(
     color: SmartTaxiColors.text,
-    fontSize: 14,
+    fontSize: 15,
     height: 1.4,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w400,
   );
   static const caption = TextStyle(
     color: SmartTaxiColors.textSecondary,
     fontSize: 12,
     height: 1.3,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w400,
   );
   static const button = TextStyle(
     color: Colors.white,
     fontSize: 16,
-    height: 1,
-    fontWeight: FontWeight.w900,
+    height: 1.2,
+    fontWeight: FontWeight.w600,
   );
 }
 
@@ -468,7 +468,7 @@ ThemeData buildSmartTaxiTheme() {
         elevation: 0,
         shadowColor: SmartTaxiColors.brand.withValues(alpha: 0.24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -481,7 +481,7 @@ ThemeData buildSmartTaxiTheme() {
         // primary and secondary.
         side: const BorderSide(color: SmartTaxiColors.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     // Some newer screens use Material's FilledButton while older ones use
@@ -495,13 +495,13 @@ ThemeData buildSmartTaxiTheme() {
         disabledBackgroundColor: SmartTaxiColors.brand.withValues(alpha: 0.45),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: SmartTaxiColors.brandDeep,
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     ),
@@ -659,7 +659,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         elevation: 0,
         shadowColor: palette.brand.withValues(alpha: 0.24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -668,7 +668,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         foregroundColor: palette.text,
         side: BorderSide(color: palette.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -679,13 +679,13 @@ ThemeData buildSmartTaxiDarkTheme() {
         disabledBackgroundColor: palette.brand.withValues(alpha: 0.35),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: palette.brandDeep,
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     ),

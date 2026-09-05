@@ -2448,8 +2448,12 @@ function ReferenceTariffList({ rows, setTariff, route, offeredPriceKzt, minOffer
             <span className="tariff-v14-card-copy">
               <b>{row.title}</b>
               <small>{row.key === "Delivery" ? "до 20 кг" : `${row.seats || 4} пассажира`}</small>
-              <strong>{row.priceKzt ? <Money value={row.priceKzt} /> : "Расчёт"}</strong>
             </span>
+            <span className="tariff-v14-card-fare">
+              <strong>{row.priceKzt ? <Money value={row.priceKzt} /> : "Расчёт"}</strong>
+              <small>{row.key === "Delivery" ? "доставка" : "за поездку"}</small>
+            </span>
+            <span className="tariff-v14-card-check" aria-hidden="true">{row.selected && <Icon name="check" size={13} />}</span>
           </button>
         ))}
       </div>
@@ -2530,9 +2534,38 @@ function ReferencePaymentRow({ payment, onOpen }) {
 }
 
 function ReferencePaymentPicker({ payment, onClose, onSelect }) {
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const dialog = dialogRef.current;
+    dialog?.querySelector("button")?.focus();
+    const onKeyDown = event => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+      } else if (event.key === "Tab") {
+        const buttons = [...dialog.querySelectorAll("button:not(:disabled)")];
+        const first = buttons[0];
+        const last = buttons.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first?.focus();
+        }
+      }
+    };
+    dialog?.addEventListener("keydown", onKeyDown);
+    return () => {
+      dialog?.removeEventListener("keydown", onKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, []);
   return (
     <div className="reference-payment-picker-backdrop" role="presentation" onClick={onClose}>
       <section
+        ref={dialogRef}
         className="reference-payment-picker"
         role="dialog"
         aria-modal="true"
@@ -4695,8 +4728,8 @@ function ProfileSection({
           <div className="profile-actions-grid">
             <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
             <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
-            <article><Icon name="star" /> Избранные адреса <span>Добавляются из поездок</span></article>
-            <article><Icon name="card" /> Способы оплаты <span>Наличные или Kaspi при заказе</span></article>
+            <article><Icon name="star" /><div><b>Избранные адреса</b><span>Добавляются из поездок</span></div></article>
+            <article><Icon name="card" /><div><b>Способы оплаты</b><span>Наличные или Kaspi при заказе</span></div></article>
             <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
           </div>
         )}

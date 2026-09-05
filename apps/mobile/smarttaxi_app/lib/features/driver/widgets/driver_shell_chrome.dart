@@ -41,15 +41,9 @@ class DriverHeader extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: palette.card.withValues(alpha: 0.94),
-                  border: Border.all(color: palette.borderStrong),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x16102a52),
-                      blurRadius: 16,
-                      offset: Offset(0, 7),
-                    ),
-                  ],
+                  border: Border.all(color: palette.border),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: SmartTaxiShadows.card,
                 ),
                 child: Icon(icon, color: palette.brandDeep, size: 23),
               ),

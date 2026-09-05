@@ -22,6 +22,11 @@ clean, volume removal, production test account or external SMS was used.
   The duplicate home pin, overflowing driver-car image and missing driver
   finish SVG were fixed. The shared finish flag now has alternating cells,
   and browser checks verify painted markers as well as actual route pixels.
+- Visual refinement follow-up: unified restrained blue/white typography,
+  larger original tariff cars with aligned KZT fares, payment keyboard focus,
+  readable account/menu surfaces and matching Flutter presentation primitives.
+  See `visual-refinement-2026-09-05.md` for final screenshots, checks and the
+  retained intermittent longitude-only route refresh observation.
 
 Web code/evidence is described in `web-picker-and-trip-recovery-2026-09-05.md`
 and `web-driver-lifecycle-2026-09-05.md`. API-backed browser scenarios are not
@@ -34,7 +39,7 @@ substitutes for physical Android acceptance or a real drive.
 - Web unit tests: 17/17 (16 lifecycle checks and the checkered-finish marker
   regression); tests are included in Node 22 CI.
 - Web production build and local browser address/lifecycle scenarios pass.
-- Flutter analyze: no issues. Full tests: 50 passed.
+- Flutter analyze: no issues. Full tests after visual refinement: 53 passed.
 - Android debug APK rebuilt with local API/socket `http://127.0.0.1:4001`
   and web `http://127.0.0.1:5175`; no production endpoint defines.
 - Compose config is valid; API/PostgreSQL/Redis/web health checks pass.
@@ -59,6 +64,8 @@ passed against the following explicitly local fallback, not a Vite server:
 - Web: existing nginx container with a read-only frozen production build,
   compiled with the exact Compose `VITE_*` arguments. This is not a fabricated
   UI, proxy to production, or replacement of successful API responses.
+  The current design-pass snapshot is `web-static-design-final` under the
+  ignored captures directory; older snapshots remain on disk.
 - Only API/web containers were recreated. PostgreSQL/Redis and all database
   volumes remained in place. Temporary Vite processes were stopped.
 
