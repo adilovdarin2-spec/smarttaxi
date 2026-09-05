@@ -34,6 +34,9 @@ clean, volume removal, production test account or external SMS was used.
 - Driver GPS feedback follow-up: visible permission/publication errors, safe
   retry on all five tabs and verified active-trip preservation when permission
   is revoked. See `driver-gps-feedback-2026-09-05.md`.
+- Web session isolation: a late old-token 401 no longer evicts a newer login;
+  driver async callbacks cannot restore old-session state after logout. Real
+  current-session revocation remains enforced. See `web-session-isolation-2026-09-05.md`.
 
 Web code/evidence is described in `web-picker-and-trip-recovery-2026-09-05.md`
 and `web-driver-lifecycle-2026-09-05.md`. API-backed browser scenarios are not
@@ -44,7 +47,7 @@ substitutes for physical Android acceptance or a real drive.
 - API: dependency-policy pretest and all 36 checks pass, including payment
   authorization. The final root-context image also passed without network
   access, with dummy test env and read-only cross-client source mounts.
-- Web unit tests: 31/31 (lifecycle/marker/publication/feedback checks);
+- Web unit tests: 35/35 (lifecycle/marker/publication/feedback/session checks);
   tests are included in Node 22 CI.
 - Web production build and local browser address/lifecycle scenarios pass.
 - Flutter analyze: no issues. Full tests after GPS publication follow-up: 62 passed.

@@ -5,6 +5,7 @@ import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import { useLiveDriverRoute } from "../client/useLiveDriverRoute.js";
 import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
 import { driverLocationFeedback } from "./driverLocationFeedback.js";
+import { sessionGuard } from "../../lib/sessionGuard.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -486,6 +487,7 @@ export default function DriverApp() {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+  const protectSession = useCallback(() => sessionGuard(getToken(), getToken, () => mountedRef.current), []);
 
   const currentRegion = useMemo(
     () => regions.find(region => regionKey(region) === selectedRegionId) || regions.find(region => regionKey(region) === driver?.currentRegionId),
@@ -508,7 +510,8 @@ export default function DriverApp() {
   const driverRoute = useLiveDriverRoute(routeOrder, session);
 
   const refreshDriver = useCallback(async () => {
-    if (!getToken()) return;
+    const isCurrent = protectSession();
+    if (!isCurrent()) return;
     const [profileResult, regionsResult, incomingResult, activeResult, earningsResult, debtResult, historyResult] = await Promise.allSettled([
       getDriverProfile(),
       getDriverRegions(),
@@ -518,6 +521,7 @@ export default function DriverApp() {
       getDriverDebt(),
       getDriverOrderHistory()
     ]);
+    if (!isCurrent()) return;
 
     if (profileResult.status === "fulfilled") {
       setDriver(profileResult.value.driver);
@@ -549,7 +553,7 @@ export default function DriverApp() {
           && String(order.payment_status || order.paymentStatus || "").toUpperCase() !== "PAID"
       ));
     }
-  }, []);
+  }, [protectSession]);
 
   useEffect(() => {
     if (!logged) {
@@ -728,27 +732,41 @@ export default function DriverApp() {
   function handleLogout() {
     clearToken();
     setLogged(false);
+    setAuth(current => ({ ...current, password: "" }));
     setDriver(null);
+    setRegions([]);
+    setSelectedRegionId("");
     setIncomingOrders([]);
     setActiveOrder(null);
     setSettlementOrders([]);
+    setEarnings(null);
+    setDebt(null);
+    setRoadAlerts([]);
+    setRoadAlertsError("");
+    setRoadAlertsLoading(false);
+    setRoadAlertSubmitting(false);
+    setRoadAlertForm({ type: "ROAD_HAZARD", comment: "" });
+    setError("");
+    setActionLoading("");
+    setTab("line");
   }
 
   const loadRoadAlerts = useCallback(async () => {
-    if (!logged) return;
+    const isCurrent = protectSession();
+    if (!logged || !isCurrent()) return;
     setRoadAlertsLoading(true);
     setRoadAlertsError("");
     try {
       const payload = await getDriverRoadAlerts({ regionId: selectedRegionId || undefined });
-      if (!mountedRef.current) return;
+      if (!isCurrent()) return;
       setRoadAlerts(Array.isArray(payload?.alerts) ? payload.alerts : []);
     } catch (error) {
-      if (!mountedRef.current) return;
+      if (!isCurrent()) return;
       setRoadAlertsError(formatError(error));
     } finally {
-      if (mountedRef.current) setRoadAlertsLoading(false);
+      if (isCurrent()) setRoadAlertsLoading(false);
     }
-  }, [logged, selectedRegionId]);
+  }, [logged, selectedRegionId, protectSession]);
 
   // Only fetched while the tab is actually open -- unlike orders/earnings
   // (shown on the home tab every session), road alerts are a secondary
@@ -759,6 +777,8 @@ export default function DriverApp() {
 
   async function submitRoadAlert(event) {
     event.preventDefault();
+    const isCurrent = protectSession();
+    if (!isCurrent()) return;
     if (!driverPosition) {
       setRoadAlertsError("Нет GPS-сигнала — выйдите на линию и подождите, пока определится местоположение.");
       return;
@@ -773,33 +793,39 @@ export default function DriverApp() {
         lng: driverPosition.lng,
         regionId: selectedRegionId || undefined
       });
-      if (!mountedRef.current) return;
+      if (!isCurrent()) return;
       setRoadAlertForm(current => ({ ...current, comment: "" }));
       await loadRoadAlerts();
     } catch (error) {
-      if (!mountedRef.current) return;
+      if (!isCurrent()) return;
       setRoadAlertsError(formatError(error));
     } finally {
-      if (mountedRef.current) setRoadAlertSubmitting(false);
+      if (isCurrent()) setRoadAlertSubmitting(false);
     }
   }
 
   async function confirmRoadAlert(alertId) {
+    const isCurrent = protectSession();
+    if (!isCurrent()) return;
     try {
       await confirmDriverRoadAlert(alertId);
+      if (!isCurrent()) return;
       await loadRoadAlerts();
     } catch (error) {
-      if (!mountedRef.current) return;
+      if (!isCurrent()) return;
       setRoadAlertsError(formatError(error));
     }
   }
 
   async function dismissRoadAlert(alertId) {
+    const isCurrent = protectSession();
+    if (!isCurrent()) return;
     try {
       await expireDriverRoadAlert(alertId);
+      if (!isCurrent()) return;
       await loadRoadAlerts();
     } catch (error) {
-      if (!mountedRef.current) return;
+      if (!isCurrent()) return;
       setRoadAlertsError(formatError(error));
     }
   }
@@ -815,10 +841,13 @@ export default function DriverApp() {
   }, []);
 
   async function withAction(name, fn) {
+    const isCurrent = protectSession();
+    if (!isCurrent()) return null;
     setActionLoading(name);
     setError("");
     try {
       const result = await fn();
+      if (!isCurrent()) return null;
       if (result?.driver) setDriver(result.driver);
       if (result?.order) {
         const order = normalizeOrder(result.order);
@@ -837,14 +866,14 @@ export default function DriverApp() {
       } catch (error) {
         // The mutation response is authoritative even if reconciliation
         // temporarily fails. Keep its successful navigation/state change.
-        setError(formatError(error));
+        if (isCurrent()) setError(formatError(error));
       }
-      return result;
+      return isCurrent() ? result : null;
     } catch (error) {
-      setError(formatError(error));
+      if (isCurrent()) setError(formatError(error));
       return null;
     } finally {
-      setActionLoading("");
+      if (isCurrent()) setActionLoading("");
     }
   }
 
