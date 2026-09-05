@@ -40,12 +40,12 @@ import 'screens/wallet/client_wallet_screen.dart';
 // Product-owned illustrations keep the premium card presentation distinct
 // without copying artwork from the visual references.
 const _tariffEconomyAsset =
-    'assets/cars/tariff_economy_white_sedan_flutter.png';
+    'assets/cars/tariff_economy_3d_v2.png';
 const _tariffComfortAsset =
     'assets/cars/tariff_comfort_white_sedan_flutter.png';
 const _tariffBusinessAsset =
     'assets/cars/tariff_business_white_premium_sedan_flutter.png';
-const _tariffDeliveryAsset = 'assets/icons/delivery_van_illustration.svg';
+const _tariffDeliveryAsset = 'assets/cars/tariff_delivery_3d_v2.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One fixed size for the car icon everywhere it appears on this map --
 // nearby free drivers before a match, and the specific driver being

@@ -134,10 +134,10 @@ function offeredPriceBoundsKzt(estimatedPrice) {
 }
 
 const carImages = {
-  Economy: "/ui/fixed-price-tariff/svg/car_econom_white.svg",
+  Economy: "/ui/fixed-price-tariff/car_economy_3d_v2.png",
   Comfort: "/ui/fixed-price-tariff/svg/car_comfort_white.svg",
   Business: "/ui/fixed-price-tariff/svg/car_comfort_white.svg",
-  Delivery: "/ui/fixed-price-tariff/svg/car_delivery_white.svg"
+  Delivery: "/ui/fixed-price-tariff/car_delivery_3d_v2.png"
 };
 
 const baseUi = "/ui/blue-white";

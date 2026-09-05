@@ -240,11 +240,11 @@ void main() {
       expect(passenger, contains('tariffDeliveryTitle'));
       expect(
         passenger,
-        contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
+        contains('assets/cars/tariff_economy_3d_v2.png'),
       );
       expect(
         passenger,
-        contains('assets/icons/delivery_van_illustration.svg'),
+        contains('assets/cars/tariff_delivery_3d_v2.png'),
       );
       expect(
         passenger,
