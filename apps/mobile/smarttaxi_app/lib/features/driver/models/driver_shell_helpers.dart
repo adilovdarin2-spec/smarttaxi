@@ -4,6 +4,50 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 
+/// Legacy source statuses remain supported alongside the current lifecycle.
+String? driverRoutePhaseForStatus(String? status) {
+  const toPickup = {
+    'DRIVER_FOUND',
+    'DRIVER_GOING_TO_CLIENT',
+    'DRIVER_ASSIGNED',
+    'DRIVER_ARRIVED',
+    'WAITING_CLIENT',
+    'NEW',
+  };
+  const toDropoff = {'TRIP_STARTED', 'IN_PROGRESS'};
+  if (toDropoff.contains(status)) return 'to_dropoff';
+  if (toPickup.contains(status)) return 'to_pickup';
+  return null;
+}
+
+/// Reopening for dispatch releases this driver just as a terminal cancellation
+/// does. Completed/unpaid orders still belong on the settlement screen.
+bool driverOrderReleasesAssignment(OrderSummary order) =>
+    (order.isOpen && order.driverId == null) ||
+    const {
+      'CANCELLED',
+      'CANCELLED_BY_DRIVER',
+      'CANCELLED_BY_CLIENT',
+      'CANCELLED_BY_OPERATOR',
+      'NO_SHOW',
+    }.contains(order.status);
+
+bool driverRouteTargetChanged(OrderSummary? previous, OrderSummary? next) =>
+    previous?.id != next?.id ||
+    driverRoutePhaseForStatus(previous?.status) !=
+        driverRoutePhaseForStatus(next?.status);
+
+/// A sequence number alone cannot reject a response after cancellation or a
+/// leg change when no replacement request has been issued yet.
+bool driverRouteRequestMatches({
+  required OrderSummary? activeOrder,
+  required String orderId,
+  required String phase,
+}) =>
+    activeOrder?.id == orderId &&
+    !driverOrderReleasesAssignment(activeOrder!) &&
+    driverRoutePhaseForStatus(activeOrder.status) == phase;
+
 // OSRM's maneuver vocabulary (routing.service.js requests steps=true and
 // passes maneuver.type/modifier through as-is — see that file's parseSteps)
 // mapped to a localized label + icon for the navigator's turn banner. Kept

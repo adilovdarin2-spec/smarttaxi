@@ -405,7 +405,7 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   void _handleOrderUpdate(dynamic data) {
-    if (data is! Map) return;
+    if (!mounted || data is! Map) return;
     final payload = Map<String, dynamic>.from(data['order'] ?? data);
     final hasRouteDetails = payload.containsKey('pickup_text') ||
         payload.containsKey('pickupText') ||
@@ -444,8 +444,7 @@ class _DriverShellState extends State<DriverShell> {
       }
     }
     final order = OrderSummary.fromJson(payload);
-    final previousPhase = _routePhaseForStatus(_activeOrder?.status);
-    final nextPhase = _routePhaseForStatus(order.status);
+    bool needsRoute = false;
     // Find whatever this driver already knew about this order's price offer
     // (it may be the active order, or still just sitting in the open list)
     // so a PENDING -> ACCEPTED/DECLINED transition can surface as a toast —
@@ -467,25 +466,29 @@ class _DriverShellState extends State<DriverShell> {
       }
     }
     setState(() {
-      _orders = mergeOrder(_orders, order);
+      final releasesCurrentOrder = _activeOrder?.id == order.id &&
+          driverOrderReleasesAssignment(order);
+      _orders = releasesCurrentOrder
+          ? _orders.where((item) => item.id != order.id).toList()
+          : mergeOrder(_orders, order);
       // awaitsSettlement as well as isActive: a finished-but-unpaid trip is
       // the one state where the driver still owes an action ("Оплата
       // получена") *and* the rider is blocked from ordering again until it
       // happens. Keying only off isActive meant such an order never reached
       // _activeOrder, so DriverTripCompletionCard — which carries that
       // button — was never built, and neither side could clear it.
-      if (_activeOrder?.id == order.id ||
+      if (releasesCurrentOrder) {
+        _applyActiveDriverOrder(null);
+      } else if (_activeOrder?.id == order.id ||
           order.isActive ||
           order.awaitsSettlement) {
-        _activeOrder = order;
-      }
-      if (!order.isActive && !order.isOpen) {
-        _driverRoute = null;
+        needsRoute = _applyActiveDriverOrder(order);
       }
       // Never move the live distance counter backwards from what a more
       // recent location ping already established — see the matching
       // comment on the passenger side (_applyOrderSnapshot).
-      if (order.distanceTraveledM != null &&
+      if (_activeOrder?.id == order.id &&
+          order.distanceTraveledM != null &&
           (_tripDistanceTraveledM == null ||
               order.distanceTraveledM! > _tripDistanceTraveledM!)) {
         _tripDistanceTraveledM = order.distanceTraveledM;
@@ -522,25 +525,33 @@ class _DriverShellState extends State<DriverShell> {
     // Order flipped from "heading to pickup" to "heading to dropoff" (or
     // just became active) — the old route line points at the wrong place
     // now, so pull the new one immediately instead of waiting for the timer.
-    if (nextPhase != null && nextPhase != previousPhase) {
-      unawaited(_loadDriverRoute(order.id));
+    if (needsRoute) {
+      unawaited(_loadDriverRoute(_activeOrder!.id));
     }
   }
 
-  static String? _routePhaseForStatus(String? status) {
-    const toPickup = {
-      'DRIVER_FOUND',
-      'DRIVER_GOING_TO_CLIENT',
-      'DRIVER_ASSIGNED',
-      'DRIVER_ARRIVED',
-      'WAITING_CLIENT',
-      'NEW',
-    };
-    const toDropoff = {'TRIP_STARTED', 'IN_PROGRESS'};
-    if (status == null) return null;
-    if (toDropoff.contains(status)) return 'to_dropoff';
-    if (toPickup.contains(status)) return 'to_pickup';
-    return null;
+  static String? _routePhaseForStatus(String? status) =>
+      driverRoutePhaseForStatus(status);
+
+  // Called inside setState by socket, REST and local dismissal paths so every
+  // route invalidation happens before an old asynchronous response can land.
+  // Returns whether the new driving leg needs an immediate route request.
+  bool _applyActiveDriverOrder(OrderSummary? next) {
+    final previous = _activeOrder;
+    final targetChanged = driverRouteTargetChanged(previous, next);
+    _activeOrder = next;
+    if (targetChanged) {
+      _driverRouteRequestId++;
+      _driverRoute = null;
+      _lastRoutePhase = null;
+      _lastRouteFetchAt = null;
+    }
+    if (previous?.id != next?.id || next == null) {
+      _tripDistanceTraveledM = next?.distanceTraveledM;
+      _showArrivalNudge = false;
+      _arrivalHapticFired = false;
+    }
+    return targetChanged && _hasActiveDrivingLeg(next?.status);
   }
 
   Future<void> _loadRegions() async {
@@ -939,7 +950,8 @@ class _DriverShellState extends State<DriverShell> {
       OrderSummary? retainedTerminal;
       if (current != null && !current.isActive) {
         for (final order in orders) {
-          if (order.id == current.id) {
+          if (order.id == current.id &&
+              !driverOrderReleasesAssignment(order)) {
             retainedTerminal = order;
             break;
           }
@@ -950,13 +962,11 @@ class _DriverShellState extends State<DriverShell> {
           : (awaitingSettlement.isNotEmpty
               ? awaitingSettlement.first
               : retainedTerminal);
-      final needsRoute = restoredActive != null &&
-          restoredActive.id != current?.id &&
-          _hasActiveDrivingLeg(restoredActive.status);
       if (!mounted) return;
+      bool needsRoute = false;
       setState(() {
         _orders = orders;
-        _activeOrder = restoredActive;
+        needsRoute = _applyActiveDriverOrder(restoredActive);
         if (restoredActive != null &&
             restoredActive.distanceTraveledM != null) {
           _tripDistanceTraveledM = restoredActive.distanceTraveledM;
@@ -965,7 +975,9 @@ class _DriverShellState extends State<DriverShell> {
       // Cold start (or app resume) landing on an order that's already in
       // progress — e.g. the app was killed mid-trip — needs its route line
       // fetched explicitly since nothing else has triggered it yet.
-      if (needsRoute) unawaited(_loadDriverRoute(restoredActive.id));
+      if (needsRoute && restoredActive != null) {
+        unawaited(_loadDriverRoute(restoredActive.id));
+      }
     } catch (error) {
       if (mounted) {
         setState(
@@ -1801,7 +1813,7 @@ class _DriverShellState extends State<DriverShell> {
       widget.sockets.joinOrder(accepted.id);
       if (!mounted) return;
       setState(() {
-        _activeOrder = accepted;
+        _applyActiveDriverOrder(accepted);
         _orders = mergeOrder(_orders, accepted);
         _tab = 2;
         _online = true;
@@ -1891,7 +1903,7 @@ class _DriverShellState extends State<DriverShell> {
         // only update.
         widget.sockets.joinOrder(updated.id);
         setState(() {
-          _activeOrder = updated;
+          _applyActiveDriverOrder(updated);
           _orders = mergeOrder(_orders, updated);
           _tab = 2;
           _online = true;
@@ -1918,21 +1930,26 @@ class _DriverShellState extends State<DriverShell> {
     String label,
     Future<OrderSummary> Function(String id) action,
   ) async {
-    if (_activeOrder == null) return;
+    final current = _activeOrder;
+    if (current == null || _tripActionLabel != null) return;
     setState(() {
       _tripActionLabel = label;
       _error = null;
     });
     try {
-      final order = await action(_activeOrder!.id);
-      if (!mounted) return;
+      final order = await action(current.id);
+      if (!mounted || _activeOrder?.id != current.id) return;
+      bool needsRoute = false;
       setState(() {
-        _activeOrder = order;
-        _orders = mergeOrder(_orders, order);
-        if (!order.isActive && !order.isOpen) {
-          _driverRoute = null;
+        if (driverOrderReleasesAssignment(order)) {
+          _applyActiveDriverOrder(null);
+          _orders = _orders.where((item) => item.id != order.id).toList();
+        } else {
+          needsRoute = _applyActiveDriverOrder(order);
+          _orders = mergeOrder(_orders, order);
         }
       });
+      if (needsRoute) unawaited(_loadDriverRoute(order.id));
       await _loadDriverStats();
     } catch (error) {
       if (mounted) {
@@ -1945,6 +1962,15 @@ class _DriverShellState extends State<DriverShell> {
   }
 
   Future<void> _loadDriverRoute(String orderId) async {
+    final requestedPhase = _routePhaseForStatus(_activeOrder?.status);
+    if (requestedPhase == null ||
+        !driverRouteRequestMatches(
+          activeOrder: _activeOrder,
+          orderId: orderId,
+          phase: requestedPhase,
+        )) {
+      return;
+    }
     // _maybeRefreshDriverRoute's own in-flight guard only covers its own
     // periodic calls — this is also called directly on bootstrap, order
     // restore, and order acceptance, so two fetches can still overlap. Only
@@ -1953,9 +1979,17 @@ class _DriverShellState extends State<DriverShell> {
     // back onto the map.
     _lastRouteFetchAt = DateTime.now();
     final requestId = ++_driverRouteRequestId;
+    bool requestIsCurrent() =>
+        mounted &&
+        requestId == _driverRouteRequestId &&
+        driverRouteRequestMatches(
+          activeOrder: _activeOrder,
+          orderId: orderId,
+          phase: requestedPhase,
+        );
     try {
       final route = await widget.api.driverToPickupRoute(orderId);
-      if (requestId != _driverRouteRequestId) return;
+      if (!requestIsCurrent() || route.phase != requestedPhase) return;
       _lastRoutePhase = route.phase;
       if (mounted) {
         setState(() {
@@ -1964,8 +1998,7 @@ class _DriverShellState extends State<DriverShell> {
         });
       }
     } catch (error) {
-      if (requestId != _driverRouteRequestId) return;
-      if (!mounted) return;
+      if (!requestIsCurrent()) return;
       // A driver mid-trip gets this refreshed every ~12s by
       // _maybeRefreshDriverRoute, so a single blip of bad coverage (a
       // tunnel, a dead zone — routine while actually driving) used to wipe
@@ -3404,12 +3437,8 @@ class _DriverShellState extends State<DriverShell> {
   // no way back to accepting new orders after finishing a trip.
   void _dismissActiveOrder() {
     setState(() {
-      _activeOrder = null;
-      _driverRoute = null;
-      _tripDistanceTraveledM = null;
-      _showArrivalNudge = false;
+      _applyActiveDriverOrder(null);
     });
-    _arrivalHapticFired = false;
   }
 
   bool _isTripFinished(String status) => const [

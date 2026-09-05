@@ -7,6 +7,16 @@ import 'package:smarttaxi_app/l10n/app_localizations.dart';
 
 final _l10n = lookupAppLocalizations(const Locale('ru'));
 
+OrderSummary _driverOrder(String status,
+        {String id = 'ride-1', String? driverId = 'driver-1'}) =>
+    OrderSummary(
+      id: id,
+      status: status,
+      pickup: 'улица Абая, 1',
+      dropoff: 'улица Жамбыла, 2',
+      driverId: driverId,
+    );
+
 DioException _badResponse(String code, {int status = 400}) {
   final options = RequestOptions(path: '/api/drivers/me/location');
   return DioException(
@@ -21,6 +31,105 @@ DioException _badResponse(String code, {int status = 400}) {
 }
 
 void main() {
+  group('driver order and route lifecycle', () {
+    test('a successful cancellation releases the reopened order', () {
+      // This is POST /orders/:id/cancel's real response contract: dispatch
+      // continues for the rider, but the cancelling driver has no assignment.
+      final reopened = _driverOrder('SEARCHING_DRIVER', driverId: null);
+      expect(driverOrderReleasesAssignment(reopened), isTrue);
+      expect(
+        driverOrderReleasesAssignment(_driverOrder('NEW', driverId: null)),
+        isTrue,
+      );
+      expect(driverOrderReleasesAssignment(_driverOrder('NEW')), isFalse);
+    });
+
+    test('cancellation releases the driver while settlement stays available',
+        () {
+      for (final status in [
+        'CANCELLED',
+        'CANCELLED_BY_DRIVER',
+        'CANCELLED_BY_CLIENT',
+        'CANCELLED_BY_OPERATOR',
+        'NO_SHOW',
+      ]) {
+        expect(driverOrderReleasesAssignment(_driverOrder(status)), isTrue,
+            reason: status);
+      }
+      for (final status in [
+        'TRIP_COMPLETED',
+        'PAYMENT_PENDING',
+        'PAID',
+        'RATED',
+        'COMPLETED',
+      ]) {
+        expect(driverOrderReleasesAssignment(_driverOrder(status)), isFalse,
+            reason: status);
+      }
+    });
+
+    test('legacy route source statuses keep their established driving leg', () {
+      expect(driverRoutePhaseForStatus('NEW'), 'to_pickup');
+      expect(driverRoutePhaseForStatus('DRIVER_ASSIGNED'), 'to_pickup');
+      expect(driverRoutePhaseForStatus('IN_PROGRESS'), 'to_dropoff');
+      expect(driverRoutePhaseForStatus('SEARCHING_DRIVER'), isNull);
+      expect(driverRoutePhaseForStatus('PAYMENT_PENDING'), isNull);
+    });
+
+    test('start trip invalidates the pickup leg before any GPS update', () {
+      final waiting = _driverOrder('WAITING_CLIENT');
+      final started = _driverOrder('TRIP_STARTED');
+      expect(driverRouteTargetChanged(waiting, started), isTrue);
+      expect(driverRoutePhaseForStatus(started.status), 'to_dropoff');
+      expect(
+        driverRouteRequestMatches(
+          activeOrder: started,
+          orderId: waiting.id,
+          phase: 'to_pickup',
+        ),
+        isFalse,
+      );
+    });
+
+    test('same-leg updates retain the route but another order invalidates it',
+        () {
+      expect(
+        driverRouteTargetChanged(
+            _driverOrder('DRIVER_FOUND'), _driverOrder('DRIVER_ARRIVED')),
+        isFalse,
+      );
+      expect(
+        driverRouteTargetChanged(_driverOrder('DRIVER_FOUND'),
+            _driverOrder('DRIVER_FOUND', id: 'ride-2')),
+        isTrue,
+      );
+    });
+
+    test('completion and dismissal invalidate outstanding route responses', () {
+      final driving = _driverOrder('TRIP_STARTED');
+      final completed = _driverOrder('TRIP_COMPLETED');
+      expect(driverRouteTargetChanged(driving, completed), isTrue);
+      expect(driverRouteTargetChanged(driving, null), isTrue);
+      for (final active in [
+        null,
+        completed,
+        _driverOrder('SEARCHING_DRIVER', driverId: null),
+        _driverOrder('TRIP_STARTED', id: 'ride-2'),
+      ]) {
+        expect(
+          driverRouteRequestMatches(
+              activeOrder: active, orderId: driving.id, phase: 'to_dropoff'),
+          isFalse,
+        );
+      }
+      expect(
+        driverRouteRequestMatches(
+            activeOrder: driving, orderId: driving.id, phase: 'to_dropoff'),
+        isTrue,
+      );
+    });
+  });
+
   group('readableError', () {
     test('reads the backend error code from the Dio response body', () {
       // DioException.toString() never includes the response body (dio's
