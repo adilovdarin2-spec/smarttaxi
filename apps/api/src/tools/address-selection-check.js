@@ -335,4 +335,23 @@ for (const loader of ["load-addresses.js", "import-addresses.js"]) {
   assert.match(source, /search_text=EXCLUDED\.search_text/, `${loader} must refresh search_text on conflict`);
 }
 
+// 13. Both clients must refuse a bare street before it can enter a route.
+// The native picker already had this final client-side guard; the web picker
+// must apply the identical rule while immediate catalogue matches are visible
+// before the debounced API response arrives.
+const webClientSource = fs.readFileSync(
+  new URL("../../../web/src/features/client/ClientApp.jsx", import.meta.url),
+  "utf8"
+);
+assert.match(
+  webClientSource,
+  /const bareStreet = \/\^\(\?:ул\(\?:ица\)\?\\\.\?\|проспект\|переулок\|бульвар\|шоссе\|көшесі\|даңғылы\)\\s\+\/i/,
+  "the web address normalizer recognizes every street-only prefix the native picker rejects"
+);
+assert.match(
+  webClientSource,
+  /bareStreet && !\/\\d\/.test\(title\)/,
+  "the web address normalizer rejects a street title without a house number"
+);
+
 console.log(`Address selection checks ok: 7 map-pick cases, 3 search cases, ${REGION_SEED.length} region radii, catalogue index invariants`);

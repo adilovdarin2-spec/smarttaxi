@@ -545,7 +545,11 @@ function normalizeAddress(address) {
   const technicalAddress = /^(?:kz|ah|[а-яa-z]{1,3})[\s-]?\d+[а-яa-z]?$/i.test(title) ||
     /^(?:точка на карте|адрес не определ[её]н)$/i.test(title) ||
     /^[-+]?\d{1,3}\.\d+\s*[,;]\s*[-+]?\d{1,3}\.\d+$/.test(title);
-  if (!title || technicalAddress) return null;
+  // Keep the web picker in parity with Flutter: a street without a house
+  // number is too ambiguous for a driver. A named POI remains valid because
+  // it does not use one of the street-only prefixes below.
+  const bareStreet = /^(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+/i.test(title);
+  if (!title || technicalAddress || (bareStreet && !/\d/.test(title))) return null;
   const base = address.subtitle || address.city || "";
   const regionName = address.region || address.regionCode || "";
   // Live-geocoded subtitles (routing.service.js) already bake the region
