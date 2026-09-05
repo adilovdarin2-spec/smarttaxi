@@ -21992,7 +21992,23 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .final10-standard-home .final10-map-wrap .map-view,
 .taxi-client-shell .final10-standard-home .final10-map-wrap .map-view.live-osm {
   opacity: .93 !important;
-  filter: saturate(.72) brightness(1.04) contrast(.93) !important;
+  filter: saturate(.64) brightness(1.05) contrast(.88) !important;
+}
+
+/* The live map remains the source of roads, labels and interaction. This
+   decorative city-volume layer only gives its neutral OSM base the calm,
+   high-key depth used by the approved blue/white reference screens. */
+.taxi-client-shell .final10-standard-home .final10-map-placeholder {
+  z-index: 2 !important;
+  opacity: .18 !important;
+  mix-blend-mode: screen;
+}
+
+.taxi-client-shell .final10-standard-home .final10-map-wrap::before {
+  z-index: 3 !important;
+  background:
+    radial-gradient(circle at 52% 39%, rgba(29, 111, 255, .09), transparent 31%),
+    linear-gradient(180deg, rgba(234, 243, 255, .18), rgba(234, 243, 255, 0) 44%) !important;
 }
 
 .taxi-client-shell .final10-standard-home .final10-map-fade-bottom {

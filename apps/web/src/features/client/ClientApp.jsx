@@ -2313,8 +2313,8 @@ function ReferenceHomeSection(props) {
             <rect x="176" y="0" width="14" height="490" fill="#cfdef2" />
             <path d="M60 40Q150 100 176 198T195 400" stroke="#1d6fff" strokeWidth="2.4" strokeDasharray="1 8" strokeLinecap="round" fill="none" opacity=".8" />
             <circle cx="60" cy="40" r="5" fill="#1d6fff" />
-            <text x="52" y="192" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#7186a3">ул. Ленина</text>
-            <text x="196" y="110" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#7186a3" transform="rotate(90 196 110)">ул. Мира</text>
+            <text x="52" y="192" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#7186a3">ул. Амангелды</text>
+            <text x="196" y="110" fontFamily="Inter, sans-serif" fontSize="9.5" fill="#7186a3" transform="rotate(90 196 110)">ул. Жамбыла</text>
             <g opacity=".85">
               <rect x="222" y="192" width="9" height="5.5" rx="2" fill="#7cabff" />
               <rect x="100" y="272" width="9" height="5.5" rx="2" fill="#7cabff" opacity=".7" />
