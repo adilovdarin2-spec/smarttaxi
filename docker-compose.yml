@@ -53,7 +53,9 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: api
       args:
         NPM_STRICT_SSL: ${NPM_STRICT_SSL:-false}
     restart: always
@@ -111,7 +113,9 @@ services:
 
   web:
     build:
-      context: ./apps/web
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: web
       args:
         VITE_API_URL: ${API_ORIGIN:-http://localhost:4001}
         VITE_SOCKET_URL: ${API_ORIGIN:-http://localhost:4001}
