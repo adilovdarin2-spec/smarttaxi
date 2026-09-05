@@ -838,6 +838,30 @@ function regionAliases(regionHint) {
   return [hint, ...(direct?.[1] || [])].map(normalizedText).filter(Boolean);
 }
 
+// A town name can frame the map, but it does not tell a driver where to stop.
+// Keep named POIs and street search suggestions here: the confirmation layer
+// is responsible for requiring a house number when the rider actually picks a
+// street. This keeps discovery useful without making a city centroid bookable.
+export function isBookableAddressSuggestion(item, regionHint) {
+  const label = compactText(item?.label || item?.title);
+  if (!label) return false;
+  const normalizedLabel = normalizedText(label);
+  const withoutParenthetical = normalizedText(label.replace(/\([^)]*\)/g, " "));
+  const aliases = regionAliases(regionHint);
+  const aliasWords = new Set(
+    aliases.flatMap(alias => normalizedText(alias).split(/\s+/)).filter(Boolean)
+  );
+  const labelWords = normalizedLabel
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  const genericSettlement = aliases.some(alias =>
+    normalizedLabel === alias || withoutParenthetical === alias
+  ) || (labelWords.length > 0 && aliasWords.size > 0 &&
+    labelWords.every(word => aliasWords.has(word)));
+  return !genericSettlement;
+}
+
 function regionCenterRule(regionHint) {
   const hint = normalizedText(regionHint);
   if (!hint) return null;
@@ -869,7 +893,11 @@ function nearestLocalPlace(point, maxKm = 30) {
 }
 
 function filterRegionAddressSuggestions(addresses, regionHint, limit = 8, query = "") {
-  const sorted = sortAddressSuggestions(addresses, regionHint, query);
+  const sorted = sortAddressSuggestions(
+    addresses.filter(item => isBookableAddressSuggestion(item, regionHint)),
+    regionHint,
+    query
+  );
   // A provider like MapTiler always returns its "closest guess" even when
   // nothing it found actually matches the query text anywhere (label/
   // subtitle/city/region) -- addressQueryScore's worst tier (20) marks
@@ -1401,7 +1429,9 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
   const matchingRegion = regionName
     ? regions.find((region) => normalizedText(region.name) === normalizedText(regionName))
     : null;
-  return filterGazetteerRowsToServiceArea(rows, regions, regionName).slice(0, limit).map((row) => ({
+  return filterGazetteerRowsToServiceArea(rows, regions, regionName)
+    .filter(row => isBookableAddressSuggestion(row, regionName))
+    .slice(0, limit).map((row) => ({
     label: row.label,
     lat: Number(row.lat),
     lng: Number(row.lng),
@@ -1552,7 +1582,7 @@ async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz"
         query
       );
     }
-    if (localFallback.length > 0) return localFallback;
+    if (localFallback.length > 0) return localFallback.filter(item => isBookableAddressSuggestion(item, region));
     throw addressSearchUnavailable();
   }
   if (!response.ok) {
@@ -1565,7 +1595,7 @@ async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz"
         query
       );
     }
-    if (localFallback.length > 0) return localFallback;
+    if (localFallback.length > 0) return localFallback.filter(item => isBookableAddressSuggestion(item, region));
     throw addressSearchUnavailable();
   }
   const data = response.data;
@@ -1579,7 +1609,7 @@ async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz"
         query
       );
     }
-    if (localFallback.length > 0) return localFallback;
+    if (localFallback.length > 0) return localFallback.filter(item => isBookableAddressSuggestion(item, region));
     throw addressSearchUnavailable();
   }
   const addresses = filterRegionAddressSuggestions(
@@ -1605,7 +1635,11 @@ async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz"
       query
     );
   }
-  return sortAddressSuggestions(localFallback, region, query);
+  return sortAddressSuggestions(
+    localFallback.filter(item => isBookableAddressSuggestion(item, region)),
+    region,
+    query
+  );
 }
 
 // "KZ13-01", "Р29", "А-2", "M32": a road's reference number, which is what

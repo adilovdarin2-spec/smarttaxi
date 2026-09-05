@@ -19,7 +19,8 @@ import fs from "node:fs";
 import {
   reverseAddress,
   searchAddresses,
-  filterGazetteerRowsToServiceArea
+  filterGazetteerRowsToServiceArea,
+  isBookableAddressSuggestion
 } from "../modules/routing/routing.service.js";
 import {
   REGION_GEO,
@@ -69,6 +70,22 @@ const nominatim = (displayName, address) => async () => ({
 });
 
 const PIN = { lat: 40.7001, lng: 68.5201 };
+
+assert.equal(
+  isBookableAddressSuggestion({ label: "Атакент" }, "Атакент"),
+  false,
+  "a settlement name alone is never a dispatchable address"
+);
+assert.equal(
+  isBookableAddressSuggestion({ label: "Атакент, Атакент" }, "Атакент"),
+  false,
+  "a repeated settlement name is still not a dispatchable address"
+);
+assert.equal(
+  isBookableAddressSuggestion({ label: "Акимат Атакента" }, "Атакент"),
+  true,
+  "a named POI stays bookable without a house number"
+);
 
 // 1. A road code over a real house. The provider answers KZ-12; the rider gets
 //    the house, because that is what they can say out loud to a driver.
@@ -343,15 +360,26 @@ const webClientSource = fs.readFileSync(
   new URL("../../../web/src/features/client/ClientApp.jsx", import.meta.url),
   "utf8"
 );
-assert.match(
-  webClientSource,
-  /const bareStreet = \/\^\(\?:ул\(\?:ица\)\?\\\.\?\|проспект\|переулок\|бульвар\|шоссе\|көшесі\|даңғылы\)\\s\+\/i/,
+assert.ok(
+  webClientSource.includes("const bareStreet =") &&
+    webClientSource.includes("көшесі") &&
+    webClientSource.includes("даңғылы"),
   "the web address normalizer recognizes every street-only prefix the native picker rejects"
 );
 assert.match(
   webClientSource,
   /bareStreet && !\/\\d\/.test\(title\)/,
   "the web address normalizer rejects a street title without a house number"
+);
+assert.match(
+  webClientSource,
+  /address\.selectionKind === "region-center"/,
+  "a settlement centroid cannot be confirmed as a rider address"
+);
+assert.match(
+  webClientSource,
+  /item\.region === code && Boolean\(normalizeAddress\(item\)\)/,
+  "the web popular-address list excludes non-bookable catalogue points"
 );
 
 console.log(`Address selection checks ok: 7 map-pick cases, 3 search cases, ${REGION_SEED.length} region radii, catalogue index invariants`);

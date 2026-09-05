@@ -284,8 +284,8 @@ const clientRegionPresets = [
 ];
 
 const clientAddressCatalog = [
-  { region: "ATAKENT", title: "Моё местоположение", subtitle: "Атакент", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["текущее", "геолокация", "центр"] },
-  { region: "ATAKENT", title: "Атакент (Ильич)", subtitle: "Центр посёлка", lat: 40.844435, lng: 68.509021, icon: "target", tags: ["центр", "площадь", "илич", "ильич", "atakent"] },
+  { region: "ATAKENT", title: "Моё местоположение", subtitle: "Атакент", lat: 40.844435, lng: 68.509021, icon: "target", selectionKind: "device-location", tags: ["текущее", "геолокация", "центр"] },
+  { region: "ATAKENT", title: "Атакент (Ильич)", subtitle: "Центр посёлка", lat: 40.844435, lng: 68.509021, icon: "target", selectionKind: "region-center", tags: ["центр", "площадь", "илич", "ильич", "atakent"] },
   { region: "ATAKENT", title: "Базар Атакент", subtitle: "Атакент, Центральный рынок", lat: 40.84473, lng: 68.51162, icon: "trips", tags: ["базар", "рынок", "центральный"] },
   { region: "ATAKENT", title: "Атакент автовокзал", subtitle: "Атакент, остановка у центра", lat: 40.84621, lng: 68.50486, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
   { region: "ATAKENT", title: "Улица Абая", subtitle: "Атакент, район центральной улицы", lat: 40.84803, lng: 68.50768, icon: "pin", tags: ["абая", "абай", "abai", "ул абая"] },
@@ -296,20 +296,20 @@ const clientAddressCatalog = [
   { region: "ATAKENT", title: "ЖД станция Мактаарал", subtitle: "Атакент, железнодорожная станция", lat: 40.83980, lng: 68.49820, icon: "trips", tags: ["жд", "станция", "мактаарал", "поезд", "railway"] },
   { region: "ATAKENT", title: "Акимат посёлка Атакент", subtitle: "Атакент, здание акимата", lat: 40.84550, lng: 68.50750, icon: "work", tags: ["акимат", "администрация"] },
 
-  { region: "MYRZAKENT", title: "Мырзакент (Славянка)", subtitle: "Центр посёлка", lat: 40.665495, lng: 68.549994, icon: "target", tags: ["мырзакент", "славян", "славянка", "myrzakent", "slavyanka"] },
+  { region: "MYRZAKENT", title: "Мырзакент (Славянка)", subtitle: "Центр посёлка", lat: 40.665495, lng: 68.549994, icon: "target", selectionKind: "region-center", tags: ["мырзакент", "славян", "славянка", "myrzakent", "slavyanka"] },
   { region: "MYRZAKENT", title: "Мырзакент базар", subtitle: "Мырзакент, центральный рынок", lat: 40.66492, lng: 68.54464, icon: "trips", tags: ["базар", "рынок"] },
   { region: "MYRZAKENT", title: "Автовокзал Мырзакент", subtitle: "Мырзакент, ориентир у центра", lat: 40.66848, lng: 68.53928, icon: "trips", tags: ["автовокзал", "вокзал", "остановка"] },
   { region: "MYRZAKENT", title: "Акимат Мактааральского района", subtitle: "Мырзакент, районный акимат", lat: 40.66690, lng: 68.55210, icon: "work", tags: ["акимат", "администрация", "район", "центр"] },
   { region: "MYRZAKENT", title: "Центральная районная больница", subtitle: "Мырзакент, ЦРБ Мактааральского района", lat: 40.66978, lng: 68.54742, icon: "work", tags: ["больница", "црб", "поликлиника", "мед", "аптека"] },
 
-  { region: "ZHETYSAY", title: "Жетысай (Джетысай)", subtitle: "Центр города", lat: 40.777134, lng: 68.324677, icon: "target", tags: ["жетысай", "жетисай", "джетысай", "zhetysay"] },
+  { region: "ZHETYSAY", title: "Жетысай (Джетысай)", subtitle: "Центр города", lat: 40.777134, lng: 68.324677, icon: "target", selectionKind: "region-center", tags: ["жетысай", "жетисай", "джетысай", "zhetysay"] },
   { region: "ZHETYSAY", title: "Центральный базар Жетысай", subtitle: "Жетысай, центральный рынок", lat: 40.77980, lng: 68.32190, icon: "trips", tags: ["базар", "рынок"] },
   { region: "ZHETYSAY", title: "Автовокзал Жетысай", subtitle: "Жетысай, ориентир у центра", lat: 40.78191, lng: 68.31951, icon: "trips", tags: ["автовокзал", "вокзал"] },
   { region: "ZHETYSAY", title: "Акимат Жетысайского района", subtitle: "Жетысай, городской сквер", lat: 40.77650, lng: 68.32710, icon: "work", tags: ["акимат", "администрация", "сквер"] },
   { region: "ZHETYSAY", title: "Мечеть «Нур»", subtitle: "Жетысай", lat: 40.77420, lng: 68.32990, icon: "pin", tags: ["мечеть", "мешіт", "нур"] },
   { region: "ZHETYSAY", title: "Улица Мухтара Ауезова", subtitle: "Жетысай", lat: 40.77860, lng: 68.32860, icon: "pin", tags: ["ауезова", "auezov", "мухтара ауезова"] },
 
-  { region: "SHYMKENT", title: "Шымкент (Чимкент)", subtitle: "Центр города", lat: 42.314696, lng: 69.588328, icon: "target", tags: ["шымкент", "чимкент", "shymkent"] },
+  { region: "SHYMKENT", title: "Шымкент (Чимкент)", subtitle: "Центр города", lat: 42.314696, lng: 69.588328, icon: "target", selectionKind: "region-center", tags: ["шымкент", "чимкент", "shymkent"] },
   { region: "SHYMKENT", title: "Mega Planet Shymkent", subtitle: "Шымкент, ТРЦ", lat: 42.31638, lng: 69.59307, icon: "work", tags: ["mega", "мега", "трц", "планет"] },
   { region: "SHYMKENT", title: "Арбат Шымкент", subtitle: "Шымкент, прогулочная зона", lat: 42.31803, lng: 69.596, icon: "favorite", tags: ["арбат", "центр"] },
   { region: "SHYMKENT", title: "Центральный парк", subtitle: "Шымкент", lat: 42.32151, lng: 69.59202, icon: "home", tags: ["парк", "центр"] },
@@ -548,8 +548,13 @@ function normalizeAddress(address) {
   // Keep the web picker in parity with Flutter: a street without a house
   // number is too ambiguous for a driver. A named POI remains valid because
   // it does not use one of the street-only prefixes below.
-  const bareStreet = /^(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+/i.test(title);
-  if (!title || technicalAddress || (bareStreet && !/\d/.test(title))) return null;
+  const bareStreet = /(?:^|[,;]\s*)(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+/i.test(title);
+  const genericSettlement = /^((?:атакент(?:\s*\(ильич\))?|мырзакент(?:\s*\(славянка\))?|жетысай(?:\s*\(джетысай\))?|шымкент(?:\s*\(чимкент\))?|киров(?:\s*\(кирово\))?|асыката(?:\s*\(асыката\))?|достык(?:\s*\(достык\))?|ынтымак(?:\s*\(ынтымак\))?|бирлик(?:\s*\(бирлик\))?|фирдоуси(?:\s*\(фердоуси\))?|жана жол(?:\s*\(жаңа жол\))?|мақтаарал(?:\s*\(мактаарал\))?|атамекен(?:\s*\(ата мекен\))?))(?:\s*,\s*\1)?$/i.test(title);
+  // A service-region centroid is useful for framing a map, but it is not a
+  // dispatchable address. It must never masquerade as a POI in the picker.
+  const nonBookableCatalogPoint = address.selectionKind === "region-center" ||
+    address.selectionKind === "device-location";
+  if (!title || technicalAddress || genericSettlement || nonBookableCatalogPoint || (bareStreet && !/\d/.test(title))) return null;
   const base = address.subtitle || address.city || "";
   const regionName = address.region || address.regionCode || "";
   // Live-geocoded subtitles (routing.service.js) already bake the region
@@ -658,7 +663,9 @@ function mergeRegions(apiRegions = []) {
 
 function localAddressesForRegion(region) {
   const code = regionCode(region);
-  return mergedClientAddressCatalog.filter(item => item.region === code);
+  return mergedClientAddressCatalog.filter(item =>
+    item.region === code && Boolean(normalizeAddress(item))
+  );
 }
 
 function popularAddressesForRegion(region, limit = 3) {

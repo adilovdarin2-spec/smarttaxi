@@ -124,6 +124,10 @@ function buildLocalLandmarks() {
     lat: center.lat,
     lng: center.lng,
     icon: "target",
+    // A settlement center only frames the map. It is deliberately excluded
+    // from bookable suggestions until a verified house-number/POI registry
+    // for the region is available.
+    selectionKind: "region-center",
     tags: [...center.aliases, "центр", "центр поселка", "орталық", "center", "centre", "ortalyk"]
   }));
 }

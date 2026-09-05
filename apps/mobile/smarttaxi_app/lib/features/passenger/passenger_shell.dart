@@ -1130,10 +1130,15 @@ class _PassengerShellState extends State<PassengerShell>
     // this client guard prevents an old cached response from becoming an
     // order address.
     final bareStreet = RegExp(
-      r'^(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+',
+      r'(?:^|[,;]\s*)(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+',
       caseSensitive: false,
     ).hasMatch(label);
     if (bareStreet && !RegExp(r'\d').hasMatch(label)) return false;
+    final genericSettlement = RegExp(
+      r'^((?:атакент(?:\s*\(ильич\))?|мырзакент(?:\s*\(славянка\))?|жетысай(?:\s*\(джетысай\))?|шымкент(?:\s*\(чимкент\))?|киров(?:\s*\(кирово\))?|асыката(?:\s*\(асыката\))?|достык(?:\s*\(достык\))?|ынтымак(?:\s*\(ынтымак\))?|бирлик(?:\s*\(бирлик\))?|фирдоуси(?:\s*\(фердоуси\))?|жана жол(?:\s*\(жаңа жол\))?|мақтаарал(?:\s*\(мактаарал\))?|атамекен(?:\s*\(ата мекен\))?))(?:\s*,\s*\1)?$',
+      caseSensitive: false,
+    ).hasMatch(label);
+    if (genericSettlement) return false;
     return !RegExp(r'^(?:kz|ah|[а-яa-z]{1,3})[\s-]?\d+[а-яa-z]?$',
             caseSensitive: false)
         .hasMatch(label);

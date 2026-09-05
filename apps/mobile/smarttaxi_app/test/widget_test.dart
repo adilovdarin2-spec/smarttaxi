@@ -655,6 +655,23 @@ void main() {
     );
   });
 
+  test('a settlement name alone never becomes a passenger address', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+
+    // API search results can contain a settlement centroid. It is useful for
+    // moving the map, but an order needs a house number or a named POI that a
+    // driver can actually find. Keep this guard in Flutter too for cached or
+    // stale responses from an older backend.
+    expect(passenger, contains('final genericSettlement = RegExp('));
+    expect(passenger, contains('атакент'));
+    expect(passenger, contains(r'(?:\s*,\s*\1)?$'));
+    expect(passenger, contains('if (genericSettlement) return false;'));
+    expect(
+      passenger,
+      contains("r'(?:^|[,;]\\s*)(?:ул(?:ица)?\\.?|проспект"),
+    );
+  });
+
   test('3D buildings stay under the style label layers on both maps', () {
     // The driver map passed no anchor at all, so MapLibre put the extrusion
     // above every style layer and it drew houses over the street names on the
