@@ -677,6 +677,19 @@ void main() {
     expect(helper, contains('await controller.getLayerIds()'));
   });
 
+  test('passenger route is a style layer below labels, not an annotation', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    expect(passenger,
+        contains("static const _routeSource = 'smarttaxi-passenger-route'"));
+    expect(passenger,
+        contains('await controller.addGeoJsonSource(_routeSource, routeData)'));
+    expect(passenger,
+        contains('await controller.setGeoJsonSource(_routeSource, routeData)'));
+    expect(passenger, contains('belowLayerId: anchorLayerId'));
+    expect(passenger, isNot(contains('geometry: geometry,')),
+        reason: 'the native passenger route must not return to addLine annotations');
+  });
+
   test('driver drawer keeps driver tabs and adds account/support sections', () {
     final driver = _read('lib/features/driver/driver_shell.dart');
     final chrome =

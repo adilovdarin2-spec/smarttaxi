@@ -880,7 +880,25 @@ class _PassengerShellState extends State<PassengerShell>
     try {
       final regions = await widget.api.getActiveRegions();
       if (!mounted) return;
-      final activeRegion = regions.isEmpty ? null : regions.first;
+      // A cached GPS fix can land before regions finish loading. Keep the
+      // selected service region aligned with that visible map center instead
+      // of silently selecting the first alphabetic region and then rejecting
+      // the rider's first manual map point as "outside the service zone".
+      RegionOption? centerRegion;
+      final seededCenter = _mapCenter;
+      if (seededCenter != null) {
+        final seededPoint = Coordinate(
+          lat: seededCenter.latitude,
+          lng: seededCenter.longitude,
+        );
+        for (final region in regions) {
+          if (region.contains(seededPoint)) {
+            centerRegion = region;
+            break;
+          }
+        }
+      }
+      final activeRegion = regions.isEmpty ? null : centerRegion ?? regions.first;
       setState(() {
         _regions = regions;
         _selectedRegion = activeRegion;
@@ -1756,13 +1774,6 @@ class _PassengerShellState extends State<PassengerShell>
       }
       return;
     }
-    if (mounted) {
-      setState(() {
-        _mapPointPickerActive = false;
-        _mapPickerAddressLoading = false;
-        _error = null;
-      });
-    }
     _mapPickerReverseDebounce?.cancel();
     await _applyMapTap(point, preferredLabel: knownLabel);
   }
@@ -1839,7 +1850,7 @@ class _PassengerShellState extends State<PassengerShell>
     });
   }
 
-  Future<void> _applyMapTap(LatLng point, {String? preferredLabel}) async {
+  Future<bool> _applyMapTap(LatLng point, {String? preferredLabel}) async {
     final l10n = AppLocalizations.of(context);
     final target = _target;
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
@@ -1848,7 +1859,7 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() {
         _error = l10n.passengerPointOutsideRegionError;
       });
-      return;
+      return false;
     }
     var resolvedLabel = preferredLabel?.trim();
     if (resolvedLabel == null ||
@@ -1868,21 +1879,26 @@ class _PassengerShellState extends State<PassengerShell>
         setState(() => _error =
             'Не удалось определить адрес. Передвиньте карту к ближайшему дому или объекту.');
       }
-      return;
+      return false;
     }
-    await _applyPoint(
+    final applied = await _applyPoint(
       target,
       coordinate,
       label,
       PointSource.map,
     );
-    if (!mounted) return;
+    if (!applied || !mounted) return false;
     if (_mapPointPickerActive) {
-      setState(() => _mapPointPickerActive = false);
+      setState(() {
+        _mapPointPickerActive = false;
+        _mapPickerAddressLoading = false;
+        _error = null;
+      });
     }
     if (target == PointTarget.pickup) {
       setState(() => _target = PointTarget.dropoff);
     }
+    return true;
   }
 
   void _handleMapTileError() {
@@ -1899,7 +1915,7 @@ class _PassengerShellState extends State<PassengerShell>
     });
   }
 
-  Future<void> _applyPoint(
+  Future<bool> _applyPoint(
     PointTarget target,
     Coordinate coordinate,
     String label,
@@ -1915,12 +1931,12 @@ class _PassengerShellState extends State<PassengerShell>
     // messages, and going back from it reset the whole destination pick
     // instead of just letting the rider try a different address.
     if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
-      if (!mounted) return;
+      if (!mounted) return false;
       AppToast.showError(
         context,
         l10n.passengerAddressOutsideServiceZoneError,
       );
-      return;
+      return false;
     }
     final inferredPickupCenter = _mapCenter ??
         selectedRegion?.center?.toLatLng() ??
@@ -1935,12 +1951,12 @@ class _PassengerShellState extends State<PassengerShell>
     if (target == PointTarget.dropoff &&
         effectivePickup != null &&
         _isSameTripPoint(effectivePickup, coordinate)) {
-      if (!mounted) return;
+      if (!mounted) return false;
       AppToast.showError(
         context,
         l10n.passengerPickupDestinationSameError,
       );
-      return;
+      return false;
     }
     setState(() {
       if (inferredPickup != null) {
@@ -1975,6 +1991,7 @@ class _PassengerShellState extends State<PassengerShell>
     });
     unawaited(_refreshNearbyDrivers(silent: true));
     await _refreshPreview();
+    return true;
   }
 
   void _swapPickupDropoff() {
@@ -5879,6 +5896,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   native_map.MapLibreMapController? _controller;
   bool _styleReady = false;
   bool _imagesInstalled = false;
+  bool _routeLayersInstalled = false;
   bool _ignoreNextCameraIdle = false;
   String _lastSceneSignature = '';
 
@@ -5886,6 +5904,9 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   static const _currentImage = 'smarttaxi-current-location-marker';
   static const _finishImage = 'smarttaxi-finish-marker';
   static const _carImage = 'smarttaxi-driver-car-marker';
+  static const _routeSource = 'smarttaxi-passenger-route';
+  static const _routeShadowLayer = 'smarttaxi-passenger-route-shadow';
+  static const _routeLineLayer = 'smarttaxi-passenger-route-line';
 
   @override
   void didUpdateWidget(covariant _NativeMapLibreSurface oldWidget) {
@@ -6113,6 +6134,72 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     }
   }
 
+  Map<String, dynamic> _routeGeoJson() {
+    if (widget.route.length < 2) {
+      return const {'type': 'FeatureCollection', 'features': <dynamic>[]};
+    }
+    return {
+      'type': 'FeatureCollection',
+      'features': [
+        {
+          'type': 'Feature',
+          'properties': const <String, dynamic>{},
+          'geometry': {
+            'type': 'LineString',
+            'coordinates': widget.route
+                .map((point) => [point.longitude, point.latitude])
+                .toList(growable: false),
+          },
+        },
+      ],
+    };
+  }
+
+  // Annotation lines always sit above the whole MapLibre style. That made the
+  // blue route cover street names exactly where a rider judges the route. A
+  // style source shares the buildings' label anchor; pins remain annotations,
+  // so pickup, destination and car markers still stay above the scene.
+  Future<void> _syncRouteStyleLayer(
+      native_map.MapLibreMapController controller) async {
+    final routeData = _routeGeoJson();
+    final sourceIds = await controller.getSourceIds();
+    if (sourceIds.contains(_routeSource)) {
+      await controller.setGeoJsonSource(_routeSource, routeData);
+    } else {
+      await controller.addGeoJsonSource(_routeSource, routeData);
+    }
+    if (_routeLayersInstalled) return;
+    final anchorLayerId = await resolveLabelAnchorLayerId(controller);
+    await controller.addLineLayer(
+      _routeSource,
+      _routeShadowLayer,
+      const native_map.LineLayerProperties(
+        lineColor: '#0b4fd1',
+        lineWidth: 10,
+        lineOpacity: 0.28,
+        lineBlur: 1.8,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      belowLayerId: anchorLayerId,
+      enableInteraction: false,
+    );
+    await controller.addLineLayer(
+      _routeSource,
+      _routeLineLayer,
+      const native_map.LineLayerProperties(
+        lineColor: '#1d6fff',
+        lineWidth: 5.5,
+        lineOpacity: 0.96,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      belowLayerId: anchorLayerId,
+      enableInteraction: false,
+    );
+    _routeLayersInstalled = true;
+  }
+
   Future<void> _syncScene() async {
     final controller = _controller;
     if (!_styleReady || controller == null) return;
@@ -6125,25 +6212,10 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
 
     try {
       await controller.clearLines();
+      // Keep the route inside the style rather than the annotation manager.
+      // It then stays beneath street and POI labels just like the web route.
+      await _syncRouteStyleLayer(controller);
       await controller.clearSymbols();
-      if (widget.route.isNotEmpty) {
-        final geometry = widget.route.map(_nativePoint).toList(growable: false);
-        await controller.addLine(
-          native_map.LineOptions(
-            geometry: geometry,
-            lineColor: '#0b4fd1',
-            lineWidth: 11,
-            lineOpacity: 0.95,
-          ),
-        );
-        await controller.addLine(
-          native_map.LineOptions(
-            geometry: geometry,
-            lineColor: '#1d6fff',
-            lineWidth: 7,
-          ),
-        );
-      }
 
       Future<void> symbol(LatLng point, String image, {double size = 0.65}) =>
           controller.addSymbol(
@@ -6197,6 +6269,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       _styleReady = true;
     }
     _lastSceneSignature = '';
+    _routeLayersInstalled = false;
     final controller = _controller;
     unawaited(_syncCameraToWidget());
     unawaited(_syncScene());
@@ -15236,8 +15309,10 @@ class _TariffSection extends StatelessWidget {
           )
         else ...[
           // The passenger flow deliberately offers two bookable choices.
-          // Present them as a paired decision so tariff, price, payment and
-          // the order action all stay in one immediate viewport.
+          // Full-width rows preserve a real car/parcel silhouette, capacity,
+          // price and selected state on compact Android screens. The former
+          // side-by-side tiles squeezed all four signals into decorative
+          // boxes and made the route sheet feel heavier than the map.
           if (visibleTariffs.length == 1)
             _TariffComparisonCard(
               item: visibleTariffs.first,
@@ -15246,26 +15321,24 @@ class _TariffSection extends StatelessWidget {
               onTap: () => onSelect(visibleTariffs.first.tariff.id),
               dark: dark,
               bestValue: visibleTariffs.first.tariff.id == bestValueTariffId,
+              compact: false,
             )
           else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
               children: [
                 for (var index = 0; index < visibleTariffs.length; index++) ...[
-                  Expanded(
-                    child: _TariffComparisonCard(
-                      item: visibleTariffs[index],
-                      selected: visibleTariffs[index].tariff.id == selectedId,
-                      estimate: estimates[visibleTariffs[index].tariff.id],
-                      onTap: () => onSelect(visibleTariffs[index].tariff.id),
-                      dark: dark,
-                      bestValue:
-                          visibleTariffs[index].tariff.id == bestValueTariffId,
-                      compact: true,
-                    ),
+                  _TariffComparisonCard(
+                    item: visibleTariffs[index],
+                    selected: visibleTariffs[index].tariff.id == selectedId,
+                    estimate: estimates[visibleTariffs[index].tariff.id],
+                    onTap: () => onSelect(visibleTariffs[index].tariff.id),
+                    dark: dark,
+                    bestValue:
+                        visibleTariffs[index].tariff.id == bestValueTariffId,
+                    compact: false,
                   ),
                   if (index < visibleTariffs.length - 1)
-                    const SizedBox(width: 10),
+                    const SizedBox(height: 10),
                 ],
               ],
             ),
@@ -15424,36 +15497,36 @@ class _TariffComparisonCard extends StatelessWidget {
         : item.asset.endsWith('.svg')
             ? SvgPicture.asset(
                 item.asset,
-                width: 78,
-                height: 54,
+                width: 58,
+                height: 40,
                 fit: BoxFit.contain,
                 placeholderBuilder: (_) => fallback,
               )
             : Image.asset(
                 item.asset,
-                width: 82,
-                height: 56,
-                cacheWidth: 164,
-                cacheHeight: 112,
+                width: 60,
+                height: 42,
+                cacheWidth: 120,
+                cacheHeight: 84,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 errorBuilder: (_, __, ___) => fallback,
               );
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(compact ? 22 : 26),
+      borderRadius: BorderRadius.circular(compact ? 22 : 22),
       child: InkWell(
-        borderRadius: BorderRadius.circular(compact ? 22 : 26),
+        borderRadius: BorderRadius.circular(compact ? 22 : 22),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          constraints: BoxConstraints(minHeight: compact ? 148 : 118),
+          constraints: BoxConstraints(minHeight: compact ? 148 : 72),
           padding: EdgeInsets.fromLTRB(
-            compact ? 11 : 14,
-            compact ? 10 : 12,
-            compact ? 11 : 14,
-            compact ? 10 : 12,
+            compact ? 11 : 11,
+            compact ? 10 : 7,
+            compact ? 11 : 11,
+            compact ? 10 : 7,
           ),
           decoration: BoxDecoration(
             color: selected ? null : palette.card,
@@ -15464,7 +15537,7 @@ class _TariffComparisonCard extends StatelessWidget {
                     colors: [palette.brandSurface, palette.brandPale],
                   )
                 : null,
-            borderRadius: BorderRadius.circular(compact ? 22 : 26),
+            borderRadius: BorderRadius.circular(compact ? 22 : 22),
             border: Border.all(
               color: selected ? palette.brand : palette.border,
               width: selected ? 2.5 : 1,
@@ -15482,54 +15555,60 @@ class _TariffComparisonCard extends StatelessWidget {
               : Row(
                   children: [
                     Container(
-                      width: 96,
-                      height: 82,
+                      width: 64,
+                      height: 54,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: palette.brandSurface.withValues(alpha: 0.72),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: art,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 9),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _tariffTitleFor(l10n, item.classId),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: palette.text,
-                              fontSize: 17,
-                              height: 1.05,
-                              fontWeight: FontWeight.w900,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _tariffTitleFor(l10n, item.classId),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: palette.text,
+                                    fontSize: 15.5,
+                                    height: 1.05,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                price == null ? 'Расчёт' : _formatTenge(price),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: palette.text,
+                                  fontSize: 18.5,
+                                  height: 1,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.4,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 2),
                           Text(
                             isDelivery ? 'до 20 кг' : 'до 4 пассажиров',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: palette.textSecondary,
-                              fontSize: 12,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            price == null ? 'Расчёт' : _formatTenge(price),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: palette.text,
-                              fontSize: 22,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
                             ),
                           ),
                           if (bestValue) ...[
@@ -15545,6 +15624,24 @@ class _TariffComparisonCard extends StatelessWidget {
                           ],
                         ],
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 26,
+                      height: 26,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected ? palette.brandDeep : palette.card,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected ? palette.brandDeep : palette.border,
+                          width: selected ? 0 : 1.5,
+                        ),
+                      ),
+                      child: selected
+                          ? const Icon(Icons.check_rounded,
+                              color: Colors.white, size: 16)
+                          : null,
                     ),
                   ],
                 ),
@@ -15564,41 +15661,43 @@ class _TariffSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // _TariffSection already owns the heading. Keep this loading state
-        // structurally identical to the final two-choice layout so it never
-        // flashes a third, clipped tariff or repeats "Выберите тариф".
-        Row(
-          children: List.generate(
-            2,
-            (index) => Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: index == 0 ? 10 : 0),
-                child: Container(
-                  height: 148,
-                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.white,
-                    border: Border.all(
-                      color: dark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : SmartTaxiColors.border,
-                    ),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _SkeletonLine(
-                          width: double.infinity, height: 54, radius: 15),
-                      SizedBox(height: 11),
-                      _SkeletonLine(width: 70, height: 13),
-                      SizedBox(height: 7),
-                      _SkeletonLine(width: 54, height: 12),
-                    ],
-                  ),
+        // Match the final full-width decision rows to avoid a jarring layout
+        // jump while live tariff estimates arrive.
+        ...List.generate(
+          2,
+          (index) => Padding(
+            padding: EdgeInsets.only(bottom: index == 0 ? 10 : 0),
+            child: Container(
+              height: 72,
+              padding: const EdgeInsets.fromLTRB(11, 7, 11, 7),
+              decoration: BoxDecoration(
+                color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+                border: Border.all(
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : SmartTaxiColors.border,
                 ),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Row(
+                children: [
+                  _SkeletonLine(width: 64, height: 54, radius: 16),
+                  SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _SkeletonLine(width: 84, height: 14),
+                        SizedBox(height: 4),
+                        _SkeletonLine(width: 104, height: 11),
+                        SizedBox(height: 5),
+                        _SkeletonLine(width: 66, height: 18),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 34),
+                ],
               ),
             ),
           ),

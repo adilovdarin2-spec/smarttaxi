@@ -251,13 +251,13 @@ const tariff = {
   is_active: true
 };
 
-function mockFetch({ ok = true, route = {} } = {}) {
+function mockFetch({ ok = true, route = {}, routes } = {}) {
   return async () => ({
     ok,
     async json() {
       return {
         code: "Ok",
-        routes: [{
+        routes: routes || [{
           distance: 4200,
           duration: 720,
           geometry: { type: "LineString", coordinates: [[69.1, 42.1], [69.2, 42.2]] },
@@ -362,6 +362,43 @@ assert.equal(preview.distanceMeters, 4200, "route preview returns provider dista
 assert.equal(preview.durationSeconds, 720, "route preview returns provider duration");
 assert.equal(preview.geometry.type, "LineString", "route preview returns provider geometry");
 assert.equal(preview.estimate.pricing.distanceKm, 4.2, "tariff estimate uses provider distance");
+
+// Provider response order is not a route-selection policy. The client must
+// receive the quickest usable alternative, and pricing must be based on that
+// same route rather than an arbitrary first/longer candidate.
+let alternativesUrl = "";
+const alternativePreview = await buildRoutePreview({
+  pickupLat: 42.11,
+  pickupLng: 69.11,
+  dropoffLat: 42.19,
+  dropoffLng: 69.19,
+  tariffId: tariff.id
+}, createExecutor(), async url => {
+  alternativesUrl = String(url);
+  return {
+    ok: true,
+    async json() {
+      return {
+        code: "Ok",
+        routes: [
+          {
+            distance: 6600,
+            duration: 660,
+            geometry: { type: "LineString", coordinates: [[69.11, 42.11], [69.15, 42.16], [69.19, 42.19]] }
+          },
+          {
+            distance: 4500,
+            duration: 480,
+            geometry: { type: "LineString", coordinates: [[69.11, 42.11], [69.14, 42.15], [69.19, 42.19]] }
+          }
+        ]
+      };
+    }
+  };
+});
+assert.match(alternativesUrl, /alternatives=true/, "routing asks OSRM for available driving alternatives");
+assert.equal(alternativePreview.durationSeconds, 480, "route preview chooses the quickest OSRM alternative");
+assert.equal(alternativePreview.distanceMeters, 4500, "fare preview uses the selected quickest route distance");
 
 await assert.rejects(
   () => buildRoutePreview({ pickupLat: 44, pickupLng: 69.1, dropoffLat: 42.2, dropoffLng: 69.2 }, createExecutor(), mockFetch()),

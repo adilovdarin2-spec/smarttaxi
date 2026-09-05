@@ -1874,7 +1874,11 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   const destination = normalizePoint(to);
   if (!env.ROUTING_BASE_URL) throw routeUnavailable("ROUTING_BASE_URL is not configured");
   const base = env.ROUTING_BASE_URL.replace(/\/$/, "");
-  const cacheKey = `route:osrm:steps:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}`;
+  // Keep the selection policy in the cache namespace. Earlier versions cached
+  // OSRM's first answer, even though its response order is not a product
+  // guarantee. A route and the fare based on it must use the same fastest
+  // candidate, never a provider-order accident.
+  const cacheKey = `route:osrm:fastest-v1:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}`;
   const cached = await cacheGetJson(cacheKey);
   if (isUsableRoutePayload(cached)) return cached;
   // A hung/misbehaving OSRM would otherwise be re-hit on every single poll
@@ -1885,7 +1889,7 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   // steps=true so the client can show a real next-turn instruction (street
   // name + actual maneuver type) instead of guessing one from bearing
   // changes in the plain geometry — see parseSteps above.
-  const url = `${base}/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true`;
+  const url = `${base}/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true&alternatives=true`;
   let response;
   try {
     response = await getJson(url, { fetchImpl, timeoutMs: 10_000 });
@@ -1898,10 +1902,22 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
     throw routeUnavailable();
   }
   const data = response.data;
-  const route = data?.routes?.[0];
-  if (!route || !Number.isFinite(Number(route.distance)) || Number(route.distance) < 0 ||
-    !Number.isFinite(Number(route.duration)) || Number(route.duration) < 0 ||
-    !hasUsableRouteGeometry(route.geometry)) {
+  // OSRM ranks candidates by its internal weight, which can differ from a
+  // rider-visible ETA. Select explicitly: the least duration wins and a
+  // shorter distance settles an ETA tie. This gives the passenger the fastest
+  // practical driving route rather than blindly drawing whichever alternative
+  // the provider happened to put first.
+  const candidates = (Array.isArray(data?.routes) ? data.routes : [])
+    .filter(candidate =>
+      Number.isFinite(Number(candidate?.distance)) && Number(candidate.distance) >= 0 &&
+      Number.isFinite(Number(candidate?.duration)) && Number(candidate.duration) >= 0 &&
+      hasUsableRouteGeometry(candidate.geometry)
+    )
+    .sort((left, right) =>
+      Number(left.duration) - Number(right.duration) || Number(left.distance) - Number(right.distance)
+    );
+  const route = candidates[0];
+  if (!route) {
     await cacheSetJson(failureKey, { failed: true }, 20);
     throw routeUnavailable();
   }
