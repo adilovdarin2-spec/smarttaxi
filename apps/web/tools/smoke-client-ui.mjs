@@ -34,6 +34,16 @@ async function waitForVisibleRoute(page) {
   }, null, { timeout: 15000 });
 }
 
+async function assertPickerAnchor(page) {
+  const canvas = await page.locator(".maplibre-canvas-host").boundingBox();
+  const tail = await page.locator(".smarttaxi-center-picker .approved-address-marker-tail").boundingBox();
+  const sheet = await page.locator(".address-picker-sheet").boundingBox();
+  assert(canvas && tail && sheet);
+  assert(Math.abs(tail.x + tail.width / 2 - canvas.x - canvas.width / 2) < 1,
+    "Pin must not inherit a second horizontal translation");
+  assert(tail.y + tail.height < sheet.y, "Pin tip remains on the visible map above the sheet");
+}
+
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
@@ -43,6 +53,8 @@ try {
   const destination = page.getByRole("button", { name: "Выбрать пункт назначения", exact: true });
   await destination.waitFor({ timeout: 30000 });
   assert(await destination.isEnabled());
+  assert.equal(await page.locator('.smarttaxi-center-picker').count(), 1);
+  assert.equal(await page.locator('.final10-marker-wrap').count(), 0, 'No decorative duplicate pickup pin');
   await assertOnScreen(destination, 844);
   await page.screenshot({ path: path.join(output, "home.png") });
 
@@ -52,6 +64,73 @@ try {
   await destination.waitFor({ timeout: 10000 });
   assert(await destination.isEnabled());
   await destination.click();
+  await page.getByRole("button", { name: "Выбрать точку на карте", exact: true }).click();
+  await page.waitForFunction(() => {
+    const button = document.querySelector(".address-picker-confirm");
+    return button && !button.disabled;
+  }, null, { timeout: 15000 });
+  const confirmPoint = page.getByRole("button", { name: "Выбрать адрес", exact: true });
+  await assertOnScreen(confirmPoint, 844);
+  await assertPickerAnchor(page);
+  await page.screenshot({ path: path.join(output, "address-map.png") });
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.waitForFunction(() => !document.querySelector(".address-picker-confirm").disabled);
+  await assertOnScreen(confirmPoint, 740);
+  await assertPickerAnchor(page);
+  await page.screenshot({ path: path.join(output, "address-map-360.png") });
+
+  // The local service seed puts Myrzakent about 20 km south of Atakent.
+  // Changing only the tab text while keeping the old map must fail this test.
+  const regionLookup = page.waitForRequest(request => {
+    const url = new URL(request.url());
+    return url.pathname.endsWith("/maps/reverse-geocode") &&
+      Math.abs(Number(url.searchParams.get("lat")) - 40.665495) < 0.02 &&
+      Math.abs(Number(url.searchParams.get("lng")) - 68.549994) < 0.02;
+  }, { timeout: 15000 });
+  await page.getByRole("button", { name: "Мырзакент (Славянка)", exact: true }).click();
+  await regionLookup;
+  await page.waitForFunction(() => !document.querySelector(".address-map-point-card").textContent.includes("Определяем"));
+  await page.screenshot({ path: path.join(output, "address-map-region.png") });
+  await page.getByRole("button", { name: "Атакент (Ильич)", exact: true }).click();
+  await page.waitForFunction(() => !document.querySelector(".address-picker-confirm").disabled);
+
+  // Hold one real geocoder response until the next map drag is in progress.
+  // An answer for the previous centre must never enable confirmation mid-drag.
+  let releaseHeld;
+  const releasePromise = new Promise(resolve => { releaseHeld = resolve; });
+  let captured;
+  const capturedPromise = new Promise(resolve => { captured = resolve; });
+  let holdNext = true;
+  await page.route("**/api/maps/reverse-geocode**", async request => {
+    if (!holdNext) return request.continue();
+    holdNext = false;
+    const response = await request.fetch();
+    captured();
+    await releasePromise;
+    await request.fulfill({ response });
+  });
+  await page.mouse.move(140, 150);
+  await page.mouse.down();
+  await page.mouse.move(220, 150, { steps: 12 });
+  await page.mouse.up();
+  await Promise.race([
+    capturedPromise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("No reverse request after dragging")), 10000))
+  ]);
+  await page.mouse.move(200, 150);
+  await page.mouse.down();
+  await page.mouse.move(150, 170, { steps: 8 });
+  const heldResponse = page.waitForResponse(response => response.url().includes("/api/maps/reverse-geocode") && response.ok());
+  releaseHeld();
+  await heldResponse;
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert(await page.locator(".address-picker-confirm").isDisabled(), "Stale reverse answer cannot confirm a moving pin");
+  await page.waitForTimeout(1100);
+  assert(await page.locator(".address-picker-confirm").isDisabled(), "Recovery timer must not confirm a long map drag");
+  await page.mouse.up();
+  await page.unroute("**/api/maps/reverse-geocode**");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Вернуться к поиску", exact: true }).click();
   await page.getByRole("button", { name: /Базар Атакент/ }).click();
   const order = page.getByRole("button", { name: /Заказать за/ });
   await page.waitForFunction(() => {
@@ -68,6 +147,11 @@ try {
   await waitForVisibleRoute(page);
   await assertOnScreen(order, 740);
   await page.screenshot({ path: path.join(output, "tariffs-360.png") });
+  await page.getByRole("button", { name: /Способ оплаты/ }).click();
+  await page.getByRole("heading", { name: "Как оплатить?", exact: true }).waitFor();
+  assert(await page.getByRole("button", { name: /^Наличные/ }).isVisible());
+  assert(await page.getByRole("button", { name: /^Бонусами/ }).isVisible());
+  await page.screenshot({ path: path.join(output, "payment.png"), animations: "disabled" });
   assert.deepEqual(errors, [], "No uncaught browser errors");
   await context.close();
 
@@ -87,8 +171,25 @@ try {
   await failurePage.screenshot({ path: path.join(output, "address-unresolved.png") });
   await manual.click();
   await failurePage.getByRole("heading", { name: "Откуда?", exact: true }).waitFor();
+  await failurePage.getByRole("button", { name: "Выбрать точку на карте", exact: true }).click();
+  await failurePage.getByText("Адрес не найден", { exact: true }).waitFor();
+  assert(await failurePage.getByRole("button", { name: "Подтвердить адрес", exact: true }).isDisabled());
+  await failurePage.screenshot({ path: path.join(output, "address-map-unresolved.png") });
   await failureContext.close();
   console.log(`Client UI smoke passed. Screenshots: ${output}`);
+} catch (error) {
+  // Keep failure evidence outside the release captures, including when a
+  // tile/reverse provider fails before the first screen can settle.
+  const failureDir = path.join(os.tmpdir(), 'smarttaxi-client-ui-failure');
+  await mkdir(failureDir, { recursive: true });
+  let index = 0;
+  for (const context of browser.contexts()) {
+    for (const page of context.pages()) {
+      await page.screenshot({ path: path.join(failureDir, `screen-${index++}.png`) }).catch(() => {});
+      console.error('Failed screen:', await page.locator('body').innerText().catch(() => 'unavailable'));
+    }
+  }
+  throw error;
 } finally {
   await browser.close();
 }

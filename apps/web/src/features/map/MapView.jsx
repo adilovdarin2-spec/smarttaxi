@@ -192,7 +192,7 @@ const approvedAddressMarkerMarkup = `<span class="approved-address-marker-badge"
 
 const currentLocationMarkerMarkup = `<span class="current-location-marker-badge" aria-hidden="true"><i></i><b></b></span>`;
 
-const finishFlagMarkerMarkup = `<span class="finish-flag-marker-badge" aria-hidden="true"><svg viewBox="0 0 58 76" fill="none"><path d="M17 68.5V9.5" stroke="#0B4FD1" stroke-width="5" stroke-linecap="round"/><path d="M19 11.5C28 5.5 37 16.5 47 10.5V43.5C37 49.5 28 38.5 19 44.5V11.5Z" fill="#fff" stroke="#0B4FD1" stroke-width="3" stroke-linejoin="round"/><path d="M21 14.5H27V21H21V14.5ZM27 14.5H33V21H27V14.5ZM33 14.5H39V21H33V14.5ZM39 14.5H45V21H39V14.5ZM21 21H27V27.5H21V21ZM27 21H33V27.5H27V21ZM33 21H39V27.5H33V21ZM39 21H45V27.5H39V21ZM21 27.5H27V34H21V27.5ZM27 27.5H33V34H27V27.5ZM33 27.5H39V34H33V27.5ZM39 27.5H45V34H39V27.5ZM21 34H27V40.5H21V34ZM27 34H33V40.5H27V34ZM33 34H39V40.5H33V34ZM39 34H45V40.5H39V34Z" fill="#1D6FFF"/><circle cx="17" cy="69" r="6.5" fill="#fff" stroke="#0B4FD1" stroke-width="3"/><circle cx="17" cy="69" r="2.5" fill="#1D6FFF"/></svg></span>`;
+const finishFlagMarkerMarkup = `<span class="finish-flag-marker-badge" aria-hidden="true"><svg viewBox="0 0 58 76" fill="none"><path d="M17 68.5V9.5" stroke="#0B4FD1" stroke-width="5" stroke-linecap="round"/><path d="M19 11.5C28 5.5 37 16.5 47 10.5V43.5C37 49.5 28 38.5 19 44.5V11.5Z" fill="#fff" stroke="#0B4FD1" stroke-width="3" stroke-linejoin="round"/><path d="M21 14.5H27V21H21V14.5ZM33 14.5H39V21H33V14.5ZM27 21H33V27.5H27V21ZM39 21H45V27.5H39V21ZM21 27.5H27V34H21V27.5ZM33 27.5H39V34H33V27.5ZM27 34H33V40.5H27V34ZM39 34H45V40.5H39V34Z" fill="#1D6FFF"/><circle cx="17" cy="69" r="6.5" fill="#fff" stroke="#0B4FD1" stroke-width="3"/><circle cx="17" cy="69" r="2.5" fill="#1D6FFF"/></svg></span>`;
 
 function smartTaxiMarkerElement() {
   const element = document.createElement("span");
@@ -275,6 +275,7 @@ export default function MapView({
   onCenterChanging
 }) {
   const containerRef = useRef(null);
+  const pickerOverlayRef = useRef(null);
   const mapRef = useRef(null);
   const centerMarkerElRef = useRef(null);
   const pickupMarkerElRef = useRef(null);
@@ -294,6 +295,31 @@ export default function MapView({
   const centerPoint = validPoint(center) || pickupPoint || destinationPoint || DEFAULT_CENTER;
   const routePoints = routeCoordinates(route);
   const style = useMemo(() => mapStyle(), []);
+
+  function pickerScreenPoint() {
+    const bounds = containerRef.current?.getBoundingClientRect();
+    const tail = pickerOverlayRef.current?.querySelector(".approved-address-marker-tail")?.getBoundingClientRect();
+    if (!bounds) return [0, 0];
+    if (!tail?.width) return [bounds.width / 2, bounds.height / 2];
+    // The sheet covers the lower map, so the visible pin sits above the camera
+    // centre. Reverse-geocode its actual tip, not an invisible point below it.
+    return [tail.left + tail.width / 2 - bounds.left, tail.bottom - bounds.top];
+  }
+
+  function pickerCoordinate(map) {
+    const point = map.unproject(pickerScreenPoint());
+    return { lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6)) };
+  }
+
+  function centerUnderPicker(map, point, duration = 0) {
+    const tip = pickerScreenPoint();
+    const canvas = map.getCanvas();
+    map.easeTo({
+      center: [point.lng, point.lat],
+      offset: [tip[0] - canvas.clientWidth / 2, tip[1] - canvas.clientHeight / 2],
+      duration
+    });
+  }
 
   useEffect(() => {
     onCenterChangeRef.current = onCenterChange;
@@ -333,17 +359,14 @@ export default function MapView({
       setMapReady(true);
       setMapError("");
       map.resize();
-      fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
+      if (centerMarker) centerUnderPicker(map, centerPoint);
+      else fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
       // A map opened in address-picker mode can already be centred correctly,
       // in which case MapLibre does not emit `moveend`. Publish that initial
       // point explicitly so the sheet resolves a real address instead of
       // remaining on the technical "Определяем адрес" placeholder.
       if (centerMarker && onCenterChangeRef.current) {
-        const initial = map.getCenter();
-        onCenterChangeRef.current({
-          lat: Number(initial.lat.toFixed(6)),
-          lng: Number(initial.lng.toFixed(6))
-        });
+        onCenterChangeRef.current(pickerCoordinate(map));
       }
       // Building extrusion is visually important, but parsing thousands of
       // polygons during the first paint made address selection feel frozen.
@@ -372,7 +395,7 @@ export default function MapView({
     if (!map) return undefined;
     const clickHandler = event => {
       if (centerMarker) {
-        map.easeTo({ center: [event.lngLat.lng, event.lngLat.lat], duration: 240 });
+        centerUnderPicker(map, event.lngLat, 240);
         // `moveend` publishes the final centre. Calling reverse-geocoding
         // here as well caused a second request for the same tap and made the
         // sheet flicker between two loading states.
@@ -403,11 +426,13 @@ export default function MapView({
       window.clearTimeout(fallbackTimer);
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
-        const centerNow = map.getCenter();
-        const next = {
-          lat: Number(centerNow.lat.toFixed(6)),
-          lng: Number(centerNow.lng.toFixed(6))
-        };
+        if (map.isMoving()) {
+          // The recovery timer must not enable confirmation during a long
+          // drag, kinetic pan or zoom animation. Wait for the camera to settle.
+          fallbackTimer = window.setTimeout(emitCenter, 180);
+          return;
+        }
+        const next = pickerCoordinate(map);
         // Both `moveend` and `zoomend` are emitted for a pinch. Emit exactly
         // one semantic address lookup for the resulting coordinate.
         const key = `${next.lat}:${next.lng}`;
@@ -438,6 +463,15 @@ export default function MapView({
       map.off("zoomend", emitCenter);
     };
   }, [centerMarker]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && mapReady && centerMarker) {
+      // A new region or explicit GPS selection must move the map as well as
+      // its label. Passive reverse results must not be passed as this centre.
+      centerUnderPicker(map, centerPoint);
+    }
+  }, [mapReady, centerMarker, centerPoint.lat, centerPoint.lng]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -569,7 +603,7 @@ export default function MapView({
       <div ref={containerRef} className="maplibre-canvas-host" aria-label="Карта SmartTaxi" />
       <div className="map-vignette" />
       {centerMarker && (
-        <div className="smarttaxi-center-picker native-address-picker" aria-hidden="true">
+        <div ref={pickerOverlayRef} className="smarttaxi-center-picker native-address-picker" aria-hidden="true">
           <span className="smarttaxi-map-marker" dangerouslySetInnerHTML={{ __html: approvedAddressMarkerMarkup }} />
         </div>
       )}

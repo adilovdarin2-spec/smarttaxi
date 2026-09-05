@@ -256,6 +256,10 @@ export function getDriverActiveOrder() {
   return api("/api/driver/orders/active");
 }
 
+export function getDriverOrderHistory() {
+  return api("/api/orders/me/driver-history?limit=50");
+}
+
 export function getDriverEarningsToday() {
   return api("/api/driver/earnings/today");
 }

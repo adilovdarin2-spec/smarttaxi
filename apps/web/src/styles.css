@@ -24263,3 +24263,438 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .tariff-v14-state .tariff-v12-order b {
   font-weight: 650 !important;
 }
+
+/* One bottom-centre anchor, with no legacy translation on the nested badge.
+   MapView resolves the geographic point beneath this exact SVG tail. */
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker {
+  left: 50% !important;
+  top: 32% !important;
+  width: 52px !important;
+  height: 68px !important;
+  transform: translate(-50%, -100%) !important;
+  display: block !important;
+}
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker span {
+  width: 52px !important;
+  height: 68px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+.taxi-client-shell .smarttaxi-center-picker.native-address-picker .approved-address-marker-badge {
+  display: grid !important;
+  grid-template-rows: 52px 16px;
+  place-items: start center;
+}
+/* Home's map is already cropped above the sheet; unlike the full-height
+   picker, its one geographic pin belongs in the middle of that visible map. */
+.taxi-client-shell .final10-standard-home .smarttaxi-center-picker.native-address-picker {
+  top: 60% !important;
+}
+
+.taxi-client-shell .address-picker-mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 14px;
+  color: #0b4fd1;
+  background: #eaf3ff;
+  font-size: 14px;
+  font-weight: 550;
+}
+.taxi-client-shell .address-picker-sheet.address-picker-sheet--map {
+  height: auto !important;
+  max-height: 60% !important;
+  overflow-y: auto;
+}
+.taxi-client-shell .address-picker-sheet--map .address-picker-title-row p {
+  display: none;
+}
+.taxi-client-shell .address-picker-sheet--map .address-map-point-card {
+  flex: 0 0 auto;
+}
+.taxi-client-shell .address-picker-sheet--map .address-map-point-card strong {
+  white-space: normal !important;
+  overflow: visible !important;
+  font-weight: 600 !important;
+}
+.taxi-client-shell .address-picker-sheet--map .address-picker-confirm {
+  background: #1d6fff !important;
+  font-weight: 600 !important;
+}
+
+/* Passenger ride sheets share one constrained column at every phone width.
+   Intrinsic card widths must not push the call action or route rail offscreen. */
+.taxi-client-shell .trip-stage-screen,
+.taxi-client-shell .trip-stage-screen .driver-found-reference-sheet,
+.taxi-client-shell .trip-stage-screen .search-driver-sheet {
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  box-sizing: border-box;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-reference-sheet,
+.taxi-client-shell .trip-stage-screen .search-driver-sheet {
+  width: 100%;
+  padding-inline: 18px !important;
+  gap: 14px;
+  box-shadow: 0 -4px 20px rgba(22, 42, 75, .07) !important;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-reference-sheet > *,
+.taxi-client-shell .trip-stage-screen .search-driver-sheet > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-driver-card {
+  grid-template-columns: 56px minmax(0, 1fr) 48px;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 20px;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-avatar {
+  width: 56px;
+  height: 56px;
+  box-sizing: border-box;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-driver-copy {
+  gap: 5px;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-driver-copy strong {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 650;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-call-round {
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(29, 111, 255, .14);
+}
+.taxi-client-shell .trip-stage-screen .driver-found-call-round img {
+  width: 23px;
+  height: 23px;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-rating-line {
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 450;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-rating-line b {
+  font-weight: 600;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-verified {
+  width: fit-content;
+  padding: 4px 7px;
+  gap: 5px;
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-verified img {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-reference-head h1,
+.taxi-client-shell .trip-stage-screen .search-driver-head h1 {
+  font-size: 26px !important;
+  line-height: 1.2;
+  font-weight: 650 !important;
+  letter-spacing: -.025em !important;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-reference-head p,
+.taxi-client-shell .trip-stage-screen .search-driver-head p {
+  font-size: 14px !important;
+  line-height: 1.45;
+  font-weight: 450 !important;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-route-card {
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  box-shadow: none;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-route-indicator {
+  width: 24px;
+  height: 94px;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-route-copy small {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 450;
+}
+.taxi-client-shell .trip-stage-screen .driver-found-route-copy strong {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 550;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.taxi-client-shell .trip-stage-screen .ride-status-rail {
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 10px;
+  gap: 6px;
+  box-shadow: none;
+}
+.taxi-client-shell .trip-stage-screen .ride-status-rail.warning {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.taxi-client-shell .trip-stage-screen .ride-status-rail span {
+  padding: 3px 0;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 550;
+}
+.taxi-client-shell .trip-stage-screen .ride-status-rail .active {
+  color: #0b4fd1 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.taxi-client-shell .trip-stage-screen .ride-status-rail .active i {
+  background: #1d6fff !important;
+}
+.taxi-client-shell .trip-stage-screen .search-driver-head {
+  grid-template-columns: minmax(0, 1fr) 102px;
+  gap: 10px;
+}
+.taxi-client-shell .trip-stage-screen .search-driver-car-route {
+  width: 102px;
+  height: 80px;
+  object-fit: contain;
+}
+.taxi-client-shell .trip-stage-screen .search-driver-nearby-pill {
+  font-size: 12px;
+  font-weight: 550;
+}
+.taxi-client-shell .trip-stage-screen .search-order-meta {
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.taxi-client-shell .trip-stage-screen .search-tariff-car {
+  width: 78px;
+}
+.taxi-client-shell .trip-stage-screen .search-tariff-car img {
+  width: 100%;
+  height: 66px;
+  object-fit: contain;
+}
+
+/* A working driver keeps the map and navigation visible while the order
+   sheet scrolls. The previous document-height shell buried actions below a
+   duplicate map and moved the menu off screen with the order content. */
+.phone-frame.driver-core-phone:not(.driver-core-login) {
+  display: grid;
+  grid-template-rows: minmax(200px, 35svh) minmax(0, 1fr) auto;
+  height: 100svh;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.phone-frame.driver-core-phone .driver-core-map-wrap {
+  grid-row: 1;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+.phone-frame.driver-core-phone .driver-core-panel {
+  grid-row: 2;
+  min-height: 0;
+  margin: 0;
+  padding: 16px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  align-content: start;
+  border-radius: 24px 24px 0 0 !important;
+  box-shadow: 0 -4px 18px rgba(22, 42, 75, .06) !important;
+}
+.phone-frame.driver-core-phone .driver-core-tabs {
+  position: relative;
+  grid-row: 3;
+  inset: auto;
+  margin: 6px 12px max(10px, env(safe-area-inset-bottom));
+  box-shadow: 0 3px 14px rgba(22, 42, 75, .06) !important;
+}
+.phone-frame.driver-core-phone.driver-core-view-money,
+.phone-frame.driver-core-phone.driver-core-view-road {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.phone-frame.driver-core-view-money .driver-core-panel,
+.phone-frame.driver-core-view-road .driver-core-panel {
+  grid-row: 1;
+  padding-top: 82px;
+}
+.phone-frame.driver-core-view-money .driver-core-tabs,
+.phone-frame.driver-core-view-road .driver-core-tabs {
+  grid-row: 2;
+}
+.phone-frame.driver-core-phone .driver-core-route-lines b {
+  color: #172136 !important;
+  font-size: 15px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+.phone-frame.driver-core-phone .driver-core-route-lines small,
+.phone-frame.driver-core-phone .driver-core-order-top span,
+.phone-frame.driver-core-phone .driver-core-order-meta span {
+  color: #65748b !important;
+  font-weight: 500;
+}
+.phone-frame.driver-core-phone .driver-core-route-lines .pickup-dot,
+.phone-frame.driver-core-phone .driver-core-route-lines .dropoff-dot {
+  background: #1d6fff;
+  box-shadow: 0 0 0 4px #eaf3ff;
+}
+.phone-frame.driver-core-phone .driver-core-route-lines .dropoff-dot {
+  border-radius: 3px;
+}
+.phone-frame.driver-core-phone .driver-core-order-top strong,
+.phone-frame.driver-core-phone .driver-core-active-head strong,
+.phone-frame.driver-core-phone .driver-core-money-card strong {
+  color: #172136 !important;
+  font-weight: 650;
+}
+.phone-frame.driver-core-phone .driver-core-card-actions .app-button,
+.phone-frame.driver-core-phone .driver-core-line-card .app-button {
+  font-weight: 600 !important;
+}
+.phone-frame.driver-core-phone .driver-core-call {
+  color: #0b4fd1;
+  border-color: #dce7f7;
+  background: #f5f9ff;
+  font-weight: 550;
+}
+.phone-frame.driver-core-phone .driver-core-split-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+.phone-frame.driver-core-phone .driver-core-split-actions > * {
+  flex: 1 1 100px;
+  min-width: 0;
+}
+.phone-frame.driver-core-phone .driver-core-road-form input,
+.phone-frame.driver-core-phone .driver-core-road-form select {
+  min-height: 48px;
+  color: #172136 !important;
+  background: #f5f9ff !important;
+  border: 1px solid #dce7f7 !important;
+  border-radius: 14px;
+  font: inherit;
+  padding: 12px 14px;
+}
+.phone-frame.driver-core-phone .driver-core-road-form input::placeholder {
+  color: #65748b !important;
+}
+.phone-frame.driver-core-phone .driver-core-section-title > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  color: #0b4fd1 !important;
+  background: #eaf3ff !important;
+  font: 650 14px/1 Inter, system-ui, sans-serif;
+}
+.phone-frame.driver-core-phone .driver-core-payment-note {
+  margin: 0;
+  color: #65748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.phone-frame.driver-core-phone .driver-core-header {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.phone-frame.driver-core-phone .driver-core-logout {
+  display: block;
+  font-weight: 600;
+}
+.phone-frame.driver-core-phone .driver-core-status.online,
+.phone-frame.driver-core-phone .driver-core-status.free {
+  color: #fff !important;
+  font-weight: 650;
+}
+.phone-frame.driver-core-phone .driver-core-panel,
+.phone-frame.driver-core-phone .driver-core-road,
+.phone-frame.driver-core-phone .driver-core-road-form,
+.phone-frame.driver-core-phone .driver-core-road-card > div {
+  min-width: 0;
+}
+.phone-frame.driver-core-phone .driver-core-road-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #dce7f7;
+  color: #172136;
+  background: #fff;
+}
+.phone-frame.driver-core-phone .driver-core-road-card p {
+  color: #65748b;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.phone-frame.driver-core-phone .driver-core-road-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.phone-frame.driver-core-phone .driver-core-road-actions .app-button {
+  min-width: 0;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 600 !important;
+}
+.phone-frame.driver-core-phone .driver-core-action-notice {
+  position: absolute;
+  z-index: 6;
+  inset: 76px 14px auto;
+  padding: 12px 14px;
+  color: #8c3726;
+  background: #fff8f5;
+  border: 1px solid #f3d8ce;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 4px 14px rgba(22, 42, 75, .08);
+}
+
+/* Match the passenger's original car asset without affecting address pins. */
+.phone-frame.driver-core-phone .map-view.live-osm .native-map-marker.driver-marker {
+  display: block;
+  width: 40px;
+  height: 40px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.phone-frame.driver-core-phone .map-view.live-osm .native-map-marker.driver-marker > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The inline finish SVG needs explicit dimensions in both map consumers. */
+.phone-frame.driver-core-phone .finish-flag-map-marker {
+  display: block;
+  width: 58px;
+  height: 76px;
+  pointer-events: none;
+  filter: drop-shadow(0 9px 12px rgba(12, 57, 130, .24));
+}
+.phone-frame.driver-core-phone .finish-flag-marker-badge,
+.phone-frame.driver-core-phone .finish-flag-marker-badge svg {
+  display: block;
+  width: 58px;
+  height: 76px;
+}

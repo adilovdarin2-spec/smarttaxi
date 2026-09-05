@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Icon, VehicleIcon } from "../../core/icons.jsx";
+import { Icon } from "../../core/icons.jsx";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
@@ -24,7 +24,6 @@ import {
   createSupportMessage,
   deleteFavoriteAddress,
   deleteClientWalletCard,
-  driverToPickupRoute,
   estimateTariff,
   getActiveRegions,
   getIntercityRoutes,
@@ -68,11 +67,8 @@ import {
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
 import { sanitizeAddressText } from "../../lib/text.js";
-
-// Statuses where a driver is assigned and actually moving toward the
-// passenger or the dropoff — mirrors the backend's TO_PICKUP/TO_DROPOFF
-// leg statuses (order-dispatch.service.js), minus the terminal ones.
-const LIVE_ROUTE_ORDER_STATUSES = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED"];
+import { clientDriverMapPoint, mergeClientDriverLocation, recoverClientActiveOrder } from "./clientTripLifecycle.js";
+import { useLiveDriverRoute } from "./useLiveDriverRoute.js";
 
 const cardPaymentsEnabled = import.meta.env.VITE_CARD_PAYMENTS_ENABLED === "true";
 
@@ -943,10 +939,9 @@ export default function ClientApp() {
   const [route, setRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState("");
-  const [liveRoute, setLiveRoute] = useState(null);
-  const lastLiveRouteFetchAtRef = useRef(0);
-  const liveRouteRequestIdRef = useRef(0);
   const [order, setOrder] = useState(null);
+  const orderRef = useRef(order);
+  orderRef.current = order;
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [incomingMessage, setIncomingMessage] = useState(null);
@@ -960,6 +955,8 @@ export default function ClientApp() {
   const [resetForm, setResetForm] = useState({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
   const [rider, setRider] = useState({ name: "Пассажир", phone: "" });
   const [authenticated, setAuthenticated] = useState(false);
+  const authSession = authenticated ? getToken() : "";
+  const liveRoute = useLiveDriverRoute(order, authSession);
   const [favorites, setFavorites] = useState([]);
   const [favoritesState, setFavoritesState] = useState({ loading: false, error: "" });
   const socketRef = useRef(null);
@@ -1013,11 +1010,12 @@ export default function ClientApp() {
   useEffect(() => () => window.clearTimeout(mainMapReverseDebounceRef.current), []);
 
   useEffect(() => {
-    if (!getToken()) return undefined;
+    const session = getToken();
+    if (!session) return undefined;
     let ignore = false;
     getCurrentUser()
       .then(payload => {
-        if (ignore) return;
+        if (ignore || getToken() !== session) return;
         const user = payload.user || {};
         if (user.role !== "CLIENT") {
         setAuthenticated(false);
@@ -1031,12 +1029,36 @@ export default function ClientApp() {
       });
       })
       .catch(() => {
-        if (!ignore) setAuthenticated(false);
+        if (!ignore && getToken() === session) setAuthenticated(false);
       });
     return () => {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    // Reload and login must recover the server's current trip before the
+    // rider tries ordering again. No trip data survives an account change.
+    setOrder(null);
+    orderRef.current = null;
+    setIncomingMessage(null);
+    seenNotificationIdsRef.current.clear();
+    if (!authSession) return undefined;
+    return recoverClientActiveOrder({
+      session: authSession,
+      getSession: getToken,
+      fetchOrder: getClientActiveOrder,
+      onRecover: restored => {
+        // An order created while recovery was in flight is newer local state.
+        if (orderRef.current) return;
+        const next = normalizeOrder(restored);
+        orderRef.current = next;
+        setOrder(next);
+        setSection("trips");
+      },
+      onError: () => setMessage("Не удалось восстановить текущую поездку. Проверьте подключение и обновите страницу.")
+    });
+  }, [authSession]);
 
   useEffect(() => {
     if (!backendRegionId || regionsLoading) {
@@ -1203,38 +1225,27 @@ export default function ClientApp() {
     setOfferedPriceKzt(estimatedPrice > 0 ? estimatedPrice : null);
   }, [estimate?.estimatedPrice, tariff?.id, pickup?.lat, pickup?.lng, destination?.lat, destination?.lng]);
 
-  // While a driver is assigned and actually en route (to pickup, then to
-  // dropoff once the trip starts), re-fetch the real driver-to-target route
-  // instead of leaving the map stuck on the original pickup->dropoff price
-  // preview. Throttled the same ~8s as the driver app's own live route poll.
-  const orderDriverLat = order?.driver_lat ?? order?.driverLat;
   useEffect(() => {
-    if (!order?.id || !getToken() || !LIVE_ROUTE_ORDER_STATUSES.includes(order.status)) {
-      setLiveRoute(null);
-      return undefined;
-    }
-    const now = Date.now();
-    if (now - lastLiveRouteFetchAtRef.current < 8000) return undefined;
-    lastLiveRouteFetchAtRef.current = now;
-    const requestId = ++liveRouteRequestIdRef.current;
+    if (!order?.id || !authSession) return undefined;
     let cancelled = false;
-    driverToPickupRoute(order.id)
-      .then(data => {
-        if (cancelled || requestId !== liveRouteRequestIdRef.current) return;
-        setLiveRoute(data?.route || null);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [order?.id, order?.status, orderDriverLat]);
-
-  useEffect(() => {
-    if (!order?.id || !getToken()) return undefined;
+    let revision = 0;
+    const isCurrent = () => !cancelled && getToken() === authSession;
     const socket = createSocket();
     socketRef.current = socket;
     socket.on("connect", () => socket.emit("join_order", order.id));
     const updateOrder = payload => {
-      if (payload?.id === order.id) setOrder(current => normalizeOrder({ ...current, ...payload }));
+      const snapshot = payload?.order || payload;
+      if (!isCurrent() || snapshot?.id !== order.id) return;
+      revision++;
+      setOrder(current => current?.id === order.id
+        ? normalizeOrder({ ...current, ...snapshot }) : current);
     };
+    const updateLocation = payload => {
+      if (!isCurrent() || payload?.orderId !== order.id) return;
+      revision++;
+      setOrder(current => mergeClientDriverLocation(current, payload));
+    };
+    socket.on("driver_location_updated", updateLocation);
     socket.on("order_status_public", updateOrder);
     socket.on("order_updated", updateOrder);
     socket.on("order_accepted", updateOrder);
@@ -1251,15 +1262,19 @@ export default function ClientApp() {
     socket.on("order.no_show", updateOrder);
     socket.on("order.cancelled", updateOrder);
     const poll = window.setInterval(() => {
+      const startedAtRevision = revision;
       getOrderStatusHistory(order.id)
         .then(data => {
-          if (data?.order?.id === order.id) {
-            setOrder(current => normalizeOrder({ ...current, ...data.order }));
+          if (isCurrent() && startedAtRevision === revision && data?.order?.id === order.id) {
+            setOrder(current => current?.id === order.id
+              ? normalizeOrder({ ...current, ...data.order }) : current);
           }
         })
         .catch(() => {});
     }, 7000);
     return () => {
+      cancelled = true;
+      socket.off("driver_location_updated", updateLocation);
       socket.off("order_status_public", updateOrder);
       socket.off("order_updated", updateOrder);
       socket.off("order_accepted", updateOrder);
@@ -1279,7 +1294,7 @@ export default function ClientApp() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [order?.id]);
+  }, [order?.id, authSession]);
 
   useEffect(() => {
     if (!order?.id || !getToken()) return undefined;
@@ -2203,10 +2218,6 @@ function ReferenceHomeSection(props) {
   const priceWasAdjusted = Boolean(totalPrice && estimatedPrice && totalPrice !== estimatedPrice);
   const activePickup = pickup || mainMapCandidate;
   const markerAddressTitle = activePickup?.title || "Моё местоположение";
-  const markerAddressSubtitle = activePickup?.subtitle || selectedRegionName || "Атакент";
-  const markerTagText = activePickup?.title && activePickup.title !== "Моё местоположение"
-    ? activePickup.title
-    : markerAddressSubtitle;
   const destinationDisabled = !pickup && (mainMapPickLoading || !mainMapCandidateReady);
   const needsManualPickup = !pickup && !mainMapPickLoading && (!mainMapCandidateReady || !mainMapCandidate);
   const primaryActionLabel = !pickup && mainMapPickLoading
@@ -2308,7 +2319,7 @@ function ReferenceHomeSection(props) {
           pickup={null}
           destination={destination}
           route={route}
-          center={activePickup || mapCenter || regionCenter(selectedRegion)}
+          center={pickup || mapCenter || regionCenter(selectedRegion)}
           compact
           addressControls
           centerMarker
@@ -2331,38 +2342,6 @@ function ReferenceHomeSection(props) {
           <path d="M12 2L19.5 20.5C19.7 21 19.1 21.4 18.7 21.1L12 17L5.3 21.1C4.9 21.4 4.3 21 4.5 20.5L12 2Z" fill="currentColor" />
         </svg>
       </button>
-
-      <div className="final10-marker-wrap" aria-hidden="true">
-        <div className="final10-radar" />
-        <div className="final10-pin-visual">
-          <svg className="final10-badge-svg" viewBox="0 0 64 64" fill="none">
-            <rect x="2" y="2" width="60" height="60" rx="20" fill="url(#final10BadgeGrad)" />
-            <rect x="6" y="6" width="52" height="52" rx="16" fill="#FFFFFF" fillOpacity=".88" />
-            <path d="M10 22C10 14 16.5 8 24 6.5" stroke="#FFFFFF" strokeOpacity=".55" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            <rect x="14" y="24" width="7" height="7" fill="#63A0FF" opacity=".55" />
-            <rect x="23" y="24" width="7" height="7" fill="#1D6FFF" opacity=".9" />
-            <rect x="18" y="33" width="7" height="7" fill="#63A0FF" opacity=".35" />
-            <text x="42" y="35" textAnchor="middle" dominantBaseline="central" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="29" fill="url(#final10BadgeGrad)">S</text>
-            <defs>
-              <linearGradient id="final10BadgeGrad" x1="4" y1="2" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#63A0FF" />
-                <stop offset="1" stopColor="#0B4FD1" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <svg className="final10-tail-svg" viewBox="0 0 64 22" preserveAspectRatio="none">
-            <path d="M26 0H38V6L32 22L26 6Z" fill="url(#final10TailGrad)" />
-            <defs>
-              <linearGradient id="final10TailGrad" x1="32" y1="0" x2="32" y2="22" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#1D6FFF" />
-                <stop offset="1" stopColor="#0B4FD1" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="final10-ground-shadow" />
-        </div>
-        <div className={`final10-address-tag ${mainMapPickLoading ? "loading" : ""}`}>{markerTagText}</div>
-      </div>
 
       <section className="final10-panel" aria-label="Выбор адреса">
         <div className="final10-grabber" aria-hidden="true" />
@@ -2891,6 +2870,7 @@ function PaymentSelector({ payment, setPayment }) {
 
 function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect }) {
   const [query, setQuery] = useState("");
+  const [mapSelectionActive, setMapSelectionActive] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mapPickLoading, setMapPickLoading] = useState(false);
@@ -2907,7 +2887,10 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
   const reverseDebounceRef = useRef(0);
   const reverseCacheRef = useRef(new Map());
   const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
   const label = mode === "pickup" ? "Откуда?" : mode === "favorite" ? "Сохранить адрес" : "Куда едем?";
   const helper = mode === "pickup" ? "Выберите точку подачи" : mode === "favorite" ? "Выберите адрес для избранного" : selectableRegions.length > 1 ? "Город или межгород — выберите регион и точный адрес" : "Выберите точку назначения";
   const popular = useMemo(() => localAddressesForRegion(searchRegion).slice(0, 4), [searchRegion?.id, searchRegion?.code, searchRegion?.name]);
@@ -2918,8 +2901,9 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
   // the list with zero height on a phone viewport, so the header says “4”
   // while none of those four places can be tapped. Prioritise real address
   // results; the map-confirmation path remains available while the catalogue
-  // is empty or after a typed search has no matches.
-  const showMapSelection = !results.length && (!hasTypedQuery || !loading);
+  // is empty or after a typed search has no matches. An explicit map mode is
+  // always available: popular places must not make the map impossible to use.
+  const showMapSelection = mapSelectionActive || (!results.length && (!hasTypedQuery || !loading));
 
   useEffect(() => () => window.clearTimeout(reverseDebounceRef.current), []);
 
@@ -2930,6 +2914,8 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
   }, [selectableRegions, searchRegionId, region?.id]);
 
   useEffect(() => {
+    reverseSeqRef.current += 1;
+    window.clearTimeout(reverseDebounceRef.current);
     setMapCandidateReady(false);
     setMapCandidate(pendingMapAddress(pickerCenter, searchRegion?.name));
   }, [pickerCenter.lat, pickerCenter.lng, searchRegion?.name]);
@@ -2974,8 +2960,13 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
 
   async function updateMapCandidate(point) {
     if (!point?.lat || !point?.lng) return;
+    // Invalidate old work before every early return, including cached points.
+    // Otherwise a slower answer can replace the point the rider returned to.
+    const seq = ++reverseSeqRef.current;
+    window.clearTimeout(reverseDebounceRef.current);
     const fallback = pendingMapAddress(point, searchRegion?.name);
-    const cacheKey = mapAddressCacheKey(point);
+    const pointKey = mapAddressCacheKey(point);
+    const cacheKey = pointKey ? `${searchRegion?.id || searchRegion?.name}:${pointKey}` : null;
     const cached = cacheKey ? reverseCacheRef.current.get(cacheKey) : null;
     if (cached) {
       setMapCandidate(cached);
@@ -2984,13 +2975,10 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
       setError("");
       return;
     }
-    const seq = reverseSeqRef.current + 1;
-    reverseSeqRef.current = seq;
     setMapCandidate(fallback);
     setMapCandidateReady(false);
     setMapPickLoading(true);
     setError("");
-    window.clearTimeout(reverseDebounceRef.current);
     reverseDebounceRef.current = window.setTimeout(async () => {
     try {
       const data = await Promise.race([
@@ -2998,7 +2986,7 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
         new Promise((_, reject) => window.setTimeout(() => reject(new Error("reverse_timeout")), 5000))
       ]);
       const address = normalizeAddress(data.address);
-      if (!address) throw new Error("address_not_resolved");
+      if (!address || !isAddressInServiceRegion(address, searchRegion)) throw new Error("address_not_resolved");
       if (mountedRef.current && seq === reverseSeqRef.current) {
         if (cacheKey) reverseCacheRef.current.set(cacheKey, address);
         setMapCandidate(address);
@@ -3018,6 +3006,7 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
   }
 
   function markMapCandidateMoving() {
+    reverseSeqRef.current += 1;
     window.clearTimeout(reverseDebounceRef.current);
     setMapCandidateReady(false);
     setMapPickLoading(true);
@@ -3046,7 +3035,7 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
       <button type="button" className="address-picker-back-button" onClick={onBack} aria-label="Назад">
         <Icon name="back" />
       </button>
-      <section className={`address-picker-sheet ${hasTypedQuery ? "address-picker-sheet--searching" : ""}`} aria-label="Выбор адреса">
+      <section className={`address-picker-sheet ${mapSelectionActive ? "address-picker-sheet--map" : hasTypedQuery ? "address-picker-sheet--searching" : ""}`} aria-label="Выбор адреса">
         <div className="address-picker-grip" aria-hidden="true" />
         <header className="address-picker-title-row">
           <div>
@@ -3071,10 +3060,15 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
           </div>
         )}
 
-        <label className="address-picker-searchbar">
+        {!mapSelectionActive && <label className="address-picker-searchbar">
           <Icon name="search" size={20} />
           <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Введите улицу, дом или место" />
-        </label>
+        </label>}
+
+        <button type="button" className="address-picker-mode-toggle" onClick={() => setMapSelectionActive(value => !value)}>
+          <Icon name={mapSelectionActive ? "search" : "pin"} size={18} />
+          {mapSelectionActive ? "Вернуться к поиску" : "Выбрать точку на карте"}
+        </button>
 
         {showMapSelection && (
           <button type="button" className="address-map-point-card" onClick={confirmMapCandidate} disabled={!mapCandidate || !mapCandidateReady || mapPickLoading}>
@@ -3089,11 +3083,11 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
           </button>
         )}
 
-        {loading && !results.length && <div className="address-picker-skeleton"><span /><span /><span /></div>}
-        {error && <p className="address-picker-note danger">{error}</p>}
-        {!loading && query.trim().length >= 2 && !error && !results.length && <p className="address-picker-note">Не нашли точный адрес. Передвиньте карту и подтвердите точку.</p>}
+        {!mapSelectionActive && loading && !results.length && <div className="address-picker-skeleton"><span /><span /><span /></div>}
+        {!mapSelectionActive && error && <p className="address-picker-note danger">{error}</p>}
+        {!mapSelectionActive && !loading && query.trim().length >= 2 && !error && !results.length && <p className="address-picker-note">Не нашли точный адрес. Передвиньте карту и подтвердите точку.</p>}
 
-        <section className="address-picker-results" aria-label={query.trim().length >= 2 ? "Результаты поиска" : "Популярные адреса"}>
+        {!mapSelectionActive && <section className="address-picker-results" aria-label={query.trim().length >= 2 ? "Результаты поиска" : "Популярные адреса"}>
           <header>
             <strong>{query.trim().length >= 2 ? "Найденные адреса" : "Популярные рядом"}</strong>
             <span>{results.length}</span>
@@ -3112,7 +3106,7 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
               </button>
             ))}
           </div>
-        </section>
+        </section>}
 
         {showMapSelection && (
           <button type="button" className="address-picker-confirm" onClick={confirmMapCandidate} disabled={!mapCandidate || !mapCandidateReady || mapPickLoading}>
@@ -3301,7 +3295,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
   const cancelled = ["CANCELLED", "CANCELED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN"].includes(status);
   const driverName = order.driver_name || "Водитель SmartTaxi";
   const carLine = driverVehicleLine(order);
-  const driverPoint = driverMapPoint(order);
+  const driverPoint = clientDriverMapPoint(order, liveRoute);
   const stage = clientLifecycleStage(status, order, activeRoute);
   const statusTone = tripStatusTone(status);
   const showRating = status === "PAID";
@@ -3344,10 +3338,10 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
           <header className="search-driver-head">
             <div>
               <h1>Ищем водителя для вас</h1>
-              <p>Это займёт всего 1–3 минуты</p>
-              <span className="search-driver-nearby-pill">3 водителя рядом</span>
+              <p>Предлагаем ваш заказ доступным водителям</p>
+              <span className="search-driver-nearby-pill">Поиск активен</span>
             </div>
-            <img className="search-driver-car-route" src={searchDriverAssets.carRoute} alt="" loading="eager" decoding="async" />
+            <img className="search-driver-car-route" src={carImages.Economy} alt="" loading="eager" decoding="async" />
           </header>
           {order.driver_offer_status === "PENDING" && order.driver_offer_price_kzt != null && (
             <PriceOfferCard order={order} onOrderUpdate={onOrderUpdate} />
@@ -3395,7 +3389,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
           <section className="driver-found-driver-card" aria-label="Водитель">
             <img className="driver-found-avatar" src={driverFoundAssets.avatar} alt="" />
             <div className="driver-found-driver-copy">
-              <strong>{hasDriver ? driverName : "Арман С."}</strong>
+              <strong>{driverName}</strong>
               <span className="driver-found-rating-line">
                 <Icon name="star" size={17} />
                 <b>{driverRatingLabel(order)}</b>
@@ -3404,7 +3398,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
               </span>
               <span className="driver-found-verified">
                 <img src={driverFoundAssets.verified} alt="" />
-                Водитель проверен
+                Ваш водитель
               </span>
             </div>
             {order.driver_phone ? (
@@ -3489,7 +3483,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
               </span>
               <span className="driver-found-verified">
                 <img src={driverFoundAssets.verified} alt="" />
-                Водитель проверен
+                Ваш водитель
               </span>
             </div>
             {stage.canContact && order.driver_phone ? (
@@ -3850,21 +3844,6 @@ function driverVehicleLine(order) {
   return [[color, model].filter(Boolean).join(" "), plate].filter(Boolean).join(" · ");
 }
 
-function driverMapPoint(order) {
-  const lat = Number(order?.driver_lat ?? order?.driverLat);
-  const lng = Number(order?.driver_lng ?? order?.driverLng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  return { lat, lng };
-}
-
-function nearbySearchDrivers() {
-  return [
-    { id: "nearby-1", label: "2 мин", x: 23, y: 31, angle: -18, delay: 0 },
-    { id: "nearby-2", label: "3 мин", x: 72, y: 26, angle: 24, delay: 0.35 },
-    { id: "nearby-3", label: "4 мин", x: 67, y: 67, angle: -8, delay: 0.7 }
-  ];
-}
-
 function tripStatusTone(status) {
   if (["TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status)) return "success";
   if (["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(status)) return "waiting";
@@ -4053,32 +4032,17 @@ function TripRatingCard({
   );
 }
 
-function SearchNearbyDrivers() {
-  return (
-    <div className="search-nearby-drivers" aria-label="Водители поблизости">
-      {nearbySearchDrivers().map(driver => (
-        <span
-          key={driver.id}
-          className="search-nearby-driver"
-          style={{
-            "--driver-x": `${driver.x}%`,
-            "--driver-y": `${driver.y}%`,
-            "--driver-angle": `${driver.angle}deg`,
-            "--driver-delay": `${driver.delay}s`
-          }}
-        >
-          <i aria-hidden="true"><img src={searchDriverAssets.car} alt="" /></i>
-          <b>{driver.label}</b>
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function SearchingOrderMeta({ order, estimate, route }) {
   const tariffName = orderTariffLabel(order, estimate);
-  const price = order.price || estimate?.estimatedPrice;
-  const image = carImages[tariffName] || carImages[estimate?.tariff?.name] || searchDriverAssets.tariffCar;
+  const price = order.price ?? estimate?.estimatedPrice;
+  const tariffKey = cleanTariffKey({ name: order.tariff || estimate?.tariff?.name || "Economy" });
+  const image = carImages[tariffKey] || carImages.Economy;
+  const orderMinutes = Number(order.duration_min ?? order.durationMin);
+  const orderKm = Number(order.distance_km ?? order.distanceKm);
+  const summary = [
+    formatTripMin(route, Number.isFinite(orderMinutes) && orderMinutes > 0 ? `${Math.ceil(orderMinutes)} мин` : ""),
+    formatTripKm(route, Number.isFinite(orderKm) && orderKm > 0 ? `${orderKm.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км` : "")
+  ].filter(Boolean).join(" · ");
   return (
     <section className="search-order-meta" aria-label="Тариф и оплата">
       <span className="search-tariff-car">
@@ -4086,7 +4050,7 @@ function SearchingOrderMeta({ order, estimate, route }) {
       </span>
       <span className="search-tariff-copy">
         <strong>{tariffName}</strong>
-        <small>{formatTripMin(route, "4 мин")} · {formatTripKm(route, "2,7 км")}</small>
+        {summary && <small>{summary}</small>}
         <em>Оплата: <b>{paymentLabel(order.payment_method)}</b></em>
       </span>
       <span className="search-tariff-price">
@@ -4270,32 +4234,6 @@ function TripMapCard({ pickup, destination, driver, route, status, mode = "" }) 
   return (
     <section className={`trip-map-card ${mode ? `trip-map-${mode}` : ""}`}>
       <MapView pickup={pickup} destination={destination} driver={driver} route={route} center={driver || pickup || destination} compact status={status} />
-      {mode === "searching" && (
-        <>
-          <SearchNearbyDrivers />
-          <span className="search-map-radar-marker" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <img src={searchDriverAssets.markerRadar} alt="" />
-          </span>
-        </>
-      )}
-      {mode === "driver-found" && (
-        <div className="driver-found-map-layer" aria-hidden="true">
-          <span className="driver-found-map-pickup"><img src={driverFoundAssets.pickupPin} alt="" /></span>
-          <svg className="driver-found-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d="M 25 76 L 48 72 Q 52 71 52 62 L 52 54 Q 52 49 58 49 L 73 49 Q 77 49 77 43 L 77 20" />
-          </svg>
-          <span className="driver-found-map-eta">
-            <img src={driverFoundAssets.etaBubble} alt="" />
-          </span>
-          <span className="driver-found-map-car">
-            <VehicleIcon />
-            <i />
-          </span>
-        </div>
-      )}
     </section>
   );
 }

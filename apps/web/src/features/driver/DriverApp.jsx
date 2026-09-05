@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import { Icon } from "../../core/icons.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import { useLiveDriverRoute } from "../client/useLiveDriverRoute.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -18,12 +19,12 @@ import {
   completeTrip,
   confirmDriverRoadAlert,
   createDriverRoadAlert,
-  driverToPickupRoute,
   expireDriverRoadAlert,
   getDriverActiveOrder,
   getDriverDebt,
   getDriverEarningsToday,
   getDriverOrders,
+  getDriverOrderHistory,
   getDriverProfile,
   getDriverRegions,
   getDriverRoadAlerts,
@@ -114,6 +115,8 @@ const ERROR_MESSAGES = {
   ORDER_REGION_MISMATCH: "Заказ относится к другому региону",
   ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
   ORDER_NOT_FOUND: "Заказ не найден",
+  DRIVER_PAYMENT_CONFIRMATION_FORBIDDEN: "Электронная оплата ожидает подтверждения платёжного сервиса",
+  SERVICE_UNAVAILABLE: "Сервис временно недоступен. Попробуйте ещё раз.",
   INVALID_STATUS_TRANSITION: "Это действие сейчас недоступно",
   FORBIDDEN: "Недостаточно прав для действия",
   UNAUTHORIZED: "Войдите как водитель"
@@ -169,7 +172,8 @@ function normalizeOrder(order) {
   const pickupLng = Number(order.pickup_lng ?? order.pickupLng);
   const dropoffLat = Number(order.dropoff_lat ?? order.dropoffLat);
   const dropoffLng = Number(order.dropoff_lng ?? order.dropoffLng);
-  const status = order.status || order.public_status || order.publicStatus;
+  const status = order.public_status || order.publicStatus || order.status;
+  const settled = ["TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status);
   return {
     ...order,
     status,
@@ -178,8 +182,9 @@ function normalizeOrder(order) {
     dropoff: cleanAddress(order.dropoff_text || order.dropoffText || order.dropoff || order.dropoff_address, "Адрес назначения"),
     pickupPoint: Number.isFinite(pickupLat) && Number.isFinite(pickupLng) ? { lat: pickupLat, lng: pickupLng } : null,
     destinationPoint: Number.isFinite(dropoffLat) && Number.isFinite(dropoffLng) ? { lat: dropoffLat, lng: dropoffLng } : null,
-    estimatedPrice: Number(order.estimated_price || order.estimatedPrice || order.price || snapshot.estimatedPrice || 0),
-    payout: Number(order.driver_payout_estimate || order.driverPayoutEstimate || 0),
+    estimatedPrice: Number((settled ? order.price : undefined) ?? order.estimated_price ?? order.estimatedPrice ?? order.price ?? snapshot.estimatedPrice ?? 0),
+    payout: Number(order.driver_payout_estimate ?? order.driverPayoutEstimate ??
+      (order.price != null && order.service_commission != null ? Math.max(0, Number(order.price) - Number(order.service_commission)) : snapshot.driverEarning) ?? 0),
     tariff: order.tariff || order.tariff_name || "Economy",
     paymentMethod: order.payment_method || order.paymentMethod || "CASH",
     distanceKm: Number(snapshot.distanceKm || order.distance_km || order.distanceKm || 0),
@@ -226,7 +231,9 @@ function orderNextAction(order) {
   if (status === "WAITING_CLIENT") return { label: "Начать поездку", fn: startTrip };
   if (status === "TRIP_STARTED") return { label: "Завершить поездку", fn: completeTrip };
   if (status === "TRIP_COMPLETED" || status === "PAYMENT_PENDING") {
-    return { label: "Подтвердить оплату", fn: markOrderPaid };
+    return ["CASH", "KASPI"].includes(order.paymentMethod)
+      ? { label: "Подтвердить оплату", fn: markOrderPaid }
+      : null;
   }
   return null;
 }
@@ -295,8 +302,8 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
   );
 }
 
-function DriverHeader({ driver, currentRegion, onLogout }) {
-  const status = driver?.publicStatus || driver?.public_status || driver?.status || "OFFLINE";
+function DriverHeader({ driver, activeOrder, currentRegion, onLogout }) {
+  const status = activeOrder ? "BUSY" : (driver?.publicStatus || driver?.public_status || driver?.status || "OFFLINE");
   return (
     <header className="driver-core-header">
       <div className="driver-core-brand">
@@ -345,7 +352,7 @@ function RegionSelector({ regions, selectedRegionId, onSelect, disabled }) {
 
 function IncomingOrderCard({ order, onAccept, onReject, loading }) {
   return (
-    <article className="driver-core-order-card">
+    <article className="driver-core-order-card" data-order-id={order.id}>
       <div className="driver-core-order-top">
         <span>{order.tariff}</span>
         <strong><Money value={order.estimatedPrice} /></strong>
@@ -379,24 +386,16 @@ function IncomingOrderCard({ order, onAccept, onReject, loading }) {
   );
 }
 
-function ActiveOrderPanel({ order, driverPosition, driverRoute, onAction, onCancel, onNoShow, loading }) {
+function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, loading }) {
   const next = orderNextAction(order);
   const meta = liveRouteMeta(driverRoute);
+  const awaitingPayment = ["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(order.status);
   return (
-    <section className="driver-core-active">
+    <section className="driver-core-active" data-order-id={order.id}>
       <div className="driver-core-active-head">
         <span>{statusLabel(order.status)}</span>
         <strong><Money value={order.estimatedPrice} /></strong>
       </div>
-      <MapView
-        pickup={order.pickupPoint}
-        destination={order.destinationPoint}
-        driver={driverPosition}
-        route={driverRoute}
-        center={driverPosition || order.pickupPoint || order.destinationPoint}
-        compact
-        status={statusLabel(order.status)}
-      />
       <div className="driver-core-route-lines large">
         <div>
           <i className="pickup-dot" />
@@ -424,12 +423,15 @@ function ActiveOrderPanel({ order, driverPosition, driverRoute, onAction, onCanc
         <span>{order.payout ? `Водителю ${order.payout.toLocaleString("ru-RU")} ₸` : "Выплата после завершения"}</span>
       </div>
       <div className="driver-core-card-actions stack">
+        {awaitingPayment && <p className="driver-core-payment-note">{next
+          ? "Поездка завершена. Подтвердите оплату после получения денег."
+          : "Поездка завершена. Ожидаем подтверждения электронной оплаты."}</p>}
         {next && (
           <Button onClick={() => onAction(order, next)} disabled={Boolean(loading)}>
             {loading === "next" ? "Сохраняем..." : next.label}
           </Button>
         )}
-        <div className="driver-core-split-actions">
+        {!awaitingPayment && <div className="driver-core-split-actions">
           <a className="driver-core-call" href={order.rider_phone ? `tel:${order.rider_phone}` : undefined}>Позвонить</a>
           {canNoShow(order) && (
             <Button variant="secondary" onClick={() => onNoShow(order)} disabled={Boolean(loading)}>
@@ -441,7 +443,7 @@ function ActiveOrderPanel({ order, driverPosition, driverRoute, onAction, onCanc
               Отменить
             </Button>
           )}
-        </div>
+        </div>}
       </div>
     </section>
   );
@@ -458,6 +460,7 @@ export default function DriverApp() {
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [incomingOrders, setIncomingOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
+  const [settlementOrders, setSettlementOrders] = useState([]);
   const [earnings, setEarnings] = useState(null);
   const [debt, setDebt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -465,7 +468,6 @@ export default function DriverApp() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("line");
   const [driverPosition, setDriverPosition] = useState(null);
-  const [driverRoute, setDriverRoute] = useState(null);
   const [roadAlerts, setRoadAlerts] = useState([]);
   const [roadAlertsLoading, setRoadAlertsLoading] = useState(false);
   const [roadAlertsError, setRoadAlertsError] = useState("");
@@ -474,10 +476,11 @@ export default function DriverApp() {
   const socketRef = useRef(null);
   const geoWatchIdRef = useRef(null);
   const lastLocationSentAtRef = useRef(0);
-  const lastRouteFetchAtRef = useRef(0);
-  const driverRouteRequestIdRef = useRef(0);
   const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const currentRegion = useMemo(
     () => regions.find(region => regionKey(region) === selectedRegionId) || regions.find(region => regionKey(region) === driver?.currentRegionId),
@@ -485,17 +488,27 @@ export default function DriverApp() {
   );
 
   const isOnline = ["ONLINE", "FREE"].includes(driver?.publicStatus || driver?.status);
+  const isWorking = isOnline || ["BUSY"].includes(driver?.publicStatus || driver?.status);
+  const displayedOrder = activeOrder || settlementOrders[0] || null;
   const center = driverPosition || activeOrder?.pickupPoint || activeOrder?.destinationPoint || regionCenter(currentRegion);
+  const routeOrder = activeOrder ? {
+    ...activeOrder,
+    driver_id: driver?.id || activeOrder.driver_id,
+    driver_lat: driverPosition?.lat ?? activeOrder.driver_lat,
+    driver_lng: driverPosition?.lng ?? activeOrder.driver_lng
+  } : null;
+  const driverRoute = useLiveDriverRoute(routeOrder, logged ? getToken() : "");
 
   const refreshDriver = useCallback(async () => {
     if (!getToken()) return;
-    const [profileResult, regionsResult, incomingResult, activeResult, earningsResult, debtResult] = await Promise.allSettled([
+    const [profileResult, regionsResult, incomingResult, activeResult, earningsResult, debtResult, historyResult] = await Promise.allSettled([
       getDriverProfile(),
       getDriverRegions(),
       getDriverOrders(),
       getDriverActiveOrder(),
       getDriverEarningsToday(),
-      getDriverDebt()
+      getDriverDebt(),
+      getDriverOrderHistory()
     ]);
 
     if (profileResult.status === "fulfilled") {
@@ -522,6 +535,12 @@ export default function DriverApp() {
     }
     if (earningsResult.status === "fulfilled") setEarnings(earningsResult.value);
     if (debtResult.status === "fulfilled") setDebt(debtResult.value);
+    if (historyResult.status === "fulfilled") {
+      setSettlementOrders(extractOrders(historyResult.value).map(normalizeOrder).filter(order =>
+        order && ["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(order.status)
+          && String(order.payment_status || order.paymentStatus || "").toUpperCase() !== "PAID"
+      ));
+    }
   }, []);
 
   useEffect(() => {
@@ -543,24 +562,44 @@ export default function DriverApp() {
   }, [logged, refreshDriver]);
 
   useEffect(() => {
-    if (!logged) return undefined;
+    if (!logged || !driver?.id) return undefined;
     const socket = createSocket();
     socketRef.current = socket;
-    const updateOrder = payload => {
-      const next = normalizeOrder(payload?.order || payload);
-      if (!next?.id) return;
-      if (ACTIVE_STATUSES.includes(next.status)) setActiveOrder(next);
-      if (FINAL_STATUSES.includes(next.status)) {
-        setActiveOrder(current => (current?.id === next.id ? null : current));
-        refreshDriver().catch(() => {});
+    let refreshTimer;
+    let alive = true;
+    let refreshing = false;
+    let refreshAgain = false;
+    const refreshState = async () => {
+      if (!alive) return;
+      if (refreshing) {
+        refreshAgain = true;
+        return;
       }
-      setIncomingOrders(list => mergeOrder(list, next));
+      refreshing = true;
+      try {
+        await refreshDriver();
+      } catch (error) {
+        if (alive) setError(formatError(error));
+      } finally {
+        refreshing = false;
+        if (alive && refreshAgain) {
+          refreshAgain = false;
+          scheduleRefresh();
+        }
+      }
     };
-    const refreshIncoming = () => {
-      getDriverOrders()
-        .then(data => setIncomingOrders(extractOrders(data).map(normalizeOrder).filter(Boolean)))
-        .catch(() => {});
+    const scheduleRefresh = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(refreshState, 120);
     };
+    const joinRooms = () => {
+      if (isOnline) socket.emit("join_drivers");
+      if (displayedOrder?.id) socket.emit("join_order", displayedOrder.id);
+      scheduleRefresh();
+    };
+    // Region events include other drivers' orders. Fetch the authenticated
+    // incoming/active endpoints instead of assigning a broadcast to this
+    // driver's active trip. Debounce the aliases of the same status change.
     [
       "order_created",
       "order.created",
@@ -574,14 +613,26 @@ export default function DriverApp() {
       "order.trip_completed",
       "order.cancelled",
       "order.paid",
-      "order.rated"
-    ].forEach(event => socket.on(event, updateOrder));
-    socket.on("connect", refreshIncoming);
+      "order.rated",
+      "order_status_public"
+    ].forEach(event => socket.on(event, scheduleRefresh));
+    socket.on("connect", joinRooms);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") scheduleRefresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    // A short HTTP reconciliation also recovers dropped events or exhausted
+    // socket reconnects without requiring the driver to reload the page.
+    const pollTimer = window.setInterval(onVisibility, 15000);
     return () => {
+      alive = false;
+      window.clearTimeout(refreshTimer);
+      window.clearInterval(pollTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [logged, refreshDriver]);
+  }, [logged, driver?.id, selectedRegionId, isOnline, displayedOrder?.id, refreshDriver]);
 
   // Reports the driver's live position while working, mirroring the mobile
   // app's continuous location stream (see driver_shell.dart _startLocationFlow)
@@ -589,7 +640,7 @@ export default function DriverApp() {
   // a driver working from a browser was invisible on the dispatch map and
   // could never get a live route/ETA back.
   useEffect(() => {
-    if (!logged || !isOnline || !navigator.geolocation) {
+    if (!logged || !isWorking || !navigator.geolocation) {
       setDriverPosition(null);
       return undefined;
     }
@@ -623,30 +674,7 @@ export default function DriverApp() {
         geoWatchIdRef.current = null;
       }
     };
-  }, [logged, isOnline]);
-
-  // Live distance/ETA to whichever leg is active, recalculated by OSRM from
-  // the driver's actual position — see liveRouteMeta(). Re-checked on every
-  // position tick but throttled to one fetch per ~8s, same cadence as the
-  // mobile app's _loadDriverRoute throttle.
-  useEffect(() => {
-    if (!activeOrder?.id || !ACTIVE_STATUSES.includes(activeOrder.status)) {
-      setDriverRoute(null);
-      return undefined;
-    }
-    const now = Date.now();
-    if (now - lastRouteFetchAtRef.current < 8000) return undefined;
-    lastRouteFetchAtRef.current = now;
-    const requestId = ++driverRouteRequestIdRef.current;
-    let cancelled = false;
-    driverToPickupRoute(activeOrder.id)
-      .then(data => {
-        if (cancelled || requestId !== driverRouteRequestIdRef.current) return;
-        setDriverRoute(data?.route || null);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [activeOrder?.id, activeOrder?.status, driverPosition]);
+  }, [logged, isWorking]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -669,6 +697,7 @@ export default function DriverApp() {
     setDriver(null);
     setIncomingOrders([]);
     setActiveOrder(null);
+    setSettlementOrders([]);
   }
 
   const loadRoadAlerts = useCallback(async () => {
@@ -676,9 +705,9 @@ export default function DriverApp() {
     setRoadAlertsLoading(true);
     setRoadAlertsError("");
     try {
-      const items = await getDriverRoadAlerts({ regionId: selectedRegionId || undefined });
+      const payload = await getDriverRoadAlerts({ regionId: selectedRegionId || undefined });
       if (!mountedRef.current) return;
-      setRoadAlerts(items);
+      setRoadAlerts(Array.isArray(payload?.alerts) ? payload.alerts : []);
     } catch (error) {
       if (!mountedRef.current) return;
       setRoadAlertsError(formatError(error));
@@ -760,9 +789,22 @@ export default function DriverApp() {
       if (result?.order) {
         const order = normalizeOrder(result.order);
         if (ACTIVE_STATUSES.includes(order.status)) setActiveOrder(order);
+        if (["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(order.status)) {
+          setActiveOrder(current => current?.id === order.id ? null : current);
+          setSettlementOrders(current => [order, ...current.filter(item => item.id !== order.id)]);
+        }
+        if (["PAID", "RATED"].includes(order.status)) {
+          setSettlementOrders(current => current.filter(item => item.id !== order.id));
+        }
         setIncomingOrders(list => mergeOrder(list, order));
       }
-      await refreshDriver();
+      try {
+        await refreshDriver();
+      } catch (error) {
+        // The mutation response is authoritative even if reconciliation
+        // temporarily fails. Keep its successful navigation/state change.
+        setError(formatError(error));
+      }
       return result;
     } catch (error) {
       setError(formatError(error));
@@ -783,13 +825,13 @@ export default function DriverApp() {
   }
 
   async function handleAccept(order) {
-    await withAction(`accept-${order.id}`, () => acceptOrder(order.id));
-    setTab("active");
+    const result = await withAction(`accept-${order.id}`, () => acceptOrder(order.id));
+    if (result) setTab("active");
   }
 
   async function handleReject(order) {
-    await withAction(`reject-${order.id}`, () => rejectDriverOrder(order.id));
-    setIncomingOrders(list => list.filter(item => item.id !== order.id));
+    const result = await withAction(`reject-${order.id}`, () => rejectDriverOrder(order.id));
+    if (result) setIncomingOrders(list => list.filter(item => item.id !== order.id));
   }
 
   async function handleNext(order, next) {
@@ -797,13 +839,15 @@ export default function DriverApp() {
   }
 
   async function handleCancel(order) {
-    await withAction("cancel", () => cancelDriverOrder(order.id));
+    const result = await withAction("cancel", () => cancelDriverOrder(order.id));
+    if (!result) return;
     setActiveOrder(null);
     setTab("line");
   }
 
   async function handleNoShow(order) {
-    await withAction("noshow", () => noShowDriverOrder(order.id));
+    const result = await withAction("noshow", () => noShowDriverOrder(order.id));
+    if (!result) return;
     setActiveOrder(null);
     setTab("line");
   }
@@ -811,11 +855,13 @@ export default function DriverApp() {
   if (!logged) {
     return <DriverLogin auth={auth} setAuth={setAuth} onSubmit={handleLogin} loading={loginLoading} error={loginError} />;
   }
+  const mapTab = ["line", "orders", "active"].includes(tab);
 
   return (
-    <PhoneFrame className="driver-core-phone">
-      <DriverHeader driver={driver} currentRegion={currentRegion} onLogout={handleLogout} />
-      <section className="driver-core-map-wrap">
+    <PhoneFrame className={`driver-core-phone driver-core-view-${tab}`}>
+      <DriverHeader driver={driver} activeOrder={activeOrder} currentRegion={currentRegion} onLogout={handleLogout} />
+      {mapTab && error && <div className="driver-core-error driver-core-action-notice" role="alert">{error}</div>}
+      {mapTab && <section className="driver-core-map-wrap">
         <MapView
           pickup={activeOrder?.pickupPoint}
           destination={activeOrder?.destinationPoint}
@@ -825,20 +871,21 @@ export default function DriverApp() {
           compact
           status={activeOrder ? statusLabel(activeOrder.status) : (isOnline ? "Готов к заказам" : "Не на линии")}
         />
-      </section>
+      </section>}
 
       <section className="driver-core-panel">
         {loading ? (
           <div className="driver-core-loading">Загружаем смену...</div>
         ) : (
           <>
-            <EarningsStrip earnings={earnings} debt={debt} />
+            {tab === "line" && <EarningsStrip earnings={earnings} debt={debt} />}
+            {tab === "line" &&
             <RegionSelector
               regions={regions}
               selectedRegionId={selectedRegionId}
               onSelect={handleRegionSelect}
               disabled={Boolean(actionLoading || activeOrder)}
-            />
+            />}
             {!regions.length && regionsLoadFailed && (
               <div className="driver-core-error">
                 Не удалось загрузить регионы.{" "}
@@ -851,21 +898,21 @@ export default function DriverApp() {
                 </button>
               </div>
             )}
-            {error && <div className="driver-core-error">{error}</div>}
+            {!mapTab && error && <div className="driver-core-error" role="alert">{error}</div>}
 
             {tab === "line" && (
               <section className="driver-core-home">
                 <div className="driver-core-line-card">
                   <div>
                     <small>Статус смены</small>
-                    <h1>{isOnline ? "Вы на линии" : "Вы не на линии"}</h1>
-                    <p>{isOnline ? "Новые заказы появятся автоматически." : "Выйдите на линию, чтобы получать заказы."}</p>
+                    <h1>{activeOrder ? "Вы выполняете заказ" : isOnline ? "Вы на линии" : "Вы не на линии"}</h1>
+                    <p>{activeOrder ? "Действия по текущей поездке доступны ниже." : isOnline ? "Новые заказы появятся автоматически." : "Выйдите на линию, чтобы получать заказы."}</p>
                   </div>
                   <Button onClick={handleStatusToggle} disabled={Boolean(actionLoading || activeOrder)}>
-                    {actionLoading === "status" ? "Сохраняем..." : (isOnline ? "Уйти с линии" : "Выйти на линию")}
+                    {actionLoading === "status" ? "Сохраняем..." : (isWorking ? "Уйти с линии" : "Выйти на линию")}
                   </Button>
                 </div>
-                {activeOrder && <ActiveOrderPanel order={activeOrder} driverPosition={driverPosition} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />}
+                {displayedOrder && <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />}
                 {!activeOrder && isOnline && incomingOrders.slice(0, 1).map(order => (
                   <IncomingOrderCard
                     key={order.id}
@@ -901,8 +948,8 @@ export default function DriverApp() {
             )}
 
             {tab === "active" && (
-              activeOrder ? (
-                <ActiveOrderPanel order={activeOrder} driverPosition={driverPosition} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />
+              displayedOrder ? (
+                <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />
               ) : (
                 <div className="driver-core-empty">Активной поездки нет.</div>
               )
@@ -933,7 +980,7 @@ export default function DriverApp() {
                     {roadAlertSubmitting ? "Отправляем..." : "Сообщить"}
                   </Button>
                   {!driverPosition && (
-                    <div className="driver-core-empty">Выйдите на линию, чтобы определить местоположение.</div>
+                    <div className="driver-core-empty">{isWorking ? "Нет сигнала GPS. Разрешите доступ к геолокации в браузере и дождитесь определения местоположения." : "Выйдите на линию, чтобы определить местоположение."}</div>
                   )}
                 </form>
 

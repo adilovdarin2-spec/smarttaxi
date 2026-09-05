@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test": "node --test tools/*.test.mjs",
     "syntax": "vite build",
     "check": "vite build",
     "preview": "vite preview --host 0.0.0.0"
