@@ -282,6 +282,43 @@ assert.equal(intercityPricing.destinationRegionId, "region-b", "intercity estima
 assert.equal(intercityPricing.estimatedPrice, 3800, "intercity estimate uses route kilometre pricing, not flat city fare");
 assert.equal(intercityPricing.pricingSnapshot.isIntercity, true, "order snapshot retains intercity state");
 
+executor.state.intercityRoutes[0].price_per_km_override = null;
+const withoutDistanceOverride = await prepareOrderPricing({
+  ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5,
+  distanceKm: 20, durationMin: 30
+}, executor);
+assert.equal(withoutDistanceOverride.pricingSnapshot.pricePerKm, 100,
+  "SQL NULL means no route override, not a zero-tenge kilometre rate");
+assert.equal(withoutDistanceOverride.estimatedPrice, 3000,
+  "a 20 km journey without an override retains real kilometre pricing");
+for (const absent of [null, undefined]) {
+  const flatExecutor = createExecutor();
+  flatExecutor.state.tariffs[0].price_per_km = 0;
+  flatExecutor.state.tariffs[0].price_per_minute = 0;
+  flatExecutor.state.intercityRoutes.push({ ...executor.state.intercityRoutes[0], price_per_km_override: absent });
+  const inherited = await prepareOrderPricing({
+    ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, distanceKm: 20, durationMin: 30
+  }, flatExecutor);
+  assert.equal(inherited.pricingSnapshot.pricePerKm, 140,
+    "a flat city tariff retains the existing intercity fallback when no override is configured");
+}
+executor.state.intercityRoutes[0].price_per_km_override = 0;
+const explicitZero = await prepareOrderPricing({
+  ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, distanceKm: 20, durationMin: 30
+}, executor);
+assert.equal(explicitZero.pricingSnapshot.pricePerKm, 0,
+  "an explicitly configured zero is not changed by the missing-override fix");
+executor.state.intercityRoutes[0].price_per_km_override = 140;
+for (const metrics of [{ distanceKm: 351, durationMin: 30 }, { distanceKm: 20, durationMin: 721 }]) {
+  await assert.rejects(() => prepareOrderPricing({
+    ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, ...metrics
+  }, executor), { code: "INVALID_ROUTE_METRICS" }, "configured intercity caps remain enforced");
+}
+await assert.rejects(() => prepareOrderPricing({
+  ...baseInput, pickupLat: 2.5, pickupLng: 2.5, dropoffLat: 0.5, dropoffLng: 0.5,
+  distanceKm: 20, durationMin: 30
+}, executor), { code: "INTERCITY_ROUTE_UNAVAILABLE" }, "enabling one direction does not enable its reverse");
+
 const overlapExecutor = createExecutor();
 // A second region whose boundary also covers baseInput's pickup/dropoff
 // (0.5,0.5)/(0.8,0.8) but whose own center sits farther away than region-a's

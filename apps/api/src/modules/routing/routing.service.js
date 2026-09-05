@@ -1866,7 +1866,8 @@ function parseSteps(route) {
   return steps
     .map(step => {
       const location = step?.maneuver?.location;
-      if (!Array.isArray(location) || location.length < 2) return null;
+      if (!Array.isArray(location) || !isRouteCoordinate(location)) return null;
+      if (!isRouteMetric(step.distance)) return null;
       return {
         type: step.maneuver?.type || "turn",
         modifier: step.maneuver?.modifier || null,
@@ -1874,32 +1875,39 @@ function parseSteps(route) {
         // links, etc.) — honest gap, not a parsing bug; the client shows a
         // generic label instead of an empty street name in that case.
         streetName: typeof step.name === "string" ? step.name : "",
-        distanceMeters: Math.round(Number(step.distance) || 0),
-        lat: Number(location[1]),
-        lng: Number(location[0]),
+        distanceMeters: Math.round(step.distance),
+        lat: location[1],
+        lng: location[0],
         // Only present on a roundabout/rotary maneuver (which exit to take,
         // counting from 1) — undefined for every other type, and the client
         // treats a missing/non-numeric value as "no exit info" rather than
         // guessing one.
-        exit: Number.isFinite(Number(step.maneuver?.exit)) ? Number(step.maneuver.exit) : null
+        exit: Number.isInteger(step.maneuver?.exit) && step.maneuver.exit > 0 ? step.maneuver.exit : null
       };
     })
     .filter(Boolean);
 }
 
+function isRouteMetric(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function isRouteCoordinate(coordinate) {
+  if (!Array.isArray(coordinate) || coordinate.length < 2) return false;
+  const [lng, lat] = coordinate;
+  return typeof lat === "number" && typeof lng === "number" &&
+    Number.isFinite(lat) && Number.isFinite(lng) &&
+    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
 function hasUsableRouteGeometry(geometry) {
   if (geometry?.type !== "LineString" || !Array.isArray(geometry.coordinates) || geometry.coordinates.length < 2) return false;
-  return geometry.coordinates.every((coordinate) => {
-    if (!Array.isArray(coordinate) || coordinate.length < 2) return false;
-    const lng = Number(coordinate[0]);
-    const lat = Number(coordinate[1]);
-    return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
-  });
+  return geometry.coordinates.every(isRouteCoordinate);
 }
 
 function isUsableRoutePayload(route) {
-  return Number.isFinite(Number(route?.distanceMeters)) && Number(route.distanceMeters) >= 0 &&
-    Number.isFinite(Number(route?.durationSeconds)) && Number(route.durationSeconds) >= 0 &&
+  return route?.providerStatus === "Ok" &&
+    isRouteMetric(route.distanceMeters) && isRouteMetric(route.durationSeconds) &&
     hasUsableRouteGeometry(route?.geometry);
 }
 
@@ -1912,7 +1920,8 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   // OSRM's first answer, even though its response order is not a product
   // guarantee. A route and the fare based on it must use the same fastest
   // candidate, never a provider-order accident.
-  const cacheKey = `route:osrm:fastest-v1:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}`;
+  // v2 also excludes responses accepted through JS null/boolean coercion.
+  const cacheKey = `route:osrm:fastest-v2:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}`;
   const cached = await cacheGetJson(cacheKey);
   if (isUsableRoutePayload(cached)) return cached;
   // A hung/misbehaving OSRM would otherwise be re-hit on every single poll
@@ -1936,6 +1945,10 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
     throw routeUnavailable();
   }
   const data = response.data;
+  if (data?.code !== "Ok") {
+    await cacheSetJson(failureKey, { failed: true }, 20);
+    throw routeUnavailable();
+  }
   // OSRM ranks candidates by its internal weight, which can differ from a
   // rider-visible ETA. Select explicitly: the least duration wins and a
   // shorter distance settles an ETA tie. This gives the passenger the fastest
@@ -1943,12 +1956,11 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   // the provider happened to put first.
   const candidates = (Array.isArray(data?.routes) ? data.routes : [])
     .filter(candidate =>
-      Number.isFinite(Number(candidate?.distance)) && Number(candidate.distance) >= 0 &&
-      Number.isFinite(Number(candidate?.duration)) && Number(candidate.duration) >= 0 &&
+      isRouteMetric(candidate?.distance) && isRouteMetric(candidate?.duration) &&
       hasUsableRouteGeometry(candidate.geometry)
     )
     .sort((left, right) =>
-      Number(left.duration) - Number(right.duration) || Number(left.distance) - Number(right.distance)
+      left.duration - right.duration || left.distance - right.distance
     );
   const route = candidates[0];
   if (!route) {

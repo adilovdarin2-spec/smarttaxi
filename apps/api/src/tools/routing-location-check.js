@@ -21,6 +21,7 @@ const {
   buildDriverToPickupRoute,
   buildRoutePreview,
   filterGazetteerRowsToServiceArea,
+  requestRoute,
   resolveActiveLeg,
   reverseAddress,
   searchAddresses,
@@ -399,6 +400,72 @@ const alternativePreview = await buildRoutePreview({
 assert.match(alternativesUrl, /alternatives=true/, "routing asks OSRM for available driving alternatives");
 assert.equal(alternativePreview.durationSeconds, 480, "route preview chooses the quickest OSRM alternative");
 assert.equal(alternativePreview.distanceMeters, 4500, "fare preview uses the selected quickest route distance");
+
+// Provider JSON is untrusted. Number(null)/Number(false) must not make a
+// malformed alternative appear to be the quickest, zero-second journey.
+const validProviderRoute = {
+  distance: 4500, duration: 480,
+  geometry: { type: "LineString", coordinates: [[69.11, 42.11], [69.19, 42.19]] }
+};
+for (const badMetric of [null, false, "", "0", [], {}, -1]) {
+  const selected = await requestRoute({
+    from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+    fetchImpl: mockFetch({ routes: [
+      { ...validProviderRoute, distance: badMetric, duration: badMetric },
+      validProviderRoute
+    ] })
+  });
+  assert.equal(selected.durationSeconds, 480, `malformed metric ${JSON.stringify(badMetric)} cannot win route selection`);
+}
+
+for (const invalidPoint of [[null, 42], [69, false], ["69", 42], [69, ""], [181, 42], [69, -91], []]) {
+  const selected = await requestRoute({
+    from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+    fetchImpl: mockFetch({ routes: [
+      { distance: 1, duration: 1, geometry: { type: "LineString", coordinates: [invalidPoint, [69.19, 42.19]] } },
+      validProviderRoute
+    ] })
+  });
+  assert.equal(selected.distanceMeters, 4500, "invalid geometry cannot replace a valid alternative");
+}
+for (const code of ["NoRoute", "NoSegment", "InvalidQuery", null, undefined]) {
+  await assert.rejects(() => requestRoute({
+    from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+    fetchImpl: async () => ({ ok: true, json: async () => ({ code, routes: [validProviderRoute] }) })
+  }), { code: "ROUTE_UNAVAILABLE" }, "non-Ok provider responses cannot produce a priced route");
+}
+await assert.rejects(() => requestRoute({
+  from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+  fetchImpl: mockFetch({ routes: [null, { ...validProviderRoute, duration: null }] })
+}), { code: "ROUTE_UNAVAILABLE" }, "no valid candidates fails closed");
+
+const tiedRoute = await requestRoute({
+  from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+  fetchImpl: mockFetch({ routes: [validProviderRoute, { ...validProviderRoute, distance: 4000 }] })
+});
+assert.equal(tiedRoute.distanceMeters, 4000, "shorter distance wins an equal-duration tie");
+const zeroRoute = await requestRoute({
+  from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.11, lng: 69.11 },
+  fetchImpl: mockFetch({ route: { distance: 0, duration: 0,
+    geometry: { type: "LineString", coordinates: [[69.11, 42.11], [69.11, 42.11]] } } })
+});
+assert.equal(zeroRoute.distanceMeters, 0, "an actual numeric zero at the same endpoint remains valid");
+
+const parsedManeuvers = await requestRoute({
+  from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+  fetchImpl: mockFetch({ route: { ...validProviderRoute, legs: [{ steps: [
+    { distance: 100, name: "Valid street", maneuver: { location: [69.11, 42.11], type: "roundabout", exit: 2 } },
+    { distance: 0, maneuver: { location: [69.19, 42.19], type: "arrive", exit: null } },
+    { distance: 1, maneuver: { location: [null, 42.11], type: "turn" } },
+    { distance: null, maneuver: { location: [69.11, 42.11], type: "turn" } },
+    { distance: -1, maneuver: { location: [69.11, 42.11], type: "turn" } },
+    { distance: 100, maneuver: { location: [69.12, 42.12], type: "roundabout", exit: 0 } }
+  ] }] } })
+});
+assert.equal(parsedManeuvers.steps.length, 3, "malformed maneuver coordinates and distances are discarded");
+assert.equal(parsedManeuvers.steps[0].exit, 2, "real roundabout exit is preserved");
+assert.equal(parsedManeuvers.steps[1].exit, null, "missing exit is not converted to zero");
+assert.equal(parsedManeuvers.steps[2].exit, null, "invalid exit is not an instruction to a nonexistent exit");
 
 await assert.rejects(
   () => buildRoutePreview({ pickupLat: 44, pickupLng: 69.1, dropoffLat: 42.2, dropoffLng: 69.2 }, createExecutor(), mockFetch()),

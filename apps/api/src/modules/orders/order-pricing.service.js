@@ -106,7 +106,11 @@ export function calculateOrderPrice(tariff, distanceKm, durationMin) {
 // still supplies its service commission, cashback and waiting rules.
 export function intercityTariff(tariff, intercityRoute) {
   if (!intercityRoute) return tariff;
-  const routeRate = Number(intercityRoute.price_per_km_override);
+  // SQL NULL means inherit the existing distance policy. Number(null) is 0,
+  // which silently disabled kilometre pricing for routes without an override.
+  // A genuinely configured zero remains an explicit override, not a default.
+  const routeRate = intercityRoute.price_per_km_override == null
+    ? NaN : Number(intercityRoute.price_per_km_override);
   const tariffRate = Number(tariff.price_per_km);
   const routeMinimum = Number(intercityRoute.min_price_override);
   const tariffIntercityMinimum = Number(tariff.intercity_override);

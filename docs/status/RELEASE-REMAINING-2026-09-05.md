@@ -17,6 +17,9 @@ does not replace the September evidence. Work and QA remain local on `dev`.
   reconciliation: 89 tests, clean analysis and an explicit localhost debug APK.
 - Android/web read-after-uncertain-creation recovery, with a compiled-browser
   proof of actual backend commit, lost response and exactly one creation POST.
+- Strict route/maneuver validation, correct missing intercity rate inheritance,
+  and 34 actual local tariff previews across all 13 regions plus four intercity
+  directions; the paired browser lifecycle also passed against that API.
 
 ## Technical acceptance still to finish
 
@@ -26,7 +29,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 | Passenger/driver visual parity | Capture the full current Android state sequence and compare with web/reference boards | Native snapshots from older builds are not acceptance of the current APK |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
 | Native driver route layer | First inspect the active route on-device; implement the documented annotation-to-style-layer plan only if needed | Renderer must not be changed blindly |
-| Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions and validation of provider failures | Existing service-bound address tests do not prove every real-world street/route |
+| Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
 | Production routing capacity | Agreed staging/self-hosted provider, data and capacity testing before rollout | Local readiness currently uses the public OSRM demo; no load test should target that shared service |
 | Deployment and remote CI acceptance | Read CI results; apply and verify an authorized staging/production configuration | No production deploy is authorized in this local QA pass; Railway root-context adoption still needs service settings migration |
 | Final Android release artifact | Device acceptance, owner-controlled signing/backup and final configured endpoints | A debug APK or an old signed AAB is not release acceptance |
@@ -62,4 +65,5 @@ these warnings did not prevent the current builds.
 - [GPS failure recovery](driver-gps-feedback-2026-09-05.md)
 - [Web session isolation](web-session-isolation-2026-09-05.md)
 - [Transport and cross-client booking recovery](transport-and-order-recovery-2026-09-05.md)
+- [Regional routing and provider validation](regional-routing-2026-09-05.md)
 - [Docker build boundary](../DOCKER_BUILDS.md)
