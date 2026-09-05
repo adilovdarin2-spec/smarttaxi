@@ -79,6 +79,12 @@ docker compose up -d --build api web
 docker compose ps
 ```
 
+For the maintained Compose helper, use `bash infra/scripts/deploy.sh` on an
+existing installation. On the first installation only, use
+`bash infra/scripts/deploy.sh --first-deploy`; this provisions Postgres first
+and still requires a successful baseline backup before starting the app.
+Backup/pull/readiness failures stop the helper. It never seeds accounts.
+
 If OSRM data is prepared:
 
 ```bash
@@ -86,22 +92,27 @@ docker compose --profile routing up -d osrm
 docker compose up -d --build api web
 ```
 
-## 5. Seed and verify
+## 5. Verify
 
 ```bash
-docker compose exec api npm run seed
-curl http://127.0.0.1:4000/api/health
-curl http://127.0.0.1:4000/api/health/ready
-curl http://127.0.0.1:4000/api/maps/diagnostics
+bash infra/scripts/health-check.sh
+curl http://127.0.0.1:4001/api/maps/diagnostics
 ```
 
-Run smokes:
+Host defaults are API `4001` and web `5175`; container ports remain `4000`
+and `80`. For standalone health checks, export `SMARTTAXI_API_PORT` /
+`SMARTTAXI_WEB_PORT` or explicit `API_URL` / `WEB_URL` when using different
+published ports. The deploy helper reads the actual bindings from Compose.
+
+Seed/test-account and business-flow smoke commands are **local-development
+only**, against the separate QA stack. Account provisioning for a live service
+is not a deployment step. After confirming `NODE_ENV=development` in that
+local API, its smoke commands can run inside the container:
 
 ```bash
-API_URL=http://127.0.0.1:4000 docker compose exec api npm run smoke:health
-API_URL=http://127.0.0.1:4000 docker compose exec api npm run smoke:maps
-API_URL=http://127.0.0.1:4000 docker compose exec api npm run smoke:stage3
-API_URL=http://127.0.0.1:4000 docker compose exec api npm run smoke:stage9
+docker compose exec -T -e API_URL=http://127.0.0.1:4000 api npm run smoke:health
+docker compose exec -T -e API_URL=http://127.0.0.1:4000 api npm run smoke:maps
+docker compose exec -T -e API_URL=http://127.0.0.1:4000 api npm run smoke:stage3
 ```
 
 ## 6. Nginx
@@ -130,10 +141,12 @@ curl https://api.smarttaxi.kz/api/maps/diagnostics
 ## 7. Backup
 
 ```bash
-POSTGRES_USER=smarttaxi POSTGRES_DB=smarttaxi ./infra/scripts/backup-db.sh
+BACKUP_DIR=/opt/smarttaxi/backups bash infra/scripts/backup-db.sh
 ```
 
 Add a daily cron/systemd timer after testing restore.
+See [BACKUP_RESTORE.md](BACKUP_RESTORE.md) for recovery into a separate new
+database and verification; the helpers do not delete earlier recovery points.
 
 ## 8. Rollback
 
@@ -144,4 +157,6 @@ docker compose up -d --build api web
 curl https://api.smarttaxi.kz/api/health/ready
 ```
 
-Do not run destructive restore as rollback unless the database migration itself broke data.
+Database recovery is a separate operation from application rollback. The
+restore helper creates a new database and leaves the running connection
+unchanged; verify it before considering promotion.
