@@ -146,10 +146,11 @@ export function driverToPickupRoute(orderId) {
   });
 }
 
-export function updateDriverLocation(payload) {
+export function updateDriverLocation(payload, { signal } = {}) {
   return api("/api/drivers/me/location", {
     method: "PATCH",
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal
   });
 }
 

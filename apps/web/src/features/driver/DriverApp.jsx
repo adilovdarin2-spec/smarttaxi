@@ -3,6 +3,7 @@ import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import { Icon } from "../../core/icons.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import { useLiveDriverRoute } from "../client/useLiveDriverRoute.js";
+import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -150,6 +151,8 @@ const PAYMENT_LABELS = {
   CASHBACK: "Бонусы",
   MIXED: "Бонусы + карта"
 };
+
+const TARIFF_LABELS = { Economy: "Эконом", Delivery: "Доставка" };
 
 function formatError(error) {
   return ERROR_MESSAGES[error?.code] || error?.message || "Запрос не выполнен";
@@ -354,7 +357,7 @@ function IncomingOrderCard({ order, onAccept, onReject, loading }) {
   return (
     <article className="driver-core-order-card" data-order-id={order.id}>
       <div className="driver-core-order-top">
-        <span>{order.tariff}</span>
+        <span>{TARIFF_LABELS[order.tariff] || order.tariff}</span>
         <strong><Money value={order.estimatedPrice} /></strong>
       </div>
       <div className="driver-core-route-lines">
@@ -418,7 +421,7 @@ function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, lo
         </div>
       )}
       <div className="driver-core-order-meta">
-        <span>{order.tariff}</span>
+        <span>{TARIFF_LABELS[order.tariff] || order.tariff}</span>
         <span>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</span>
         <span>{order.payout ? `Водителю ${order.payout.toLocaleString("ru-RU")} ₸` : "Выплата после завершения"}</span>
       </div>
@@ -468,14 +471,13 @@ export default function DriverApp() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("line");
   const [driverPosition, setDriverPosition] = useState(null);
+  const [publishedDriverPosition, setPublishedDriverPosition] = useState(null);
   const [roadAlerts, setRoadAlerts] = useState([]);
   const [roadAlertsLoading, setRoadAlertsLoading] = useState(false);
   const [roadAlertsError, setRoadAlertsError] = useState("");
   const [roadAlertForm, setRoadAlertForm] = useState({ type: "ROAD_HAZARD", comment: "" });
   const [roadAlertSubmitting, setRoadAlertSubmitting] = useState(false);
   const socketRef = useRef(null);
-  const geoWatchIdRef = useRef(null);
-  const lastLocationSentAtRef = useRef(0);
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -490,14 +492,17 @@ export default function DriverApp() {
   const isOnline = ["ONLINE", "FREE"].includes(driver?.publicStatus || driver?.status);
   const isWorking = isOnline || ["BUSY"].includes(driver?.publicStatus || driver?.status);
   const displayedOrder = activeOrder || settlementOrders[0] || null;
+  const session = logged ? getToken() : "";
+  const confirmedPosition = publishedDriverPosition?.session === session &&
+    publishedDriverPosition?.driverId === driver?.id ? publishedDriverPosition : null;
   const center = driverPosition || activeOrder?.pickupPoint || activeOrder?.destinationPoint || regionCenter(currentRegion);
   const routeOrder = activeOrder ? {
     ...activeOrder,
     driver_id: driver?.id || activeOrder.driver_id,
-    driver_lat: driverPosition?.lat ?? activeOrder.driver_lat,
-    driver_lng: driverPosition?.lng ?? activeOrder.driver_lng
+    driver_lat: confirmedPosition?.lat ?? activeOrder.driver_lat,
+    driver_lng: confirmedPosition?.lng ?? activeOrder.driver_lng
   } : null;
-  const driverRoute = useLiveDriverRoute(routeOrder, logged ? getToken() : "");
+  const driverRoute = useLiveDriverRoute(routeOrder, session);
 
   const refreshDriver = useCallback(async () => {
     if (!getToken()) return;
@@ -640,41 +645,46 @@ export default function DriverApp() {
   // a driver working from a browser was invisible on the dispatch map and
   // could never get a live route/ETA back.
   useEffect(() => {
-    if (!logged || !isWorking || !navigator.geolocation) {
+    setPublishedDriverPosition(null);
+    if (!session || !driver?.id || !isWorking || !navigator.geolocation) {
       setDriverPosition(null);
       return undefined;
     }
+    let alive = true;
+    const publisher = createDriverLocationPublisher({
+      publish: updateDriverLocation,
+      isCurrent: () => alive && getToken() === session,
+      onPublished: location => {
+        if (location.driverId === driver.id) setPublishedDriverPosition({ ...location, session });
+      }
+    });
     const handlePosition = position => {
+      if (!alive || getToken() !== session) return;
       const point = { lat: position.coords.latitude, lng: position.coords.longitude };
+      if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng) || Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180) return;
       setDriverPosition(point);
-      const now = Date.now();
-      // Browser geolocation has no distance-filter option (unlike the
-      // mobile app's Geolocator stream), so a plain time throttle stands in
-      // for it — still frequent enough for dispatch, without spamming the
-      // endpoint on every tick.
-      if (now - lastLocationSentAtRef.current < 15000) return;
-      lastLocationSentAtRef.current = now;
-      updateDriverLocation({
+      // The marker is immediate. Routing uses the acknowledged server fix,
+      // not this raw point: the route endpoint reads persisted coordinates.
+      publisher.update({
         lat: point.lat,
         lng: point.lng,
         heading: Number.isFinite(position.coords.heading) ? position.coords.heading : undefined,
         speed: Number.isFinite(position.coords.speed) ? position.coords.speed : undefined,
         accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : undefined,
         source: "web"
-      }).catch(() => {});
+      });
     };
-    geoWatchIdRef.current = navigator.geolocation.watchPosition(handlePosition, () => {}, {
+    const watchId = navigator.geolocation.watchPosition(handlePosition, () => {}, {
       enableHighAccuracy: true,
       maximumAge: 10000,
       timeout: 20000
     });
     return () => {
-      if (geoWatchIdRef.current != null) {
-        navigator.geolocation.clearWatch(geoWatchIdRef.current);
-        geoWatchIdRef.current = null;
-      }
+      alive = false;
+      publisher.dispose();
+      navigator.geolocation.clearWatch(watchId);
     };
-  }, [logged, isWorking]);
+  }, [session, driver?.id, isWorking, selectedRegionId]);
 
   async function handleLogin(event) {
     event.preventDefault();

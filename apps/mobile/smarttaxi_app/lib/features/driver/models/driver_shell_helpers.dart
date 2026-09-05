@@ -37,6 +37,15 @@ bool driverRouteTargetChanged(OrderSummary? previous, OrderSummary? next) =>
     driverRoutePhaseForStatus(previous?.status) !=
         driverRoutePhaseForStatus(next?.status);
 
+/// A restored active assignment is already a working server-side session.
+/// Resume GPS without calling setDriverStatus(FREE) or duplicating a watcher.
+bool driverShouldRestoreLocation({
+  required OrderSummary? order,
+  required bool hasSubscription,
+  required bool isStarting,
+}) =>
+    order?.isActive == true && !hasSubscription && !isStarting;
+
 /// A sequence number alone cannot reject a response after cancellation or a
 /// leg change when no replacement request has been issued yet.
 bool driverRouteRequestMatches({

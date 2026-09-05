@@ -32,7 +32,7 @@
   text-shadow: none !important;
   transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
 }
-.phone-frame:is(.taxi-client-shell, .driver-core-phone) .app-button.secondary {
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) .app-button:is(.secondary, .ghost) {
   color: var(--ui-ink) !important;
   background: #fff !important;
   border: 1px solid var(--ui-line) !important;

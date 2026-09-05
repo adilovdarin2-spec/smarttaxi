@@ -32,6 +32,62 @@ DioException _badResponse(String code, {int status = 400}) {
 
 void main() {
   group('driver order and route lifecycle', () {
+    test('cold active-trip restore resumes GPS without duplicating a watcher',
+        () {
+      for (final status in [
+        'DRIVER_FOUND',
+        'DRIVER_GOING_TO_CLIENT',
+        'DRIVER_ASSIGNED',
+        'DRIVER_ARRIVED',
+        'WAITING_CLIENT',
+        'TRIP_STARTED',
+        'IN_PROGRESS'
+      ]) {
+        expect(
+            driverShouldRestoreLocation(
+                order: _driverOrder(status),
+                hasSubscription: false,
+                isStarting: false),
+            isTrue,
+            reason: status);
+        expect(
+            driverShouldRestoreLocation(
+                order: _driverOrder(status),
+                hasSubscription: true,
+                isStarting: false),
+            isFalse,
+            reason: status);
+        expect(
+            driverShouldRestoreLocation(
+                order: _driverOrder(status),
+                hasSubscription: false,
+                isStarting: true),
+            isFalse,
+            reason: status);
+      }
+      for (final status in [
+        'NEW',
+        'SEARCHING_DRIVER',
+        'CANCELLED_BY_DRIVER',
+        'TRIP_COMPLETED',
+        'PAYMENT_PENDING',
+        'PAID',
+        'RATED'
+      ]) {
+        expect(
+            driverShouldRestoreLocation(
+                order: _driverOrder(status),
+                hasSubscription: false,
+                isStarting: false),
+            isFalse,
+            reason: status);
+      }
+      expect(
+          driverShouldRestoreLocation(
+              order: null, hasSubscription: false, isStarting: false),
+          isFalse);
+    });
+
     test('a successful cancellation releases the reopened order', () {
       // This is POST /orders/:id/cancel's real response contract: dispatch
       // continues for the rider, but the cancelling driver has no assignment.

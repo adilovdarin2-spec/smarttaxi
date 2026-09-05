@@ -348,6 +348,7 @@ try {
   mark("passenger_search_recovered_after_open");
   const card = page.locator(`[data-order-id="${newOrder.id}"]`);
   await card.waitFor({ timeout: 20000 });
+  assert.equal(await card.locator('.driver-core-order-top > span').innerText(), 'Эконом', 'Driver tariff uses the same localized label as the passenger');
   assert.equal((await request("/api/driver/orders/active")).activeOrder, null, "Incoming broadcast must not become active trip");
   mark("incoming_without_reload", { elapsedMs: Date.now() - started, orderId: newOrder.id });
   await shot("driver-incoming-live");
@@ -358,6 +359,7 @@ try {
   await card.getByRole("button", { name: "Принять", exact: true }).click();
   await page.locator(".driver-core-view-active").waitFor();
   await page.getByRole("button", { name: "Еду к клиенту", exact: true }).waitFor();
+  assert.equal(await page.locator('.driver-core-active .app-button.ghost').evaluate(element => getComputedStyle(element).backgroundImage), 'none', 'Cancellation remains a secondary action, not another primary gradient CTA');
   assert.equal(await page.locator(".driver-core-header .driver-core-status").innerText(), "Занят", "The authoritative accepted order keeps the header BUSY while profile refresh fails");
   await passenger.getByRole("heading", { name: "Водитель найден", exact: true }).waitFor({ timeout: 20000 });
   await page.unroute(profilePattern);
@@ -369,9 +371,24 @@ try {
   const latestLocationAt = locationReports.findLast(item => item.status === 200).at;
   await page.waitForTimeout(Math.max(0, 15500 - (Date.now() - latestLocationAt)));
   gps = { ...gps, longitude: Number((gps.longitude + 0.0003).toFixed(6)) };
+  // Delay only this browser's real location write, not its response or route.
+  // Routing must not settle on the old server fix while publication is pending.
+  const locationPattern = '**/api/drivers/me/location';
+  await page.route(locationPattern, async route => {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    await route.continue();
+  });
   await context.setGeolocation(gps);
   await waitForEvidence(() => locationReports.some(item => item.status === 200 && Number(item.location?.lng) === gps.longitude), "Longitude-only update reached actual API");
+  await page.unroute(locationPattern);
   await assertLiveRoute("to_pickup", "longitude-only movement");
+  mark('delayed_location_write_reconciled_before_route');
+  // A final fix inside the throttle window must be sent even if GPS stops.
+  gps = { ...gps, longitude: Number((gps.longitude + 0.0001).toFixed(6)) };
+  await context.setGeolocation(gps);
+  await waitForEvidence(() => locationReports.some(item => item.status === 200 && Number(item.location?.lng) === gps.longitude), 'Trailing GPS fix reached actual API without another tick');
+  await assertLiveRoute('to_pickup', 'trailing GPS fix');
+  mark('trailing_location_published_without_another_tick');
   const movingState = await request("/api/driver/orders/active");
   assert.equal(movingState.activeOrder?.id, newOrder.id);
   assert.equal(movingState.driver?.publicStatus, "BUSY", "A location update must not free a driver with an active order");

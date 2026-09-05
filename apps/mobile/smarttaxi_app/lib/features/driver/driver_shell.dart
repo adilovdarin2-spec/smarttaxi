@@ -28,6 +28,7 @@ import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/models.dart';
+import 'models/driver_location_sync.dart';
 import 'models/driver_shell_helpers.dart';
 import 'screens/notifications/driver_notifications_screen.dart';
 import 'screens/rating/driver_rating_screen.dart';
@@ -179,6 +180,7 @@ class _DriverShellState extends State<DriverShell> {
   // TRIP_STARTED arrives; reset whenever the active order is dismissed.
   int? _tripDistanceTraveledM;
   StreamSubscription<Position>? _positionSub;
+  DriverLocationSync<Position, int?>? _locationSync;
   StreamSubscription<bool>? _socketConnectionSub;
   StreamSubscription<Map<String, dynamic>>? _pushMessageSub;
   Timer? _socketFallbackPollTimer;
@@ -286,6 +288,8 @@ class _DriverShellState extends State<DriverShell> {
   // on a timer and immediately if the driver strays off the drawn line —
   // a real navigator reroutes, it doesn't just leave a stale line on screen.
   bool _routeFetchInFlight = false;
+  Timer? _routeRefreshTimer;
+  Position? _pendingRoutePosition;
   DateTime? _lastRouteFetchAt;
   String? _lastRoutePhase;
   int _driverRouteRequestId = 0;
@@ -309,12 +313,21 @@ class _DriverShellState extends State<DriverShell> {
   @override
   void dispose() {
     _voice.dispose();
+    _disposeLocationSync();
     _positionSub?.cancel();
     _socketConnectionSub?.cancel();
     _socketFallbackPollTimer?.cancel();
     _pushMessageSub?.cancel();
     widget.sockets.clearListeners();
     super.dispose();
+  }
+
+  void _disposeLocationSync() {
+    _locationSync?.dispose();
+    _locationSync = null;
+    _routeRefreshTimer?.cancel();
+    _routeRefreshTimer = null;
+    _pendingRoutePosition = null;
   }
 
   // Region approval/blocking is an admin action with no matching socket
@@ -352,6 +365,8 @@ class _DriverShellState extends State<DriverShell> {
     if (mounted) setState(() => _voiceEnabled = voiceEnabled);
     await _loadRegions();
     await _loadOrders();
+    if (!mounted) return;
+    unawaited(_restoreLocationForActiveOrder());
     await _loadDriverStats();
     await _loadRoadAlerts();
     unawaited(_loadTripHistory());
@@ -541,6 +556,9 @@ class _DriverShellState extends State<DriverShell> {
     final targetChanged = driverRouteTargetChanged(previous, next);
     _activeOrder = next;
     if (targetChanged) {
+      _routeRefreshTimer?.cancel();
+      _routeRefreshTimer = null;
+      _pendingRoutePosition = null;
       _driverRouteRequestId++;
       _driverRoute = null;
       _lastRoutePhase = null;
@@ -749,6 +767,9 @@ class _DriverShellState extends State<DriverShell> {
       if (nextOnline) {
         final locationStarted = await _startLocationFlow();
         if (!locationStarted) {
+          _disposeLocationSync();
+          await _positionSub?.cancel();
+          _positionSub = null;
           await widget.api.setDriverStatus('OFFLINE');
           if (!mounted) return;
           setState(() {
@@ -767,6 +788,7 @@ class _DriverShellState extends State<DriverShell> {
         await _loadDriverStats();
         await _loadRoadAlerts();
       } else {
+        _disposeLocationSync();
         await _positionSub?.cancel();
         _positionSub = null;
         _locationMessage = null;
@@ -829,6 +851,33 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
+  Future<void> _restoreLocationForActiveOrder() async {
+    if (!mounted ||
+        !driverShouldRestoreLocation(
+          order: _activeOrder,
+          hasSubscription: _positionSub != null,
+          isStarting: _locationLoading,
+        )) {
+      return;
+    }
+    setState(() {
+      _online = true;
+      _locationLoading = true;
+    });
+    try {
+      // An active order was restored, not newly accepted. Do not set FREE
+      // here: the backend must retain BUSY and its existing assignment.
+      await _startLocationFlow();
+    } catch (error) {
+      if (mounted) {
+        setState(() => _locationMessage =
+            readableError(AppLocalizations.of(context), error));
+      }
+    } finally {
+      if (mounted) setState(() => _locationLoading = false);
+    }
+  }
+
   Future<bool> _startLocationFlow() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!mounted) return false;
@@ -849,10 +898,37 @@ class _DriverShellState extends State<DriverShell> {
       return false;
     }
     await _positionSub?.cancel();
+    _disposeLocationSync();
+    late final DriverLocationSync<Position, int?> sync;
+    sync = DriverLocationSync<Position, int?>(
+      isCurrent: () => mounted && identical(_locationSync, sync),
+      publish: (position) => widget.api.updateDriverLocation(
+        location: Coordinate(lat: position.latitude, lng: position.longitude),
+        heading: position.heading.isFinite ? position.heading : null,
+        speed: position.speed.isFinite ? position.speed : null,
+        accuracy: position.accuracy.isFinite ? position.accuracy : null,
+      ),
+      onPublished: (position, tripDistanceM) {
+        if (tripDistanceM != null) {
+          setState(() => _tripDistanceTraveledM = tripDistanceM);
+        }
+        // The route endpoint reads persisted GPS. Never race it against the
+        // location write or let an older overlapping write rewind its origin.
+        unawaited(_maybeRefreshDriverRoute(position));
+      },
+      onError: (error) {
+        // Preserve specific backend rejection messages; a rejected fix must
+        // not masquerade as a published position or unlock a route refresh.
+        setState(() => _locationMessage =
+            readableError(AppLocalizations.of(context), error));
+      },
+    );
+    _locationSync = sync;
     _positionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high, distanceFilter: 20),
-    ).listen((position) async {
+    ).listen((position) {
+      if (!mounted || !identical(_locationSync, sync)) return;
       if (mounted) {
         setState(() => _applyPositionFix(position));
       }
@@ -862,30 +938,7 @@ class _DriverShellState extends State<DriverShell> {
       _checkSpeedingVoiceWarning(position);
       _checkManeuverVoiceAnnouncement();
       unawaited(_maybeFetchOsmNavigation(position));
-      unawaited(_maybeRefreshDriverRoute(position));
-      try {
-        final tripDistanceM = await widget.api.updateDriverLocation(
-          location: Coordinate(lat: position.latitude, lng: position.longitude),
-          heading: position.heading.isFinite ? position.heading : null,
-          speed: position.speed.isFinite ? position.speed : null,
-          accuracy: position.accuracy.isFinite ? position.accuracy : null,
-        );
-        if (mounted && tripDistanceM != null) {
-          setState(() => _tripDistanceTraveledM = tripDistanceM);
-        }
-      } catch (error) {
-        // readableError, not a hardcoded generic string — the backend
-        // rejects this for real, specific, non-retryable reasons too
-        // (DRIVER_LOCATION_OUTSIDE_REGION, DRIVER_REGION_INACTIVE,
-        // DRIVER_OFFLINE on a status race), and "Попробуйте снова" is
-        // actively misleading for those: retrying an out-of-region ping
-        // will never succeed until the driver is actually back in the
-        // region.
-        if (mounted) {
-          setState(() => _locationMessage =
-              readableError(AppLocalizations.of(context), error));
-        }
-      }
+      unawaited(sync.add(position));
     }, onError: (_) {
       if (mounted) {
         setState(() => _locationMessage =
@@ -899,15 +952,16 @@ class _DriverShellState extends State<DriverShell> {
           timeLimit: Duration(seconds: 10),
         ),
       );
+      if (!mounted || !identical(_locationSync, sync)) return false;
       if (mounted) {
         setState(() => _applyPositionFix(current));
       }
-      await widget.api.updateDriverLocation(
-        location: Coordinate(lat: current.latitude, lng: current.longitude),
-        heading: current.heading.isFinite ? current.heading : null,
-        speed: current.speed.isFinite ? current.speed : null,
-        accuracy: current.accuracy.isFinite ? current.accuracy : null,
-      );
+      if (!await sync.add(current)) {
+        if (mounted && identical(_locationSync, sync)) {
+          setState(() => _error = _locationMessage);
+        }
+        return false;
+      }
       if (mounted) {
         setState(() => _locationMessage =
             AppLocalizations.of(context).driverLocationActive);
@@ -1422,16 +1476,24 @@ class _DriverShellState extends State<DriverShell> {
       _routePhaseForStatus(status) != null;
 
   Future<void> _maybeRefreshDriverRoute(Position position) async {
+    if (!mounted) return;
     final order = _activeOrder;
-    if (order == null || !_hasActiveDrivingLeg(order.status)) return;
+    if (order == null || !_hasActiveDrivingLeg(order.status)) {
+      _pendingRoutePosition = null;
+      _routeRefreshTimer?.cancel();
+      _routeRefreshTimer = null;
+      return;
+    }
+    _pendingRoutePosition = position;
     if (_routeFetchInFlight) return;
+    _routeRefreshTimer?.cancel();
+    _routeRefreshTimer = null;
 
     final phase = _routePhaseForStatus(order.status);
     final now = DateTime.now();
     final elapsed =
         _lastRouteFetchAt == null ? null : now.difference(_lastRouteFetchAt!);
     final phaseChanged = phase != _lastRoutePhase;
-    final dueForRefresh = elapsed == null || elapsed.inSeconds >= 12;
     final route = _driverRoute;
     final offRoute = route == null ||
         route.geometry.isEmpty ||
@@ -1441,16 +1503,32 @@ class _DriverShellState extends State<DriverShell> {
             ) >
             60;
 
-    if (!phaseChanged && !dueForRefresh && !offRoute) return;
-    // Hard floor so erratic GPS near the deviation threshold can't spam the
-    // routing provider — never more than one refetch every few seconds.
-    if (elapsed != null && elapsed.inSeconds < 4) return;
+    final delay = driverRouteRefreshDelay(
+      elapsed: elapsed,
+      phaseChanged: phaseChanged,
+      offRoute: offRoute,
+    );
+    if (delay > Duration.zero) {
+      _routeRefreshTimer = Timer(delay, () {
+        _routeRefreshTimer = null;
+        final pending = _pendingRoutePosition;
+        if (mounted && pending != null) {
+          unawaited(_maybeRefreshDriverRoute(pending));
+        }
+      });
+      return;
+    }
 
+    _pendingRoutePosition = null;
     _routeFetchInFlight = true;
     try {
       await _loadDriverRoute(order.id);
     } finally {
       _routeFetchInFlight = false;
+      final pending = _pendingRoutePosition;
+      if (mounted && pending != null) {
+        unawaited(_maybeRefreshDriverRoute(pending));
+      }
     }
   }
 
@@ -2426,6 +2504,7 @@ class _DriverShellState extends State<DriverShell> {
               danger: true,
               onTap: () {
                 Navigator.of(context).pop();
+                _disposeLocationSync();
                 widget.onLogout();
               },
             ),
@@ -2622,7 +2701,10 @@ class _DriverShellState extends State<DriverShell> {
               message: l10n.driverLogoutConfirmText,
               confirmLabel: l10n.logOut,
             );
-            if (confirmed) unawaited(widget.onLogout());
+            if (confirmed) {
+              _disposeLocationSync();
+              unawaited(widget.onLogout());
+            }
           },
         ),
         body: SafeArea(

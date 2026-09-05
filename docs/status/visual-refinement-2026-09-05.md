@@ -57,6 +57,11 @@ The native driver annotation renderer remains unchanged pending physical QA.
 
 ### Intermittent observation retained
 
+Follow-up: the write-before-route race was subsequently reproduced with a delayed
+real location PATCH and fixed. See `gps-publication-ordering-2026-09-05.md` for
+the causal regression and passing post-fix checks. The account below describes
+the observation at the time of the design pass, before that correction.
+
 One final-repeat lifecycle run exceeded the unchanged 25-second wait for the
 driver's route after a longitude-only GPS update. The location API and passenger
 route had the new longitude; the last driver route still had the old longitude.

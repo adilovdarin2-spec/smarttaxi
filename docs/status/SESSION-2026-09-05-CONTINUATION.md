@@ -27,6 +27,10 @@ clean, volume removal, production test account or external SMS was used.
   readable account/menu surfaces and matching Flutter presentation primitives.
   See `visual-refinement-2026-09-05.md` for final screenshots, checks and the
   retained intermittent longitude-only route refresh observation.
+- GPS publication follow-up: reproduced the delayed-write route race, gated web
+  and Flutter route refresh on location acknowledgement, retained trailing GPS
+  updates, and restored Android GPS after a cold active-trip restore. See
+  `gps-publication-ordering-2026-09-05.md` for scope and causal browser evidence.
 
 Web code/evidence is described in `web-picker-and-trip-recovery-2026-09-05.md`
 and `web-driver-lifecycle-2026-09-05.md`. API-backed browser scenarios are not
@@ -35,11 +39,12 @@ substitutes for physical Android acceptance or a real drive.
 ## Local verification
 
 - API: dependency-policy pretest and all 36 checks pass, including payment
-  authorization. The final locked image also passed without network access.
-- Web unit tests: 17/17 (16 lifecycle checks and the checkered-finish marker
-  regression); tests are included in Node 22 CI.
+  authorization. The final root-context image also passed without network
+  access, with dummy test env and read-only cross-client source mounts.
+- Web unit tests: 26/26 (lifecycle/marker checks plus nine location-publication
+  regressions); tests are included in Node 22 CI.
 - Web production build and local browser address/lifecycle scenarios pass.
-- Flutter analyze: no issues. Full tests after visual refinement: 53 passed.
+- Flutter analyze: no issues. Full tests after GPS publication follow-up: 62 passed.
 - Android debug APK rebuilt with local API/socket `http://127.0.0.1:4001`
   and web `http://127.0.0.1:5175`; no production endpoint defines.
 - Compose config is valid; API/PostgreSQL/Redis/web health checks pass.
@@ -50,46 +55,25 @@ substitutes for physical Android acceptance or a real drive.
 
 ## Current local QA runtime
 
-Repeated npm registry timeouts/reset errors prevented the final clean
-root-context API/web image builds. Earlier locked Node 22 builds passed;
-the final service-local API Docker build also passed. These are distinct
-from the last root-context build attempts, which are not marked successful.
+The earlier npm registry network blocker cleared during the GPS follow-up.
+Both normal root-context images passed `rtk docker compose build api web`,
+including fresh locked npm installation and the web production build.
+API/web were then recreated from `smarttaxi-api` / `smarttaxi-web` using the
+regular configuration. All four services are healthy; API readiness confirms
+development mode, database, Redis and OSRM. Web no longer has a bind mount.
 
-The four local services are running and healthy. The final browser suites
-passed against the following explicitly local fallback, not a Vite server:
-
-- API: `smarttaxi-qa-api:cache-hardened-20260905`, using a fresh locked
-  `npm ci` seeded from the previously verified image's npm cache. Runtime
-  source, dependency checks, full API tests and readiness were verified.
-- Web: existing nginx container with a read-only frozen production build,
-  compiled with the exact Compose `VITE_*` arguments. This is not a fabricated
-  UI, proxy to production, or replacement of successful API responses.
-  The current design-pass snapshot is `web-static-design-final` under the
-  ignored captures directory; older snapshots remain on disk.
-- Only API/web containers were recreated. PostgreSQL/Redis and all database
-  volumes remained in place. Temporary Vite processes were stopped.
-
-The ignored local override and frozen assets live under
-`tmp-2026-09-05-captures/`. To retain this current local QA arrangement:
-
-```text
-rtk docker compose -f docker-compose.yml -f tmp-2026-09-05-captures/compose-qa-verified.yml up -d --no-deps --no-build api web
-```
-
-Do not deploy that machine-specific override. Once registry connectivity is
-stable and no QA trip is active, rerun the normal root-context build, check
-readiness and both smoke suites, and return to the regular configuration:
+The current local runtime uses standard Compose:
 
 ```text
 rtk docker compose up -d --no-deps --build api web
 ```
 
-This removes the temporary mount from the container configuration; the
-ignored frozen assets/diagnostics and the rehearsal backup remain recoverable
-on disk. The standard Dockerfiles and release configuration are unchanged by
-the fallback. Final paired browser evidence is recorded in
-`web-driver-lifecycle-2026-09-05.md`; the final passenger preview smoke also
-passed under nginx on port 5175.
+PostgreSQL/Redis containers and database volumes were not recreated. The former
+fallback API image, machine-specific override, `web-static-gps-final` snapshot,
+older frozen builds/diagnostics and rehearsal backup remain recoverable under
+their existing ignored paths. Do not deploy or reapply that old override as the
+current runtime. See `gps-publication-ordering-2026-09-05.md` for final browser
+evidence and the resolved write-before-route regression.
 
 ## Device blocker — action required
 
@@ -129,9 +113,6 @@ production auth to work around this blocker.
   APK and old signed artifact are not evidence of release acceptance.
 - Railway subdirectory build contexts still require their documented
   configuration migration to consume the root lock. Local Compose is covered.
-- Repeat the final clean root-context Docker builds after npm registry
-  connectivity recovers; the documented local QA fallback is not a release
-  artifact or a clean-build acceptance substitute.
 - Git pushes succeeded. Remote CI result was not independently read because
   GitHub CLI is not authenticated; locally executed checks are stated above.
 
