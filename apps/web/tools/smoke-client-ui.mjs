@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
@@ -9,6 +9,20 @@ import os from "node:os";
 // reverse-geocoder, so its recovery path is reproducible without an outage.
 const base = process.env.QA_WEB_URL || "http://127.0.0.1:5175";
 assert(["127.0.0.1", "localhost", "[::1]"].includes(new URL(base).hostname), "UI smoke is local-only");
+const exerciseOrderRecovery = process.env.QA_ORDER_RECOVERY === "true";
+const apiBase = process.env.QA_API_URL || "http://127.0.0.1:4001";
+assert(["127.0.0.1", "localhost", "[::1]"].includes(new URL(apiBase).hostname), "Order recovery QA is local-only");
+let qaClient;
+let qaOrder;
+async function localRequest(endpoint, { body, token = qaClient?.token } = {}) {
+  const response = await fetch(`${apiBase}${endpoint}`, {
+    method: body === undefined ? "GET" : "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  assert(response.ok, `Local QA request failed: ${endpoint} (${response.status})`);
+  return response.json();
+}
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.QA_PLAYWRIGHT_PACKAGE || "playwright");
 const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), "smarttaxi-web-ui-qa");
@@ -45,7 +59,25 @@ async function assertPickerAnchor(page) {
 }
 
 try {
+  if (exerciseOrderRecovery) {
+    const health = await localRequest("/api/health/ready");
+    assert.equal(health.status, "ok");
+    assert.equal(health.env, "development", "Never register or order outside local development");
+    const phone = `+7708${String(Date.now()).slice(-7)}`;
+    const sent = await localRequest("/api/auth/sms/send", { body: { phone, purpose: "REGISTER" } });
+    assert(sent.devCode, "Requires the local development SMS flow");
+    const verified = await localRequest("/api/auth/sms/verify", { body: { phone, purpose: "REGISTER", code: sent.devCode } });
+    const account = await localRequest("/api/auth/register/password", { body: {
+      phone, verificationToken: verified.verificationToken,
+      name: "Local order recovery QA", password: "123456"
+    } });
+    qaClient = { token: account.token, phone };
+  }
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  if (qaClient) {
+    // Actual token issued by the verified local registration; never forged.
+    await context.addInitScript(token => localStorage.setItem("smarttaxi_token", token), qaClient.token);
+  }
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -166,6 +198,51 @@ try {
   await page.keyboard.press('Escape');
   assert.equal(await paymentDialog.count(), 0, 'Escape closes the payment sheet');
   assert(await page.getByRole('button', { name: /Способ оплаты/ }).evaluate(button => button === document.activeElement), 'Closing payment restores focus to the opening control');
+  if (exerciseOrderRecovery) {
+    let creationRequests = 0;
+    let recoveredId;
+    page.on("response", async response => {
+      if (new URL(response.url()).pathname === "/api/orders/me/active" && response.ok()) {
+        const data = await response.json().catch(() => ({}));
+        if (data.order?.id) recoveredId = data.order.id;
+      }
+    });
+    await page.route("**/api/orders", async route => {
+      if (route.request().method() !== "POST") return route.continue();
+      try {
+        const target = new URL(route.request().url());
+        assert(["127.0.0.1", "localhost", "[::1]"].includes(target.hostname));
+        assert.equal(target.port, new URL(apiBase).port);
+        assert.equal(target.protocol, new URL(apiBase).protocol);
+        creationRequests++;
+        // Let the real development backend commit, then lose only this browser's
+        // response. Do not fabricate the created order or the recovery response.
+        const response = await route.fetch();
+        assert(response.ok(), "Real local order creation must succeed first");
+        qaOrder = (await response.json()).order;
+        assert(qaOrder?.id);
+        await route.abort("connectionreset");
+      } catch (error) {
+        errors.push(`Recovery interception failed: ${error.message}`);
+        await route.abort("failed").catch(() => {});
+      }
+    });
+    await order.click();
+    await page.locator(".trip-search-card[data-order-id]").waitFor({ timeout: 20000 });
+    assert(qaOrder?.id);
+    await page.locator(`.trip-search-card[data-order-id="${qaOrder.id}"]`).waitFor();
+    assert.equal(creationRequests, 1, "A lost response must not replay order creation");
+    assert.equal(recoveredId, qaOrder.id, "UI must restore the same server-confirmed order");
+    await page.locator('.map-loading-chip').waitFor({ state: 'hidden', timeout: 30000 });
+    await page.screenshot({ path: path.join(output, "order-response-recovered.png"), animations: "disabled" });
+    await writeFile(path.join(output, "order-recovery-result.json"), JSON.stringify({
+      web: base, api: apiBase, orderId: qaOrder.id, creationRequests,
+      recoveredSameOrder: recoveredId === qaOrder.id,
+      responseLossInjectedAfterRealCommit: true,
+      frontendMode: await page.locator('script[src="/@vite/client"]').count() ? "vite-development" : "built-web"
+    }, null, 2));
+    await page.unroute("**/api/orders");
+  }
   assert.deepEqual(errors, [], "No uncaught browser errors");
   await context.close();
 
@@ -205,5 +282,16 @@ try {
   }
   throw error;
 } finally {
-  await browser.close();
+  try {
+    if (qaOrder?.id && qaClient) {
+      await localRequest(`/api/orders/${qaOrder.id}/cancel-public`, {
+        body: { riderPhone: qaClient.phone }
+      });
+      const active = await localRequest("/api/orders/me/active");
+      assert.equal(active.order, null, "This run's isolated client must have no active order after cleanup");
+      console.log(`Isolated local recovery order cancelled: ${qaOrder.id}`);
+    }
+  } finally {
+    await browser.close();
+  }
 }

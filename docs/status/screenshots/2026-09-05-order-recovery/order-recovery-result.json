@@ -1,0 +1,9 @@
+{
+  "web": "http://127.0.0.1:5175",
+  "api": "http://127.0.0.1:4001",
+  "orderId": "cf338693-bc75-4979-a6cf-e18555d8adbb",
+  "creationRequests": 1,
+  "recoveredSameOrder": true,
+  "responseLossInjectedAfterRealCommit": true,
+  "frontendMode": "built-web"
+}

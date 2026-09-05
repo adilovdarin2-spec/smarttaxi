@@ -1,5 +1,10 @@
 # SmartTaxi final readiness report — 2026-08-31
 
+Historical report. For current acceptance status and unresolved technical/device
+checks, use [the September remaining-work list](RELEASE-REMAINING-2026-09-05.md)
+and [the continuation](SESSION-2026-09-05-CONTINUATION.md). The original outcome
+below describes the evidence available at that time, not current release approval.
+
 ## Outcome
 
 The repository is locally runnable and verified across API, web, Flutter,

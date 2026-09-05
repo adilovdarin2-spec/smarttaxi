@@ -69,6 +69,7 @@ import { createSocket } from "../../lib/socket.js";
 import { sanitizeAddressText } from "../../lib/text.js";
 import { clientDriverMapPoint, mergeClientDriverLocation, recoverClientActiveOrder } from "./clientTripLifecycle.js";
 import { useLiveDriverRoute } from "./useLiveDriverRoute.js";
+import { sessionGuard } from "../../lib/sessionGuard.js";
 
 const cardPaymentsEnabled = import.meta.env.VITE_CARD_PAYMENTS_ENABLED === "true";
 
@@ -942,6 +943,11 @@ export default function ClientApp() {
   const [order, setOrder] = useState(null);
   const orderRef = useRef(order);
   orderRef.current = order;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [incomingMessage, setIncomingMessage] = useState(null);
@@ -1814,6 +1820,7 @@ export default function ClientApp() {
       setMessage(errorMessages.UNAUTHORIZED);
       return;
     }
+    const isCurrent = sessionGuard(getToken(), getToken, () => mountedRef.current);
     if (!pickup || !destination || !tariff || !route || !estimate) return;
     if (isSameTripPoint(pickup, destination)) {
       setRouteError(sameTripPointMessage);
@@ -1849,6 +1856,7 @@ export default function ClientApp() {
       }
       if (!tariff.isLocal) orderPayload.tariffId = tariff.id;
       const active = await getClientActiveOrder();
+      if (!isCurrent()) return;
       if (active.order) {
         setOrder(normalizeOrder(active.order));
         setSection("trips");
@@ -1856,24 +1864,27 @@ export default function ClientApp() {
         return;
       }
       const data = await createOrder(orderPayload);
+      if (!isCurrent()) return;
       setOrder(normalizeOrder(data.order));
       setSection("trips");
     } catch (error) {
+      if (!isCurrent()) return;
       if (error?.code === "CLIENT_HAS_ACTIVE_ORDER" && error?.details?.orderId) {
         try {
           const active = await getOrderStatusHistory(error.details.orderId);
+          if (!isCurrent()) return;
           setOrder(normalizeOrder(active.order));
           setSection("trips");
           setMessage("Открыли ваш активный заказ");
           return;
         } catch {
-          setMessage(errorMessages.CLIENT_HAS_ACTIVE_ORDER);
+          if (isCurrent()) setMessage(errorMessages.CLIENT_HAS_ACTIVE_ORDER);
           return;
         }
       }
       setMessage(formatError(error));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }
 
@@ -1902,6 +1913,7 @@ export default function ClientApp() {
 
   function logout() {
     clearToken();
+    setLoading(false);
     setAuthenticated(false);
     setRider({ name: "Пассажир", phone: "" });
     setAuth({ phone: "", password: "" });

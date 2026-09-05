@@ -37,6 +37,12 @@ clean, volume removal, production test account or external SMS was used.
 - Web session isolation: a late old-token 401 no longer evicts a newer login;
   driver async callbacks cannot restore old-session state after logout. Real
   current-session revocation remains enforced. See `web-session-isolation-2026-09-05.md`.
+- Native transport and booking recovery: unsafe automatic write retries were
+  removed, old-session expiration is ownership-checked, and Android/web restore
+  server-confirmed active orders after an uncertain creation response without
+  resending the POST. The local compiled browser verified actual response loss
+  after creation, then passed the full paired lifecycle again. See
+  `transport-and-order-recovery-2026-09-05.md`.
 
 Web code/evidence is described in `web-picker-and-trip-recovery-2026-09-05.md`
 and `web-driver-lifecycle-2026-09-05.md`. API-backed browser scenarios are not
@@ -47,10 +53,10 @@ substitutes for physical Android acceptance or a real drive.
 - API: dependency-policy pretest and all 36 checks pass, including payment
   authorization. The final root-context image also passed without network
   access, with dummy test env and read-only cross-client source mounts.
-- Web unit tests: 35/35 (lifecycle/marker/publication/feedback/session checks);
+- Web unit tests: 46/46 (lifecycle/marker/publication/feedback/session/recovery checks);
   tests are included in Node 22 CI.
 - Web production build and local browser address/lifecycle scenarios pass.
-- Flutter analyze: no issues. Full tests after GPS publication follow-up: 62 passed.
+- Flutter analyze: no issues. Full tests after transport/order recovery: 89 passed.
 - Android debug APK rebuilt with local API/socket `http://127.0.0.1:4001`
   and web `http://127.0.0.1:5175`; no production endpoint defines.
 - Compose config is valid; API/PostgreSQL/Redis/web health checks pass.
@@ -124,3 +130,6 @@ production auth to work around this blocker.
 
 No claim is made that the entire product is commercially ready or that every
 screen has passed physical-device QA.
+
+The consolidated current acceptance list is `RELEASE-REMAINING-2026-09-05.md`.
+Historical August readiness reports do not replace this September evidence.

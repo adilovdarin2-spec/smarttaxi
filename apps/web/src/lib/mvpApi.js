@@ -1,4 +1,5 @@
 import { API_URL, api, clearToken, getToken, login as apiLogin, setToken } from "./api.js";
+import { createOrderWithRecovery } from "./orderCreation.js";
 
 export { clearToken, getToken };
 
@@ -155,10 +156,7 @@ export function updateDriverLocation(payload, { signal } = {}) {
 }
 
 export function createOrder(payload) {
-  return api("/api/orders", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
+  return createOrderWithRecovery(payload, { request: api, readToken: getToken });
 }
 
 export function getClientActiveOrder() {

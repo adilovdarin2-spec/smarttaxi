@@ -23,6 +23,7 @@ export async function api(path, options = {}) {
   if (!response.ok) {
     const message = data.message || data.error || "API request failed";
     const error = new Error(message);
+    error.status = response.status;
     error.code = data.error;
     error.details = data.details;
     if (response.status === 401 && data.error === "SESSION_SUPERSEDED" && requestIsCurrent()) {

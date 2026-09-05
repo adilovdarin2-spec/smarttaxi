@@ -7,72 +7,30 @@ import '../../features/passenger/models/client_wallet_models.dart';
 import '../../features/shared/models.dart';
 import '../auth/auth_store.dart';
 import '../config/app_config.dart';
+import 'api_transport.dart';
 
 class ApiClient {
-  ApiClient(this._authStore)
-      : _dio = Dio(BaseOptions(
-          baseUrl: AppConfig.apiBaseUrl,
-          // 12s was too tight for the first request after an idle stretch.
-          // The host suspends the service when nothing has hit it for a
-          // while and waking it takes longer than that, so a returning user
-          // was met with "сервер недоступен" on the very first screen even
-          // though the backend answered fine a second later. Reported from
-          // the field as "when you haven't opened the app for a while".
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-          headers: {'Content-Type': 'application/json'},
-        )) {
-    // Retry a cold backend instead of declaring it unreachable. Only
-    // connection-level failures qualify — a timeout, or a refused/dropped
-    // socket, which is exactly what a suspended service produces. Anything
-    // that actually came back (4xx, 5xx) is a real answer and is left
-    // alone; that also keeps non-idempotent POSTs safe, since a request the
-    // server did receive never reaches this branch.
-    _dio.interceptors.add(InterceptorsWrapper(onError: (error, handler) async {
-      const retriable = {
-        DioExceptionType.connectionTimeout,
-        DioExceptionType.receiveTimeout,
-        DioExceptionType.connectionError,
-      };
-      final attempt =
-          (error.requestOptions.extra['coldStartAttempt'] as int?) ?? 0;
-      if (retriable.contains(error.type) && attempt < 2) {
-        // 1s then 3s: enough for a waking service to finish booting, short
-        // enough that a genuinely offline phone still fails quickly.
-        await Future<void>.delayed(Duration(seconds: attempt == 0 ? 1 : 3));
-        final options = error.requestOptions;
-        options.extra = {...options.extra, 'coldStartAttempt': attempt + 1};
-        try {
-          return handler.resolve(await _dio.fetch(options));
-        } on DioException catch (retryError) {
-          return handler.next(retryError);
-        }
-      }
-      handler.next(error);
-    }));
-    _dio.interceptors.add(InterceptorsWrapper(onError: (error, handler) {
-      // The backend invalidates every token issued before a rotation the
-      // instant a second device logs in (session_version mismatch — see
-      // common/auth.js's requireAuth). Dio has no other global place to
-      // catch that: without this, the kicked-out device would just show a
-      // confusing generic error on whatever screen happened to be open
-      // instead of being dropped back to the login screen.
-      final code = error.response?.data is Map
-          ? (error.response?.data as Map)['error']
-          : null;
-      if (error.response?.statusCode == 401 && code == 'SESSION_SUPERSEDED') {
-        onSessionExpired?.call();
-      }
-      handler.next(error);
-    }));
+  ApiClient(this._authStore,
+      {Dio? dio, Future<void> Function(Duration)? retryDelay})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              baseUrl: AppConfig.apiBaseUrl,
+              // Keep enough time for the first request to a cold backend.
+              connectTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 30),
+              headers: {'Content-Type': 'application/json'},
+            )) {
+    installApiTransportGuards(_dio,
+        readToken: _authStore.readToken,
+        onSessionExpired: () => onSessionExpired?.call(),
+        retryDelay: retryDelay);
   }
 
   final AuthStore _authStore;
   final Dio _dio;
 
-  // Set by the app root once at startup; fired at most once per forced
-  // logout (the root callback clears the token itself so subsequent 401s
-  // after that point simply route to the login screen already showing).
+  // Set by the app root at startup. The transport validates request ownership
+  // and fires at most once per superseded token, even for concurrent 401s.
   void Function()? onSessionExpired;
 
   Future<void> _attachToken() async {
@@ -330,11 +288,72 @@ class ApiClient {
       if (promoCode != null && promoCode.isNotEmpty) 'promoCode': promoCode,
       if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
     };
-    final response =
-        await _dio.post<Map<String, dynamic>>('/api/orders', data: payload);
-    final data = response.data ?? {};
-    return OrderSummary.fromJson(
-        Map<String, dynamic>.from(data['order'] ?? data));
+    try {
+      final response =
+          await _dio.post<Map<String, dynamic>>('/api/orders', data: payload);
+      final data = response.data ?? {};
+      return OrderSummary.fromJson(
+          Map<String, dynamic>.from(data['order'] ?? data));
+    } on DioException catch (error) {
+      final recovered = await _recoverCreatedOrder(error);
+      if (recovered != null) return recovered;
+      rethrow;
+    }
+  }
+
+  Future<OrderSummary?> _recoverCreatedOrder(DioException error) async {
+    final status = error.response?.statusCode;
+    final code = error.response?.data is Map
+        ? (error.response?.data as Map)['error']
+        : null;
+    final uncertain = error.response == null &&
+        const {
+          DioExceptionType.connectionTimeout,
+          DioExceptionType.sendTimeout,
+          DioExceptionType.receiveTimeout,
+          DioExceptionType.connectionError,
+        }.contains(error.type);
+    final serverFailure = status != null && status >= 500 && status < 600;
+    final alreadyActive = status == 409 && code == 'CLIENT_HAS_ACTIVE_ORDER';
+    if (!uncertain && !serverFailure && !alreadyActive) return null;
+
+    final authorization = error.requestOptions.headers['Authorization'];
+    if (authorization is! String || !authorization.startsWith('Bearer ')) {
+      return null;
+    }
+    Future<bool> stillOwnsSession() async {
+      if (_dio.options.headers['Authorization'] != authorization) return false;
+      final token = await _authStore.readToken();
+      return token != null &&
+          token.isNotEmpty &&
+          authorization == 'Bearer $token' &&
+          _dio.options.headers['Authorization'] == authorization;
+    }
+
+    try {
+      if (!await stillOwnsSession()) return null;
+      // An uncertain write may already have committed. Read the server's
+      // active order (including settlement), never repeat the creation. Pin
+      // this read to the original account, then recheck ownership on return.
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/orders/me/active',
+        options: Options(headers: {'Authorization': authorization}),
+      );
+      if (!await stillOwnsSession()) return null;
+      final order = response.data?['order'];
+      if (order is! Map ||
+          order['id'] is! String ||
+          (order['id'] as String).trim().isEmpty ||
+          order['status'] is! String ||
+          (order['status'] as String).trim().isEmpty) {
+        return null;
+      }
+      return OrderSummary.fromJson(Map<String, dynamic>.from(order));
+    } catch (_) {
+      // An unavailable/invalid read is not confirmation. Keep the original
+      // creation failure visible; don't fabricate an order or payment state.
+      return null;
+    }
   }
 
   Map<String, String> _tariffPayload(String? tariffIdOrName) {
