@@ -5,6 +5,21 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../auth/auth_store.dart';
 import '../config/app_config.dart';
 
+Map<String, dynamic> socketOptionsForSession(String? token) => io
+        .OptionBuilder()
+    // dispose() does not evict socket_io_client's origin/namespace cache.
+    // Each explicit session connection must own a fresh authenticated socket;
+    // otherwise passenger -> driver login can keep the passenger token and
+    // silently miss dispatch events. Automatic reconnect stays on this socket.
+    .enableForceNew()
+    .setTransports(['websocket', 'polling'])
+    .disableAutoConnect()
+    .setAuth({'token': token})
+    .enableReconnection()
+    .setReconnectionDelay(1000)
+    .setReconnectionDelayMax(8000)
+    .build();
+
 class SocketService {
   SocketService(this._authStore);
 
@@ -34,14 +49,7 @@ class SocketService {
     _socket?.dispose();
     final socket = io.io(
       AppConfig.socketUrl,
-      io.OptionBuilder()
-          .setTransports(['websocket', 'polling'])
-          .disableAutoConnect()
-          .setAuth({'token': token})
-          .enableReconnection()
-          .setReconnectionDelay(1000)
-          .setReconnectionDelayMax(8000)
-          .build(),
+      socketOptionsForSession(token),
     );
     _socket = socket;
     socket.onConnect((_) {

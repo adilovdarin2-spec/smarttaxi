@@ -16,7 +16,11 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 - Browser delayed/trailing GPS recovery, permission loss, failed actions,
   active/unpaid-trip restoration and stale-session isolation.
 - Native GPS queue/route ordering, presentation, transport and creation
-  reconciliation: 89 tests, clean analysis and an explicit localhost debug APK.
+  reconciliation plus passenger route framing and socket session isolation:
+  95 tests, clean analysis and a verified installed localhost debug APK.
+- Physical Android passenger pre-order screens and the driver lifecycle through
+  manual local CASH receipt were exercised. The revised route/flag and home
+  footer are visually confirmed; this does not close all native acceptance.
 - Android/web read-after-uncertain-creation recovery, with a compiled-browser
   proof of actual backend commit, lost response and exactly one creation POST.
 - Strict route/maneuver validation, correct missing intercity rate inheritance,
@@ -27,8 +31,8 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 | Item | What closes it | Current constraint |
 |---|---|---|
-| Current Android APK on the physical phone | Restore normal device confirmation flow, then approve/install the localhost build and verify local login | USB switches are enabled, but Xiaomi's confirmation activity logs an exception and exits before the failed install; the owner reports no prompt. See the phone-install diagnostic |
-| Passenger/driver visual parity | Capture the full current Android state sequence and compare with web/reference boards | Native snapshots from older builds are not acceptance of the current APK |
+| Passenger/driver visual parity | Complete current native state coverage and compare with web/reference boards | Sep 6 route/picker/footer fixes were inspected on the installed candidate. Home pickup occlusion, stale picker route pill, driver Line-map marker sizing and native passenger trip states remain; see physical QA |
+| Native automatic dispatch after account switch | Observe the new order without manual refresh on the revised APK | A library-level stale-session reproduction fails before the fix and passes after it; device verification is next |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
 | Native driver route layer | First inspect the active route on-device; implement the documented annotation-to-style-layer plan only if needed | Renderer must not be changed blindly |
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
@@ -62,6 +66,7 @@ these warnings did not prevent the current builds.
 ## Evidence index
 
 - [Current continuation](SESSION-2026-09-05-CONTINUATION.md)
+- [Physical Android pass and installed candidate](physical-android-qa-2026-09-06.md)
 - [Phone installation diagnostic](phone-install-diagnostics-2026-09-05.md)
 - [Presentation/screenshots](visual-refinement-2026-09-05.md)
 - [Route/GPS ordering](gps-publication-ordering-2026-09-05.md)

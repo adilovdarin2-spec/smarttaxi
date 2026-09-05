@@ -1,5 +1,12 @@
 # SmartTaxi continuation — 2026-09-05
 
+**Sep 6 update:** the owner's restart allowed installation, and the latest
+localhost candidate was subsequently installed and hash-verified too. See
+[physical Android QA](physical-android-qa-2026-09-06.md) for actual native
+screens, the driver lifecycle, 95 passing Flutter tests and current open
+acceptance items. The historical device-blocker section below is superseded
+by that report; do not repeat its installation diagnosis as current state.
+
 Work is on `dev`. Existing work and Docker data were retained; no reset,
 clean, volume removal, production test account or external SMS was used.
 

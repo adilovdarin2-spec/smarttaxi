@@ -26,10 +26,12 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/active_locale.dart';
 import '../../core/utils/contact_phone.dart';
 import '../../core/utils/map_layers.dart';
+import '../../core/utils/passenger_map_viewport.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/exit_on_double_back.dart';
+import '../../core/widgets/measure_size.dart';
 import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
@@ -234,6 +236,7 @@ class _PassengerShellState extends State<PassengerShell>
   bool _skipNextLocationIntro = false;
   bool _mapPointPickerActive = false;
   bool _sheetMinimized = false;
+  double? _homePanelHeight;
   int _mapTileErrorCount = 0;
   String? _error;
   List<RegionOption> _regions = const [];
@@ -2713,8 +2716,8 @@ class _PassengerShellState extends State<PassengerShell>
         ? (compact ? 0.42 : 0.39)
         : routeComplete
             ? (compact ? 0.66 : 0.60)
-            : (compact ? 0.50 : 0.46);
-    final mapControlsBottom = screen.height * sheetFraction + 12;
+            : (compact ? 0.54 : 0.50);
+    final mapControlsBottom = _homePanelHeight ?? screen.height * sheetFraction;
     final mapRoute = _order?.driverId != null
         ? (_driverPickupRoute?.geometry ?? const <LatLng>[])
         : (_preview?.geometry ?? const <LatLng>[]);
@@ -2774,69 +2777,78 @@ class _PassengerShellState extends State<PassengerShell>
           ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: _CollapsibleOrderSheet(
-            minimized: _sheetMinimized,
-            onMinimizedChanged: (value) =>
-                setState(() => _sheetMinimized = value),
-            maxHeight: screen.height * sheetFraction,
-            child: pickingMapPoint
-                ? _MapPointPickerSheet(
-                    target: _target,
-                    addressLabel: _mapPickerAddressLabel,
-                    addressHint: _mapPickerAddressHint,
-                    addressLoading: _mapPickerAddressLoading,
-                    onCancel: _cancelMapPointSelection,
-                    onConfirm: _confirmMapPointSelection,
-                  )
-                : _OrderSheet(
-                    pickupSource: _pickupSource,
-                    dropoffSource: _dropoffSource,
-                    pickupLabel: _pickupSource == PointSource.none
-                        ? l10n.passengerMyLocationLabel
-                        : _pickupLabel,
-                    dropoffLabel: _dropoffSource == PointSource.none
-                        ? l10n.passengerChooseDropoffLabel
-                        : _dropoffLabel,
-                    pickupActive: _target == PointTarget.pickup,
-                    dropoffActive: _target == PointTarget.dropoff,
-                    onSwap: _swapPickupDropoff,
-                    locationLoading: _locationLoading,
-                    paymentMethod: _paymentMethod,
-                    paymentLabel: _paymentMethodLabel,
-                    onPickupTap: () => _selectPoint(target: PointTarget.pickup),
-                    onDropoffTap: () =>
-                        _selectPoint(target: PointTarget.dropoff),
-                    onUseLocation: _usePhoneLocation,
-                    onPaymentTap: _choosePaymentMethod,
-                    onFavoriteTap: () {
-                      setState(() => _tab = PassengerTab.favoriteAddresses);
-                      unawaited(_loadFavoriteAddresses());
-                    },
-                    orderNote: _orderNote,
-                    onNoteTap: _editOrderNote,
-                    tariffs: _tariffs,
-                    selectedTariffId: _tariffId,
-                    preview: _preview,
-                    tariffEstimates: _tariffEstimates,
-                    offeredPriceKzt: _offeredPriceKzt,
-                    onOfferedPriceChanged: (value) =>
-                        setState(() => _offeredPriceKzt = value),
-                    loading: _loading,
-                    previewLoading: _previewLoading,
-                    error: _error,
-                    onTariff: (id) async {
-                      unawaited(HapticFeedback.selectionClick());
-                      final cached = _tariffEstimates[id];
-                      setState(() {
-                        _tariffId = id;
-                        _offeredPriceKzt = null;
-                        if (cached != null) _preview = cached;
-                      });
-                      if (cached == null) await _refreshPreview();
-                    },
-                    onCreate: _createOrder,
-                    cta: _ctaText(),
-                  ),
+          child: MeasureSize(
+            onChange: (size) {
+              if (mounted &&
+                  (_homePanelHeight == null ||
+                      (_homePanelHeight! - size.height).abs() > 0.5)) {
+                setState(() => _homePanelHeight = size.height);
+              }
+            },
+            child: _CollapsibleOrderSheet(
+              minimized: _sheetMinimized,
+              onMinimizedChanged: (value) =>
+                  setState(() => _sheetMinimized = value),
+              maxHeight: screen.height * sheetFraction,
+              child: pickingMapPoint
+                  ? _MapPointPickerSheet(
+                      target: _target,
+                      addressLabel: _mapPickerAddressLabel,
+                      addressHint: _mapPickerAddressHint,
+                      addressLoading: _mapPickerAddressLoading,
+                      onCancel: _cancelMapPointSelection,
+                      onConfirm: _confirmMapPointSelection,
+                    )
+                  : _OrderSheet(
+                      pickupSource: _pickupSource,
+                      dropoffSource: _dropoffSource,
+                      pickupLabel: _pickupSource == PointSource.none
+                          ? l10n.passengerMyLocationLabel
+                          : _pickupLabel,
+                      dropoffLabel: _dropoffSource == PointSource.none
+                          ? l10n.passengerChooseDropoffLabel
+                          : _dropoffLabel,
+                      pickupActive: _target == PointTarget.pickup,
+                      dropoffActive: _target == PointTarget.dropoff,
+                      onSwap: _swapPickupDropoff,
+                      locationLoading: _locationLoading,
+                      paymentMethod: _paymentMethod,
+                      paymentLabel: _paymentMethodLabel,
+                      onPickupTap: () => _selectPoint(target: PointTarget.pickup),
+                      onDropoffTap: () =>
+                          _selectPoint(target: PointTarget.dropoff),
+                      onUseLocation: _usePhoneLocation,
+                      onPaymentTap: _choosePaymentMethod,
+                      onFavoriteTap: () {
+                        setState(() => _tab = PassengerTab.favoriteAddresses);
+                        unawaited(_loadFavoriteAddresses());
+                      },
+                      orderNote: _orderNote,
+                      onNoteTap: _editOrderNote,
+                      tariffs: _tariffs,
+                      selectedTariffId: _tariffId,
+                      preview: _preview,
+                      tariffEstimates: _tariffEstimates,
+                      offeredPriceKzt: _offeredPriceKzt,
+                      onOfferedPriceChanged: (value) =>
+                          setState(() => _offeredPriceKzt = value),
+                      loading: _loading,
+                      previewLoading: _previewLoading,
+                      error: _error,
+                      onTariff: (id) async {
+                        unawaited(HapticFeedback.selectionClick());
+                        final cached = _tariffEstimates[id];
+                        setState(() {
+                          _tariffId = id;
+                          _offeredPriceKzt = null;
+                          if (cached != null) _preview = cached;
+                        });
+                        if (cached == null) await _refreshPreview();
+                      },
+                      onCreate: _createOrder,
+                      cta: _ctaText(),
+                    ),
+            ),
           ),
         ),
       ],
@@ -5605,11 +5617,19 @@ class _MapCanvasState extends State<_MapCanvas> {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final center = widget.center;
-    final pickup = widget.pickup;
-    final dropoff = widget.dropoff;
+    // During selection only the center pin represents the point being edited.
+    // Keep the other endpoint, but do not paint an old flag/route over the pin.
+    final pickup =
+        widget.showCenterMarker && widget.activeTarget == PointTarget.pickup
+            ? null
+            : widget.pickup;
+    final dropoff =
+        widget.showCenterMarker && widget.activeTarget == PointTarget.dropoff
+            ? null
+            : widget.dropoff;
     final driver = widget.driver;
     final nearbyDrivers = widget.nearbyDrivers;
-    final route = widget.route;
+    final route = widget.showCenterMarker ? const <LatLng>[] : widget.route;
     final permissionNotice = widget.permissionNotice;
     final routeLoading = widget.routeLoading;
     final routeError = widget.routeError;
@@ -5663,6 +5683,8 @@ class _MapCanvasState extends State<_MapCanvas> {
                       driver: driver,
                       nearbyDrivers: nearbyDrivers,
                       route: route,
+                      pickingPoint: showCenterMarker,
+                      panelHeight: widget.controlsBottom,
                       onTap: onTap,
                       onCenterChanged: onCenterChanged,
                     )
@@ -5878,6 +5900,8 @@ class _NativeMapLibreSurface extends StatefulWidget {
     required this.driver,
     required this.nearbyDrivers,
     required this.route,
+    required this.pickingPoint,
+    required this.panelHeight,
     required this.onTap,
     required this.onCenterChanged,
   });
@@ -5890,6 +5914,8 @@ class _NativeMapLibreSurface extends StatefulWidget {
   final DriverLocation? driver;
   final List<NearbyDriver> nearbyDrivers;
   final List<LatLng> route;
+  final bool pickingPoint;
+  final double panelHeight;
   final ValueChanged<LatLng> onTap;
   final void Function(LatLng center, double zoom) onCenterChanged;
 
@@ -5904,6 +5930,9 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   bool _routeLayersInstalled = false;
   bool _ignoreNextCameraIdle = false;
   String _lastSceneSignature = '';
+  String _lastRouteFitSignature = '';
+  Size _viewportSize = Size.zero;
+  Timer? _cameraSyncTimer;
 
   static const _pickupImage = 'smarttaxi-pickup-marker';
   static const _currentImage = 'smarttaxi-current-location-marker';
@@ -5921,8 +5950,23 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     // search, or region selection does not automatically recenter MapLibre.
     // Keep the visual camera in lock-step with the same shell state, while
     // leaving an already-completed user pan untouched.
-    unawaited(_syncCameraToWidget());
+    _scheduleCameraSync();
     unawaited(_syncScene());
+  }
+
+  @override
+  void dispose() {
+    _cameraSyncTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleCameraSync() {
+    // Sheet animations report intermediate sizes. Fit once they settle instead
+    // of starting a new camera animation on every layout frame.
+    _cameraSyncTimer?.cancel();
+    _cameraSyncTimer = Timer(const Duration(milliseconds: 100), () {
+      if (mounted) unawaited(_syncCameraToWidget());
+    });
   }
 
   Future<void> _installImages() async {
@@ -6061,6 +6105,37 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   Future<void> _syncCameraToWidget() async {
     final controller = _controller;
     if (!_styleReady || controller == null) return;
+    if (!widget.pickingPoint && widget.route.length >= 2) {
+      if (_viewportSize.isEmpty) return;
+      final points = [
+        ...widget.route,
+        if (widget.pickup != null) widget.pickup!.toLatLng(),
+        if (widget.dropoff != null) widget.dropoff!.toLatLng(),
+      ];
+      final signature = '${points.map(_pointKey).join('|')}|'
+          '${widget.panelHeight.toStringAsFixed(1)}|$_viewportSize';
+      // GPS/notification rebuilds and a user pan must not reset route framing.
+      if (_lastRouteFitSignature == signature) return;
+      _lastRouteFitSignature = signature;
+      final padding = passengerRouteInsets(_viewportSize, widget.panelHeight);
+      try {
+        _ignoreNextCameraIdle = true;
+        await controller.animateCamera(
+          native_map.CameraUpdate.newLatLngBounds(
+            passengerRouteBounds(points),
+            left: padding.left,
+            top: padding.top,
+            right: padding.right,
+            bottom: padding.bottom,
+          ),
+          duration: const Duration(milliseconds: 380),
+        );
+      } catch (_) {
+        _lastRouteFitSignature = '';
+      }
+      return;
+    }
+    _lastRouteFitSignature = '';
     final current = controller.cameraPosition;
     final target = _nativePoint(widget.center);
     final currentTarget = current?.target;
@@ -6247,7 +6322,9 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         // The destination flag is a confirmation detail, not the dominant
         // object on the map. Keep it in the same visual weight as the
         // address marker and never let it cover the route near its finish.
-        await symbol(dropoff.toLatLng(), _finishImage, size: 0.40);
+        // The source canvas is 1000px wide. A 0.40 scale made it a 400dp
+        // annotation; the confirmed phone screenshot showed an enormous flag.
+        await symbol(dropoff.toLatLng(), _finishImage, size: 0.08);
       }
       final driver = widget.driver;
       if (driver != null) {
@@ -6274,6 +6351,8 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       _styleReady = true;
     }
     _lastSceneSignature = '';
+    _lastRouteFitSignature = '';
+    _imagesInstalled = false;
     _routeLayersInstalled = false;
     final controller = _controller;
     unawaited(_syncCameraToWidget());
@@ -6297,6 +6376,13 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
 
   Future<void> _settle3dCamera(
       native_map.MapLibreMapController controller) async {
+    if (!widget.pickingPoint && widget.route.length >= 2) {
+      // A route overview is fitted above the sheet. Do not overwrite that fit
+      // with the street-level opening camera after the first style frame.
+      _lastRouteFitSignature = '';
+      await _syncCameraToWidget();
+      return;
+    }
     try {
       await controller.animateCamera(
         native_map.CameraUpdate.newCameraPosition(
@@ -6329,93 +6415,100 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        native_map.MapLibreMap(
-          styleString: AppConfig.mapLibreStyleUrl,
-          initialCameraPosition: native_map.CameraPosition(
-            target: _nativePoint(widget.center),
-            zoom: widget.zoom,
-            tilt: 38,
+    return LayoutBuilder(builder: (context, constraints) {
+      final viewport = constraints.biggest;
+      if (_viewportSize != viewport) {
+        _viewportSize = viewport;
+        _scheduleCameraSync();
+      }
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          native_map.MapLibreMap(
+            styleString: AppConfig.mapLibreStyleUrl,
+            initialCameraPosition: native_map.CameraPosition(
+              target: _nativePoint(widget.center),
+              zoom: widget.zoom,
+              tilt: 38,
+            ),
+            compassEnabled: false,
+            trackCameraPosition: true,
+            rotateGesturesEnabled: true,
+            tiltGesturesEnabled: true,
+            onMapCreated: (controller) {
+              _controller = controller;
+            },
+            onStyleLoadedCallback: _onStyleLoaded,
+            onMapClick: (_, coordinates) => widget.onTap(
+              LatLng(coordinates.latitude, coordinates.longitude),
+            ),
+            onCameraIdle: _onCameraIdle,
           ),
-          compassEnabled: false,
-          trackCameraPosition: true,
-          rotateGesturesEnabled: true,
-          tiltGesturesEnabled: true,
-          onMapCreated: (controller) {
-            _controller = controller;
-          },
-          onStyleLoadedCallback: _onStyleLoaded,
-          onMapClick: (_, coordinates) => widget.onTap(
-            LatLng(coordinates.latitude, coordinates.longitude),
-          ),
-          onCameraIdle: _onCameraIdle,
-        ),
-        IgnorePointer(
-          child: AnimatedOpacity(
-            opacity: _styleReady ? 0 : 1,
-            duration: const Duration(milliseconds: 240),
-            curve: Curves.easeOutCubic,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(color: Color(0xfff7fbff)),
-              // The former centre spinner sat underneath the order sheet on
-              // a phone, making a slow vector-style fetch look like a blank,
-              // frozen map. Keep a compact status pill in the visible map
-              // area instead; it disappears the moment the style is ready.
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 94),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: SmartTaxiColors.brand.withValues(alpha: 0.20),
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _styleReady ? 0 : 1,
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(color: Color(0xfff7fbff)),
+                // The former centre spinner sat underneath the order sheet on
+                // a phone, making a slow vector-style fetch look like a blank,
+                // frozen map. Keep a compact status pill in the visible map
+                // area instead; it disappears the moment the style is ready.
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 94),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 11,
                       ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x1f1d6fff),
-                          blurRadius: 22,
-                          offset: Offset(0, 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.96),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: SmartTaxiColors.brand.withValues(alpha: 0.20),
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.25,
-                            color: SmartTaxiColors.brand,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x1f1d6fff),
+                            blurRadius: 22,
+                            offset: Offset(0, 8),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          AppLocalizations.of(context).passengerMapLoadingTitle,
-                          style: const TextStyle(
-                            color: SmartTaxiColors.text,
-                            fontSize: 13,
-                            height: 1,
-                            fontWeight: FontWeight.w800,
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.25,
+                              color: SmartTaxiColors.brand,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          Text(
+                            AppLocalizations.of(context).passengerMapLoadingTitle,
+                            style: const TextStyle(
+                              color: SmartTaxiColors.text,
+                              fontSize: 13,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 }
 
