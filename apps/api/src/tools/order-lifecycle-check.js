@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createOrderCancelledTransaction } from "../modules/finance/finance.service.js";
 import { isOrderSearchTimedOut } from "../modules/orders/order-dispatch.service.js";
+import { assertDriverManualPaymentAllowed } from "../modules/payments/manual-payment-policy.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
@@ -11,6 +12,24 @@ const dispatchService = readFileSync(join(root, "modules", "orders", "order-disp
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const financeService = readFileSync(join(root, "modules", "finance", "finance.service.js"), "utf8");
 const paymentsRoutes = readFileSync(join(root, "modules", "payments", "payments.routes.js"), "utf8");
+
+// A driver's cash receipt is not an electronic provider confirmation. This
+// guard executes before any PAID status/payment/ledger write in updateStatus.
+for (const method of ["CASH", "KASPI"]) {
+  assert.doesNotThrow(() => assertDriverManualPaymentAllowed("DRIVER", method));
+}
+for (const method of ["CARD", "MIXED", "CASHBACK", undefined, "UNKNOWN"]) {
+  assert.throws(() => assertDriverManualPaymentAllowed("DRIVER", method), {
+    code: "DRIVER_PAYMENT_CONFIRMATION_FORBIDDEN", status: 403
+  });
+}
+for (const role of ["OWNER", "FINANCE"]) {
+  for (const method of ["CASH", "KASPI", "CARD", "MIXED"]) {
+    assert.doesNotThrow(() => assertDriverManualPaymentAllowed(role, method), "Keep the existing authorized finance reconciliation path");
+  }
+}
+assert.match(ordersRoutes, /if \(status === "PAID"\) assertDriverManualPaymentAllowed\(req\.user\.role, existing\.payment_method\);\s*assertTransition\(existing, status\)/,
+  "Both driver and general mark-paid aliases must enforce the payment-method guard before changing the order");
 
 // --- structural: CARD orders must not credit real money before the payment
 // is actually confirmed. A driver's withdrawable balance and a client's

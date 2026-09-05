@@ -39,6 +39,7 @@ import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notificatio
 import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } from "./promo.service.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
 import { spendOrderCashback, trySpendOrderCashback } from "./cashback-payment.service.js";
+import { assertDriverManualPaymentAllowed } from "../payments/manual-payment-policy.js";
 
 const router = Router();
 // Anti-fraud: auto-suspend a driver whose rolling average drops below this
@@ -1135,6 +1136,7 @@ async function updateStatus(req, res, next, status) {
       if (driver && existing.driver_id !== driver.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
       if (driver && existing.region_id !== driver.current_region_id) throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
       if (driver) await assertDriverCanServeOrder(driver, existing, client);
+      if (status === "PAID") assertDriverManualPaymentAllowed(req.user.role, existing.payment_method);
       assertTransition(existing, status);
 
       let extra = "";
