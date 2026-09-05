@@ -4,6 +4,7 @@ import { Icon } from "../../core/icons.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import { useLiveDriverRoute } from "../client/useLiveDriverRoute.js";
 import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
+import { driverLocationFeedback } from "./driverLocationFeedback.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -472,6 +473,8 @@ export default function DriverApp() {
   const [tab, setTab] = useState("line");
   const [driverPosition, setDriverPosition] = useState(null);
   const [publishedDriverPosition, setPublishedDriverPosition] = useState(null);
+  const [locationIssue, setLocationIssue] = useState(null);
+  const [locationAttempt, setLocationAttempt] = useState(0);
   const [roadAlerts, setRoadAlerts] = useState([]);
   const [roadAlertsLoading, setRoadAlertsLoading] = useState(false);
   const [roadAlertsError, setRoadAlertsError] = useState("");
@@ -646,23 +649,35 @@ export default function DriverApp() {
   // could never get a live route/ETA back.
   useEffect(() => {
     setPublishedDriverPosition(null);
-    if (!session || !driver?.id || !isWorking || !navigator.geolocation) {
+    setLocationIssue(null);
+    if (!session || !driver?.id || !isWorking) {
       setDriverPosition(null);
       return undefined;
     }
+    if (!navigator.geolocation) {
+      setDriverPosition(null);
+      setLocationIssue(driverLocationFeedback({ code: 'unsupported' }));
+      return undefined;
+    }
     let alive = true;
-    const publisher = createDriverLocationPublisher({
+    let publisher;
+    const createPublisher = () => createDriverLocationPublisher({
       publish: updateDriverLocation,
       isCurrent: () => alive && getToken() === session,
       onPublished: location => {
-        if (location.driverId === driver.id) setPublishedDriverPosition({ ...location, session });
-      }
+        if (location.driverId !== driver.id) return;
+        setPublishedDriverPosition({ ...location, session });
+        setLocationIssue(issue => issue?.source === 'publication' ? null : issue);
+      },
+      onError: error => setLocationIssue(driverLocationFeedback(error, 'publication'))
     });
     const handlePosition = position => {
       if (!alive || getToken() !== session) return;
       const point = { lat: position.coords.latitude, lng: position.coords.longitude };
       if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng) || Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180) return;
       setDriverPosition(point);
+      setLocationIssue(issue => issue?.source === 'browser' ? null : issue);
+      publisher ||= createPublisher();
       // The marker is immediate. Routing uses the acknowledged server fix,
       // not this raw point: the route endpoint reads persisted coordinates.
       publisher.update({
@@ -674,17 +689,26 @@ export default function DriverApp() {
         source: "web"
       });
     };
-    const watchId = navigator.geolocation.watchPosition(handlePosition, () => {}, {
+    const handleLocationError = error => {
+      if (!alive || getToken() !== session) return;
+      // Do not keep retrying an old fix after GPS/permission has been lost.
+      // A subsequent valid stream event can create a fresh publisher.
+      publisher?.dispose();
+      publisher = null;
+      setDriverPosition(null);
+      setLocationIssue(driverLocationFeedback(error));
+    };
+    const watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, {
       enableHighAccuracy: true,
       maximumAge: 10000,
       timeout: 20000
     });
     return () => {
       alive = false;
-      publisher.dispose();
+      publisher?.dispose();
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [session, driver?.id, isWorking, selectedRegionId]);
+  }, [session, driver?.id, isWorking, selectedRegionId, locationAttempt]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -879,11 +903,21 @@ export default function DriverApp() {
           route={driverRoute}
           center={center}
           compact
-          status={activeOrder ? statusLabel(activeOrder.status) : (isOnline ? "Готов к заказам" : "Не на линии")}
+          status={activeOrder ? statusLabel(activeOrder.status) : (isWorking && locationIssue ? "GPS требует внимания" : isOnline ? (confirmedPosition ? "Готов к заказам" : "Определяем местоположение") : "Не на линии")}
         />
       </section>}
 
       <section className="driver-core-panel">
+        {isWorking && locationIssue && (
+          <section className="driver-core-location-notice" role="status" aria-live="polite">
+            <div className="driver-core-location-icon" aria-hidden="true"><Icon name="pin" /></div>
+            <div>
+              <h2>{locationIssue.title}</h2>
+              <p>{locationIssue.description}</p>
+              <Button variant="secondary" onClick={() => setLocationAttempt(attempt => attempt + 1)}>Повторить GPS</Button>
+            </div>
+          </section>
+        )}
         {loading ? (
           <div className="driver-core-loading">Загружаем смену...</div>
         ) : (

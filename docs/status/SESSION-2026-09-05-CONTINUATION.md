@@ -31,6 +31,9 @@ clean, volume removal, production test account or external SMS was used.
   and Flutter route refresh on location acknowledgement, retained trailing GPS
   updates, and restored Android GPS after a cold active-trip restore. See
   `gps-publication-ordering-2026-09-05.md` for scope and causal browser evidence.
+- Driver GPS feedback follow-up: visible permission/publication errors, safe
+  retry on all five tabs and verified active-trip preservation when permission
+  is revoked. See `driver-gps-feedback-2026-09-05.md`.
 
 Web code/evidence is described in `web-picker-and-trip-recovery-2026-09-05.md`
 and `web-driver-lifecycle-2026-09-05.md`. API-backed browser scenarios are not
@@ -41,8 +44,8 @@ substitutes for physical Android acceptance or a real drive.
 - API: dependency-policy pretest and all 36 checks pass, including payment
   authorization. The final root-context image also passed without network
   access, with dummy test env and read-only cross-client source mounts.
-- Web unit tests: 26/26 (lifecycle/marker checks plus nine location-publication
-  regressions); tests are included in Node 22 CI.
+- Web unit tests: 31/31 (lifecycle/marker/publication/feedback checks);
+  tests are included in Node 22 CI.
 - Web production build and local browser address/lifecycle scenarios pass.
 - Flutter analyze: no issues. Full tests after GPS publication follow-up: 62 passed.
 - Android debug APK rebuilt with local API/socket `http://127.0.0.1:4001`

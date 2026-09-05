@@ -182,3 +182,40 @@ test('server-backed route uses the persisted longitude after a delayed write', a
   publisher.dispose();
   scheduler.dispose();
 });
+
+test('publication errors are reported without blocking the trailing retry', async () => {
+  const clock = fakeClock();
+  const errors = [], published = [];
+  const failure = { code: 'DRIVER_LOCATION_OUTSIDE_REGION' };
+  let attempts = 0;
+  const publisher = createDriverLocationPublisher({ ...clock,
+    publish: async value => { if (++attempts === 1) throw failure; return ack(value); },
+    onError: error => errors.push(error), onPublished: value => published.push(value) });
+  publisher.update(point());
+  await flush();
+  assert.deepEqual(errors, [failure]);
+  assert.deepEqual(published, []);
+  publisher.update(point(68.5044));
+  await clock.advance(15000);
+  assert.equal(published[0].lng, 68.5044);
+  publisher.dispose();
+});
+
+test('missing acknowledgement reports feedback; disposal suppresses late failures', async () => {
+  const clock = fakeClock();
+  const errors = [];
+  const pending = deferred();
+  let attempts = 0;
+  const publisher = createDriverLocationPublisher({ ...clock,
+    publish: () => ++attempts === 1 ? Promise.resolve({}) : pending.promise,
+    onError: error => errors.push(error), onPublished() {} });
+  publisher.update(point());
+  await flush();
+  assert.deepEqual(errors, [{ code: 'LOCATION_ACK_MISSING' }]);
+  await clock.advance(15000);
+  publisher.dispose();
+  pending.reject(new Error('request aborted after logout'));
+  await flush();
+  assert.equal(errors.length, 1, 'A closed session must not show late error feedback');
+  assert.equal(clock.pending(), 0);
+});

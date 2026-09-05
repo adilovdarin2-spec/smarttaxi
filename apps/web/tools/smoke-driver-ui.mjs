@@ -368,6 +368,27 @@ try {
   assert.equal(await page.evaluate(() => window.driverQaWatches.size), 1, "Geolocation watch must remain running while BUSY");
   mark("busy_geolocation_watch_retained");
   await assertLiveRoute("to_pickup", "accepted");
+  // Revoke permission in this test browser during the accepted trip. The
+  // server assignment and all legitimate trip actions must remain available.
+  await context.clearPermissions();
+  await context.grantPermissions([]);
+  assert.equal(await page.evaluate(async () => (await navigator.permissions.query({ name: 'geolocation' })).state), 'denied');
+  await page.getByRole('heading', { name: 'Разрешите геолокацию', exact: true }).waitFor();
+  const gpsInterrupted = await request('/api/driver/orders/active');
+  assert.equal(gpsInterrupted.activeOrder?.id, newOrder.id);
+  assert.equal(gpsInterrupted.driver?.publicStatus, 'BUSY');
+  assert(await page.getByRole('button', { name: 'Еду к клиенту', exact: true }).isEnabled());
+  await page.locator('.driver-core-location-notice').scrollIntoViewIfNeeded();
+  await onScreen(page.getByRole('button', { name: 'Повторить GPS', exact: true }));
+  await shot('driver-gps-denied-active');
+  await context.grantPermissions(['geolocation']);
+  const gpsRecovery = page.waitForResponse(response => response.url().endsWith('/api/drivers/me/location') && response.status() === 200);
+  await page.getByRole('button', { name: 'Повторить GPS', exact: true }).click();
+  await gpsRecovery;
+  await page.locator('.driver-core-location-notice').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => window.driverQaWatches.size), 1);
+  assert.equal((await request('/api/driver/orders/active')).activeOrder?.id, newOrder.id);
+  mark('permission_loss_and_retry_preserve_busy_trip');
   const latestLocationAt = locationReports.findLast(item => item.status === 200).at;
   await page.waitForTimeout(Math.max(0, 15500 - (Date.now() - latestLocationAt)));
   gps = { ...gps, longitude: Number((gps.longitude + 0.0003).toFixed(6)) };

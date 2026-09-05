@@ -12,6 +12,7 @@ function coordinates(location) {
 export function createDriverLocationPublisher({
   publish,
   onPublished,
+  onError = () => {},
   isCurrent = () => true,
   now = Date.now,
   setTimer = setTimeout,
@@ -58,13 +59,17 @@ export function createDriverLocationPublisher({
       .then(payload => {
         if (!current()) return;
         const confirmed = coordinates(payload?.location);
-        if (!confirmed) return; // No acknowledgement: retry, do not invent one.
+        if (!confirmed) {
+          onError({ code: 'LOCATION_ACK_MISSING' });
+          return; // No acknowledgement: retry, do not invent one.
+        }
         if (revision === sentRevision) latest = null;
         onPublished(confirmed);
       })
-      .catch(() => {
+      .catch(error => {
         // A failed write keeps the newest fix queued. Never mark it published
         // or require another GPS event just to recover a transient failure.
+        if (current()) onError(error);
       })
       .finally(() => {
         request = null;
