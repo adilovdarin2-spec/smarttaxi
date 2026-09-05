@@ -1,10 +1,12 @@
 # railway-deploy-cache-bust: 2026-07-15
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 WORKDIR /app
 ARG NPM_STRICT_SSL=false
 RUN npm config set strict-ssl ${NPM_STRICT_SSL}
 COPY package*.json ./
-RUN npm install --omit=dev
+# Messaging does not need Firebase's optional Firestore/Storage SDKs. This
+# context uses the mirrored qs override in apps/api/package.json.
+RUN npm install --omit=dev --omit=optional
 COPY src ./src
 # The harvested address gazetteer (~1.8 MB gzipped, 80 611 rows). It has to
 # ship inside the image: the container cannot reach Overpass to fetch it, so

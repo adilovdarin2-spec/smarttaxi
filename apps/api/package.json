@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/server.js",
+  "overrides": {
+    "qs": "6.16.0"
+  },
   "scripts": {
+    "pretest": "node src/tools/dependency-policy-check.js",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "seed": "node src/seeds/seed.js",

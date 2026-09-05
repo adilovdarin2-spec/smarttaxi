@@ -1,7 +1,7 @@
 # Compose builds use the repository root so npm consumes the same tracked lock
 # as CI. The service-local Dockerfiles remain compatible with Railway's current
 # subdirectory build contexts; see docs/DOCKER_BUILDS.md before migrating them.
-FROM node:20-bookworm-slim AS workspace-manifests
+FROM node:22-bookworm-slim AS workspace-manifests
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
@@ -12,8 +12,10 @@ FROM workspace-manifests AS api-dependencies
 # Preserve the existing local proxy override. Deployments can pass true, as
 # .env.example already does; no TLS setting is changed as part of lock adoption.
 ARG NPM_STRICT_SSL=false
+# Firebase is used only for Messaging; omit its unused optional Firestore and
+# Storage SDKs (including their legacy UUID dependency tree).
 RUN npm config set strict-ssl ${NPM_STRICT_SSL} \
-    && npm ci --omit=dev --workspace=apps/api --include-workspace-root=false
+    && npm ci --omit=dev --omit=optional --workspace=apps/api --include-workspace-root=false
 
 FROM api-dependencies AS api
 COPY apps/api/src ./apps/api/src

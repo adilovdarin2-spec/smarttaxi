@@ -6,8 +6,13 @@
 `infra/docker/Dockerfile`, selecting the `api` and `web` targets. Both run
 `npm ci` for their workspace using the tracked root `package-lock.json`.
 Manifest/lock mismatches now fail a build instead of silently resolving new
-dependency versions. API installs production dependencies only; the web image
+dependency versions. API installs production, non-optional dependencies only; the web image
 contains only nginx and the generated static files.
+
+Node 22 is the shared CI and Docker baseline, including the service-local
+Railway Dockerfiles. The root manifest and lock metadata declare Node >=22
+for local tooling. This satisfies the existing locked map dependency's engine
+requirement without changing any dependency version.
 
 The root `.dockerignore` is an allowlist: manifests/lock, API source/address
 data, web source/public assets/build config, and shared source. Local `.env`
@@ -44,14 +49,16 @@ Card payments and OpenFreeMap keep their existing application defaults.
 does not alter the local proxy/TLS setup. `.env.example` supplies `true` for a
 configured deployment. The prior Compose fallback remains unchanged.
 
-This locks npm dependencies, not every image byte: Node/nginx base tags remain
-the existing tags and their platform/security updates can change image digests.
+This locks npm dependencies, not every image byte: Node/nginx base tags can
+receive platform/security updates that change image digests.
 
 ## Railway boundary
 
 The documented Railway services use `apps/api` and `apps/web` as their Root
-Directory with the service-local `Dockerfile`. Those Dockerfiles and
-`railway.json` files are unchanged. Replacing their `COPY` paths with
+Directory with the service-local `Dockerfile`. Their build context, `COPY`
+paths and `railway.json` files are unchanged. The compatible Node base is
+aligned to 22; API installs also omit unused optional dependencies and use
+the API manifest's mirrored `qs` security override. Replacing their `COPY` paths with
 root-relative paths would break a build that cannot access the repository root.
 
 **Railway subdirectory builds still use `npm install` without the root lock.**
@@ -73,9 +80,19 @@ deployment or production variable was changed in this pass.
   network-disabled disposable container.
 - `docker compose config -q` and `git diff --check` passed. Existing running
   services, database volumes and published ports were not recreated.
+- Node 22 follow-up: both locked targets rebuilt successfully with no
+  `EBADENGINE` warning. API runtime reported `v22.23.2`; all 300 installed
+  package versions still matched the lock. The full API test command passed
+  in a network-disabled container with web source mounted read-only for its
+  cross-platform contract assertions; no shared database was connected.
+  The web lifecycle tests also passed 16/16 on Node 22 with read-only source,
+  and the final nginx configuration passed again.
 
-Observed dependency warnings are not silently fixed here: a locked web
-dependency (`@mapbox/jsonlint-lines-primitives@2.0.3`) declares Node >=22 while
-the current base/CI use Node 20; this build succeeded. npm's install audit
-reported 11 moderate advisories for API dependencies and none for web. No
-forced dependency upgrade or toolchain migration was performed.
+The initial Node 20 verification exposed a locked web dependency
+(`@mapbox/jsonlint-lines-primitives@2.0.3`) that declares Node >=22. The shared
+baseline was therefore aligned to Node 22. npm's install audit reported 11
+moderate advisories for API dependencies and none for web. The subsequent
+[API dependency hardening pass](status/api-dependency-hardening-2026-09-05.md)
+patches `qs` and omits unused optional Firebase SDKs from API images: the
+production/non-optional audit is clean, while the full lock retains eight
+moderate optional-chain findings. No forced dependency upgrade was performed.
