@@ -377,6 +377,10 @@ class _PassengerShellState extends State<PassengerShell>
   int _nearbyDriversRequest = 0;
   int _mapPickerReverseRequest = 0;
   String _mapPickerAddressLabel = 'Точка на карте';
+  // The reverse-geocoder returns the coordinate of the actual address/POI.
+  // Keep it with the label: using only the free camera centre can display a
+  // nearby house while routing from a different service lane.
+  Coordinate? _mapPickerResolvedCoordinate;
   // What to tell the rider when the pin resolves to nothing. reverseAddress()
   // already answers an unresolvable pin with guidance naming their town
   // ("Попробуйте передвинуть точку в пределах Мырзакент"); the picker used to
@@ -1744,6 +1748,7 @@ class _PassengerShellState extends State<PassengerShell>
         _mapPointPickerActive = true;
         _mapCenter = center;
         _mapPickerAddressLabel = l10n.passengerResolvingAddressLabel;
+        _mapPickerResolvedCoordinate = null;
         _mapPickerAddressHint = null;
         _mapPickerAddressLoading = true;
         _error = null;
@@ -1762,14 +1767,16 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _useMapCenterAsPickup() async {
-    final point = _mapCenter ??
+    final point = _mapPickerResolvedCoordinate?.toLatLng() ??
+        _mapCenter ??
         _selectedRegion?.center?.toLatLng() ??
         _atakentFallbackCenter;
     await _applyMapTap(point);
   }
 
   Future<void> _confirmMapPointSelection() async {
-    final point = _mapCenter ??
+    final point = _mapPickerResolvedCoordinate?.toLatLng() ??
+        _mapCenter ??
         _selectedRegion?.center?.toLatLng() ??
         _atakentFallbackCenter;
     final knownLabel = _mapPickerAddressLoading
@@ -1792,6 +1799,7 @@ class _PassengerShellState extends State<PassengerShell>
     _mapPickerReverseDebounce?.cancel();
     setState(() {
       _mapPointPickerActive = false;
+      _mapPickerResolvedCoordinate = null;
       _mapPickerAddressHint = null;
       _mapPickerAddressLoading = false;
     });
@@ -1813,6 +1821,7 @@ class _PassengerShellState extends State<PassengerShell>
       // about where the pin is now.
       setState(() {
         _mapPickerAddressLoading = true;
+        _mapPickerResolvedCoordinate = null;
         _mapPickerAddressHint = null;
       });
     }
@@ -1828,6 +1837,7 @@ class _PassengerShellState extends State<PassengerShell>
     final requestId = ++_mapPickerReverseRequest;
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
     var label = l10n.passengerMapPointLabel;
+    Coordinate? resolvedCoordinate;
     String? hint;
     final selectedRegion = _selectedRegion;
     if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
@@ -1837,6 +1847,7 @@ class _PassengerShellState extends State<PassengerShell>
         final address = await widget.api.reverseAddress(coordinate);
         if (address != null && _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
+          resolvedCoordinate = address.coordinate;
         } else {
           // Prefer the server's own wording: it names the rider's town, which
           // a generic string here cannot.
@@ -1856,6 +1867,7 @@ class _PassengerShellState extends State<PassengerShell>
     }
     setState(() {
       _mapPickerAddressLabel = label;
+      _mapPickerResolvedCoordinate = resolvedCoordinate;
       _mapPickerAddressHint = hint;
       _mapPickerAddressLoading = false;
     });
@@ -1864,7 +1876,7 @@ class _PassengerShellState extends State<PassengerShell>
   Future<bool> _applyMapTap(LatLng point, {String? preferredLabel}) async {
     final l10n = AppLocalizations.of(context);
     final target = _target;
-    final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
+    var coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
     final selectedRegion = _selectedRegion;
     if (_shouldBlockPointByRegion(selectedRegion, coordinate)) {
       setState(() {
@@ -1881,6 +1893,7 @@ class _PassengerShellState extends State<PassengerShell>
         final address = await widget.api.reverseAddress(coordinate);
         if (address != null && _isUsablePassengerAddressLabel(address.label)) {
           resolvedLabel = address.label.trim();
+          coordinate = address.coordinate;
         }
       } catch (_) {}
     }
@@ -1902,6 +1915,7 @@ class _PassengerShellState extends State<PassengerShell>
     if (_mapPointPickerActive) {
       setState(() {
         _mapPointPickerActive = false;
+        _mapPickerResolvedCoordinate = null;
         _mapPickerAddressLoading = false;
         _error = null;
       });

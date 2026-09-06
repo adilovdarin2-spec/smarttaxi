@@ -20,17 +20,17 @@ void main() {
 
   test('native map content must move upward when the bottom sheet is taller',
       () {
-    expect(passengerPointScrollY(const Size(360, 739), 415), -167.5);
+    expect(passengerPointScrollY(const Size(360, 739), 415), -151.5);
     // A collapsed sheet may instead leave more space below the header.
-    expect(passengerPointScrollY(const Size(360, 739), 54), 13);
+    expect(passengerPointScrollY(const Size(360, 739), 54), 29);
   });
 
   test('physical 360dp phone route stays above its 541dp panel', () {
     final padding = passengerRouteInsets(const Size(360, 739), 541);
     expect(padding.bottom, 557);
-    expect(padding.top, 96);
+    expect(padding.top, 128);
     expect(739 - padding.bottom, lessThan(739 - 541));
-    expect(739 - padding.vertical, greaterThan(60));
+    expect(739 - padding.vertical, greaterThan(48));
     expect(360 - padding.horizontal, greaterThan(200));
   });
 

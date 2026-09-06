@@ -2,17 +2,17 @@
 // paint-only changes: preserve route/road geometry, widths and label ordering.
 export function libertyPaintForLayer(id) {
   if (id === 'background') return { 'background-color': '#f4f7fb' };
-  if (id === 'water') return { 'fill-color': '#c4ddf7' };
+  if (id === 'water') return { 'fill-color': '#b9d8f5' };
   if (id === 'building') return { 'fill-color': '#e4ebf6', 'fill-outline-color': '#d6dfec' };
   if (id === 'landuse_residential') return { 'fill-color': '#eef2f7' };
   if (['park', 'landcover_wood', 'landcover_grass', 'landuse_pitch', 'landuse_track', 'landuse_cemetery'].includes(id)) return { 'fill-color': '#dcebe3' };
   if (['landuse_hospital', 'landuse_school', 'landcover_sand', 'aeroway_fill'].includes(id)) return { 'fill-color': '#edf0f6' };
-  if (id.startsWith('waterway_') && !id.includes('label')) return { 'line-color': '#b8d4f0' };
+  if (id.startsWith('waterway_') && !id.includes('label')) return { 'line-color': '#aacbeb' };
   if (/^(road|tunnel|bridge)_/.test(id) && !/rail|arrow|shield|area/.test(id)) {
-    return { 'line-color': id.endsWith('_casing') ? '#d9e2ef' : /motorway|trunk/.test(id) ? '#eef4fc' : '#ffffff' };
+    return { 'line-color': id.endsWith('_casing') ? '#d2deed' : /motorway|trunk/.test(id) ? '#e3edfb' : '#ffffff' };
   }
   if (id.startsWith('label_') || id.startsWith('highway-name-') || id.startsWith('poi_')) {
-    return { 'text-color': '#64748b', 'text-halo-color': '#ffffff', 'text-halo-width': 1.2 };
+    return { 'text-color': '#50627a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.35 };
   }
   return null;
 }

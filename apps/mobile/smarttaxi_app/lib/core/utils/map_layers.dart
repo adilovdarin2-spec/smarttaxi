@@ -6,7 +6,7 @@ native_map.LayerProperties? libertyPresentationForLayer(String id) {
   // maplibre_gl 0.21 Android cannot set background paint at runtime. Leave
   // that provider layer intact rather than swallowing an unsupported call.
   if (id == 'water') {
-    return const native_map.FillLayerProperties(fillColor: '#c4ddf7');
+    return const native_map.FillLayerProperties(fillColor: '#b9d8f5');
   }
   if (id == 'building') {
     return const native_map.FillLayerProperties(
@@ -30,22 +30,22 @@ native_map.LayerProperties? libertyPresentationForLayer(String id) {
     return const native_map.FillLayerProperties(fillColor: '#edf0f6');
   }
   if (id.startsWith('waterway_') && !id.contains('label')) {
-    return const native_map.LineLayerProperties(lineColor: '#b8d4f0');
+    return const native_map.LineLayerProperties(lineColor: '#aacbeb');
   }
   if (RegExp(r'^(road|tunnel|bridge)_').hasMatch(id) &&
       !RegExp(r'rail|arrow|shield|area').hasMatch(id)) {
     return native_map.LineLayerProperties(
         lineColor: id.endsWith('_casing')
-            ? '#d9e2ef'
+            ? '#d2deed'
             : id.contains('motorway') || id.contains('trunk')
-                ? '#eef4fc'
+                ? '#e3edfb'
                 : '#ffffff');
   }
   if (id.startsWith('label_') ||
       id.startsWith('highway-name-') ||
       id.startsWith('poi_')) {
     return const native_map.SymbolLayerProperties(
-        textColor: '#64748b', textHaloColor: '#ffffff', textHaloWidth: 1.2);
+        textColor: '#50627a', textHaloColor: '#ffffff', textHaloWidth: 1.35);
   }
   return null;
 }

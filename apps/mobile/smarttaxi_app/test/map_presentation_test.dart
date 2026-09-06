@@ -54,9 +54,13 @@ void main() {
     expect(
         libertyPresentationForLayer('road_minor_casing')!
             .toJson()['line-color'],
-        '#d9e2ef');
+        '#d2deed');
     expect(libertyPresentationForLayer('road_minor')!.toJson()['line-color'],
         '#ffffff');
+    expect(libertyPresentationForLayer('water')!.toJson()['fill-color'],
+        '#b9d8f5');
+    expect(libertyPresentationForLayer('label_city')!.toJson()['text-color'],
+        '#50627a');
   });
 
   test('Light and dark themes use the bundled typeface', () {

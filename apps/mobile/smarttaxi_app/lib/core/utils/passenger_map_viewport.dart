@@ -10,7 +10,10 @@ EdgeInsets passengerRouteInsets(Size viewport, double panelHeight) {
   final height = math.max(1.0, viewport.height);
   final bottom =
       (panelHeight + 16).clamp(0.0, math.max(0.0, height - 48)).toDouble();
-  final top = math.min(96.0, math.max(0.0, height - bottom - 32));
+  // The floating ETA chip occupies the upper map band. Keep enough headroom
+  // for the full square-and-tail pickup marker as well; 96dp left its badge
+  // visibly tucked under the chip on the 360dp Xiaomi QA viewport.
+  final top = math.min(128.0, math.max(0.0, height - bottom - 32));
   final side = math.min(44.0, math.max(0.0, (viewport.width - 32) / 2));
   return EdgeInsets.fromLTRB(side, top, side, bottom);
 }

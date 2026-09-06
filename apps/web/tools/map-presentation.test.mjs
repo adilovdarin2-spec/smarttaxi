@@ -9,8 +9,10 @@ test('Liberty colors retain road geometry, widths, arrows and labels', () => {
     assert(Object.keys(paint).every(key => key.endsWith('color') || key === 'text-halo-width'));
   }
   for (const id of ['smarttaxi-route', 'road_one_way_arrow', 'road_major_rail', 'road_shield_us', 'waterway_line_label', 'custom-layer']) assert.equal(libertyPaintForLayer(id), null);
-  assert.equal(libertyPaintForLayer('road_minor_casing')['line-color'], '#d9e2ef');
+  assert.equal(libertyPaintForLayer('road_minor_casing')['line-color'], '#d2deed');
   assert.equal(libertyPaintForLayer('road_minor')['line-color'], '#ffffff');
+  assert.equal(libertyPaintForLayer('water')['fill-color'], '#b9d8f5');
+  assert.equal(libertyPaintForLayer('label_city')['text-color'], '#50627a');
 });
 
 test('Custom styles are not recolored by a matching background id alone', () => {

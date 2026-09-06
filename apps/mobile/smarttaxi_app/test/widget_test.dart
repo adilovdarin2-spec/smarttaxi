@@ -363,6 +363,17 @@ void main() {
     expect(api, contains('searchAddresses'));
     expect(api, contains('reverseAddress'));
     expect(models, contains('class AddressSuggestion'));
+    // A map pin is reverse-resolved to a real address. Route from the
+    // returned address coordinate as well as showing its label; otherwise a
+    // nearby house can be named while OSRM starts on a different service lane.
+    expect(passenger, contains('Coordinate? _mapPickerResolvedCoordinate;'));
+    expect(passenger, contains('resolvedCoordinate = address.coordinate;'));
+    expect(passenger,
+        contains('_mapPickerResolvedCoordinate = resolvedCoordinate;'));
+    expect(
+      passenger,
+      contains('final point = _mapPickerResolvedCoordinate?.toLatLng() ??'),
+    );
     expect(api, contains("'/api/routes/preview'"));
     expect(api, contains("'/api/routes/driver-to-pickup'"));
     expect(passenger, contains('PointSource.gps'));
