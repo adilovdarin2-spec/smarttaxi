@@ -103,84 +103,92 @@ class DriverGradientButton extends StatelessWidget {
     final resolvedLoadingText =
         loadingText ?? AppLocalizations.of(context).driverUpdatingGeneric;
     final active = enabled && onTap != null && !loading;
-    return DriverPressScale(
+    return Semantics(
+      container: true,
+      button: true,
       enabled: active,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.5,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            // Reserve the subtle highlight for an actionable arrival hint.
-            color: context.palette.brand,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: active && highlighted
-                ? [
-                    BoxShadow(
-                      color: context.palette.brand.withValues(alpha: 0.22),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: active ? onTap : null,
-              child: Container(
-                constraints: BoxConstraints(minHeight: height),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                width: double.infinity,
-                child: Center(
-                  child: loading
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Flexible(
-                              child: Text(resolvedLoadingText,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (icon != null) ...[
-                              Icon(icon, color: Colors.white, size: 20),
-                              const SizedBox(width: 8),
-                            ],
-                            Flexible(
-                              child: Text(
-                                text,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
+      label: text,
+      child: ExcludeSemantics(
+        child: DriverPressScale(
+          enabled: active,
+          child: Opacity(
+            opacity: enabled ? 1 : 0.5,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                // Reserve the subtle highlight for an actionable arrival hint.
+                color: context.palette.brand,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: active && highlighted
+                    ? [
+                        BoxShadow(
+                          color: context.palette.brand.withValues(alpha: 0.22),
+                          blurRadius: 12,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 3),
                         ),
+                      ]
+                    : null,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: active ? onTap : null,
+                  child: Container(
+                    constraints: BoxConstraints(minHeight: height),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    width: double.infinity,
+                    child: Center(
+                      child: loading
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Flexible(
+                                  child: Text(resolvedLoadingText,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600)),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (icon != null) ...[
+                                  Icon(icon, color: Colors.white, size: 20),
+                                  const SizedBox(width: 8),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    text,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -3670,6 +3670,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverSpeedLabel => 'Скорость';
 
   @override
+  String get driverNavigatorNoRouteLabel => 'Маршрут не выбран';
+
+  @override
   String get driverLimitLabel => 'Лимит';
 
   @override

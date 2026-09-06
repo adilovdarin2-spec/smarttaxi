@@ -1557,6 +1557,7 @@
   "driverReportRoadEventSemanticLabel": "Сообщить о дорожном событии",
   "driverRecenterSemanticLabel": "Вернуться к текущей позиции",
   "driverSpeedLabel": "Скорость",
+  "driverNavigatorNoRouteLabel": "Маршрут не выбран",
   "driverLimitLabel": "Лимит",
   "driverSearchingGpsSignal": "Ищу сигнал GPS…",
   "driverRouteWillAppearAfterCalc": "Маршрут появится после расчёта",

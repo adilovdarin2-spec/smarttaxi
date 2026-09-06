@@ -1554,6 +1554,7 @@
   "driverReportRoadEventSemanticLabel": "Жол оқиғасы туралы хабарлау",
   "driverRecenterSemanticLabel": "Ағымдағы позицияға оралу",
   "driverSpeedLabel": "Жылдамдық",
+  "driverNavigatorNoRouteLabel": "Маршрут таңдалмаған",
   "driverLimitLabel": "Шектеу",
   "driverSearchingGpsSignal": "GPS сигналын іздеп жатырмыз…",
   "driverRouteWillAppearAfterCalc": "Бағыт есептелгеннен кейін пайда болады",

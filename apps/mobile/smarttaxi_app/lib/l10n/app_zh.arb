@@ -1557,6 +1557,7 @@
   "driverReportRoadEventSemanticLabel": "上报路况事件",
   "driverRecenterSemanticLabel": "回到当前位置",
   "driverSpeedLabel": "速度",
+  "driverNavigatorNoRouteLabel": "尚未选择路线",
   "driverLimitLabel": "限速",
   "driverSearchingGpsSignal": "正在搜索 GPS 信号…",
   "driverRouteWillAppearAfterCalc": "路线将在计算完成后显示",

@@ -3707,6 +3707,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get driverSpeedLabel => 'Tezlik';
 
   @override
+  String get driverNavigatorNoRouteLabel => 'Yo‘nalish tanlanmagan';
+
+  @override
   String get driverLimitLabel => 'Chegara';
 
   @override

@@ -1557,6 +1557,7 @@
   "driverReportRoadEventSemanticLabel": "Yo'l voqeasi haqida xabar berish",
   "driverRecenterSemanticLabel": "Joriy pozitsiyaga qaytish",
   "driverSpeedLabel": "Tezlik",
+  "driverNavigatorNoRouteLabel": "Yo‘nalish tanlanmagan",
   "driverLimitLabel": "Chegara",
   "driverSearchingGpsSignal": "GPS signalini qidirmoqdaman…",
   "driverRouteWillAppearAfterCalc": "Marshrut hisoblangandan keyin paydo bo'ladi",

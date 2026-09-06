@@ -6643,6 +6643,12 @@ abstract class AppLocalizations {
   /// **'Скорость'**
   String get driverSpeedLabel;
 
+  /// No description provided for @driverNavigatorNoRouteLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Маршрут не выбран'**
+  String get driverNavigatorNoRouteLabel;
+
   /// No description provided for @driverLimitLabel.
   ///
   /// In ru, this message translates to:

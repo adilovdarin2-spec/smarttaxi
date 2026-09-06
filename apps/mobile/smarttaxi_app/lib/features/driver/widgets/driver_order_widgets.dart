@@ -231,9 +231,8 @@ class OrderCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Flexible(
+                    Expanded(
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Flexible(
                             child: Text(
@@ -241,7 +240,7 @@ class OrderCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: context.palette.text,
-                                fontSize: 21,
+                                fontSize: 23,
                                 height: 1,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -269,49 +268,46 @@ class OrderCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Payment + distance/duration meta share the remaining
-                    // width and ellipsize together rather than risking an
-                    // overflow on narrow screens once both are present.
+                    const SizedBox(width: 10),
+                    Icon(Icons.account_balance_wallet_rounded,
+                        size: 15, color: context.palette.textSecondary),
+                    const SizedBox(width: 5),
                     Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.account_balance_wallet_rounded,
-                                size: 14, color: context.palette.textSecondary),
-                            const SizedBox(width: 4),
-                            Text(
-                              payment,
-                              style: TextStyle(
-                                color: context.palette.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            if (meta != null) ...[
-                              const SizedBox(width: 8),
-                              Icon(Icons.route_rounded,
-                                  size: 14,
-                                  color: context.palette.textSecondary),
-                              const SizedBox(width: 4),
-                              Text(
-                                meta,
-                                style: TextStyle(
-                                  color: context.palette.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ],
+                      child: Text(
+                        payment,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.palette.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ],
                 ),
+                if (meta != null) ...[
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      Icon(Icons.route_rounded,
+                          size: 15, color: context.palette.brandDeep),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          meta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.palette.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Divider(height: 1, color: context.palette.border),
                 const SizedBox(height: 8),

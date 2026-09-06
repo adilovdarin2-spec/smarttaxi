@@ -3441,6 +3441,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverSpeedLabel => '速度';
 
   @override
+  String get driverNavigatorNoRouteLabel => '尚未选择路线';
+
+  @override
   String get driverLimitLabel => '限速';
 
   @override

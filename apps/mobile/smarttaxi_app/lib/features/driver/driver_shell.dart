@@ -3228,9 +3228,7 @@ class _DriverShellState extends State<DriverShell> {
                         // blue, not a warning amber.
                         label: statusLabel(l10n, _activeOrder!.status),
                         tone: StatusTone.info),
-                    const SizedBox(height: 16),
-                    DriverStatusStepper(status: _activeOrder!.status),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     if ((_activeOrder!.riderPhone ?? '').trim().isNotEmpty) ...[
                       Row(
                         children: [
@@ -3276,6 +3274,13 @@ class _DriverShellState extends State<DriverShell> {
                         onPickupTap: null,
                         onDropoffTap: null,
                         dark: Theme.of(context).brightness == Brightness.dark),
+                    const SizedBox(height: 14),
+                    // The current destination and passenger are the pieces a
+                    // working driver needs before the historical progress
+                    // rail. Keeping the stepper after them makes both
+                    // addresses visible in the initial compact-phone
+                    // viewport while preserving the full lifecycle context.
+                    DriverStatusStepper(status: _activeOrder!.status),
                     if (_activeOrder!.status == 'WAITING_CLIENT' &&
                         _activeOrder!.waitingStartedAt != null) ...[
                       const SizedBox(height: 12),
@@ -4996,10 +5001,12 @@ class _NavRouteReadout extends StatelessWidget {
   const _NavRouteReadout({
     required this.distanceMeters,
     required this.durationSeconds,
+    required this.idleLabel,
   });
 
   final double? distanceMeters;
   final double? durationSeconds;
+  final String idleLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -5057,7 +5064,7 @@ class _NavRouteReadout extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           arrival == null
-              ? 'Рассчитываем маршрут'
+              ? idleLabel
               : 'Прибытие в ${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -5744,6 +5751,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                         child: _NavRouteReadout(
                           distanceMeters: routeProgress?.distanceMeters,
                           durationSeconds: routeProgress?.durationSeconds,
+                          idleLabel: l10n.driverNavigatorNoRouteLabel,
                         ),
                       ),
                       if (speedLimit != null) ...[
@@ -6036,7 +6044,11 @@ class _TripMapState extends State<_TripMap> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: SizedBox(
-        height: 246,
+        // On compact Android screens 246dp left only the passenger name
+        // visible above the pinned lifecycle CTA. The map remains the
+        // dominant visual at 216dp while the pickup/drop-off fields now
+        // enter the initial viewport instead of hiding below the fold.
+        height: 216,
         child: Stack(
           children: [
             FlutterMap(

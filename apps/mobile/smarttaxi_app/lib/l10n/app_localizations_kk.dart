@@ -3672,6 +3672,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverSpeedLabel => 'Жылдамдық';
 
   @override
+  String get driverNavigatorNoRouteLabel => 'Маршрут таңдалмаған';
+
+  @override
   String get driverLimitLabel => 'Шектеу';
 
   @override
