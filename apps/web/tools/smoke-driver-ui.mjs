@@ -258,13 +258,23 @@ try {
   token = login.token;
   await page.getByRole("navigation", { name: "Меню водителя" }).waitFor();
   await page.locator(".driver-core-loading").waitFor({ state: "hidden" });
+  const initial = await request("/api/driver/orders/active");
+  const active = initial.activeOrder;
+  if (active) assert.equal(active.id, process.env.QA_EXISTING_ORDER_ID, "Refusing to change an unrelated existing order; supply the authorized QA order ID");
+  // Offline drivers deliberately do not publish GPS. Establish this run's
+  // working region through the normal UI before expecting a location write.
+  if (!active) {
+    const selector = page.locator('.driver-core-region-card select');
+    await selector.selectOption({ label: 'Атакент' });
+    await page.waitForFunction(() => !document.querySelector('.driver-core-region-card select').disabled);
+    const startShift = page.getByRole('button', { name: 'Выйти на линию', exact: true });
+    if (await startShift.count()) await startShift.click();
+    await page.getByRole('button', { name: 'Уйти с линии', exact: true }).waitFor();
+  }
   await waitForEvidence(() => locationReports.some(item => item.status === 200 && Number(item.location?.lng) === gps.longitude), "Real driver location API accepted browser GPS fixture");
   mark("simulated_browser_gps_sent_to_real_api", { latitude: gps.latitude, longitude: gps.longitude });
   await assertDriverCar(page, "driver initial location");
   await page.waitForFunction(() => !document.body.textContent.includes("Загружаем карту"), null, { timeout: 25000 }).catch(() => mark("map_provider_still_loading"));
-  const initial = await request("/api/driver/orders/active");
-  const active = initial.activeOrder;
-  if (active) assert.equal(active.id, process.env.QA_EXISTING_ORDER_ID, "Refusing to change an unrelated existing order; supply the authorized QA order ID");
 
   for (const size of [{ width: 390, height: 844 }, { width: 360, height: 740 }]) {
     await page.setViewportSize(size);

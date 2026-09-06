@@ -100,7 +100,7 @@ class DriverStatusStepper extends StatelessWidget {
                           color: done ? palette.text : palette.textSecondary,
                           fontSize: 10,
                           height: 1,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -193,11 +193,11 @@ class OrderCard extends StatelessWidget {
                 height: 32,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: context.palette.brand,
-                  borderRadius: BorderRadius.circular(12),
+                  color: context.palette.brandSurface,
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.local_taxi_rounded,
-                    color: context.palette.text, size: 18),
+                    color: context.palette.brandDeep, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -205,7 +205,8 @@ class OrderCard extends StatelessWidget {
                   title: l10n.driverNewOrderTitle,
                   text: order.tariff == null || order.tariff!.isEmpty
                       ? l10n.driverWorkingRegionLabel
-                      : l10n.driverTariffLabel(order.tariff!),
+                      : l10n.driverTariffLabel(
+                          driverTariffTitle(l10n, order.tariff!)),
                 ),
               ),
               StatusPill(
@@ -222,9 +223,8 @@ class OrderCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: context.palette.brandSurface,
-              border: Border.all(color: context.palette.borderStrong),
-              borderRadius: BorderRadius.circular(18),
+              color: context.palette.appBackground,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class OrderCard extends StatelessWidget {
                                 color: context.palette.text,
                                 fontSize: 21,
                                 height: 1,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -261,7 +261,7 @@ class OrderCard extends StatelessWidget {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 9.5,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -288,7 +288,7 @@ class OrderCard extends StatelessWidget {
                               style: TextStyle(
                                 color: context.palette.textSecondary,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             if (meta != null) ...[
@@ -302,7 +302,7 @@ class OrderCard extends StatelessWidget {
                                 style: TextStyle(
                                   color: context.palette.textSecondary,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -313,7 +313,7 @@ class OrderCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Divider(height: 1, color: context.palette.borderStrong),
+                Divider(height: 1, color: context.palette.border),
                 const SizedBox(height: 8),
                 _CompactRouteRow(
                   icon: Icons.radio_button_checked_rounded,
@@ -348,9 +348,8 @@ class OrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: accepting || rejecting || offeringPrice
-                      ? null
-                      : onReject,
+                  onPressed:
+                      accepting || rejecting || offeringPrice ? null : onReject,
                   child: rejecting
                       ? ButtonSpinner(text: l10n.driverSkippingButton)
                       : FittedBox(
@@ -363,9 +362,8 @@ class OrderCard extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: accepting || rejecting || offeringPrice
-                      ? null
-                      : onAccept,
+                  onPressed:
+                      accepting || rejecting || offeringPrice ? null : onAccept,
                   child: accepting
                       ? ButtonSpinner(text: l10n.driverAcceptingButton)
                       : Text(l10n.driverAcceptButton),
@@ -394,15 +392,15 @@ class OrderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      l10n.driverClientOfferedCustomPrice(order.driverOfferPriceKzt ==
-                              null
-                          ? l10n.driverClientOfferedCustomPriceGeneric
-                          : formatDriverMoney(order.driverOfferPriceKzt!)),
+                      l10n.driverClientOfferedCustomPrice(
+                          order.driverOfferPriceKzt == null
+                              ? l10n.driverClientOfferedCustomPriceGeneric
+                              : formatDriverMoney(order.driverOfferPriceKzt!)),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: context.palette.text,
                         fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -415,7 +413,8 @@ class OrderCard extends StatelessWidget {
                                 : () => onRespondToCounter!(false),
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
-                              child: Text(l10n.driverDeclineButton, maxLines: 1),
+                              child:
+                                  Text(l10n.driverDeclineButton, maxLines: 1),
                             ),
                           ),
                         ),
@@ -427,7 +426,8 @@ class OrderCard extends StatelessWidget {
                                 ? null
                                 : () => onRespondToCounter!(true),
                             child: respondingToCounter
-                                ? ButtonSpinner(text: l10n.driverRespondingButton)
+                                ? ButtonSpinner(
+                                    text: l10n.driverRespondingButton)
                                 : Text(l10n.driverAcceptButton),
                           ),
                         ),
@@ -451,7 +451,7 @@ class OrderCard extends StatelessWidget {
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -505,7 +505,7 @@ class _CompactRouteRow extends StatelessWidget {
             style: TextStyle(
               color: context.palette.text,
               fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -543,7 +543,7 @@ class DriverOrderChip extends StatelessWidget {
               style: TextStyle(
                 color: context.palette.text,
                 fontSize: 12,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -575,8 +575,7 @@ class DriverWaitingTimerCard extends StatefulWidget {
   final int waitingPricePerMinute;
 
   @override
-  State<DriverWaitingTimerCard> createState() =>
-      _DriverWaitingTimerCardState();
+  State<DriverWaitingTimerCard> createState() => _DriverWaitingTimerCardState();
 }
 
 class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
@@ -586,8 +585,8 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(
-        const Duration(seconds: 1), (_) => setState(() => _now = DateTime.now()));
+    _timer = Timer.periodic(const Duration(seconds: 1),
+        (_) => setState(() => _now = DateTime.now()));
   }
 
   @override
@@ -616,7 +615,8 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isPaid ? context.palette.dangerSoft : context.palette.brandSurface,
+        color:
+            isPaid ? context.palette.dangerSoft : context.palette.brandSurface,
         border: Border.all(
             color: isPaid ? context.palette.danger : context.palette.border),
         borderRadius: BorderRadius.circular(18),
@@ -633,10 +633,12 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isPaid ? l10n.driverPaidWaitingLabel : l10n.driverFreeWaitingLabel,
+                  isPaid
+                      ? l10n.driverPaidWaitingLabel
+                      : l10n.driverFreeWaitingLabel,
                   style: TextStyle(
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: isPaid
                         ? context.palette.danger
                         : context.palette.textSecondary,
@@ -649,7 +651,7 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
                       : freeUntil.difference(_now)),
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     color: context.palette.text,
                   ),
                 ),
@@ -661,7 +663,7 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
               '+$owedKzt ₸',
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 color: context.palette.danger,
               ),
             ),
@@ -703,7 +705,7 @@ class DriverTripDistanceCard extends StatelessWidget {
               l10n.driverTripDistanceCoveredLabel,
               style: TextStyle(
                 fontSize: 12.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: context.palette.textSecondary,
               ),
             ),
@@ -712,7 +714,7 @@ class DriverTripDistanceCard extends StatelessWidget {
             '${(distanceTraveledM / 1000).toStringAsFixed(1)} км',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               color: context.palette.text,
             ),
           ),
@@ -761,13 +763,17 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
   String? _preferenceType;
   bool _preferenceSaving = false;
 
-  static List<(String key, String label)> _positiveTags(AppLocalizations l10n) => [
+  static List<(String key, String label)> _positiveTags(
+          AppLocalizations l10n) =>
+      [
         ('polite_passenger', l10n.driverRatingTagPolitePassenger),
         ('waited_at_pickup', l10n.driverRatingTagWaitedAtPickup),
         ('exact_address', l10n.driverRatingTagExactAddress),
         ('on_time_exit', l10n.driverRatingTagOnTimeExit),
       ];
-  static List<(String key, String label)> _negativeTags(AppLocalizations l10n) => [
+  static List<(String key, String label)> _negativeTags(
+          AppLocalizations l10n) =>
+      [
         ('long_no_show', l10n.driverRatingTagLongNoShow),
         ('rude_communication', l10n.driverRatingTagRudeCommunication),
         ('wrong_address', l10n.driverRatingTagWrongAddress),
@@ -787,7 +793,10 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
       await widget.api.markOrderPaid(widget.order.id);
       if (mounted) setState(() => _paid = true);
     } catch (error) {
-      if (mounted) AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        AppToast.showError(
+            context, readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _confirmingPayment = false);
     }
@@ -809,7 +818,10 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
       // for a request that didn't actually go through) — the driver can
       // retry immediately, or move on via the always-present "Готово"
       // button regardless.
-      if (mounted) AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        AppToast.showError(
+            context, readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -830,7 +842,10 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
     } catch (error) {
       // Don't optimistically flip the star/block icon for a request that
       // didn't actually save — same reasoning as _submitRating above.
-      if (mounted) AppToast.showError(context, readableError(AppLocalizations.of(context), error));
+      if (mounted) {
+        AppToast.showError(
+            context, readableError(AppLocalizations.of(context), error));
+      }
     } finally {
       if (mounted) setState(() => _preferenceSaving = false);
     }
@@ -852,10 +867,11 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
           Text(l10n.driverTripCompletedTitle,
               style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   color: context.palette.text)),
           const SizedBox(height: 14),
-          _SummaryRow(label: l10n.driverTripCostLabel, value: '${price.round()} ₸'),
+          _SummaryRow(
+              label: l10n.driverTripCostLabel, value: '${price.round()} ₸'),
           if (commission > 0) ...[
             const SizedBox(height: 8),
             _SummaryRow(
@@ -873,11 +889,12 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
             Text(l10n.driverConfirmPaymentTitle,
                 style: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: context.palette.text)),
             const SizedBox(height: 6),
             Text(l10n.driverConfirmPaymentHint,
-                style: TextStyle(fontSize: 13, color: context.palette.textSecondary)),
+                style: TextStyle(
+                    fontSize: 13, color: context.palette.textSecondary)),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _confirmingPayment ? null : _confirmPayment,
@@ -889,7 +906,7 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
             Text(l10n.driverRatePassengerTitle,
                 style: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: context.palette.text)),
             const SizedBox(height: 10),
             _DriverStarSelector(
@@ -914,8 +931,8 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                 controller: _commentController,
                 minLines: 2,
                 maxLines: 4,
-                decoration: InputDecoration(
-                    hintText: l10n.driverCommentOptionalHint),
+                decoration:
+                    InputDecoration(hintText: l10n.driverCommentOptionalHint),
               ),
             ],
             const SizedBox(height: 14),
@@ -929,15 +946,15 @@ class _DriverTripCompletionCardState extends State<DriverTripCompletionCard> {
                         ? ButtonSpinner(text: l10n.driverSendingRatingButton)
                         : FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(l10n.driverSubmitRatingButton, maxLines: 1),
+                            child: Text(l10n.driverSubmitRatingButton,
+                                maxLines: 1),
                           ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 TextButton(
-                  onPressed: _submitting
-                      ? null
-                      : () => setState(() => _rated = true),
+                  onPressed:
+                      _submitting ? null : () => setState(() => _rated = true),
                   child: Text(l10n.driverSkipButton),
                 ),
               ],
@@ -1032,13 +1049,13 @@ class _SummaryRow extends StatelessWidget {
           child: Text(label,
               style: TextStyle(
                   fontSize: emphasized ? 15 : 13,
-                  fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: emphasized ? FontWeight.w600 : FontWeight.w600,
                   color: context.palette.textSecondary)),
         ),
         Text(value,
             style: TextStyle(
                 fontSize: emphasized ? 22 : 15,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 color: danger ? context.palette.danger : context.palette.text)),
       ],
     );
@@ -1111,7 +1128,7 @@ class _DriverTagChip extends StatelessWidget {
         child: Text(label,
             style: TextStyle(
                 fontSize: 12.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 color: selected
                     ? context.palette.brandDeep
                     : context.palette.textSecondary)),

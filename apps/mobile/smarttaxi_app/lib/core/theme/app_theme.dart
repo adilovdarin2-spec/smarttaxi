@@ -17,13 +17,13 @@ class SmartTaxiColors {
   // black+blue dark background.
   static const bgDark = Color(0xff05070c);
   static const background = Color(0xffffffff);
-  static const appBackground = Color(0xfff7fbff);
+  static const appBackground = Color(0xfff5f7fa);
   static const card = Color(0xffffffff);
   static const cardWarm = Color(0xfff2f7ff);
   static const text = Color(0xff111827);
   static const textSecondary = Color(0xff606978);
   static const textMuted = Color(0xff9ca3af);
-  static const border = Color(0xffe2e6ee);
+  static const border = Color(0xffe6eaf0);
   static const borderStrong = Color(0xff1d6fff);
   static const success = Color(0xff16a34a);
   static const successSoft = Color(0xffecfdf3);
@@ -365,6 +365,12 @@ ThemeData buildSmartTaxiTheme() {
       elevation: 0,
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
+      titleTextStyle: TextStyle(
+        color: SmartTaxiColors.text,
+        fontSize: 20,
+        height: 1.2,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     // The product uses blue action glyphs consistently: a map pin, payment
     // method and profile affordance should feel like parts of the same UI,
@@ -411,7 +417,7 @@ ThemeData buildSmartTaxiTheme() {
       backgroundColor: SmartTaxiColors.text,
       contentTextStyle: const TextStyle(
         color: SmartTaxiColors.background,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
@@ -421,32 +427,32 @@ ThemeData buildSmartTaxiTheme() {
       labelStyle: const TextStyle(
         color: SmartTaxiColors.textSecondary,
         fontSize: 13,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w400,
       ),
       floatingLabelStyle: const TextStyle(
         color: SmartTaxiColors.brandDeep,
         fontSize: 13,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w500,
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: SmartTaxiColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: SmartTaxiColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: SmartTaxiColors.brand, width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: SmartTaxiColors.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: SmartTaxiColors.danger, width: 1.8),
       ),
     ),
@@ -467,7 +473,7 @@ ThemeData buildSmartTaxiTheme() {
         disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
         elevation: 0,
         shadowColor: SmartTaxiColors.brand.withValues(alpha: 0.24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -480,7 +486,7 @@ ThemeData buildSmartTaxiTheme() {
         // the two competed for the same emphasis instead of reading as
         // primary and secondary.
         side: const BorderSide(color: SmartTaxiColors.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -494,7 +500,7 @@ ThemeData buildSmartTaxiTheme() {
         foregroundColor: Colors.white,
         disabledBackgroundColor: SmartTaxiColors.brand.withValues(alpha: 0.45),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -517,7 +523,7 @@ ThemeData buildSmartTaxiTheme() {
           color:
               selected ? SmartTaxiColors.text : SmartTaxiColors.textSecondary,
           fontSize: 12,
-          fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
         );
       }),
     ),
@@ -608,7 +614,7 @@ ThemeData buildSmartTaxiDarkTheme() {
       backgroundColor: palette.card,
       contentTextStyle: TextStyle(
         color: palette.text,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
@@ -618,32 +624,32 @@ ThemeData buildSmartTaxiDarkTheme() {
       labelStyle: TextStyle(
         color: palette.textSecondary,
         fontSize: 13,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: TextStyle(
         color: palette.brandDeep,
         fontSize: 13,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: palette.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: palette.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: palette.brand, width: 1.8),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: palette.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: palette.danger, width: 1.8),
       ),
     ),
@@ -658,7 +664,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
         elevation: 0,
         shadowColor: palette.brand.withValues(alpha: 0.24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -667,7 +673,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         minimumSize: const Size.fromHeight(56),
         foregroundColor: palette.text,
         side: BorderSide(color: palette.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -678,7 +684,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         foregroundColor: Colors.white,
         disabledBackgroundColor: palette.brand.withValues(alpha: 0.35),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -700,7 +706,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         return TextStyle(
           color: selected ? palette.text : palette.textSecondary,
           fontSize: 12,
-          fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
         );
       }),
     ),

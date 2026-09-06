@@ -20,6 +20,18 @@ String? driverRoutePhaseForStatus(String? status) {
   return null;
 }
 
+/// The map caption follows the same leg as routing, including legacy statuses.
+String driverTripMapLabel(
+  AppLocalizations l10n,
+  OrderSummary order, {
+  required bool hasRoute,
+}) {
+  if (!hasRoute) return l10n.driverRouteWillAppearAfterCalc;
+  return driverRoutePhaseForStatus(order.status) == 'to_dropoff'
+      ? order.dropoff
+      : l10n.driverRouteToPickupPoint;
+}
+
 /// Reopening for dispatch releases this driver just as a terminal cancellation
 /// does. Completed/unpaid orders still belong on the settlement screen.
 bool driverOrderReleasesAssignment(OrderSummary order) =>

@@ -131,10 +131,10 @@ function offeredPriceBoundsKzt(estimatedPrice) {
 }
 
 const carImages = {
-  Economy: "/ui/fixed-price-tariff/car_economy_3d_v2.png",
+  Economy: "/ui/fixed-price-tariff/car_economy_photo_v1.png",
   Comfort: "/ui/fixed-price-tariff/svg/car_comfort_white.svg",
   Business: "/ui/fixed-price-tariff/svg/car_comfort_white.svg",
-  Delivery: "/ui/fixed-price-tariff/car_delivery_3d_v2.png"
+  Delivery: "/ui/fixed-price-tariff/car_delivery_photo_v1.png"
 };
 
 const baseUi = "/ui/blue-white";
@@ -1949,7 +1949,7 @@ export default function ClientApp() {
             addressSelectionMode={section === "home" && !destination}
             route={route}
             onMenu={() => setDrawerOpen(true)}
-            onBell={() => setSection("support")}
+            onBell={() => selectSection("notifications")}
             onBackRoute={() => {
               setDestination(null);
               setRoute(null);
@@ -2061,7 +2061,7 @@ export default function ClientApp() {
           {section === "referral" && <ReferralSection authenticated={authenticated} />}
           {section === "faq" && <FaqSection />}
           {section === "about" && <AboutSection />}
-          {section === "settings" && <SettingsSection onLogout={logout} />}
+          {section === "settings" && <SettingsSection onLogout={logout} onNavigate={selectSection} />}
           {section === "legalTerms" && <LegalSection type="terms" />}
           {section === "legalPrivacy" && <LegalSection type="privacy" />}
           {section === "legalInfo" && <LegalSection type="info" />}
@@ -2281,7 +2281,6 @@ function ReferenceHomeSection(props) {
                 </span>
               )}
             </div>
-            <span>Фикс. цена</span>
           </header>
           {routeError && <p className="reference-state-error">{routeError}</p>}
           {tariffsError && <p className="reference-state-hint">{tariffsError}</p>}
@@ -4740,8 +4739,8 @@ function ProfileSection({
           <div className="profile-actions-grid">
             <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
             <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
-            <article><Icon name="star" /><div><b>Избранные адреса</b><span>Добавляются из поездок</span></div></article>
-            <article><Icon name="card" /><div><b>Способы оплаты</b><span>Наличные или Kaspi при заказе</span></div></article>
+            <article><Icon name="star" /><div><b>Избранные адреса</b><span>Дом, работа и любимые места</span></div></article>
+            <article><Icon name="card" /><div><b>Способы оплаты</b><span>{paymentOptions.map(option => option.title).join(' · ')}</span></div></article>
             <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
           </div>
         )}
@@ -5180,24 +5179,28 @@ function SupportSection({ activeOrderId, authenticated }) {
   );
 }
 
-function SettingsSection({ onLogout }) {
+function SettingsSection({ onLogout, onNavigate }) {
   return (
     <section className="screen-grid menu-screen">
       <section className="screen-intro"><h1>Настройки</h1><p>Параметры аккаунта и приложения.</p></section>
       <section className="app-card settings-list-premium">
-        <SettingsRow icon="user" title="Аккаунт" text="Имя и телефон в профиле" />
-        <SettingsRow icon="support" title="Уведомления" text="Статусы поездки и ответы поддержки" />
-        <SettingsRow icon="shield" title="Безопасность" text="Пароль аккаунта" />
+        <SettingsRow icon="user" title="Аккаунт" text="Имя и телефон в профиле" onClick={() => onNavigate('profile')} />
+        <SettingsRow icon="support" title="Уведомления" text="Статусы поездки и ответы поддержки" onClick={() => onNavigate('notifications')} />
+        <SettingsRow icon="shield" title="Безопасность" text="Помощь и правила безопасности" onClick={() => onNavigate('legalSafety')} />
         <SettingsRow icon="settings" title="Тема" text="Светлая синяя" />
-        <SettingsRow icon="document" title="Версия" text="Client MVP, web build" />
+        <SettingsRow icon="document" title="Версия" text="SmartTaxi Web" />
         <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
       </section>
     </section>
   );
 }
 
-function SettingsRow({ icon, title, text, muted = false }) {
-  return <div className={`settings-row-premium ${muted ? "muted" : ""}`}><Icon name={icon} /><span><b>{title}</b><small>{text}</small></span></div>;
+function SettingsRow({ icon, title, text, muted = false, onClick }) {
+  const content = <><Icon name={icon} /><span><b>{title}</b><small>{text}</small></span>{onClick && <Icon name="chevron" size={18} />}</>;
+  const className = `settings-row-premium ${muted ? "muted" : ""}`;
+  return onClick
+    ? <button type="button" className={className} onClick={onClick}>{content}</button>
+    : <div className={className}>{content}</div>;
 }
 
 function FavoritesSection({ onHome, authenticated, favorites, favoritesState, onPickOnMap, onDelete, onLogin }) {
@@ -5549,7 +5552,7 @@ function AboutSection() {
         <SmartTaxiLogo large />
         <h2>SmartTaxi</h2>
         <p>SmartTaxi помогает быстро выбрать адрес на карте, увидеть цену до заказа и безопасно пройти весь путь поездки.</p>
-        <SettingsRow icon="cash" title="Оплата" text="Наличные или Kaspi. Карты не подключены." />
+        <SettingsRow icon="cash" title="Оплата" text={paymentOptions.map(option => option.title).join(' · ')} />
         <SettingsRow icon="shield" title="Безопасность" text="Статусы поездки, поддержка и юридические документы в меню" />
       </section>
     </section>

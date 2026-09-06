@@ -169,7 +169,7 @@ class DriverDrawer extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -184,7 +184,7 @@ class DriverDrawer extends StatelessWidget {
                             style: TextStyle(
                                 color: palette.text,
                                 fontSize: 16.5,
-                                fontWeight: FontWeight.w900)),
+                                fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -209,7 +209,7 @@ class DriverDrawer extends StatelessWidget {
                                 style: TextStyle(
                                   color: palette.textSecondary,
                                   fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),

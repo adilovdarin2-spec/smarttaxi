@@ -16,10 +16,11 @@ EdgeInsets passengerRouteInsets(Size viewport, double panelHeight) {
 }
 
 /// Move the map's center point into the unobscured area, retaining native
-/// projection/zoom/pitch. Positive screen scroll moves the point upward.
+/// projection/zoom/pitch. Native MapLibre scrollBy translates the map content:
+/// negative Y moves the pickup upward (unlike scrolling a document viewport).
 double passengerPointScrollY(Size viewport, double panelHeight) {
   final padding = passengerRouteInsets(viewport, panelHeight);
-  return (padding.bottom - padding.top) / 2;
+  return (padding.top - padding.bottom) / 2;
 }
 
 native_map.LatLngBounds passengerRouteBounds(Iterable<LatLng> points) {

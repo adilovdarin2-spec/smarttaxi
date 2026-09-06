@@ -38,7 +38,7 @@ class DriverProfileRow extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: valueColor,
             ),
           ),
@@ -81,7 +81,7 @@ class DriverTripHistoryCard extends StatelessWidget {
                   formatTripHistoryDate(l10n, trip.createdAt),
                   style: TextStyle(
                     fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: context.palette.textSecondary,
                   ),
                 ),
@@ -92,7 +92,7 @@ class DriverTripHistoryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -104,7 +104,7 @@ class DriverTripHistoryCard extends StatelessWidget {
           if (trip.price != null)
             Text(
               formatDriverMoney(trip.price!.round()),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
         ],
       ),
@@ -139,7 +139,7 @@ class DriverSupportTopicChip extends StatelessWidget {
             style: TextStyle(
               color: selected ? Colors.white : context.palette.text,
               fontSize: 12.5,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -149,7 +149,8 @@ class DriverSupportTopicChip extends StatelessWidget {
 }
 
 class DriverFaqTile extends StatefulWidget {
-  const DriverFaqTile({super.key, required this.question, required this.answer});
+  const DriverFaqTile(
+      {super.key, required this.question, required this.answer});
 
   final String question;
   final String answer;
@@ -176,7 +177,7 @@ class _DriverFaqTileState extends State<DriverFaqTile> {
                   child: Text(
                     widget.question,
                     style: const TextStyle(
-                        fontSize: 14.5, fontWeight: FontWeight.w800),
+                        fontSize: 14.5, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Icon(
@@ -239,7 +240,8 @@ class DriverDividedListCard extends StatelessWidget {
 }
 
 class DriverSettingsGroup extends StatelessWidget {
-  const DriverSettingsGroup({super.key, required this.title, required this.children});
+  const DriverSettingsGroup(
+      {super.key, required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -255,7 +257,7 @@ class DriverSettingsGroup extends StatelessWidget {
             style: TextStyle(
               color: context.palette.textSecondary,
               fontSize: 11.5,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
             ),
           ),
@@ -301,7 +303,7 @@ class DriverSettingsRow extends StatelessWidget {
                           ? context.palette.danger
                           : context.palette.text,
                       fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 2),

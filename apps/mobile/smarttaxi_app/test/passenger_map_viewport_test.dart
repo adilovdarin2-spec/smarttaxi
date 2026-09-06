@@ -5,16 +5,24 @@ import 'package:smarttaxi_app/core/utils/passenger_map_viewport.dart';
 import 'package:smarttaxi_app/core/widgets/measure_size.dart';
 
 void main() {
-  test('home pickup scrolls into the visible map without changing its zoom', () {
+  test('home pickup scrolls into the visible map without changing its zoom',
+      () {
     const viewport = Size(360, 739);
     for (final panelHeight in [415.0, 54.0]) {
       final padding = passengerRouteInsets(viewport, panelHeight);
-      final y = viewport.height / 2 -
-          passengerPointScrollY(viewport, panelHeight);
+      final y =
+          viewport.height / 2 + passengerPointScrollY(viewport, panelHeight);
       expect(y, (padding.top + viewport.height - padding.bottom) / 2);
       expect(y, greaterThan(padding.top));
       expect(y, lessThan(viewport.height - panelHeight));
     }
+  });
+
+  test('native map content must move upward when the bottom sheet is taller',
+      () {
+    expect(passengerPointScrollY(const Size(360, 739), 415), -167.5);
+    // A collapsed sheet may instead leave more space below the header.
+    expect(passengerPointScrollY(const Size(360, 739), 54), 13);
   });
 
   test('physical 360dp phone route stays above its 541dp panel', () {

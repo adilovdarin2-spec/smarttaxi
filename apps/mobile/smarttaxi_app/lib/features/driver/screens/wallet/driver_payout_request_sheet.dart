@@ -220,16 +220,18 @@ class _DriverPayoutRequestSheetState extends State<DriverPayoutRequestSheet> {
                         style: TextStyle(
                           color: palette.text,
                           fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                     Text(
-                      hasDestination ? l10n.passengerChangeButton : l10n.addButton,
+                      hasDestination
+                          ? l10n.passengerChangeButton
+                          : l10n.addButton,
                       style: TextStyle(
                         color: palette.brandDeep,
                         fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],

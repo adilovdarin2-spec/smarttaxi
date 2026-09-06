@@ -79,8 +79,8 @@ class _DriverPressScaleState extends State<DriverPressScale> {
   }
 }
 
-/// Full-width primary CTA with a blue gradient, press-scale and a matching
-/// glow shadow — the driver-side equivalent of the passenger's
+/// Full-width primary CTA with the shared solid-blue treatment and press
+/// feedback — the driver-side equivalent of the passenger's
 /// `_BrandCtaButton`. Used for the one action per screen that should read as
 /// unmistakably "the main button" (going online, confirming a step), not for
 /// every button on the page.
@@ -125,39 +125,30 @@ class DriverGradientButton extends StatelessWidget {
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            // brand itself is identical in both palettes, but brandDeep isn't
-            // (light 0xff0b4fd1 vs dark 0xff5b9bff) — this was const, so it
-            // could never pick up the dark-theme value at all.
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.palette.brandSky,
-                context.palette.brand,
-                context.palette.brandDeep,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: active
+            // Reserve the subtle highlight for an actionable arrival hint.
+            color: context.palette.brand,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: active && highlighted
                 ? [
                     BoxShadow(
-                      color: context.palette.brand
-                          .withValues(alpha: highlighted ? 0.55 : 0.32),
-                      blurRadius: highlighted ? 28 : 20,
-                      spreadRadius: highlighted ? 2 : 0,
-                      offset: const Offset(0, 10),
+                      color: context.palette.brand.withValues(alpha: 0.22),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 3),
                     ),
                   ]
                 : null,
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               onTap: active ? onTap : null,
-              child: SizedBox(
-                height: height,
+              child: Container(
+                constraints: BoxConstraints(minHeight: height),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 width: double.infinity,
                 child: Center(
                   child: loading
@@ -173,10 +164,13 @@ class DriverGradientButton extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Text(resolvedLoadingText,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900)),
+                            Flexible(
+                              child: Text(resolvedLoadingText,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600)),
+                            ),
                           ],
                         )
                       : Row(
@@ -186,14 +180,17 @@ class DriverGradientButton extends StatelessWidget {
                               Icon(icon, color: Colors.white, size: 20),
                               const SizedBox(width: 8),
                             ],
-                            Text(
-                              text,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
+                            Flexible(
+                              child: Text(
+                                text,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -205,6 +202,47 @@ class DriverGradientButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Keep the next trip action reachable while route/details scroll. The shell
+/// provides the real state-machine action; this widget owns only layout.
+class DriverTripLayout extends StatelessWidget {
+  const DriverTripLayout({super.key, required this.body, this.action});
+
+  final Widget body;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    if (action == null) return body;
+    return Column(
+      children: [
+        Expanded(child: body),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          decoration: BoxDecoration(
+            color: context.palette.card,
+            border: Border(top: BorderSide(color: context.palette.border)),
+          ),
+          child: action,
+        ),
+      ],
+    );
+  }
+}
+
+String driverTariffTitle(AppLocalizations l10n, String tariff) {
+  switch (tariff.trim().toLowerCase()) {
+    case 'economy':
+    case 'эконом':
+      return l10n.tariffEconomyTitle;
+    case 'delivery':
+    case 'доставка':
+      return l10n.tariffDeliveryTitle;
+    default:
+      // Preserve historical/custom tariff names, including legacy classes.
+      return tariff;
   }
 }
 
@@ -223,13 +261,13 @@ class SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
       const SizedBox(height: 3),
       Text(text,
           style: TextStyle(
               color: context.palette.textSecondary,
               fontSize: 12,
-              fontWeight: FontWeight.w700)),
+              fontWeight: FontWeight.w500)),
     ]);
   }
 }
@@ -252,12 +290,11 @@ class LineGlyph extends StatelessWidget {
             : context.palette.textMuted;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
-      width: 58,
-      height: 58,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(
           busy
@@ -298,7 +335,7 @@ class LoadingStrip extends StatelessWidget {
             child: Text(text,
                 style: TextStyle(
                     color: context.palette.textSecondary,
-                    fontWeight: FontWeight.w700)),
+                    fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -367,7 +404,8 @@ class DrawerItem extends StatelessWidget {
     // Coloring the Icon/Text widgets directly rather than relying on
     // ListTile's selected/selectedColor plumbing, which doesn't reliably
     // reach the title/leading widgets in practice.
-    final tint = danger ? palette.danger : (active ? palette.brandDeep : palette.text);
+    final tint =
+        danger ? palette.danger : (active ? palette.brandDeep : palette.text);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: ListTile(
@@ -377,7 +415,7 @@ class DrawerItem extends StatelessWidget {
         selectedTileColor: palette.brandSurface,
         leading: Icon(icon, size: 22, color: tint),
         title: Text(label,
-            style: TextStyle(fontWeight: FontWeight.w800, color: tint)),
+            style: TextStyle(fontWeight: FontWeight.w600, color: tint)),
         onTap: onTap,
       ),
     );
@@ -403,7 +441,7 @@ class DrawerSectionLabel extends StatelessWidget {
         style: TextStyle(
           color: context.palette.textSecondary,
           fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.6,
         ),
       ),
@@ -419,12 +457,11 @@ class PremiumCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.palette.card,
         border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: SmartTaxiShadows.raised,
+        borderRadius: BorderRadius.circular(18),
       ),
       child: child,
     );
@@ -443,17 +480,17 @@ class TitleBlock extends StatelessWidget {
       Text(title,
           style: TextStyle(
               color: context.palette.text,
-              fontSize: 30,
-              height: 1.08,
+              fontSize: 24,
+              height: 1.2,
               letterSpacing: -0.4,
-              fontWeight: FontWeight.w900)),
+              fontWeight: FontWeight.w600)),
       const SizedBox(height: 7),
       Text(text,
           style: TextStyle(
               color: context.palette.textSecondary,
               fontSize: 14,
               height: 1.35,
-              fontWeight: FontWeight.w600)),
+              fontWeight: FontWeight.w400)),
     ]);
   }
 }
@@ -484,8 +521,8 @@ class DriverSosButton extends StatelessWidget {
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (_) => _DriverSosSheet(
-                sosPhone: sosPhone, api: api, orderId: orderId),
+            builder: (_) =>
+                _DriverSosSheet(sosPhone: sosPhone, api: api, orderId: orderId),
           ),
           child: SizedBox(
             width: 46,
@@ -530,8 +567,7 @@ class _DriverSosSheet extends StatelessWidget {
     try {
       await api.submitSupportMessage(
         topic: 'SOS',
-        message:
-            'Экстренный вызов водителя. Координаты: $locationText.',
+        message: 'Экстренный вызов водителя. Координаты: $locationText.',
         orderId: orderId,
       );
     } catch (_) {
@@ -581,7 +617,8 @@ class _DriverSosSheet extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.driverEmergencyHelpTitle,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -631,7 +668,7 @@ class _DriverSosRow extends StatelessWidget {
                   Text(title,
                       style: TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           color: onTap != null
                               ? context.palette.danger
                               : context.palette.text)),
@@ -666,7 +703,8 @@ class InlineMessage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: danger ? context.palette.dangerSoft : context.palette.brandSurface,
+        color:
+            danger ? context.palette.dangerSoft : context.palette.brandSurface,
         border: Border.all(
             color: danger
                 ? context.palette.danger.withValues(alpha: 0.3)
@@ -678,7 +716,7 @@ class InlineMessage extends StatelessWidget {
               color: danger
                   ? context.palette.danger
                   : context.palette.textSecondary,
-              fontWeight: FontWeight.w700)),
+              fontWeight: FontWeight.w500)),
     );
   }
 }

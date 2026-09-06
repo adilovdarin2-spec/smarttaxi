@@ -136,7 +136,8 @@ class _RatingHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    final maxCount = summary.maxBreakdownCount == 0 ? 1 : summary.maxBreakdownCount;
+    final maxCount =
+        summary.maxBreakdownCount == 0 ? 1 : summary.maxBreakdownCount;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -156,7 +157,7 @@ class _RatingHeroCard extends StatelessWidget {
                 summary.rating.toStringAsFixed(2),
                 style: TextStyle(
                   fontSize: 34,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   color: palette.text,
                 ),
               ),
@@ -167,7 +168,7 @@ class _RatingHeroCard extends StatelessWidget {
                   l10n.driverReviewsCountLabel(summary.reviewCount),
                   style: TextStyle(
                     color: palette.textSecondary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     fontSize: 13,
                   ),
                 ),
@@ -230,7 +231,7 @@ class _BreakdownBar extends StatelessWidget {
           child: Text('$star',
               style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   color: palette.text)),
         ),
         const SizedBox(width: 4),
@@ -287,7 +288,9 @@ class _ReviewRow extends StatelessWidget {
                 children: List.generate(
                   5,
                   (index) => Icon(
-                    index < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
+                    index < review.rating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
                     size: 16,
                     color: palette.brand,
                   ),
@@ -296,8 +299,8 @@ class _ReviewRow extends StatelessWidget {
               const Spacer(),
               if (review.orderShortId != null)
                 Text('№ ${review.orderShortId}',
-                    style:
-                        TextStyle(color: palette.textSecondary, fontSize: 11.5)),
+                    style: TextStyle(
+                        color: palette.textSecondary, fontSize: 11.5)),
             ],
           ),
           if (review.tags.isNotEmpty) ...[
@@ -308,7 +311,8 @@ class _ReviewRow extends StatelessWidget {
               children: [
                 for (final tag in review.tags)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: palette.cardWarm,
                       borderRadius: BorderRadius.circular(10),
@@ -325,8 +329,8 @@ class _ReviewRow extends StatelessWidget {
           if (review.comment != null) ...[
             const SizedBox(height: 8),
             Text(review.comment!,
-                style: TextStyle(
-                    fontSize: 13, height: 1.35, color: palette.text)),
+                style:
+                    TextStyle(fontSize: 13, height: 1.35, color: palette.text)),
           ],
         ],
       ),

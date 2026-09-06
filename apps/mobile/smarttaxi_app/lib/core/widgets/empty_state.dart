@@ -25,56 +25,43 @@ class EmptyState extends StatelessWidget {
         child: Container(
           width: double.infinity,
           margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: context.palette.cardWarm,
+            color: context.palette.card,
             border: Border.all(color: context.palette.border),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0f102a52),
-                blurRadius: 28,
-                offset: Offset(0, 14),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 72,
-                height: 72,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: context.palette.card,
-                  border: Border.all(color: context.palette.borderStrong),
-                  borderRadius: BorderRadius.circular(26),
-                  boxShadow: const [
-                    BoxShadow(
-                        color: Color(0x14102a52),
-                        blurRadius: 24,
-                        offset: Offset(0, 12))
-                  ],
+                  color: context.palette.brandSurface,
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(icon ?? Icons.route_outlined,
-                    color: context.palette.brandDeep, size: 31),
+                    color: context.palette.brandDeep, size: 24),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(title,
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.start,
                   style: TextStyle(
                       color: context.palette.text,
-                      fontSize: 17.5,
+                      fontSize: 16,
                       height: 1.2,
-                      fontWeight: FontWeight.w900)),
+                      fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(
                 text,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.start,
                 style: TextStyle(
                     color: context.palette.textSecondary,
-                    fontSize: 14,
+                    fontSize: 13,
                     height: 1.38,
-                    fontWeight: FontWeight.w600),
+                    fontWeight: FontWeight.w400),
               ),
               if (action != null && onAction != null) ...[
                 const SizedBox(height: 18),

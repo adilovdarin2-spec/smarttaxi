@@ -481,8 +481,8 @@ class _DriverShellState extends State<DriverShell> {
       }
     }
     setState(() {
-      final releasesCurrentOrder = _activeOrder?.id == order.id &&
-          driverOrderReleasesAssignment(order);
+      final releasesCurrentOrder =
+          _activeOrder?.id == order.id && driverOrderReleasesAssignment(order);
       _orders = releasesCurrentOrder
           ? _orders.where((item) => item.id != order.id).toList()
           : mergeOrder(_orders, order);
@@ -1004,8 +1004,7 @@ class _DriverShellState extends State<DriverShell> {
       OrderSummary? retainedTerminal;
       if (current != null && !current.isActive) {
         for (final order in orders) {
-          if (order.id == current.id &&
-              !driverOrderReleasesAssignment(order)) {
+          if (order.id == current.id && !driverOrderReleasesAssignment(order)) {
             retainedTerminal = order;
             break;
           }
@@ -2324,7 +2323,7 @@ class _DriverShellState extends State<DriverShell> {
                           style: TextStyle(
                               color: context.palette.text,
                               fontSize: 17,
-                              fontWeight: FontWeight.w900),
+                              fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -2334,7 +2333,7 @@ class _DriverShellState extends State<DriverShell> {
                           style: TextStyle(
                             color: context.palette.textSecondary,
                             fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -2379,7 +2378,7 @@ class _DriverShellState extends State<DriverShell> {
           const SizedBox(height: 20),
           Text(
             l10n.driverProfileTripHistoryTitle,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           for (final trip in _tripHistory) ...[
@@ -2449,7 +2448,7 @@ class _DriverShellState extends State<DriverShell> {
               const SizedBox(height: 18),
               const Text(
                 'SmartTaxi',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Text(
@@ -2598,7 +2597,7 @@ class _DriverShellState extends State<DriverShell> {
                 style: TextStyle(
                   color: context.palette.text,
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2607,7 +2606,7 @@ class _DriverShellState extends State<DriverShell> {
                 style: TextStyle(
                   color: context.palette.textSecondary,
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 14),
@@ -2801,6 +2800,39 @@ class _DriverShellState extends State<DriverShell> {
         padding: driverPagePadding(context),
         children: [
           // No status/tone here any more: DriverHeader already shows the
+          Stack(
+            children: [
+              _SmartNavigatorMap(
+                current: _currentCoordinate,
+                heading: _currentHeading,
+                activeOrder: _activeOrder,
+                route: _driverRoute?.geometry ?? const [],
+                // _allNavigatorAlerts (driver-submitted alerts + OSM speed
+                // cameras), not just _roadAlerts — this small map on the
+                // main "На линии" screen was the only one of the two navigator
+                // maps that dropped cameras; the full-screen navigator
+                // already merges both (line ~4090: shell._allNavigatorAlerts).
+                alerts: _allNavigatorAlerts,
+                signs: _osmSigns,
+                mapUnavailable: _navigatorMapUnavailable,
+                onTileError: _handleNavigatorTileError,
+                fallbackCenter: _selectedRegion?.center,
+                height: (MediaQuery.sizeOf(context).height * 0.34)
+                    .clamp(180.0, 300.0),
+              ),
+              Positioned(
+                top: 14,
+                right: 14,
+                child: _MapChipButton(
+                  icon: Icons.add_location_alt_rounded,
+                  semanticLabel: l10n.driverDrawerRoadAlerts,
+                  badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
+                  onTap: () => unawaited(_openRoadAlerts()),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           // very same pill on every tab, and printing "Занят" twice within
           // 350 vertical pixels was the screen's loudest bit of clutter.
           DriverShiftHero(
@@ -2839,37 +2871,6 @@ class _DriverShellState extends State<DriverShell> {
             demandLoading: _demandHintLoading,
           ),
           const SizedBox(height: 12),
-          Stack(
-            children: [
-              _SmartNavigatorMap(
-                current: _currentCoordinate,
-                heading: _currentHeading,
-                activeOrder: _activeOrder,
-                route: _driverRoute?.geometry ?? const [],
-                // _allNavigatorAlerts (driver-submitted alerts + OSM speed
-                // cameras), not just _roadAlerts — this small map on the
-                // main "На линии" screen was the only one of the two navigator
-                // maps that dropped cameras; the full-screen navigator
-                // already merges both (line ~4090: shell._allNavigatorAlerts).
-                alerts: _allNavigatorAlerts,
-                signs: _osmSigns,
-                mapUnavailable: _navigatorMapUnavailable,
-                onTileError: _handleNavigatorTileError,
-                fallbackCenter: _selectedRegion?.center,
-                height: 238,
-              ),
-              Positioned(
-                top: 14,
-                right: 14,
-                child: _MapChipButton(
-                  icon: Icons.add_location_alt_rounded,
-                  semanticLabel: l10n.driverDrawerRoadAlerts,
-                  badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
-                  onTap: () => unawaited(_openRoadAlerts()),
-                ),
-              ),
-            ],
-          ),
           // Only worth a banner when there's an actual permission/GPS
           // problem to act on — a permanently-present "we use your
           // location" caption is chrome, not information.
@@ -3014,7 +3015,7 @@ class _DriverShellState extends State<DriverShell> {
   Widget _tripTab() {
     final l10n = AppLocalizations.of(context);
     final action = _nextAction();
-    return ListView(
+    final body = ListView(
       padding: driverPagePadding(context),
       children: [
         Row(
@@ -3040,12 +3041,14 @@ class _DriverShellState extends State<DriverShell> {
               text: l10n.driverTripEmptyText,
               icon: Icons.route_outlined)
         else ...[
-          _TripMap(
-              order: _activeOrder!,
-              route: _driverRoute?.geometry ?? const [],
-              current: _currentCoordinate,
-              heading: _currentHeading),
-          const SizedBox(height: 12),
+          if (!_isTripFinished(_activeOrder!.status)) ...[
+            _TripMap(
+                order: _activeOrder!,
+                route: _driverRoute?.geometry ?? const [],
+                current: _currentCoordinate,
+                heading: _currentHeading),
+            const SizedBox(height: 12),
+          ],
           if (_isTripFinished(_activeOrder!.status))
             DriverTripCompletionCard(
               order: _activeOrder!,
@@ -3079,7 +3082,7 @@ class _DriverShellState extends State<DriverShell> {
                               style: TextStyle(
                                 color: context.palette.text,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -3153,7 +3156,7 @@ class _DriverShellState extends State<DriverShell> {
                                 style: TextStyle(
                                   color: context.palette.text,
                                   fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -3165,12 +3168,14 @@ class _DriverShellState extends State<DriverShell> {
                       const SizedBox(height: 14),
                       Text('${_activeOrder!.price!.round()} ₸',
                           style: const TextStyle(
-                              fontSize: 26, fontWeight: FontWeight.w900)),
+                              fontSize: 26, fontWeight: FontWeight.w600)),
                     ],
                     if (_activeOrder!.tariff != null &&
                         _activeOrder!.tariff!.isNotEmpty) ...[
                       const SizedBox(height: 6),
-                      Text(l10n.driverTripTariffLabel(_activeOrder!.tariff!),
+                      Text(
+                          l10n.driverTripTariffLabel(
+                              driverTariffTitle(l10n, _activeOrder!.tariff!)),
                           style:
                               TextStyle(color: context.palette.textSecondary)),
                     ],
@@ -3203,18 +3208,6 @@ class _DriverShellState extends State<DriverShell> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (action != null)
-                      DriverGradientButton(
-                        text: action.$1,
-                        enabled: _tripActionLabel == null ||
-                            _tripActionLabel == action.$1,
-                        loading: _tripActionLabel == action.$1,
-                        loadingText: l10n.driverTripSavingButton,
-                        highlighted: _showArrivalNudge,
-                        onTap: _tripActionLabel != null
-                            ? null
-                            : () => _tripAction(action.$1, action.$2),
-                      ),
                     if (_canNoShow(_activeOrder!.status)) ...[
                       const SizedBox(height: 10),
                       // IntrinsicWidth for the same reason as the "Позвонить"
@@ -3270,6 +3263,22 @@ class _DriverShellState extends State<DriverShell> {
           InlineMessage(text: _error!, danger: true)
         ],
       ],
+    );
+    return DriverTripLayout(
+      body: body,
+      action: action == null
+          ? null
+          : DriverGradientButton(
+              text: action.$1,
+              enabled:
+                  _tripActionLabel == null || _tripActionLabel == action.$1,
+              loading: _tripActionLabel == action.$1,
+              loadingText: l10n.driverTripSavingButton,
+              highlighted: _showArrivalNudge,
+              onTap: _tripActionLabel != null
+                  ? null
+                  : () => _tripAction(action.$1, action.$2),
+            ),
     );
   }
 
@@ -3461,7 +3470,7 @@ class _DriverShellState extends State<DriverShell> {
           title,
           style: TextStyle(
             color: dialogContext.palette.text,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
@@ -3482,7 +3491,7 @@ class _DriverShellState extends State<DriverShell> {
             style:
                 TextButton.styleFrom(foregroundColor: context.palette.danger),
             child: Text(confirmLabel,
-                style: const TextStyle(fontWeight: FontWeight.w900)),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -3626,7 +3635,7 @@ class _DriverIssueBanner extends StatelessWidget {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 15,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -3714,7 +3723,7 @@ class _MapChipButton extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -3768,7 +3777,7 @@ class _RegionPickerRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   fontSize: 14.5,
                   color: enabled ? palette.text : palette.textMuted,
                 ),
@@ -4794,7 +4803,7 @@ class _NavSpeedDial extends StatelessWidget {
               color: speeding ? palette.danger : palette.text,
               fontSize: 26,
               height: 1.05,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           Text(
@@ -4803,7 +4812,7 @@ class _NavSpeedDial extends StatelessWidget {
             style: TextStyle(
               color: palette.textSecondary,
               fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -4860,7 +4869,7 @@ class _NavRouteReadout extends StatelessWidget {
                 style: TextStyle(
                   color: palette.text,
                   fontSize: 28,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -4872,7 +4881,7 @@ class _NavRouteReadout extends StatelessWidget {
                 style: TextStyle(
                   color: palette.textSecondary,
                   fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -4888,7 +4897,7 @@ class _NavRouteReadout extends StatelessWidget {
           style: TextStyle(
             color: palette.textSecondary,
             fontSize: 12,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -4928,7 +4937,7 @@ class _SpeedLimitSign extends StatelessWidget {
         style: const TextStyle(
           color: Colors.black,
           fontSize: 20,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           height: 1,
         ),
       ),
@@ -5661,7 +5670,7 @@ class _NavCircleButton extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -5704,7 +5713,7 @@ class _NavTargetStrip extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 13.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: palette.text,
               ),
             ),
@@ -5743,7 +5752,7 @@ class _GpsSearchingBanner extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -5949,10 +5958,11 @@ class _TripMapState extends State<_TripMap> {
               left: 12,
               top: 12,
               child: _DriverMapBadge(
-                text: widget.route.isEmpty
-                    ? AppLocalizations.of(context)
-                        .driverRouteWillAppearAfterCalc
-                    : AppLocalizations.of(context).driverRouteToPickupPoint,
+                text: driverTripMapLabel(
+                  AppLocalizations.of(context),
+                  widget.order,
+                  hasRoute: widget.route.isNotEmpty,
+                ),
               ),
             ),
           ],
@@ -6037,7 +6047,7 @@ class _DriverMapBadge extends StatelessWidget {
           text,
           style: const TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: SmartTaxiColors.text,
           ),
         ),
@@ -6116,7 +6126,7 @@ class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
               l10n.driverQuickMessageSheetTitle,
               style: TextStyle(
                 fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 color: context.palette.text,
               ),
             ),
@@ -6219,7 +6229,7 @@ class _PriceOfferSheetState extends State<_PriceOfferSheet> {
             ),
             Text(
               l10n.driverPriceOfferSheetTitle,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
@@ -6514,7 +6524,7 @@ class _DriverRecurringBookingCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -7127,7 +7137,7 @@ class _RoadAlertMap extends StatelessWidget {
                         style: TextStyle(
                           color: context.palette.text,
                           fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -7179,7 +7189,7 @@ class _RoadAlertMapFallback extends StatelessWidget {
                 child: Text(
                   AppLocalizations.of(context).driverMapUnavailableUseGps,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: SmartTaxiColors.text,
                   ),
                 ),
@@ -7231,7 +7241,7 @@ class _RoadAlertPin extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
             ),
@@ -7292,14 +7302,14 @@ class _RoadAlertRow extends StatelessWidget {
               children: [
                 Text(roadAlertLabel(l10n, alert.type),
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w900)),
+                        fontSize: 15, fontWeight: FontWeight.w600)),
                 if (alert.comment.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     alert.comment,
                     style: TextStyle(
                       color: context.palette.textSecondary,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -7312,7 +7322,7 @@ class _RoadAlertRow extends StatelessWidget {
                   style: TextStyle(
                     color: context.palette.textSecondary,
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (alert.speedLimit != null) ...[
@@ -7322,7 +7332,7 @@ class _RoadAlertRow extends StatelessWidget {
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -7333,7 +7343,7 @@ class _RoadAlertRow extends StatelessWidget {
                     style: TextStyle(
                       color: context.palette.textSecondary,
                       fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -7523,7 +7533,7 @@ class _NextManeuverBanner extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -7534,7 +7544,7 @@ class _NextManeuverBanner extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (streetName != null && streetName!.isNotEmpty) ...[
@@ -7606,7 +7616,7 @@ class _NavigatorVoiceBanner extends StatelessWidget {
                 style: TextStyle(
                   color: palette.brandDeep,
                   fontSize: 15,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

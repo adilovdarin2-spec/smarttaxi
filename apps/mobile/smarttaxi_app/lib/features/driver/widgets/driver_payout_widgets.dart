@@ -129,7 +129,7 @@ class _MethodChoiceButton extends StatelessWidget {
             style: TextStyle(
               color: selected ? palette.brandDeep : palette.textSecondary,
               fontSize: 13.5,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

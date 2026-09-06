@@ -151,8 +151,8 @@ class _ClientWalletScreenState extends State<ClientWalletScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.passengerWalletRemoveCardConfirmTitle),
-        content: Text(l10n.passengerWalletRemoveCardConfirmText(
-            card.maskedCardNumber)),
+        content: Text(
+            l10n.passengerWalletRemoveCardConfirmText(card.maskedCardNumber)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -239,11 +239,12 @@ class _ClientWalletScreenState extends State<ClientWalletScreen> {
                       style: SmartTaxiTextStyles.subtitle
                           .copyWith(color: palette.textSecondary)),
                 ),
-                TextButton.icon(
-                  onPressed: _openAddCard,
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: Text(l10n.passengerWalletAddCardButton),
-                ),
+                if (_cards.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _openAddCard,
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: Text(l10n.passengerWalletAddCardButton),
+                  ),
               ],
             ),
             const SizedBox(height: 4),
@@ -291,7 +292,7 @@ class _WalletCtaButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         onTap: active ? onTap : null,
         child: Opacity(
           opacity: active ? 1 : 0.6,
@@ -300,19 +301,8 @@ class _WalletCtaButton extends StatelessWidget {
             height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [palette.brand, palette.brandDeep],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: palette.brand.withValues(alpha: 0.32),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              color: palette.brand,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: loading
                 ? const SizedBox(
@@ -326,7 +316,7 @@ class _WalletCtaButton extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
@@ -351,9 +341,8 @@ class _WalletBalanceCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: palette.brandSurface,
-        borderRadius: BorderRadius.circular(SmartTaxiRadius.lg),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: palette.border),
-        boxShadow: SmartTaxiShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +355,7 @@ class _WalletBalanceCard extends StatelessWidget {
             _money(summary.balanceKzt),
             style: TextStyle(
               fontSize: 32,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               color: palette.text,
             ),
           ),
@@ -448,7 +437,7 @@ class _TopupRequestRow extends StatelessWidget {
           Expanded(
             child: Text(_money(request.amountKzt),
                 style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     fontSize: 15,
                     color: palette.text)),
           ),
@@ -499,7 +488,7 @@ class _ClientCardRow extends StatelessWidget {
               children: [
                 Text(card.maskedCardNumber,
                     style: TextStyle(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         fontSize: 13.5,
                         color: palette.text)),
                 if (card.holderName != null && card.holderName!.isNotEmpty)
@@ -686,8 +675,8 @@ class _TopUpSheetState extends State<_TopUpSheet> {
     final l10n = AppLocalizations.of(context);
     final amount = int.tryParse(_amountController.text.trim());
     if (amount == null || amount < _minTopupKzt) {
-      setState(() => _error =
-          l10n.passengerWalletTopUpMinNote(_money(_minTopupKzt)));
+      setState(() =>
+          _error = l10n.passengerWalletTopUpMinNote(_money(_minTopupKzt)));
       return;
     }
     setState(() {

@@ -31,7 +31,10 @@ List<_NotificationDayGroup> _groupByDay(
             : '${day.day.toString().padLeft(2, '0')}.${day.month.toString().padLeft(2, '0')}.${day.year}';
     ordered.putIfAbsent(label, () => []).add(item);
   }
-  return [for (final entry in ordered.entries) _NotificationDayGroup(entry.key, entry.value)];
+  return [
+    for (final entry in ordered.entries)
+      _NotificationDayGroup(entry.key, entry.value)
+  ];
 }
 
 IconData _iconFor(String type) {
@@ -71,8 +74,7 @@ class DriverNotificationsScreen extends StatefulWidget {
       _DriverNotificationsScreenState();
 }
 
-class _DriverNotificationsScreenState
-    extends State<DriverNotificationsScreen> {
+class _DriverNotificationsScreenState extends State<DriverNotificationsScreen> {
   bool _loading = true;
   String? _error;
   List<AppNotification> _items = const [];
@@ -216,7 +218,7 @@ class _DriverNotificationTile extends StatelessWidget {
                         style: TextStyle(
                           color: palette.text,
                           fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -251,7 +253,7 @@ class _DriverNotificationTile extends StatelessWidget {
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],

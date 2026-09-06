@@ -194,7 +194,7 @@ class _ApplicationDocumentRow extends StatelessWidget {
                 child: Text(
                   documentTypeLabel(l10n, type),
                   style: TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: palette.text),
                 ),

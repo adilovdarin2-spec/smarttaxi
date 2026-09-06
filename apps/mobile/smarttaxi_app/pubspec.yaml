@@ -52,6 +52,8 @@ flutter:
     - assets/cars/tariff_business_white_premium_sedan_flutter.png
     - assets/cars/tariff_economy_white_sedan_flutter.png
     - assets/cars/tariff_economy_3d_v2.png
+    - assets/cars/car_economy_photo_v1.png
+    - assets/cars/car_delivery_photo_v1.png
     - assets/cars/tariff_delivery_3d_v2.png
     - assets/cars/tariff_v11_economy.png
     - assets/cars/tariff_v11_delivery.png

@@ -273,7 +273,7 @@ class _WalletBalanceCard extends StatelessWidget {
             _money(summary.balanceKzt),
             style: TextStyle(
               fontSize: 32,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               color: palette.text,
             ),
           ),
@@ -326,7 +326,7 @@ class _WalletBalanceCard extends StatelessWidget {
               ),
               child: Text(
                 l10n.driverWalletTopUpButton,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -391,7 +391,7 @@ class _WalletBreakdownRow extends StatelessWidget {
             text,
             style: TextStyle(
               color: textColor,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               fontSize: 12.5,
             ),
           ),
@@ -450,13 +450,12 @@ class _PayoutRequestRow extends StatelessWidget {
               children: [
                 Text(_money(request.amountKzt),
                     style: TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
                         color: palette.text)),
                 const SizedBox(height: 2),
                 Text(_timeAgo(l10n, request.createdAt),
-                    style:
-                        TextStyle(color: palette.textMuted, fontSize: 11.5)),
+                    style: TextStyle(color: palette.textMuted, fontSize: 11.5)),
                 if (request.isRejected && request.rejectionReason != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -500,13 +499,12 @@ class _TopupRequestRow extends StatelessWidget {
               children: [
                 Text(_money(request.amountKzt),
                     style: TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
                         color: palette.text)),
                 const SizedBox(height: 2),
                 Text(_timeAgo(l10n, request.createdAt),
-                    style:
-                        TextStyle(color: palette.textMuted, fontSize: 11.5)),
+                    style: TextStyle(color: palette.textMuted, fontSize: 11.5)),
               ],
             ),
           ),
@@ -582,7 +580,7 @@ class _WalletTransactionRow extends StatelessWidget {
                           ? l10n.driverWalletTxAdjustment
                           : l10n.driverWalletTxEarning,
                   style: TextStyle(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       fontSize: 13.5,
                       color: palette.text),
                 ),
@@ -604,7 +602,7 @@ class _WalletTransactionRow extends StatelessWidget {
                     ? _money(transaction.amountKzt)
                     : '+${_money(transaction.amountKzt)}',
             style: TextStyle(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: isCharge
                   ? palette.danger
                   : isAdjustment

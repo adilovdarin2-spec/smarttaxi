@@ -584,7 +584,7 @@ class _AuthWordmark extends StatelessWidget {
                     text: 'Smart',
                     style: TextStyle(
                       fontSize: 44 * scale,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       color: Colors.white,
                       letterSpacing: -0.5,
                       height: 1.05,
@@ -729,7 +729,7 @@ class _PhotoAuthLanguageToggle extends StatelessWidget {
                 style: const TextStyle(
                   color: SmartTaxiColors.authInk,
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -781,7 +781,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(compact ? 34 : 42),
+          top: Radius.circular(24),
         ),
         boxShadow: SmartTaxiShadows.sheet,
       ),
@@ -803,7 +803,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
                 color: SmartTaxiColors.authInk,
                 fontSize: titleSize,
                 height: 1.05,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,
               ),
             ),
@@ -814,7 +814,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
                 color: SmartTaxiColors.authMuted,
                 fontSize: compact ? 13.0 : 15.0,
                 height: 1.35,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
             SizedBox(height: compact ? 10 : 13),
@@ -829,7 +829,7 @@ class _PhotoSmsVerificationCard extends StatelessWidget {
                 color: SmartTaxiColors.authMuted,
                 fontSize: compact ? 14.2 : 15.6,
                 height: 1.2,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             SizedBox(height: compact ? 12 : 16),
@@ -936,7 +936,7 @@ class _PhotoSmsPhoneChip extends StatelessWidget {
           color: SmartTaxiColors.authInk,
           fontSize: compact ? 15.2 : 17,
           height: 1.1,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         ),
       ),
@@ -960,7 +960,7 @@ class _PhotoSmsSafetyText extends StatelessWidget {
             color: SmartTaxiColors.authInk,
             fontSize: compact ? 13.0 : 14.2,
             height: 1.2,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 5),
@@ -970,7 +970,7 @@ class _PhotoSmsSafetyText extends StatelessWidget {
             color: SmartTaxiColors.authMuted,
             fontSize: compact ? 12.6 : 14.0,
             height: 1.28,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -996,7 +996,7 @@ class _PhotoSmsFooter extends StatelessWidget {
             color: SmartTaxiColors.authCaption,
             fontSize: compact ? 10.5 : 12.0,
             height: 1.28,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 6),
@@ -1007,7 +1007,7 @@ class _PhotoSmsFooter extends StatelessWidget {
             color: SmartTaxiColors.authCaption,
             fontSize: compact ? 10.3 : 11.8,
             height: 1.28,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -1239,7 +1239,7 @@ class _PhotoSmsCodeBox extends StatelessWidget {
                       color: SmartTaxiColors.authInk,
                       fontSize: compact ? 23 : 27,
                       height: 1,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w600,
                     ),
                   )
                 : active
@@ -1350,7 +1350,7 @@ class _PhotoSmsResendRow extends StatelessWidget {
                     color: SmartTaxiColors.authMuted,
                     fontSize: compact ? 13.2 : 15.2,
                     height: 1.2,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1362,7 +1362,7 @@ class _PhotoSmsResendRow extends StatelessWidget {
                     color: SmartTaxiColors.brand,
                     fontSize: compact ? 13.8 : 15.8,
                     height: 1.2,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -1479,7 +1479,7 @@ class _OfflineOverlay extends StatelessWidget {
                   style: const TextStyle(
                     color: SmartTaxiColors.authInk,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1490,7 +1490,7 @@ class _OfflineOverlay extends StatelessWidget {
                     color: SmartTaxiColors.authMuted,
                     fontSize: 14,
                     height: 1.4,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 22),
@@ -1556,7 +1556,7 @@ class _UpdateRequiredScreen extends StatelessWidget {
                     style: TextStyle(
                       color: SmartTaxiColors.authInk,
                       fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1571,7 +1571,7 @@ class _UpdateRequiredScreen extends StatelessWidget {
                       color: SmartTaxiColors.authMuted,
                       fontSize: 14,
                       height: 1.4,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 22),
@@ -1654,7 +1654,7 @@ class _UpdateAvailableSheet extends StatelessWidget {
                         style: TextStyle(
                           color: SmartTaxiColors.text,
                           fontSize: 18,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1667,7 +1667,7 @@ class _UpdateAvailableSheet extends StatelessWidget {
                           color: SmartTaxiColors.textSecondary,
                           fontSize: 13,
                           height: 1.3,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -1720,7 +1720,7 @@ class _RuntimeFallbackScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   const Text(
                     'SmartTaxi',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -1729,7 +1729,7 @@ class _RuntimeFallbackScreen extends StatelessWidget {
                     style: const TextStyle(
                       color: SmartTaxiColors.textSecondary,
                       height: 1.4,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -1797,7 +1797,7 @@ class _ButtonLoader extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -1915,7 +1915,8 @@ class _SplashContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(58),
                     boxShadow: [
                       BoxShadow(
-                        color: SmartTaxiColors.brandDeep.withValues(alpha: 0.22),
+                        color:
+                            SmartTaxiColors.brandDeep.withValues(alpha: 0.22),
                         blurRadius: 48,
                         offset: const Offset(0, 22),
                       ),
@@ -1945,7 +1946,7 @@ class _SplashContent extends StatelessWidget {
                         color: SmartTaxiColors.brandDeep,
                         fontSize: 12,
                         height: 1.2,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.1,
                       ),
                     ),
@@ -1968,7 +1969,7 @@ class _SplashContent extends StatelessWidget {
                         color: SmartTaxiColors.authMuted,
                         fontSize: 15.2,
                         height: 1.15,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0,
                       ),
                     ),
@@ -2571,7 +2572,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
             bottom: false,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final horizontalPadding = compact ? 30.0 : 38.0;
+                final horizontalPadding = compact ? 24.0 : 28.0;
                 final topPadding = compact ? 44.0 : 52.0;
                 final bottomPadding = (compact ? 12.0 : 18.0) +
                     MediaQuery.paddingOf(context).bottom;
@@ -2630,7 +2631,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(compact ? 34 : 42)),
+                                  top: Radius.circular(24)),
                               boxShadow: SmartTaxiShadows.sheet,
                             ),
                             child: SingleChildScrollView(
@@ -2645,7 +2646,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                                       color: SmartTaxiColors.authInk,
                                       fontSize: compact ? 26.0 : 30.0,
                                       height: 1.05,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w600,
                                       letterSpacing: -0.3,
                                     ),
                                   ),
@@ -2656,7 +2657,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                                       color: SmartTaxiColors.authMuted,
                                       fontSize: compact ? 13.0 : 15.0,
                                       height: compact ? 1.25 : 1.35,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   SizedBox(height: compact ? 15 : 21),
@@ -2909,7 +2910,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                   style: const TextStyle(
                     color: SmartTaxiColors.authInk,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     height: 1.08,
                     letterSpacing: 0,
                   ),
@@ -2921,7 +2922,7 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
                     color: SmartTaxiColors.authMuted,
                     fontSize: 13.4,
                     height: 1.42,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -3263,7 +3264,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final horizontalPadding = compact ? 30.0 : 38.0;
+    final horizontalPadding = compact ? 24.0 : 28.0;
     final topPadding =
         keyboardOpen ? (compact ? 24.0 : 30.0) : (compact ? 34.0 : 42.0);
     final fieldGap =
@@ -3286,8 +3287,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(compact ? 34 : 42)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: SmartTaxiShadows.sheet,
         ),
         child: SingleChildScrollView(
@@ -3304,7 +3304,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
                   color: SmartTaxiColors.authInk,
                   fontSize: titleSize,
                   height: 1.05,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -3317,7 +3317,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
                   color: SmartTaxiColors.authMuted,
                   fontSize: subtitleSize,
                   height: compact ? 1.34 : 1.42,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
@@ -3362,7 +3362,7 @@ class _PhotoPasswordLoginCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: compact ? 13.2 : 14.6,
                       height: 1.1,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       decoration: TextDecoration.underline,
                       decorationColor: const Color(0x66111426),
                       decorationThickness: 0.75,
@@ -3449,7 +3449,7 @@ class _PhotoNewPasswordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final horizontalPadding = compact ? 30.0 : 38.0;
+    final horizontalPadding = compact ? 24.0 : 28.0;
     final topPadding =
         keyboardOpen ? (compact ? 24.0 : 28.0) : (compact ? 34.0 : 42.0);
     final fieldGap = keyboardOpen ? 14.0 : (compact ? 17.0 : 21.0);
@@ -3462,7 +3462,7 @@ class _PhotoNewPasswordCard extends StatelessWidget {
           fontSize:
               keyboardOpen ? (compact ? 23.0 : 26.0) : (compact ? 25.0 : 29.0),
           height: 1.08,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0,
         ),
       ),
@@ -3474,7 +3474,7 @@ class _PhotoNewPasswordCard extends StatelessWidget {
           fontSize:
               keyboardOpen ? (compact ? 12.6 : 13.6) : (compact ? 13.0 : 15.0),
           height: 1.36,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
           letterSpacing: 0,
         ),
       ),
@@ -3566,8 +3566,7 @@ class _PhotoNewPasswordCard extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(compact ? 34 : 42)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: SmartTaxiShadows.sheet,
         ),
         child: child,
@@ -3610,7 +3609,7 @@ class _PhotoPasswordFieldGroup extends StatelessWidget {
             color: SmartTaxiColors.authInk,
             fontSize: compact ? 13.0 : 14.2,
             height: 1.15,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             letterSpacing: 0,
           ),
         ),
@@ -3693,7 +3692,7 @@ class _PhotoNewPasswordRuleCard extends StatelessWidget {
                     color: SmartTaxiColors.authInk,
                     fontSize: compact ? 13.8 : 15.4,
                     height: 1.12,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: 0,
                   ),
                 ),
@@ -3704,7 +3703,7 @@ class _PhotoNewPasswordRuleCard extends StatelessWidget {
                     color: SmartTaxiColors.authMuted,
                     fontSize: compact ? 12.2 : 13.6,
                     height: 1.33,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0,
                   ),
                 ),
@@ -3751,7 +3750,7 @@ class _PhotoNewPasswordSafeNote extends StatelessWidget {
                   color: SmartTaxiColors.authInk,
                   fontSize: compact ? 13.1 : 14.6,
                   height: 1.2,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 0,
                 ),
               ),
@@ -3762,7 +3761,7 @@ class _PhotoNewPasswordSafeNote extends StatelessWidget {
                   color: SmartTaxiColors.authMuted,
                   fontSize: compact ? 11.8 : 13.2,
                   height: 1.32,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
@@ -3916,7 +3915,7 @@ class _PhotoPhoneFieldState extends State<_PhotoPhoneField> {
               style: TextStyle(
                 color: SmartTaxiColors.authInk,
                 fontSize: 16.2,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(width: 12),
@@ -3973,7 +3972,7 @@ class _PhotoAuthTextField extends StatelessWidget {
         color: SmartTaxiColors.authInk,
         fontSize: 15.4,
         height: 1.1,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         labelText: label,
@@ -3982,7 +3981,7 @@ class _PhotoAuthTextField extends StatelessWidget {
         labelStyle: const TextStyle(
           color: SmartTaxiColors.authFieldLabel,
           fontSize: 15.4,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
         ),
         hintStyle: const TextStyle(
           color: SmartTaxiColors.authFieldHint,
@@ -4011,7 +4010,8 @@ class _PhotoAuthTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: SmartTaxiColors.brand, width: 1.5),
+          borderSide:
+              const BorderSide(color: SmartTaxiColors.brand, width: 1.5),
         ),
       ),
       autofillHints: autofillHints,
@@ -4117,7 +4117,7 @@ class _PhotoAuthErrorBanner extends StatelessWidget {
                             color: Color(0xFF1F2933),
                             fontSize: 12.8,
                             height: 1.3,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -4175,7 +4175,7 @@ class _PhotoAuthInfoLine extends StatelessWidget {
                   color: SmartTaxiColors.brandDeep,
                   fontSize: 12.6,
                   height: 1.25,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -4336,7 +4336,7 @@ class _PhotoAuthLegalLink extends StatelessWidget {
             color: SmartTaxiColors.authInk,
             fontSize: 10.8,
             height: 1.35,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
             decoration: TextDecoration.underline,
             decorationColor: Color(0x55111426),
             decorationThickness: 0.75,
@@ -4419,7 +4419,7 @@ class _PhotoAuthPrimaryButton extends StatelessWidget {
                                 color: Colors.white,
                                 fontSize: 16,
                                 height: 1,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

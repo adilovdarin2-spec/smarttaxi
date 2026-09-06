@@ -240,11 +240,11 @@ void main() {
       expect(passenger, contains('tariffDeliveryTitle'));
       expect(
         passenger,
-        contains('assets/cars/tariff_economy_3d_v2.png'),
+        contains('assets/cars/car_economy_photo_v1.png'),
       );
       expect(
         passenger,
-        contains('assets/cars/tariff_delivery_3d_v2.png'),
+        contains('assets/cars/car_delivery_photo_v1.png'),
       );
       expect(
         passenger,
@@ -377,10 +377,9 @@ void main() {
     // whether to keep waiting.
     expect(
       passenger,
-      contains("""
-  return route.isFallback
-      ? '\$text · \${l10n.driverRouteFallbackNotice}'
-      : text;"""),
+      contains(RegExp(
+        r"return\s+route\.isFallback\s*\?\s*'\$text · \$\{l10n.driverRouteFallbackNotice\}'\s*:\s*text;",
+      )),
     );
     expect(
       passenger,
@@ -559,7 +558,8 @@ void main() {
     expect(
       passenger,
       contains('final serverHint = address?.subtitle?.trim();'),
-      reason: "the server's wording wins: it names the town, a local string cannot",
+      reason:
+          "the server's wording wins: it names the town, a local string cannot",
     );
     expect(
       passenger,
@@ -571,21 +571,24 @@ void main() {
       contains('''                                : canConfirm
                                     ? addressLabel
                                     : addressHint ?? addressLabel,'''),
-      reason: 'and the card shows the hint precisely when confirmation is blocked',
+      reason:
+          'and the card shows the hint precisely when confirmation is blocked',
     );
     // A stale hint must not survive the pin moving, being cancelled, or the
     // picker being reopened.
     expect(
       RegExp(r'_mapPickerAddressHint = null').allMatches(passenger).length,
       greaterThanOrEqualTo(3),
-      reason: 'the hint is cleared on open, on cancel and when a new point resolves',
+      reason:
+          'the hint is cleared on open, on cancel and when a new point resolves',
     );
   });
 
-  test('the map picker marker is drawn from the approved reference geometry', () {
+  test('the map picker marker is drawn from the approved reference geometry',
+      () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
-    final reference =
-        _read('../../../design-reference/web-approved/assets/map-initial-square-tail-marker.svg');
+    final reference = _read(
+        '../../../design-reference/web-approved/assets/map-initial-square-tail-marker.svg');
     final web = _read('../../../apps/web/src/features/map/MapView.jsx');
 
     // The reference is a 64-unit viewBox with the badge at (2,2), 60 across.
@@ -598,18 +601,27 @@ void main() {
     expect(web, contains('M10 22C10 14 16.5 8 24 6.5'));
     expect(
       passenger,
-      contains('..cubicTo(4 * unit, 8 * unit, 10.5 * unit, 2 * unit, 18 * unit, 0.5 * unit)'),
-      reason: 'the corner highlight arc is the reference curve, less the insets',
+      contains(RegExp(
+        r'\.\.cubicTo\(\s*4 \* unit, 8 \* unit, 10\.5 \* unit, 2 \* unit, 18 \* unit, 0\.5 \* unit\)',
+      )),
+      reason:
+          'the corner highlight arc is the reference curve, less the insets',
     );
     expect(passenger, contains('static const _unit = _badgeSize / 60;'));
-    expect(passenger, contains('fontSize: 29 * _unit'), reason: 'glyph size is the reference 29 units');
+    expect(passenger, contains('fontSize: 29 * _unit'),
+        reason: 'glyph size is the reference 29 units');
     expect(
       passenger,
       contains('shaderCallback: (bounds) =>'),
       reason: 'and the glyph takes the badge gradient, not a flat fill',
     );
-    for (final mark in ['(8, 18, light, .55)', '(17, 18, mid, .9)', '(12, 27, light, .35)']) {
-      expect(passenger, contains(mark), reason: 'speed marks sit on reference coordinates');
+    for (final mark in [
+      '(8, 18, light, .55)',
+      '(17, 18, mid, .9)',
+      '(12, 27, light, .35)'
+    ]) {
+      expect(passenger, contains(mark),
+          reason: 'speed marks sit on reference coordinates');
     }
     // Same three squares, same opacities, in the reference and the web.
     for (final rect in [
@@ -704,7 +716,8 @@ void main() {
         contains('await controller.setGeoJsonSource(_routeSource, routeData)'));
     expect(passenger, contains('belowLayerId: anchorLayerId'));
     expect(passenger, isNot(contains('geometry: geometry,')),
-        reason: 'the native passenger route must not return to addLine annotations');
+        reason:
+            'the native passenger route must not return to addLine annotations');
   });
 
   test('driver drawer keeps driver tabs and adds account/support sections', () {
@@ -869,7 +882,8 @@ void main() {
     expect(driver, isNot(contains('Yandex')));
     expect(driver, isNot(contains('Google')));
     expect(driver, contains('CameraFit.coordinates'));
-    expect(driver, contains('driverRouteToPickupPoint'));
+    expect(driver, contains('driverTripMapLabel('));
+    expect(helpers, contains('driverRouteToPickupPoint'));
     expect(helpers, contains('errorRouteUnavailable'));
     expect(driver, contains("status == 'DRIVER_FOUND'"));
     expect(driver, contains("status == 'DRIVER_GOING_TO_CLIENT'"));
@@ -979,7 +993,8 @@ void main() {
     expect(passenger, contains('BoxFit.scaleDown'));
     expect(passenger, contains('TextButton.styleFrom'));
     expect(emptyState, contains('BoxConstraints(maxWidth: 430)'));
-    expect(emptyState, contains('fontWeight: FontWeight.w900'));
+    expect(emptyState, contains('fontWeight: FontWeight.w600'));
+    expect(emptyState, isNot(contains('fontWeight: FontWeight.w900')));
     expect(statusPill, contains('BoxConstraints(maxWidth: 164)'));
     expect(statusPill, contains('TextOverflow.ellipsis'));
     // driverPagePadding and the compact-screen scaleDown treatment moved into

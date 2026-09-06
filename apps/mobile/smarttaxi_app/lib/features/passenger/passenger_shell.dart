@@ -41,13 +41,12 @@ import 'screens/wallet/client_wallet_screen.dart';
 
 // Product-owned illustrations keep the premium card presentation distinct
 // without copying artwork from the visual references.
-const _tariffEconomyAsset =
-    'assets/cars/tariff_economy_3d_v2.png';
+const _tariffEconomyAsset = 'assets/cars/car_economy_photo_v1.png';
 const _tariffComfortAsset =
     'assets/cars/tariff_comfort_white_sedan_flutter.png';
 const _tariffBusinessAsset =
     'assets/cars/tariff_business_white_premium_sedan_flutter.png';
-const _tariffDeliveryAsset = 'assets/cars/tariff_delivery_3d_v2.png';
+const _tariffDeliveryAsset = 'assets/cars/car_delivery_photo_v1.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One fixed size for the car icon everywhere it appears on this map --
 // nearby free drivers before a match, and the specific driver being
@@ -901,7 +900,8 @@ class _PassengerShellState extends State<PassengerShell>
           }
         }
       }
-      final activeRegion = regions.isEmpty ? null : centerRegion ?? regions.first;
+      final activeRegion =
+          regions.isEmpty ? null : centerRegion ?? regions.first;
       setState(() {
         _regions = regions;
         _selectedRegion = activeRegion;
@@ -1804,7 +1804,8 @@ class _PassengerShellState extends State<PassengerShell>
 
   void _scheduleMapPickerReverse(LatLng point, {bool immediate = false}) {
     _mapPickerReverseDebounce?.cancel();
-    if (mounted && (!_mapPickerAddressLoading || _mapPickerAddressHint != null)) {
+    if (mounted &&
+        (!_mapPickerAddressLoading || _mapPickerAddressHint != null)) {
       // Clearing the hint as the map starts moving matters: leaving the old
       // "move the pin" line up while a new point resolves reads as advice
       // about where the pin is now.
@@ -2029,7 +2030,8 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() {
         _preview = null;
         _tariffEstimates = const {};
-        _error = AppLocalizations.of(context).passengerPickupDestinationSameError;
+        _error =
+            AppLocalizations.of(context).passengerPickupDestinationSameError;
       });
       return;
     }
@@ -2814,7 +2816,8 @@ class _PassengerShellState extends State<PassengerShell>
                       locationLoading: _locationLoading,
                       paymentMethod: _paymentMethod,
                       paymentLabel: _paymentMethodLabel,
-                      onPickupTap: () => _selectPoint(target: PointTarget.pickup),
+                      onPickupTap: () =>
+                          _selectPoint(target: PointTarget.pickup),
                       onDropoffTap: () =>
                           _selectPoint(target: PointTarget.dropoff),
                       onUseLocation: _usePhoneLocation,
@@ -3005,7 +3008,7 @@ class _PassengerShellState extends State<PassengerShell>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         title: Text(
           l10n.passengerLogoutConfirmTitle,
-          style: const TextStyle(fontWeight: FontWeight.w900),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         content: Text(
           l10n.passengerLogoutConfirmText,
@@ -3024,7 +3027,7 @@ class _PassengerShellState extends State<PassengerShell>
             onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(foregroundColor: palette.danger),
             child: Text(l10n.passengerLogoutButton,
-                style: const TextStyle(fontWeight: FontWeight.w900)),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -3505,7 +3508,7 @@ class _PassengerShellState extends State<PassengerShell>
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -3520,7 +3523,7 @@ class _PassengerShellState extends State<PassengerShell>
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 19,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -3529,7 +3532,7 @@ class _PassengerShellState extends State<PassengerShell>
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -3771,7 +3774,7 @@ class _PassengerShellState extends State<PassengerShell>
                     child: Text(
                       l10n.passengerPromoHaveCode,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w900),
+                          fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -3817,7 +3820,7 @@ class _PassengerShellState extends State<PassengerShell>
                   style: TextStyle(
                     color: palette.danger,
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -3852,7 +3855,7 @@ class _PassengerShellState extends State<PassengerShell>
                               l10n.passengerPromoActiveTitle(result.code),
                               style: const TextStyle(
                                 fontSize: 13.5,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -3962,7 +3965,7 @@ class _PassengerShellState extends State<PassengerShell>
                 Text(
                   l10n.passengerDriverAppSubmittedTitle,
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w900),
+                      fontSize: 18, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -3993,7 +3996,7 @@ class _PassengerShellState extends State<PassengerShell>
                           l10n.passengerDriverAppQuestionBanner,
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             color: palette.text,
                           ),
                         ),
@@ -4099,7 +4102,7 @@ class _PassengerShellState extends State<PassengerShell>
                               text: l10n.passengerDriverTermsLink,
                               style: TextStyle(
                                 color: palette.brandDeep,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => setState(
@@ -4111,7 +4114,7 @@ class _PassengerShellState extends State<PassengerShell>
                               text: l10n.passengerDriverSafetyRulesLink,
                               style: TextStyle(
                                 color: palette.brandDeep,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => setState(
@@ -4229,7 +4232,7 @@ class _PassengerShellState extends State<PassengerShell>
                       children: [
                         Text(
                           l10n.passengerSupportUrgentTitle,
-                          style: const TextStyle(fontWeight: FontWeight.w900),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -4304,7 +4307,7 @@ class _PassengerShellState extends State<PassengerShell>
                             style: TextStyle(
                               color: palette.textSecondary,
                               fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         )
@@ -4814,7 +4817,7 @@ class _PassengerShellState extends State<PassengerShell>
                     style: TextStyle(
                       color: palette.textSecondary,
                       fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -4825,7 +4828,7 @@ class _PassengerShellState extends State<PassengerShell>
                           summary.code,
                           style: const TextStyle(
                             fontSize: 30,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: 2,
                           ),
                         ),
@@ -4871,7 +4874,7 @@ class _PassengerShellState extends State<PassengerShell>
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -4879,7 +4882,7 @@ class _PassengerShellState extends State<PassengerShell>
                           '${summary.invitedCount}',
                           style: const TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -4897,7 +4900,7 @@ class _PassengerShellState extends State<PassengerShell>
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -4905,7 +4908,7 @@ class _PassengerShellState extends State<PassengerShell>
                           _formatTenge(summary.totalBonusEarned),
                           style: const TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -5070,7 +5073,7 @@ class _PassengerShellState extends State<PassengerShell>
               const SizedBox(height: 18),
               const Text(
                 'SmartTaxi',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Text(
@@ -5125,7 +5128,7 @@ class _PassengerShellState extends State<PassengerShell>
             style: TextStyle(
               color: palette.textMuted,
               fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -5196,7 +5199,7 @@ class _PassengerShellState extends State<PassengerShell>
                     style: TextStyle(
                       color: context.palette.brandDeep,
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -5247,7 +5250,7 @@ class _SupportHistoryCard extends StatelessWidget {
                       : item.topic,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -5288,7 +5291,7 @@ class _SupportHistoryCard extends StatelessWidget {
                     style: TextStyle(
                       color: palette.brandDeep,
                       fontSize: 11,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -5433,7 +5436,7 @@ class _SupportTopicChip extends StatelessWidget {
             style: TextStyle(
               color: selected ? palette.text : palette.textSecondary,
               fontSize: 13,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -5933,6 +5936,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   String _lastRouteFitSignature = '';
   String _lastHomeFitSignature = '';
   int _homeCameraMoves = 0;
+  int _homeFitGeneration = 0;
   Size _viewportSize = Size.zero;
   Timer? _cameraSyncTimer;
 
@@ -6124,6 +6128,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           '${widget.panelHeight.toStringAsFixed(1)}|$_viewportSize';
       // GPS/notification rebuilds and a user pan must not reset route framing.
       if (_lastRouteFitSignature == signature) return;
+      _homeFitGeneration++;
       _lastRouteFitSignature = signature;
       final padding = passengerRouteInsets(_viewportSize, widget.panelHeight);
       try {
@@ -6151,6 +6156,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           '${widget.panelHeight.toStringAsFixed(1)}|$_viewportSize';
       if (_lastHomeFitSignature == signature) return;
       _lastHomeFitSignature = signature;
+      final generation = ++_homeFitGeneration;
       _homeCameraMoves++;
       try {
         _ignoreNextCameraIdle = true;
@@ -6165,7 +6171,10 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           duration: const Duration(milliseconds: 220),
         );
         // A gesture, newer GPS selection or resized panel cancels this fit.
-        if (!mounted || moved == false || _lastHomeFitSignature != signature) {
+        if (!mounted ||
+            moved == false ||
+            generation != _homeFitGeneration ||
+            _lastHomeFitSignature != signature) {
           return;
         }
         _ignoreNextCameraIdle = true;
@@ -6177,13 +6186,14 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           duration: const Duration(milliseconds: 220),
         );
       } catch (_) {
-        _lastHomeFitSignature = '';
+        if (generation == _homeFitGeneration) _lastHomeFitSignature = '';
       } finally {
         _homeCameraMoves--;
       }
       return;
     }
     _lastHomeFitSignature = '';
+    _homeFitGeneration++;
     final current = controller.cameraPosition;
     final target = _nativePoint(widget.center);
     final currentTarget = current?.target;
@@ -6546,7 +6556,8 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            AppLocalizations.of(context).passengerMapLoadingTitle,
+                            AppLocalizations.of(context)
+                                .passengerMapLoadingTitle,
                             style: const TextStyle(
                               color: SmartTaxiColors.text,
                               fontSize: 13,
@@ -7171,7 +7182,8 @@ class _MarkerBadgePainter extends CustomPainter {
     // origin and the inner square's 4-unit inset.
     final highlight = ui.Path()
       ..moveTo(4 * unit, 16 * unit)
-      ..cubicTo(4 * unit, 8 * unit, 10.5 * unit, 2 * unit, 18 * unit, 0.5 * unit);
+      ..cubicTo(
+          4 * unit, 8 * unit, 10.5 * unit, 2 * unit, 18 * unit, 0.5 * unit);
     canvas.drawPath(
       highlight,
       Paint()
@@ -7199,7 +7211,6 @@ class _MarkerBadgePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MarkerBadgePainter oldDelegate) => false;
 }
-
 
 // The address marker is deliberately identical for pickup and destination.
 // The field label supplies that meaning; a second visual language made the
@@ -7706,13 +7717,13 @@ class _HomeOrderPanel extends StatelessWidget {
         8 + MediaQuery.paddingOf(context).bottom,
       ),
       child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(32)),
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
           decoration: BoxDecoration(
             color: context.palette.card,
-            borderRadius: const BorderRadius.all(Radius.circular(32)),
+            borderRadius: const BorderRadius.all(Radius.circular(24)),
             boxShadow: SmartTaxiShadows.raised,
           ),
           child: child,
@@ -7748,7 +7759,7 @@ class _OrderSheetHeading extends StatelessWidget {
               color: palette.textSecondary,
               fontSize: 13,
               height: 1.1,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 3),
@@ -7759,10 +7770,10 @@ class _OrderSheetHeading extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: palette.text,
-            fontSize: 28,
-            height: 1.0,
+            fontSize: 22,
+            height: 1.2,
             letterSpacing: -0.4,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 7),
@@ -7774,7 +7785,7 @@ class _OrderSheetHeading extends StatelessWidget {
             color: palette.textSecondary,
             fontSize: 13.5,
             height: 1.1,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -7850,7 +7861,7 @@ class _QuickAddressChoices extends StatelessWidget {
                           style: TextStyle(
                             color: palette.brandDeep,
                             fontSize: 12.2,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -7895,12 +7906,14 @@ class _TrustRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 7),
-        Text(
-          AppLocalizations.of(context).passengerVerifiedDriversSubtitle,
-          style: TextStyle(
-            color: palette.textSecondary,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
+        Flexible(
+          child: Text(
+            AppLocalizations.of(context).passengerVerifiedDriversSubtitle,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ),
       ],
@@ -7938,18 +7951,11 @@ class _SheetAddressEntryCard extends StatelessWidget {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(15, 14, 12, 14),
+      padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
       decoration: BoxDecoration(
-        color: palette.card,
+        color: palette.appBackground,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: SmartTaxiColors.authInk.withValues(alpha: 0.07),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -7957,7 +7963,7 @@ class _SheetAddressEntryCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _RouteDotsColumn(height: 90),
+              const _RouteDotsColumn(height: 78),
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
@@ -7972,7 +7978,7 @@ class _SheetAddressEntryCard extends StatelessWidget {
                         onTap: onUseLocation,
                       ),
                     ),
-                    Divider(height: 16, color: palette.border),
+                    Divider(height: 1, color: palette.border),
                     _SheetAddressRow(
                       title: l10n.passengerToLabel,
                       label: dropoffLabel,
@@ -8070,8 +8076,9 @@ class _SheetAddressRow extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 54),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
               Expanded(
@@ -8084,9 +8091,9 @@ class _SheetAddressRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: palette.textSecondary,
-                        fontSize: 11.5,
-                        height: 1.05,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                        height: 1.2,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -8095,10 +8102,10 @@ class _SheetAddressRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: active ? palette.brandDeep : palette.text,
-                        fontSize: 14.4,
-                        height: 1.12,
-                        fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                        color: palette.text,
+                        fontSize: 14,
+                        height: 1.2,
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -8279,19 +8286,18 @@ class _RouteSummaryCard extends StatelessWidget {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(13, 10, 9, 10),
+      padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
       decoration: BoxDecoration(
-        color: palette.card,
+        color: palette.appBackground,
         border: Border.fromBorderSide(
-          BorderSide(color: palette.borderStrong),
+          BorderSide(color: palette.border),
         ),
-        borderRadius: const BorderRadius.all(Radius.circular(22)),
-        boxShadow: _cardShadow,
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const _RouteDotsColumn(height: 54),
+          const _RouteDotsColumn(height: 40),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -8305,15 +8311,12 @@ class _RouteSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          // A chevron, not a labelled button: "Изменить" took about 90dp of
-          // a 326dp sheet and squeezed the addresses beside it into an
-          // ellipsis — "улица Бектасова, …" on the screen it exists to show.
-          // The whole card is the target, so the affordance can be this small.
+          // Keep a full touch target without squeezing the address labels.
           IconButton(
             onPressed: onEdit,
-            visualDensity: VisualDensity.compact,
+            visualDensity: VisualDensity.standard,
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             tooltip: l10n.passengerChangeButton,
             icon: Icon(
               Icons.chevron_right_rounded,
@@ -8338,32 +8341,32 @@ class _RouteSummaryLine extends StatelessWidget {
     final palette = context.palette;
     return Row(
       children: [
+        SizedBox(
+          width: 40,
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 11,
+              height: 1.2,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: palette.text,
-                  fontSize: 12.3,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: palette.textSecondary,
-                  fontSize: 11.8,
-                  height: 1.05,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 13,
+              height: 1.2,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -8424,7 +8427,7 @@ class _OrderNoteRow extends StatelessWidget {
                   style: TextStyle(
                     color: hasNote ? palette.text : palette.textSecondary,
                     fontSize: 12.5,
-                    fontWeight: hasNote ? FontWeight.w700 : FontWeight.w600,
+                    fontWeight: hasNote ? FontWeight.w500 : FontWeight.w600,
                   ),
                 ),
               ),
@@ -8560,31 +8563,10 @@ class _OrderSheet extends StatelessWidget {
                                   l10n.passengerTariffSectionTitle,
                                   style: TextStyle(
                                     color: context.palette.text,
-                                    fontSize: 25,
-                                    height: 1,
+                                    fontSize: 18,
+                                    height: 1.2,
                                     letterSpacing: -0.4,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: context.palette.brand,
-                                    width: 1.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  'Фикс. цена',
-                                  style: TextStyle(
-                                    color: context.palette.brandDeep,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -8810,7 +8792,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                         fontSize: 22.5,
                         height: 1.02,
                         letterSpacing: 0,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -8827,7 +8809,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                     ),
                     child: Text(
                       l10n.cancel,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -8841,7 +8823,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                   color: palette.textSecondary,
                   fontSize: 13.1,
                   height: 1.16,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 12),
@@ -8895,7 +8877,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                               color: palette.text,
                               fontSize: 15.4,
                               height: 1.05,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -8913,7 +8895,7 @@ class _MapPointPickerSheet extends StatelessWidget {
                                   : palette.warning,
                               fontSize: 12.5,
                               height: 1.15,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -9007,7 +8989,7 @@ class _TripHistoryCard extends StatelessWidget {
                   _formatTripDate(l10n, trip.createdAt),
                   style: TextStyle(
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: palette.textSecondary,
                   ),
                 ),
@@ -9034,7 +9016,7 @@ class _TripHistoryCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 13.5, fontWeight: FontWeight.w700),
+                      fontSize: 13.5, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -9061,7 +9043,7 @@ class _TripHistoryCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 13.5, fontWeight: FontWeight.w700),
+                      fontSize: 13.5, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -9075,7 +9057,7 @@ class _TripHistoryCard extends StatelessWidget {
                   _localizedTariffLabel(l10n, trip.tariff),
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     color: palette.textSecondary,
                   ),
                 ),
@@ -9084,7 +9066,7 @@ class _TripHistoryCard extends StatelessWidget {
                   _formatTenge(trip.price!),
                   style: const TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
             ],
@@ -9220,7 +9202,7 @@ class _TripDetailScreen extends StatelessWidget {
                     style: TextStyle(
                       color: palette.textSecondary,
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -9283,7 +9265,7 @@ class _TripDetailScreen extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           if (driverMeta.isNotEmpty) ...[
@@ -9295,7 +9277,7 @@ class _TripDetailScreen extends StatelessWidget {
                               style: TextStyle(
                                 color: palette.textSecondary,
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -9313,7 +9295,7 @@ class _TripDetailScreen extends StatelessWidget {
                         trip.driverRating!.toStringAsFixed(1),
                         style: const TextStyle(
                           fontSize: 13.5,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -9568,7 +9550,7 @@ class _TripStatusPanel extends StatelessWidget {
                           color: palette.text,
                           fontSize: 22,
                           height: 1.02,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -9660,7 +9642,7 @@ class _TripStatusPanel extends StatelessWidget {
                               color: palette.text,
                               fontSize: 22,
                               height: 1.02,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -9672,7 +9654,7 @@ class _TripStatusPanel extends StatelessWidget {
                               color: palette.textSecondary,
                               fontSize: 13,
                               height: 1.1,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -9766,7 +9748,7 @@ class _TripStatusPanel extends StatelessWidget {
                               color: palette.text,
                               fontSize: 22,
                               height: 1.02,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           // The subtitle is meant to add specifics beyond the
@@ -9786,7 +9768,7 @@ class _TripStatusPanel extends StatelessWidget {
                                 color: palette.textSecondary,
                                 fontSize: 13,
                                 height: 1.1,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -10027,7 +10009,7 @@ class _RateDriverPanel extends StatelessWidget {
                 color: palette.text,
                 fontSize: 17,
                 height: 1.2,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 16),
@@ -10094,7 +10076,7 @@ class _RateDriverPanel extends StatelessWidget {
                 l10n.passengerSkipButton,
                 style: TextStyle(
                   color: palette.textSecondary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -10142,7 +10124,7 @@ class _RatedThankYouPanel extends StatelessWidget {
             style: TextStyle(
               color: palette.text,
               fontSize: 17,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
@@ -10269,7 +10251,7 @@ class _TripReceiptPanel extends StatelessWidget {
                           color: palette.text,
                           fontSize: 18,
                           height: 1.05,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -10278,7 +10260,7 @@ class _TripReceiptPanel extends StatelessWidget {
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -10355,7 +10337,7 @@ class _TripReceiptPanel extends StatelessWidget {
                     style: TextStyle(
                       color: palette.danger,
                       fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -10398,7 +10380,7 @@ class _TripReceiptPanel extends StatelessWidget {
                     style: TextStyle(
                       color: palette.brandDeep,
                       fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -10441,7 +10423,7 @@ class _TripReceiptPanel extends StatelessWidget {
               style: TextStyle(
                 color: palette.brandDeep,
                 fontSize: 13,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -10497,7 +10479,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
             style: TextStyle(
               color: palette.text,
               fontSize: 18,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
@@ -10530,7 +10512,7 @@ class _NoDriversFoundPanel extends StatelessWidget {
               l10n.passengerCancelOrderButton,
               style: TextStyle(
                 color: palette.danger,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -10669,7 +10651,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
             style: TextStyle(
               color: palette.text,
               fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           if (order.offerDriverRating != null) ...[
@@ -10684,7 +10666,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -10731,7 +10713,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
             style: TextStyle(
               color: palette.textSecondary,
               fontSize: 12.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -10754,7 +10736,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 _StepperCircleButton(
@@ -10781,7 +10763,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
               ),
               child: Text(
                 l10n.passengerSubmitOfferButton,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -10792,7 +10774,7 @@ class _DriverPriceOfferPanelState extends State<_DriverPriceOfferPanel> {
               l10n.passengerDeclineOfferButton,
               style: TextStyle(
                 color: palette.textSecondary,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -10843,7 +10825,7 @@ class _QueuedPriceOfferBanner extends StatelessWidget {
                 style: TextStyle(
                   color: palette.textSecondary,
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -10911,7 +10893,7 @@ class _QueuedPriceOfferRow extends StatelessWidget {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
@@ -10919,7 +10901,7 @@ class _QueuedPriceOfferRow extends StatelessWidget {
                   style: TextStyle(
                     color: palette.brandDeep,
                     fontSize: 13.5,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -10951,7 +10933,7 @@ class _QueuedPriceOfferRow extends StatelessWidget {
                       l10n.passengerChooseOfferButton,
                       style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
             ),
@@ -10995,7 +10977,7 @@ class _PriceCompareTile extends StatelessWidget {
             style: TextStyle(
               color: palette.textSecondary,
               fontSize: 11.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
@@ -11006,7 +10988,7 @@ class _PriceCompareTile extends StatelessWidget {
             style: TextStyle(
               color: emphasize ? palette.brandDeep : palette.text,
               fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -11086,7 +11068,7 @@ class _ClientCounterPendingPanel extends StatelessWidget {
             style: TextStyle(
               color: palette.text,
               fontSize: 17,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
@@ -11185,7 +11167,7 @@ class _TripCancelledPanel extends StatelessWidget {
             style: TextStyle(
               color: palette.text,
               fontSize: 17,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
@@ -11271,7 +11253,7 @@ class _CancelConfirmSheet extends StatelessWidget {
               style: TextStyle(
                 color: palette.text,
                 fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
@@ -11377,7 +11359,7 @@ class _ConfirmSheet extends StatelessWidget {
               style: TextStyle(
                 color: palette.text,
                 fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
@@ -11481,7 +11463,7 @@ class _RecurringBookingCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -11580,7 +11562,7 @@ class _RecurringBookingCard extends StatelessWidget {
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -11626,7 +11608,7 @@ class _RecurringBookingChip extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 11.5,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -11687,7 +11669,7 @@ class _FavoriteAddressCard extends StatelessWidget {
                       address.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     // The chip repeats the category name (Дом/Работа/Другое)
                     // for context — but the create sheet pre-fills the title
@@ -11782,7 +11764,7 @@ class _DriverPreferenceCard extends StatelessWidget {
                       : preference.driverName!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 if (meta.isNotEmpty) ...[
                   const SizedBox(height: 3),
@@ -11871,7 +11853,7 @@ class _AddDriverPreferenceSheetState extends State<_AddDriverPreferenceSheet> {
             const SizedBox(height: 14),
             Text(
               l10n.passengerMarkDriverTitle,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 14),
             if (widget.candidates.isEmpty)
@@ -12003,7 +11985,7 @@ class _CreateFavoriteAddressSheetState
             const SizedBox(height: 14),
             Text(
               l10n.passengerAddToFavoritesTitle,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
@@ -12179,7 +12161,7 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
                 widget.title,
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 12),
@@ -12440,7 +12422,7 @@ class _CreateRecurringBookingSheetState
                 Text(
                   l10n.passengerNewRecurringRouteTitle,
                   style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w900),
+                      fontSize: 18, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -12454,7 +12436,7 @@ class _CreateRecurringBookingSheetState
                 const SizedBox(height: 16),
                 Text(l10n.driverProfileNameFallback,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 13)),
+                        fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 if (widget.knownDrivers.isEmpty)
                   _CompactNotice(
@@ -12496,7 +12478,7 @@ class _CreateRecurringBookingSheetState
                 const SizedBox(height: 14),
                 Text(l10n.passengerDaysOfWeekLabel,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 13)),
+                        fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -12518,7 +12500,7 @@ class _CreateRecurringBookingSheetState
                 const SizedBox(height: 14),
                 Text(l10n.passengerPickupTimeLabel,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 13)),
+                        fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: _pickTime,
@@ -12616,7 +12598,7 @@ class _RecurringAddressField extends StatelessWidget {
                       style: TextStyle(
                         color: palette.textSecondary,
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
@@ -12626,7 +12608,7 @@ class _RecurringAddressField extends StatelessWidget {
                       style: TextStyle(
                         color: value == null ? palette.textMuted : palette.text,
                         fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -12692,7 +12674,7 @@ class _InitialsAvatar extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: size * 0.365,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 )
               : Image.network(
@@ -12705,7 +12687,7 @@ class _InitialsAvatar extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: size * 0.365,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -12805,7 +12787,7 @@ class _ArrivedBannerState extends State<_ArrivedBanner>
                 style: TextStyle(
                   color: palette.success,
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -12901,7 +12883,7 @@ class _TripProgressCard extends StatelessWidget {
                   style: TextStyle(
                     color: palette.brandDeep,
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -12926,7 +12908,7 @@ class _TripProgressCard extends StatelessWidget {
                 style: TextStyle(
                   color: palette.brandDeep,
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -12956,7 +12938,7 @@ class _TripProgressCard extends StatelessWidget {
                         style: TextStyle(
                           color: palette.textSecondary,
                           fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       Text(
@@ -12966,7 +12948,7 @@ class _TripProgressCard extends StatelessWidget {
                         style: TextStyle(
                           color: palette.text,
                           fontSize: 14.5,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -13269,7 +13251,7 @@ class _SafetySheet extends StatelessWidget {
                     l10n.passengerSafetyTitle,
                     style: TextStyle(
                       fontSize: 17,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w600,
                       color: palette.text,
                     ),
                   ),
@@ -13435,7 +13417,7 @@ class _ChatSheetState extends State<_ChatSheet> {
               widget.peerName.trim().isEmpty
                   ? l10n.passengerChatFallbackTitle
                   : widget.peerName.trim(),
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 2),
             Text(
@@ -13457,7 +13439,7 @@ class _ChatSheetState extends State<_ChatSheet> {
                             style: TextStyle(
                               color: palette.textSecondary,
                               fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         )
@@ -13540,7 +13522,7 @@ class _ChatBubble extends StatelessWidget {
               style: TextStyle(
                 color: entry.fromMe ? Colors.white : palette.text,
                 fontSize: 13.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 3),
@@ -13551,7 +13533,7 @@ class _ChatBubble extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.75)
                     : palette.textSecondary,
                 fontSize: 9.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -13648,7 +13630,7 @@ class _DriverContactCard extends StatelessWidget {
                           style: TextStyle(
                             color: palette.text,
                             fontSize: 14,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -13664,7 +13646,7 @@ class _DriverContactCard extends StatelessWidget {
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -13678,7 +13660,7 @@ class _DriverContactCard extends StatelessWidget {
                       style: TextStyle(
                         color: palette.textSecondary,
                         fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: .3,
                       ),
                     ),
@@ -13746,7 +13728,7 @@ class _DriverContactCard extends StatelessWidget {
                             style: TextStyle(
                               color: palette.text,
                               fontSize: 15.5,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -13763,7 +13745,7 @@ class _DriverContactCard extends StatelessWidget {
                             style: TextStyle(
                               color: palette.textSecondary,
                               fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -13799,7 +13781,7 @@ class _DriverContactCard extends StatelessWidget {
                           style: TextStyle(
                             color: palette.text,
                             fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: .5,
                           ),
                         ),
@@ -13925,7 +13907,7 @@ class _TripActionButton extends StatelessWidget {
               style: TextStyle(
                 color: textColor,
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -14161,7 +14143,7 @@ class _SearchProgressRowsState extends State<_SearchProgressRows> {
                           : palette.textSecondary,
                       fontSize: 12.4,
                       height: 1.15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                     child: Text(
                       items[i].$1,
@@ -14240,7 +14222,7 @@ class _TripRouteMiniLine extends StatelessWidget {
               color: palette.textSecondary,
               fontSize: 12,
               height: 1,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -14254,7 +14236,7 @@ class _TripRouteMiniLine extends StatelessWidget {
               color: palette.text,
               fontSize: 14,
               height: 1.05,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -14297,7 +14279,7 @@ class _TripInfoPill extends StatelessWidget {
               color: palette.textSecondary,
               fontSize: 10.5,
               height: 1,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 5),
@@ -14309,7 +14291,7 @@ class _TripInfoPill extends StatelessWidget {
               color: emphasis ? palette.brandDeep : palette.text,
               fontSize: 13.5,
               height: 1,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               // Prices/distances live here — tabular figures keep digit
               // width uniform so the pill doesn't reflow as a value updates.
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -14504,7 +14486,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                             color: palette.text,
                             fontSize: 21,
                             height: 1.05,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -14515,7 +14497,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                         ),
                         child: Text(
                           l10n.cancel,
-                          style: const TextStyle(fontWeight: FontWeight.w900),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -14552,7 +14534,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                     style: TextStyle(
                       color: palette.text,
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                     textInputAction: TextInputAction.search,
                     onChanged: _onQueryChanged,
@@ -14561,7 +14543,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                       hintText: widget.hint,
                       hintStyle: TextStyle(
                         color: palette.textMuted,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                       prefixIcon: Icon(
                         Icons.search_rounded,
@@ -14583,7 +14565,8 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: palette.brand, width: 1.8),
+                        borderSide:
+                            BorderSide(color: palette.brand, width: 1.8),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 15),
@@ -14733,7 +14716,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                         color: palette.text,
                         fontSize: 13.2,
                         height: 1.05,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -14745,7 +14728,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                         color: palette.textSecondary,
                         fontSize: 11.2,
                         height: 1.05,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -14787,7 +14770,7 @@ class _RecentAddressSection extends StatelessWidget {
             style: TextStyle(
               color: context.palette.text,
               fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -14916,18 +14899,18 @@ class _AddressResultTile extends StatelessWidget {
     final icon = _addressIconFor(item.label, recent: recent);
     final palette = context.palette;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.zero,
       child: Material(
-        color: palette.cardWarm,
-        borderRadius: BorderRadius.circular(18),
+        color: palette.card,
+        borderRadius: BorderRadius.circular(8),
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(8),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+            constraints: const BoxConstraints(minHeight: 64),
+            padding: const EdgeInsets.fromLTRB(4, 12, 4, 12),
             decoration: BoxDecoration(
-              border: Border.all(color: palette.border),
-              borderRadius: BorderRadius.circular(18),
+              border: Border(bottom: BorderSide(color: palette.border)),
             ),
             child: Row(
               children: [
@@ -14955,8 +14938,8 @@ class _AddressResultTile extends StatelessWidget {
                           item.label,
                           highlight,
                           TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
                             color: palette.text,
                           ),
                           palette,
@@ -14973,14 +14956,14 @@ class _AddressResultTile extends StatelessWidget {
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: palette.brandDeep),
+                Icon(Icons.chevron_right_rounded, color: palette.textMuted),
               ],
             ),
           ),
@@ -15041,7 +15024,7 @@ class _AddressEmptyHint extends StatelessWidget {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 14,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     height: 1.1,
                   ),
                 ),
@@ -15053,7 +15036,7 @@ class _AddressEmptyHint extends StatelessWidget {
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1.15,
                   ),
                 ),
@@ -15115,7 +15098,7 @@ class _LocationRequiredScreen extends StatelessWidget {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 21,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -15128,7 +15111,7 @@ class _LocationRequiredScreen extends StatelessWidget {
                     color: palette.textSecondary,
                     fontSize: 14,
                     height: 1.4,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -15145,7 +15128,7 @@ class _LocationRequiredScreen extends StatelessWidget {
                   onPressed: onPickManually,
                   child: Text(
                     l10n.passengerPickPointOnMapManualButton,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -15214,7 +15197,7 @@ class _LocationPermissionSheet extends StatelessWidget {
                     style: TextStyle(
                       color: palette.text,
                       fontSize: 21,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       height: 1.05,
                     ),
                   ),
@@ -15247,7 +15230,7 @@ class _LocationPermissionSheet extends StatelessWidget {
               ),
               child: Text(
                 l10n.passengerPickPointOnMapButton,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -15566,7 +15549,7 @@ class _TariffComparisonCard extends StatelessWidget {
             color: palette.text,
             fontSize: 16,
             height: 1.04,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 4),
@@ -15587,7 +15570,7 @@ class _TariffComparisonCard extends StatelessWidget {
                 color: palette.textSecondary,
                 fontSize: 11,
                 height: 1,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -15605,7 +15588,7 @@ class _TariffComparisonCard extends StatelessWidget {
             fontSize: 19,
             height: 1,
             letterSpacing: -0.35,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (bestValue) ...[
@@ -15622,7 +15605,7 @@ class _TariffComparisonCard extends StatelessWidget {
                   color: palette.brandDeep,
                   fontSize: 10,
                   height: 1,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -15643,7 +15626,7 @@ class _TariffComparisonCard extends StatelessWidget {
       color: palette.brandDeep,
       size: 50,
     );
-    // Delivery is an actual van, while a ride is a side-view sedan. This
+    // Delivery is an actual van, while a ride is a compact sedan. This
     // makes the two choices instantly distinguishable at a glance instead of
     // presenting the same car twice with different labels.
     final art = item.asset.isEmpty
@@ -15652,14 +15635,14 @@ class _TariffComparisonCard extends StatelessWidget {
             ? SvgPicture.asset(
                 item.asset,
                 width: compact ? 58 : 82,
-                height: compact ? 40 : 64,
+                height: compact ? 40 : 54,
                 fit: BoxFit.contain,
                 placeholderBuilder: (_) => fallback,
               )
             : Image.asset(
                 item.asset,
                 width: compact ? 60 : 82,
-                height: compact ? 42 : 64,
+                height: compact ? 42 : 54,
                 cacheWidth: 164,
                 cacheHeight: 128,
                 fit: BoxFit.contain,
@@ -15675,7 +15658,7 @@ class _TariffComparisonCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          constraints: BoxConstraints(minHeight: compact ? 148 : 88),
+          constraints: BoxConstraints(minHeight: compact ? 148 : 76),
           padding: EdgeInsets.fromLTRB(
             compact ? 11 : 11,
             10,
@@ -15689,13 +15672,6 @@ class _TariffComparisonCard extends StatelessWidget {
               color: selected ? palette.brand : palette.border,
               width: selected ? 1.25 : 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: palette.brand.withValues(alpha: selected ? 0.07 : 0.035),
-                blurRadius: 14,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
           child: compact
               ? _compactContent(context, art, price)
@@ -15703,7 +15679,7 @@ class _TariffComparisonCard extends StatelessWidget {
                   children: [
                     Container(
                       width: 82,
-                      height: 64,
+                      height: 54,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.transparent,
@@ -15765,7 +15741,7 @@ class _TariffComparisonCard extends StatelessWidget {
                               style: TextStyle(
                                 color: palette.brandDeep,
                                 fontSize: 10.5,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -15818,7 +15794,8 @@ class _TariffSkeleton extends StatelessWidget {
               height: 72,
               padding: const EdgeInsets.fromLTRB(11, 7, 11, 7),
               decoration: BoxDecoration(
-                color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+                color:
+                    dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
                 border: Border.all(
                   color: dark
                       ? Colors.white.withValues(alpha: 0.08)
@@ -15886,11 +15863,11 @@ class _CompactPriceAdjuster extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: palette.brandSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.brand.withValues(alpha: 0.18)),
+        color: palette.appBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
       ),
       child: Row(
         children: [
@@ -15905,7 +15882,7 @@ class _CompactPriceAdjuster extends StatelessWidget {
                     color: palette.textSecondary,
                     fontSize: 12,
                     height: 1,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -15928,7 +15905,7 @@ class _CompactPriceAdjuster extends StatelessWidget {
                 fontSize: 22,
                 height: 1,
                 letterSpacing: -0.55,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -15955,16 +15932,16 @@ class _CompactPriceStepButton extends StatelessWidget {
     final palette = context.palette;
     final enabled = onTap != null;
     return Material(
-      color: enabled ? palette.brandDeep : palette.card.withValues(alpha: 0.55),
+      color: Colors.transparent,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 38,
-          height: 38,
+          width: 48,
+          height: 48,
           child: Icon(icon,
-              size: 20, color: enabled ? Colors.white : palette.textMuted),
+              size: 22, color: enabled ? palette.brandDeep : palette.textMuted),
         ),
       ),
     );
@@ -16033,7 +16010,7 @@ class _PriceAdjuster extends StatelessWidget {
               color: palette.textSecondary,
               fontSize: 12.5,
               height: 1.1,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -16056,7 +16033,7 @@ class _PriceAdjuster extends StatelessWidget {
                     color: palette.text,
                     fontSize: 38,
                     height: 1.05,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     letterSpacing: -1.2,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -16098,7 +16075,7 @@ class _PriceAdjuster extends StatelessWidget {
                       color: palette.brandDeep,
                       fontSize: 12,
                       height: 1.15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -16166,19 +16143,11 @@ class _PaymentMethodRow extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       opacity: enabled ? 1 : 0.56,
       child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
         decoration: BoxDecoration(
           color: palette.card,
-          border: Border.all(color: palette.border),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: SmartTaxiColors.authInk.withValues(alpha: 0.035),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border(top: BorderSide(color: palette.border)),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -16196,9 +16165,9 @@ class _PaymentMethodRow extends StatelessWidget {
                       l10n.paymentMethodFullLabel,
                       style: TextStyle(
                         color: palette.textSecondary,
-                        fontSize: 10.8,
-                        height: 1,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        height: 1.2,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -16208,7 +16177,7 @@ class _PaymentMethodRow extends StatelessWidget {
                         color: palette.text,
                         fontSize: 14,
                         height: 1,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -16245,8 +16214,7 @@ class _PaymentIcon extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: palette.brandSurface,
-        border: Border.all(color: palette.borderStrong),
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: _SvgIcon(icon, color: palette.brandDeep, size: 18),
     );
@@ -16316,7 +16284,7 @@ class _RegionConfirmSheet extends StatelessWidget {
                           color: palette.text,
                           fontSize: 22,
                           height: 1.08,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -16326,7 +16294,7 @@ class _RegionConfirmSheet extends StatelessWidget {
                           color: palette.textSecondary,
                           fontSize: 14,
                           height: 1.35,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -16435,7 +16403,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
               style: TextStyle(
                 fontSize: 24,
                 height: 1.08,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 color: palette.text,
               ),
             ),
@@ -16445,7 +16413,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
               style: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 height: 1.35,
               ),
             ),
@@ -16498,7 +16466,8 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                                 height: 38,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: selected ? palette.brand : palette.card,
+                                  color:
+                                      selected ? palette.brand : palette.card,
                                   borderRadius: BorderRadius.circular(15),
                                   border: Border.all(
                                     color: palette.borderStrong,
@@ -16520,7 +16489,7 @@ class _RegionSelectSheetState extends State<_RegionSelectSheet> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: palette.text,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w600,
                                     fontSize: 16,
                                   ),
                                 ),
@@ -16582,7 +16551,7 @@ class _PaymentMethodSheet extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
         decoration: BoxDecoration(
           color: palette.card,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isDark ? 0.42 : 0.20),
@@ -16602,7 +16571,7 @@ class _PaymentMethodSheet extends StatelessWidget {
               style: TextStyle(
                 color: palette.text,
                 fontSize: 22,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 3),
@@ -16611,7 +16580,7 @@ class _PaymentMethodSheet extends StatelessWidget {
               style: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w400,
               ),
             ),
             const SizedBox(height: 16),
@@ -16622,81 +16591,40 @@ class _PaymentMethodSheet extends StatelessWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     onTap: () => Navigator.pop(context, item.$1),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOutCubic,
-                      constraints: const BoxConstraints(minHeight: 76),
-                      padding: const EdgeInsets.all(14),
+                      constraints: const BoxConstraints(minHeight: 72),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        gradient: active
-                            ? LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  palette.brand
-                                      .withValues(alpha: isDark ? 0.22 : 0.12),
-                                  palette.brand
-                                      .withValues(alpha: isDark ? 0.06 : 0.03),
-                                ],
-                              )
-                            : null,
-                        color: active ? null : palette.appBackground,
+                        color: active ? palette.brandSurface : palette.card,
                         border: Border.all(
                           color: active ? palette.brand : palette.border,
-                          width: active ? 1.8 : 1,
+                          width: active ? 1.25 : 1,
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: active
-                            ? [
-                                BoxShadow(
-                                  color: palette.brand
-                                      .withValues(alpha: isDark ? 0.30 : 0.20),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 7),
-                                ),
-                              ]
-                            : null,
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 48,
-                            height: 48,
+                            width: 36,
+                            height: 36,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: active
-                                    ? [palette.brand, palette.brandDeep]
-                                    : [
-                                        palette.brandSurface,
-                                        palette.brandSurface,
-                                      ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: active
-                                  ? [
-                                      BoxShadow(
-                                        color: palette.brand
-                                            .withValues(alpha: 0.35),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ]
-                                  : null,
+                              color: palette.brandSurface,
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: _SvgIcon(
                               item.$1 == 'CASH' || item.$1 == 'CASHBACK'
                                   ? _iconBanknote
                                   : _iconCreditCard,
-                              color: active ? Colors.white : palette.brandDeep,
-                              size: 22,
+                              color: palette.brandDeep,
+                              size: 20,
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -16705,8 +16633,8 @@ class _PaymentMethodSheet extends StatelessWidget {
                                   item.$2,
                                   style: TextStyle(
                                     color: palette.text,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 3),
@@ -16715,7 +16643,7 @@ class _PaymentMethodSheet extends StatelessWidget {
                                   style: TextStyle(
                                     color: palette.textSecondary,
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ],
@@ -16793,7 +16721,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
               Text(
                 l10n.passengerOrderNoteSheetTitle,
                 style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               Text(
@@ -16835,7 +16763,7 @@ class _OrderNoteSheetState extends State<_OrderNoteSheet> {
                     ),
                     child: Text(
                       l10n.passengerDeleteNoteButton,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -16927,7 +16855,8 @@ class _SmartDrawer extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: palette.brand.withValues(alpha: 0.32),
+                                    color:
+                                        palette.brand.withValues(alpha: 0.32),
                                     blurRadius: 14,
                                     offset: const Offset(0, 6),
                                   ),
@@ -16942,7 +16871,7 @@ class _SmartDrawer extends StatelessWidget {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 17,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -16960,7 +16889,7 @@ class _SmartDrawer extends StatelessWidget {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14.5,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   if (accountPhone.trim().isNotEmpty)
@@ -16974,7 +16903,7 @@ class _SmartDrawer extends StatelessWidget {
                                           color: Colors.white
                                               .withValues(alpha: 0.78),
                                           fontSize: 12,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
@@ -17009,7 +16938,7 @@ class _SmartDrawer extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -17141,7 +17070,7 @@ class _SmartDrawer extends StatelessWidget {
               style: TextStyle(
                 color: palette.textMuted,
                 fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 12),
@@ -17241,7 +17170,7 @@ class _DrawerItem extends StatelessWidget {
                     style: TextStyle(
                       color: tone,
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -17277,7 +17206,7 @@ class _DrawerSectionLabel extends StatelessWidget {
         style: TextStyle(
           color: context.palette.textMuted,
           fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.4,
         ),
       ),
@@ -17302,43 +17231,28 @@ class _AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Container(
-      height: 62,
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: palette.card.withValues(alpha: 0.96),
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10102a52),
-            blurRadius: 22,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
+      height: 56,
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: [
-          Material(
-            color: palette.brandSurface,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: onBack ?? onMenu,
-              child: Padding(
-                padding: const EdgeInsets.all(9),
-                child: Icon(
-                  onBack != null
-                      ? Icons.arrow_back_ios_new_rounded
-                      : Icons.menu_rounded,
-                  size: 20,
-                  color: palette.brandDeep,
-                ),
-              ),
+          IconButton(
+            onPressed: onBack ?? onMenu,
+            tooltip: onBack != null
+                ? MaterialLocalizations.of(context).backButtonTooltip
+                : AppLocalizations.of(context).driverDrawerMenuTooltip,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            icon: Icon(
+              onBack != null ? Icons.arrow_back_rounded : Icons.menu_rounded,
+              size: 22,
+              color: palette.text,
             ),
           ),
           const SizedBox(width: 10),
-          const BrandLogo(),
+          const SizedBox.square(
+            dimension: 28,
+            child: FittedBox(child: BrandLogo()),
+          ),
           const Spacer(),
           trailing,
         ],
@@ -17410,7 +17324,7 @@ class _ActiveOrderBanner extends StatelessWidget {
                           color: palette.text,
                           fontSize: 13.5,
                           height: 1.05,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -17424,7 +17338,7 @@ class _ActiveOrderBanner extends StatelessWidget {
                           color: palette.textSecondary,
                           fontSize: 11.5,
                           height: 1.05,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -17571,15 +17485,15 @@ class _MapRoundButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           child: _MapGlassChrome(
             child: Container(
-              width: 52,
-              height: 52,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: prominent
                     ? palette.brand
                     : palette.card.withValues(alpha: 0.78),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: prominent ? palette.brand : palette.borderStrong,
+                  color: prominent ? palette.brand : palette.border,
                 ),
                 boxShadow: const [
                   BoxShadow(
@@ -17697,7 +17611,7 @@ class _RouteSummaryPill extends StatelessWidget {
               color: palette.text,
               fontSize: 14.5,
               height: 1,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -17989,7 +17903,7 @@ class _BonusBalanceCard extends StatelessWidget {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -18153,7 +18067,7 @@ class _NotificationTile extends StatelessWidget {
                         style: TextStyle(
                           color: palette.text,
                           fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -18186,7 +18100,7 @@ class _NotificationTile extends StatelessWidget {
                   style: TextStyle(
                     color: palette.textMuted,
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -18207,14 +18121,13 @@ class _PremiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.card,
         border: Border.fromBorderSide(
           BorderSide(color: palette.border),
         ),
-        borderRadius: const BorderRadius.all(Radius.circular(30)),
-        boxShadow: _cardShadow,
+        borderRadius: const BorderRadius.all(Radius.circular(18)),
       ),
       child: child,
     );
@@ -18244,7 +18157,7 @@ class _SectionLabel extends StatelessWidget {
                 style: TextStyle(
                   color: palette.text,
                   fontSize: 17,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 3),
@@ -18409,7 +18322,7 @@ class _ButtonSpinner extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -18477,9 +18390,7 @@ class _BrandCtaButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedLoadingText =
         loadingText ?? AppLocalizations.of(context).passengerCtaCreatingOrder;
-    // Reads the palette rather than the raw SmartTaxiColors constants: this
-    // gradient used to be `const`, which froze the primary CTA at the light
-    // theme's blues even in dark mode (brandDeep differs per theme).
+    // Shared solid-blue action treatment in both rider and driver surfaces.
     final palette = context.palette;
     return _PressScale(
       enabled: enabled && !loading,
@@ -18487,28 +18398,14 @@ class _BrandCtaButton extends StatelessWidget {
         opacity: enabled ? 1 : 0.52,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                palette.brand,
-                palette.brandDeep,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: enabled
-                ? [
-                    BoxShadow(
-                      color: palette.brand.withValues(alpha: 0.16),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ]
-                : null,
+            color: palette.brand,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               onTap: enabled ? onTap : null,
               child: SizedBox(
                 height: 54,
@@ -18553,19 +18450,10 @@ class _BrandCtaButton extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Container(
-                              width: 34,
-                              height: 34,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_rounded,
-                                color: Colors.white,
-                                size: 19,
-                              ),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 20,
                             ),
                           ],
                         ),
@@ -18729,7 +18617,7 @@ class _FaqTileState extends State<_FaqTile> {
                     child: Text(
                       widget.question,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                         fontSize: 14.5,
                         height: 1.25,
                       ),
@@ -18798,10 +18686,10 @@ class _TitleBlock extends StatelessWidget {
           title,
           style: TextStyle(
             color: context.palette.text,
-            fontSize: 30,
-            height: 1.08,
+            fontSize: 24,
+            height: 1.2,
             letterSpacing: -0.4,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 7),
@@ -18811,7 +18699,7 @@ class _TitleBlock extends StatelessWidget {
             color: context.palette.textSecondary,
             fontSize: 14,
             height: 1.35,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -18858,7 +18746,7 @@ class _LegalDocumentTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -18929,7 +18817,7 @@ class _CompactNotice extends StatelessWidget {
                     color: dark ? Colors.white : SmartTaxiColors.text,
                     fontSize: 15,
                     height: 1.05,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -19015,7 +18903,7 @@ class _InlineMessage extends StatelessWidget {
                     : (dark ? Colors.white70 : SmartTaxiColors.textSecondary),
                 fontSize: 12.5,
                 height: 1.2,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -19066,7 +18954,7 @@ class _ProfileStatTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
               color: palette.text,
             ),
           ),
@@ -19077,7 +18965,7 @@ class _ProfileStatTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               color: palette.textSecondary,
             ),
           ),
@@ -19117,7 +19005,7 @@ class _ProfileRow extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
         if (copyable) ...[
@@ -19179,11 +19067,15 @@ class _SettingsGroup extends StatelessWidget {
             style: TextStyle(
               color: context.palette.text,
               fontSize: 17,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 10),
-          ...children,
+          for (var index = 0; index < children.length; index++) ...[
+            children[index],
+            if (index < children.length - 1)
+              Divider(height: 1, color: context.palette.border),
+          ],
         ],
       ),
     );
@@ -19222,7 +19114,7 @@ class _SettingsRow extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: titleColor,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -19264,7 +19156,7 @@ class _ProfileGroupLabel extends StatelessWidget {
         style: TextStyle(
           color: context.palette.textSecondary,
           fontSize: 12,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -19300,17 +19192,12 @@ class _MenuLine extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: danger ? palette.dangerSoft : palette.brandSurface,
-                border: Border.all(
-                  color: danger
-                      ? palette.danger.withValues(alpha: 0.3)
-                      : palette.border,
-                ),
-                borderRadius: BorderRadius.circular(16),
+                shape: BoxShape.circle,
               ),
               child: Icon(icon, color: tone, size: 20),
             ),
@@ -19328,7 +19215,8 @@ class _MenuLine extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: tone,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -19348,7 +19236,7 @@ class _MenuLine extends StatelessWidget {
                             style: TextStyle(
                               color: palette.brandDeep,
                               fontSize: 9.5,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -19367,7 +19255,7 @@ class _MenuLine extends StatelessWidget {
                             : palette.textSecondary,
                         fontSize: 12,
                         height: 1.2,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -19415,7 +19303,7 @@ class _DriverStepRow extends StatelessWidget {
             style: TextStyle(
               color: palette.brandDeep,
               fontSize: 13,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -19428,7 +19316,7 @@ class _DriverStepRow extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 2),
@@ -19607,13 +19495,13 @@ class _SheetHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 44,
-        height: 5,
-        margin: const EdgeInsets.only(bottom: 16),
+        width: 36,
+        height: 4,
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: dark
               ? Colors.white.withValues(alpha: 0.22)
-              : SmartTaxiColors.borderStrong,
+              : SmartTaxiColors.border,
           borderRadius: BorderRadius.circular(999),
         ),
       ),
@@ -19697,7 +19585,7 @@ class _StatusStepper extends StatelessWidget {
                         color: done ? palette.text : palette.textSecondary,
                         fontSize: 10,
                         height: 1,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -19840,9 +19728,7 @@ String _driverPickupMeta(AppLocalizations l10n, RoutePreview route) {
   // approach was shown the identical sentence with no hint it was a guess,
   // which is the wrong way round — the passenger is the one deciding whether
   // to keep waiting.
-  return route.isFallback
-      ? '$text · ${l10n.driverRouteFallbackNotice}'
-      : text;
+  return route.isFallback ? '$text · ${l10n.driverRouteFallbackNotice}' : text;
 }
 
 String _readableDriverRouteError(AppLocalizations l10n, Object error) {

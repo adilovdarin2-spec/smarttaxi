@@ -38,27 +38,11 @@ class DriverShiftHero extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.card,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: online
-              ? palette.success.withValues(alpha: 0.35)
-              : palette.border,
-          width: online ? 1.4 : 1,
-        ),
-        // One shadow, not two stacked. A 34px-blur coloured glow plus a
-        // second tight shadow under the same card is what made this read as
-        // heavy and slightly cheap — a card lit from two directions at once.
-        boxShadow: [
-          BoxShadow(
-            color: (online ? palette.success : palette.brand)
-                .withValues(alpha: online ? 0.16 : 0.11),
-            blurRadius: 26,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +65,7 @@ class DriverShiftHero extends StatelessWidget {
                       style: TextStyle(
                         color: palette.text,
                         fontSize: 17,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -102,7 +86,7 @@ class DriverShiftHero extends StatelessWidget {
                               style: TextStyle(
                                 color: palette.textSecondary,
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
@@ -117,19 +101,12 @@ class DriverShiftHero extends StatelessWidget {
               if (sosButton != null) sosButton!,
             ],
           ),
-          const SizedBox(height: 16),
-          // Earnings, not the status word again. This row used to open with
-          // a tone dot and the very same "Занят"/"На линии" that the header
-          // pill already shows a few dozen pixels higher — the screen said
-          // it twice and, between the two, said the day's takings once and
-          // quietly, in the corner. The status still lives in the header
-          // (where it stays visible on every tab) and in the button below,
-          // which names the state by naming its opposite.
+          const SizedBox(height: 12),
+          // One quiet totals row; status remains in the persistent header.
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: palette.brandSurface,
-              borderRadius: BorderRadius.circular(18),
+              border: Border(top: BorderSide(color: palette.border)),
             ),
             child: Row(
               children: [
@@ -146,7 +123,7 @@ class DriverShiftHero extends StatelessWidget {
                     style: TextStyle(
                       color: palette.textSecondary,
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -155,15 +132,15 @@ class DriverShiftHero extends StatelessWidget {
                   todayEarnings ?? '—',
                   maxLines: 1,
                   style: TextStyle(
-                    color: palette.brandDeep,
+                    color: palette.text,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           if (online)
             SizedBox(
               width: double.infinity,
@@ -172,7 +149,7 @@ class DriverShiftHero extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(56),
                   foregroundColor: palette.text,
-                  side: BorderSide(color: palette.borderStrong),
+                  side: BorderSide(color: palette.border),
                 ),
                 child: loading
                     ? ButtonSpinner(text: l10n.driverUpdatingStatusButton)
@@ -219,8 +196,12 @@ class DriverTodayStrip extends StatelessWidget {
   // value font size without wrapping or ellipsizing.
   (String, Color) _demandMeta(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (demandLevel >= 1.5) return (l10n.driverDemandHigh, context.palette.danger);
-    if (demandLevel > 1.0) return (l10n.driverDemandAboveNormal, context.palette.brandDeep);
+    if (demandLevel >= 1.5) {
+      return (l10n.driverDemandHigh, context.palette.danger);
+    }
+    if (demandLevel > 1.0) {
+      return (l10n.driverDemandAboveNormal, context.palette.brandDeep);
+    }
     return (l10n.driverDemandNormal, context.palette.textSecondary);
   }
 
@@ -243,8 +224,7 @@ class DriverTodayStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.card,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: SmartTaxiShadows.card,
+        borderRadius: BorderRadius.circular(18),
       ),
       // IntrinsicHeight, not CrossAxisAlignment.stretch on the outer
       // ListView — this lives inside a vertically-scrolling ListView, which
@@ -327,7 +307,7 @@ class _StatColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -340,13 +320,13 @@ class _StatColumn extends StatelessWidget {
                 SizedBox(
                   width: 10,
                   height: 10,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 1.6, color: tone),
+                  child:
+                      CircularProgressIndicator(strokeWidth: 1.6, color: tone),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -355,7 +335,7 @@ class _StatColumn extends StatelessWidget {
               style: TextStyle(
                 color: context.palette.text,
                 fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -369,8 +349,8 @@ class _StatColumn extends StatelessWidget {
             // background fails WCAG AA (~2.5:1).
             style: TextStyle(
               color: context.palette.textSecondary,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
               height: 1.2,
             ),
           ),
@@ -440,7 +420,7 @@ class LocationNotice extends StatelessWidget {
               text,
               style: TextStyle(
                   color: context.palette.textSecondary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   height: 1.35),
             ),
           ),
