@@ -5,9 +5,9 @@
   --ui-ink: #152238;
   --ui-muted: #627087;
   --ui-line: #e6eaf0;
-  --ui-tint: #f5f7fa;
+  --ui-tint: #f7f9fc;
   --ui-shadow: 0 4px 18px rgba(26, 49, 83, .055);
-  --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ui-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ui-ink);
   font-family: var(--ui-font) !important;
   background: #f8fafd !important;
@@ -83,7 +83,7 @@
 .phone-frame.taxi-client-shell .final10-addr-group {
   border: 1px solid var(--ui-line) !important;
   border-radius: 16px !important;
-  background: var(--ui-tint) !important;
+  background: #fff !important;
   box-shadow: none !important;
 }
 .phone-frame.taxi-client-shell .final10-addr-row {
@@ -209,7 +209,7 @@
   text-align: left; transition: border-color .18s ease, background .18s ease;
 }
 .phone-frame.taxi-client-shell .tariff-v14-card.selected {
-  background: #f5f9ff !important; border-color: #1d6fff !important;
+  background: #fff !important; border-color: #1d6fff !important;
   box-shadow: none !important;
 }
 .phone-frame.taxi-client-shell .tariff-v14-card::after { display: none !important; }
@@ -370,7 +370,7 @@
   box-shadow: none !important;
 }
 .phone-frame.taxi-client-shell .screen-grid:not(.auth-profile-screen) .screen-intro h1 {
-  font-size: 24px !important;
+  font-size: 20px !important;
 }
 .phone-frame.taxi-client-shell .screen-grid:not(.auth-profile-screen) .settings-list-premium {
   gap: 0 !important;
@@ -393,7 +393,7 @@
   width: 36px; height: 36px; padding: 8px; border-radius: 50%;
 }
 .phone-frame.taxi-client-shell .settings-list-premium .settings-row-premium > svg:last-child:not(:first-child) {
-  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--ui-muted);
+  width: 20px !important; height: 20px !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--ui-muted) !important;
 }
 .phone-frame.taxi-client-shell .profile-actions-grid article {
   padding: 12px 0 !important;
@@ -422,4 +422,29 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(button, a) { transition: none !important; }
+}
+
+/* Composition pass: sheet, toolbar, content and nav have distinct roles. */
+.phone-frame:is(.taxi-client-shell, .driver-core-phone),
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(button,input,textarea,select) {
+  font-family: var(--ui-font) !important;
+  font-synthesis: none;
+}
+.phone-frame.taxi-client-shell .final10-panel { padding: 12px 20px max(16px, env(safe-area-inset-bottom)) !important; }
+.phone-frame.taxi-client-shell .final10-sheet-heading h1 { font-size: 20px !important; }
+.phone-frame.taxi-client-shell .final10-addr-row { min-height: 50px !important; }
+.phone-frame.taxi-client-shell .final10-addr-row .final10-txt strong { font-weight: 400 !important; }
+.phone-frame.taxi-client-shell .reference-client-header { min-height: 52px !important; padding-block: 4px !important; }
+.phone-frame.taxi-client-shell .reference-brand-chip span { font-size: 13px !important; color: var(--ui-muted) !important; }
+.phone-frame.taxi-client-shell .reference-brand-chip img { display: none; }
+.phone-frame.taxi-client-shell .screen-grid:not(.auth-profile-screen) .screen-intro h1 { font-size: 20px !important; }
+.phone-frame.taxi-client-shell .screen-grid:is(.profile-screen:not(.auth-profile-screen), .menu-screen, .drawer-linked-screen) { padding: 16px 20px !important; gap: 16px !important; }
+.phone-frame.driver-core-phone .driver-core-tabs { border-radius: 0 !important; margin: 0 !important; box-shadow: none !important; border: 0 !important; border-top: 1px solid var(--ui-line) !important; }
+.phone-frame.driver-core-phone .driver-core-tabs button.active { background: transparent !important; color: #1d6fff !important; }
+@font-face {
+  font-family: Inter;
+  src: url('/fonts/InterVariable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
 }

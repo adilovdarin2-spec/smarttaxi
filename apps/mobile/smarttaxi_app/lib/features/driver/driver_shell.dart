@@ -4231,12 +4231,12 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
         'openmaptiles',
         'smarttaxi-driver-3d-buildings',
         const native_map.FillExtrusionLayerProperties(
-          fillExtrusionColor: '#d7e8ff',
+          fillExtrusionColor: '#cfdef5',
           fillExtrusionHeight: [
             'coalesce',
             ['get', 'render_height'],
             ['get', 'height'],
-            14,
+            5,
           ],
           fillExtrusionBase: [
             'coalesce',
@@ -4244,13 +4244,15 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
             ['get', 'min_height'],
             0,
           ],
-          fillExtrusionOpacity: 0.9,
+          fillExtrusionOpacity: 0.62,
+          fillExtrusionVerticalGradient: false,
         ),
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
         enableInteraction: false,
       );
+      await hideDuplicateLibertyBuildings(controller);
     } catch (_) {
       // The style's building source is optional. The operational map and all
       // safety annotations remain available without it.
@@ -4432,6 +4434,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       unawaited(Future<void>(() async {
         await Future<void>.delayed(const Duration(milliseconds: 280));
         if (mounted && identical(controller, _controller)) {
+          await applyLibertyPresentation(controller);
           await _enable3dBuildings(controller);
           await _settle3dCamera(controller);
         }

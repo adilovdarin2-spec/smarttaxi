@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Icon } from "../../core/icons.jsx";
+import { applyLibertyPresentation, hideDuplicateBuildings } from './mapPresentation.mjs';
 
 const DEFAULT_CENTER = { lat: 40.844435, lng: 68.509021 };
 const DEFAULT_ZOOM = 16;
@@ -65,15 +66,17 @@ function add3dBuildings(map) {
       "source-layer": buildingLayer["source-layer"],
       minzoom: 13,
       paint: {
-        "fill-extrusion-color": "#dceaff",
+        "fill-extrusion-color": "#cfdef5",
         // Most OSM building footprints do not declare a height. A subtle
         // default keeps those blocks dimensional at navigation zoom without
         // turning the city into exaggerated towers.
         "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 5],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
-        "fill-extrusion-opacity": 0.78
+        "fill-extrusion-opacity": 0.62,
+        "fill-extrusion-vertical-gradient": false
       }
     }, firstLabelLayerId(map));
+    hideDuplicateBuildings(map, 'smarttaxi-3d-buildings');
   } catch {
     // Styles without vector building layers are still valid map styles.
   }
@@ -372,6 +375,7 @@ export default function MapView({
       // polygons during the first paint made address selection feel frozen.
       // Wait until the base map is interactive; the 3D layer then appears
       // progressively without blocking pan, pinch or the location control.
+      applyLibertyPresentation(map);
       map.once("idle", () => add3dBuildings(map));
     };
     const onError = () => setMapError("Карта загружается нестабильно. Проверьте интернет или повторите позже.");

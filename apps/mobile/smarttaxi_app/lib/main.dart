@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -17,6 +19,7 @@ import 'core/sockets/socket_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/active_locale.dart';
 import 'core/widgets/brand_logo.dart';
+import 'core/widgets/startup_screen.dart';
 import 'core/widgets/exit_on_double_back.dart';
 import 'features/driver/driver_shell.dart';
 import 'features/passenger/passenger_shell.dart';
@@ -38,6 +41,10 @@ Future<void> main() async {
 
 Future<void> _runApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(
+        const ['Inter'], await rootBundle.loadString('assets/fonts/OFL.txt'));
+  });
   await SystemChrome.setPreferredOrientations(const [
     DeviceOrientation.portraitUp,
   ]);
@@ -1375,9 +1382,9 @@ class _PhotoSmsResendRow extends StatelessWidget {
 }
 
 class _BrandLoader extends StatefulWidget {
-  const _BrandLoader({this.size = 42});
+  const _BrandLoader();
 
-  final double size;
+  final double size = 42;
 
   @override
   State<_BrandLoader> createState() => _BrandLoaderState();
@@ -1825,163 +1832,7 @@ class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
 
   @override
-  Widget build(BuildContext context) {
-    // Deliberately no photo/bitmap background here: a full-screen image
-    // decode + BoxFit.cover is one of the more expensive things a low-end
-    // phone can do on first frame. This screen is pure vector/text, so it
-    // costs next to nothing to paint regardless of device class.
-    return const Scaffold(
-      backgroundColor: SmartTaxiColors.appBackground,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              SmartTaxiColors.brandSurface,
-            ],
-          ),
-        ),
-        child: _SplashContent(),
-      ),
-    );
-  }
-}
-
-class _SplashContent extends StatelessWidget {
-  const _SplashContent();
-
-  // Matches the native Android launch_background bitmap exactly (same PNG,
-  // same 260x260 size, same dead-center placement) — swapping in a
-  // different-looking logo or moving it here would read as two different
-  // loading screens flashing one after the other the instant Flutter takes
-  // over from the native splash. The background tone is the same fixed
-  // reason: android/.../colors.xml#smarttaxi_background is this exact
-  // #F7FBFF, so only *additive* depth (glow, shadow) is safe here — anything
-  // that changes the base tone would flash when Flutter attaches.
-  static const _logoSize = 260.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.92, end: 1),
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Opacity(
-        opacity: value.clamp(0.0, 1.0),
-        child: Transform.scale(scale: value, child: child),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // The logo is pinned dead-center via Align, matching exactly
-          // where the native Android launch_background bitmap sits
-          // (gravity="center") — so there's no visible jump when this
-          // widget takes over from the native splash. Everything else is
-          // anchored a fixed distance *below* that fixed point instead of
-          // living inside a mainAxisAlignment.center Column, so adding the
-          // tagline/loader/label never shifts the logo itself.
-          final belowLogoTop = constraints.maxHeight / 2 + _logoSize / 2 + 14;
-          final aboveLogoBottom = constraints.maxHeight / 2 - _logoSize / 2;
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // Soft radial glow in the brand blue behind the icon — pure
-              // depth, doesn't touch the edges/corners so it never collides
-              // with the native splash's flat background tone there.
-              Align(
-                alignment: Alignment.center,
-                child: Container(
-                  width: _logoSize * 1.55,
-                  height: _logoSize * 1.55,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        SmartTaxiColors.brand.withValues(alpha: 0.16),
-                        SmartTaxiColors.brand.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Container(
-                  width: _logoSize,
-                  height: _logoSize,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(58),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            SmartTaxiColors.brandDeep.withValues(alpha: 0.22),
-                        blurRadius: 48,
-                        offset: const Offset(0, 22),
-                      ),
-                    ],
-                  ),
-                  child: const Image(
-                    image: AssetImage(BrandLogo.iconAssetPath),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                top: aboveLogoBottom - 34,
-                child: Center(
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: SmartTaxiColors.brandSurface,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      l10n.appTagline,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.brandDeep,
-                        fontSize: 12,
-                        height: 1.2,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                top: belowLogoTop,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const _BrandLoader(size: 40),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.loading,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.authMuted,
-                        fontSize: 15.2,
-                        height: 1.15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const StartupScreen();
 }
 
 // Auth-flow feedback (errors/validation) is stored as a *kind*, not resolved

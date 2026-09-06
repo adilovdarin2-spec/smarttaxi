@@ -36,8 +36,8 @@ class DriverHeader extends StatelessWidget {
               onTap: onTap,
               borderRadius: BorderRadius.circular(18),
               child: Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: palette.card.withValues(alpha: 0.94),
@@ -45,13 +45,13 @@ class DriverHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: SmartTaxiShadows.card,
                 ),
-                child: Icon(icon, color: palette.brandDeep, size: 23),
+                child: Icon(icon, color: palette.text, size: 22),
               ),
             ),
           ),
         );
     return SizedBox(
-      height: 60,
+      height: 56,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
         child: Row(

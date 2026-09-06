@@ -17,14 +17,14 @@ class SmartTaxiColors {
   // black+blue dark background.
   static const bgDark = Color(0xff05070c);
   static const background = Color(0xffffffff);
-  static const appBackground = Color(0xfff5f7fa);
+  static const appBackground = Color(0xfff7f9fc);
   static const card = Color(0xffffffff);
   static const cardWarm = Color(0xfff2f7ff);
   static const text = Color(0xff111827);
   static const textSecondary = Color(0xff606978);
   static const textMuted = Color(0xff9ca3af);
   static const border = Color(0xffe6eaf0);
-  static const borderStrong = Color(0xff1d6fff);
+  static const borderStrong = Color(0xffd7e0ed);
   static const success = Color(0xff16a34a);
   static const successSoft = Color(0xffecfdf3);
   static const danger = Color(0xffdc2626);
@@ -119,16 +119,16 @@ class SmartTaxiShadows {
 class SmartTaxiTextStyles {
   static const title = TextStyle(
     color: SmartTaxiColors.text,
-    fontSize: 26,
+    fontSize: 20,
     height: 1.2,
     letterSpacing: -0.5,
     fontWeight: FontWeight.w600,
   );
   static const subtitle = TextStyle(
     color: SmartTaxiColors.textSecondary,
-    fontSize: 14,
-    height: 1.3,
-    fontWeight: FontWeight.w500,
+    fontSize: 12.5,
+    height: 1.4,
+    fontWeight: FontWeight.w400,
   );
   static const body = TextStyle(
     color: SmartTaxiColors.text,
@@ -339,6 +339,7 @@ extension SmartTaxiPaletteX on BuildContext {
 ThemeData buildSmartTaxiTheme() {
   final base = ThemeData(
     useMaterial3: true,
+    fontFamily: 'Inter',
     colorScheme: ColorScheme.fromSeed(
       seedColor: SmartTaxiColors.brand,
       primary: SmartTaxiColors.brand,
@@ -349,15 +350,11 @@ ThemeData buildSmartTaxiTheme() {
   return base.copyWith(
     extensions: const [SmartTaxiPalette.light],
     scaffoldBackgroundColor: SmartTaxiColors.appBackground,
-    // No 'Inter' font is bundled as an asset (pubspec.yaml has no `fonts:`
-    // section), so declaring fontFamily: 'Inter' here was a silent no-op —
-    // every screen was already rendering with this fallback stack. Dropping
-    // the phantom primary family just makes that explicit instead of
-    // implying a custom typeface that was never actually loaded.
+    // Bundled Cyrillic/Kazakh typography, independent of manufacturer fonts.
     textTheme: base.textTheme.apply(
       bodyColor: SmartTaxiColors.text,
       displayColor: SmartTaxiColors.text,
-      fontFamilyFallback: const ['SF Pro Display', 'Segoe UI', 'system-ui'],
+      fontFamily: 'Inter',
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: SmartTaxiColors.background,
@@ -553,6 +550,7 @@ ThemeData buildSmartTaxiTheme() {
 ThemeData buildSmartTaxiDarkTheme() {
   const palette = SmartTaxiPalette.dark;
   final base = ThemeData(
+    fontFamily: 'Inter',
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
@@ -569,7 +567,7 @@ ThemeData buildSmartTaxiDarkTheme() {
     textTheme: base.textTheme.apply(
       bodyColor: palette.text,
       displayColor: palette.text,
-      fontFamilyFallback: const ['SF Pro Display', 'Segoe UI', 'system-ui'],
+      fontFamily: 'Inter',
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: palette.appBackground,

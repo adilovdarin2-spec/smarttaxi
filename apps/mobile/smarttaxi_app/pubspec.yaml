@@ -41,7 +41,12 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/InterVariable.ttf
   assets:
+    - assets/fonts/OFL.txt
     - assets/brand/smarttaxi_wordmark_2026.png
     - assets/brand/smarttaxi_app_icon_2026.png
     - assets/auth/auth_phone_full_reference.png

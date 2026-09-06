@@ -1,0 +1,101 @@
+{
+  "web": "http://127.0.0.1:5175",
+  "localRegistration": true,
+  "evidence": [
+    {
+      "key": "profile",
+      "headings": [
+        "Профиль",
+        "Проверка дизайна"
+      ]
+    },
+    {
+      "key": "trips",
+      "headings": [
+        "Мои поездки"
+      ]
+    },
+    {
+      "key": "favorites",
+      "headings": [
+        "Избранное"
+      ]
+    },
+    {
+      "key": "recurring",
+      "headings": [
+        "Регулярные поездки"
+      ]
+    },
+    {
+      "key": "drivers",
+      "headings": [
+        "Мои водители"
+      ]
+    },
+    {
+      "key": "notifications",
+      "headings": [
+        "Уведомления"
+      ]
+    },
+    {
+      "key": "wallet",
+      "headings": [
+        "Кошелёк"
+      ]
+    },
+    {
+      "key": "promo",
+      "headings": [
+        "Промокоды"
+      ]
+    },
+    {
+      "key": "referral",
+      "headings": [
+        "Пригласить друга"
+      ]
+    },
+    {
+      "key": "support",
+      "headings": [
+        "Поддержка"
+      ]
+    },
+    {
+      "key": "application",
+      "headings": [
+        "Стать водителем"
+      ]
+    },
+    {
+      "key": "faq",
+      "headings": [
+        "FAQ"
+      ]
+    },
+    {
+      "key": "settings",
+      "headings": [
+        "Настройки"
+      ]
+    },
+    {
+      "key": "about",
+      "headings": [
+        "О SmartTaxi",
+        "SmartTaxi"
+      ]
+    },
+    {
+      "key": "regions",
+      "headings": [
+        "Регион обслуживания"
+      ]
+    }
+  ],
+  "settingsNavigation": true,
+  "notificationBell": true,
+  "errors": []
+}

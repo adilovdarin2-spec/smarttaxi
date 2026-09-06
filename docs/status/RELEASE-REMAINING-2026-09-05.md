@@ -6,7 +6,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 ## Verified local baseline
 
-- API dependency policy and 36 checks; web 46 tests and production build.
+- API dependency policy and 36 checks; web 49 tests and production build.
 - Standard root-lock Docker images, healthy local API/web/PostgreSQL/Redis,
   actual isolated backup restoration. No database volume was removed.
 - npm TLS validation enabled by default in both API build contexts and Compose;
@@ -17,7 +17,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
   active/unpaid-trip restoration and stale-session isolation.
 - Native GPS queue/route ordering, presentation, transport and creation
   reconciliation plus passenger route framing and socket session isolation:
-  122 tests and clean analysis. The latest localhost redesign/home-camera
+  129 tests and clean analysis. The latest localhost redesign/home-camera
   candidate was installed on the physical phone and hash-verified.
 - Physical Android passenger pre-order screens and the driver lifecycle through
   manual local CASH receipt were exercised. The revised route/flag and home
@@ -28,6 +28,11 @@ does not replace the September evidence. Work and QA remain local on `dev`.
   completed settlement is shown without an obsolete map. Final installed home,
   tariffs, payment and settlement were recaptured. See the current redesign
   report for intermediate-capture qualifications and remaining states.
+- Sep 6 composition refinement: bundled licensed Inter typography, simplified
+  startup, edge-to-edge passenger/driver chrome, full-height native address
+  search and a shared lighter map palette. Duplicate provider buildings are
+  hidden while SmartTaxi buildings remain below labels/routes/markers. The final
+  localhost APK was installed and hash-verified on the physical phone.
 - Android/web read-after-uncertain-creation recovery, with a compiled-browser
   proof of actual backend commit, lost response and exactly one creation POST.
 - Strict route/maneuver validation, correct missing intercity rate inheritance,
@@ -39,6 +44,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 | Item | What closes it | Current constraint |
 |---|---|---|
 | Passenger/driver visual parity | Complete current native state coverage and compare with web/reference boards | Current redesign APK is installed and hash-verified. Home/tariffs/payment, account sections and driver lifecycle were inspected; Line is map-first and trip actions fixed above navigation. Native passenger waiting/active/receipt, nested forms/errors and functional settings parity remain; shared styling is not full-state acceptance |
+| Driver account in passenger mode | Reconcile UI mode switching with API authorization and test wallet/recurring/order behavior | The UI permits a DRIVER seed to enter passenger mode, but passenger wallet is rejected with 403 and recurring payments with 404. This is a product/API parity defect, not an external blocker or an empty-state styling issue |
 | Native automatic dispatch after account switch | Observe the new driver order without manual refresh on the revised APK | The library-level stale-session reproduction fails before and passes after the fix. Native passenger assignment updates were received, but native driver incoming after account switch still needs its device check |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
 | Native driver route layer | Apply the documented annotation-to-style-layer plan with before/after device evidence | Actual on-device route is still visually heavy and has label-ordering differences from the passenger map. Existing renderer was preserved in the redesign; dedicated route/marker/layer regression QA is still needed |
@@ -72,6 +78,7 @@ these warnings did not prevent the current builds.
 
 ## Evidence index
 
+- [Composition, typography and map refinement](composition-redesign-2026-09-06.md)
 - [Current screen redesign and installed candidate](screen-redesign-2026-09-06.md)
 - [Current continuation](SESSION-2026-09-05-CONTINUATION.md)
 - [Physical Android pass and installed candidate](physical-android-qa-2026-09-06.md)

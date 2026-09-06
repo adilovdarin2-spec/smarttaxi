@@ -1710,6 +1710,8 @@ class _PassengerShellState extends State<PassengerShell>
     final selected = await showModalBottomSheet<_PointResult>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(),
       // The light value was 0xf6fffcf6 — the brand theme's cream. Because
       // this barrier is near-opaque it effectively repaints the whole
       // upper half of the screen, so it was the largest warm surface left
@@ -5413,18 +5415,9 @@ class _SupportTopicChip extends StatelessWidget {
         color: selected ? palette.brandPale : palette.card,
         border: Border.all(
           color: selected ? palette.brand : palette.border,
-          width: selected ? 1.6 : 1,
+          width: 1,
         ),
         borderRadius: BorderRadius.circular(999),
-        boxShadow: selected
-            ? const [
-                BoxShadow(
-                  color: Color(0x10102a52),
-                  blurRadius: 14,
-                  offset: Offset(0, 6),
-                )
-              ]
-            : null,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -5436,7 +5429,7 @@ class _SupportTopicChip extends StatelessWidget {
             style: TextStyle(
               color: selected ? palette.text : palette.textSecondary,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -6239,7 +6232,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         const native_map.FillExtrusionLayerProperties(
           // Buildings should add quiet depth to the map, not compete with
           // the selected route or the blue SmartTaxi marker.
-          fillExtrusionColor: '#edf4fc',
+          fillExtrusionColor: '#cfdef5',
           fillExtrusionHeight: [
             'coalesce',
             ['get', 'render_height'],
@@ -6247,7 +6240,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             // Small cities often omit a measured height in OSM. A modest
             // fallback keeps the 3D surface dimensional instead of silently
             // degrading into a flat plan outside major cities.
-            14,
+            5,
           ],
           fillExtrusionBase: [
             'coalesce',
@@ -6255,7 +6248,8 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             ['get', 'min_height'],
             0,
           ],
-          fillExtrusionOpacity: 0.76,
+          fillExtrusionOpacity: 0.62,
+          fillExtrusionVerticalGradient: false,
         ),
         sourceLayer: 'building',
         // MapLibre adds a runtime layer above every existing style layer by
@@ -6267,6 +6261,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         minzoom: 13,
         enableInteraction: false,
       );
+      await hideDuplicateLibertyBuildings(controller);
     } catch (_) {
       // See the note above: source/layer names are style-specific.
     }
@@ -6386,10 +6381,10 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       }
       final driver = widget.driver;
       if (driver != null) {
-        await symbol(driver.toLatLng(), _carImage, size: 0.23);
+        await symbol(driver.toLatLng(), _carImage, size: 0.12);
       } else {
         for (final nearby in widget.nearbyDrivers.take(5)) {
-          await symbol(nearby.toLatLng(), _carImage, size: 0.2);
+          await symbol(nearby.toLatLng(), _carImage, size: 0.10);
         }
       }
     } catch (_) {
@@ -6423,6 +6418,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       unawaited(Future<void>(() async {
         await Future<void>.delayed(const Duration(milliseconds: 280));
         if (mounted && identical(controller, _controller)) {
+          await applyLibertyPresentation(controller);
           await _enable3dBuildings(controller);
           // Android applies the style's own initial camera after its first
           // frame. Re-apply the intended pitch only after that point; without
@@ -7701,34 +7697,17 @@ class _HomeOrderPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A floating card with side margins and fully-rounded corners, not a
-    // flush edge-to-edge bottom sheet — keeps a sliver of map visible on
-    // either side so this still reads as "a panel over the map" rather than
-    // "a screen that replaced the map". Intentionally opaque, no
-    // BackdropFilter: the sheet sits above a live, continuously-animating
-    // map + pulse/timer widgets, and a blur here would force an expensive
-    // re-sample of everything beneath it on every frame for an effect a
-    // fully opaque surface already hides completely.
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        10,
-        0,
-        10,
-        8 + MediaQuery.paddingOf(context).bottom,
+    // One edge-to-edge surface: the map meets the sheet cleanly, without a
+    // second rounded frame and slivers of map beneath the order action.
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      decoration: BoxDecoration(
+        color: context.palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: SmartTaxiShadows.sheet,
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-          decoration: BoxDecoration(
-            color: context.palette.card,
-            borderRadius: const BorderRadius.all(Radius.circular(24)),
-            boxShadow: SmartTaxiShadows.raised,
-          ),
-          child: child,
-        ),
-      ),
+      child: child,
     );
   }
 }
@@ -7736,12 +7715,10 @@ class _HomeOrderPanel extends StatelessWidget {
 class _OrderSheetHeading extends StatelessWidget {
   const _OrderSheetHeading({
     required this.title,
-    required this.text,
     this.eyebrow,
   });
 
   final String title;
-  final String text;
   final String? eyebrow;
 
   @override
@@ -7757,7 +7734,7 @@ class _OrderSheetHeading extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: palette.textSecondary,
-              fontSize: 13,
+              fontSize: 11,
               height: 1.1,
               fontWeight: FontWeight.w500,
             ),
@@ -7770,22 +7747,10 @@ class _OrderSheetHeading extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: palette.text,
-            fontSize: 22,
+            fontSize: 20,
             height: 1.2,
             letterSpacing: -0.4,
             fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: palette.textSecondary,
-            fontSize: 13.5,
-            height: 1.1,
-            fontWeight: FontWeight.w400,
           ),
         ),
       ],
@@ -7835,23 +7800,23 @@ class _QuickAddressChoices extends StatelessWidget {
           Expanded(
             child: Material(
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: choices[index].onTap,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  height: 42,
+                  height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: palette.brandSurface,
+                    color: palette.card,
                     border: Border.all(color: palette.border),
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(choices[index].icon,
-                          size: 16, color: palette.brandDeep),
+                          size: 16, color: palette.textSecondary),
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
@@ -7859,9 +7824,9 @@ class _QuickAddressChoices extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: palette.brandDeep,
+                            color: palette.textSecondary,
                             fontSize: 12.2,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -7872,50 +7837,6 @@ class _QuickAddressChoices extends StatelessWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _TrustRow extends StatelessWidget {
-  const _TrustRow();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                palette.brand.withValues(alpha: 0.16),
-                palette.brand.withValues(alpha: 0.05),
-              ],
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.verified_rounded,
-            size: 13,
-            color: palette.brandDeep,
-          ),
-        ),
-        const SizedBox(width: 7),
-        Flexible(
-          child: Text(
-            AppLocalizations.of(context).passengerVerifiedDriversSubtitle,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -7953,9 +7874,9 @@ class _SheetAddressEntryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
       decoration: BoxDecoration(
-        color: palette.appBackground,
+        color: palette.card,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -8077,7 +7998,7 @@ class _SheetAddressRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 54),
+          constraints: const BoxConstraints(minHeight: 50),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
@@ -8091,7 +8012,7 @@ class _SheetAddressRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: palette.textSecondary,
-                        fontSize: 12,
+                        fontSize: 10.5,
                         height: 1.2,
                         fontWeight: FontWeight.w400,
                       ),
@@ -8105,7 +8026,7 @@ class _SheetAddressRow extends StatelessWidget {
                         color: palette.text,
                         fontSize: 14,
                         height: 1.2,
-                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -8288,7 +8209,7 @@ class _RouteSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
       decoration: BoxDecoration(
-        color: palette.appBackground,
+        color: palette.card,
         border: Border.fromBorderSide(
           BorderSide(color: palette.border),
         ),
@@ -8602,13 +8523,6 @@ class _OrderSheet extends StatelessWidget {
                               dark: isDark,
                             ),
                           ],
-                          // Trust needs to be visible at the exact moment the
-                          // rider decides on a tariff and price, not only on
-                          // the empty address screen.  This is deliberately
-                          // compact so the payment action remains above the
-                          // fold on smaller phones.
-                          const SizedBox(height: 10),
-                          const _TrustRow(),
                         ],
                       ),
                     ),
@@ -8659,7 +8573,6 @@ class _OrderSheet extends StatelessWidget {
                 if (!routeSelected) ...[
                   _OrderSheetHeading(
                     title: l10n.passengerHomeWhereToTitle,
-                    text: l10n.passengerHomeWhereToSubtitle,
                     eyebrow: l10n.passengerHomeGreeting,
                   ),
                   const SizedBox(height: 12),
@@ -8688,8 +8601,6 @@ class _OrderSheet extends StatelessWidget {
                     text: l10n.passengerHomeSetDestination,
                     onTap: onDropoffTap,
                   ),
-                  const SizedBox(height: 10),
-                  const _TrustRow(),
                 ] else if (routeSelected && routeError)
                   _CompactNotice(
                     icon: Icons.route_outlined,
@@ -14455,8 +14366,8 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
     final hasTypedQuery = _query.text.trim().length >= 2;
     final showMapPointChoice =
         !hasTypedQuery || (!_loading && _results.isEmpty);
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height,
       child: ColoredBox(
         color: palette.card,
         child: SafeArea(
@@ -14476,7 +14387,6 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SheetHandle(dark: isDark),
                   Row(
                     children: [
                       Expanded(
@@ -14484,7 +14394,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                           widget.title,
                           style: TextStyle(
                             color: palette.text,
-                            fontSize: 21,
+                            fontSize: 20,
                             height: 1.05,
                             fontWeight: FontWeight.w600,
                           ),
@@ -14534,7 +14444,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                     style: TextStyle(
                       color: palette.text,
                       fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w400,
                     ),
                     textInputAction: TextInputAction.search,
                     onChanged: _onQueryChanged,
@@ -14552,19 +14462,19 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                       filled: true,
                       fillColor: palette.brandSurface,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: palette.brand.withValues(alpha: 0.22),
+                          color: palette.border,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: palette.brand.withValues(alpha: 0.22),
+                          color: palette.border,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide:
                             BorderSide(color: palette.brand, width: 1.8),
                       ),
@@ -14676,16 +14586,17 @@ class _MapPointChoiceButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.zero,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.zero,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
           decoration: BoxDecoration(
-            color: palette.brandSurface,
-            border: Border.all(color: palette.border),
-            borderRadius: BorderRadius.circular(18),
+            color: palette.card,
+            border: Border(bottom: BorderSide(color: palette.border)),
+            borderRadius: BorderRadius.zero,
           ),
           child: Row(
             children: [
@@ -14716,7 +14627,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                         color: palette.text,
                         fontSize: 13.2,
                         height: 1.05,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -14728,7 +14639,7 @@ class _MapPointChoiceButton extends StatelessWidget {
                         color: palette.textSecondary,
                         fontSize: 11.2,
                         height: 1.05,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -14989,12 +14900,7 @@ class _AddressEmptyHint extends StatelessWidget {
     final resolvedTitle = title ?? l10n.passengerAddressEmptyHintTitle;
     final resolvedText = text ?? l10n.passengerAddressEmptyHintText;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: palette.cardWarm,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(18),
-      ),
+      padding: const EdgeInsets.fromLTRB(4, 20, 4, 20),
       child: Row(
         children: [
           Container(
@@ -15024,7 +14930,7 @@ class _AddressEmptyHint extends StatelessWidget {
                   style: TextStyle(
                     color: palette.text,
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     height: 1.1,
                   ),
                 ),
@@ -15036,7 +14942,7 @@ class _AddressEmptyHint extends StatelessWidget {
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                     height: 1.15,
                   ),
                 ),
@@ -15549,7 +15455,7 @@ class _TariffComparisonCard extends StatelessWidget {
             color: palette.text,
             fontSize: 16,
             height: 1.04,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 4),
@@ -15570,7 +15476,7 @@ class _TariffComparisonCard extends StatelessWidget {
                 color: palette.textSecondary,
                 fontSize: 11,
                 height: 1,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -15588,7 +15494,7 @@ class _TariffComparisonCard extends StatelessWidget {
             fontSize: 19,
             height: 1,
             letterSpacing: -0.35,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         if (bestValue) ...[
@@ -15605,7 +15511,7 @@ class _TariffComparisonCard extends StatelessWidget {
                   color: palette.brandDeep,
                   fontSize: 10,
                   height: 1,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -15651,9 +15557,9 @@ class _TariffComparisonCard extends StatelessWidget {
               );
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -15666,8 +15572,8 @@ class _TariffComparisonCard extends StatelessWidget {
             10,
           ),
           decoration: BoxDecoration(
-            color: selected ? palette.brandSurface : palette.card,
-            borderRadius: BorderRadius.circular(18),
+            color: palette.card,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected ? palette.brand : palette.border,
               width: selected ? 1.25 : 1,
@@ -15702,9 +15608,9 @@ class _TariffComparisonCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: palette.text,
-                                    fontSize: 15.5,
+                                    fontSize: 14.5,
                                     height: 1.2,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -15715,9 +15621,9 @@ class _TariffComparisonCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: palette.text,
-                                  fontSize: 18.5,
+                                  fontSize: 17,
                                   height: 1.2,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                   letterSpacing: -0.4,
                                 ),
                               ),
@@ -15741,7 +15647,7 @@ class _TariffComparisonCard extends StatelessWidget {
                               style: TextStyle(
                                 color: palette.brandDeep,
                                 fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -17231,7 +17137,7 @@ class _AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Container(
-      height: 56,
+      height: 48,
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
@@ -17249,10 +17155,11 @@ class _AppHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const SizedBox.square(
-            dimension: 28,
-            child: FittedBox(child: BrandLogo()),
-          ),
+          Text('SmartTaxi',
+              style: TextStyle(
+                  fontSize: 13,
+                  color: palette.textSecondary,
+                  fontWeight: FontWeight.w500)),
           const Spacer(),
           trailing,
         ],
@@ -17482,18 +17389,16 @@ class _MapRoundButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: _MapGlassChrome(
             child: Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: prominent
-                    ? palette.brand
-                    : palette.card.withValues(alpha: 0.78),
-                borderRadius: BorderRadius.circular(18),
+                color: palette.card,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: prominent ? palette.brand : palette.border,
+                  color: palette.border,
                 ),
                 boxShadow: const [
                   BoxShadow(
@@ -17508,7 +17413,7 @@ class _MapRoundButton extends StatelessWidget {
                 children: [
                   Icon(
                     icon,
-                    color: prominent ? Colors.white : palette.brandDeep,
+                    color: prominent ? palette.brand : palette.text,
                     size: 23,
                   ),
                   if (badgeVisible)
@@ -17550,13 +17455,13 @@ class _MapBackButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: palette.card.withValues(alpha: 0.98),
-            border: Border.all(color: palette.borderStrong),
-            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: palette.border),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1a102a52),
@@ -17587,13 +17492,13 @@ class _RouteSummaryPill extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 168),
       child: Container(
-        height: 44,
+        height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: palette.card.withValues(alpha: 0.98),
-          border: Border.all(color: palette.borderStrong),
-          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: palette.border),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: const [
             BoxShadow(
               color: Color(0x1f102a52),
@@ -17609,7 +17514,7 @@ class _RouteSummaryPill extends StatelessWidget {
             maxLines: 1,
             style: TextStyle(
               color: palette.text,
-              fontSize: 14.5,
+              fontSize: 12.5,
               height: 1,
               fontWeight: FontWeight.w600,
             ),
@@ -18127,7 +18032,10 @@ class _PremiumCard extends StatelessWidget {
         border: Border.fromBorderSide(
           BorderSide(color: palette.border),
         ),
-        borderRadius: const BorderRadius.all(Radius.circular(18)),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? null
+            : SmartTaxiShadows.card,
       ),
       child: child,
     );
@@ -18423,7 +18331,7 @@ class _BrandCtaButton extends StatelessWidget {
                             Expanded(
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
+                                alignment: Alignment.center,
                                 child: Text.rich(
                                   TextSpan(
                                     children: [
@@ -18448,12 +18356,6 @@ class _BrandCtaButton extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 20,
                             ),
                           ],
                         ),
@@ -18686,18 +18588,18 @@ class _TitleBlock extends StatelessWidget {
           title,
           style: TextStyle(
             color: context.palette.text,
-            fontSize: 24,
+            fontSize: 20,
             height: 1.2,
             letterSpacing: -0.4,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 5),
         Text(
           text,
           style: TextStyle(
             color: context.palette.textSecondary,
-            fontSize: 14,
+            fontSize: 12.5,
             height: 1.35,
             fontWeight: FontWeight.w400,
           ),
@@ -19065,9 +18967,9 @@ class _SettingsGroup extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: context.palette.text,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+              color: context.palette.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 10),
@@ -19102,8 +19004,9 @@ class _SettingsRow extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 62),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
             Expanded(
@@ -19114,7 +19017,8 @@ class _SettingsRow extends StatelessWidget {
                     title,
                     style: TextStyle(
                       color: titleColor,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -19122,9 +19026,9 @@ class _SettingsRow extends StatelessWidget {
                     text,
                     style: TextStyle(
                       color: palette.textSecondary,
-                      fontSize: 13,
+                      fontSize: 12,
                       height: 1.3,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
@@ -19133,7 +19037,7 @@ class _SettingsRow extends StatelessWidget {
             if (onTap != null)
               Icon(
                 Icons.chevron_right_rounded,
-                color: palette.brandDeep,
+                color: palette.textMuted,
               ),
           ],
         ),

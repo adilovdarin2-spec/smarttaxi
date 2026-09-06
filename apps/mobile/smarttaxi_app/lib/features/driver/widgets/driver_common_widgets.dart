@@ -9,7 +9,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Rounded, floating chrome wrapper used around the bottom tab bar.
+/// A quiet navigation rail aligned to the screen, not another floating card.
 class FloatingNav extends StatelessWidget {
   const FloatingNav({super.key, required this.child});
 
@@ -17,26 +17,12 @@ class FloatingNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.paddingOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(14, 6, 14, 10 + bottom * 0.35),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: context.palette.card.withValues(alpha: 0.96),
-            border: Border.all(color: context.palette.border),
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: const [
-              BoxShadow(
-                  color: Color(0x16102a52),
-                  blurRadius: 28,
-                  offset: Offset(0, 12))
-            ],
-          ),
-          child: child,
-        ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.palette.card,
+        border: Border(top: BorderSide(color: context.palette.border)),
       ),
+      child: child,
     );
   }
 }
@@ -480,7 +466,7 @@ class TitleBlock extends StatelessWidget {
       Text(title,
           style: TextStyle(
               color: context.palette.text,
-              fontSize: 24,
+              fontSize: 20,
               height: 1.2,
               letterSpacing: -0.4,
               fontWeight: FontWeight.w600)),
@@ -488,7 +474,7 @@ class TitleBlock extends StatelessWidget {
       Text(text,
           style: TextStyle(
               color: context.palette.textSecondary,
-              fontSize: 14,
+              fontSize: 12.5,
               height: 1.35,
               fontWeight: FontWeight.w400)),
     ]);
