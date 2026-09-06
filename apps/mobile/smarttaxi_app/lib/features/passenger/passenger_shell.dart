@@ -15559,6 +15559,9 @@ class _TariffComparisonCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final isDelivery = item.classId == _TariffVisualClass.delivery;
     final price = estimate?.estimatedPrice;
+    final tripMeta = estimate == null
+        ? null
+        : '${_formatMinutes(estimate!)} · ${_formatDistance(estimate!)}';
     final fallback = Icon(
       isDelivery ? Icons.local_shipping_rounded : Icons.local_taxi_rounded,
       color: palette.brandDeep,
@@ -15604,28 +15607,43 @@ class _TariffComparisonCard extends StatelessWidget {
             10,
           ),
           decoration: BoxDecoration(
-            color: palette.card,
+            color: selected
+                ? palette.brand.withValues(alpha: dark ? 0.13 : 0.055)
+                : palette.card,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected ? palette.brand : palette.border,
-              width: selected ? 1.25 : 1,
+              width: selected ? 1.5 : 1,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color:
+                          palette.brand.withValues(alpha: dark ? 0.10 : 0.08),
+                      blurRadius: 18,
+                      offset: const Offset(0, 7),
+                    ),
+                  ]
+                : null,
           ),
           child: compact
               ? _compactContent(context, art, price)
               : Row(
                   children: [
                     Container(
-                      width: 82,
-                      height: 54,
+                      width: 86,
+                      height: 62,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
+                        color: selected
+                            ? palette.brand
+                                .withValues(alpha: dark ? 0.16 : 0.09)
+                            : palette.appBackground,
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: art,
                     ),
-                    const SizedBox(width: 9),
+                    const SizedBox(width: 11),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -15646,62 +15664,98 @@ class _TariffComparisonCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                price == null ? 'Расчёт' : _formatTenge(price),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: palette.text,
-                                  fontSize: 17,
-                                  height: 1.2,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: -0.4,
-                                ),
-                              ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 5),
                           Text(
-                            isDelivery ? 'до 20 кг' : 'до 4 пассажиров',
+                            isDelivery
+                                ? 'до 20 кг'
+                                : (tripMeta ?? 'до 4 пассажиров'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: palette.textSecondary,
-                              fontSize: 11,
+                              fontSize: 10.5,
+                              height: 1.2,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (bestValue) ...[
-                            const SizedBox(height: 5),
-                            Text(
-                              'Выгодный',
-                              style: TextStyle(
-                                color: palette.brandDeep,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: palette.brand.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Оптимальный',
+                                style: TextStyle(
+                                  color: palette.brandDeep,
+                                  fontSize: 9.5,
+                                  height: 1,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
                         ],
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 78,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            price == null ? 'Расчёт' : _formatTenge(price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontSize: 18,
+                              height: 1.1,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.5,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            isDelivery ? 'доставка' : 'за поездку',
+                            style: TextStyle(
+                              color: palette.textSecondary,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 18,
-                      height: 18,
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 22,
+                      height: 22,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: selected ? palette.brandDeep : palette.card,
+                        color: selected ? palette.brand : Colors.transparent,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: selected ? palette.brandDeep : palette.border,
+                          color: selected ? palette.brand : palette.border,
                           width: selected ? 0 : 1.5,
                         ),
                       ),
                       child: selected
                           ? const Icon(Icons.check_rounded,
-                              color: Colors.white, size: 16)
+                              color: Colors.white, size: 17)
                           : null,
                     ),
                   ],
@@ -15801,11 +15855,13 @@ class _CompactPriceAdjuster extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
       decoration: BoxDecoration(
-        color: palette.appBackground,
+        color: palette.brand.withValues(alpha: 0.055),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.border),
+        border: Border.all(
+          color: palette.brand.withValues(alpha: 0.16),
+        ),
       ),
       child: Row(
         children: [
@@ -15817,10 +15873,20 @@ class _CompactPriceAdjuster extends StatelessWidget {
                 Text(
                   l10n.passengerYourPriceLabel,
                   style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12,
+                    color: palette.text,
+                    fontSize: 12.5,
                     height: 1,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  currentPrice == basePrice ? 'Рекомендованная' : 'Ваша ставка',
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 9.5,
+                    height: 1,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -15830,7 +15896,7 @@ class _CompactPriceAdjuster extends StatelessWidget {
             icon: Icons.remove_rounded,
             onTap: currentPrice > _minPrice ? () => _adjust(-_step) : null,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 110),
             child: Text(
@@ -15848,7 +15914,7 @@ class _CompactPriceAdjuster extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _CompactPriceStepButton(
             icon: Icons.add_rounded,
             onTap: currentPrice < _maxPrice ? () => _adjust(_step) : null,
@@ -15871,15 +15937,24 @@ class _CompactPriceStepButton extends StatelessWidget {
     final enabled = onTap != null;
     return Material(
       color: Colors.transparent,
-      shape: const CircleBorder(),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        customBorder: const CircleBorder(),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Icon(icon,
-              size: 22, color: enabled ? palette.brandDeep : palette.textMuted),
+        child: Ink(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color:
+                enabled ? palette.card : palette.card.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: palette.border),
+          ),
+          child: Icon(
+            icon,
+            size: 21,
+            color: enabled ? palette.brandDeep : palette.textMuted,
+          ),
         ),
       ),
     );

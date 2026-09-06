@@ -2458,7 +2458,8 @@ function ReferenceTariffList({ rows, setTariff, route, offeredPriceKzt, minOffer
             <span className="tariff-v14-car"><img src={row.image} alt="" /></span>
             <span className="tariff-v14-card-copy">
               <b>{row.title}</b>
-              <small>{row.key === "Delivery" ? "до 20 кг" : `${row.seats || 4} пассажира`}</small>
+              <small>{row.key === "Delivery" ? "▣  до 20 кг" : `◷  ${formatTripMin(route, "—")} · ${distanceKmFromRoute(route) || "—"} км`}</small>
+              {row.selected && row.key !== "Delivery" && <em>Оптимальный</em>}
             </span>
             <span className="tariff-v14-card-fare">
               <strong>{row.priceKzt ? <Money value={row.priceKzt} /> : "Расчёт"}</strong>
@@ -2469,7 +2470,7 @@ function ReferenceTariffList({ rows, setTariff, route, offeredPriceKzt, minOffer
         ))}
       </div>
       <section className="tariff-v14-price" aria-label="Ваша цена">
-        <span><small>Ваша цена</small><em>{route ? `${formatTripMin(route, "—")} в пути` : "маршрут"}</em></span>
+        <span><small>Ваша цена</small><em>{offeredPriceKzt === selectedRow.priceKzt ? "Рекомендованная" : "Ваша ставка"}</em></span>
         <div>
           <button type="button" aria-label="Уменьшить цену" disabled={!offeredPriceKzt || offeredPriceKzt <= minOfferedPriceKzt} onClick={() => onPriceChange(-1)}>−</button>
           <b>{offeredPriceKzt ? <Money value={offeredPriceKzt} /> : "Расчёт"}</b>
