@@ -3170,7 +3170,19 @@ class _PassengerShellState extends State<PassengerShell>
             const <LatLng>[]);
     final screen = MediaQuery.sizeOf(context);
     final compact = screen.height < 740 || screen.width < 390;
-    final sheetFraction = compact ? 0.44 : 0.40;
+    // Receipt and rating panels carry the primary post-trip action. On narrow
+    // Android devices the generic trip height left that CTA below the visible
+    // viewport, which made a completed ride look stuck. Give terminal states a
+    // little more room while preserving the map-first proportions in transit.
+    final terminalSheet = const {
+      'TRIP_COMPLETED',
+      'PAYMENT_PENDING',
+      'COMPLETED',
+      'PAID',
+      'RATED',
+    }.contains(order.status);
+    final sheetFraction =
+        terminalSheet ? (compact ? 0.54 : 0.49) : (compact ? 0.44 : 0.40);
     final routeMeta = driverRouteText ?? _orderRouteMeta(order);
     return Stack(
       children: [
@@ -9645,7 +9657,13 @@ class _TripStatusPanel extends StatelessWidget {
               Builder(builder: (context) {
                 final activeTitleText = order.driverId == null
                     ? l10n.passengerTripWithIdTitle(orderShortId)
-                    : l10n.passengerDriverFoundTitle;
+                    : _statusLabel(l10n, order.status);
+                final activeSubtitleText = order.driverId == null
+                    ? statusText
+                    : arrived
+                        ? l10n.passengerDriverArrivedWaitingBanner
+                        : (driverRouteText ??
+                            l10n.passengerDriverRouteDescription);
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -9664,17 +9682,15 @@ class _TripStatusPanel extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          // The subtitle is meant to add specifics beyond the
-                          // headline ("Водитель едет к вам", "Водитель
-                          // приехал"...) — right at DRIVER_FOUND/DRIVER_ASSIGNED
-                          // though, _statusLabel resolves to the exact same
-                          // string as the title above, so this would render
-                          // "Водитель найден" twice in a row. Skip it only in
-                          // that one case rather than showing a redundant line.
-                          if (statusText != activeTitleText) ...[
+                          // Keep the status itself in the headline and use the
+                          // second line for live ETA/route context. Previously
+                          // every pre-trip state kept the static "Водитель
+                          // найден" title and only changed a muted subtitle,
+                          // so "едет" was easy to miss and web/mobile disagreed.
+                          if (activeSubtitleText != activeTitleText) ...[
                             const SizedBox(height: 5),
                             Text(
-                              statusText,
+                              activeSubtitleText,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
