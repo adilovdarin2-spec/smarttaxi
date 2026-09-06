@@ -234,7 +234,7 @@ async function transition(orderId, label, status, image) {
   assert.equal(result.order?.public_status || result.order?.status, status);
   await page.waitForFunction(() => !document.querySelector(".driver-core-card-actions .app-button:disabled"));
   if (passenger) {
-    const titles = { DRIVER_GOING_TO_CLIENT: "Водитель найден", DRIVER_ARRIVED: "Водитель на месте", WAITING_CLIENT: "Идёт ожидание", TRIP_STARTED: "Поездка началась", TRIP_COMPLETED: "Поездка окончена", PAID: "Оставьте отзыв" };
+    const titles = { DRIVER_GOING_TO_CLIENT: "Водитель едет к вам", DRIVER_ARRIVED: "Водитель на месте", WAITING_CLIENT: "Идёт ожидание", TRIP_STARTED: "Поездка началась", TRIP_COMPLETED: "Поездка окончена", PAID: "Оставьте отзыв" };
     if (titles[status]) await passenger.getByRole("heading", { name: titles[status], exact: true }).waitFor({ timeout: 20000 });
   }
   if (image) await shot(image);

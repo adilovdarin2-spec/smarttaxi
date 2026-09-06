@@ -436,7 +436,7 @@ function clientLifecycleStage(status, order, route = null) {
       canStartNewTrip: false
     },
     DRIVER_GOING_TO_CLIENT: {
-      title: "Водитель найден",
+      title: "Водитель едет к вам",
       subtitle: driverEtaText(order, route),
       badge: label,
       canCancel: true,
@@ -3426,7 +3426,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
         <section className="driver-found-reference-sheet" data-order-id={order.id || ""}>
           <div className="driver-found-grip" aria-hidden="true" />
           <header className="driver-found-reference-head">
-            <h1>Водитель найден</h1>
+            <h1>{stage.title}</h1>
             <p>{driverEtaText(order, activeRoute)}</p>
           </header>
 
@@ -4041,6 +4041,7 @@ function TripRatingCard({
             className={value <= rating ? "selected" : ""}
             onClick={() => setRating(value)}
             aria-label={`${value} из 5`}
+            aria-pressed={value <= rating}
           >
             <Icon name="star" size={21} />
           </button>
@@ -4053,6 +4054,7 @@ function TripRatingCard({
             key={key}
             className={tags.includes(key) ? "selected" : ""}
             onClick={() => onToggleTag(key)}
+            aria-pressed={tags.includes(key)}
           >
             {label}
           </button>
@@ -4069,7 +4071,7 @@ function TripRatingCard({
         />
       </label>
       {error && <p className="trip-rating-error">{error}</p>}
-      <button type="submit" className="trip-rating-submit" disabled={submitting}>
+      <button type="submit" className="trip-rating-submit" disabled={submitting || rating < 1}>
         {submitting ? "Отправляем..." : "Отправить оценку"}
       </button>
     </form>
