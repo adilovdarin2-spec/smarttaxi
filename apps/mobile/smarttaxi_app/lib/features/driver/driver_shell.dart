@@ -2709,18 +2709,48 @@ class _DriverShellState extends State<DriverShell> {
         body: SafeArea(
           child: Column(
             children: [
-              DriverHeader(
-                  onMenu: _openDrawer,
-                  onNotifications: _openNotifications,
-                  status: _driverStatusLabel(),
-                  tone: _driverStatusTone()),
               Expanded(
                 child: IndexedStack(
                   index: _tab,
                   children: [
-                    _lineTab(),
-                    _ordersTab(),
-                    _tripTab(),
+                    Stack(
+                      children: [
+                        Positioned.fill(child: _lineTab()),
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          right: 0,
+                          child: DriverHeader(
+                            onMenu: _openDrawer,
+                            onNotifications: _openNotifications,
+                            status: _driverStatusLabel(),
+                            tone: _driverStatusTone(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        DriverHeader(
+                          onMenu: _openDrawer,
+                          onNotifications: _openNotifications,
+                          status: _driverStatusLabel(),
+                          tone: _driverStatusTone(),
+                        ),
+                        Expanded(child: _ordersTab()),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        DriverHeader(
+                          onMenu: _openDrawer,
+                          onNotifications: _openNotifications,
+                          status: _driverStatusLabel(),
+                          tone: _driverStatusTone(),
+                        ),
+                        Expanded(child: _tripTab()),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -2789,6 +2819,17 @@ class _DriverShellState extends State<DriverShell> {
     final stats = _driverStats;
     final todayEarnings =
         stats == null ? null : formatDriverMoney(stats.revenueTotal);
+    if (AppConfig.useMapLibre3d) {
+      return _premiumLineTab(
+        l10n: l10n,
+        disabledReason: disabledReason,
+        availabilityIssue: availabilityIssue,
+        busy: busy,
+        openOrders: openOrders.length,
+        stats: stats,
+        todayEarnings: todayEarnings,
+      );
+    }
     return RefreshIndicator(
       onRefresh: () async {
         await _loadRegions();
@@ -2888,6 +2929,127 @@ class _DriverShellState extends State<DriverShell> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _premiumLineTab({
+    required AppLocalizations l10n,
+    required String? disabledReason,
+    required _DriverAvailabilityIssue? availabilityIssue,
+    required bool busy,
+    required int openOrders,
+    required DriverStats? stats,
+    required String? todayEarnings,
+  }) {
+    final screen = MediaQuery.sizeOf(context);
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _SmartNavigatorMap(
+            current: _currentCoordinate,
+            heading: _currentHeading,
+            activeOrder: _activeOrder,
+            route: _driverRoute?.geometry ?? const [],
+            alerts: _allNavigatorAlerts,
+            signs: _osmSigns,
+            mapUnavailable: _navigatorMapUnavailable,
+            onTileError: _handleNavigatorTileError,
+            fallbackCenter: _selectedRegion?.center,
+            height: screen.height,
+            badgeTop: 60,
+          ),
+        ),
+        Positioned(
+          top: 70,
+          right: 16,
+          child: _MapChipButton(
+            icon: Icons.add_location_alt_rounded,
+            semanticLabel: l10n.driverDrawerRoadAlerts,
+            badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
+            onTap: () => unawaited(_openRoadAlerts()),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: screen.height * 0.49),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: context.palette.card,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: SmartTaxiShadows.sheet,
+              ),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await _loadRegions();
+                  await _loadOrders();
+                  await _loadDriverStats();
+                  await _loadRoadAlerts();
+                },
+                child: ListView(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 9, 16, 18),
+                  children: [
+                    const Center(child: SheetHandle()),
+                    const SizedBox(height: 10),
+                    DriverShiftHero(
+                      online: _online,
+                      busy: busy,
+                      loading: _loading,
+                      regionName: _selectedRegion?.name,
+                      driverName: widget.accountLabel,
+                      todayEarnings: todayEarnings,
+                      embedded: true,
+                      onToggle: _loading || (!_online && disabledReason != null)
+                          ? null
+                          : () => _setOnline(!_online),
+                      onRegionTap: () => unawaited(_showRegionPicker()),
+                      sosButton: DriverSosButton(
+                        sosPhone: _sosPhone,
+                        api: widget.api,
+                        orderId: _activeOrder?.id,
+                      ),
+                    ),
+                    if (availabilityIssue != null) ...[
+                      const SizedBox(height: 10),
+                      _DriverIssueBanner(
+                        issue: availabilityIssue,
+                        danger: _selectedRegion?.status == 'BLOCKED',
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    DriverTodayStrip(
+                      stats: stats,
+                      loading: _driverStatsLoading,
+                      openOrders: openOrders,
+                      demandLevel: _demandLevel,
+                      demandLoading: _demandHintLoading,
+                    ),
+                    if (_locationMessage != null) ...[
+                      const SizedBox(height: 10),
+                      LocationNotice(
+                        online: _online,
+                        loading: _locationLoading,
+                        message: _locationMessage,
+                      ),
+                    ],
+                    if (_error != null) ...[
+                      const SizedBox(height: 10),
+                      InlineMessage(text: _error!, danger: true),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -3826,6 +3988,7 @@ class _SmartNavigatorMap extends StatefulWidget {
     this.heading,
     this.fallbackCenter,
     this.height,
+    this.badgeTop = 14,
   });
 
   final Coordinate? current;
@@ -3838,6 +4001,7 @@ class _SmartNavigatorMap extends StatefulWidget {
   final VoidCallback onTileError;
   final Coordinate? fallbackCenter;
   final double? height;
+  final double badgeTop;
 
   @override
   State<_SmartNavigatorMap> createState() => _SmartNavigatorMapState();
@@ -4076,7 +4240,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                     ),
             Positioned(
               left: 14,
-              top: 14,
+              top: widget.badgeTop,
               // No right: — a badge stretched edge-to-edge with left-aligned
               // text inside a white rounded pill reads as a search/input
               // bar (it visually is one), which it isn't and does nothing

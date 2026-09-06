@@ -41,11 +41,9 @@ import 'screens/wallet/client_wallet_screen.dart';
 
 // Product-owned illustrations keep the premium card presentation distinct
 // without copying artwork from the visual references.
-const _tariffEconomyAsset = 'assets/cars/car_economy_photo_v1.png';
-const _tariffComfortAsset =
-    'assets/cars/tariff_comfort_white_sedan_flutter.png';
-const _tariffBusinessAsset =
-    'assets/cars/tariff_business_white_premium_sedan_flutter.png';
+const _tariffEconomyAsset = 'assets/cars/tariff_economy_unbranded_v2.png';
+const _tariffComfortAsset = 'assets/cars/tariff_comfort_unbranded_v2.png';
+const _tariffBusinessAsset = 'assets/cars/tariff_business_unbranded_v2.png';
 const _tariffDeliveryAsset = 'assets/cars/car_delivery_photo_v1.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One fixed size for the car icon everywhere it appears on this map --
@@ -5672,7 +5670,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                       // scale. A chosen pickup/dropoff keeps the closer
                       // route-focused framing below.
                       zoom: zoom ??
-                          (pickup == null && dropoff == null ? 15.0 : 15.2),
+                          (pickup == null && dropoff == null ? 16.0 : 16.35),
                       pickup: pickup,
                       pickupIsCurrentLocation: widget.pickupIsCurrentLocation,
                       dropoff: dropoff,

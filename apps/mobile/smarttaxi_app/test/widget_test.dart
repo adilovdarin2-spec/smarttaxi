@@ -75,6 +75,18 @@ void main() {
       pubspec,
       contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
     );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_economy_unbranded_v2.png'),
+    );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_comfort_unbranded_v2.png'),
+    );
+    expect(
+      pubspec,
+      contains('assets/cars/tariff_business_unbranded_v2.png'),
+    );
     expect(pubspec, contains('assets/map/driver_car_topview_white.png'));
     expect(pubspec, contains('assets/map/marker_my_location_2026.png'));
     expect(pubspec, contains('assets/map/marker_destination_2026.png'));
@@ -240,7 +252,7 @@ void main() {
       expect(passenger, contains('tariffDeliveryTitle'));
       expect(
         passenger,
-        contains('assets/cars/car_economy_photo_v1.png'),
+        contains('assets/cars/tariff_economy_unbranded_v2.png'),
       );
       expect(
         passenger,
@@ -248,11 +260,11 @@ void main() {
       );
       expect(
         passenger,
-        contains('assets/cars/tariff_comfort_white_sedan_flutter.png'),
+        contains('assets/cars/tariff_comfort_unbranded_v2.png'),
       );
       expect(
         passenger,
-        contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
+        contains('assets/cars/tariff_business_unbranded_v2.png'),
       );
       expect(passenger, contains('passengerTariffNotConfiguredTitle'));
       expect(passenger, contains('_PaymentMethodRow'));

@@ -17,6 +17,7 @@ class DriverShiftHero extends StatelessWidget {
     this.driverName,
     this.todayEarnings,
     this.sosButton,
+    this.embedded = false,
   });
 
   final bool online;
@@ -32,17 +33,18 @@ class DriverShiftHero extends StatelessWidget {
   // collapses instead of showing a placeholder dash.
   final String? todayEarnings;
   final Widget? sosButton;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: embedded ? EdgeInsets.zero : const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: palette.card,
+        color: embedded ? Colors.transparent : palette.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.border),
+        border: embedded ? null : Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

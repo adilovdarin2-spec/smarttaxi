@@ -448,3 +448,277 @@
   font-weight: 100 900;
   font-display: swap;
 }
+
+/* Reference-composition lock. The driver home is a map workspace with one
+   bottom work sheet, not a dashboard made from vertically stacked cards. */
+.phone-frame.driver-core-phone.driver-core-view-line {
+  position: relative !important;
+  display: block !important;
+  min-height: min(100svh, 844px) !important;
+  overflow: hidden !important;
+  background: #f8fafd !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-header {
+  position: absolute !important;
+  z-index: 40 !important;
+  top: 10px !important;
+  left: 12px !important;
+  right: 12px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  pointer-events: none;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-header > * {
+  min-height: 46px !important;
+  pointer-events: auto;
+  border: 1px solid rgba(31, 52, 82, .09) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, .95) !important;
+  box-shadow: 0 8px 24px rgba(18, 35, 60, .10) !important;
+  backdrop-filter: blur(14px);
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-brand {
+  min-width: 0 !important;
+  padding: 6px 12px 6px 8px !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-brand span {
+  overflow: hidden;
+  color: #152238 !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-status,
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-logout {
+  padding-inline: 13px !important;
+  color: #152238 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-status.online {
+  color: #fff !important;
+  border-color: transparent !important;
+  background: #1d6fff !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-map-wrap {
+  position: absolute !important;
+  z-index: 1 !important;
+  inset: 0 0 66px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #eaf3ff !important;
+  box-shadow: none !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-map-wrap > *,
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-map-wrap .map-view {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel {
+  position: absolute !important;
+  z-index: 30 !important;
+  right: 0 !important;
+  bottom: 65px !important;
+  left: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  max-height: 48% !important;
+  padding: 10px 16px 16px !important;
+  overflow: auto !important;
+  border: 0 !important;
+  border-radius: 28px 28px 0 0 !important;
+  background: rgba(255, 255, 255, .98) !important;
+  box-shadow: 0 -14px 40px rgba(18, 35, 60, .14) !important;
+  scrollbar-width: none;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel::before {
+  width: 38px;
+  height: 4px;
+  margin: 0 auto 2px;
+  flex: 0 0 auto;
+  border-radius: 99px;
+  background: #dce3ed;
+  content: "";
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-home {
+  order: -30 !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 4px 12px !important;
+  padding: 4px 0 10px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e3e9f1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card > div {
+  min-width: 0;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card small {
+  color: #6a778b !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card h1 {
+  margin: 2px 0 0 !important;
+  color: #101828 !important;
+  font-size: 22px !important;
+  line-height: 1.12 !important;
+  font-weight: 680 !important;
+  letter-spacing: -.45px !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card p {
+  margin: 4px 0 0 !important;
+  color: #667085 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  font-weight: 400 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card .app-button {
+  width: auto !important;
+  min-width: 116px !important;
+  min-height: 46px !important;
+  align-self: center !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  padding: 10px 14px !important;
+  border-radius: 14px !important;
+  background: #1d6fff !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-stats {
+  order: -20 !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #e3e9f1 !important;
+  border-radius: 17px !important;
+  background: #fff !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-stats > div {
+  min-height: 60px !important;
+  padding: 10px !important;
+  border: 0 !important;
+  border-right: 1px solid #e3e9f1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-stats > div:last-child {
+  border-right: 0 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-stats small {
+  color: #6a778b !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-stats strong {
+  margin-top: 3px !important;
+  color: #101828 !important;
+  font-size: 16px !important;
+  font-weight: 680 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-region-card {
+  order: -10 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: #f6f8fb !important;
+  box-shadow: none !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-region-card select {
+  min-height: 40px !important;
+  padding: 7px 30px 7px 10px !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-tabs {
+  position: absolute !important;
+  z-index: 50 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  min-height: 66px !important;
+  margin: 0 !important;
+  padding: 5px 4px 4px !important;
+  border: 0 !important;
+  border-top: 1px solid #e3e9f1 !important;
+  border-radius: 0 !important;
+  background: rgba(255, 255, 255, .98) !important;
+  box-shadow: none !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-tabs button {
+  min-width: 0 !important;
+  padding: 4px 2px !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  font-size: 9px !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-tabs button.active {
+  color: #1d6fff !important;
+  background: #eef5ff !important;
+}
+
+@media (max-width: 374px) {
+  .phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel {
+    padding-inline: 13px !important;
+  }
+
+  .phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card .app-button {
+    min-width: 104px !important;
+    padding-inline: 10px !important;
+  }
+}
