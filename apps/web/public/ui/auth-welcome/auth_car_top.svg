@@ -1,0 +1,26 @@
+<svg width="150" height="86" viewBox="0 0 150 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="body" x1="16" y1="43" x2="134" y2="43" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFFFFF"/>
+    <stop offset="1" stop-color="#F3F6FA"/>
+  </linearGradient>
+  <filter id="shadow" x="0" y="0" width="150" height="86" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#101828" flood-opacity="0.18"/>
+  </filter>
+</defs>
+<g filter="url(#shadow)">
+  <path d="M24 49C27 25 45 12 69 12H82C106 12 124 25 127 49L130 67C115 73 96 76 75 76C54 76 35 73 20 67L24 49Z" fill="url(#body)"/>
+  <path d="M48 21C54 16 63 14 72 14H80C89 14 98 16 104 21L114 44C101 49 88 51 75 51C62 51 49 49 36 44L48 21Z" fill="#132238"/>
+  <path d="M52 23C58 19 64 18 72 18H73L70 47C60 47 51 45 41 42L52 23Z" fill="#EAF4FB"/>
+  <path d="M79 18H81C89 18 95 20 100 24L109 42C99 45 90 47 80 47L79 18Z" fill="#EAF4FB"/>
+  <path d="M19 55C29 60 45 63 75 63C105 63 121 60 131 55L134 65C120 73 98 80 75 80C52 80 30 73 16 65L19 55Z" fill="#FFFFFF"/>
+  <path d="M31 62C42 66 57 68 75 68C93 68 108 66 119 62" stroke="#D7DEE8" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="33" cy="70" r="9" fill="#111827"/>
+  <circle cx="33" cy="70" r="4" fill="#F8FAFC"/>
+  <circle cx="117" cy="70" r="9" fill="#111827"/>
+  <circle cx="117" cy="70" r="4" fill="#F8FAFC"/>
+  <rect x="16" y="44" width="14" height="8" rx="4" fill="#1D6FFF"/>
+  <rect x="120" y="44" width="14" height="8" rx="4" fill="#1D6FFF"/>
+  <path d="M65 8H85" stroke="#1D6FFF" stroke-width="6" stroke-linecap="round"/>
+</g>
+</svg>

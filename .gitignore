@@ -1,10 +1,31 @@
 node_modules
 dist
 build
+.dart_tool
+.idea
+.flutter-plugins
+.flutter-plugins-dependencies
+*.apk
+*.aab
+*.jks
+*.keystore
+apps/mobile/smarttaxi_app/android/key.properties
 .next
 .expo
 .env
 .env.local
+apps/api/secrets/
+apps/api/uploads/
+apps/mobile/smarttaxi_app/android/app/google-services.json
 *.log
 .DS_Store
 coverage
+backups/
+data/osrm/*
+!data/osrm/README.md
+
+# Scratch screenshots and probe output from QA sessions. These accumulate at
+# the repo root during device/emulator passes; they are evidence for a single
+# session, not project files.
+tmp-*
+*.out.log

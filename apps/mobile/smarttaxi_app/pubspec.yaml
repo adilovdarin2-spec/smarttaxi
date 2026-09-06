@@ -1,0 +1,73 @@
+name: smarttaxi_app
+description: SmartTaxi passenger and driver mobile application.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  connectivity_plus: ^6.1.0
+  dio: ^5.7.0
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+  flutter_map: ^7.0.2
+  flutter_secure_storage: ^9.2.2
+  flutter_svg: ^2.0.10+1
+  flutter_tts: ^4.2.0
+  geolocator: ^13.0.2
+  image_picker: ^1.1.2
+  # Keep the 3D MapLibre pilot on the last compatibility line for the
+  # current Java/Android toolchain; the modern line requires JDK 21.
+  maplibre_gl: 0.21.0
+  file_picker: ^8.1.4
+  latlong2: ^0.9.1
+  path_provider: ^2.1.4
+  sentry_flutter: ^9.0.0
+  share_plus: ^10.1.3
+  socket_io_client: ^3.0.2
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/InterVariable.ttf
+  assets:
+    - assets/fonts/OFL.txt
+    - assets/brand/smarttaxi_wordmark_2026.png
+    - assets/brand/smarttaxi_app_icon_2026.png
+    - assets/auth/auth_phone_full_reference.png
+    - assets/auth/auth_welcome_logo_mark.png
+    - assets/auth/auth_background_2026.png
+    - assets/legal/
+    - assets/cars/tariff_comfort_white_sedan_flutter.png
+    - assets/cars/tariff_business_white_premium_sedan_flutter.png
+    - assets/cars/tariff_economy_white_sedan_flutter.png
+    - assets/cars/tariff_economy_unbranded_v2.png
+    - assets/cars/tariff_comfort_unbranded_v2.png
+    - assets/cars/tariff_business_unbranded_v2.png
+    - assets/cars/tariff_economy_3d_v2.png
+    - assets/cars/car_economy_photo_v1.png
+    - assets/cars/car_delivery_photo_v1.png
+    - assets/cars/tariff_delivery_3d_v2.png
+    - assets/cars/tariff_v11_economy.png
+    - assets/cars/tariff_v11_delivery.png
+    - assets/icons/
+    - assets/map/driver_car_topview_white.png
+    - assets/map/smarttaxi_map_marker.png
+    - assets/map/marker_my_location_2026.png
+    - assets/map/marker_destination_2026.png
+    - assets/map/marker_address_pick_2026.png

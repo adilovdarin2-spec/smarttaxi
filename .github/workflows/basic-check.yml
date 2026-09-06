@@ -1,12 +1,61 @@
-name: Basic check
+name: CI
 on:
   pull_request:
   push:
     branches: [ main, dev ]
+
 jobs:
-  basic:
+  api:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      JWT_SECRET: ci_only_placeholder_secret_not_a_real_credential_32chars
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: node infra/scripts/tests/docker-build-policy-check.mjs
+      - run: npm ci
+      - run: npm run syntax
+      - run: npm test
+
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show files
-        run: find . -maxdepth 3 -type f | sort
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix apps/web test
+      - run: npm run build
+
+  operations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash infra/scripts/tests/operations-check.sh
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile/smarttaxi_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          # Match the SDK the app is actually developed and released on.
+          # CI sat on 3.41.9 while the working machine ran 3.47.2, so
+          # `flutter analyze` could pass locally and fail here on lint
+          # implementations that differ between analyzer versions - which is
+          # exactly how a red mobile job reached this branch. A gate that
+          # checks a toolchain nobody uses is checking the wrong thing.
+          flutter-version: '3.47.2'
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

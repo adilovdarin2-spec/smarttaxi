@@ -1,0 +1,23 @@
+[
+  {
+    "step": "real_browser_permission_denial_is_visible"
+  },
+  {
+    "step": "gps_recovery_remains_reachable_on_all_five_tabs"
+  },
+  {
+    "step": "permission_retry_recovers_one_watch_and_real_publication"
+  },
+  {
+    "step": "failed_publication_is_not_silent"
+  },
+  {
+    "step": "publication_retry_uses_latest_real_fix"
+  },
+  {
+    "step": "going_offline_disposes_tracking_and_notice"
+  },
+  {
+    "step": "passed"
+  }
+]

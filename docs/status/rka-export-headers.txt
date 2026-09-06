@@ -1,0 +1,19 @@
+HTTP/1.1 200 OK
+Server: nginx
+Date: Tue, 01 Sep 2026 12:44:31 GMT
+Content-Type: application/json
+Content-Length: 82342
+Connection: keep-alive
+content-disposition: attachment; filename="s_buildings-data.json"
+set-cookie: OPENDATA_PORTAL_FLASH=; Path=/; Domain=.egov.kz
+set-cookie: OPENDATA_PORTAL_SESSION=; Max-Age=0; Expires=Tue, 01 Sep 2026 12:44:31 GMT; Path=/; Domain=.egov.kz
+set-cookie: OPENDATA_PORTAL_ERRORS=; Max-Age=0; Expires=Tue, 01 Sep 2026 12:44:31 GMT; Path=/; Domain=.egov.kz
+cache-control: max-age=3600
+last-modified: Tue, 01 Sep 2026 12:44:31 GMT
+etag: "1788266671136--1999219086"
+accept-ranges: bytes
+set-cookie: PORTAL_SERVERID=; Expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/
+cache-control: private
+Strict-Transport-Security: max-age=15768000
+Set-Cookie: cookiesession1=678B77ABFAB5C850E356FF59E16825D8;Expires=Wed, 01 Sep 2027 12:44:31 GMT;Path=/;HttpOnly
+

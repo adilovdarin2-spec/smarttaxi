@@ -2,7 +2,15 @@ import { Router } from "express";
 import { z } from "zod";
 import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
+import { OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 const router = Router();
+
+// 'COMPLETED' is the pre-lifecycle-expansion terminal status, kept in the
+// orders_status_check constraint (schema.sql) for old rows; 'PAID'/'RATED'
+// are what current orders actually reach once money has been settled.
+// TRIP_COMPLETED/PAYMENT_PENDING are deliberately excluded here -- the ride
+// happened, but the client hasn't paid yet, so it isn't revenue.
+const SETTLED_WITH_PAYMENT_STATUSES = ["COMPLETED", "PAID", "RATED"];
 
 const RangeQuery = z.object({
   from: z.string().datetime().optional(),
@@ -27,19 +35,30 @@ function dateWhere(range, params) {
   return `WHERE ${clauses.join(" AND ")}`;
 }
 
-router.get("/stats", requireAuth, requireRole("OWNER", "OPERATOR", "FINANCE"), async (req, res, next) => {
+router.get("/stats", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
   try {
     const range = RangeQuery.parse(req.query);
     const params = [];
     const where = dateWhere(range, params);
+    // Current orders never reach the legacy-only statuses this query used
+    // to filter on ('COMPLETED'/'NEW'/'DRIVER_ASSIGNED'+'DRIVER_ARRIVED'+
+    // 'IN_PROGRESS') -- the real lifecycle uses SEARCHING_DRIVER/DRIVER_FOUND/
+    // .../PAID/RATED (see order-dispatch.service.js), so every number here
+    // read ~0 for all live traffic. Kept the legacy values in each set too,
+    // since old rows can still carry them under the orders_status_check
+    // constraint.
+    params.push(SETTLED_WITH_PAYMENT_STATUSES, OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES);
+    const settledIdx = params.length - 2;
+    const openIdx = params.length - 1;
+    const activeIdx = params.length;
     const today = await query(`
       SELECT COUNT(*)::int orders_total,
-             COALESCE(SUM(price) FILTER (WHERE status='COMPLETED'),0)::int revenue_total,
-             COALESCE(SUM(service_commission) FILTER (WHERE status='COMPLETED'),0)::int commission_total,
-             COALESCE(SUM(cashback_earned) FILTER (WHERE status='COMPLETED'),0)::int cashback_total,
-             COUNT(*) FILTER (WHERE status='NEW')::int new_orders,
-             COUNT(*) FILTER (WHERE status IN ('DRIVER_ASSIGNED','DRIVER_ARRIVED','IN_PROGRESS'))::int active_orders,
-             COUNT(*) FILTER (WHERE status='COMPLETED')::int completed_orders
+             COALESCE(SUM(price) FILTER (WHERE status = ANY($${settledIdx}::text[])),0)::int revenue_total,
+             COALESCE(SUM(service_commission) FILTER (WHERE status = ANY($${settledIdx}::text[])),0)::int commission_total,
+             COALESCE(SUM(cashback_earned) FILTER (WHERE status = ANY($${settledIdx}::text[])),0)::int cashback_total,
+             COUNT(*) FILTER (WHERE status = ANY($${openIdx}::text[]))::int new_orders,
+             COUNT(*) FILTER (WHERE status = ANY($${activeIdx}::text[]))::int active_orders,
+             COUNT(*) FILTER (WHERE status = ANY($${settledIdx}::text[]))::int completed_orders
       FROM orders ${where}
     `, params);
     const drivers = await query(`

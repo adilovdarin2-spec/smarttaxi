@@ -1,0 +1,1715 @@
+{
+  "@@locale": "zh",
+  "appName": "SmartTaxi",
+  "@appName": {
+    "description": "App name, shown in the OS task switcher"
+  },
+  "continueLabel": "继续",
+  "cancel": "取消",
+  "save": "保存",
+  "close": "关闭",
+  "retry": "重试",
+  "logIn": "登录",
+  "logOut": "退出登录",
+  "loading": "加载中...",
+  "pullToRetry": "下拉屏幕重试。",
+  "settings": "设置",
+  "language": "语言",
+  "languageRussian": "俄语",
+  "languageKazakh": "哈萨克语",
+  "languageUzbek": "乌兹别克语",
+  "languageChinese": "中文",
+  "languageChangedNote": "界面语言已更改。部分页面目前只完成了部分翻译。",
+  "passengerSettingsTitle": "设置",
+  "passengerSettingsSubtitle": "账户、行程和应用信息",
+  "passengerSettingsAccountGroup": "账户",
+  "passengerSettingsPhoneLabel": "手机号码",
+  "passengerSettingsPhoneMissing": "未填写",
+  "passengerSettingsPhoneCopied": "号码已复制",
+  "passengerSettingsRegionLabel": "地区",
+  "passengerSettingsRegionNotSelected": "未选择",
+  "passengerSettingsLogoutTitle": "退出账户",
+  "passengerSettingsLogoutText": "结束当前会话",
+  "passengerSettingsInterfaceGroup": "界面",
+  "passengerSettingsLanguageLabel": "语言",
+  "passengerSettingsThemeLabel": "主题",
+  "passengerSettingsThemeDark": "深色",
+  "passengerSettingsThemeSystem": "跟随系统",
+  "passengerSettingsThemeLight": "浅色",
+  "passengerSettingsPermissionsGroup": "权限",
+  "passengerSettingsPushLabel": "推送通知",
+  "passengerSettingsPushEnabled": "已开启 — 点击打开设置",
+  "passengerSettingsPushDisabled": "已在手机设置中关闭",
+  "passengerSettingsPushNotRequested": "尚未请求",
+  "passengerSettingsPushCheckError": "订单状态变化时会在应用内显示",
+  "passengerSettingsPushChecking": "正在检查状态...",
+  "passengerSettingsLocationLabel": "定位",
+  "passengerSettingsLocationText": "打开手机定位设置",
+  "passengerSettingsAboutGroup": "关于应用",
+  "passengerSettingsVersionLabel": "应用版本",
+  "passengerSettingsLegalTitle": "法律信息",
+  "passengerSettingsLegalText": "使用条款、支付、取消、安全",
+  "home": "首页",
+  "trips": "行程",
+  "profile": "我的",
+  "notifications": "通知",
+  "support": "客服",
+  "passengerDrawerTrips": "我的行程",
+  "passengerDrawerWallet": "钱包",
+  "passengerDrawerPromoCodes": "优惠码",
+  "passengerDrawerRecurringBookings": "常用路线",
+  "passengerDrawerFavoriteAddresses": "常用地址",
+  "passengerDrawerDrivers": "司机",
+  "passengerDrawerReferrals": "邀请好友",
+  "passengerDrawerBecomeDriver": "成为司机",
+  "passengerDrawerDriverMode": "司机模式",
+  "passengerDrawerHelpSection": "帮助",
+  "passengerDrawerFaq": "常见问题",
+  "passengerDrawerAboutSection": "关于服务",
+  "passengerDrawerAboutUs": "关于我们",
+  "passengerDrawerRegionalBadge": "区域出租车",
+  "passengerFaqSubtitle": "常见问题解答",
+  "passengerFaqSearchHint": "搜索问题",
+  "passengerFaqClearSearch": "清除搜索",
+  "passengerFaqNoResultsTitle": "未找到结果",
+  "passengerFaqNoResultsText": "请尝试更换关键词,或联系客服。",
+  "passengerFaqQ1": "如何叫车?",
+  "passengerFaqA1": "在地图上选择上车点和目的地,选择车型,等待计价后点击“叫车”。",
+  "passengerFaqQ2": "为什么服务只在指定地区可用?",
+  "passengerFaqA2": "SmartTaxi 只在管理员开通的地区运营,以确保行程可控、公平。",
+  "passengerFaqQ3": "价格是如何计算的?",
+  "passengerFaqA3": "价格由服务器根据路线、车型、距离和行程时间计算得出。",
+  "passengerFaqQ4": "如何成为司机?",
+  "passengerFaqA4": "打开“成为司机”板块,填写车辆信息,等待管理员审核。",
+  "passengerFaqQ5": "司机没有来怎么办?",
+  "passengerFaqA5": "打开客服并选择“司机未到”主题。",
+  "passengerFaqQ6": "如何取消订单?",
+  "passengerFaqA6": "如果订单仍可取消,打开“我的行程”并点击“取消行程”。",
+  "passengerFaqQ7": "为什么需要定位?",
+  "passengerFaqA7": "定位有助于选择上车点并规划准确的路线。",
+  "passengerFaqQ8": "如何联系客服?",
+  "passengerFaqA8": "在菜单中打开“客服”板块并发送消息。",
+  "passengerSupportSubtitle": "请描述您的问题,我们将为您提供帮助",
+  "passengerSupportUrgentTitle": "紧急问题?",
+  "passengerSupportCallDirectly": "直接拨打:{phone}",
+  "@passengerSupportCallDirectly": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "callButton": "拨打电话",
+  "passengerSupportTopicSectionTitle": "问题类型",
+  "passengerSupportTopicSectionText": "请选择您需要哪方面的帮助",
+  "passengerSupportTopicTripIssue": "行程问题",
+  "passengerSupportTopicNoShow": "司机未到",
+  "passengerSupportTopicLostItem": "遗失物品",
+  "passengerSupportTopicPayment": "支付问题",
+  "passengerSupportTopicOther": "其他",
+  "passengerSupportChooseTopicFirst": "请先在上方选择问题类型再继续。",
+  "messageLabel": "留言",
+  "passengerSupportMessageHint": "请输入留言…",
+  "passengerSupportMessageTooShort": "请更详细地描述问题:至少 8 个字符。",
+  "passengerSupportLostItemNeedsTrip": "请选择遗失物品的行程,否则无法通知司机。",
+  "sendButton": "发送",
+  "sendingButton": "发送中...",
+  "passengerSupportLostItemSent": "留言已发送,司机已收到通知。",
+  "passengerSupportMessageSent": "留言已发送。我们会在此回复,如有需要也会致电您。",
+  "passengerSupportDialFailed": "无法打开拨号界面",
+  "passengerSupportYourRequests": "我的留言记录",
+  "passengerSupportLoadError": "无法加载留言记录",
+  "passengerAboutDescription": "SmartTaxi 是一款区域出租车服务,致力于在已开通的地区提供快捷、透明、公正的出行服务。",
+  "passengerAboutRegionalModelTitle": "区域运营模式",
+  "passengerAboutRegionalModelText": "行程仅在管理员开通的地区内可用,暂不支持跨城行程。",
+  "passengerAboutContactTitle": "联系我们",
+  "passengerAboutContactText": "如需帮助,请打开左侧菜单中的客服。",
+  "passengerAboutSupportSubtitle": "有问题吗?我们会为您解答",
+  "passengerAboutLegalSubtitle": "条款、支付、取消、安全",
+  "passengerAboutVersionLabel": "SmartTaxi · 版本 {version}",
+  "@passengerAboutVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "loadFailedTitle": "加载失败",
+  "passengerRecurringSubtitle": "上学路线及其他按计划安排的行程",
+  "passengerRecurringNewRoute": "新建路线",
+  "passengerRecurringEmptyTitle": "暂无常用路线",
+  "passengerRecurringEmptyText": "创建一条路线——例如接送孩子上学——司机将在您选择的日期按计划到达。",
+  "passengerRecurringCancelTitle": "确定取消该常用路线吗?",
+  "passengerRecurringCancelText": "{route},{days} {time}。此操作无法撤销。",
+  "@passengerRecurringCancelText": {
+    "placeholders": {
+      "route": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerRecurringCancelConfirm": "取消路线",
+  "passengerFavoritesAddAddressTitle": "要添加哪个地址?",
+  "passengerFavoritesDeleteTitle": "确定从收藏中删除该地址吗?",
+  "passengerFavoritesDeleteText": "{title} — {address}。",
+  "@passengerFavoritesDeleteText": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteButton": "删除",
+  "passengerFavoritesSubtitle": "家、公司等常用地点——让下单更快捷",
+  "passengerFavoritesAddButton": "添加地址",
+  "passengerFavoritesEmptyTitle": "暂无收藏地址",
+  "passengerFavoritesEmptyText": "添加家、公司或任何常去的地方,方便快速使用。",
+  "passengerDriverAppSubtitle": "利用您的车辆,按自己的节奏赚钱",
+  "passengerDriverStep1Title": "填写申请",
+  "passengerDriverStep1Text": "姓名、电话和车辆信息——只需一分钟",
+  "passengerDriverStep2Title": "等待审核",
+  "passengerDriverStep2Text": "管理员通常在 1-2 天内完成审核",
+  "passengerDriverStep3Title": "开始接单",
+  "passengerDriverStep3Text": "通过审核后即可立即接受您所在地区的订单",
+  "passengerDriverAppSubmittedTitle": "申请已提交",
+  "passengerDriverAppQuestionBanner": "对申请有疑问?请联系客服。",
+  "passengerDriverPersonalDataGroup": "个人信息",
+  "passengerDriverFullNameLabel": "姓名",
+  "phoneLabel": "电话",
+  "passengerDriverCarGroup": "车辆信息",
+  "passengerDriverCarModelLabel": "车辆品牌和型号",
+  "passengerDriverCarColorLabel": "车辆颜色",
+  "passengerDriverPlateLabel": "车牌号",
+  "passengerDriverYearLabel": "出厂年份",
+  "passengerDriverCommentLabel": "备注(选填)",
+  "passengerDriverAgreePrefix": "我同意",
+  "passengerDriverTermsLink": "使用条款",
+  "passengerDriverSafetyRulesLink": "安全规则",
+  "passengerDriverSubmitButton": "提交申请",
+  "passengerDriverPrefsSubtitle": "标记喜欢的司机,屏蔽不想再次接触的司机",
+  "passengerDriverPrefsAddButton": "从行程记录中添加",
+  "passengerDriverPrefsEmptyTitle": "暂无标记",
+  "passengerDriverPrefsEmptyText": "从行程记录中将司机标记为收藏,或屏蔽不喜欢的司机。",
+  "passengerDriverPrefsFavoritesTitle": "收藏司机",
+  "passengerDriverPrefsFavoritesText": "常用路线会优先安排这些司机",
+  "passengerDriverPrefsBlockedTitle": "已屏蔽",
+  "passengerDriverPrefsBlockedText": "不会为常用路线推荐",
+  "passengerReferralsSubtitle": "分享邀请码,每邀请一位好友即可获得奖励",
+  "passengerReferralsYourCode": "您的邀请码",
+  "copyButton": "复制",
+  "passengerReferralsCodeCopied": "邀请码已复制",
+  "passengerReferralsShareCode": "分享邀请码",
+  "passengerReferralsShareMessage": "使用我的邀请码 {code} 在 SmartTaxi 打车,首次出行即可获得奖励!",
+  "@passengerReferralsShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerReferralsInvited": "已邀请",
+  "passengerReferralsEarned": "已获得",
+  "passengerReferralsHowItWorksTitle": "运作方式",
+  "passengerReferralsHowItWorksText": "好友注册时输入您的邀请码,完成首次行程后,奖励将计入您的账户余额。",
+  "passengerPromoSubtitle": "输入优惠码,查看可享受的折扣",
+  "passengerPromoHaveCode": "有优惠码吗?",
+  "passengerPromoHint": "输入优惠码,查看它在您所在地区是否有效,以及可享受的折扣。",
+  "passengerPromoFieldHint": "例如:SMART500",
+  "checkButton": "查询",
+  "checkingButton": "查询中...",
+  "passengerPromoNoRegionError": "请先在首页选择地区",
+  "passengerPromoActiveTitle": "优惠码“{code}”有效",
+  "@passengerPromoActiveTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerPromoDiscountSummary": "折扣 {discount} · 例如,一趟原价 {previewPrice} 的行程,您只需支付 {finalPrice}",
+  "@passengerPromoDiscountSummary": {
+    "placeholders": {
+      "discount": {
+        "type": "String"
+      },
+      "previewPrice": {
+        "type": "String"
+      },
+      "finalPrice": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerPromoHowToApplyTitle": "如何使用折扣",
+  "passengerPromoHowToApplyText": "此次查询的优惠码需要在选择车型时再次输入,系统才会按实际行程重新计算最终价格。",
+  "passengerHomeWhereToTitle": "要去哪里?",
+  "passengerHomeWhereToSubtitle": "请选择上车点和目的地",
+  "passengerHomeGreeting": "您好！",
+  "passengerQuickHome": "家",
+  "passengerQuickWork": "工作",
+  "passengerQuickFavorites": "收藏",
+  "passengerHomeSetDestination": "设置目的地",
+  "passengerHomeRouteIssueTitle": "请确认路线",
+  "passengerHomeRouteIssueText": "无法规划路线。请更改地址或在地图上选择一个点。",
+  "passengerHomePickupQuestion": "从哪里出发?",
+  "passengerAddressSearchError": "地址搜索暂时不可用,请在地图上选择位置。",
+  "passengerAddressNoResultsText": "请输入更具体的街道、区域或地点名称。",
+  "passengerAddressPickOnMapTitle": "在地图上选择",
+  "passengerAddressPickOnMapSubtitle": "在地图上选择位置",
+  "tariffEconomyTitle": "经济型",
+  "tariffComfortTitle": "舒适型",
+  "tariffBusinessTitle": "商务型",
+  "tariffDeliveryTitle": "同城配送",
+  "passengerTariffSectionTitle": "请选择车型",
+  "passengerTariffSectionText": "价格已固定,时间和距离仅供参考",
+  "passengerTariffFixedPriceBadge": "一口价",
+  "passengerTariffNotConfiguredTitle": "车型尚未配置",
+  "passengerTariffNotConfiguredText": "管理员需要为该地区添加车型。",
+  "passengerTariffUnavailableTitle": "暂无可用车型",
+  "passengerTariffUnavailableText": "该地区需要经济型或同城配送车型。",
+  "passengerTariffBestValueBadge": "超值",
+  "paymentCash": "现金",
+  "paymentKaspi": "Kaspi",
+  "paymentCard": "银行卡",
+  "tariffLabel": "车型",
+  "paymentMethodLabel": "支付方式",
+  "paymentMethodFullLabel": "支付方式",
+  "passengerTripInTransitLabel": "行程中",
+  "passengerCtaCreatingOrder": "正在创建订单...",
+  "passengerCtaPickPickup": "选择上车点",
+  "passengerCtaPickDropoff": "选择目的地",
+  "passengerCtaCalculate": "计算价格",
+  "passengerCtaOrderDelivery": "下单配送",
+  "passengerCtaOrderWithLabel": "叫{label}",
+  "@passengerCtaOrderWithLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerCtaOrder": "叫车",
+  "passengerTripsSubtitle": "当前订单、行程状态与路线详情",
+  "passengerTripsLoadErrorTitle": "无法加载历史记录",
+  "passengerTripsEmptyTitle": "暂无进行中的行程",
+  "passengerTripsLoadErrorText": "请检查网络连接,并下拉屏幕重试。",
+  "passengerTripsEmptyText": "下单后,SmartTaxi 会在这里显示行程状态。",
+  "passengerGoHomeAction": "返回首页",
+  "passengerDriverSearchingLabel": "正在寻找司机",
+  "passengerDriverWaitingLocationLabel": "正在等待司机定位",
+  "passengerDriverConnectedLabel": "司机已联系",
+  "passengerTripDetailTitle": "行程",
+  "passengerTripShareTooltip": "分享行程单",
+  "passengerTripDistanceLabel": "距离",
+  "passengerTripTotalLabel": "总计",
+  "passengerTripDriverGroupLabel": "司机",
+  "passengerTripContactSupportButton": "针对本次行程联系客服",
+  "passengerTripDateUnknown": "日期未知",
+  "passengerTripDateToday": "今天",
+  "passengerTripDateYesterday": "昨天",
+  "passengerTripShareTextPrefix": "SmartTaxi 行程",
+  "passengerSearchingSubtitleWithCount": "正在为您展示 {count} 位附近的空闲司机",
+  "@passengerSearchingSubtitleWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerSearchingSubtitleGeneric": "正在查找附近的空闲司机",
+  "passengerDriverOfferDescription": "正在向附近的司机推送订单。",
+  "passengerDriverRouteDescription": "实时显示行程状态和路线。",
+  "passengerTripInProgressTitle": "行程进行中",
+  "passengerCancellingLabel": "正在取消...",
+  "passengerCancelSearchButton": "取消搜索",
+  "passengerTripWithIdTitle": "行程 {id}",
+  "@passengerTripWithIdTitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerDriverFoundTitle": "已找到司机",
+  "passengerNewTripButton": "再叫一单",
+  "passengerCancelTripButton": "取消行程",
+  "passengerCancelTripShortButton": "取消",
+  "passengerRateDriverFallbackName": "司机",
+  "passengerRateDriverQuestion": "与{name}的行程怎么样?",
+  "@passengerRateDriverQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerSubmitRatingButton": "提交评价",
+  "passengerSubmittingRatingButton": "提交中...",
+  "passengerSkipButton": "跳过",
+  "passengerRatedThankYouTitle": "感谢您的评价!",
+  "passengerRatedThankYouText": "您的反馈有助于我们提升服务质量",
+  "passengerOrderAgainButton": "再次叫车",
+  "passengerTripCompletedTitle": "行程已完成",
+  "passengerTripReceiptSubtitle": "行程单",
+  "passengerRateTripButton": "评价行程",
+  "passengerCardPaymentFailedText": "银行卡支付未成功",
+  "passengerRetryPaymentButton": "重新支付",
+  "passengerPaymentSlowText": "支付耗时比平时长",
+  "passengerPaymentProcessingText": "正在处理银行卡支付...",
+  "passengerPaymentAwaitingText": "正在等待支付确认",
+  "ratingTagPoliteDriver": "司机礼貌",
+  "ratingTagCleanCar": "车内整洁",
+  "ratingTagSafeDriving": "驾驶安全",
+  "ratingTagOnTime": "准时到达",
+  "ratingTagLate": "迟到",
+  "ratingTagRude": "态度粗鲁",
+  "ratingTagUnsafeDriving": "驾驶不安全",
+  "ratingTagDirtyCar": "车内脏乱",
+  "passengerNoDriversTitle": "附近暂无司机",
+  "passengerNoDriversText": "附近暂时没有空闲司机。请一分钟后重新搜索,或取消订单。",
+  "passengerRetrySearchButton": "重新搜索",
+  "passengerRetryingSearchButton": "重新搜索中...",
+  "passengerCancelOrderButton": "取消订单",
+  "passengerYourPriceLabel": "您的出价",
+  "passengerDriverPriceLabel": "司机出价",
+  "passengerAcceptOfferButton": "接受",
+  "passengerSendingResponseButton": "正在发送回复...",
+  "passengerCounterOfferPrompt": "或提出您的出价",
+  "passengerSubmitOfferButton": "发送出价",
+  "passengerDeclineOfferButton": "拒绝",
+  "passengerQueuedOffersTitle": "其他司机的出价",
+  "passengerChooseOfferButton": "选择",
+  "passengerWaitingDriverResponseTitle": "正在等待司机回复",
+  "passengerOfferSentText": "您的出价已发送",
+  "passengerYouOfferedText": "您出价 {amount}",
+  "@passengerYouOfferedText": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerCancelledByDriverTitle": "司机已取消行程",
+  "passengerCancelledByDriverText": "我们将在几秒内为您寻找其他司机",
+  "passengerCancelledByOperatorTitle": "行程已被客服取消",
+  "passengerCancelledByOperatorText": "如果这是误操作,请联系客服",
+  "passengerNoShowTitle": "行程未能完成",
+  "passengerNoShowText": "司机在上车点未能等到您",
+  "passengerCancelledGenericTitle": "行程已取消",
+  "passengerCancelledGenericText": "您可以随时再次叫车",
+  "passengerCancelTripConfirmTitle": "确定取消行程吗?",
+  "passengerCancelSearchConfirmTitle": "确定停止寻找司机吗?",
+  "passengerCancelTripConfirmText": "司机已在赶来的路上。司机接单后频繁取消可能会产生少量费用。",
+  "passengerCancelSearchConfirmText": "我们将停止搜索,订单会被取消。",
+  "passengerCancelConfirmYesButton": "是,取消",
+  "passengerCancelConfirmNoButton": "否,继续",
+  "passengerHeadingToDropoffTitle": "正前往目的地",
+  "passengerEnRouteLowercase": "行驶中",
+  "passengerJustStartedLowercase": "刚刚出发",
+  "passengerMinutesEnRoute": "已行驶 {minutes} 分钟",
+  "@passengerMinutesEnRoute": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerJustStartedCapitalized": "刚刚出发",
+  "passengerShareTripTooltipEnabled": "分享行程跟踪",
+  "passengerShareTripTooltipDisabled": "匹配到司机后即可获得分享链接",
+  "passengerShareTripMessage": "我正在通过 SmartTaxi 追踪行程{routeSuffix}。状态:{link}",
+  "@passengerShareTripMessage": {
+    "placeholders": {
+      "routeSuffix": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerSafetyTitle": "行程安全",
+  "passengerCallPhoneLabel": "拨打 {phone}",
+  "@passengerCallPhoneLabel": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerSosEmergencyLineText": "如遇突发状况,可拨打 SmartTaxi 紧急热线",
+  "passengerSupportWillBeNotifiedTitle": "客服将收到提醒",
+  "passengerSupportWillBeNotifiedText": "拨打电话的同时,系统会将您的行程号和位置信息一并发送给客服",
+  "quickMessageArrived": "我到了",
+  "quickMessageWaitingAtEntrance": "我在门口等您",
+  "quickMessageRunningLate2Min": "我会晚到 2 分钟",
+  "quickMessagePleaseComeOut": "请出来一下",
+  "quickMessageOnMyWay": "我已经在路上了",
+  "passengerChatFallbackTitle": "聊天",
+  "passengerChatQuickPhrasesNotice": "目前仅支持快捷短语,暂不支持自由输入",
+  "passengerChatEmptyText": "暂无消息",
+  "passengerChatSendFailedError": "消息发送失败",
+  "messageButton": "发消息",
+  "passengerSearchStepCheckingDrivers": "正在核实附近司机",
+  "passengerSearchStepWaitingConfirmation": "正在等待订单确认",
+  "passengerSearchStepLockingFirst": "锁定第一位接单的司机",
+  "passengerFromLabel": "出发地",
+  "passengerToLabel": "目的地",
+  "passengerNotifLoadError": "无法加载通知",
+  "passengerNotifSubtitle": "行程状态和 SmartTaxi 的重要消息",
+  "passengerNotifCategoryOrders": "订单",
+  "passengerNotifCategoryService": "服务",
+  "passengerNotifCategoryBonus": "奖励",
+  "passengerNotifLoadErrorTitle": "加载失败",
+  "passengerNotifEmptyTitle": "暂无新通知",
+  "passengerNotifEmptyCategoryTitle": "这里暂时是空的",
+  "passengerNotifEmptyText": "当司机接单或行程状态发生变化时,我们会在这里以及行程状态中显示。",
+  "passengerNotifEmptyCategoryText": "该分类下暂无通知。",
+  "passengerBonusBalanceLabel": "返现与奖励余额",
+  "passengerBonusNotEnoughText": "暂不足以支付最低车型的一次行程",
+  "passengerBonusRidesLeft": "还可用于 {count} {count, plural, other{次行程}}",
+  "@passengerBonusRidesLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerNearbyCarsCount": "附近有 {count} {count, plural, other{辆车}}",
+  "@passengerNearbyCarsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerTimeAgoJustNow": "刚刚",
+  "passengerTimeAgoMinutes": "{minutes} 分钟前",
+  "@passengerTimeAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerTimeAgoHours": "{hours} 小时前",
+  "@passengerTimeAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerTimeAgoDays": "{days} 天前",
+  "@passengerTimeAgoDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerMarkDriverTitle": "标记司机",
+  "passengerNoTripDriversText": "行程记录中暂无可标记的司机。",
+  "passengerChooseDriverHint": "请选择司机",
+  "passengerAddToFavoritesChip": "加入收藏",
+  "passengerBlockDriverChip": "屏蔽",
+  "passengerAddToFavoritesTitle": "加入收藏",
+  "passengerFavoriteLabelHome": "家",
+  "passengerFavoriteLabelWork": "公司",
+  "passengerFavoriteLabelOther": "其他",
+  "passengerFavoriteNameLabel": "名称",
+  "passengerFavoriteNameHint": "例如:“别墅”或“健身房”",
+  "passengerAddressSearchNotFoundError": "未找到该地址",
+  "passengerAddressSearchHint": "街道、门牌号或地点名称",
+  "passengerClearAction": "清除",
+  "passengerSearchErrorTitle": "搜索出错",
+  "passengerEnterAddressTitle": "请输入地址",
+  "passengerStartTypingStreetText": "开始输入街道或地点名称",
+  "passengerTryDifferentQueryText": "请尝试更换关键词",
+  "passengerNewRecurringRouteTitle": "新建常用路线",
+  "passengerRecurringRouteExampleText": "例如:工作日接送孩子上学",
+  "passengerNoAvailableDriversTitle": "暂无可选司机",
+  "passengerNoAvailableDriversText": "只能从与您有过行程记录的司机中选择。请至少完成一次行程后再创建常用路线。",
+  "passengerDayMon": "周一",
+  "passengerDayTue": "周二",
+  "passengerDayWed": "周三",
+  "passengerDayThu": "周四",
+  "passengerDayFri": "周五",
+  "passengerDaysOfWeekLabel": "星期",
+  "passengerPickupTimeLabel": "上车时间",
+  "passengerChooseTimeButton": "选择时间",
+  "passengerPriceLabelTenge": "价格,坚戈",
+  "passengerRecurringErrorChooseDriver": "请选择司机",
+  "passengerRecurringErrorAddresses": "请填写上车点和目的地",
+  "passengerRecurringErrorDays": "请至少选择一个星期几",
+  "passengerRecurringErrorTime": "请填写上车时间",
+  "passengerRecurringErrorPrice": "请输入 200 至 1,000,000 坚戈之间的价格",
+  "passengerSendToDriverButton": "发送给司机",
+  "passengerSendingButton": "发送中...",
+  "passengerPickupPointTitle": "上车点",
+  "passengerDropoffPointTitle": "目的地",
+  "passengerChooseAddressText": "选择地址",
+  "passengerRecentAddressesTitle": "最近使用的地址",
+  "passengerLocationFailedPickManuallyError": "无法获取定位,请在地图上选择上车点。",
+  "passengerPickupDestinationSameError": "目的地与上车点相同。请选择其他地址。",
+  "statusStepSearching": "搜索中",
+  "statusStepGoing": "赶来中",
+  "statusStepWaiting": "等待中",
+  "statusStepInTransit": "行程中",
+  "statusLabelSearching": "正在寻找司机",
+  "statusLabelDriverFound": "已找到司机",
+  "statusLabelDriverGoingToClient": "司机正在赶来",
+  "statusLabelDriverArrived": "司机已到达",
+  "statusLabelWaitingClient": "等待乘客",
+  "statusLabelPaymentPending": "等待支付",
+  "statusLabelPaid": "已支付",
+  "statusLabelRated": "感谢您的评价",
+  "statusLabelCancelled": "已取消",
+  "statusLabelCancelledByDriver": "司机已取消",
+  "statusLabelCancelledByOperator": "客服已取消",
+  "statusLabelNoShow": "乘客未出现",
+  "statusLabelUpdating": "状态更新中",
+  "driverPickupMetaToDropoff": "距目的地",
+  "driverPickupMetaToPickup": "距上车点",
+  "driverRouteFallbackNotice": "约",
+  "driverPickupMetaText": "{label}:{distance} 公里 · {minutes} 分钟",
+  "@driverPickupMetaText": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "routeErrorWaitingLocation": "正在等待司机定位。",
+  "routeErrorDriverRouteUnavailable": "司机路线暂时不可用。",
+  "errorClientHasActiveOrder": "您已有一个进行中的订单,请打开该行程或先取消。",
+  "errorValidation": "请检查地址后重试。",
+  "errorUnauthorized": "登录状态已过期,请重新登录。",
+  "errorForbidden": "权限不足,无法执行此操作。",
+  "errorRateLimited": "请求过于频繁,请稍后再试。",
+  "errorPickupRegionInactive": "该地点暂不提供服务",
+  "errorDropoffRegionInactive": "目的地不在已开通地区范围内",
+  "errorIntercityNotSupported": "暂不支持跨城行程",
+  "errorTariffInactive": "该车型暂时不可用",
+  "errorTariffRegionMismatch": "该车型在所选地区不可用",
+  "errorRouteUnavailable": "路线暂时不可用。",
+  "errorPromoCodeRequired": "请输入优惠码。",
+  "errorPromoNotFound": "未找到该优惠码,请检查后重试。",
+  "errorPromoNotStarted": "该优惠码尚未生效。",
+  "errorPromoExpired": "该优惠码已过期。",
+  "errorPromoMinOrderNotMet": "订单金额低于该优惠码的最低要求。",
+  "errorPromoLimitReached": "该优惠码的使用次数已达上限。",
+  "errorPromoAlreadyUsed": "您已使用过该优惠码。",
+  "errorServerUnavailable": "服务器不可用,请检查网络连接。",
+  "errorDriverNameRequired": "请输入姓名",
+  "errorDriverPhoneRequired": "请输入电话号码",
+  "errorDriverCarRequired": "请输入车辆品牌和型号",
+  "errorDriverPlateRequired": "请输入车牌号",
+  "errorDriverTermsRequired": "请先同意条款再提交申请",
+  "errorGenericRequestFailed": "请求执行失败",
+  "passengerGpsOrMapHintText": "您可以开启 GPS 以精确定位上车点,或在地图上手动选择。",
+  "passengerThemeLight": "浅色",
+  "passengerThemeDark": "深色",
+  "passengerThemeSystem": "跟随系统",
+  "passengerLogoutConfirmTitle": "确定退出账户吗?",
+  "passengerLogoutConfirmText": "退出后需要重新使用手机号登录才能继续使用 SmartTaxi。",
+  "passengerCancelButton": "取消",
+  "passengerLogoutButton": "退出",
+  "passengerAccountLabelFallback": "用户",
+  "passengerClientOfSmartTaxi": "SmartTaxi 用户",
+  "passengerStatTripsLabel": "行程数",
+  "passengerStatSpentLabel": "已消费",
+  "passengerStatRatedLabel": "已评价",
+  "passengerAccountNumberLabel": "账户编号",
+  "passengerPhoneLabel": "电话",
+  "passengerQuickActionsGroup": "快捷操作",
+  "passengerMyTripsMenuSubtitle": "当前行程记录和状态",
+  "passengerWalletMenuSubtitle": "余额和绑定的银行卡",
+  "passengerPromoMenuSubtitle": "查询并使用折扣",
+  "passengerNotificationsMenuSubtitle": "行程状态和消息",
+  "passengerSupportMenuSubtitle": "如需帮助,请联系我们",
+  "passengerFavoriteAddressesSubtitle": "家、公司等常用地点",
+  "passengerFavoriteAddressesSectionTitle": "收藏地址",
+  "passengerDriversMenuSubtitle": "收藏与已屏蔽的司机",
+  "passengerReferralsMenuSubtitle": "您的邀请码及邀请奖励",
+  "passengerWalletTitle": "钱包",
+  "passengerWalletSubtitle": "余额、充值和绑定的银行卡",
+  "passengerWalletBalanceLabel": "余额",
+  "passengerWalletTopUpButton": "充值",
+  "passengerWalletLoadError": "无法加载钱包",
+  "passengerWalletTopUpRequestsTitle": "充值申请",
+  "passengerWalletCardsTitle": "已绑定银行卡",
+  "passengerWalletNoCards": "暂无绑定的银行卡",
+  "passengerWalletAddCardButton": "添加银行卡",
+  "passengerWalletAddCardSubtitle": "银行卡仅用于保存以便日后支付——当前不会产生任何扣款。",
+  "passengerWalletDefaultBadge": "默认",
+  "passengerWalletSetDefaultAction": "设为默认",
+  "passengerWalletRemoveAction": "删除",
+  "passengerWalletRemoveCardConfirmTitle": "确定删除该银行卡吗?",
+  "passengerWalletRemoveCardConfirmText": "尾号 {last4} 的银行卡将被删除。",
+  "@passengerWalletRemoveCardConfirmText": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerCardNumberLabel": "银行卡号",
+  "passengerCardHolderNameLabel": "持卡人姓名(选填)",
+  "passengerErrorInvalidCardNumber": "请输入正确的银行卡号",
+  "passengerErrorCardTypo": "银行卡号似乎有误,请检查后重试",
+  "passengerWalletTopUpSheetTitle": "余额充值",
+  "passengerWalletTopUpAmountLabel": "充值金额",
+  "passengerWalletTopUpMinNote": "最低充值金额为 {amount}",
+  "@passengerWalletTopUpMinNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerWalletTopUpPendingNote": "通过 Kaspi Pay 支付的功能稍后会在应用内上线——申请已保存,该功能上线后会自动处理。",
+  "passengerWalletTopUpSubmitButton": "提交申请",
+  "passengerWalletTopupStatusPending": "待处理",
+  "passengerWalletTopupStatusCompleted": "已完成",
+  "passengerWalletTopupStatusFailed": "未成功",
+  "passengerWalletTopupStatusCancelled": "已取消",
+  "passengerSettingsMenuSubtitle": "语言、权限、账户",
+  "passengerAccountGroup": "账户",
+  "passengerProfileSubtitle": "SmartTaxi 账户、行程和设置",
+  "passengerAddressEmptyHintTitle": "开始输入地址",
+  "passengerAddressEmptyHintText": "请输入街道、区域或地点名称。",
+  "passengerEnableLocationTitle": "请开启定位",
+  "passengerNoLocationAccessTitle": "无法访问定位",
+  "passengerEnableLocationText": "开启手机 GPS,以便找到附近司机并精确确定上车地点。",
+  "passengerNoLocationAccessText": "SmartTaxi 需要访问定位才能找到您附近的司机,请在手机设置中授予权限。",
+  "passengerOpenSettingsButton": "打开设置",
+  "passengerPickPointOnMapManualButton": "在地图上手动选择位置",
+  "passengerLocationSheetTitle": "上车定位",
+  "passengerLocationSheetText": "我们仅使用您的位置来确定上车点和规划路线,您也可以在地图上手动选择位置。",
+  "passengerAllowLocationButton": "允许定位",
+  "passengerPickPointOnMapButton": "在地图上选择位置",
+  "passengerPriceHintFaster": "更快找到司机",
+  "passengerPriceHintSlower": "可能需要更长时间",
+  "passengerPriceHintNormal": "正常应答速度",
+  "passengerYourRegionQuestion": "您所在的地区是:{region}?",
+  "@passengerYourRegionQuestion": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerRegionDetectedText": "我们已根据定位确定您的地区,请确认以确保订单正常运作。",
+  "passengerChangeButton": "更改",
+  "passengerYesCorrectButton": "是的,正确",
+  "passengerFindCityHint": "查找城市或区域",
+  "passengerNoRegionFoundText": "请输入更具体的地区或城镇名称。",
+  "passengerPaymentCashDescription": "行程结束后向司机支付现金",
+  "passengerPaymentCardDescription": "通过 Kaspi Pay 使用银行卡支付",
+  "passengerChoosePaymentText": "请选择本次行程的支付方式",
+  "passengerMyLocationLabel": "我的位置",
+  "passengerChooseDropoffLabel": "请选择目的地",
+  "passengerAddressOutsideServiceZoneError": "该地址不在服务范围内,请选择其他地址。",
+  "passengerMapPointLabel": "地图上的位置",
+  "passengerResolvingAddressLabel": "正在确定地址...",
+  "passengerRegionNotServedYetLabel": "该地区暂未开通服务",
+  "passengerPointOutsideRegionError": "该位置不在所选地区范围内,请更换地区或在 SmartTaxi 服务范围内选择位置。",
+  "passengerMapLoadingTitle": "地图加载中",
+  "passengerMapLoadingSubtitle": "正在连接城市地图",
+  "passengerMapUnavailableTitle": "地图暂时不可用",
+  "passengerMapUnavailableText": "您可以手动选择路线和下单,地图恢复连接后将自动加载。",
+  "passengerAllowGeolocationTooltip": "允许定位",
+  "passengerCalculatingRouteText": "正在计算路线...",
+  "passengerRouteReadyText": "路线已就绪",
+  "passengerVerifiedDriversSubtitle": "认证司机 · 安全出行",
+  "passengerAddressNotePlaceholder": "描述地点(门牌、单元、楼层)",
+  "passengerMapMarkerDragHint": "请移动地图,使标记正好落在所需入口上方。",
+  "passengerOrderNoteSheetTitle": "描述地点",
+  "passengerOrderNoteSheetSubtitle": "例如:对讲机 45 号,二单元,请在道闸旁等候",
+  "passengerOrderNoteFieldLabel": "给司机的备注",
+  "passengerOrderNoteFieldHint": "在哪里能找到您,或需要前往哪里...",
+  "passengerDeleteNoteButton": "删除备注",
+  "passengerConfirmAddressButton": "确认地址",
+  "passengerRecurringStatusActive": "进行中",
+  "passengerRecurringStatusPaused": "已暂停",
+  "passengerRecurringStatusCancelled": "已取消",
+  "passengerRecurringStatusAwaitingDriver": "等待司机确认",
+  "passengerRecurringStatusSkippedToday": "今日已跳过",
+  "passengerRecurringSkippedTodayText": "今日行程未能完成:未找到空闲司机。下次按计划仍会正常进行。",
+  "passengerRecurringPauseButton": "暂停",
+  "passengerRecurringResumeButton": "恢复",
+  "passengerRecurringAwaitingDriverConfirmationText": "正在等待司机确认",
+  "passengerRecurringCancelButton": "取消",
+  "passengerDriverArrivedWaitingBanner": "司机已到达并在等您",
+  "passengerCopiedValueToast": "已复制:{value}",
+  "@passengerCopiedValueToast": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerCopyLabelSemantics": "复制{label}",
+  "@passengerCopyLabelSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerDriverAppSubmittedMessage": "申请已提交,管理员将审核您的信息。",
+  "passengerServerUnavailableError": "服务器暂时不可用。连接恢复后即可选择路线。",
+  "passengerRecurringSentToDriverToast": "申请已发送给司机,正在等待确认",
+  "passengerRecurringCancelledToast": "常用路线已取消",
+  "passengerRecurringPausedToast": "常用路线已暂停",
+  "passengerRecurringResumedToast": "常用路线已恢复",
+  "passengerAddressAddedToFavoritesToast": "地址已加入收藏",
+  "passengerAddressRemovedFromFavoritesToast": "地址已从收藏中移除",
+  "passengerDriverBlockedToast": "司机已屏蔽",
+  "passengerDriverAddedToFavoritesToast": "司机已加入收藏",
+  "passengerEntryDeletedToast": "记录已删除",
+  "passengerActiveRegionsNotLoadedError": "已开通地区尚未加载完成",
+  "passengerDriverFoundExclamation": "已找到司机!",
+  "passengerDriverFoundNamedText": "已找到司机:{name} 正在赶来",
+  "@passengerDriverFoundNamedText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerDriverCancelledSearchingAnotherToast": "司机已取消行程——正在为您寻找其他司机",
+  "passengerPaymentInitiateFailedError": "无法发起支付,请检查网络连接。",
+  "passengerLoginRequiredForOrderError": "请使用手机号登录后再下单。",
+  "passengerAcceptedNewPriceToast": "您已接受新价格:{amount}",
+  "@passengerAcceptedNewPriceToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerDeclinedOfferedPriceToast": "您已拒绝该报价",
+  "passengerCounterOfferSentToast": "您的出价已发送给司机:{amount}",
+  "@passengerCounterOfferSentToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerQueuedOfferArrivedToast": "又一位司机出价:{amount}",
+  "@passengerQueuedOfferArrivedToast": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "passengerLegalHubTitle": "法律信息",
+  "passengerLegalHubSubtitle": "SmartTaxi 官方文件,2026 年 7 月 6 日修订版",
+  "passengerAllDocumentsButton": "全部文件",
+  "passengerSupportStatusResolved": "已回复",
+  "passengerSupportStatusPending": "处理中",
+  "passengerSupportResponseLabel": "客服回复",
+  "passengerPickupPointSemanticLabel": "上车点",
+  "passengerDropoffPointSemanticLabel": "目的地",
+  "passengerNearbyFreeDriverSemanticLabel": "附近有空闲司机,{eta} 分钟",
+  "@passengerNearbyFreeDriverSemanticLabel": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      }
+    }
+  },
+  "passengerDriverCarSemanticLabel": "司机车辆",
+  "passengerLocationServiceDisabledError": "定位已关闭,请在设置中开启,或在地图上选择位置。",
+  "passengerChooseRegionTitle": "请选择地区",
+  "passengerChooseRegionSubtitle": "请选择您要用车的地区。",
+  "passengerLocationSkippedManualPickText": "即使未授权定位,您也可以在地图上选择上车点。",
+  "passengerLocationDeniedManualPickError": "定位未开启,请在地图上手动选择上车点。",
+  "passengerLocationOutsideRegionError": "您的位置不在所选地区范围内,请在地图上选择上车点或更换地区。",
+  "passengerCurrentLocationLabel": "当前位置",
+  "passengerSectionUnavailableTitle": "板块不可用",
+  "passengerSectionUnavailableText": "请返回首页,然后重新打开该板块。",
+  "passengerMonthJan": "1月",
+  "passengerMonthFeb": "2月",
+  "passengerMonthMar": "3月",
+  "passengerMonthApr": "4月",
+  "passengerMonthMay": "5月",
+  "passengerMonthJun": "6月",
+  "passengerMonthJul": "7月",
+  "passengerMonthAug": "8月",
+  "passengerMonthSep": "9月",
+  "passengerMonthOct": "10月",
+  "passengerMonthNov": "11月",
+  "passengerMonthDec": "12月",
+  "passengerNoTripsForLostItem": "没有可关联此留言的行程。请在下方留言中描述行程情况,我们会人工联系司机。",
+  "passengerWhichTripLabel": "哪一趟行程?",
+  "passengerWhichTripText": "用于通知司机",
+  "passengerChooseTripHint": "请选择行程",
+  "authWelcomeTitle": "登录与注册",
+  "authWelcomeSubtitle": "请输入手机号以继续",
+  "phoneNumberLabel": "手机号码",
+  "authSmsConsentNotice": "我们将发送包含验证码的短信,快捷且安全。",
+  "authLegalConsentPrefix": "继续即表示您同意",
+  "authLegalConsentJoiner": "及",
+  "termsOfUseLink": "使用条款",
+  "privacyPolicyLink": "隐私政策",
+  "smsEnterCodeTitle": "请输入短信验证码",
+  "smsCodeSentSubtitle": "验证码已发送",
+  "smsCodeHint": "6 位数字验证码",
+  "smsNeverShareCode": "请勿将验证码告诉任何人。",
+  "smsStaffNeverAsk": "SmartTaxi 员工绝不会向您索要验证码。",
+  "smsCodeValidity": "验证码有效期为 5 分钟,计时结束后可重新发送。",
+  "smsTermsConsent": "继续即表示您同意服务条款。",
+  "smsResendCode": "重新发送验证码",
+  "smsResendCountdown": "重新发送倒计时",
+  "authCheckingLabel": "验证中...",
+  "offlineTitle": "无网络连接",
+  "offlineBody": "请检查 Wi-Fi 或移动数据网络,恢复连接后应用会自动继续运行。",
+  "offlineRetryLabel": "重新检查",
+  "runtimeFallbackBody": "无法打开该页面,请重启应用或重新登录。",
+  "runtimeFallbackAction": "返回首页",
+  "devCodeLabel": "本地测试验证码:{devCode}",
+  "@devCodeLabel": {
+    "placeholders": {
+      "devCode": {
+        "type": "String"
+      }
+    }
+  },
+  "validateEnterName": "请输入姓名",
+  "validateEnterPhone": "请输入手机号码",
+  "validateCorrectPhone": "请输入正确的号码",
+  "validateSmsCode": "请输入短信中的 6 位数字",
+  "validateConfirmPhoneFirst": "请先验证手机号码",
+  "validateEnterPassword": "请输入密码",
+  "validateEnterNewPassword": "请输入新密码",
+  "passwordHintMinChars": "至少 8 个字符,包含字母和数字",
+  "passwordAddLettersDigits": "请添加字母和数字",
+  "repeatPasswordLabel": "请再次输入密码",
+  "passwordsMismatch": "两次输入的密码不一致",
+  "invalidSmsCode": "验证码错误,请重试。",
+  "serverUnavailable": "服务器不可用,请检查网络后重试。",
+  "smsConfirmFailed": "验证码确认失败,请重试。",
+  "invalidPhoneOrPassword": "手机号或密码错误",
+  "phoneAlreadyRegistered": "该手机号已注册",
+  "driverAccountBlocked": "司机账户已被封禁",
+  "sessionExpiredOtherDevice": "由于您的账户在其他设备上登录,已自动退出",
+  "passwordMinLength": "密码长度不能少于 6 个字符",
+  "checkFilledData": "请检查已填写的信息",
+  "createPasswordTitle": "设置密码",
+  "createPasswordSubtitle": "还差最后一步:填写姓名并设置登录密码。",
+  "createAccountButton": "创建账户",
+  "creatingLabel": "创建中...",
+  "nameFieldLabel": "姓名",
+  "referralCodeFieldLabel": "邀请码(选填)",
+  "passwordFieldLabel": "密码",
+  "hidePasswordTooltip": "隐藏密码",
+  "showPasswordTooltip": "显示密码",
+  "backToSmsCode": "返回短信验证码",
+  "publicOfferTitle": "公开要约",
+  "legalDocPendingNotice": "该文件尚未准备好,完成法律审核后将在此显示。",
+  "personalDataConsentTitle": "个人数据处理同意书",
+  "understoodLabel": "知道了",
+  "closingLabel": "关闭中...",
+  "privacyPolicyTitle": "隐私政策",
+  "passwordLoginSubtitle": "请输入密码登录账户",
+  "passwordLoginWelcome": "欢迎回来!请输入密码登录账户",
+  "forgotPasswordLabel": "忘记密码?",
+  "loggingInLabel": "登录中...",
+  "newPasswordFieldLabel": "新密码",
+  "newPasswordSubtitle": "请设置登录账户的新密码",
+  "repeatPasswordHint": "请再次输入密码",
+  "savePasswordButton": "保存密码",
+  "savingLabel": "保存中...",
+  "strongPasswordTitle": "高强度密码",
+  "strongPasswordHint": "请使用至少 8 个字符,包含字母和数字",
+  "secureTitle": "安全保障",
+  "secureHint": "您的密码受到安全保护,不会提供给第三方",
+  "defaultAccountLabel": "SmartTaxi 账户",
+  "appTagline": "您的舒适,我们的关怀",
+  "driverDrawerWallet": "钱包",
+  "driverDrawerDocuments": "证件",
+  "driverDrawerRating": "评分",
+  "driverDrawerNotifications": "通知",
+  "driverDrawerMenuTooltip": "菜单",
+  "driverDrawerNameFallback": "SmartTaxi 司机",
+  "driverDrawerWorkSection": "工作",
+  "driverDrawerNavigatorBrand": "Smart Navigator",
+  "driverDrawerServiceSection": "服务",
+  "driverDrawerRoadAlerts": "路况上报",
+  "driverDrawerPassengerMode": "乘客模式",
+  "driverWalletTitle": "钱包",
+  "driverWalletSubtitle": "余额、欠款和提现",
+  "driverWalletLoadError": "无法加载钱包",
+  "driverWalletBalanceLabel": "余额",
+  "driverWalletDebtLabel": "欠款:{amount}",
+  "@driverWalletDebtLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "driverWalletPendingLabel": "处理中:{amount}",
+  "@driverWalletPendingLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "driverWalletRequestPayoutButton": "申请提现",
+  "driverWalletMinPayoutNote": "最低提现金额为 {amount}",
+  "@driverWalletMinPayoutNote": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "driverWalletPayoutRequestsTitle": "提现申请",
+  "driverWalletNoPayoutRequests": "暂无申请记录",
+  "driverWalletTopUpButton": "余额充值",
+  "driverWalletTopupRequestsTitle": "充值申请",
+  "driverWalletNoTopupRequests": "暂无申请记录",
+  "driverTopupStatusPending": "等待入账",
+  "driverTopupSheetTitle": "余额充值",
+  "driverTopupSheetHint": "请填写金额,经理会联系您接收转账并完成入账",
+  "driverTopupAmountLabel": "金额,坚戈",
+  "driverTopupErrorBelowMin": "最低金额为 {amount}",
+  "@driverTopupErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "driverTopupErrorGeneric": "申请创建失败,请重试",
+  "driverTopupSubmitButton": "提交申请",
+  "driverWalletTransactionsTitle": "交易记录",
+  "driverWalletNoTransactions": "暂无已完成的行程",
+  "driverWalletTxCashCommission": "现金行程佣金",
+  "driverWalletTxAdjustment": "调整",
+  "driverWalletTxEarning": "行程收入",
+  "driverPayoutStatusPending": "审核中",
+  "driverPayoutStatusApproved": "已批准",
+  "driverPayoutStatusPaid": "已支付",
+  "driverPayoutStatusRejected": "已拒绝",
+  "driverPayoutStatusCancelled": "已取消",
+  "driverPayoutSheetTitle": "申请提现",
+  "driverPayoutSheetAvailable": "可提现金额:{amount}",
+  "@driverPayoutSheetAvailable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPayoutAmountLabel": "金额,坚戈",
+  "driverPayoutPhoneLabel": "用于转账的 Kaspi 号码",
+  "driverPayoutErrorBelowMin": "最低金额为 {amount}",
+  "@driverPayoutErrorBelowMin": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPayoutErrorExceedsBalance": "金额超出可用余额",
+  "driverPayoutErrorPhoneRequired": "请填写用于 Kaspi 转账的号码",
+  "driverPayoutErrorGeneric": "申请创建失败,请重试",
+  "driverPayoutSubmitButton": "提交申请",
+  "driverDocumentsTitle": "证件",
+  "driverDocumentsSubtitle": "请上传证件以供 SmartTaxi 管理员审核",
+  "driverDocumentsLoadError": "无法加载证件",
+  "driverDocumentStatusMissing": "未上传",
+  "driverDocumentStatusApproved": "已通过",
+  "driverDocumentStatusRejected": "已拒绝",
+  "driverDocumentStatusPending": "审核中",
+  "driverDocumentUploadButton": "上传",
+  "driverDocumentReuploadButton": "重新上传",
+  "driverDocumentUploadHint": "JPG、PNG 或 PDF,最大 8 MB",
+  "driverDocumentUploadError": "文件上传失败,请检查格式(JPG、PNG、PDF)后重试",
+  "driverDocumentPickCamera": "拍照",
+  "driverDocumentPickFile": "选择文件",
+  "driverDocumentPickCameraShort": "拍照",
+  "driverDocumentPickFileShort": "文件",
+  "driverDocumentTypeLicenseFront": "驾驶证(正面)",
+  "driverDocumentTypeLicenseBack": "驾驶证(背面)",
+  "driverDocumentTypeIdCardFront": "身份证(正面)",
+  "driverDocumentTypeIdCardBack": "身份证(背面)",
+  "driverDocumentTypeVehicleRegistration": "行驶证",
+  "driverDocumentTypeInsurancePolicy": "保险单",
+  "driverDocumentTypeProfilePhoto": "头像照片",
+  "driverDocumentTypeOther": "证件",
+  "driverApplicationDocumentsTitle": "证件",
+  "driverApplicationDocumentsIntro": "申请已提交。现在上传证件可加快审核速度",
+  "driverApplicationDocumentsDone": "完成",
+  "driverApplicationDocumentsLater": "稍后继续",
+  "driverApplicationDocumentUploaded": "已上传",
+  "driverRatingTitle": "评分",
+  "driverRatingSubtitle": "乘客的评分与评价",
+  "driverRatingLoadError": "无法加载评分",
+  "driverRatingEmptyTitle": "暂无评价",
+  "driverRatingEmptyText": "乘客评价行程后,评价将显示在这里",
+  "driverRatingTopTagsTitle": "最常被提及",
+  "driverRatingRecentTitle": "最新评价",
+  "driverNotificationsTitle": "通知",
+  "driverNotificationsSubtitle": "提现、证件和订单状态",
+  "driverNotificationsLoadError": "无法加载通知",
+  "driverNotificationsEmptyTitle": "暂无新通知",
+  "driverNotificationsEmptyText": "这里会显示提现状态、证件审核和行程状态",
+  "driverProfileTitle": "司机资料",
+  "driverProfileSubtitle": "账户信息与当前班次",
+  "driverProfileNameFallback": "司机",
+  "driverProfilePhoneMissing": "未填写电话",
+  "driverProfileRegionLabel": "工作地区",
+  "driverProfileRegionNotSelected": "未选择",
+  "driverProfileLineStatusLabel": "接单状态",
+  "driverProfileOrdersTodayLabel": "今日订单数",
+  "driverProfileEarnedTodayLabel": "今日收入",
+  "driverProfileDebtLabel": "欠款",
+  "driverProfileDocumentsNote": "车辆证件和地区准入由 SmartTaxi 管理员审核。",
+  "driverProfileTripHistoryTitle": "行程记录",
+  "driverAvatarUpdated": "头像已更新",
+  "driverAvatarUploadError": "头像上传失败",
+  "driverSupportTitle": "客服",
+  "driverSupportSubtitle": "请描述您的问题,我们将为您提供帮助",
+  "driverSupportTopicSectionTitle": "问题类型",
+  "driverSupportTopicSectionText": "请选择您需要哪方面的帮助",
+  "driverSupportTopicOrder": "订单问题",
+  "driverSupportTopicRegion": "地区相关问题",
+  "driverSupportTopicBilling": "账务与欠款",
+  "driverSupportTopicOther": "其他",
+  "driverSupportMessageLabel": "留言",
+  "driverSupportMessageHint": "请输入留言...",
+  "driverSupportMessageTooShort": "请更详细地描述问题:至少 8 个字符。",
+  "driverSupportMessageSent": "留言已发送,管理员会尽快回复。",
+  "driverSupportSendingButton": "发送中...",
+  "driverSupportSendButton": "发送",
+  "driverSupportHistoryTitle": "我的留言记录",
+  "driverSupportStatusResolved": "已回复",
+  "driverSupportStatusPending": "处理中",
+  "driverSupportResponseLabel": "客服回复",
+  "driverSupportLoadError": "无法加载留言记录",
+  "driverTripHistoryLoadError": "无法加载行程记录",
+  "driverSupportEmptyTitle": "暂无留言记录",
+  "driverSupportEmptyText": "这里会显示您提交给客服的留言及回复",
+  "driverFaqTitle": "常见问题",
+  "driverFaqSubtitle": "司机常见问题解答",
+  "driverFaqQ1": "如何接单?",
+  "driverFaqA1": "在“订单”标签页打开订单卡片并点击“接单”。乘客出价更高的订单会显示在上方。",
+  "driverFaqQ2": "为什么看不到订单?",
+  "driverFaqA2": "请检查您是否处于接单状态(“接单”标签页)、是否已选择工作地区、以及定位是否已开启。",
+  "driverFaqQ3": "欠款是如何计算的?",
+  "driverFaqA3": "使用现金或转账支付时,服务佣金会计入欠款;使用电子支付时,佣金会自动扣除。",
+  "driverFaqQ4": "「自主报价」是什么意思?",
+  "driverFaqA4": "乘客可以提出高于或低于系统计价的价格。此类订单会带有标记,并优先显示在列表顶部。",
+  "driverFaqQ5": "如何更换工作地区?",
+  "driverFaqA5": "地区在“接单”标签页中选择,仅可选择管理员已批准的地区。",
+  "driverFaqQ6": "我错过的订单会怎样?",
+  "driverFaqA6": "被错过的订单会继续开放给该地区的其他司机,直到有人接单为止。",
+  "driverAboutDescription": "SmartTaxi 是一款区域出租车服务。司机端应用仅显示管理员已批准的开通地区内的订单。",
+  "driverAboutVersionLabel": "应用版本",
+  "driverSettingsTitle": "设置",
+  "driverSettingsSubtitle": "账户与应用信息",
+  "driverSettingsAccountGroup": "账户",
+  "driverSettingsPhoneLabel": "手机号码",
+  "driverSettingsPhoneMissing": "未填写",
+  "driverSettingsPhoneCopied": "号码已复制",
+  "driverSettingsLogoutTitle": "退出账户",
+  "driverSettingsLogoutText": "结束当前会话",
+  "driverSettingsInterfaceGroup": "界面",
+  "driverSettingsLanguageLabel": "语言",
+  "driverSettingsAboutGroup": "关于应用",
+  "driverSettingsTermsTitle": "使用条款",
+  "driverSettingsTermsText": "行程、订单及各方责任规则",
+  "driverSettingsPrivacyTitle": "隐私政策",
+  "driverSettingsPrivacyText": "手机号、定位和行程记录的使用方式",
+  "driverTabLine": "接单",
+  "driverTabOrders": "订单",
+  "driverTabTrip": "行程",
+  "driverTabNavigator": "导航",
+  "driverLineRegionSectionTitle": "工作地区",
+  "driverLineRegionSectionText": "订单仅来自您所选择的地区",
+  "driverLineRegionsLoading": "正在加载地区...",
+  "driverLineNoRegionsTitle": "暂无已批准的地区",
+  "driverLineNoRegionsText": "需要管理员批准您才能开始工作。",
+  "driverLineLocationSectionTitle": "定位",
+  "driverLineLocationSectionText": "仅在接单状态下才会发送位置信息",
+  "driverOrdersTitle": "本地区订单",
+  "driverOrdersSubtitle": "仅显示您工作地区内的订单。",
+  "driverOrdersUpdating": "正在更新订单...",
+  "driverOrdersGoOnlineTitle": "开启接单状态以接收订单",
+  "driverOrdersGoOnlineText": "开启接单状态后,订单会显示在这里。",
+  "driverOrdersEmptyTitle": "您所在地区暂无订单",
+  "driverOrdersEmptyText": "乘客下单后,新订单会显示在这里。",
+  "driverTripTitle": "当前行程",
+  "driverTripSubtitle": "行程的下一步",
+  "driverTripEmptyTitle": "暂无进行中的行程",
+  "driverTripEmptyText": "接单后,行程会显示在这里。",
+  "driverTripTariffLabel": "车型:{tariff}",
+  "@driverTripTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
+  "driverTripSavingButton": "保存中...",
+  "driverTripDoneButton": "完成,继续接单",
+  "driverTripNoShowButton": "乘客未出现",
+  "driverTripCancelButton": "取消",
+  "driverActionGoingToClient": "已出发接乘客",
+  "driverActionArrived": "已到达",
+  "driverActionStartWaiting": "开始等待",
+  "driverActionStartTrip": "开始行程",
+  "driverActionCompleteTrip": "结束行程",
+  "driverStatusBusy": "忙碌中",
+  "driverStatusOnline": "接单中",
+  "driverStatusOffline": "未接单",
+  "driverLocationChecking": "正在检查定位...",
+  "driverLocationRequiredError": "接单需要开启定位",
+  "driverLocationSendFailed": "定位发送失败,请重试。",
+  "driverLocationFetchFailed": "无法获取定位,请重试。",
+  "driverLocationActive": "定位已开启",
+  "driverGoOnlineRequiredError": "请开启接单状态以接受订单。",
+  "driverGoOnlineRequiredRejectError": "请开启接单状态以跳过订单。",
+  "driverUpdatesUnavailableNote": "与更新服务器的连接暂时不可用,页面将继续通过 API 正常工作。",
+  "driverManeuverTurnLeft": "左转",
+  "driverManeuverTurnRight": "右转",
+  "driverManeuverSlightLeft": "稍微靠左行驶",
+  "driverManeuverSlightRight": "稍微靠右行驶",
+  "driverManeuverSharpLeft": "急左转",
+  "driverManeuverSharpRight": "急右转",
+  "driverManeuverUturn": "掉头",
+  "driverManeuverStraight": "直行",
+  "driverManeuverMergeLeft": "向左并道",
+  "driverManeuverMergeRight": "向右并道",
+  "driverManeuverOnRamp": "驶入高速",
+  "driverManeuverOffRamp": "驶出高速",
+  "driverManeuverRoundaboutWithExit": "环岛,第 {exit} 出口",
+  "@driverManeuverRoundaboutWithExit": {
+    "placeholders": {
+      "exit": {
+        "type": "int"
+      }
+    }
+  },
+  "driverManeuverRoundabout": "环岛行驶",
+  "driverManeuverExitRoundabout": "驶出环岛",
+  "driverManeuverArrive": "您即将到达目的地",
+  "driverManeuverFollowRoute": "沿路线行驶",
+  "driverPaymentCashback": "奖励",
+  "driverPaymentMixed": "混合支付",
+  "driverRouteMetaLabel": "路线:{details}",
+  "@driverRouteMetaLabel": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "driverOrderStatusNew": "新订单",
+  "driverOrderStatusAccepted": "已接单",
+  "driverOrderStatusGoingToClient": "正在赶往乘客",
+  "driverOrderStatusWaiting": "等待中",
+  "driverOrderStatusCompleted": "已完成",
+  "driverOrderStatusPaymentPending": "等待支付",
+  "driverOrderStatusRated": "已评价",
+  "driverOrderStatusCancelledByDriver": "司机已取消",
+  "driverOrderStatusCancelledByClient": "乘客已取消",
+  "driverOrderStatusCancelledByOperator": "客服已取消",
+  "driverOrderStatusCancelled": "已取消",
+  "driverErrorRegionNotSelected": "请选择工作地区",
+  "driverErrorRegionInactive": "该地区暂时已关闭",
+  "driverErrorRegionNotApproved": "您尚未获得该地区的批准",
+  "driverErrorRegionBlocked": "该地区的工作权限已被封禁",
+  "driverErrorDriverBlocked": "司机账户已被封禁",
+  "driverErrorDocumentsNotApproved": "服务器仍要求进行证件审核——请联系客服",
+  "driverErrorHasActiveOrder": "您已有一个进行中的订单",
+  "driverErrorOrderAlreadyAccepted": "该订单已被其他司机接单",
+  "driverErrorInvalidStatusTransition": "该订单当前无法执行此操作",
+  "driverErrorForbiddenOrder": "该订单已分配给其他司机",
+  "driverErrorOrderRegionMismatch": "该订单不在您的工作地区内",
+  "driverErrorOrderNotFound": "未找到该订单",
+  "driverErrorDebtLimit": "已超出欠款限额,请联系客服",
+  "driverErrorLocationOutsideRegion": "定位不在工作地区范围内",
+  "driverErrorLocationUnavailable": "正在等待司机定位",
+  "driverErrorOrderNotCompleted": "行程款项尚未经客服确认。",
+  "driverErrorOrderAlreadyRated": "您已评价过该乘客",
+  "driverPassengerFallback": "乘客",
+  "driverStepperAccepted": "已接单",
+  "driverStepperGoing": "赶来中",
+  "driverStepperArrived": "已到达",
+  "driverStepperWaiting": "等待中",
+  "driverStepperInTransit": "行程中",
+  "driverStepperFinish": "完成",
+  "driverNewOrderTitle": "新订单",
+  "driverWorkingRegionLabel": "工作地区",
+  "driverTariffLabel": "车型 {tariff}",
+  "@driverTariffLabel": {
+    "placeholders": {
+      "tariff": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPriceAfterCalculation": "计价后价格",
+  "driverCustomPriceBadge": "自主报价",
+  "driverSkippingButton": "跳过中...",
+  "driverSkipButton": "跳过",
+  "driverAcceptingButton": "接单中...",
+  "driverAcceptButton": "接单",
+  "driverDeclineButton": "拒绝",
+  "driverRespondingButton": "回复中...",
+  "driverClientOfferedCustomPrice": "乘客出价 {price}",
+  "@driverClientOfferedCustomPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "driverClientOfferedCustomPriceGeneric": "自主报价",
+  "driverAwaitingClientResponse": "正在等待乘客回复",
+  "driverAwaitingClientResponseWithPrice": "正在等待回复:{price}",
+  "@driverAwaitingClientResponseWithPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "driverOfferCustomPriceButton": "提出您的报价",
+  "driverPaidWaitingLabel": "计费等待",
+  "driverFreeWaitingLabel": "免费等待",
+  "driverTripDistanceCoveredLabel": "本次行程已行驶",
+  "driverTripCompletedTitle": "行程已完成",
+  "driverTripCostLabel": "行程费用",
+  "driverServiceCommissionLabel": "服务佣金",
+  "driverYouReceiveLabel": "您将获得",
+  "driverConfirmPaymentTitle": "乘客已支付行程费用了吗?",
+  "driverConfirmPaymentHint": "请确认已收到付款,以便继续为乘客评分",
+  "driverConfirmPaymentButton": "已收到付款",
+  "driverConfirmingPaymentButton": "确认中...",
+  "driverRatePassengerTitle": "请为乘客评分",
+  "driverRatingTagPolitePassenger": "乘客礼貌",
+  "driverRatingTagWaitedAtPickup": "在上车点耐心等待",
+  "driverRatingTagExactAddress": "地址准确",
+  "driverRatingTagOnTimeExit": "准时下车",
+  "driverRatingTagLongNoShow": "长时间未出现",
+  "driverRatingTagRudeCommunication": "态度粗鲁",
+  "driverRatingTagWrongAddress": "地址错误",
+  "driverRatingTagDirtyInterior": "弄脏了车内",
+  "driverCommentOptionalHint": "备注(选填)",
+  "driverSendingRatingButton": "发送中...",
+  "driverSubmitRatingButton": "提交评分",
+  "driverRatingThanksMessage": "谢谢,评分已提交",
+  "driverRatingSkippedMessage": "已跳过评分",
+  "driverFavoriteAddedLabel": "已收藏",
+  "driverFavoriteAddButton": "加入收藏",
+  "driverBlockedLabel": "已屏蔽",
+  "driverBlockButton": "不再接受",
+  "doneButton": "完成",
+  "driverStarRatingSemanticLabel": "评分:{count} {count, plural, other{星}}",
+  "@driverStarRatingSemanticLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "driverUpdatingGeneric": "更新中...",
+  "driverEmergencyHelpTitle": "紧急求助",
+  "driverEmergencyCallButton": "拨打 {phone}",
+  "@driverEmergencyCallButton": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "driverEmergencyLineSubtitle": "如遇突发状况,可拨打 SmartTaxi 紧急热线",
+  "driverSupportWillReceiveSignal": "客服将收到提醒",
+  "driverSupportSignalDescription": "拨打电话的同时,系统会将您的位置信息及行程号(如有)一并发送给客服",
+  "driverChooseRegionButton": "选择地区",
+  "driverTodayLabel": "今天",
+  "driverGoOfflineButton": "停止接单",
+  "driverGoOnlineButton": "开始接单",
+  "driverDemandHigh": "高",
+  "driverDemandAboveNormal": "偏高",
+  "driverDemandNormal": "正常",
+  "driverTripsTodayLabel": "今日行程数",
+  "driverNewOrdersLabel": "新订单数",
+  "driverDemandNearbyLabel": "附近需求",
+  "driverLocationOnlineHint": "定位仅在接单状态下发送。",
+  "driverUpdatingStatusButton": "状态更新中...",
+  "driverPayoutMethodTitle": "提现方式",
+  "driverPayoutCardSummary": "银行卡 •• •• •• {last4}",
+  "@driverPayoutCardSummary": {
+    "placeholders": {
+      "last4": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPayoutKaspiSummary": "Kaspi 转账:{phone}",
+  "@driverPayoutKaspiSummary": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPayoutMethodNotSet": "未设置——请添加以便提现",
+  "driverPayoutMethodSubtitle": "提现时款项将转入的账户",
+  "driverPayoutMethodKaspiOption": "Kaspi 转账",
+  "driverPayoutMethodCardOption": "银行卡",
+  "driverCardNumberLabel": "银行卡号",
+  "driverPhoneNumberKaspiLabel": "电话号码(Kaspi)",
+  "driverSavingButton": "保存中...",
+  "driverErrorInvalidCardNumber": "请输入正确的银行卡号",
+  "driverErrorPhoneRequiredGeneric": "请输入电话号码",
+  "driverErrorCardTypo": "银行卡号似乎有误,请检查后重试",
+  "driverErrorSaveFailedGeneric": "保存失败,请检查信息后重试。",
+  "driverPayoutMethodNotSetShort": "未设置提现方式",
+  "addButton": "添加",
+  "driverReviewsCountLabel": "{count} {count, plural, other{条评价}}",
+  "@driverReviewsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "driverTopTagLabel": "{tag} · {count}",
+  "@driverTopTagLabel": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "driverClientAcceptedPriceToast": "乘客已接受您的报价:{price}",
+  "@driverClientAcceptedPriceToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "driverClientDeclinedOfferToast": "乘客已拒绝您的报价",
+  "driverClientCounterOfferToast": "乘客提出了新报价:{price}",
+  "@driverClientCounterOfferToast": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "driverSpeedLimitAnnouncement": "限速 {limit}",
+  "@driverSpeedLimitAnnouncement": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "driverCameraIn500mVoice": "前方 500 米有测速摄像头",
+  "driverCameraIn500mBanner": "500 米后有摄像头{heading}",
+  "@driverCameraIn500mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
+  "driverCameraIn200mVoice": "前方 200 米有测速摄像头",
+  "driverCameraIn200mBanner": "200 米后有摄像头{heading}",
+  "@driverCameraIn200mBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
+  "driverCameraNowVoice": "摄像头",
+  "driverCameraNowBanner": "摄像头{heading}",
+  "@driverCameraNowBanner": {
+    "placeholders": {
+      "heading": {
+        "type": "String"
+      }
+    }
+  },
+  "driverSignBannerLabel": "标志:{sign}",
+  "@driverSignBannerLabel": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      }
+    }
+  },
+  "driverSpeedingVoiceWarning": "超速",
+  "driverManeuverIn200mVoice": "200 米后{maneuver}{street}",
+  "@driverManeuverIn200mVoice": {
+    "placeholders": {
+      "maneuver": {
+        "type": "String"
+      },
+      "street": {
+        "type": "String"
+      }
+    }
+  },
+  "driverStreetSuffix": ",{street}",
+  "@driverStreetSuffix": {
+    "placeholders": {
+      "street": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPriceOfferSentToast": "报价已发送给乘客",
+  "driverAcceptedClientPriceToast": "您已接受乘客的价格——订单已确认归您",
+  "driverDeclinedClientOfferToast": "您已拒绝乘客的报价",
+  "driverSettingsPayoutsGroup": "提现",
+  "driverLogoutConfirmText": "退出后需要重新使用手机号登录才能继续在 SmartTaxi 工作。",
+  "driverMustGoOfflineToChangeRegion": "请先停止接单才能更换地区",
+  "driverQuickMessageToClientButton": "给乘客发送快捷消息",
+  "driverNoShowConfirmTitle": "乘客未出现吗?",
+  "driverNoShowConfirmText": "该行程将被标记为乘客未出现——请确认您已等待完免费等待时间。",
+  "driverNoShowConfirmButton": "确认未出现",
+  "driverCancelTripConfirmTitle": "确定取消行程吗?",
+  "driverCancelTripConfirmText": "订单将重新开放给其他司机接单。频繁取消可能会影响您的评分。",
+  "back": "返回",
+  "pressBackAgainToExit": "再次点击「返回」退出应用",
+  "driverNoApprovedRegionsTitle": "暂无已批准的地区",
+  "driverChooseWorkingRegionTitle": "请选择工作地区",
+  "driverRegionTemporarilyDisabledTitle": "该地区暂时已关闭",
+  "driverRegionWorkBlockedTitle": "该地区的工作权限已被封禁",
+  "driverRegionNotApprovedTitle": "您尚未获得该地区的批准",
+  "driverNoRegionsMessage": "开始接单需要至少一个已获批准的地区。请联系客服为您开通地区权限。",
+  "driverContactSupportAction": "联系客服",
+  "driverChooseRegionMessage": "您已有获批准的地区——请选择一个以开始接单。",
+  "driverRegionPausedMessage": "「{region}」地区的工作目前已暂停。",
+  "@driverRegionPausedMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
+  "driverTryLaterOrChangeRegion": "请稍后再试或更换地区。",
+  "driverTryLater": "请稍后再试。",
+  "driverChangeRegionAction": "更换地区",
+  "driverAccessBlockedTitle": "访问已被封禁",
+  "driverRegionBlockedByAdminMessage": "「{region}」地区的工作已被管理员封禁。",
+  "@driverRegionBlockedByAdminMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
+  "driverApplicationUnderReviewTitle": "申请审核中",
+  "driverApplicationUnderReviewMessage": "我们正在审核您对「{region}」地区的访问权限,通常需要一些时间。",
+  "@driverApplicationUnderReviewMessage": {
+    "placeholders": {
+      "region": {
+        "type": "String"
+      }
+    }
+  },
+  "driverStatusUnavailableByRegion": "该地区暂不可用",
+  "driverRegionStatusDisabled": "已关闭",
+  "driverRegionStatusBlocked": "已封禁",
+  "driverRegionStatusApproved": "已批准",
+  "driverRegionStatusUnderReview": "审核中",
+  "driverFreeModeLabel": "自由模式",
+  "driverActiveOrderLabel": "当前订单",
+  "driverYourCarSemanticLabel": "您的车辆",
+  "driverDisableVoiceHints": "关闭语音提示",
+  "driverEnableVoiceHints": "开启语音提示",
+  "driverReportRoadEventSemanticLabel": "上报路况事件",
+  "driverRecenterSemanticLabel": "回到当前位置",
+  "driverSpeedLabel": "速度",
+  "driverNavigatorNoRouteLabel": "尚未选择路线",
+  "driverLimitLabel": "限速",
+  "driverSearchingGpsSignal": "正在搜索 GPS 信号…",
+  "driverRouteWillAppearAfterCalc": "路线将在计算完成后显示",
+  "driverRouteToPickupPoint": "前往上车点的路线",
+  "driverQuickMessageArrived": "我到了",
+  "driverQuickMessageWaitingAtEntrance": "我在门口等您",
+  "driverQuickMessageRunningLate2Min": "我会晚到 2 分钟",
+  "driverQuickMessagePleaseComeOut": "请出来一下",
+  "driverQuickMessageOnMyWay": "我已经在路上了",
+  "driverQuickMessageSentToast": "已发送:{text}",
+  "@driverQuickMessageSentToast": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "driverQuickMessageSheetTitle": "快捷消息",
+  "driverPriceOfferRangeError": "请输入 200 至 1,000,000 坚戈之间的价格",
+  "driverPriceOfferSheetTitle": "提出您的报价",
+  "driverPriceOfferSheetSubtitle": "乘客将看到您的报价,并可以选择接受或拒绝",
+  "driverCurrentOrderPriceLabel": "当前订单价格:{price}",
+  "@driverCurrentOrderPriceLabel": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "driverPriceFieldLabel": "价格,坚戈",
+  "driverSendOfferButton": "发送报价",
+  "driverRouteAcceptedToast": "路线已接受",
+  "driverRouteDeclinedToast": "路线已拒绝",
+  "driverRecurringTitle": "常用路线",
+  "driverRecurringSubtitle": "收到的申请与您的活跃路线",
+  "driverRecurringEmptyTitle": "暂无申请",
+  "driverRecurringEmptyText": "与乘客共同完成一次行程后,乘客即可向您提出常用路线申请。",
+  "driverRecurringNewRequestsTitle": "新申请",
+  "driverRecurringNewRequestsText": "如果您愿意按计划接送,请接受",
+  "driverRecurringYourRoutesTitle": "您的路线",
+  "driverRecurringNewRequestLabel": "新申请",
+  "driverRejectButton": "拒绝",
+  "driverEnableLocationOrPickOnMap": "请开启定位或在地图上选择位置。",
+  "driverAllowLocationOrPickOnMap": "请允许定位或在地图上选择位置。",
+  "driverCoordinatesFromGps": "坐标已通过 GPS 选定。",
+  "driverFailedToGetLocation": "无法获取定位。",
+  "driverChooseAlertPointOnMapOrGps": "请在地图上或通过 GPS 选择事件位置。",
+  "driverEnterSpeedLimitNumber": "请输入数字形式的限速值。",
+  "driverAlertSubmittedForSafety": "该事件已提交,用于道路安全提示。",
+  "driverAlertConfirmedThanks": "谢谢,您的确认将帮助其他司机。",
+  "driverAlertHiddenFromList": "该事件已从活跃列表中隐藏。",
+  "driverRoadAlertsTitle": "路况上报",
+  "driverRoadAlertsSubtitle": "标记的摄像头和危险路段会立即显示在其他司机的导航中——帮助路上的每一位司机。",
+  "refreshButton": "刷新",
+  "driverPointSelectedOnMap": "坐标已在地图上选定。",
+  "driverNewAlertSectionTitle": "新事件",
+  "driverNewAlertSectionText": "请选择类型和位置,该地区的司机都能看到此消息。",
+  "driverAlertCommentLabel": "备注",
+  "driverAlertCommentHint": "例如:右侧车道封闭",
+  "driverAlertSpeedLimitLabel": "限速,公里/小时",
+  "driverAlertSpeedLimitHint": "仅当有标志标明时填写",
+  "driverPointSelectedCoordinates": "已选定位置:{lat},{lng}",
+  "@driverPointSelectedCoordinates": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "driverNearbyAlertsTitle": "附近事件",
+  "driverNearbyAlertsSubtitle": "仅显示已保存的活跃消息。",
+  "driverLoadingAlerts": "正在加载事件...",
+  "driverAlertsLoadFailedTitle": "无法加载事件",
+  "driverCheckConnectionRetry": "请检查网络连接后重试。",
+  "driverNoNearbyAlertsTitle": "附近暂无路况事件",
+  "driverNoNearbyAlertsText": "司机上报消息后,将显示在这里。",
+  "driverTapMapToSelectAlertPoint": "点击地图以选择事件位置",
+  "driverMapUnavailableUseGps": "地图暂时不可用,请通过 GPS 选择位置或稍后再试。",
+  "roadAlertHazard": "道路危险",
+  "roadAlertAccident": "交通事故",
+  "roadAlertRoadWork": "道路施工",
+  "roadAlertSpeedCamera": "测速摄像头",
+  "roadAlertPolice": "交通检查",
+  "roadAlertTrafficJam": "交通拥堵",
+  "roadAlertRoadClosed": "道路封闭",
+  "roadAlertBadRoad": "路况不佳",
+  "roadAlertPothole": "路面坑洞",
+  "roadAlertSpeedBump": "减速带",
+  "roadAlertIcyRoad": "路面结冰",
+  "roadAlertSchoolZone": "学校区域",
+  "roadAlertTemporarySpeedLimit": "临时限速",
+  "roadAlertDangerousTurn": "危险弯道",
+  "roadAlertRailroadCrossing": "铁路道口",
+  "roadAlertPedestrianCrossing": "人行横道",
+  "roadAlertOther": "其他",
+  "driverAlertConfidenceLabel": "可信度:{score}% · 确认数:{count}",
+  "@driverAlertConfidenceLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "driverAlertSpeedLimitDetail": "限速:{limit} 公里/小时",
+  "@driverAlertSpeedLimitDetail": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "driverAlertHeadingDetail": "方向:{direction}",
+  "@driverAlertHeadingDetail": {
+    "placeholders": {
+      "direction": {
+        "type": "String"
+      }
+    }
+  },
+  "driverConfirmAlertButton": "仍然存在",
+  "noButton": "否",
+  "driverInDistanceLabel": "{distance}后",
+  "@driverInDistanceLabel": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "roadAlertShortAccident": "事故",
+  "roadAlertShortRoadWork": "施",
+  "roadAlertShortSpeedCamera": "摄",
+  "roadAlertShortPolice": "检",
+  "roadAlertShortTrafficJam": "堵",
+  "roadAlertShortBadRoad": "差",
+  "roadAlertShortPothole": "坑",
+  "roadAlertShortSpeedBump": "带",
+  "roadAlertShortIcyRoad": "冰",
+  "roadAlertShortSchoolZone": "校",
+  "roadAlertShortTemporarySpeedLimit": "限速",
+  "roadAlertShortDangerousTurn": "弯",
+  "roadAlertShortRailroadCrossing": "铁",
+  "roadAlertShortPedestrianCrossing": "行",
+  "driverRegionsLoadFailedTitle": "无法加载区域",
+  "driverRegionsLoadFailedMessage": "请检查网络连接，然后下拉刷新。您的区域权限没有变化。",
+  "driverRegionsRetryAction": "刷新",
+  "authTagline": "城市出租车",
+  "passengerMapPointNoAddressHint": "请将标记移到最近的建筑或地点"
+}
