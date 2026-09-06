@@ -4,7 +4,15 @@ import { AppError } from "./errors.js";
 import { query } from "../db/pool.js";
 
 export function signToken(user) {
-  return jwt.sign({ id: user.id, role: user.role, email: user.email, phone: user.phone, name: user.name, sessionVersion: user.session_version }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
+  return jwt.sign({
+    id: user.id,
+    role: user.role,
+    baseRole: user.baseRole || user.base_role || user.role,
+    email: user.email,
+    phone: user.phone,
+    name: user.name,
+    sessionVersion: user.session_version
+  }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 }
 
 // Rotating this on a real login/password-reset/logout invalidates every

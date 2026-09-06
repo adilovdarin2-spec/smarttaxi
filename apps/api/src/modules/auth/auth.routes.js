@@ -155,6 +155,48 @@ async function loginWithPhonePassword({ phone, password, req }) {
   return { token: signToken(rotated), user: publicUser(rotated) };
 }
 
+async function issueModeToken(userId, mode) {
+  const user = (await query("SELECT * FROM users WHERE id=$1 AND is_active=true", [userId])).rows[0];
+  if (!user) throw new AppError("User not found", 404, "USER_NOT_FOUND");
+
+  if (mode === "PASSENGER") {
+    if (!["CLIENT", "DRIVER"].includes(user.role)) {
+      throw new AppError("Passenger mode is unavailable", 403, "PASSENGER_MODE_UNAVAILABLE");
+    }
+    const client = (await query(`
+      INSERT INTO clients(user_id, name, phone)
+      VALUES($1,$2,$3)
+      ON CONFLICT (phone) DO UPDATE
+      SET user_id=EXCLUDED.user_id,
+          name=EXCLUDED.name
+      RETURNING id
+    `, [user.id, user.name, user.phone])).rows[0];
+    await ensureReferralCode(client.id);
+    const actingUser = { ...user, role: "CLIENT", baseRole: user.role };
+    return {
+      token: signToken(actingUser),
+      user: publicUser(actingUser),
+      mode: "passenger",
+      baseRole: user.role
+    };
+  }
+
+  if (user.role !== "DRIVER") {
+    throw new AppError("Driver mode is unavailable", 403, "DRIVER_MODE_UNAVAILABLE");
+  }
+  const driver = (await query("SELECT id, is_blocked FROM drivers WHERE user_id=$1", [user.id])).rows[0];
+  if (!driver || driver.is_blocked) {
+    throw new AppError("Driver is blocked or missing", 403, "DRIVER_MODE_UNAVAILABLE");
+  }
+  const actingUser = { ...user, role: "DRIVER", baseRole: user.role };
+  return {
+    token: signToken(actingUser),
+    user: publicUser(actingUser),
+    mode: "driver",
+    baseRole: user.role
+  };
+}
+
 router.post("/phone/check", rateLimit({ prefix: "auth-phone-check", windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
     const body = PhoneSchema.parse(req.body);
@@ -274,6 +316,21 @@ router.post("/login/password", rateLimit({ prefix: "auth-login-password", window
     const body = LoginPasswordSchema.parse(req.body);
     const data = await loginWithPhonePassword({ ...body, req });
     res.json(data);
+  } catch (e) { next(e); }
+});
+
+// Driver accounts can genuinely use the rider experience. The persisted
+// account role remains DRIVER; only this session token's acting role changes,
+// so all existing CLIENT authorization and ownership checks stay intact.
+router.post("/mode/passenger", requireAuth, rateLimit({ prefix: "auth-mode-passenger", windowMs: 60_000, max: 20 }), async (req, res, next) => {
+  try {
+    res.json(await issueModeToken(req.user.id, "PASSENGER"));
+  } catch (e) { next(e); }
+});
+
+router.post("/mode/driver", requireAuth, rateLimit({ prefix: "auth-mode-driver", windowMs: 60_000, max: 20 }), async (req, res, next) => {
+  try {
+    res.json(await issueModeToken(req.user.id, "DRIVER"));
   } catch (e) { next(e); }
 });
 

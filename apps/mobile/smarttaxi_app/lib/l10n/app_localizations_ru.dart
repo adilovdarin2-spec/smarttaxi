@@ -192,6 +192,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerDrawerBecomeDriver => 'Стать водителем';
 
   @override
+  String get passengerDrawerDriverMode => 'Режим водителя';
+
+  @override
   String get passengerDrawerHelpSection => 'Помощь';
 
   @override

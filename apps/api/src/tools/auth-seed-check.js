@@ -18,6 +18,11 @@ assert.match(authRoutes, /router\.post\("\/sms\/verify"/, "SMS verify endpoint m
 assert.match(authRoutes, /router\.post\("\/register\/password"/, "SMS registration password endpoint must exist");
 assert.doesNotMatch(authRoutes, /router\.post\("\/register",/, "registration must only be reachable through the SMS-verified /register/password endpoint");
 assert.match(authRoutes, /router\.post\("\/login\/password"/, "phone password login endpoint must exist");
+assert.match(authRoutes, /router\.post\("\/mode\/passenger", requireAuth/, "passenger mode switch must require an authenticated session");
+assert.match(authRoutes, /router\.post\("\/mode\/driver", requireAuth/, "driver mode switch must require an authenticated session");
+assert.match(authRoutes, /const actingUser = \{ \.\.\.user, role: "CLIENT", baseRole: user\.role \}/, "passenger mode must issue a CLIENT-scoped token");
+assert.match(authRoutes, /const actingUser = \{ \.\.\.user, role: "DRIVER", baseRole: user\.role \}/, "driver mode must restore a DRIVER-scoped token");
+assert.doesNotMatch(authRoutes, /UPDATE users SET role=/, "mode switching must never mutate the account's persisted role");
 assert.match(authRoutes, /router\.get\("\/me", requireAuth/, "me endpoint must require auth");
 assert.match(authRoutes, /email: z\.string\(\)\.trim\(\)\.toLowerCase\(\)\.email\(\)\.optional\(\)/, "login must support email");
 assert.match(authRoutes, /phone: z\.string\(\)\.trim\(\)\.min\(6\)\.max\(32\)/, "login must support phone");

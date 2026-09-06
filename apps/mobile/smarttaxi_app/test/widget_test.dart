@@ -95,6 +95,7 @@ void main() {
 
   test('auth screen is production-only and starts before main app', () {
     final main = _read('lib/main.dart');
+    final api = _read('lib/core/api/api_client.dart');
     final authArb = _read('lib/l10n/app_ru.arb');
     final testAccountsLabel = 'Тестовые '
         'аккаунты';
@@ -132,6 +133,10 @@ void main() {
     expect(main, isNot(contains(testAccountsLabel)));
     expect(main, isNot(contains(clientSeedPassword)));
     expect(main, isNot(contains(ownerSeedPassword)));
+    expect(main, contains("switchAppMode('passenger')"));
+    expect(main, contains("switchAppMode('driver')"));
+    expect(api, contains("'/api/auth/mode/\$mode'"));
+    expect(api, contains('await _authStore.saveToken(token)'));
   });
 
   test('login and register forms are phone-only', () {

@@ -456,6 +456,12 @@ abstract class AppLocalizations {
   /// **'Стать водителем'**
   String get passengerDrawerBecomeDriver;
 
+  /// No description provided for @passengerDrawerDriverMode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Режим водителя'**
+  String get passengerDrawerDriverMode;
+
   /// No description provided for @passengerDrawerHelpSection.
   ///
   /// In ru, this message translates to:

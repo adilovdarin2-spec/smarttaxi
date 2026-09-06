@@ -186,6 +186,7 @@ class PassengerShell extends StatefulWidget {
     required this.accountLabel,
     required this.accountPhone,
     this.accountId = '',
+    this.canUseDriverMode = false,
     required this.onLogout,
     required this.onOpenDriverMode,
     this.onRequestNotifications,
@@ -202,6 +203,7 @@ class PassengerShell extends StatefulWidget {
   final String accountLabel;
   final String accountPhone;
   final String accountId;
+  final bool canUseDriverMode;
   final Future<void> Function() onLogout;
   final Future<bool> Function() onOpenDriverMode;
   final Future<void> Function()? onRequestNotifications;
@@ -2567,7 +2569,9 @@ class _PassengerShellState extends State<PassengerShell>
           accountLabel: widget.accountLabel,
           accountPhone: widget.accountPhone,
           active: _tab,
-          driverLabel: AppLocalizations.of(context).passengerDrawerBecomeDriver,
+          driverLabel: widget.canUseDriverMode
+              ? AppLocalizations.of(context).passengerDrawerDriverMode
+              : AppLocalizations.of(context).passengerDrawerBecomeDriver,
           onSelect: (tab) {
             Navigator.pop(context);
             setState(() => _tab = tab);

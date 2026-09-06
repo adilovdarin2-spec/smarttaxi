@@ -193,6 +193,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerDrawerBecomeDriver => 'Haydovchi bo\'lish';
 
   @override
+  String get passengerDrawerDriverMode => 'Haydovchi rejimi';
+
+  @override
   String get passengerDrawerHelpSection => 'Yordam';
 
   @override

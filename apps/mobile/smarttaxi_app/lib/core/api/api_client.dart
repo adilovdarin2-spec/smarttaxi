@@ -71,6 +71,24 @@ class ApiClient {
     return data;
   }
 
+  Future<Map<String, dynamic>> switchAppMode(String mode) async {
+    if (mode != 'passenger' && mode != 'driver') {
+      throw ArgumentError.value(mode, 'mode', 'Unsupported app mode');
+    }
+    await _attachToken();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/auth/mode/$mode',
+    );
+    final data = response.data ?? {};
+    final token = data['token']?.toString();
+    if (token == null || token.isEmpty) {
+      throw const FormatException('Mode switch did not return a token');
+    }
+    await _authStore.saveToken(token);
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    return data;
+  }
+
   Future<Map<String, dynamic>> checkAuthPhone(String phone) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/auth/phone/check',
@@ -169,7 +187,9 @@ class ApiClient {
       queryParameters: {'version': currentVersion},
     );
     return AppVersionInfo.fromJson(
-      response.data is Map ? Map<String, dynamic>.from(response.data as Map) : const {},
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
     );
   }
 
@@ -371,7 +391,8 @@ class ApiClient {
   // with no idea a driver is already on the way.
   Future<OrderSummary?> getMyActiveOrder() async {
     await _attachToken();
-    final response = await _dio.get<Map<String, dynamic>>('/api/orders/me/active');
+    final response =
+        await _dio.get<Map<String, dynamic>>('/api/orders/me/active');
     final data = response.data ?? {};
     final order = data['order'];
     if (order is! Map) return null;
@@ -429,7 +450,8 @@ class ApiClient {
     });
   }
 
-  Future<({String code, int discountAmountKzt, int finalPriceKzt})> validatePromoCode({
+  Future<({String code, int discountAmountKzt, int finalPriceKzt})>
+      validatePromoCode({
     required String code,
     required String regionId,
     required int orderPriceKzt,
@@ -507,10 +529,11 @@ class ApiClient {
     await _dio.post('/api/notifications/read-all');
   }
 
-  Future<({String? sosPhone, String? supportPhone})> getServiceContacts() async {
+  Future<({String? sosPhone, String? supportPhone})>
+      getServiceContacts() async {
     try {
-      final response = await _dio
-          .get<Map<String, dynamic>>('/api/regions/service-settings');
+      final response =
+          await _dio.get<Map<String, dynamic>>('/api/regions/service-settings');
       String? clean(String? key) {
         final value = response.data?[key]?.toString().trim();
         return (value == null || value.isEmpty) ? null : value;
@@ -534,12 +557,10 @@ class ApiClient {
     // actual current_region_id) alongside the approvals list — surfacing it
     // here is what lets the driver shell default the region picker to what
     // the backend already has selected, instead of guessing.
-    final driverJson = response.data is Map
-        ? (response.data as Map)['driver']
-        : null;
-    final currentRegionId = driverJson is Map
-        ? driverJson['current_region_id']?.toString()
-        : null;
+    final driverJson =
+        response.data is Map ? (response.data as Map)['driver'] : null;
+    final currentRegionId =
+        driverJson is Map ? driverJson['current_region_id']?.toString() : null;
     return (regions: regions, currentRegionId: currentRegionId);
   }
 
@@ -811,8 +832,7 @@ class ApiClient {
 
   Future<List<RecurringBooking>> getMyRecurringBookings() async {
     await _attachToken();
-    final response =
-        await _dio.get<dynamic>('/api/recurring-bookings/mine');
+    final response = await _dio.get<dynamic>('/api/recurring-bookings/mine');
     final items = _extractList(response.data, 'bookings');
     return items
         .map((item) => RecurringBooking.fromJson(item))
@@ -821,8 +841,7 @@ class ApiClient {
 
   Future<List<RecurringBooking>> getDriverRecurringBookings() async {
     await _attachToken();
-    final response =
-        await _dio.get<dynamic>('/api/recurring-bookings/driver');
+    final response = await _dio.get<dynamic>('/api/recurring-bookings/driver');
     final items = _extractList(response.data, 'bookings');
     return items
         .map((item) => RecurringBooking.fromJson(item))
@@ -994,7 +1013,9 @@ class ApiClient {
     final response =
         await _dio.get<Map<String, dynamic>>('/api/clients/me/wallet/cards');
     final items = _extractList(response.data, 'cards');
-    return items.map((item) => ClientCard.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => ClientCard.fromJson(item))
+        .toList(growable: false);
   }
 
   // Store-only, Luhn-checked, never charged/tokenized — see
@@ -1008,7 +1029,8 @@ class ApiClient {
       '/api/clients/me/wallet/cards',
       data: {
         'cardNumber': cardNumber,
-        if (holderName != null && holderName.isNotEmpty) 'holderName': holderName,
+        if (holderName != null && holderName.isNotEmpty)
+          'holderName': holderName,
       },
     );
     final data = response.data ?? {};
@@ -1025,7 +1047,9 @@ class ApiClient {
     final response = await _dio
         .put<Map<String, dynamic>>('/api/clients/me/wallet/cards/$id/default');
     final items = _extractList(response.data, 'cards');
-    return items.map((item) => ClientCard.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => ClientCard.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<List<ClientTopupRequest>> getClientTopupRequests() async {
@@ -1172,7 +1196,8 @@ class ApiClient {
     String? orderId,
   }) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>('/api/support', data: {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/support', data: {
       'topic': topic,
       'message': message,
       if (orderId != null) 'orderId': orderId,
@@ -1200,8 +1225,8 @@ class ApiClient {
     int? year,
     String comment = '',
   }) async {
-    final response =
-        await _dio.post<Map<String, dynamic>>('/api/admin/driver-applications', data: {
+    final response = await _dio
+        .post<Map<String, dynamic>>('/api/admin/driver-applications', data: {
       'fullName': fullName,
       'phone': phone,
       'carModel': carModel,
@@ -1237,7 +1262,9 @@ class ApiClient {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/drivers/me/documents');
     final items = _extractList(response.data, 'documents');
-    return items.map((item) => DriverDocument.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => DriverDocument.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<DriverDocument> uploadDriverDocument({
@@ -1289,7 +1316,9 @@ class ApiClient {
       queryParameters: {if (status != null) 'status': status},
     );
     final items = _extractList(response.data, 'payoutRequests');
-    return items.map((item) => PayoutRequest.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => PayoutRequest.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<PayoutRequest> createPayoutRequest({
@@ -1318,10 +1347,12 @@ class ApiClient {
 
   Future<List<TopupRequest>> getTopupRequests() async {
     await _attachToken();
-    final response =
-        await _dio.get<Map<String, dynamic>>('/api/drivers/me/wallet/topup-requests');
+    final response = await _dio
+        .get<Map<String, dynamic>>('/api/drivers/me/wallet/topup-requests');
     final items = _extractList(response.data, 'topupRequests');
-    return items.map((item) => TopupRequest.fromJson(item)).toList(growable: false);
+    return items
+        .map((item) => TopupRequest.fromJson(item))
+        .toList(growable: false);
   }
 
   Future<TopupRequest> createTopupRequest(int amountKzt) async {
@@ -1337,8 +1368,8 @@ class ApiClient {
 
   Future<PayoutDetailsStatus> getPayoutDetailsStatus() async {
     await _attachToken();
-    final response = await _dio
-        .get<Map<String, dynamic>>('/api/drivers/me/wallet/payout-details-status');
+    final response = await _dio.get<Map<String, dynamic>>(
+        '/api/drivers/me/wallet/payout-details-status');
     return PayoutDetailsStatus.fromJson(response.data ?? {});
   }
 
@@ -1363,8 +1394,8 @@ class ApiClient {
 
   Future<DriverRatingSummary> getDriverRatingSummary() async {
     await _attachToken();
-    final response = await _dio
-        .get<Map<String, dynamic>>('/api/drivers/me/rating-summary');
+    final response =
+        await _dio.get<Map<String, dynamic>>('/api/drivers/me/rating-summary');
     return DriverRatingSummary.fromJson(response.data ?? {});
   }
 

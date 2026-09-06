@@ -120,6 +120,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   String _accountLabel = '';
   String _accountPhone = '';
   String _accountId = '';
+  String _accountBaseRole = '';
   bool _offline = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   late final PushService _pushService = PushService(widget.api);
@@ -185,6 +186,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
         _accountLabel = '';
         _accountPhone = '';
         _accountId = '';
+        _accountBaseRole = '';
         _authInitialError = _AuthMessageKind.sessionExpiredOtherDevice;
         _session = AppSession.auth;
       });
@@ -277,6 +279,18 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       await _saveUserFromPayload(me);
       final savedMode = await widget.authStore.readMode();
       if (!mounted) return;
+      final actingRole = _userRole(me['user']);
+      if (savedMode == 'driver') {
+        if (actingRole != 'DRIVER') {
+          await widget.api.switchAppMode('driver');
+        }
+      } else if (actingRole == 'DRIVER') {
+        // A driver may have closed the app while using rider mode. Restore a
+        // CLIENT-scoped token before PassengerShell starts its authenticated
+        // wallet/order/history requests; changing only the local widget tree
+        // leaves every one of those endpoints correctly returning 403.
+        await widget.api.switchAppMode('passenger');
+      }
       if (savedMode == 'driver' && await _canOpenDriver()) {
         if (!mounted) return;
         await _showAppSystemUi();
@@ -312,6 +326,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
         _accountLabel = cachedUser['label'] ?? '';
         _accountPhone = cachedUser['phone'] ?? '';
         _accountId = cachedUser['id'] ?? '';
+        _accountBaseRole = cachedUser['role'] ?? '';
         final savedMode = await widget.authStore.readMode();
         if (!mounted) return;
         await _showAppSystemUi();
@@ -347,6 +362,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     _accountLabel = _userLabel(user);
     _accountPhone = _userPhone(user);
     _accountId = _userId(user);
+    _accountBaseRole = _userBaseRole(user);
     await widget.authStore.saveUser(
       label: _accountLabel,
       phone: _accountPhone,
@@ -368,14 +384,33 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   }
 
   Future<bool> _openDriverMode() async {
+    try {
+      await widget.api.switchAppMode('driver');
+    } catch (_) {
+      return false;
+    }
     final allowed = await _canOpenDriver();
-    if (!allowed) return false;
+    if (!allowed) {
+      // Keep the currently visible passenger shell usable if the account is
+      // no longer approved for any active driver region.
+      try {
+        await widget.api.switchAppMode('passenger');
+      } catch (_) {
+        // The original driver-mode failure remains the useful outcome.
+      }
+      return false;
+    }
     await widget.authStore.saveMode('driver');
     if (mounted) setState(() => _session = AppSession.driver);
     return true;
   }
 
   Future<void> _openPassengerMode() async {
+    try {
+      await widget.api.switchAppMode('passenger');
+    } catch (_) {
+      return;
+    }
     await widget.authStore.saveMode('passenger');
     if (mounted) setState(() => _session = AppSession.passenger);
   }
@@ -389,6 +424,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
         _accountLabel = '';
         _accountPhone = '';
         _accountId = '';
+        _accountBaseRole = '';
         _session = AppSession.auth;
       });
     }
@@ -413,6 +449,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           accountLabel: _accountLabel,
           accountPhone: _accountPhone,
           accountId: _accountId,
+          canUseDriverMode: _accountBaseRole == 'DRIVER',
           onLogout: _logout,
           onOpenDriverMode: _openDriverMode,
           onRequestNotifications: _pushService.requestPermission,
@@ -4340,6 +4377,11 @@ String _userMail(dynamic user) {
 String _userRole(dynamic user) {
   if (user is! Map) return '';
   return (user['role'] ?? '').toString();
+}
+
+String _userBaseRole(dynamic user) {
+  if (user is! Map) return '';
+  return (user['baseRole'] ?? user['role'] ?? '').toString();
 }
 
 String _phoneDigits(String value) => value.replaceAll(RegExp(r'\D'), '');

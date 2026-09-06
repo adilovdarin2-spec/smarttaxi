@@ -186,6 +186,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerDrawerBecomeDriver => '成为司机';
 
   @override
+  String get passengerDrawerDriverMode => '司机模式';
+
+  @override
   String get passengerDrawerHelpSection => '帮助';
 
   @override

@@ -192,6 +192,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerDrawerBecomeDriver => 'Жүргізуші болу';
 
   @override
+  String get passengerDrawerDriverMode => 'Жүргізуші режимі';
+
+  @override
   String get passengerDrawerHelpSection => 'Көмек';
 
   @override
