@@ -723,6 +723,67 @@
   background: #eef5ff !important;
 }
 
+/* Product-wide refinement: all rider and driver states share the same quiet
+   canvas, surface depth and action hierarchy. This is intentionally placed
+   after the historical presentation passes so an old screen cannot reintroduce
+   chunky borders, over-dark shadows or a different CTA treatment. */
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) {
+  --ui-ink: #152238;
+  --ui-muted: #65738a;
+  --ui-line: #e3e9f2;
+  --ui-tint: #f5f8fd;
+  --ui-shadow: 0 8px 24px rgba(21, 34, 56, .07);
+  background: #f8faff !important;
+}
+
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(.app-button, .final10-cta, .tariff-v12-order, .address-picker-confirm) {
+  min-height: 52px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #3181ff 0%, #1d6fff 52%, #0b4fd1 100%) !important;
+  box-shadow: 0 10px 22px rgba(29, 111, 255, .20) !important;
+  font-weight: 650 !important;
+}
+
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(.app-button, .final10-cta, .tariff-v12-order, .address-picker-confirm):hover:not(:disabled) {
+  box-shadow: 0 14px 28px rgba(29, 111, 255, .26) !important;
+  transform: translateY(-1px);
+}
+
+.phone-frame.taxi-client-shell :is(.final10-addr-group, .address-map-point-card, .tariff-v14-route-card),
+.phone-frame.driver-core-phone :is(.driver-core-order-card, .driver-core-active, .driver-core-region-card) {
+  border-color: var(--ui-line) !important;
+  box-shadow: 0 4px 16px rgba(21, 34, 56, .035) !important;
+}
+
+.phone-frame.taxi-client-shell .tariff-v14-card {
+  border-radius: 18px !important;
+  border-color: #e3e9f2 !important;
+  box-shadow: 0 5px 18px rgba(21, 34, 56, .045) !important;
+}
+
+.phone-frame.taxi-client-shell .tariff-v14-card.selected {
+  border-color: #1d6fff !important;
+  background: linear-gradient(135deg, #f8fbff 0%, #eaf3ff 100%) !important;
+  box-shadow: 0 9px 22px rgba(29, 111, 255, .13) !important;
+}
+
+.phone-frame.taxi-client-shell :is(.screen-grid, .client-simple-section, .settings-list-premium) {
+  color: var(--ui-ink) !important;
+}
+
+.phone-frame.taxi-client-shell .screen-grid:not(.auth-profile-screen) :is(.premium-profile-card, .drawer-linked-card, .settings-list-premium, .premium-support-card),
+.phone-frame.driver-core-phone :is(.driver-core-order-card, .driver-core-active) {
+  border-color: var(--ui-line) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 6px 20px rgba(21, 34, 56, .05) !important;
+}
+
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(input, textarea, select) {
+  border-color: var(--ui-line) !important;
+  background: #fff !important;
+  color: var(--ui-ink) !important;
+}
+
 @media (max-width: 374px) {
   .phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel {
     padding-inline: 13px !important;

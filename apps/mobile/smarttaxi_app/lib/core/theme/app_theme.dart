@@ -17,14 +17,17 @@ class SmartTaxiColors {
   // black+blue dark background.
   static const bgDark = Color(0xff05070c);
   static const background = Color(0xffffffff);
-  static const appBackground = Color(0xfff7f9fc);
+  // The neutral canvas deliberately stays almost white. A cool tint is kept
+  // for grouped content only; colouring the whole screen blue made every
+  // individual card look heavier than its hierarchy deserved.
+  static const appBackground = Color(0xfff8faff);
   static const card = Color(0xffffffff);
   static const cardWarm = Color(0xfff2f7ff);
-  static const text = Color(0xff111827);
-  static const textSecondary = Color(0xff606978);
-  static const textMuted = Color(0xff9ca3af);
-  static const border = Color(0xffe6eaf0);
-  static const borderStrong = Color(0xffd7e0ed);
+  static const text = Color(0xff152238);
+  static const textSecondary = Color(0xff65738a);
+  static const textMuted = Color(0xff98a5b8);
+  static const border = Color(0xffe3e9f2);
+  static const borderStrong = Color(0xffd5dfed);
   static const success = Color(0xff16a34a);
   static const successSoft = Color(0xffecfdf3);
   static const danger = Color(0xffdc2626);
@@ -386,7 +389,7 @@ ThemeData buildSmartTaxiTheme() {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: SmartTaxiColors.border),
       ),
     ),
@@ -401,7 +404,7 @@ ThemeData buildSmartTaxiTheme() {
       modalBackgroundColor: SmartTaxiColors.background,
       modalBarrierColor: Color(0x52000000),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       clipBehavior: Clip.antiAlias,
     ),
@@ -470,7 +473,7 @@ ThemeData buildSmartTaxiTheme() {
         disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
         elevation: 0,
         shadowColor: SmartTaxiColors.brand.withValues(alpha: 0.24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -483,7 +486,7 @@ ThemeData buildSmartTaxiTheme() {
         // the two competed for the same emphasis instead of reading as
         // primary and secondary.
         side: const BorderSide(color: SmartTaxiColors.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -497,7 +500,7 @@ ThemeData buildSmartTaxiTheme() {
         foregroundColor: Colors.white,
         disabledBackgroundColor: SmartTaxiColors.brand.withValues(alpha: 0.45),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.70),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -509,7 +512,7 @@ ThemeData buildSmartTaxiTheme() {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      height: 74,
+      height: 72,
       backgroundColor: Colors.transparent,
       indicatorColor: SmartTaxiColors.brandSurface,
       surfaceTintColor: Colors.transparent,
@@ -599,7 +602,7 @@ ThemeData buildSmartTaxiDarkTheme() {
       modalBackgroundColor: palette.appBackground,
       modalBarrierColor: const Color(0x8a000000),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       clipBehavior: Clip.antiAlias,
     ),
@@ -662,7 +665,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
         elevation: 0,
         shadowColor: palette.brand.withValues(alpha: 0.24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -671,7 +674,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         minimumSize: const Size.fromHeight(56),
         foregroundColor: palette.text,
         side: BorderSide(color: palette.border),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -682,7 +685,7 @@ ThemeData buildSmartTaxiDarkTheme() {
         foregroundColor: Colors.white,
         disabledBackgroundColor: palette.brand.withValues(alpha: 0.35),
         disabledForegroundColor: Colors.white.withValues(alpha: 0.60),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
@@ -694,7 +697,7 @@ ThemeData buildSmartTaxiDarkTheme() {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      height: 74,
+      height: 72,
       backgroundColor: Colors.transparent,
       indicatorColor: palette.brandSurface,
       surfaceTintColor: Colors.transparent,
