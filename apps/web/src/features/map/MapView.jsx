@@ -191,7 +191,11 @@ function animateMarkerTo(marker, fromPoint, toPoint, durationMs = 900) {
   marker._smartTaxiTweenFrame = requestAnimationFrame(step);
 }
 
-const approvedAddressMarkerMarkup = `<span class="approved-address-marker-badge" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect x="2" y="2" width="60" height="60" rx="20" fill="url(#smartTaxiMarkerGradient)"/><rect x="6" y="6" width="52" height="52" rx="16" fill="#fff" fill-opacity=".9"/><path d="M10 22C10 14 16.5 8 24 6.5" stroke="#fff" stroke-opacity=".55" stroke-width="2.5" stroke-linecap="round"/><rect x="14" y="24" width="7" height="7" fill="#63A0FF" fill-opacity=".55"/><rect x="23" y="24" width="7" height="7" fill="#1D6FFF" fill-opacity=".9"/><rect x="18" y="33" width="7" height="7" fill="#63A0FF" fill-opacity=".35"/><text x="42" y="35" text-anchor="middle" dominant-baseline="central" font-family="Manrope, sans-serif" font-weight="800" font-size="29" fill="url(#smartTaxiMarkerGradient)">S</text><defs><linearGradient id="smartTaxiMarkerGradient" x1="4" y1="2" x2="60" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#63A0FF"/><stop offset="1" stop-color="#0B4FD1"/></linearGradient></defs></svg><svg class="approved-address-marker-tail" viewBox="0 0 64 22" preserveAspectRatio="none"><path d="M26 0H38V6L32 22L26 6Z" fill="#0B4FD1"/></svg></span>`;
+// Keep this markup byte-for-byte aligned with
+// design-reference/web-approved/assets/map-initial-square-tail-marker.svg.
+// The tail is part of the same 64×86 drawing: splitting it into a second SVG
+// changed both its gradient and the point used to select an address on the map.
+const approvedAddressMarkerMarkup = `<span class="approved-address-marker-badge" aria-hidden="true"><svg width="64" height="86" viewBox="0 0 64 86" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="smarttaxiSquareMarkerGrad" x1="4" y1="2" x2="60" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#63A0FF"/><stop offset="1" stop-color="#0B4FD1"/></linearGradient><linearGradient id="smarttaxiSquareTailGrad" x1="32" y1="64" x2="32" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#1D6FFF"/><stop offset="1" stop-color="#0B4FD1"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="20" fill="url(#smarttaxiSquareMarkerGrad)"/><rect x="6" y="6" width="52" height="52" rx="16" fill="#FFFFFF" fill-opacity=".88"/><path d="M10 22C10 14 16.5 8 24 6.5" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="2.5" stroke-linecap="round"/><rect x="14" y="24" width="7" height="7" fill="#63A0FF" fill-opacity=".55"/><rect x="23" y="24" width="7" height="7" fill="#1D6FFF" fill-opacity=".9"/><rect x="18" y="33" width="7" height="7" fill="#63A0FF" fill-opacity=".35"/><text x="42" y="35" text-anchor="middle" dominant-baseline="central" font-family="Manrope, Arial, sans-serif" font-weight="800" font-size="29" fill="url(#smarttaxiSquareMarkerGrad)">S</text><path d="M26 62H38V68L32 84L26 68Z" fill="url(#smarttaxiSquareTailGrad)"/></svg></span>`;
 
 const currentLocationMarkerMarkup = `<span class="current-location-marker-badge" aria-hidden="true"><i></i><b></b></span>`;
 
@@ -301,12 +305,13 @@ export default function MapView({
 
   function pickerScreenPoint() {
     const bounds = containerRef.current?.getBoundingClientRect();
-    const tail = pickerOverlayRef.current?.querySelector(".approved-address-marker-tail")?.getBoundingClientRect();
+    const marker = pickerOverlayRef.current?.querySelector(".approved-address-marker-badge > svg")?.getBoundingClientRect();
     if (!bounds) return [0, 0];
-    if (!tail?.width) return [bounds.width / 2, bounds.height / 2];
+    if (!marker?.width) return [bounds.width / 2, bounds.height / 2];
     // The sheet covers the lower map, so the visible pin sits above the camera
-    // centre. Reverse-geocode its actual tip, not an invisible point below it.
-    return [tail.left + tail.width / 2 - bounds.left, tail.bottom - bounds.top];
+    // centre. Reverse-geocode its actual tip (y=84 in the approved 86-unit
+    // artwork), not the transparent 2-unit margin below it.
+    return [marker.left + marker.width / 2 - bounds.left, marker.top + marker.height * (84 / 86) - bounds.top];
   }
 
   function pickerCoordinate(map) {

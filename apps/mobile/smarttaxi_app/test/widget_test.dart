@@ -627,6 +627,9 @@ void main() {
     // them once, so this pins the three that were wrong.
     expect(reference, contains('M10 22C10 14 16.5 8 24 6.5'));
     expect(web, contains('M10 22C10 14 16.5 8 24 6.5'));
+    expect(reference, contains('M26 62H38V68L32 84L26 68Z'));
+    expect(web, contains('M26 62H38V68L32 84L26 68Z'),
+        reason: 'the web keeps the approved gradient tail in its 64×86 SVG');
     expect(
       passenger,
       contains(RegExp(

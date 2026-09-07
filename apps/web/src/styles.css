@@ -20159,28 +20159,20 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .smarttaxi-map-marker {
   display: block;
   width: 52px !important;
-  height: 68px !important;
+  height: 70px !important;
   filter: drop-shadow(0 9px 13px rgba(12, 57, 130, .22));
 }
 
 .approved-address-marker-badge {
-  display: grid;
+  display: block;
   width: 52px;
-  height: 68px;
-  place-items: start center;
+  height: 70px;
 }
 
 .approved-address-marker-badge > svg:first-child {
   display: block;
   width: 52px;
-  height: 52px;
-}
-
-.approved-address-marker-tail {
-  display: block;
-  width: 52px;
-  height: 18px;
-  margin-top: -2px;
+  height: 70px;
 }
 
 .smarttaxi-center-picker .smarttaxi-map-marker {
@@ -24271,21 +24263,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   left: 50% !important;
   top: 32% !important;
   width: 52px !important;
-  height: 68px !important;
+  height: 70px !important;
   transform: translate(-50%, -100%) !important;
   display: block !important;
 }
 .taxi-client-shell .smarttaxi-center-picker.native-address-picker span {
   width: 52px !important;
-  height: 68px !important;
+  height: 70px !important;
   padding: 0 !important;
   margin: 0 !important;
   transform: none !important;
-}
-.taxi-client-shell .smarttaxi-center-picker.native-address-picker .approved-address-marker-badge {
-  display: grid !important;
-  grid-template-rows: 52px 16px;
-  place-items: start center;
 }
 /* Home's map is already cropped above the sheet; unlike the full-height
    picker, its one geographic pin belongs in the middle of that visible map. */
