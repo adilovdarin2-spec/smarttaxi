@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -4316,6 +4317,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
   static const _routeSource = 'smarttaxi-driver-route';
   static const _routeShadowLayer = 'smarttaxi-driver-route-shadow';
   static const _routeLineLayer = 'smarttaxi-driver-route-line';
+  static const _driverCarMapSourceWidth = 384;
 
   native_map.LatLng _point(LatLng point) =>
       native_map.LatLng(point.latitude, point.longitude);
@@ -4375,17 +4377,50 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
     final controller = _controller;
     if (controller == null || _imagesInstalled) return;
     try {
-      Future<void> add(String id, String asset) async {
+      Future<void> add(String id, String asset, {int? targetWidth}) async {
         final bytes = await rootBundle.load(asset);
+        final source = Uint8List.fromList(
+          bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+        );
+        Uint8List image = source;
+        if (targetWidth != null) {
+          final codec = await ui.instantiateImageCodec(
+            source,
+            targetWidth: targetWidth,
+          );
+          final frame = await codec.getNextFrame();
+          try {
+            final encoded = await frame.image.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            if (encoded == null) {
+              throw StateError('Unable to prepare map marker image');
+            }
+            image = Uint8List.fromList(
+              encoded.buffer.asUint8List(
+                encoded.offsetInBytes,
+                encoded.lengthInBytes,
+              ),
+            );
+          } finally {
+            frame.image.dispose();
+            codec.dispose();
+          }
+        }
         await controller.addImage(
           id,
-          Uint8List.fromList(
-            bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-          ),
+          image,
         );
       }
 
-      await add(_carImage, _driverSelfCarAsset);
+      // MapLibre's Android annotation manager clamps tiny icon-size values on
+      // high-DPI screens. Downsampling this 1024px source preserves its visual
+      // design while making the actual car footprint one road-width.
+      await add(
+        _carImage,
+        _driverSelfCarAsset,
+        targetWidth: _driverCarMapSourceWidth,
+      );
       await add(_finishImage, 'assets/map/marker_destination_2026.png');
       _imagesInstalled = true;
     } catch (_) {
@@ -4634,9 +4669,9 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
             iconImage: _carImage,
             iconAnchor: 'center',
             // A top-down car should occupy one road-width at navigation zoom,
-            // not three-plus. At the 1024 px source resolution, 0.025 keeps
-            // the vehicle, route, and street labels readable together.
-            iconSize: 0.025,
+            // not three-plus. On Android's high-DPI renderer, 0.01 keeps the
+            // vehicle, route, and street labels readable together.
+            iconSize: 0.01,
             iconRotate: widget.heading,
           ),
         );

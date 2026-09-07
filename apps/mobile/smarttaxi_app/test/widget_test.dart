@@ -764,8 +764,10 @@ void main() {
     expect(driver, contains('belowLayerId: anchorLayerId'));
     expect(driver, isNot(contains('lineWidth: 11,')),
         reason: 'the navigator route must not return to addLine annotations');
-    expect(driver, contains('iconSize: 0.025,'),
+    expect(driver, contains('iconSize: 0.01,'),
         reason: 'the driver car must remain road-scale at navigation zoom');
+    expect(driver, contains('_driverCarMapSourceWidth = 384'),
+        reason: 'high-DPI MapLibre must receive a compact car source image');
     expect(driver, contains('iconSize: 0.08,'),
         reason: 'the finish flag must not cover the destination intersection');
   });
