@@ -32,6 +32,15 @@
   text-shadow: none !important;
   transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
 }
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(.app-button, .final10-cta, .tariff-v12-order, .address-picker-confirm):disabled,
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card .app-button:disabled,
+.phone-frame.driver-core-phone .driver-core-card-actions .app-button:disabled {
+  color: #93a1b5 !important;
+  background: #e8edf5 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 1 !important;
+}
 .phone-frame:is(.taxi-client-shell, .driver-core-phone) .app-button:is(.secondary, .ghost) {
   color: var(--ui-ink) !important;
   background: #fff !important;
