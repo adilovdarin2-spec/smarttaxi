@@ -4443,12 +4443,12 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
         'openmaptiles',
         'smarttaxi-driver-3d-buildings',
         const native_map.FillExtrusionLayerProperties(
-          fillExtrusionColor: '#cfdef5',
+          fillExtrusionColor: '#d7e4f5',
           fillExtrusionHeight: [
             'coalesce',
             ['get', 'render_height'],
             ['get', 'height'],
-            5,
+            0,
           ],
           fillExtrusionBase: [
             'coalesce',
@@ -4456,8 +4456,11 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
             ['get', 'min_height'],
             0,
           ],
-          fillExtrusionOpacity: 0.62,
-          fillExtrusionVerticalGradient: false,
+          // The driver map uses the same measured source heights as the
+          // rider map. Lighting gives roofs and facades distinct depth while
+          // labels, route and vehicle continue to render above this layer.
+          fillExtrusionOpacity: 0.78,
+          fillExtrusionVerticalGradient: true,
         ),
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,

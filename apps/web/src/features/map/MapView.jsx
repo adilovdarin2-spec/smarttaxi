@@ -66,14 +66,20 @@ function add3dBuildings(map) {
       "source-layer": buildingLayer["source-layer"],
       minzoom: 13,
       paint: {
-        "fill-extrusion-color": "#cfdef5",
-        // Most OSM building footprints do not declare a height. A subtle
-        // default keeps those blocks dimensional at navigation zoom without
-        // turning the city into exaggerated towers.
-        "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 5],
+        "fill-extrusion-color": "#d7e4f5",
+        // Do not invent a single five-metre height for buildings that have
+        // no recorded height. It turned distinct OSM footprints into the
+        // same row of low boxes. OpenMapTiles provides render_height for its
+        // buildings; a configured vector style may instead expose height.
+        // If neither exists, retaining the provider's flat footprint is more
+        // honest than fabricating a physical building.
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 0],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
-        "fill-extrusion-opacity": 0.62,
-        "fill-extrusion-vertical-gradient": false
+        "fill-extrusion-opacity": 0.78,
+        // MapLibre's light-aware gradient separates roofs from facades, so
+        // real outlines and measured heights remain legible at navigation
+        // pitch instead of reading as uniformly coloured rectangles.
+        "fill-extrusion-vertical-gradient": true
       }
     }, firstLabelLayerId(map));
     hideDuplicateBuildings(map, 'smarttaxi-3d-buildings');

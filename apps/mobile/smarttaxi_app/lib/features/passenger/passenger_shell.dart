@@ -6260,15 +6260,12 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         const native_map.FillExtrusionLayerProperties(
           // Buildings should add quiet depth to the map, not compete with
           // the selected route or the blue SmartTaxi marker.
-          fillExtrusionColor: '#cfdef5',
+          fillExtrusionColor: '#d7e4f5',
           fillExtrusionHeight: [
             'coalesce',
             ['get', 'render_height'],
             ['get', 'height'],
-            // Small cities often omit a measured height in OSM. A modest
-            // fallback keeps the 3D surface dimensional instead of silently
-            // degrading into a flat plan outside major cities.
-            5,
+            0,
           ],
           fillExtrusionBase: [
             'coalesce',
@@ -6276,8 +6273,11 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             ['get', 'min_height'],
             0,
           ],
-          fillExtrusionOpacity: 0.62,
-          fillExtrusionVerticalGradient: false,
+          // A transparent, unshaded extrusion made every footprint look like
+          // the same pale box. Keep the source's real height and let the
+          // renderer separate the roof from the facade with map lighting.
+          fillExtrusionOpacity: 0.78,
+          fillExtrusionVerticalGradient: true,
         ),
         sourceLayer: 'building',
         // MapLibre adds a runtime layer above every existing style layer by
