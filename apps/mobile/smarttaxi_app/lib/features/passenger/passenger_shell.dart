@@ -8471,7 +8471,11 @@ class _OrderSheet extends StatelessWidget {
       // The selected-route sheet is deliberately tall enough to show the
       // complete decision at once: route, tariff, car, offered price, payment
       // and order action. At 60% the speed hint was below the initial fold.
-      final maxRouteSheetHeight = screen.height * (compact ? 0.72 : 0.70);
+      // Keep enough map visible to retain orientation while the decision
+      // surface stays comfortably scrollable on compact Android devices.
+      // The former 70–72% panel made a completed route look like a dialog
+      // over a mostly hidden map rather than a map-first booking screen.
+      final maxRouteSheetHeight = screen.height * (compact ? 0.70 : 0.66);
       return TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.96, end: 1),
         duration: const Duration(milliseconds: 260),
@@ -8504,7 +8508,7 @@ class _OrderSheet extends StatelessWidget {
                             dropoffLabel: dropoffLabel,
                             onEdit: onDropoffTap,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
@@ -15592,14 +15596,14 @@ class _TariffComparisonCard extends StatelessWidget {
               );
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          constraints: BoxConstraints(minHeight: compact ? 148 : 76),
+          constraints: BoxConstraints(minHeight: compact ? 148 : 86),
           padding: EdgeInsets.fromLTRB(
             compact ? 11 : 11,
             10,
@@ -15610,18 +15614,18 @@ class _TariffComparisonCard extends StatelessWidget {
             color: selected
                 ? palette.brand.withValues(alpha: dark ? 0.13 : 0.055)
                 : palette.card,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected ? palette.brand : palette.border,
-              width: selected ? 1.5 : 1,
+              width: selected ? 1.25 : 1,
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
                       color:
                           palette.brand.withValues(alpha: dark ? 0.10 : 0.08),
-                      blurRadius: 18,
-                      offset: const Offset(0, 7),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
                     ),
                   ]
                 : null,
@@ -15631,19 +15635,19 @@ class _TariffComparisonCard extends StatelessWidget {
               : Row(
                   children: [
                     Container(
-                      width: 86,
-                      height: 62,
+                      width: 84,
+                      height: 64,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: selected
                             ? palette.brand
                                 .withValues(alpha: dark ? 0.16 : 0.09)
                             : palette.appBackground,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: art,
                     ),
-                    const SizedBox(width: 11),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -15658,7 +15662,7 @@ class _TariffComparisonCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: palette.text,
-                                    fontSize: 14.5,
+                                    fontSize: 15,
                                     height: 1.2,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -15705,9 +15709,9 @@ class _TariffComparisonCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 11),
                     SizedBox(
-                      width: 78,
+                      width: 80,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -15718,7 +15722,7 @@ class _TariffComparisonCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: palette.text,
-                              fontSize: 18,
+                              fontSize: 18.5,
                               height: 1.1,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.5,
@@ -15739,11 +15743,11 @@ class _TariffComparisonCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 7),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      width: 22,
-                      height: 22,
+                      width: 21,
+                      height: 21,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: selected ? palette.brand : Colors.transparent,

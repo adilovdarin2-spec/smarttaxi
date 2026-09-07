@@ -4255,9 +4255,13 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
               // extending under the "report an event" chip button that
               // overlays this same top-right corner.
               child: _DriverMapBadge(
-                text: widget.activeOrder == null
-                    ? l10n.driverFreeModeLabel
-                    : l10n.driverActiveOrderLabel,
+                // A completed-but-unsettled order is deliberately retained
+                // for the driver's payment action, but it is no longer a
+                // live trip. Calling that state "active" on the line map
+                // made an offline driver think dispatch was still running.
+                text: widget.activeOrder?.isActive == true
+                    ? l10n.driverActiveOrderLabel
+                    : l10n.driverFreeModeLabel,
               ),
             ),
           ],

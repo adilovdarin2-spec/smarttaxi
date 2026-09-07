@@ -103,10 +103,10 @@ class DriverShiftHero extends StatelessWidget {
               if (sosButton != null) sosButton!,
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: embedded ? 8 : 12),
           // One quiet totals row; status remains in the persistent header.
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: EdgeInsets.symmetric(vertical: embedded ? 9 : 12),
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: palette.border)),
             ),
@@ -142,7 +142,7 @@ class DriverShiftHero extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: embedded ? 2 : 4),
           if (online)
             SizedBox(
               width: double.infinity,
@@ -309,7 +309,7 @@ class _StatColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -328,7 +328,7 @@ class _StatColumn extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -336,7 +336,7 @@ class _StatColumn extends StatelessWidget {
               maxLines: 1,
               style: TextStyle(
                 color: context.palette.text,
-                fontSize: 17,
+                fontSize: 16.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
