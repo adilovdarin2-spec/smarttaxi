@@ -6269,6 +6269,32 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     // best-effort enhancement rather than a hard dependency.
     final anchorLayerId = await resolveLabelAnchorLayerId(controller);
     try {
+      // Keep low, real residential footprints flat. Their source height is
+      // too small for a believable volume, and extruding every one made the
+      // map look like a grid of toy boxes.
+      await controller.addFillLayer(
+        'openmaptiles',
+        'smarttaxi-low-buildings',
+        const native_map.FillLayerProperties(
+          fillColor: '#dce8f5',
+          fillOutlineColor: '#c4d4e8',
+          fillOpacity: 0.92,
+        ),
+        sourceLayer: 'building',
+        belowLayerId: anchorLayerId,
+        minzoom: 13,
+        filter: [
+          '<',
+          [
+            'coalesce',
+            ['get', 'render_height'],
+            ['get', 'height'],
+            0,
+          ],
+          9,
+        ],
+        enableInteraction: false,
+      );
       await controller.addFillExtrusionLayer(
         'openmaptiles',
         'smarttaxi-3d-buildings',
@@ -6304,6 +6330,16 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         // stay on top of houses as they do in the reference.
         belowLayerId: anchorLayerId,
         minzoom: 13,
+        filter: [
+          '>=',
+          [
+            'coalesce',
+            ['get', 'render_height'],
+            ['get', 'height'],
+            0,
+          ],
+          9,
+        ],
         enableInteraction: false,
       );
       await hideDuplicateLibertyBuildings(controller);

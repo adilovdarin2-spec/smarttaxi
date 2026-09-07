@@ -738,6 +738,18 @@ void main() {
     expect(helper, contains('await controller.getLayerIds()'));
   });
 
+  test('low residential footprints are not rendered as generic 3D boxes', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final driver = _read('lib/features/driver/driver_shell.dart');
+    expect(passenger, contains("'smarttaxi-low-buildings'"));
+    expect(driver, contains("'smarttaxi-driver-low-buildings'"));
+    for (final source in [passenger, driver]) {
+      expect(source, contains("['get', 'render_height']"));
+      expect(source, contains('fillExtrusionHeight:'),
+          reason: 'Measured tall buildings retain real 3D height.');
+    }
+  });
+
   test('passenger route is a style layer below labels, not an annotation', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
     expect(passenger,

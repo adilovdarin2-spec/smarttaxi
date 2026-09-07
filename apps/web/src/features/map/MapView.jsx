@@ -59,12 +59,34 @@ function add3dBuildings(map) {
     const layers = map.getStyle()?.layers || [];
     const buildingLayer = layers.find(layer => layer.type === "fill" && layer.source && layer["source-layer"] && /building/i.test(`${layer.id} ${layer["source-layer"]}`));
     if (!buildingLayer || map.getLayer("smarttaxi-3d-buildings")) return;
+    const measuredHeight = ["coalesce", ["get", "render_height"], ["get", "height"], 0];
+    const labelAnchor = firstLabelLayerId(map);
+    // Small private houses have an accurate footprint but rarely have enough
+    // height metadata to read as architecture in a vector map. Rendering all
+    // of them as prisms created a field of toy boxes. Keep their real outline
+    // as a calm plan view and reserve volume for measured multi-storey homes.
+    if (!map.getLayer("smarttaxi-low-buildings")) {
+      map.addLayer({
+        id: "smarttaxi-low-buildings",
+        type: "fill",
+        source: buildingLayer.source,
+        "source-layer": buildingLayer["source-layer"],
+        minzoom: 13,
+        filter: ["<", measuredHeight, 9],
+        paint: {
+          "fill-color": "#dce8f5",
+          "fill-outline-color": "#c4d4e8",
+          "fill-opacity": 0.92
+        }
+      }, labelAnchor);
+    }
     map.addLayer({
       id: "smarttaxi-3d-buildings",
       type: "fill-extrusion",
       source: buildingLayer.source,
       "source-layer": buildingLayer["source-layer"],
       minzoom: 13,
+      filter: [">=", measuredHeight, 9],
       paint: {
         // A slightly stronger blue-grey material lets real roof outlines and
         // facade shading read at navigation pitch; the earlier near-white
@@ -76,7 +98,7 @@ function add3dBuildings(map) {
         // buildings; a configured vector style may instead expose height.
         // If neither exists, retaining the provider's flat footprint is more
         // honest than fabricating a physical building.
-        "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 0],
+        "fill-extrusion-height": measuredHeight,
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
         "fill-extrusion-opacity": 0.9,
         // MapLibre's light-aware gradient separates roofs from facades, so
@@ -84,7 +106,7 @@ function add3dBuildings(map) {
         // pitch instead of reading as uniformly coloured rectangles.
         "fill-extrusion-vertical-gradient": true
       }
-    }, firstLabelLayerId(map));
+    }, labelAnchor);
     hideDuplicateBuildings(map, 'smarttaxi-3d-buildings');
   } catch {
     // Styles without vector building layers are still valid map styles.
