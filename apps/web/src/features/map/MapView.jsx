@@ -66,7 +66,10 @@ function add3dBuildings(map) {
       "source-layer": buildingLayer["source-layer"],
       minzoom: 13,
       paint: {
-        "fill-extrusion-color": "#d7e4f5",
+        // A slightly stronger blue-grey material lets real roof outlines and
+        // facade shading read at navigation pitch; the earlier near-white
+        // treatment made measured buildings disappear into the road surface.
+        "fill-extrusion-color": "#c6d8ef",
         // Do not invent a single five-metre height for buildings that have
         // no recorded height. It turned distinct OSM footprints into the
         // same row of low boxes. OpenMapTiles provides render_height for its
@@ -75,7 +78,7 @@ function add3dBuildings(map) {
         // honest than fabricating a physical building.
         "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 0],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
-        "fill-extrusion-opacity": 0.78,
+        "fill-extrusion-opacity": 0.9,
         // MapLibre's light-aware gradient separates roofs from facades, so
         // real outlines and measured heights remain legible at navigation
         // pitch instead of reading as uniformly coloured rectangles.
@@ -351,7 +354,10 @@ export default function MapView({
       // Slightly more perspective on the rider's map matches the approved
       // navigation reference while retaining enough top-down context to pick
       // an exact entrance or house.
-      pitch: compact ? 50 : 42,
+      // A delivery map is read in perspective. This is high enough for real
+      // building heights to be visible without losing the street context
+      // needed to choose an entrance.
+      pitch: compact ? 58 : 56,
       bearing: compact ? -12 : -8,
       attributionControl: false,
       logoPosition: "bottom-left",

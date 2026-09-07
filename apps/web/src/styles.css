@@ -19189,7 +19189,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   inset: 0 0 auto 0 !important;
   height: 58% !important;
   overflow: hidden !important;
-  background: #0d111c !important;
+  background: #eaf3ff !important;
 }
 
 .taxi-client-shell .final10-map-placeholder {
@@ -19216,15 +19216,16 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  opacity: .74 !important;
-  filter: saturate(.72) brightness(.52) contrast(1.12) hue-rotate(180deg) !important;
+  /* Keep the actual vector map intact. The former dark/hue-rotated film
+     erased road hierarchy, building shading and the rider's real position. */
+  opacity: 1 !important;
+  filter: saturate(1.04) contrast(1.01) brightness(1.02) !important;
 }
 
 .taxi-client-shell .final10-map-wrap .map-vignette,
 .taxi-client-shell .final10-map-wrap .map-controls,
 .taxi-client-shell .final10-map-wrap .map-attribution,
 .taxi-client-shell .final10-map-wrap .map-marker,
-.taxi-client-shell .final10-map-wrap .smarttaxi-center-picker,
 .taxi-client-shell .final10-map-wrap .map-loading-chip,
 .taxi-client-shell .final10-map-wrap .maplibregl-ctrl-attrib,
 .taxi-client-shell .final10-map-wrap .maplibregl-ctrl-logo {
@@ -19250,12 +19251,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: grid !important;
   grid-template-rows: 45px 1px 45px !important;
   overflow: hidden !important;
-  border: 1px solid rgba(255, 255, 255, .20) !important;
+  border: 1px solid rgba(29, 111, 255, .18) !important;
   border-radius: 18px !important;
-  background: rgba(255, 255, 255, .16) !important;
+  background: rgba(255, 255, 255, .94) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .18),
-    0 14px 34px rgba(0, 0, 0, .23) !important;
+    inset 0 1px 0 rgba(255, 255, 255, .92),
+    0 14px 34px rgba(13, 64, 142, .16) !important;
   backdrop-filter: blur(18px) saturate(1.15) !important;
 }
 
@@ -19267,18 +19268,18 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
-  color: #fff7ec !important;
+  color: #0b4fd1 !important;
   box-shadow: none !important;
 }
 
 .taxi-client-shell .final10-map-wrap .map-zoom-stack button:active {
-  background: rgba(255, 255, 255, .10) !important;
+  background: #eaf3ff !important;
 }
 
 .taxi-client-shell .final10-map-wrap .map-zoom-stack button img {
   width: 16px !important;
   height: 16px !important;
-  filter: brightness(0) invert(1) drop-shadow(0 3px 6px rgba(0, 0, 0, .24)) !important;
+  filter: invert(28%) sepia(87%) saturate(2085%) hue-rotate(211deg) brightness(87%) contrast(100%) !important;
 }
 
 .taxi-client-shell .final10-map-wrap .map-zoom-stack i {
@@ -19308,9 +19309,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   z-index: 3 !important;
   pointer-events: none !important;
   background:
-    linear-gradient(180deg, rgba(226, 121, 61, .10), rgba(226, 121, 61, 0) 34%),
-    radial-gradient(circle at 50% 44%, rgba(226, 121, 61, .09), transparent 28%),
-    rgba(10, 14, 23, .15) !important;
+    linear-gradient(180deg, rgba(234, 243, 255, .22), rgba(234, 243, 255, 0) 34%),
+    radial-gradient(circle at 50% 44%, rgba(29, 111, 255, .07), transparent 28%) !important;
 }
 
 .taxi-client-shell .final10-map-fade-top,
@@ -19325,13 +19325,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .final10-map-fade-top {
   top: 0 !important;
   height: 160px !important;
-  background: linear-gradient(180deg, rgba(226, 121, 61, .09), rgba(226, 121, 61, 0)) !important;
+  background: linear-gradient(180deg, rgba(234, 243, 255, .48), rgba(234, 243, 255, 0)) !important;
 }
 
 .taxi-client-shell .final10-map-fade-bottom {
   bottom: 0 !important;
   height: 120px !important;
-  background: linear-gradient(180deg, rgba(10, 14, 23, 0), #0a0e17) !important;
+  background: linear-gradient(180deg, rgba(246, 250, 255, 0), rgba(246, 250, 255, .88)) !important;
 }
 
 .taxi-client-shell .final10-top-controls {
@@ -19354,11 +19354,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border: 1px solid var(--final10-border) !important;
+  border: 1px solid rgba(29, 111, 255, .18) !important;
   border-radius: 16px !important;
-  color: var(--final10-text) !important;
-  background: var(--final10-surface-1) !important;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, .45) !important;
+  color: #0b4fd1 !important;
+  background: rgba(255, 255, 255, .94) !important;
+  box-shadow: 0 16px 34px rgba(13, 64, 142, .16) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
 }
@@ -19443,7 +19443,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   top: 78px !important;
   right: 20px !important;
   z-index: 21 !important;
-  color: var(--final10-accent-light) !important;
+  color: #1d6fff !important;
 }
 
 .taxi-client-shell .final10-marker-wrap {
@@ -23376,6 +23376,34 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 @keyframes smarttaxi-location-pulse {
   0% { transform: scale(.42); opacity: .9; }
   70%, 100% { transform: scale(1); opacity: 0; }
+}
+
+/* The address picker and selected-address marker share the supplied 64×86
+   square-and-wide-tail SVG. Older generic marker rules compressed its canvas
+   to a 56×43 pill, so the visible tip no longer matched the selected house. */
+.taxi-client-shell .smarttaxi-center-picker > .smarttaxi-map-marker,
+.taxi-client-shell .smarttaxi-map-marker.native-address-pick-marker {
+  width: 64px;
+  height: 86px;
+  display: block;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.taxi-client-shell .smarttaxi-center-picker > .smarttaxi-map-marker > .approved-address-marker-badge,
+.taxi-client-shell .smarttaxi-map-marker.native-address-pick-marker > .approved-address-marker-badge,
+.taxi-client-shell .smarttaxi-center-picker > .smarttaxi-map-marker svg,
+.taxi-client-shell .smarttaxi-map-marker.native-address-pick-marker svg {
+  width: 64px;
+  height: 86px;
+  display: block;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* Passenger tariff sheet: mirrors the approved map-first mobile reference.

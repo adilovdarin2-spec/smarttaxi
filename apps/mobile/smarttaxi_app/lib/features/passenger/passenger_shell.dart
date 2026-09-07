@@ -6275,7 +6275,9 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         const native_map.FillExtrusionLayerProperties(
           // Buildings should add quiet depth to the map, not compete with
           // the selected route or the blue SmartTaxi marker.
-          fillExtrusionColor: '#d7e4f5',
+          // Keep real OSM roof outlines and light-driven facades visible
+          // against Liberty's pale roads; near-white buildings looked flat.
+          fillExtrusionColor: '#c6d8ef',
           fillExtrusionHeight: [
             'coalesce',
             ['get', 'render_height'],
@@ -6291,7 +6293,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           // A transparent, unshaded extrusion made every footprint look like
           // the same pale box. Keep the source's real height and let the
           // renderer separate the roof from the facade with map lighting.
-          fillExtrusionOpacity: 0.78,
+          fillExtrusionOpacity: 0.9,
           fillExtrusionVerticalGradient: true,
         ),
         sourceLayer: 'building',
@@ -6490,7 +6492,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           native_map.CameraPosition(
             target: _nativePoint(widget.center),
             zoom: widget.zoom,
-            tilt: 55,
+            tilt: 56,
           ),
         ),
         duration: const Duration(milliseconds: 320),
@@ -6534,7 +6536,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             initialCameraPosition: native_map.CameraPosition(
               target: _nativePoint(widget.center),
               zoom: widget.zoom,
-              tilt: 38,
+              tilt: 56,
             ),
             compassEnabled: false,
             trackCameraPosition: true,
