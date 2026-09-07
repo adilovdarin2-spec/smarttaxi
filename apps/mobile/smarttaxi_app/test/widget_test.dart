@@ -730,10 +730,11 @@ void main() {
       expect(source, contains('belowLayerId: anchorLayerId'));
       expect(source, isNot(contains("belowLayerId: 'road_one_way_arrow'")));
     }
-    // The shared resolver keeps the deployed style's QA'd anchor first and
-    // only then falls back to the lowest label layer.
+    // The shared resolver uses the lowest actual label layer, which is after
+    // Liberty's regular building fill/extrusion layers.
     final helper = _read('lib/core/utils/map_layers.dart');
-    expect(helper, contains("const preferred = 'road_one_way_arrow'"));
+    expect(helper, isNot(contains("const preferred = 'road_one_way_arrow'")));
+    expect(helper, contains("lower.contains('label')"));
     expect(helper, contains('await controller.getLayerIds()'));
   });
 

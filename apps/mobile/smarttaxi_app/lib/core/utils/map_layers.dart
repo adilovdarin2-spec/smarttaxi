@@ -102,18 +102,11 @@ Future<void> hideDuplicateLibertyBuildings(
 /// go under street, POI and city names, and only the map annotations
 /// (pickup/dropoff/driver markers) sit above the houses.
 ///
-/// Both map screens got this wrong in different directions. The passenger map
-/// hardcoded `road_one_way_arrow`, which is right for the deployed OpenFreeMap
-/// Liberty style but throws on any style without that exact layer — and the
-/// `catch` around the call swallowed it, so the map lost its buildings
-/// entirely instead of drawing them a little differently. The driver map
-/// passed no anchor at all, so its buildings covered the street names on the
-/// navigation screen, which is the one place a name has to stay readable.
-///
-/// `road_one_way_arrow` stays the first choice so the deployed style keeps
-/// exactly the layering it has been QA'd with. `getLayerIds()` returns style
-/// order, bottom first, so the first label-looking id after that is the lowest
-/// label layer — the same anchor `MapView.jsx` computes on the web.
+/// Road-direction arrows are not a safe anchor: in Liberty they precede the
+/// provider building layers, so a custom extrusion added there is covered by
+/// the regular 2D buildings. `getLayerIds()` returns bottom-to-top order; the
+/// first label-looking id is the lowest actual label layer and leaves every
+/// street, POI and city name readable above our buildings.
 ///
 /// Returns null when the style has no label layers at all, which means "add on
 /// top" — MapLibre's own default, and the best available answer for a style
@@ -121,15 +114,17 @@ Future<void> hideDuplicateLibertyBuildings(
 Future<String?> resolveLabelAnchorLayerId(
   native_map.MapLibreMapController controller,
 ) async {
-  const preferred = 'road_one_way_arrow';
   try {
     final ids = (await controller.getLayerIds())
         .map((id) => id.toString())
         .toList(growable: false);
-    if (ids.contains(preferred)) return preferred;
     for (final id in ids) {
       final lower = id.toLowerCase();
-      if (lower.contains('label') || lower.contains('_name')) return id;
+      if (lower.contains('label') ||
+          lower.contains('_name') ||
+          lower.startsWith('poi_')) {
+        return id;
+      }
     }
   } catch (_) {
     // Style not ready yet, or a platform that does not implement the call.

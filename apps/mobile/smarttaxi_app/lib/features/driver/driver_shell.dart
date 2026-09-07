@@ -4492,7 +4492,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
           native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 14.2 : 15.4,
-            tilt: 42,
+            tilt: 58,
           ),
         ),
         duration: const Duration(milliseconds: 420),
@@ -4726,7 +4726,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
           native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 15.0 : 15.4,
-            tilt: 55,
+            tilt: 58,
           ),
         ),
         duration: const Duration(milliseconds: 320),
@@ -4756,7 +4756,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
           initialCameraPosition: native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 14.2 : 15.4,
-            tilt: 42,
+            tilt: 58,
           ),
           compassEnabled: false,
           trackCameraPosition: true,

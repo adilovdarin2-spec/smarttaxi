@@ -6092,24 +6092,23 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   }
 
   Future<Uint8List> _currentLocationMarkerPng() async {
-    const size = 96;
+    const size = 72;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
-    const center = ui.Offset(48, 48);
-    canvas.drawCircle(
-      center,
-      34,
-      ui.Paint()..color = const Color(0x331d6fff),
-    );
+    const center = ui.Offset(36, 36);
     canvas.drawCircle(
       center,
       25,
-      ui.Paint()..color = const Color(0xff1d6fff),
+      ui.Paint()..color = const Color(0x1f1d6fff),
     );
-    canvas.drawCircle(center, 17, ui.Paint()..color = Colors.white);
     canvas.drawCircle(
       center,
-      10,
+      14,
+      ui.Paint()..color = Colors.white,
+    );
+    canvas.drawCircle(
+      center,
+      11,
       ui.Paint()..color = const Color(0xff1d6fff),
     );
     final image = await recorder.endRecording().toImage(size, size);
@@ -6164,6 +6163,22 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           ),
           duration: const Duration(milliseconds: 380),
         );
+        // Bounds fitting resets the camera to a flat plan. Keep the route
+        // fully framed, then restore the pitched view that makes source-backed
+        // building heights visible above their real footprints.
+        final fitted = controller.cameraPosition;
+        if (fitted != null) {
+          await controller.animateCamera(
+            native_map.CameraUpdate.newCameraPosition(
+              native_map.CameraPosition(
+                target: fitted.target,
+                zoom: fitted.zoom,
+                tilt: 56,
+              ),
+            ),
+            duration: const Duration(milliseconds: 220),
+          );
+        }
       } catch (_) {
         _lastRouteFitSignature = '';
       }
@@ -6186,7 +6201,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             native_map.CameraPosition(
               target: _nativePoint(pickup.toLatLng()),
               zoom: widget.zoom,
-              tilt: 55,
+              tilt: 56,
             ),
           ),
           duration: const Duration(milliseconds: 220),
@@ -6235,7 +6250,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           native_map.CameraPosition(
             target: target,
             zoom: widget.zoom,
-            tilt: 38,
+            tilt: 52,
           ),
         ),
         duration: const Duration(milliseconds: 380),
@@ -6395,7 +6410,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           widget.pickupIsCurrentLocation ? _currentImage : _pickupImage,
           // A selected address must remain legible without covering street
           // names, route geometry or the building volume beneath it.
-          size: widget.pickupIsCurrentLocation ? 0.40 : 0.54,
+          size: widget.pickupIsCurrentLocation ? 0.32 : 0.54,
         );
       }
       final dropoff = widget.dropoff;
