@@ -4298,6 +4298,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
   native_map.MapLibreMapController? _controller;
   bool _styleReady = false;
   bool _imagesInstalled = false;
+  bool _routeLayersInstalled = false;
   String _lastSceneSignature = '';
   DateTime? _lastSceneSyncAt;
   Timer? _sceneSyncTimer;
@@ -4312,6 +4313,9 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
 
   static const _carImage = 'smarttaxi-driver-navigator-car';
   static const _finishImage = 'smarttaxi-driver-navigator-finish';
+  static const _routeSource = 'smarttaxi-driver-route';
+  static const _routeShadowLayer = 'smarttaxi-driver-route-shadow';
+  static const _routeLineLayer = 'smarttaxi-driver-route-line';
 
   native_map.LatLng _point(LatLng point) =>
       native_map.LatLng(point.latitude, point.longitude);
@@ -4498,6 +4502,73 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
     );
   }
 
+  Map<String, dynamic> _routeGeoJson() {
+    if (widget.route.length < 2) {
+      return const {'type': 'FeatureCollection', 'features': <dynamic>[]};
+    }
+    return {
+      'type': 'FeatureCollection',
+      'features': [
+        {
+          'type': 'Feature',
+          'properties': const <String, dynamic>{},
+          'geometry': {
+            'type': 'LineString',
+            'coordinates': widget.route
+                .map((point) => [point.longitude, point.latitude])
+                .toList(growable: false),
+          },
+        },
+      ],
+    };
+  }
+
+  // An annotation line is always placed above every style layer. In the
+  // navigator that hid street names under the brightest visual element on the
+  // screen. Keep the route in the style below the same label anchor as 3D
+  // buildings; the car, finish flag and safety pins remain annotations above
+  // the route and buildings.
+  Future<void> _syncRouteStyleLayer(
+      native_map.MapLibreMapController controller) async {
+    final routeData = _routeGeoJson();
+    final sourceIds = await controller.getSourceIds();
+    if (sourceIds.contains(_routeSource)) {
+      await controller.setGeoJsonSource(_routeSource, routeData);
+    } else {
+      await controller.addGeoJsonSource(_routeSource, routeData);
+    }
+    if (_routeLayersInstalled) return;
+    final anchorLayerId = await resolveLabelAnchorLayerId(controller);
+    await controller.addLineLayer(
+      _routeSource,
+      _routeShadowLayer,
+      const native_map.LineLayerProperties(
+        lineColor: '#0b4fd1',
+        lineWidth: 10,
+        lineOpacity: 0.28,
+        lineBlur: 1.8,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      belowLayerId: anchorLayerId,
+      enableInteraction: false,
+    );
+    await controller.addLineLayer(
+      _routeSource,
+      _routeLineLayer,
+      const native_map.LineLayerProperties(
+        lineColor: '#1d6fff',
+        lineWidth: 5.5,
+        lineOpacity: 0.96,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      belowLayerId: anchorLayerId,
+      enableInteraction: false,
+    );
+    _routeLayersInstalled = true;
+  }
+
   Future<void> _syncScene() async {
     final controller = _controller;
     if (!_styleReady || controller == null) return;
@@ -4513,24 +4584,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       await controller.clearLines();
       await controller.clearCircles();
       await controller.clearSymbols();
-      if (widget.route.isNotEmpty) {
-        final route = widget.route.map(_point).toList(growable: false);
-        await controller.addLine(
-          native_map.LineOptions(
-            geometry: route,
-            lineColor: '#0b4fd1',
-            lineWidth: 11,
-            lineOpacity: 0.96,
-          ),
-        );
-        await controller.addLine(
-          native_map.LineOptions(
-            geometry: route,
-            lineColor: '#1d6fff',
-            lineWidth: 7,
-          ),
-        );
-      }
+      await _syncRouteStyleLayer(controller);
 
       final pickup = widget.activeOrder?.pickupCoordinate;
       if (pickup != null) {
@@ -4548,7 +4602,11 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
             geometry: _coordinate(dropoff),
             iconImage: _finishImage,
             iconAnchor: 'bottom',
-            iconSize: 0.62,
+            // Uses the same compact destination scale as the passenger map.
+            // At 0.62 the 1000px source covered intersections and obscured
+            // labels; 0.08 keeps the flag readable without competing with
+            // the road geometry.
+            iconSize: 0.08,
           ),
         );
       }
@@ -4575,7 +4633,10 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
             geometry: _driverPoint(current),
             iconImage: _carImage,
             iconAnchor: 'center',
-            iconSize: 0.23,
+            // A top-down car should occupy one road-width at navigation zoom,
+            // not three-plus. At the 1024 px source resolution, 0.025 keeps
+            // the vehicle, route, and street labels readable together.
+            iconSize: 0.025,
             iconRotate: widget.heading,
           ),
         );
@@ -4596,6 +4657,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       _styleReady = true;
     }
     _lastSceneSignature = '';
+    _routeLayersInstalled = false;
     final controller = _controller;
     unawaited(_followDriverIfNeeded());
     _scheduleSceneSync(immediately: true);

@@ -751,6 +751,25 @@ void main() {
             'the native passenger route must not return to addLine annotations');
   });
 
+  test(
+      'driver navigator route is a style layer below labels, not an annotation',
+      () {
+    final driver = _read('lib/features/driver/driver_shell.dart');
+    expect(driver,
+        contains("static const _routeSource = 'smarttaxi-driver-route'"));
+    expect(driver,
+        contains('await controller.addGeoJsonSource(_routeSource, routeData)'));
+    expect(driver,
+        contains('await controller.setGeoJsonSource(_routeSource, routeData)'));
+    expect(driver, contains('belowLayerId: anchorLayerId'));
+    expect(driver, isNot(contains('lineWidth: 11,')),
+        reason: 'the navigator route must not return to addLine annotations');
+    expect(driver, contains('iconSize: 0.025,'),
+        reason: 'the driver car must remain road-scale at navigation zoom');
+    expect(driver, contains('iconSize: 0.08,'),
+        reason: 'the finish flag must not cover the destination intersection');
+  });
+
   test('driver drawer keeps driver tabs and adds account/support sections', () {
     final driver = _read('lib/features/driver/driver_shell.dart');
     final chrome =
