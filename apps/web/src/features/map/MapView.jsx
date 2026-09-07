@@ -65,6 +65,22 @@ function add3dBuildings(map) {
     // height metadata to read as architecture in a vector map. Rendering all
     // of them as prisms created a field of toy boxes. Keep their real outline
     // as a calm plan view and reserve volume for measured multi-storey homes.
+    if (!map.getLayer("smarttaxi-low-building-shadow")) {
+      map.addLayer({
+        id: "smarttaxi-low-building-shadow",
+        type: "fill",
+        source: buildingLayer.source,
+        "source-layer": buildingLayer["source-layer"],
+        minzoom: 13,
+        filter: ["<", measuredHeight, 9],
+        paint: {
+          "fill-color": "#9fb8d3",
+          "fill-opacity": 0.24,
+          "fill-translate": [1.2, 2],
+          "fill-translate-anchor": "viewport"
+        }
+      }, labelAnchor);
+    }
     if (!map.getLayer("smarttaxi-low-buildings")) {
       map.addLayer({
         id: "smarttaxi-low-buildings",
@@ -74,9 +90,9 @@ function add3dBuildings(map) {
         minzoom: 13,
         filter: ["<", measuredHeight, 9],
         paint: {
-          "fill-color": "#dce8f5",
-          "fill-outline-color": "#c4d4e8",
-          "fill-opacity": 0.92
+          "fill-color": "#e5eff9",
+          "fill-outline-color": "#aec5df",
+          "fill-opacity": 0.96
         }
       }, labelAnchor);
     }

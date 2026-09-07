@@ -743,6 +743,8 @@ void main() {
     final driver = _read('lib/features/driver/driver_shell.dart');
     expect(passenger, contains("'smarttaxi-low-buildings'"));
     expect(driver, contains("'smarttaxi-driver-low-buildings'"));
+    expect(passenger, contains("'smarttaxi-low-building-shadow'"));
+    expect(driver, contains("'smarttaxi-driver-low-building-shadow'"));
     for (final source in [passenger, driver]) {
       expect(source, contains("['get', 'render_height']"));
       expect(source, contains('fillExtrusionHeight:'),

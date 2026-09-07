@@ -6274,11 +6274,35 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       // map look like a grid of toy boxes.
       await controller.addFillLayer(
         'openmaptiles',
+        'smarttaxi-low-building-shadow',
+        const native_map.FillLayerProperties(
+          fillColor: '#9fb8d3',
+          fillOpacity: 0.24,
+          fillTranslate: [1.2, 2],
+          fillTranslateAnchor: 'viewport',
+        ),
+        sourceLayer: 'building',
+        belowLayerId: anchorLayerId,
+        minzoom: 13,
+        filter: [
+          '<',
+          [
+            'coalesce',
+            ['get', 'render_height'],
+            ['get', 'height'],
+            0,
+          ],
+          9,
+        ],
+        enableInteraction: false,
+      );
+      await controller.addFillLayer(
+        'openmaptiles',
         'smarttaxi-low-buildings',
         const native_map.FillLayerProperties(
-          fillColor: '#dce8f5',
-          fillOutlineColor: '#c4d4e8',
-          fillOpacity: 0.92,
+          fillColor: '#e5eff9',
+          fillOutlineColor: '#aec5df',
+          fillOpacity: 0.96,
         ),
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
