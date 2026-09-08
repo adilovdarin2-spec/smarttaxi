@@ -275,7 +275,7 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
         <SmartTaxiLogo className="auth-logo" />
         <div>
           <p className="driver-core-eyebrow">Кабинет водителя</p>
-          <h1>Выйдите на линию и принимайте заказы</h1>
+          <h1>Хорошая смена начинается здесь</h1>
           <p>Вход только для одобренных водителей SmartTaxi.</p>
         </div>
         <form onSubmit={onSubmit} className="driver-core-form">
@@ -942,7 +942,7 @@ export default function DriverApp() {
       </section>}
 
       <section className="driver-core-panel">
-        {isWorking && locationIssue && (
+        {mapTab && isWorking && locationIssue && (
           <section className="driver-core-location-notice" role="status" aria-live="polite">
             <div className="driver-core-location-icon" aria-hidden="true"><Icon name="pin" /></div>
             <div>
@@ -1092,7 +1092,7 @@ export default function DriverApp() {
             {tab === "money" && (
               <section className="driver-core-money">
                 <div className="driver-core-money-card">
-                  <small>Грязная выручка сегодня</small>
+                  <small>Выручка сегодня</small>
                   <strong><Money value={earnings?.todayGrossKzt} /></strong>
                 </div>
                 <div className="driver-core-money-grid">

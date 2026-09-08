@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/account_action_row.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
@@ -26,20 +27,26 @@ class DriverProfileRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: context.palette.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: context.palette.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: valueColor,
+          const SizedBox(width: 16),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: valueColor,
+              ),
             ),
           ),
         ],
@@ -71,41 +78,54 @@ class DriverTripHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return PremiumCard(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  formatTripHistoryDate(l10n, trip.createdAt),
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${trip.pickup} → ${trip.dropoff}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                StatusPill(label: statusLabel(l10n, trip.status), tone: _tone),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                  child: Text(
+                formatTripHistoryDate(l10n, trip.createdAt),
+                style: TextStyle(
+                    fontSize: 12, color: context.palette.textSecondary),
+              )),
+              if (trip.price != null) ...[
+                const SizedBox(width: 12),
+                Text(formatDriverMoney(trip.price!.round()),
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w600)),
               ],
-            ),
+            ],
           ),
-          const SizedBox(width: 10),
-          if (trip.price != null)
-            Text(
-              formatDriverMoney(trip.price!.round()),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          const SizedBox(height: 14),
+          for (final endpoint in [
+            (Icons.radio_button_checked_rounded, trip.pickup),
+            (Icons.flag_outlined, trip.dropoff),
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(endpoint.$1, size: 16, color: context.palette.brandDeep),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: Text(
+                    endpoint.$2,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  )),
+                ],
+              ),
             ),
+          Divider(height: 16, color: context.palette.border),
+          StatusPill(label: statusLabel(l10n, trip.status), tone: _tone),
         ],
       ),
     );
@@ -262,7 +282,10 @@ class DriverSettingsGroup extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          for (final child in children) child,
+          for (var index = 0; index < children.length; index++) ...[
+            if (index > 0) Divider(height: 1, color: context.palette.border),
+            children[index],
+          ],
         ],
       ),
     );
@@ -274,56 +297,25 @@ class DriverSettingsRow extends StatelessWidget {
     super.key,
     required this.title,
     required this.text,
+    this.icon = Icons.tune_rounded,
     this.onTap,
     this.danger = false,
   });
 
   final String title;
   final String text;
+  final IconData icon;
   final VoidCallback? onTap;
   final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AccountActionRow(
+      icon: danger ? Icons.logout_rounded : icon,
+      title: title,
+      subtitle: text,
+      danger: danger,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: danger
-                          ? context.palette.danger
-                          : context.palette.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: context.palette.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (onTap != null)
-              Icon(Icons.chevron_right_rounded,
-                  color: context.palette.textMuted),
-          ],
-        ),
-      ),
     );
   }
 }

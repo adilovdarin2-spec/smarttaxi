@@ -65,6 +65,8 @@ flutter:
     - assets/cars/tariff_delivery_3d_v2.png
     - assets/cars/tariff_v11_economy.png
     - assets/cars/tariff_v11_delivery.png
+    - assets/cars/tariff_economy_smarttaxi_v3.png
+    - assets/cars/tariff_delivery_smarttaxi_v3.png
     - assets/icons/
     - assets/map/driver_car_topview_white.png
     - assets/map/smarttaxi_map_marker.png

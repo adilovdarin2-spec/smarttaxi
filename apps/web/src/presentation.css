@@ -355,6 +355,99 @@
 .phone-frame.driver-core-phone :is(.driver-core-route-hint b, .driver-core-header b, .driver-core-header button, .driver-core-status-badge) { font-weight: 600 !important; }
 
 /* GPS problems belong to the scrollable sheet, not over the road geometry. */
+.phone-frame.driver-core-phone .driver-core-auth-card {
+  padding: 28px 24px !important; gap: 24px !important;
+  border: 1px solid #ffffff !important; border-radius: 28px !important;
+  box-shadow: 0 12px 36px rgba(26,49,83,.08) !important;
+}
+.phone-frame.driver-core-phone .driver-core-auth-card h1 {
+  font-size: 28px !important; line-height: 1.16 !important; font-weight: 650 !important; letter-spacing: -.9px !important; margin: 10px 0 14px !important;
+}
+.phone-frame.driver-core-phone .driver-core-auth-card p { font-size: 14px !important; font-weight: 400 !important; line-height: 1.55 !important; color: var(--ui-muted) !important; }
+.phone-frame.driver-core-phone .driver-core-auth-card .driver-core-eyebrow { font-size: 11px !important; font-weight: 550 !important; letter-spacing: .08em !important; color: #0b4fd1 !important; }
+.phone-frame.driver-core-phone .driver-core-form label { font-size: 12px !important; font-weight: 500 !important; color: var(--ui-muted) !important; }
+.phone-frame.driver-core-phone .driver-core-form input { min-height: 52px; border: 1px solid var(--ui-line) !important; border-radius: 14px !important; box-shadow: none !important; font-size: 15px !important; font-weight: 400 !important; background: #f8fafd !important; color: var(--ui-ink) !important; }
+.phone-frame.driver-core-phone .driver-core-money .driver-core-money-card {
+  padding: 26px 22px !important; border: 0 !important; border-radius: 24px !important;
+  color: #fff !important; background: linear-gradient(125deg,#1d6fff,#0b4fd1) !important; box-shadow: 0 10px 26px #1d6fff20 !important;
+}
+.phone-frame.driver-core-phone .driver-core-money-card small { font-size: 13px !important; font-weight: 400 !important; color: #eaf3ff !important; }
+.phone-frame.driver-core-phone .driver-core-money-card strong { font-size: 36px !important; line-height: 1.2 !important; font-weight: 600 !important; letter-spacing: -1px !important; color: #fff !important; }
+.phone-frame.driver-core-phone .driver-core-money-grid { gap: 12px !important; }
+.phone-frame.driver-core-phone .driver-core-money-grid > div { padding: 18px !important; min-width: 0; border: 1px solid var(--ui-line) !important; border-radius: 18px !important; background: #fff !important; box-shadow: none !important; }
+.phone-frame.driver-core-phone .driver-core-money-grid small { color: var(--ui-muted) !important; font-size: 12px !important; font-weight: 400 !important; }
+.phone-frame.driver-core-phone .driver-core-money-grid b { color: var(--ui-ink) !important; font-size: 20px !important; font-weight: 600 !important; }
+
+.phone-frame.taxi-client-shell .account-page-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.phone-frame.taxi-client-shell .account-icon-button {
+  display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px;
+  border: 1px solid var(--ui-line); border-radius: 14px; color: var(--ui-ink); background: #fff;
+}
+.phone-frame.taxi-client-shell .account-overview .account-identity {
+  display: flex; align-items: center; gap: 16px; padding: 22px 18px;
+  border: 0 !important; background: #fff !important;
+  box-shadow: 0 6px 24px rgba(26,49,83,.06) !important;
+}
+.phone-frame.taxi-client-shell .account-identity > div { min-width: 0; }
+.phone-frame.taxi-client-shell .account-identity h2 {
+  margin: 0; font-size: 20px; line-height: 1.25; font-weight: 650; letter-spacing: -.5px; overflow-wrap: anywhere;
+}
+.phone-frame.taxi-client-shell .account-identity p { margin: 5px 0 10px; color: var(--ui-muted); font-size: 13px; }
+.phone-frame.taxi-client-shell .account-avatar {
+  display: grid; place-items: center; flex-shrink: 0; width: 64px; height: 64px;
+  border-radius: 22px; background: linear-gradient(145deg,#eaf3ff,#d6e7ff); color: #0b4fd1; font-size: 28px; font-weight: 650;
+}
+.phone-frame.taxi-client-shell .account-member { color: #0b4fd1; background: #eaf3ff; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: 550; }
+.phone-frame.taxi-client-shell .screen-grid:not(.auth-profile-screen) .account-action-list {
+  padding: 0 14px !important; border: 0 !important; overflow: hidden;
+  box-shadow: 0 4px 18px rgba(26,49,83,.05) !important;
+}
+.phone-frame.taxi-client-shell .screen-grid:not(.auth-profile-screen) .account-action-list .settings-row-premium:last-child { border-bottom: 0 !important; }
+.phone-frame.taxi-client-shell .account-action-list .settings-row-premium > svg:first-child { border-radius: 12px !important; background: #f0f6ff !important; color: #0b4fd1 !important; }
+.phone-frame.taxi-client-shell .account-details {
+  padding: 0 14px; background: #fff; border: 0; border-radius: 18px; box-shadow: 0 4px 18px rgba(26,49,83,.05);
+}
+.phone-frame.taxi-client-shell .account-details summary {
+  display: flex; align-items: center; gap: 12px; min-height: 64px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 500;
+}
+.phone-frame.taxi-client-shell .account-details summary::-webkit-details-marker { display: none; }
+.phone-frame.taxi-client-shell .account-details summary > span { flex: 1; }
+.phone-frame.taxi-client-shell .account-details summary > svg:first-child { width: 36px; height: 36px; padding: 8px; color: #0b4fd1; border-radius: 12px; background: #f0f6ff; }
+.phone-frame.taxi-client-shell .account-details[open] summary > svg:last-child { transform: rotate(90deg); }
+.phone-frame.taxi-client-shell .account-details .profile-actions-grid { padding: 0 0 16px; }
+.phone-frame.taxi-client-shell .account-details p { font-size: 12px; color: var(--ui-muted); line-height: 1.5; margin: 0 0 4px; }
+.phone-frame.taxi-client-shell .account-signout {
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  width: 100%; min-height: 52px; border: 1px solid #cbddfa; border-radius: 14px;
+  color: #0b4fd1; background: transparent; font-size: 14px; font-weight: 550;
+}
+.phone-frame.taxi-client-shell .account-group-label { margin: 6px 4px -6px; color: var(--ui-muted); font-size: 12px; font-weight: 500; }
+.phone-frame.taxi-client-shell .account-support-intro {
+  display: flex; align-items: center; gap: 16px; padding: 20px 18px;
+  background: linear-gradient(120deg,#eaf3ff,#f4f8ff); border-radius: 20px;
+}
+.phone-frame.taxi-client-shell .account-support-intro h2 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+.phone-frame.taxi-client-shell .account-support-intro p { margin: 0; font-size: 12px; line-height: 1.55; color: var(--ui-muted); }
+.phone-frame.taxi-client-shell .account-support-symbol { display: grid; place-items: center; width: 52px; height: 52px; flex-shrink: 0; border-radius: 18px; background: #fff; color: #1d6fff; box-shadow: 0 5px 12px #1d6fff0a; }
+.phone-frame.taxi-client-shell .support-topic-list { display: grid; gap: 0; margin-bottom: 18px; }
+.phone-frame.taxi-client-shell .support-topic-selection { display: flex; align-items: center; gap: 10px; padding: 12px 8px 20px; color: #0b4fd1; }
+.phone-frame.taxi-client-shell .support-topic-selection strong { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; color: var(--ui-ink); }
+.phone-frame.taxi-client-shell .support-topic-selection button { min-height: 44px; padding: 8px 10px; border: 0; border-radius: 10px; background: #eaf3ff; color: #0b4fd1; font-size: 12px; }
+.phone-frame.taxi-client-shell .support-topic-list button {
+  display: grid; grid-template-columns: 36px minmax(0,1fr) 20px; align-items: center; gap: 12px;
+  padding: 10px 8px; min-height: 60px; text-align: left; font-size: 14px; font-weight: 500;
+  border: 0; border-bottom: 1px solid var(--ui-line); border-radius: 0; color: var(--ui-ink); background: #fff;
+}
+.phone-frame.taxi-client-shell .support-topic-list button.selected { border-radius: 12px; background: #f0f6ff; border-bottom-color: transparent; }
+.phone-frame.taxi-client-shell .support-topic-list button > svg { color: #7e90aa; }
+.phone-frame.taxi-client-shell .support-topic-list button.selected > svg { color: #1d6fff; }
+.phone-frame.taxi-client-shell .account-row-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; color: #0b4fd1; background: #f0f6ff; }
+.phone-frame.taxi-client-shell .account-support .premium-support-card { padding: 12px 12px 18px; }
+.phone-frame.taxi-client-shell .account-support .support-textarea { padding-inline: 4px; }
+.phone-frame.taxi-client-shell .account-support .support-textarea textarea { min-height: 124px; background: #f8fafd; }
+
 .phone-frame.driver-core-phone .driver-core-location-notice {
   display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px;
   padding: 14px; margin-bottom: 2px; border: 1px solid #cbddfa;
@@ -527,6 +620,7 @@
   inset: 0 0 66px !important;
   height: auto !important;
   min-height: 0 !important;
+  max-height: none !important;
   margin: 0 !important;
   overflow: hidden !important;
   border: 0 !important;
@@ -541,6 +635,29 @@
   height: 100% !important;
   min-height: 100% !important;
   border-radius: 0 !important;
+}
+
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-map-wrap .map-badge {
+  top: 72px !important;
+  left: 16px !important;
+  right: 70px !important;
+  bottom: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  width: fit-content;
+  max-width: calc(100% - 86px);
+  white-space: normal;
+  pointer-events: none;
+}
+
+/* Both top and bottom were inherited from different historical map skins,
+   stretching the attribution into a tall opaque rectangle over the roads. */
+.phone-frame.driver-core-phone .driver-core-map-wrap .map-attribution {
+  bottom: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 .phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel {
@@ -566,7 +683,14 @@
   display: none;
 }
 
+/* Keep every summary readable when GPS feedback or an order extends the
+   sheet. The sheet scrolls; its cards must not collapse under flex pressure. */
+.phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel > * {
+  flex-shrink: 0;
+}
+
 .phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel::before {
+  order: -40;
   width: 38px;
   height: 4px;
   margin: 0 auto 2px;
@@ -584,8 +708,8 @@
 
 .phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: 4px 12px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 14px !important;
   padding: 4px 0 10px !important;
   border: 0 !important;
   border-bottom: 1px solid #e3e9f1 !important;
@@ -622,17 +746,17 @@
 }
 
 .phone-frame.driver-core-phone.driver-core-view-line .driver-core-line-card .app-button {
-  width: auto !important;
-  min-width: 116px !important;
-  min-height: 46px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 52px !important;
   align-self: center !important;
-  grid-column: 2 !important;
-  grid-row: 1 !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
   padding: 10px 14px !important;
   border-radius: 14px !important;
   background: #1d6fff !important;
   box-shadow: none !important;
-  font-size: 13px !important;
+  font-size: 16px !important;
   font-weight: 650 !important;
 }
 

@@ -257,11 +257,11 @@ void main() {
       expect(passenger, contains('tariffDeliveryTitle'));
       expect(
         passenger,
-        contains('assets/cars/tariff_economy_unbranded_v2.png'),
+        contains('assets/cars/tariff_economy_smarttaxi_v3.png'),
       );
       expect(
         passenger,
-        contains('assets/cars/car_delivery_photo_v1.png'),
+        contains('assets/cars/tariff_delivery_smarttaxi_v3.png'),
       );
       expect(
         passenger,

@@ -68,6 +68,37 @@ try {
       assert(bounds.x >= -1 && bounds.x + bounds.width <= width + 1, `${key}: page overflows at ${width}`);
       await page.screenshot({ path: path.join(output, `${key}-${width}.png`) });
     }
+    if (key === "profile") {
+      assert.equal(await page.locator('.account-details').getAttribute('open'), null);
+      await page.getByText('Данные для заказа', { exact: true }).click();
+      await page.getByLabel('Имя', { exact: true }).fill('Александр с длинным именем');
+      await page.getByLabel('Телефон для заказа', { exact: true }).fill(phone);
+      await page.getByText('Данные для заказа', { exact: true }).click();
+      await page.locator('.account-action-list button').filter({ hasText: 'Способы оплаты' }).click();
+      const paymentDialog = page.getByRole('dialog', { name: 'Способ оплаты', exact: true });
+      await paymentDialog.waitFor();
+      await page.screenshot({ path: path.join(output, 'profile-payment-360.png') });
+      await page.keyboard.press('Escape');
+      await paymentDialog.waitFor({ state: 'hidden' });
+      assert.equal(await page.evaluate(() => document.activeElement.textContent.includes('Способы оплаты')), true);
+      await page.locator('.account-action-list button').filter({ hasText: 'Избранные адреса' }).click();
+      await page.getByRole('heading', { name: 'Избранное', exact: true }).waitFor();
+      await section('profile', 'Ваш профиль');
+      await page.getByRole('button', { name: 'Настройки профиля', exact: true }).click();
+      await page.getByRole('heading', { name: 'Настройки', exact: true }).waitFor();
+      await section('profile', 'Ваш профиль');
+    }
+    if (key === 'support') {
+      await page.getByRole('button', { name: 'Забыл вещь', exact: true }).click();
+      assert.equal(await page.locator('.support-topic-selection strong').innerText(), 'Забыл вещь');
+      await page.getByLabel('Забыл вещь', { exact: true }).fill('Проверка формы без отправки');
+      await page.screenshot({ path: path.join(output, 'support-selected-360.png') });
+      const sendBounds = await page.getByRole('button', { name: 'Отправить обращение', exact: true }).boundingBox();
+      assert(sendBounds.y + sendBounds.height <= 740, 'Selected topic must leave the send action visible');
+      await page.getByRole('button', { name: 'Изменить', exact: true }).click();
+      await page.getByRole('button', { name: 'Оплата', exact: true }).click();
+      assert.equal(await page.getByLabel('Оплата', { exact: true }).inputValue(), 'Проверка формы без отправки');
+    }
     if (key === "settings") {
       const row = page.locator(".settings-list-premium .settings-row-premium").first();
       assert.equal(await row.evaluate(element => getComputedStyle(element).borderRadius), "0px", "Settings must be a divided list, not nested pill cards");

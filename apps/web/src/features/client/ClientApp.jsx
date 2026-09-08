@@ -2038,7 +2038,7 @@ export default function ClientApp() {
             />
           )}
           {section === "trips" && <TripsSection authenticated={authenticated} order={order} pickup={pickup} destination={destination} route={route} liveRoute={liveRoute} estimate={estimate} loading={loading} onCancel={cancelOrder} onHome={startNewTrip} onSupport={() => setSection("support")} onOrderUpdate={next => setOrder(normalizeOrder(next))} />}
-          {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
+          {section === "profile" && <ProfileSection authenticated={authenticated} rider={rider} setRider={setRider} auth={auth} setAuth={setAuth} authMode={authMode} setAuthMode={setAuthMode} registerForm={registerForm} setRegisterForm={setRegisterForm} resetForm={resetForm} setResetForm={setResetForm} message={message} setMessage={setMessage} loading={loading} onPhoneSubmit={submitAuthPhone} onPasswordSubmit={submitPasswordLogin} onRegisterCodeSubmit={verifyRegistrationSms} onRegister={submitRegister} onSendSms={sendRegistrationSms} onResetRequest={sendResetSms} onResetCodeSubmit={verifyResetSms} onResetPassword={submitResetPassword} onLogout={logout} onNavigate={selectSection} payment={payment} setPayment={setPayment} onAuthDone={() => { setAuthMode("phone"); setSection("home"); }} />}
           {section === "favorites" && (
             <FavoritesSection
               onHome={() => setSection("home")}
@@ -4660,8 +4660,12 @@ function ProfileSection({
   onResetCodeSubmit,
   onResetPassword,
   onLogout,
+  onNavigate,
+  payment,
+  setPayment,
   onAuthDone
 }) {
+  const [paymentOpen, setPaymentOpen] = useState(false);
   if (!authenticated || authMode === "success") {
     return (
       <PremiumAuthFlow
@@ -4688,77 +4692,47 @@ function ProfileSection({
       />
     );
   }
-  const isRegister = authMode === "register";
   return (
-    <section className={`screen-grid profile-screen ${authenticated ? "" : "auth-profile-screen"} ${!authenticated && isRegister ? "register-mode" : ""}`}>
-      {authenticated ? (
-        <section className="screen-intro"><h1>Профиль</h1><p>Аккаунт пассажира</p></section>
-      ) : (
-        <section className="auth-hero-panel">
-          <SmartTaxiLogo large />
-          <div>
-            <strong>SmartTaxi</strong>
-            <span>{isRegister ? "Создайте аккаунт для поездок" : "Войдите, чтобы заказать поездку"}</span>
-          </div>
-        </section>
-      )}
-      <section className="app-card account-card premium-profile-card">
-        <div className={`profile-avatar-row ${authenticated ? "" : "auth-card-title"}`}>
-          <SmartTaxiLogo />
-          <div>
-            <h2>{authenticated ? rider.name || "Пассажир" : isRegister ? "Создать аккаунт" : "Вход"}</h2>
-            <span>{authenticated ? rider.phone || "Телефон не указан" : isRegister ? "Имя, телефон и пароль" : "Телефон и пароль"}</span>
-          </div>
-        </div>
-        {!authenticated ? (
-          <>
-            <div className="auth-mode-switch" aria-label="Выбор входа">
-              <button type="button" className={!isRegister ? "active" : ""} onClick={() => setAuthMode("login")}>Войти</button>
-              <button type="button" className={isRegister ? "active" : ""} onClick={() => setAuthMode("register")}>Регистрация</button>
-            </div>
-            {isRegister ? (
-              <form className="form-grid premium-login-form" onSubmit={onRegister}>
-                <label>Имя<input value={registerForm.name} onChange={event => setRegisterForm({ ...registerForm, name: event.target.value })} placeholder="Ваше имя" autoComplete="name" /></label>
-                <label>Телефон<input value={registerForm.phone} onChange={event => setRegisterForm({ ...registerForm, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
-                <button type="button" className="auth-sms-button" onClick={onSendSms} disabled={loading || !registerForm.phone.trim()}>
-                  {registerForm.smsSent ? "Отправить код ещё раз" : "Получить SMS-код"}
-                </button>
-                <label>SMS-код<input value={registerForm.code} onChange={event => setRegisterForm({ ...registerForm, code: event.target.value })} placeholder={registerForm.devCode || "6 цифр"} inputMode="numeric" autoComplete="one-time-code" /></label>
-                <label>Пароль<input value={registerForm.password} onChange={event => setRegisterForm({ ...registerForm, password: event.target.value })} placeholder="Минимум 6 символов" type="password" autoComplete="new-password" /></label>
-                <label>Повторите пароль<input value={registerForm.repeat} onChange={event => setRegisterForm({ ...registerForm, repeat: event.target.value })} placeholder="Повторите пароль" type="password" autoComplete="new-password" /></label>
-                {message && <p className={message.includes("создан") ? "state-note success" : "state-note danger"}>{message}</p>}
-                <Button className="wide primary-brand" type="submit" disabled={loading}>{loading ? "Создаём..." : "Создать аккаунт"}</Button>
-              </form>
-            ) : (
-              <form className="form-grid premium-login-form" onSubmit={onSubmit}>
-                <label>Телефон<input value={auth.phone} onChange={event => setAuth({ ...auth, phone: event.target.value })} placeholder="+7" inputMode="tel" autoComplete="tel" /></label>
-                <label>Пароль<input value={auth.password} onChange={event => setAuth({ ...auth, password: event.target.value })} placeholder="Пароль" type="password" autoComplete="current-password" /></label>
-                {message && <p className={message.includes("Вход") ? "state-note success" : "state-note danger"}>{message}</p>}
-                <Button className="wide primary-brand" type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</Button>
-              </form>
-            )}
-          </>
-        ) : (
-          <div className="profile-actions-grid">
-            <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} /></label>
-            <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" /></label>
-            <article><Icon name="star" /><div><b>Избранные адреса</b><span>Дом, работа и любимые места</span></div></article>
-            <article><Icon name="card" /><div><b>Способы оплаты</b><span>{paymentOptions.map(option => option.title).join(' · ')}</span></div></article>
-            <button type="button" className="danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
-          </div>
-        )}
+    <section className="screen-grid profile-screen account-overview">
+      <section className="screen-intro account-page-heading">
+        <div><h1>Профиль</h1><p>Ваши поездки и настройки</p></div>
+        <button type="button" className="account-icon-button" aria-label="Настройки профиля" onClick={() => onNavigate("settings")}><Icon name="settings" /></button>
       </section>
+      <section className="app-card premium-profile-card account-identity">
+        <span className="account-avatar" aria-hidden="true">{Array.from(rider.name?.trim() || "П")[0].toUpperCase()}</span>
+        <div><h2>{rider.name || "Пассажир"}</h2><p>{rider.phone || "Телефон не указан"}</p><span className="account-member">Пассажир SmartTaxi</span></div>
+      </section>
+      <section className="app-card settings-list-premium account-action-list" aria-label="Мои поездки">
+        <SettingsRow icon="history" title="История поездок" text="Маршруты, стоимость и детали" onClick={() => onNavigate("trips")} />
+        <SettingsRow icon="star" title="Избранные адреса" text="Дом, работа и любимые места" onClick={() => onNavigate("favorites")} />
+        <SettingsRow icon="card" title="Способы оплаты" text={payment.title} onClick={() => setPaymentOpen(true)} />
+        <SettingsRow icon="cash" title="Кошелёк" text="Баланс и история операций" onClick={() => onNavigate("wallet")} />
+      </section>
+      <details className="app-card account-details">
+        <summary><Icon name="user" /><span>Данные для заказа</span><Icon name="chevron" size={18} /></summary>
+        <div className="profile-actions-grid">
+          <p>Эти данные используются при оформлении поездки.</p>
+          <label>Имя<input value={rider.name} onChange={event => setRider({ ...rider, name: event.target.value })} autoComplete="name" /></label>
+          <label>Телефон для заказа<input value={rider.phone} onChange={event => setRider({ ...rider, phone: event.target.value })} inputMode="tel" autoComplete="tel" /></label>
+        </div>
+      </details>
+      <section className="app-card settings-list-premium account-action-list" aria-label="Помощь и приложение">
+        <SettingsRow icon="support" title="Поддержка" text="Поможем с вопросами о поездке" onClick={() => onNavigate("support")} />
+        <SettingsRow icon="settings" title="Настройки" onClick={() => onNavigate("settings")} />
+      </section>
+      <button type="button" className="account-signout" onClick={onLogout}><Icon name="logout" size={20} /> Выйти из аккаунта</button>
+      {paymentOpen && <ReferencePaymentPicker payment={payment} onClose={() => setPaymentOpen(false)} onSelect={next => { setPayment(next); setPaymentOpen(false); }} />}
     </section>
   );
 }
 
 const supportTopics = [
-  { code: "Проблема с поездкой", label: "Проблема с поездкой" },
-  { code: "Водитель не приехал", label: "Водитель не приехал" },
-  { code: "LOST_ITEM", label: "Забыл вещь" },
-  { code: "Оплата", label: "Оплата" },
-  { code: "Безопасность", label: "Безопасность" },
-  { code: "Другое", label: "Другое" }
+  { code: "Проблема с поездкой", label: "Проблема с поездкой", icon: "route" },
+  { code: "Водитель не приехал", label: "Водитель не приехал", icon: "clock" },
+  { code: "LOST_ITEM", label: "Забыл вещь", icon: "gift" },
+  { code: "Оплата", label: "Оплата", icon: "card" },
+  { code: "Безопасность", label: "Безопасность", icon: "shield" },
+  { code: "Другое", label: "Другое", icon: "support" }
 ];
 
 function ClientAccessGate({ title, text = "Войдите в аккаунт, чтобы открыть этот раздел." }) {
@@ -5105,7 +5079,7 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
 }
 
 function SupportSection({ activeOrderId, authenticated }) {
-  const [topicCode, setTopicCode] = useState(supportTopics[0].code);
+  const [topicCode, setTopicCode] = useState("");
   const [text, setText] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -5136,7 +5110,7 @@ function SupportSection({ activeOrderId, authenticated }) {
   }, [authenticated, sent]);
 
   async function submit() {
-    if (!text.trim() || sending) return;
+    if (!text.trim() || !topicCode || sending) return;
     if (!authenticated) {
       setError(errorMessages.UNAUTHORIZED);
       return;
@@ -5160,22 +5134,28 @@ function SupportSection({ activeOrderId, authenticated }) {
   }
 
   return (
-    <section className="screen-grid menu-screen">
-      <section className="screen-intro"><h1>Поддержка</h1><p>{supportPhone ? "Выберите тему обращения. Если вопрос срочный, позвоните оператору напрямую." : "Выберите тему обращения — ответ появится в истории обращений."}</p></section>
+    <section className="screen-grid menu-screen account-support">
+      <section className="screen-intro"><h1>Поддержка</h1><p>Мы рядом, если нужна помощь</p></section>
+      <section className="account-support-intro">
+        <span className="account-support-symbol" aria-hidden="true"><Icon name="support" size={28} /></span>
+        <div><h2>Чем можем помочь?</h2><p>Выберите тему и опишите ситуацию. Ответ появится в истории обращений.</p></div>
+      </section>
       <section className="app-card premium-support-card">
-        <div className="support-topic-row">
-          {supportTopics.map(item => <button type="button" key={item.code} className={topicCode === item.code ? "selected" : ""} onClick={() => { setTopicCode(item.code); setSent(false); }}>{item.label}</button>)}
-        </div>
+        {!topicCode ? <div className="support-topic-list" aria-label="Тема обращения">
+          {supportTopics.map(item => <button type="button" key={item.code} aria-pressed={topicCode === item.code} className={topicCode === item.code ? "selected" : ""} onClick={() => { setTopicCode(item.code); setSent(false); }}><span className="account-row-icon"><Icon name={item.icon} size={20} /></span><span>{item.label}</span><Icon name={topicCode === item.code ? "check" : "chevron"} size={18} /></button>)}
+        </div> : <div className="support-topic-selection"><Icon name={activeTopic.icon} size={22} /><strong>{activeTopic.label}</strong><button type="button" disabled={sending} onClick={() => setTopicCode("")}>Изменить</button></div>}
+        {topicCode && <>
         <label className="admin-textarea-field support-textarea">
           <span>{activeTopic.label}</span>
-          <textarea value={text} onChange={event => { setText(event.target.value); setSent(false); setError(""); }} placeholder="Напишите сообщение..." rows={5} />
+          <textarea aria-label={activeTopic.label} value={text} onChange={event => { setText(event.target.value); setSent(false); setError(""); }} placeholder="Напишите сообщение..." rows={5} />
         </label>
-        {supportPhone && <div className="support-action-row">
-          <a className="menu-secondary-link" href={`tel:${supportPhone}`}><Icon name="phone" size={18} /> Позвонить</a>
-        </div>}
         {error && <p className="state-note danger">{error}</p>}
         {sent && <p className="state-note success">Обращение отправлено. Ответ появится здесь же после обработки оператором.</p>}
         <Button className="wide primary-brand" disabled={!text.trim() || sending} onClick={submit}>{sending ? "Отправляем..." : "Отправить обращение"}</Button>
+        </>}
+        {supportPhone && <div className="support-action-row">
+          <a className="menu-secondary-link" href={`tel:${supportPhone}`}><Icon name="phone" size={18} /> Позвонить</a>
+        </div>}
         {authenticated && !history.loading && history.rows.length > 0 && <div className="support-history-list"><b>Мои обращения</b>{history.rows.slice(0, 10).map(item => <div key={item.id} className="support-history-row"><span><strong>{item.topic || item.subject || "Обращение"}</strong><small>{item.message || item.text || item.body || ""}</small></span><em>{formatClientDate(item.createdAt || item.created_at)}</em></div>)}</div>}
       </section>
     </section>
@@ -5184,22 +5164,26 @@ function SupportSection({ activeOrderId, authenticated }) {
 
 function SettingsSection({ onLogout, onNavigate }) {
   return (
-    <section className="screen-grid menu-screen">
+    <section className="screen-grid menu-screen account-settings">
       <section className="screen-intro"><h1>Настройки</h1><p>Параметры аккаунта и приложения.</p></section>
-      <section className="app-card settings-list-premium">
+      <section className="app-card settings-list-premium account-action-list">
         <SettingsRow icon="user" title="Аккаунт" text="Имя и телефон в профиле" onClick={() => onNavigate('profile')} />
         <SettingsRow icon="support" title="Уведомления" text="Статусы поездки и ответы поддержки" onClick={() => onNavigate('notifications')} />
         <SettingsRow icon="shield" title="Безопасность" text="Помощь и правила безопасности" onClick={() => onNavigate('legalSafety')} />
+      </section>
+      <h2 className="account-group-label">Приложение</h2>
+      <section className="app-card settings-list-premium account-action-list">
         <SettingsRow icon="settings" title="Тема" text="Светлая синяя" />
         <SettingsRow icon="document" title="Версия" text="SmartTaxi Web" />
-        <button type="button" className="settings-danger" onClick={onLogout}><Icon name="logout" /> Выйти</button>
+        <SettingsRow icon="document" title="О приложении" onClick={() => onNavigate('about')} />
       </section>
+      <button type="button" className="account-signout" onClick={onLogout}><Icon name="logout" size={20} /> Выйти из аккаунта</button>
     </section>
   );
 }
 
 function SettingsRow({ icon, title, text, muted = false, onClick }) {
-  const content = <><Icon name={icon} /><span><b>{title}</b><small>{text}</small></span>{onClick && <Icon name="chevron" size={18} />}</>;
+  const content = <><Icon name={icon} /><span><b>{title}</b>{text && <small>{text}</small>}</span>{onClick && <Icon name="chevron" size={18} />}</>;
   const className = `settings-row-premium ${muted ? "muted" : ""}`;
   return onClick
     ? <button type="button" className={className} onClick={onClick}>{content}</button>

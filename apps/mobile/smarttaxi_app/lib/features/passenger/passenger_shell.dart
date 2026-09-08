@@ -28,6 +28,7 @@ import '../../core/utils/contact_phone.dart';
 import '../../core/utils/map_layers.dart';
 import '../../core/utils/passenger_map_viewport.dart';
 import '../../core/widgets/app_toast.dart';
+import '../../core/widgets/account_action_row.dart';
 import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/exit_on_double_back.dart';
@@ -3512,32 +3513,27 @@ class _PassengerShellState extends State<PassengerShell>
               Row(
                 children: [
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 64,
+                    height: 64,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          palette.brand,
-                          palette.brandDeep,
+                          palette.brandPale,
+                          palette.brandSurface,
                         ],
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: palette.brand.withValues(alpha: 0.32),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(22),
                     ),
                     child: Text(
-                      label.isEmpty ? '?' : label.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
+                      label.isEmpty
+                          ? '?'
+                          : label.characters.first.toUpperCase(),
+                      style: TextStyle(
+                        color: palette.brandDeep,
+                        fontSize: 28,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -3549,7 +3545,7 @@ class _PassengerShellState extends State<PassengerShell>
                       children: [
                         Text(
                           label,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 19,
@@ -3558,7 +3554,9 @@ class _PassengerShellState extends State<PassengerShell>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          l10n.passengerClientOfSmartTaxi,
+                          widget.accountPhone.isNotEmpty
+                              ? widget.accountPhone
+                              : l10n.passengerClientOfSmartTaxi,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 13,
@@ -3606,20 +3604,28 @@ class _PassengerShellState extends State<PassengerShell>
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              if (widget.accountId.trim().isNotEmpty) ...[
-                _ProfileRow(
-                  label: l10n.passengerAccountNumberLabel,
-                  value: widget.accountId,
-                  copyable: true,
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (widget.accountPhone.trim().isNotEmpty)
-                _ProfileRow(
-                  label: l10n.passengerPhoneLabel,
-                  value: widget.accountPhone,
-                  copyable: true,
+              if (widget.accountId.trim().isNotEmpty ||
+                  widget.accountPhone.trim().isNotEmpty)
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  title: Text(l10n.passengerSettingsAccountGroup,
+                      style: TextStyle(
+                          fontSize: 13, color: palette.textSecondary)),
+                  children: [
+                    if (widget.accountId.trim().isNotEmpty)
+                      _ProfileRow(
+                          label: l10n.passengerAccountNumberLabel,
+                          value: widget.accountId,
+                          copyable: true),
+                    if (widget.accountPhone.trim().isNotEmpty)
+                      _ProfileRow(
+                          label: l10n.passengerPhoneLabel,
+                          value: widget.accountPhone,
+                          copyable: true),
+                  ],
                 ),
             ],
           ),
@@ -4302,26 +4308,44 @@ class _PassengerShellState extends State<PassengerShell>
                   text: l10n.passengerSupportTopicSectionText,
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: topics
-                      .map(
-                        (topic) => _SupportTopicChip(
-                          label: topicLabel(topic),
-                          selected: _supportTopic == topic,
-                          onTap: () => setState(() {
-                            _supportTopic = topic;
-                            // A previously-picked trip only makes sense for
-                            // "Забыл вещь" — switching to a different topic
-                            // (or re-picking the same one) shouldn't carry a
-                            // stale selection into a fresh report.
-                            _lostItemOrderId = null;
-                          }),
-                        ),
-                      )
-                      .toList(),
-                ),
+                if (_supportTopic != null)
+                  AccountActionRow(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: topicLabel(_supportTopic!),
+                    subtitle: l10n.passengerChangeButton,
+                    onTap: _supportSending
+                        ? null
+                        : () => setState(() {
+                              _supportTopic = null;
+                              _lostItemOrderId = null;
+                            }),
+                  )
+                else
+                  Column(
+                    children: topics
+                        .map(
+                          (topic) => AccountActionRow(
+                            icon: switch (topic) {
+                              'trip_issue' => Icons.route_outlined,
+                              'no_show' => Icons.schedule_rounded,
+                              'lost_item' => Icons.work_outline_rounded,
+                              'payment' => Icons.credit_card_rounded,
+                              _ => Icons.chat_bubble_outline_rounded,
+                            },
+                            title: topicLabel(topic),
+                            selected: _supportTopic == topic,
+                            onTap: () => setState(() {
+                              _supportTopic = topic;
+                              // A previously-picked trip only makes sense for
+                              // "Забыл вещь" — switching to a different topic
+                              // (or re-picking the same one) shouldn't carry a
+                              // stale selection into a fresh report.
+                              _lostItemOrderId = null;
+                            }),
+                          ),
+                        )
+                        .toList(),
+                  ),
                 // Step 2 only appears once a topic is chosen — reads as a
                 // flow (topic -> trip if lost item -> message) instead of
                 // one flat form with every field visible from the start.
@@ -4975,6 +4999,7 @@ class _PassengerShellState extends State<PassengerShell>
           children: [
             _SettingsRow(
               title: l10n.passengerSettingsPhoneLabel,
+              icon: Icons.phone_outlined,
               text: widget.accountPhone.isEmpty
                   ? l10n.passengerSettingsPhoneMissing
                   : widget.accountPhone,
@@ -4991,12 +5016,14 @@ class _PassengerShellState extends State<PassengerShell>
             ),
             _SettingsRow(
               title: l10n.passengerSettingsRegionLabel,
+              icon: Icons.location_city_outlined,
               text: _selectedRegion?.name ??
                   l10n.passengerSettingsRegionNotSelected,
               onTap: () => unawaited(_chooseRegion()),
             ),
             _SettingsRow(
               title: l10n.passengerSettingsLogoutTitle,
+              icon: Icons.logout_rounded,
               text: l10n.passengerSettingsLogoutText,
               danger: true,
               onTap: () => unawaited(_confirmAndLogout()),
@@ -5009,6 +5036,7 @@ class _PassengerShellState extends State<PassengerShell>
           children: [
             _SettingsRow(
               title: l10n.passengerSettingsLanguageLabel,
+              icon: Icons.language_rounded,
               text: switch (activeLanguageCode(context, widget.currentLocale)) {
                 'kk' => l10n.languageKazakh,
                 'uz' => l10n.languageUzbek,
@@ -5019,6 +5047,7 @@ class _PassengerShellState extends State<PassengerShell>
             ),
             _SettingsRow(
               title: l10n.passengerSettingsThemeLabel,
+              icon: Icons.palette_outlined,
               text: switch (widget.themeMode) {
                 ThemeMode.dark => l10n.passengerSettingsThemeDark,
                 ThemeMode.system => l10n.passengerSettingsThemeSystem,
@@ -5037,6 +5066,7 @@ class _PassengerShellState extends State<PassengerShell>
               builder: (context, snapshot) {
                 return _SettingsRow(
                   title: l10n.passengerSettingsPushLabel,
+                  icon: Icons.notifications_outlined,
                   text: snapshot.data ?? l10n.passengerSettingsPushChecking,
                   onTap: () => Geolocator.openAppSettings(),
                 );
@@ -5044,6 +5074,7 @@ class _PassengerShellState extends State<PassengerShell>
             ),
             _SettingsRow(
               title: l10n.passengerSettingsLocationLabel,
+              icon: Icons.my_location_rounded,
               text: l10n.passengerSettingsLocationText,
               onTap: () => Geolocator.openLocationSettings(),
             ),
@@ -5055,10 +5086,12 @@ class _PassengerShellState extends State<PassengerShell>
           children: [
             _SettingsRow(
               title: l10n.passengerSettingsVersionLabel,
+              icon: Icons.info_outline_rounded,
               text: _appVersion,
             ),
             _SettingsRow(
               title: l10n.passengerSettingsLegalTitle,
+              icon: Icons.description_outlined,
               text: l10n.passengerSettingsLegalText,
               onTap: () => setState(() => _tab = PassengerTab.legalHub),
             ),
@@ -19197,60 +19230,25 @@ class _SettingsRow extends StatelessWidget {
   const _SettingsRow({
     required this.title,
     required this.text,
+    this.icon = Icons.tune_rounded,
     this.danger = false,
     this.onTap,
   });
 
   final String title;
   final String text;
+  final IconData icon;
   final bool danger;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    final titleColor = danger ? palette.danger : palette.text;
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
+    return AccountActionRow(
+      icon: icon,
+      title: title,
+      subtitle: text,
+      danger: danger,
       onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 62),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: titleColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 12,
-                      height: 1.3,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (onTap != null)
-              Icon(
-                Icons.chevron_right_rounded,
-                color: palette.textMuted,
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

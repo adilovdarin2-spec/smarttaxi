@@ -2485,6 +2485,7 @@ class _DriverShellState extends State<DriverShell> {
           children: [
             DriverSettingsRow(
               title: l10n.driverSettingsPhoneLabel,
+              icon: Icons.phone_outlined,
               text: _accountPhone.isEmpty
                   ? l10n.driverSettingsPhoneMissing
                   : _accountPhone,
@@ -2523,6 +2524,7 @@ class _DriverShellState extends State<DriverShell> {
           children: [
             DriverSettingsRow(
               title: l10n.driverSettingsLanguageLabel,
+              icon: Icons.language_rounded,
               text: switch (activeLanguageCode(context, widget.currentLocale)) {
                 'kk' => l10n.languageKazakh,
                 'uz' => l10n.languageUzbek,
@@ -2533,6 +2535,7 @@ class _DriverShellState extends State<DriverShell> {
             ),
             DriverSettingsRow(
               title: l10n.passengerSettingsThemeLabel,
+              icon: Icons.palette_outlined,
               text: switch (widget.themeMode ?? ThemeMode.light) {
                 ThemeMode.dark => l10n.passengerThemeDark,
                 ThemeMode.system => l10n.passengerThemeSystem,
@@ -2547,9 +2550,12 @@ class _DriverShellState extends State<DriverShell> {
           title: l10n.driverSettingsAboutGroup,
           children: [
             DriverSettingsRow(
-                title: l10n.driverAboutVersionLabel, text: _appVersion),
+                icon: Icons.info_outline_rounded,
+                title: l10n.driverAboutVersionLabel,
+                text: _appVersion),
             DriverSettingsRow(
               title: l10n.driverSettingsTermsTitle,
+              icon: Icons.description_outlined,
               text: l10n.driverSettingsTermsText,
               onTap: () => _showDriverLegalSheet(
                 title: l10n.termsOfUseLink,
@@ -2559,6 +2565,7 @@ class _DriverShellState extends State<DriverShell> {
             ),
             DriverSettingsRow(
               title: l10n.driverSettingsPrivacyTitle,
+              icon: Icons.shield_outlined,
               text: l10n.driverSettingsPrivacyText,
               onTap: () => _showDriverLegalSheet(
                 title: l10n.privacyPolicyTitle,
