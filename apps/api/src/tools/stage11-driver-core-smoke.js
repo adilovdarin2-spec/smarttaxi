@@ -102,8 +102,43 @@ async function main() {
   mark("health", { status: health.status });
 
   const driverLogin = await login("+77000000000", "123456");
-  const driverToken = driverLogin.token;
+  let driverToken = driverLogin.token;
   mark("driver_login", { role: driverLogin.user?.role });
+
+  // A driver is allowed to book their own ride.  The mode endpoint must issue
+  // a CLIENT-scoped token without changing the persisted DRIVER account, and
+  // all rider-owned APIs must accept that token.  Exercise the switch here
+  // because a static role assertion cannot catch a bad token hand-off in an
+  // actual client session.
+  const passengerMode = await request("/api/auth/mode/passenger", {
+    method: "POST",
+    token: driverToken
+  });
+  if (passengerMode.mode !== "passenger" || passengerMode.user?.role !== "CLIENT") {
+    throw new Error("Driver passenger mode did not issue a CLIENT-scoped session");
+  }
+  const passengerToken = passengerMode.token;
+  const [passengerWallet, passengerRecurring] = await Promise.all([
+    request("/api/clients/me/wallet", { token: passengerToken }),
+    request("/api/recurring-bookings/mine", { token: passengerToken })
+  ]);
+  if (!passengerWallet || !Array.isArray(passengerRecurring.bookings)) {
+    throw new Error("Driver passenger session cannot use rider-owned APIs");
+  }
+  mark("driver_passenger_mode", {
+    role: passengerMode.user.role,
+    recurringCount: passengerRecurring.bookings.length
+  });
+
+  const driverMode = await request("/api/auth/mode/driver", {
+    method: "POST",
+    token: passengerToken
+  });
+  if (driverMode.mode !== "driver" || driverMode.user?.role !== "DRIVER") {
+    throw new Error("Driver mode did not restore a DRIVER-scoped session");
+  }
+  driverToken = driverMode.token;
+  mark("driver_mode_restored", { role: driverMode.user.role });
   await cleanupActiveDriverOrder(driverToken, steps);
 
   const offline = await request("/api/driver/status/offline", { method: "POST", token: driverToken });
