@@ -36,8 +36,9 @@ production service or personal account was used.
   real map footprints.
 - The destination map picker showed the approved large square-tail selector,
   disabled confirmation while reverse lookup was pending, and enabled it only
-  after a street-and-house result was returned. The previous pickup stayed
-  visible as context while editing the destination.
+  after a street-and-house result was returned. While editing, it now shows
+  only that selector: retaining the prior endpoint created two visually
+  identical address pins and made the confirmation point ambiguous.
 - The phone created a local CASH order from the normal passenger UI. A local,
   region-approved driver then accepted it through the ordinary authenticated
   driver API flow. The passenger app updated itself from searching to
@@ -81,6 +82,17 @@ as a substitute for the driver's UI.
 The order was local QA data and the cash-payment acknowledgement was only a
 development state transition; no real money, merchant or production account
 was involved.
+
+## Picker follow-up — single-marker confirmation
+
+The connected phone was rebuilt against the same local Docker API after the
+picker-marker refinement. From passenger mode, the pass followed the normal
+destination search → `Указать на карте` route and inspected the live native
+MapLibre surface. The centre selector was the only square-tail address marker;
+the existing pickup and any prior destination marker reappear only after the
+picker closes. The resolved card still reported `улица Бектасова, 60,
+Мырзакент` and its confirmation action remained enabled only for that valid
+street-and-house address.
 
 ## Driver account and settings visual pass
 
