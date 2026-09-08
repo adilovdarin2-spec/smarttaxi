@@ -82,6 +82,18 @@ The order was local QA data and the cash-payment acknowledgement was only a
 development state transition; no real money, merchant or production account
 was involved.
 
+## Driver account and settings visual pass
+
+- The driver drawer, profile sheet and settings sheet were inspected on the
+  same physical device after the lifecycle pass. Account, region, shift,
+  earnings, trip history, payout-method, language, legal-information and
+  logout actions were readable and reachable without clipping at phone width.
+- Light and dark themes were both opened from the real settings control. The
+  dark sheet retained readable text, visible chevrons, distinct destructive
+  logout treatment, and a blue accent without low-contrast surfaces.
+- The device was returned to the light theme and the local driver was taken
+  offline after QA.
+
 ## Deliberate boundaries
 
 - The APK on the phone is a development QA artifact. A separately signed
