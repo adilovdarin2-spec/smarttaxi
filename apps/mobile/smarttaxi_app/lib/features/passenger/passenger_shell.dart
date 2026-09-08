@@ -7809,7 +7809,11 @@ class _HomeOrderPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
       decoration: BoxDecoration(
         color: context.palette.card,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        // The booking surface is the app's primary visual anchor.  A broader
+        // sheet corner gives it the calm, deliberate silhouette used by the
+        // address, tariff and trip states instead of reading like a generic
+        // Material dialog over the map.
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: SmartTaxiShadows.sheet,
       ),
       child: child,
@@ -7852,9 +7856,9 @@ class _OrderSheetHeading extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: palette.text,
-            fontSize: 20,
+            fontSize: 24,
             height: 1.2,
-            letterSpacing: -0.4,
+            letterSpacing: -0.6,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -7905,23 +7909,24 @@ class _QuickAddressChoices extends StatelessWidget {
           Expanded(
             child: Material(
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               child: InkWell(
                 onTap: choices[index].onTap,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  height: 48,
+                  height: 50,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: palette.card,
                     border: Border.all(color: palette.border),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: SmartTaxiShadows.card,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(choices[index].icon,
-                          size: 16, color: palette.textSecondary),
+                          size: 16, color: palette.brandDeep),
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
@@ -7929,7 +7934,7 @@ class _QuickAddressChoices extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: palette.textSecondary,
+                            color: palette.text,
                             fontSize: 12.2,
                             fontWeight: FontWeight.w500,
                           ),
@@ -7977,11 +7982,12 @@ class _SheetAddressEntryCard extends StatelessWidget {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
+      padding: const EdgeInsets.fromLTRB(13, 5, 9, 5),
       decoration: BoxDecoration(
         color: palette.card,
         border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: SmartTaxiShadows.card,
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -8100,11 +8106,11 @@ class _SheetAddressRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 50),
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(vertical: 7),
           child: Row(
             children: [
               Expanded(

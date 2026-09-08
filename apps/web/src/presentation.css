@@ -63,12 +63,12 @@
 .phone-frame.taxi-client-shell :is(.final10-panel, .address-picker-sheet, .tariff-v14-sheet) {
   background: #fff !important;
   border: 0 !important;
-  border-radius: 24px 24px 0 0 !important;
-  box-shadow: 0 -4px 24px rgba(26, 49, 83, .065) !important;
+  border-radius: 28px 28px 0 0 !important;
+  box-shadow: 0 -12px 32px rgba(26, 49, 83, .10) !important;
 }
 .phone-frame.taxi-client-shell .final10-panel {
-  padding: 10px 16px max(16px, env(safe-area-inset-bottom)) !important;
-  gap: 12px !important;
+  padding: 12px 20px max(18px, env(safe-area-inset-bottom)) !important;
+  gap: 14px !important;
 }
 .phone-frame.taxi-client-shell :is(.final10-grabber, .address-picker-grip, .tariff-v14-grip, .driver-found-grip, .search-driver-grip) {
   width: 36px !important;
@@ -84,20 +84,20 @@
 }
 .phone-frame.taxi-client-shell :is(.final10-sheet-heading h1, .address-picker-title-row h1) {
   color: var(--ui-ink) !important;
-  font-size: 22px !important;
+  font-size: 24px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -.6px !important;
 }
 .phone-frame.taxi-client-shell .final10-addr-group {
   border: 1px solid var(--ui-line) !important;
-  border-radius: 16px !important;
+  border-radius: 18px !important;
   background: #fff !important;
-  box-shadow: none !important;
+  box-shadow: 0 5px 18px rgba(21, 34, 56, .05) !important;
 }
 .phone-frame.taxi-client-shell .final10-addr-row {
-  min-height: 54px !important;
-  padding: 10px 12px !important;
+  min-height: 56px !important;
+  padding: 11px 13px !important;
   background: transparent !important;
 }
 .phone-frame.taxi-client-shell .final10-addr-row:last-child { background: #f7faff !important; }
@@ -114,16 +114,16 @@
 }
 .phone-frame.taxi-client-shell .final10-txt strong.placeholder { color: var(--ui-muted) !important; }
 .phone-frame.taxi-client-shell .final10-chip {
-  min-height: 48px !important;
+  min-height: 50px !important;
   gap: 7px !important;
-  padding: 10px 8px !important;
+  padding: 10px 9px !important;
   border: 1px solid var(--ui-line) !important;
-  border-radius: 13px !important;
+  border-radius: 14px !important;
   background: #fff !important;
-  box-shadow: none !important;
+  box-shadow: 0 4px 14px rgba(21, 34, 56, .045) !important;
 }
 .phone-frame.taxi-client-shell .final10-chip :is(span, svg) {
-  color: #42516a !important;
+  color: #0b4fd1 !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   text-shadow: none !important;
@@ -199,9 +199,9 @@
   padding: 0 !important; color: var(--ui-muted) !important; background: transparent !important; font-size: 11px !important; font-weight: 400 !important;
 }
 .phone-frame.taxi-client-shell .tariff-v14-route-card {
-  padding: 10px 12px !important; min-height: 60px !important;
-  border: 1px solid var(--ui-line) !important; border-radius: 16px !important;
-  box-shadow: none !important; background: #fff !important;
+  padding: 11px 13px !important; min-height: 64px !important;
+  border: 1px solid var(--ui-line) !important; border-radius: 18px !important;
+  box-shadow: 0 5px 18px rgba(21, 34, 56, .05) !important; background: #fff !important;
 }
 .phone-frame.taxi-client-shell .tariff-v14-route-card > button {
   color: #0b4fd1 !important; background: #f2f7ff !important; border: 0 !important;
@@ -214,7 +214,7 @@
   gap: 11px !important; min-height: 88px !important; height: auto !important;
   padding: 10px 11px !important; align-items: center !important;
   background: #fff !important; border: 1px solid var(--ui-line) !important;
-  border-radius: 18px !important; box-shadow: none !important;
+  border-radius: 20px !important; box-shadow: 0 4px 16px rgba(21, 34, 56, .04) !important;
   text-align: left; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
 }
 .phone-frame.taxi-client-shell .tariff-v14-card.selected {
