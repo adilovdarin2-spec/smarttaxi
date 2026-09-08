@@ -497,6 +497,11 @@ export default function DriverApp() {
   const isOnline = ["ONLINE", "FREE"].includes(driver?.publicStatus || driver?.status);
   const isWorking = isOnline || ["BUSY"].includes(driver?.publicStatus || driver?.status);
   const displayedOrder = activeOrder || settlementOrders[0] || null;
+  const lineStatusTitle = activeOrder
+    ? "Вы выполняете заказ"
+    : isOnline
+      ? "На линии"
+      : "Не на линии";
   const session = logged ? getToken() : "";
   const confirmedPosition = publishedDriverPosition?.session === session &&
     publishedDriverPosition?.driverId === driver?.id ? publishedDriverPosition : null;
@@ -978,7 +983,7 @@ export default function DriverApp() {
                 <div className="driver-core-line-card">
                   <div>
                     <small>Статус смены</small>
-                    <h1>{activeOrder ? "Вы выполняете заказ" : isOnline ? "Вы на линии" : "Вы не на линии"}</h1>
+                    <h1>{lineStatusTitle}</h1>
                     <p>{activeOrder ? "Действия по текущей поездке доступны ниже." : isOnline ? "Новые заказы появятся автоматически." : "Выйдите на линию, чтобы получать заказы."}</p>
                   </div>
                   <Button onClick={handleStatusToggle} disabled={Boolean(actionLoading || activeOrder)}>
