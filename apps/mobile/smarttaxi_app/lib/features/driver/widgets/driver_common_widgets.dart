@@ -117,16 +117,29 @@ class DriverGradientButton extends StatelessWidget {
               duration: const Duration(milliseconds: 260),
               curve: Curves.easeOutCubic,
               decoration: BoxDecoration(
-                // Reserve the subtle highlight for an actionable arrival hint.
-                color: context.palette.brand,
+                // The same blue-to-deep-blue plane used by the rider's main
+                // action.  It gives the one consequential control on a
+                // driver screen a deliberate visual hierarchy without
+                // adding another colour to the product palette.
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    context.palette.brandSky,
+                    context.palette.brand,
+                    context.palette.brandDeep,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: active && highlighted
+                boxShadow: active
                     ? [
                         BoxShadow(
-                          color: context.palette.brand.withValues(alpha: 0.22),
-                          blurRadius: 12,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 3),
+                          color: context.palette.brand.withValues(
+                            alpha: highlighted ? 0.30 : 0.18,
+                          ),
+                          blurRadius: highlighted ? 16 : 12,
+                          spreadRadius: highlighted ? 1 : 0,
+                          offset: const Offset(0, 4),
                         ),
                       ]
                     : null,

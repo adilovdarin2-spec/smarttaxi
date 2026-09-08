@@ -18500,8 +18500,25 @@ class _BrandCtaButton extends StatelessWidget {
         opacity: enabled ? 1 : 0.52,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: palette.brand,
+            // Keep the passenger's primary action visually equal to the
+            // driver CTA: a single restrained blue ramp, not a flat default
+            // Material fill.  All contrast and touch semantics still belong
+            // to the existing InkWell below.
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [palette.brandSky, palette.brand, palette.brandDeep],
+            ),
             borderRadius: BorderRadius.circular(14),
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: palette.brand.withValues(alpha: 0.18),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Material(
             color: Colors.transparent,
