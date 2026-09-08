@@ -28,15 +28,26 @@ const activeRegions = Array.isArray(regionsPayload.regions)
   : [];
 assert.ok(activeRegions.length > 0, "at least one active region must be available for address search");
 
-// Address quality is a product-wide promise, not a three-city sample.  Every
-// active service region must be able to resolve its own name through the same
-// public endpoint the passenger uses. This catches broken polygons, missing
-// imports and region/code mismatches before release.
+// A settlement name is useful for framing the map, but must never be offered
+// as a selectable pickup or destination: a driver cannot stop at a town
+// centroid. Check every active region against the public endpoint so a
+// provider or local-catalogue regression cannot reintroduce that invalid
+// suggestion. Address completeness itself is verified by the separate
+// official-registry import audit, because this smoke run must not pretend a
+// town name is a house/POI-level address.
 for (const region of activeRegions) {
   const query = region.name;
   const results = await request(`/api/maps/search?q=${encodeURIComponent(query)}&region=${encodeURIComponent(query)}&limit=5`);
   assert.ok(Array.isArray(results), `search ${query} must return an array`);
-  assert.ok(results.length > 0, `search ${query} must return at least one result`);
+  const normalizedRegion = query.toLocaleLowerCase("ru-RU").trim();
+  for (const result of results) {
+    const label = String(result.label || result.title || "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLocaleLowerCase("ru-RU");
+    assert.notEqual(label, normalizedRegion, `search ${query} must not offer a bare settlement as an address`);
+  }
 }
 
 const reversed = await request(`/api/maps/reverse?lat=${pickup.lat}&lng=${pickup.lng}`);
