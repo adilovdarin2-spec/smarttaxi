@@ -25,11 +25,41 @@ payment provider.
 - The native destination picker opens with region selection, an address/POI
   input, and map-point selection.
 
+## Extended passenger lifecycle on the physical phone
+
+This follow-up used the same local Docker stack and local test accounts. The
+phone remained on the debug APK configured for the local API/socket; no
+production service or personal account was used.
+
+- The passenger home showed a readable reverse-resolved pickup address,
+  `улица Бектасова, 60, Мырзакент`, the compact square-tail pickup marker and
+  real map footprints.
+- The destination map picker showed the approved large square-tail selector,
+  disabled confirmation while reverse lookup was pending, and enabled it only
+  after a street-and-house result was returned. The previous pickup stayed
+  visible as context while editing the destination.
+- The phone created a local CASH order from the normal passenger UI. A local,
+  region-approved driver then accepted it through the ordinary authenticated
+  driver API flow. The passenger app updated itself from searching to
+  `Водитель найден` without a manual refresh.
+- On the physical native map, the route, finish flag and car were visible at
+  useful scale. The street label remained legible over the route, and map
+  geometry/markers respected the intended ordering: buildings behind labels,
+  route and address markers.
+- The passenger UI received the full local lifecycle: driver found, active
+  trip, completed cash receipt and rating sheet. The receipt displayed the
+  route summary, `700 ₸`, CASH and the correct disabled/enabled rating action.
+
+The test order was stationary local QA data. It was completed and marked paid
+only by the local development finance test role; no merchant transaction was
+created. The final rating sheet is intentionally left open on the phone for
+visual review.
+
 ## Deliberate boundaries
 
-- The APK is a development QA artifact. A release APK is blocked when the
-  private upload keystore is absent; this is the expected signing safeguard
-  and must not be bypassed.
+- The APK on the phone is a development QA artifact. A separately signed
+  Android App Bundle is recorded in `release-qa-local-2026-09-08.md`; no
+  bundle has been uploaded to a store.
 - No production account, real SMS sender, payment merchant, or personal
   address was used.
 - Exact building façades/roofs still depend on a licensed external 3D map-data
