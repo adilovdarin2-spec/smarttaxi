@@ -41,10 +41,10 @@ import 'screens/wallet/client_wallet_screen.dart';
 
 // Product-owned illustrations keep the premium card presentation distinct
 // without copying artwork from the visual references.
-const _tariffEconomyAsset = 'assets/cars/tariff_economy_unbranded_v2.png';
+const _tariffEconomyAsset = 'assets/cars/tariff_economy_smarttaxi_v3.png';
 const _tariffComfortAsset = 'assets/cars/tariff_comfort_unbranded_v2.png';
 const _tariffBusinessAsset = 'assets/cars/tariff_business_unbranded_v2.png';
-const _tariffDeliveryAsset = 'assets/cars/car_delivery_photo_v1.png';
+const _tariffDeliveryAsset = 'assets/cars/tariff_delivery_smarttaxi_v3.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One fixed size for the car icon everywhere it appears on this map --
 // nearby free drivers before a match, and the specific driver being
