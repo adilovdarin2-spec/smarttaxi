@@ -5641,16 +5641,14 @@ class _MapCanvasState extends State<_MapCanvas> {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final center = widget.center;
-    // During selection only the center pin represents the point being edited.
-    // Keep the other endpoint, but do not paint an old flag/route over the pin.
-    final pickup =
-        widget.showCenterMarker && widget.activeTarget == PointTarget.pickup
-            ? null
-            : widget.pickup;
-    final dropoff =
-        widget.showCenterMarker && widget.activeTarget == PointTarget.dropoff
-            ? null
-            : widget.dropoff;
+    // The fixed centre marker is the only address marker while selecting a
+    // point. Keeping the other endpoint visible used the exact same blue
+    // square-and-tail artwork twice on this small canvas, so a rider could
+    // not tell which pin the confirmation card described. The sheet already
+    // preserves the existing address; restore both endpoint markers as soon
+    // as selection ends.
+    final pickup = widget.showCenterMarker ? null : widget.pickup;
+    final dropoff = widget.showCenterMarker ? null : widget.dropoff;
     final driver = widget.driver;
     final nearbyDrivers = widget.nearbyDrivers;
     final route = widget.showCenterMarker ? const <LatLng>[] : widget.route;

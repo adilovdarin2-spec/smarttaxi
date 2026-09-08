@@ -591,14 +591,19 @@ export default function MapView({
       }
     }
 
-    const showCenterMarker = addressControls && !pickupPoint && !destinationPoint && !centerMarker;
+    // Address-picker mode owns the pin visually. Rendering a persisted pickup
+    // or destination alongside it produces two equivalent blue address pins,
+    // which makes it ambiguous which coordinate the confirmation applies to.
+    const staticPickupPoint = centerMarker ? null : pickupPoint;
+    const staticDestinationPoint = centerMarker ? null : destinationPoint;
+    const showCenterMarker = addressControls && !staticPickupPoint && !staticDestinationPoint && !centerMarker;
     syncStaticMarker(centerMarkerElRef, showCenterMarker ? centerPoint : null, "bottom", smartTaxiMarkerElement);
     // The same approved blue square-and-tail pin represents both route
     // endpoints and the address-selection cursor. Its tail is the actual
     // geographic point, so MapLibre must anchor it from the bottom.
     syncStaticMarker(
       pickupMarkerElRef,
-      pickupPoint,
+      staticPickupPoint,
       // The live-location glyph is a concentric dot, whose centre is the
       // coordinate. The approved address marker has a downward tail: anchor
       // that tail instead, otherwise every selected house is visibly shifted
@@ -606,7 +611,7 @@ export default function MapView({
       pickup?.markerKind === "current-location" ? "center" : "bottom",
       pickup?.markerKind === "current-location" ? currentLocationMarkerElement : smartTaxiMarkerElement
     );
-    syncStaticMarker(destinationMarkerElRef, destinationPoint, "bottom", finishFlagMarkerElement);
+    syncStaticMarker(destinationMarkerElRef, staticDestinationPoint, "bottom", finishFlagMarkerElement);
 
     if (!driverPoint) {
       driverMarkerElRef.current?.remove();
