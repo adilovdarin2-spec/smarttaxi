@@ -784,6 +784,41 @@
   color: var(--ui-ink) !important;
 }
 
+/* Interaction polish is part of the visual system: all actionable surfaces
+   acknowledge input in the same restrained way.  Without these rules an
+   otherwise calm sheet feels inconsistent when one row jumps, another only
+   changes colour and a third has the browser's default focus outline. */
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(button, a, input, textarea, select) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(button, a, input, textarea, select):focus-visible {
+  outline: 3px solid rgba(29, 111, 255, .28) !important;
+  outline-offset: 2px !important;
+}
+
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) :is(.app-button, .final10-cta, .tariff-v12-order, .address-picker-confirm):active:not(:disabled) {
+  box-shadow: 0 5px 13px rgba(29, 111, 255, .19) !important;
+  transform: translateY(0) scale(.985) !important;
+}
+
+.phone-frame.taxi-client-shell :is(.tariff-v14-card, .reference-payment-options button, .settings-row-premium button, .support-topic-row button):active:not(:disabled),
+.phone-frame.driver-core-phone :is(.driver-core-tabs button, .driver-core-logout, .driver-core-call):active:not(:disabled) {
+  background-color: #eaf3ff !important;
+  transform: scale(.985);
+}
+
+.phone-frame:is(.taxi-client-shell, .driver-core-phone) button:disabled {
+  cursor: not-allowed;
+  opacity: .56;
+  box-shadow: none !important;
+}
+
+.phone-frame.taxi-client-shell :is(input, textarea, select):focus {
+  border-color: #1d6fff !important;
+  box-shadow: 0 0 0 3px rgba(29, 111, 255, .10) !important;
+}
+
 @media (max-width: 374px) {
   .phone-frame.driver-core-phone.driver-core-view-line .driver-core-panel {
     padding-inline: 13px !important;

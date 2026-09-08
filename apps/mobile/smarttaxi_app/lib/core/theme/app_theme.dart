@@ -353,6 +353,14 @@ ThemeData buildSmartTaxiTheme() {
   return base.copyWith(
     extensions: const [SmartTaxiPalette.light],
     scaffoldBackgroundColor: SmartTaxiColors.appBackground,
+    // The same calm, blue acknowledgement used by web controls. It replaces
+    // the platform-default grey ripple with a short brand-tinted response,
+    // making buttons, rows and fields feel like one product on touch.
+    splashFactory: InkSparkle.splashFactory,
+    highlightColor: SmartTaxiColors.brand.withValues(alpha: 0.06),
+    splashColor: SmartTaxiColors.brand.withValues(alpha: 0.12),
+    hoverColor: SmartTaxiColors.brand.withValues(alpha: 0.05),
+    focusColor: SmartTaxiColors.brand.withValues(alpha: 0.10),
     // Bundled Cyrillic/Kazakh typography, independent of manufacturer fonts.
     textTheme: base.textTheme.apply(
       bodyColor: SmartTaxiColors.text,
@@ -567,6 +575,11 @@ ThemeData buildSmartTaxiDarkTheme() {
   return base.copyWith(
     extensions: const [palette],
     scaffoldBackgroundColor: palette.appBackground,
+    splashFactory: InkSparkle.splashFactory,
+    highlightColor: palette.brand.withValues(alpha: 0.10),
+    splashColor: palette.brand.withValues(alpha: 0.16),
+    hoverColor: palette.brand.withValues(alpha: 0.08),
+    focusColor: palette.brand.withValues(alpha: 0.14),
     textTheme: base.textTheme.apply(
       bodyColor: palette.text,
       displayColor: palette.text,
