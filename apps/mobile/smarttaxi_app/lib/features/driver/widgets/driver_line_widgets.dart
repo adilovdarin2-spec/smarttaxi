@@ -39,6 +39,15 @@ class DriverShiftHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
+    final driverLabel = (driverName ?? '').trim().isNotEmpty
+        ? driverName!.trim()
+        : l10n.driverDrawerNameFallback;
+    final shiftStatus = busy
+        ? l10n.driverStatusBusy
+        : online
+            ? l10n.driverStatusOnline
+            : l10n.driverStatusOffline;
+    final placeLabel = regionName ?? l10n.driverChooseRegionButton;
     return Container(
       padding: embedded ? EdgeInsets.zero : const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -59,18 +68,17 @@ class DriverShiftHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (driverName ?? '').trim().isNotEmpty
-                          ? driverName!.trim()
-                          : l10n.driverDrawerNameFallback,
+                      shiftStatus,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: palette.text,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
+                        fontSize: embedded ? 24 : 21,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.35,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     InkWell(
                       onTap: onRegionTap,
                       borderRadius: BorderRadius.circular(10),
@@ -82,7 +90,7 @@ class DriverShiftHero extends StatelessWidget {
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
-                              regionName ?? l10n.driverChooseRegionButton,
+                              '$driverLabel · $placeLabel',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
