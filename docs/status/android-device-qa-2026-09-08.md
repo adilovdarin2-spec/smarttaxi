@@ -94,6 +94,14 @@ was involved.
 - The device was returned to the light theme and the local driver was taken
   offline after QA.
 
+## Session recovery on the physical phone
+
+The local full-smoke login deliberately superseded the phone's earlier local
+test-driver session. After a force-stop and normal launch, the app discarded
+that stale session and returned to the regular Russian login screen without a
+blank shell, raw server error or a stuck loading state. A normal local login
+then restored the driver to the offline line screen.
+
 ## Deliberate boundaries
 
 - The APK on the phone is a development QA artifact. A separately signed
