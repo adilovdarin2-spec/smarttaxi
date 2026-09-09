@@ -4,6 +4,7 @@ import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { driverDailyStats } from "./driver-daily-stats.service.js";
 import {
   assertDriverCanGoOnline,
   assertDriverDispatchReady
@@ -190,15 +191,9 @@ router.post("/orders/:id/reject", requireAuth, requireRole("DRIVER"), async (req
 router.get("/earnings/today", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const driver = await getDriverForUser(req.user.id);
-    const stats = (await query(`
-      SELECT COUNT(*) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','RATED','COMPLETED'))::int completed_orders,
-             COALESCE(SUM(price) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','RATED','COMPLETED')),0)::int today_gross_kzt,
-             COALESCE(SUM(service_commission) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','RATED','COMPLETED')),0)::int commission_kzt
-      FROM orders
-      WHERE driver_id=$1 AND created_at >= date_trunc('day', NOW())
-    `, [driver.id])).rows[0];
-    const todayGrossKzt = Number(stats.today_gross_kzt || 0);
-    const commissionKzt = Number(stats.commission_kzt || 0);
+    const stats = await driverDailyStats(driver.id, query);
+    const todayGrossKzt = stats.revenue_total;
+    const commissionKzt = stats.commission_total;
     res.json({
       todayGrossKzt,
       todayNetKzt: Math.max(0, todayGrossKzt - commissionKzt),

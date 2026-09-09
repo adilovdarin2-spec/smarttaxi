@@ -49,6 +49,18 @@ bool driverRouteTargetChanged(OrderSummary? previous, OrderSummary? next) =>
     driverRoutePhaseForStatus(previous?.status) !=
         driverRoutePhaseForStatus(next?.status);
 
+bool driverNavigationCanGuide(String? status) => const {
+      'DRIVER_FOUND',
+      'DRIVER_ASSIGNED',
+      'DRIVER_GOING_TO_CLIENT',
+      'TRIP_STARTED',
+      'IN_PROGRESS',
+    }.contains(status);
+
+bool driverShouldCloseNavigator(String? openedOrderId, OrderSummary? order) =>
+    openedOrderId != null &&
+    (order?.id != openedOrderId || !driverNavigationCanGuide(order?.status));
+
 /// A restored active assignment is already a working server-side session.
 /// Resume GPS without calling setDriverStatus(FREE) or duplicating a watcher.
 bool driverShouldRestoreLocation({
@@ -95,9 +107,15 @@ bool driverRouteRequestMatches({
         case 'right':
           return (l10n.driverManeuverTurnRight, Icons.turn_right_rounded);
         case 'slight left':
-          return (l10n.driverManeuverSlightLeft, Icons.turn_slight_left_rounded);
+          return (
+            l10n.driverManeuverSlightLeft,
+            Icons.turn_slight_left_rounded
+          );
         case 'slight right':
-          return (l10n.driverManeuverSlightRight, Icons.turn_slight_right_rounded);
+          return (
+            l10n.driverManeuverSlightRight,
+            Icons.turn_slight_right_rounded
+          );
         case 'sharp left':
           return (l10n.driverManeuverSharpLeft, Icons.turn_left_rounded);
         case 'sharp right':
@@ -122,12 +140,17 @@ bool driverRouteRequestMatches({
       // a driver just "circular motion" without which exit to take isn't
       // enough to actually navigate a multi-exit roundabout correctly.
       return exit != null
-          ? (l10n.driverManeuverRoundaboutWithExit(exit),
-              Icons.roundabout_left_rounded)
+          ? (
+              l10n.driverManeuverRoundaboutWithExit(exit),
+              Icons.roundabout_left_rounded
+            )
           : (l10n.driverManeuverRoundabout, Icons.roundabout_left_rounded);
     case 'exit roundabout':
     case 'exit rotary':
-      return (l10n.driverManeuverExitRoundabout, Icons.roundabout_right_rounded);
+      return (
+        l10n.driverManeuverExitRoundabout,
+        Icons.roundabout_right_rounded
+      );
     case 'arrive':
       return (l10n.driverManeuverArrive, Icons.flag_rounded);
     default:
@@ -234,21 +257,25 @@ String? liveRouteMeta(
   double? liveDurationSeconds,
 }) {
   if (route == null) return null;
-  final distanceKm = (liveDistanceMeters ?? route.distanceMeters) / 1000;
-  final minutes = ((liveDurationSeconds ?? route.durationSeconds) / 60).round();
+  final meters = liveDistanceMeters ?? route.distanceMeters;
+  final seconds = liveDurationSeconds ?? route.durationSeconds;
+  if (!meters.isFinite || meters < 0 || !seconds.isFinite || seconds < 0) {
+    return null;
+  }
+  final minutes = (seconds / 60).ceil().clamp(1, 1000000);
   final label = route.isToDropoff
       ? l10n.driverPickupMetaToDropoff
       : l10n.driverPickupMetaToPickup;
-  final text =
-      l10n.driverPickupMetaText(label, distanceKm.toStringAsFixed(1), minutes);
+  final distance = meters < 1000
+      ? l10n.driverNavMeters(meters.round())
+      : l10n.driverNavKilometers((meters / 1000).toStringAsFixed(1));
+  final text = '$label: $distance · ${l10n.driverNavMinutes(minutes)}';
   // route.isFallback means OSRM was unreachable and the backend drew a
   // straight line between the two points instead of a real road route
   // (routing.service.js's straightLineRouteFallback) — distance/ETA are a
   // rough guess, not what the road actually measures. This used to render
   // identically to a real route with no way to tell the difference.
-  return route.isFallback
-      ? '$text · ${l10n.driverRouteFallbackNotice}'
-      : text;
+  return route.isFallback ? '$text · ${l10n.driverRouteFallbackNotice}' : text;
 }
 
 String statusLabel(AppLocalizations l10n, String status) {

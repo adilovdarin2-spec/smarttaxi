@@ -156,6 +156,24 @@ class NavigatorRoadWarning extends StatelessWidget {
   }
 }
 
+/// The primary trip action stays outside the scrolling information panel.
+class NavigatorTripControls extends StatelessWidget {
+  const NavigatorTripControls(
+      {super.key, required this.panel, required this.maxHeight, this.action});
+  final Widget panel;
+  final Widget? action;
+  final double maxHeight;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Flexible(child: SingleChildScrollView(child: panel)),
+          if (action != null) ...[const SizedBox(height: 8), action!],
+        ]),
+      );
+}
+
 class NavigatorTripPanel extends StatelessWidget {
   const NavigatorTripPanel(
       {super.key,

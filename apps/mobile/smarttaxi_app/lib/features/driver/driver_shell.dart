@@ -3069,6 +3069,11 @@ class _DriverShellState extends State<DriverShell> {
   Widget _tripTab() {
     final l10n = AppLocalizations.of(context);
     final action = _nextAction();
+    final liveMeta = driverNavigationCanGuide(_activeOrder?.status)
+        ? liveRouteMeta(l10n, _driverRoute)
+        : null;
+    final tripMeta = liveMeta ??
+        (_activeOrder == null ? null : routeMeta(l10n, _activeOrder!));
     final body = ListView(
       padding: driverPagePadding(context),
       children: [
@@ -3238,13 +3243,9 @@ class _DriverShellState extends State<DriverShell> {
                           style:
                               TextStyle(color: context.palette.textSecondary)),
                     ],
-                    if ((liveRouteMeta(l10n, _driverRoute) ??
-                            routeMeta(l10n, _activeOrder!)) !=
-                        null) ...[
+                    if (tripMeta != null) ...[
                       const SizedBox(height: 8),
-                      Text(
-                          liveRouteMeta(l10n, _driverRoute) ??
-                              routeMeta(l10n, _activeOrder!)!,
+                      Text(tripMeta,
                           style:
                               TextStyle(color: context.palette.textSecondary)),
                     ],
@@ -3356,6 +3357,7 @@ class _DriverShellState extends State<DriverShell> {
         builder: (_) => _DriverFullScreenNavigator(shell: this),
       ),
     );
+    if (mounted && _activeOrder != null) setState(() => _tab = 2);
   }
 
   Coordinate? get _currentCoordinate {
@@ -5003,6 +5005,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   bool _mapReady = false;
   bool _mapUnavailable = false;
   int _tileErrorCount = 0;
+  String? _openedOrderId;
   // Navigator can be opened before the driver goes online.  In that case it
   // owns a short-lived location stream for map preview, so permission/service
   // failures must be shown as an actionable state instead of an endless
@@ -5041,6 +5044,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   @override
   void initState() {
     super.initState();
+    _openedOrderId = widget.shell._activeOrder?.id;
     // This poll exists only because the shell's own setState calls don't
     // reach this widget (a separate pushed route, not a descendant) -- every
     // tick unconditionally rebuilds the whole map/banner/cockpit tree, which
@@ -5194,7 +5198,12 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   }
 
   void _tick() {
-    if (!mounted) return;
+    if (!mounted || !widget.shell.mounted) return;
+    if (driverShouldCloseNavigator(_openedOrderId, widget.shell._activeOrder) &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      Navigator.of(context).pop();
+      return;
+    }
     final current = widget.shell._currentCoordinate;
     // A UI repaint is not a GPS fix. The accepted Position.timestamp drives
     // freshness; route refreshes are scheduled after acknowledged GPS writes.
@@ -5274,7 +5283,9 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     // in that case; this also removes the layout conflict where it and the
     // "GPS lost" banner would otherwise render at the same position.
     final showManeuverBanner = maneuver != null && !_gpsLost;
-    final route = shell._driverRoute?.geometry ?? const <LatLng>[];
+    final route = shell._driverRoute?.isFallback == true
+        ? const <LatLng>[]
+        : shell._driverRoute?.geometry ?? const <LatLng>[];
     final alerts = shell._allNavigatorAlerts;
     final routeProgress = shell._liveRouteProgress();
     final targetMeta = liveRouteMeta(
@@ -5288,6 +5299,8 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     // repeated the very same two numbers — the panel said everything twice
     // and still never told the driver which street he was aiming for.
     final navOrder = shell._activeOrder;
+    final navAction =
+        driverNavigationCanGuide(navOrder?.status) ? shell._nextAction() : null;
     final navToDropoff = navOrder != null &&
         _DriverShellState._routePhaseForStatus(navOrder.status) == 'to_dropoff';
     final targetLabel = navOrder == null
@@ -5396,7 +5409,8 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                                 foreground: Colors.white,
                               ),
                             ),
-                          if (shell._activeOrder?.dropoffCoordinate != null)
+                          if (navToDropoff &&
+                              shell._activeOrder?.dropoffCoordinate != null)
                             Marker(
                               point: shell._activeOrder!.dropoffCoordinate!
                                   .toLatLng(),
@@ -5489,13 +5503,16 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                   maxHeight: MediaQuery.sizeOf(context).height * 0.32),
               child: SingleChildScrollView(
                 child: NavigatorStatusStack(
-                  status: _gpsStatusMessage != null
-                      ? InlineMessage(text: _gpsStatusMessage!)
-                      : _gpsLost
-                          ? const _GpsSearchingBanner()
-                          : shell._navigatorMessage != null
-                              ? InlineMessage(text: shell._navigatorMessage!)
-                              : null,
+                  status: shell._error != null
+                      ? InlineMessage(text: shell._error!, danger: true)
+                      : _gpsStatusMessage != null
+                          ? InlineMessage(text: _gpsStatusMessage!)
+                          : _gpsLost
+                              ? const _GpsSearchingBanner()
+                              : shell._navigatorMessage != null
+                                  ? InlineMessage(
+                                      text: shell._navigatorMessage!)
+                                  : null,
                   maneuver: showManeuverBanner
                       ? NavigatorManeuverBanner(
                           label: maneuver.label,
@@ -5527,11 +5544,31 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                     )),
                 const SizedBox(height: 10),
               ],
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                    maxHeight: MediaQuery.sizeOf(context).height * 0.36),
-                child: SingleChildScrollView(
-                    child: NavigatorTripPanel(
+              NavigatorTripControls(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.42,
+                action: navAction == null
+                    ? null
+                    : DriverGradientButton(
+                        text: navAction.$1,
+                        enabled: shell._tripActionLabel == null,
+                        loading: shell._tripActionLabel != null,
+                        loadingText: l10n.driverTripSavingButton,
+                        onTap: shell._tripActionLabel != null
+                            ? null
+                            : () async {
+                                if (shell._activeOrder?.id != navOrder?.id ||
+                                    shell._activeOrder?.status !=
+                                        navOrder?.status) {
+                                  return;
+                                }
+                                await shell._tripAction(
+                                    navAction.$1, navAction.$2);
+                                if (mounted) {
+                                  _tick();
+                                }
+                              },
+                      ),
+                panel: NavigatorTripPanel(
                   targetLabel: targetLabel,
                   targetIcon: targetIcon,
                   speedKmh: speedKmh,
@@ -5541,7 +5578,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                   idleLabel: _gpsLost
                       ? l10n.driverSearchingGpsSignal
                       : l10n.driverNavigatorNoRouteLabel,
-                )),
+                ),
               ),
             ]),
           ),

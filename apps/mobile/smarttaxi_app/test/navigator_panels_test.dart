@@ -6,10 +6,67 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smarttaxi_app/core/theme/app_theme.dart';
 import 'package:smarttaxi_app/features/driver/widgets/navigator_panels.dart';
+import 'package:smarttaxi_app/features/driver/widgets/driver_common_widgets.dart';
 import 'package:smarttaxi_app/l10n/app_localizations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  for (final width in [320.0, 390.0]) {
+    for (final scale in [1.0, 1.6]) {
+      testWidgets('navigator trip action remains visible at $width/$scale',
+          (tester) async {
+        tester.view.physicalSize = Size(width, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        var pressed = 0;
+        Future<void> render(bool loading) => tester.pumpWidget(MaterialApp(
+              theme: buildSmartTaxiTheme(),
+              locale: const Locale('ru'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(scale)),
+                  child: child!),
+              home: Scaffold(
+                  body: Stack(children: [
+                Positioned(
+                    left: 14,
+                    right: 14,
+                    bottom: 14,
+                    child: NavigatorTripControls(
+                      maxHeight: 568 * .42,
+                      panel: const NavigatorTripPanel(
+                          targetLabel:
+                              'улица Бектасова, 60, главный вход со стороны улицы',
+                          speedKmh: 20,
+                          distanceMeters: 240,
+                          durationSeconds: 120,
+                          idleLabel: 'GPS'),
+                      action: DriverGradientButton(
+                          text: 'Прибыл',
+                          loading: loading,
+                          onTap: () => pressed++),
+                    ))
+              ])),
+            ));
+        await render(false);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final rect = tester.getRect(find.byType(DriverGradientButton));
+        expect(rect.bottom, lessThanOrEqualTo(554));
+        expect(rect.top, greaterThan(300));
+        await tester.tap(find.byType(DriverGradientButton));
+        expect(pressed, 1);
+        await render(true);
+        await tester.pump();
+        await tester.tap(find.byType(DriverGradientButton));
+        expect(pressed, 1);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
   setUpAll(() async {
     await (FontLoader('Inter')
           ..addFont(rootBundle.load('assets/fonts/InterVariable.ttf')))

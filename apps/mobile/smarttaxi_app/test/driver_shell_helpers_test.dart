@@ -31,6 +31,53 @@ DioException _badResponse(String code, {int status = 400}) {
 }
 
 void main() {
+  test('navigator follows only its original driving assignment', () {
+    for (final status in [
+      'DRIVER_FOUND',
+      'DRIVER_ASSIGNED',
+      'DRIVER_GOING_TO_CLIENT',
+      'TRIP_STARTED',
+      'IN_PROGRESS'
+    ]) {
+      expect(
+          driverShouldCloseNavigator('ride-1', _driverOrder(status)), isFalse);
+    }
+    for (final status in [
+      'DRIVER_ARRIVED',
+      'WAITING_CLIENT',
+      'TRIP_COMPLETED',
+      'PAID',
+      'RATED',
+      'CANCELLED_BY_CLIENT'
+    ]) {
+      expect(
+          driverShouldCloseNavigator('ride-1', _driverOrder(status)), isTrue);
+    }
+    expect(driverShouldCloseNavigator('ride-1', null), isTrue);
+    expect(
+        driverShouldCloseNavigator(
+            'ride-1', _driverOrder('TRIP_STARTED', id: 'other')),
+        isTrue);
+    expect(driverShouldCloseNavigator(null, null), isFalse,
+        reason: 'Standalone preview remains available');
+  });
+  test('nearby live route uses metres and never rounds positive time to zero',
+      () {
+    const route = RoutePreview(
+        regionId: 'region',
+        distanceMeters: 8,
+        durationSeconds: 3,
+        geometry: [],
+        phase: 'to_pickup');
+    expect(liveRouteMeta(_l10n, route), contains('8 м'));
+    expect(liveRouteMeta(_l10n, route), contains('1 мин'));
+    expect(
+        liveRouteMeta(_l10n, route,
+            liveDistanceMeters: 1250, liveDurationSeconds: 61),
+        contains('2 мин'));
+    expect(liveRouteMeta(_l10n, route, liveDistanceMeters: double.nan), isNull);
+    expect(liveRouteMeta(_l10n, route, liveDurationSeconds: -1), isNull);
+  });
   group('driver order and route lifecycle', () {
     test('cold active-trip restore resumes GPS without duplicating a watcher',
         () {
@@ -224,12 +271,14 @@ void main() {
     });
 
     test('handles a non-Dio error without throwing', () {
-      expect(readableError(_l10n, Exception('boom')), 'Не удалось выполнить запрос');
+      expect(readableError(_l10n, Exception('boom')),
+          'Не удалось выполнить запрос');
     });
   });
 
   group('apiErrorCode', () {
-    test('extracts the code driver_shell.dart branches on for approval'
+    test(
+        'extracts the code driver_shell.dart branches on for approval'
         ' blocks (DRIVER_REGION_BLOCKED etc.)', () {
       // driver_shell.dart's _setOnline() used to test
       // approvalCodes.any(error.toString().contains) to decide whether a
@@ -253,7 +302,8 @@ void main() {
       // confirmed live against router.project-osrm.org near Мырзакент) —
       // not a hypothetical vocabulary.
       expect(maneuverLabelAndIcon(_l10n, 'turn', 'left').$1, 'Поворот налево');
-      expect(maneuverLabelAndIcon(_l10n, 'turn', 'right').$1, 'Поворот направо');
+      expect(
+          maneuverLabelAndIcon(_l10n, 'turn', 'right').$1, 'Поворот направо');
       expect(maneuverLabelAndIcon(_l10n, 'turn', 'slight left').$1,
           'Держитесь левее');
       expect(maneuverLabelAndIcon(_l10n, 'roundabout', 'right').$1,
@@ -334,8 +384,7 @@ void main() {
       expect(route.steps[2].exit, 2);
     });
 
-    test('defaults to an empty step list for the straight-line fallback',
-        () {
+    test('defaults to an empty step list for the straight-line fallback', () {
       final route = RoutePreview.fromJson({
         'regionId': 'region-1',
         'distanceMeters': 100.0,

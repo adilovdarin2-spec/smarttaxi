@@ -13,6 +13,7 @@ import {
 } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { updateDriverLocation } from "../routing/routing.service.js";
 import { ACTIVE_ORDER_STATUSES, syncDriverAvailability } from "../orders/order-dispatch.service.js";
+import { driverDailyStats } from "./driver-daily-stats.service.js";
 const router = Router();
 
 function nearbyPublicId(driverId) {
@@ -204,13 +205,7 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
     let driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
     if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
     driver = await syncDriverAvailability(driver, query);
-    const stats = await query(`
-      SELECT COUNT(*)::int orders_total,
-             COUNT(*) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED'))::int completed_orders,
-             COALESCE(SUM(price) FILTER (WHERE status IN ('TRIP_COMPLETED','PAYMENT_PENDING','PAID','COMPLETED')),0)::int revenue_total
-      FROM orders
-      WHERE driver_id=$1 AND created_at >= date_trunc('day', NOW())
-    `, [driver.id]);
+    const stats = await driverDailyStats(driver.id, query);
     const activeOrder = (await query(`
       SELECT *
       FROM orders
@@ -222,7 +217,9 @@ router.get("/me/stats", requireAuth, requireRole("DRIVER"), async (req, res, nex
       driver,
       activeOrder,
       today: {
-        ...stats.rows[0],
+        orders_total: stats.orders_total,
+        completed_orders: stats.completed_orders,
+        revenue_total: stats.revenue_total,
         debt: driver.debt,
         balance: driver.balance
       }
