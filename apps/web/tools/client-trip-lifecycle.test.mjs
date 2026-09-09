@@ -50,6 +50,40 @@ function fakeClock() {
   };
 }
 
+test("route failures identify the affected leg, retry, and recover without another GPS fix", async () => {
+  const clock = fakeClock();
+  let calls = 0;
+  const errors = [], received = [];
+  const scheduler = createLiveRouteScheduler({ ...clock,
+    fetchRoute: async () => { if (++calls === 1) throw Error('offline'); return route(); },
+    onRoute: value => received.push(value), onError: value => errors.push(value)
+  });
+  scheduler.update(order());
+  await flush();
+  assert.deepEqual(errors, [{sourceOrderId:'trip-1',sourceDriverId:'driver-1',phase:'to_pickup'}]);
+  await clock.advance(8000);
+  assert.equal(calls, 2);
+  assert.equal(received.at(-1).phase, 'to_pickup');
+  scheduler.dispose();
+});
+
+test("late route failures never become errors on a replacement leg or disposed screen", async () => {
+  for (const dispose of [false, true]) {
+    const old = deferred();
+    let calls = 0;
+    const errors = [];
+    const scheduler = createLiveRouteScheduler({
+      fetchRoute: () => ++calls === 1 ? old.promise : Promise.resolve(route('to_dropoff')),
+      onRoute() {}, onError: value => errors.push(value)
+    });
+    scheduler.update(order()); await flush();
+    if (dispose) scheduler.dispose(); else scheduler.update(order({status:'TRIP_STARTED'}));
+    old.reject(Error('late offline')); await flush();
+    assert.deepEqual(errors, []);
+    scheduler.dispose();
+  }
+});
+
 test("longitude-only movement gets a trailing route without another GPS tick", async () => {
   const clock = fakeClock();
   const calls = [];

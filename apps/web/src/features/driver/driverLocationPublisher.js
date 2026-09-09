@@ -14,6 +14,7 @@ export function createDriverLocationPublisher({
   onPublished,
   onError = () => {},
   isCurrent = () => true,
+  isFresh = () => true,
   now = Date.now,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
@@ -50,6 +51,11 @@ export function createDriverLocationPublisher({
   function run() {
     if (!current() || !latest || request) return;
     const location = latest;
+    if (!isFresh(location)) {
+      latest = null;
+      onError({ code: "GPS_FIX_STALE" });
+      return;
+    }
     const sentRevision = revision;
     const controller = new AbortController();
     request = controller;

@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import { Icon } from "../../core/icons.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
-import { useLiveDriverRoute } from "../client/useLiveDriverRoute.js";
+import { useLiveDriverRouteState } from "../client/useLiveDriverRoute.js";
 import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
 import { driverLocationFeedback } from "./driverLocationFeedback.js";
+import DriverNavigator from "./DriverNavigator.jsx";
+import { driverRouteMeta } from "./driverRoutePresentation.js";
+import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress.js";
 import { sessionGuard } from "../../lib/sessionGuard.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
@@ -251,23 +254,6 @@ function canNoShow(order) {
   return ["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(order?.status);
 }
 
-// Distance/ETA from the driver's actual live position to whichever leg is
-// active right now (pickup or dropoff), recalculated by the backend via
-// OSRM as the driver moves — as opposed to order.distanceKm/durationMin,
-// which is the static whole-trip estimate captured once at order creation
-// and never updates while the trip is in progress.
-function liveRouteMeta(route) {
-  if (!route) return null;
-  const distanceKm = Number(route.distanceMeters || 0) / 1000;
-  // Rounded up, not to nearest, to match the app-wide convention (see
-  // ClientApp's durationMinFromRoute) — never shows "0 мин" while there's
-  // still real time left on the leg.
-  const minutes = Math.ceil(Number(route.durationSeconds || 0) / 60);
-  if (!Number.isFinite(distanceKm) || !Number.isFinite(minutes)) return null;
-  const label = route.phase === "to_dropoff" ? "До точки назначения" : "До точки подачи";
-  return `${label}: ${distanceKm.toFixed(1)} км · ${minutes} мин`;
-}
-
 function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
   return (
     <PhoneFrame className="driver-core-phone driver-core-login">
@@ -391,9 +377,9 @@ function IncomingOrderCard({ order, onAccept, onReject, loading }) {
   );
 }
 
-function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, loading }) {
+function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, onNavigate, loading }) {
   const next = orderNextAction(order);
-  const meta = liveRouteMeta(driverRoute);
+  const meta = driverRouteMeta(driverRoute, order.status);
   const awaitingPayment = ["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(order.status);
   return (
     <section className="driver-core-active" data-order-id={order.id}>
@@ -428,6 +414,8 @@ function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, lo
         <span>{order.payout ? `Водителю ${order.payout.toLocaleString("ru-RU")} ₸` : "Выплата после завершения"}</span>
       </div>
       <div className="driver-core-card-actions stack">
+        {["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "TRIP_STARTED"].includes(order.status) &&
+          <Button variant="secondary" onClick={() => onNavigate(order)}><Icon name="route" /> Навигатор</Button>}
         {awaitingPayment && <p className="driver-core-payment-note">{next
           ? "Поездка завершена. Подтвердите оплату после получения денег."
           : "Поездка завершена. Ожидаем подтверждения электронной оплаты."}</p>}
@@ -472,6 +460,8 @@ export default function DriverApp() {
   const [actionLoading, setActionLoading] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState("line");
+  const [navigationOrderId, setNavigationOrderId] = useState(null);
+  const closeNavigation = useCallback(() => { setNavigationOrderId(null); setTab("active"); }, []);
   const [driverPosition, setDriverPosition] = useState(null);
   const [publishedDriverPosition, setPublishedDriverPosition] = useState(null);
   const [locationIssue, setLocationIssue] = useState(null);
@@ -512,7 +502,15 @@ export default function DriverApp() {
     driver_lat: confirmedPosition?.lat ?? activeOrder.driver_lat,
     driver_lng: confirmedPosition?.lng ?? activeOrder.driver_lng
   } : null;
-  const driverRoute = useLiveDriverRoute(routeOrder, session);
+  const { route: driverRoute, unavailable: routeUnavailable } = useLiveDriverRouteState(routeOrder, session);
+  const navigationActive = Boolean(session && activeOrder?.id === navigationOrderId &&
+    ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "TRIP_STARTED"].includes(activeOrder?.status));
+  useEffect(() => {
+    if (!navigationActive && navigationOrderId !== null) {
+      setNavigationOrderId(null);
+      setTab("active");
+    }
+  }, [navigationActive, navigationOrderId]);
 
   const refreshDriver = useCallback(async () => {
     const isCurrent = protectSession();
@@ -670,8 +668,11 @@ export default function DriverApp() {
     }
     let alive = true;
     let publisher;
+    let lastFixTimestamp = null;
     const createPublisher = () => createDriverLocationPublisher({
       publish: updateDriverLocation,
+      intervalMs: 4000,
+      isFresh: location => navigationFixIsFresh(location.timestamp),
       isCurrent: () => alive && getToken() === session,
       onPublished: location => {
         if (location.driverId !== driver.id) return;
@@ -682,8 +683,9 @@ export default function DriverApp() {
     });
     const handlePosition = position => {
       if (!alive || getToken() !== session) return;
-      const point = { lat: position.coords.latitude, lng: position.coords.longitude };
-      if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng) || Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180) return;
+      const point = browserNavigationFix(position, lastFixTimestamp);
+      if (!point) return;
+      lastFixTimestamp = point.timestamp;
       setDriverPosition(point);
       setLocationIssue(issue => issue?.source === 'browser' ? null : issue);
       publisher ||= createPublisher();
@@ -692,9 +694,10 @@ export default function DriverApp() {
       publisher.update({
         lat: point.lat,
         lng: point.lng,
-        heading: Number.isFinite(position.coords.heading) ? position.coords.heading : undefined,
-        speed: Number.isFinite(position.coords.speed) ? position.coords.speed : undefined,
-        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : undefined,
+        timestamp: point.timestamp,
+        heading: point.heading ?? undefined,
+        speed: point.speed ?? undefined,
+        accuracy: point.accuracy ?? undefined,
         source: "web"
       });
     };
@@ -709,15 +712,33 @@ export default function DriverApp() {
     };
     const watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, {
       enableHighAccuracy: true,
-      maximumAge: 10000,
+      maximumAge: 2000,
       timeout: 20000
     });
+    // Browser watches need not fire while stationary. Request actual fresh
+    // fixes during navigation; never turn a repaint into a GPS timestamp.
+    let polling = false;
+    const gpsTimer = navigationActive ? window.setInterval(() => {
+      if (polling || document.visibilityState !== "visible") return;
+      polling = true;
+      const polledAfter = lastFixTimestamp;
+      navigator.geolocation.getCurrentPosition(
+        position => { polling = false; handlePosition(position); },
+        error => {
+          polling = false;
+          // A timeout from the poll must not erase a newer watch fix.
+          if (lastFixTimestamp === polledAfter) handleLocationError(error);
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+      );
+    }, 4000) : null;
     return () => {
       alive = false;
       publisher?.dispose();
+      if (gpsTimer !== null) window.clearInterval(gpsTimer);
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [session, driver?.id, isWorking, selectedRegionId, locationAttempt]);
+  }, [session, driver?.id, isWorking, selectedRegionId, locationAttempt, navigationActive]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -923,6 +944,14 @@ export default function DriverApp() {
   if (!logged) {
     return <DriverLogin auth={auth} setAuth={setAuth} onSubmit={handleLogin} loading={loginLoading} error={loginError} />;
   }
+  if (navigationActive) {
+    return <PhoneFrame className="driver-navigation-phone"><DriverNavigator
+      order={activeOrder} route={driverRoute} routeUnavailable={routeUnavailable} position={driverPosition} locationIssue={locationIssue}
+      error={error} nextAction={orderNextAction(activeOrder)} loading={actionLoading}
+      onNext={() => handleNext(activeOrder, orderNextAction(activeOrder))} onClose={closeNavigation}
+      onRetryGPS={() => setLocationAttempt(attempt => attempt + 1)} MapComponent={MapView}
+    /></PhoneFrame>;
+  }
   const mapTab = ["line", "orders", "active"].includes(tab);
 
   return (
@@ -990,7 +1019,7 @@ export default function DriverApp() {
                     {actionLoading === "status" ? "Сохраняем..." : (isWorking ? "Уйти с линии" : "Выйти на линию")}
                   </Button>
                 </div>
-                {displayedOrder && <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />}
+                {displayedOrder && <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} onNavigate={order => setNavigationOrderId(order.id)} loading={actionLoading} />}
                 {!activeOrder && isOnline && incomingOrders.slice(0, 1).map(order => (
                   <IncomingOrderCard
                     key={order.id}
@@ -1027,7 +1056,7 @@ export default function DriverApp() {
 
             {tab === "active" && (
               displayedOrder ? (
-                <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} loading={actionLoading} />
+                <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} onNavigate={order => setNavigationOrderId(order.id)} loading={actionLoading} />
               ) : (
                 <div className="driver-core-empty">Активной поездки нет.</div>
               )

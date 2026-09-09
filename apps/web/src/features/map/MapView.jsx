@@ -328,7 +328,10 @@ export default function MapView({
   onMapPick,
   centerMarker = false,
   onCenterChange,
-  onCenterChanging
+  onCenterChanging,
+  navigationMode = false,
+  followDriver = false,
+  onFollowChange
 }) {
   const containerRef = useRef(null);
   const pickerOverlayRef = useRef(null);
@@ -352,6 +355,13 @@ export default function MapView({
   const centerPoint = validPoint(center) || pickupPoint || destinationPoint || DEFAULT_CENTER;
   const routePoints = routeCoordinates(route);
   const style = useMemo(() => mapStyle(), []);
+
+  function followCar(map, duration = 500) {
+    if (!navigationMode || !followDriver || !driverPoint) return;
+    map.easeTo({ center: [driverPoint.lng, driverPoint.lat], zoom: 17.5, pitch: 40,
+      bearing: Number.isFinite(driver?.heading) ? driver.heading : map.getBearing(),
+      offset: [0, Math.min(70, map.getCanvas().clientHeight * .18)], duration });
+  }
 
   function pickerScreenPoint() {
     const bounds = containerRef.current?.getBoundingClientRect();
@@ -450,6 +460,7 @@ export default function MapView({
       setMapError("");
       map.resize();
       if (centerMarker) centerUnderPicker(map, centerPoint, 0, true);
+      else if (navigationMode && followDriver && driverPoint) followCar(map, 0);
       else fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
       // A map opened in address-picker mode can already be centred correctly,
       // in which case MapLibre does not emit `moveend`. Publish that initial
@@ -666,27 +677,42 @@ export default function MapView({
       animateMarkerTo(driverMarkerElRef.current, driverMarkerPointRef.current, driverPoint);
       driverMarkerPointRef.current = driverPoint;
     }
-  }, [mapReady, addressControls, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, centerPoint.lat, centerPoint.lng]);
+    if (driverMarkerElRef.current && navigationMode) {
+      driverMarkerElRef.current.setRotationAlignment("map").setPitchAlignment("map");
+      if (Number.isFinite(driver?.heading)) driverMarkerElRef.current.setRotation(driver.heading);
+    }
+  }, [mapReady, addressControls, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, navigationMode, centerPoint.lat, centerPoint.lng]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
+    if (navigationMode) { followCar(map); return; }
     if (centerMarker && !routePoints.length && !pickupPoint && !destinationPoint && !driverPoint) return;
     fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
-  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, centerPoint.lat, centerPoint.lng, route, compact]);
+  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, centerPoint.lat, centerPoint.lng, route, compact, navigationMode, followDriver]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !navigationMode) return;
+    const stopFollowing = event => { if (event.originalEvent) onFollowChange?.(false); };
+    map.on("dragstart", stopFollowing);
+    map.on("zoomstart", stopFollowing);
+    return () => { map.off("dragstart", stopFollowing); map.off("zoomstart", stopFollowing); };
+  }, [navigationMode, onFollowChange]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !containerRef.current) return undefined;
     const observer = new ResizeObserver(() => {
       map.resize();
-      if (!centerMarker) {
+      if (navigationMode) followCar(map, 0);
+      else if (!centerMarker) {
         fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
       }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, centerPoint.lat, centerPoint.lng, route, compact]);
+  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, centerPoint.lat, centerPoint.lng, route, compact, navigationMode, followDriver]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -31,6 +31,7 @@ function routeContext(order) {
 export function createLiveRouteScheduler({
   fetchRoute,
   onRoute,
+  onError = () => {},
   now = Date.now,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
@@ -75,11 +76,17 @@ export function createLiveRouteScheduler({
           sourceOrderId: active.orderId,
           sourceDriverId: active.driverId
         });
-        else pending = true;
+        else {
+          pending = true;
+          onError({ sourceOrderId: active.orderId, sourceDriverId: active.driverId, phase: active.phase });
+        }
       })
       .catch(() => {
         // Keep a previously confirmed route during a brief provider outage.
-        if (!disposed && requestGeneration === generation) pending = true;
+        if (!disposed && requestGeneration === generation) {
+          pending = true;
+          onError({ sourceOrderId: active.orderId, sourceDriverId: active.driverId, phase: active.phase });
+        }
       })
       .finally(() => {
         if (disposed || requestGeneration !== generation) return;

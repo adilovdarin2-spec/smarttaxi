@@ -48,6 +48,28 @@ test('location becomes route-visible only after the real write acknowledges it',
   publisher.dispose();
 });
 
+test('an expired queued GPS fix is dropped instead of being published as fresh', async () => {
+  const clock = fakeClock();
+  const sent = [], errors = [];
+  const publisher = createDriverLocationPublisher({ ...clock,
+    isFresh: location => clock.now() - location.timestamp <= 12000,
+    publish: async location => { sent.push(location); return ack(location); },
+    onPublished() {}, onError: error => errors.push(error.code)
+  });
+  publisher.update({ ...point(), timestamp: 0 });
+  await flush();
+  await clock.advance(1000);
+  publisher.update({ ...point(68.5043), timestamp: 1000 });
+  await clock.advance(14000);
+  assert.equal(sent.length, 1);
+  assert.deepEqual(errors, ['GPS_FIX_STALE']);
+  assert.equal(clock.pending(), 0);
+  publisher.update({ ...point(68.5045), timestamp: clock.now() });
+  await flush();
+  assert.equal(sent.length, 2, 'a genuinely new fix recovers publication');
+  publisher.dispose();
+});
+
 test('a final GPS fix inside the throttle window is sent without another event', async () => {
   const clock = fakeClock();
   const sent = [];
