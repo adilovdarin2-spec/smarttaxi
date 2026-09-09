@@ -9,6 +9,32 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get driverNavNow => 'Сейчас';
+
+  @override
+  String get driverNavSpeedUnit => 'км/ч';
+
+  @override
+  String driverNavMeters(int count) {
+    return '$count м';
+  }
+
+  @override
+  String driverNavKilometers(String distance) {
+    return '$distance км';
+  }
+
+  @override
+  String driverNavMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String driverNavArrival(String time) {
+    return 'Прибытие в $time';
+  }
+
+  @override
   String get appName => 'SmartTaxi';
 
   @override

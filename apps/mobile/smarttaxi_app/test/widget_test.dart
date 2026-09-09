@@ -942,8 +942,8 @@ void main() {
     expect(driver, contains('_openFullScreenNavigator'));
     expect(driver, contains('_DriverFullScreenNavigator'));
     expect(driver, contains('_SmartNavigatorMap'));
-    expect(driver, contains('_NavSpeedDial'));
-    expect(driver, contains('_NavRouteReadout'));
+    expect(driver, contains('NavigatorTripPanel('));
+    expect(driver, contains('NavigatorStatusStack('));
     expect(driver, contains('driverFreeModeLabel'));
     // 2GIS/Yandex/Google external-navigator buttons were removed by explicit
     // request — guard against them silently coming back.

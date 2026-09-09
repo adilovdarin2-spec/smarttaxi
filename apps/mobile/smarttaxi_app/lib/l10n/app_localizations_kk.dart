@@ -9,6 +9,32 @@ class AppLocalizationsKk extends AppLocalizations {
   AppLocalizationsKk([String locale = 'kk']) : super(locale);
 
   @override
+  String get driverNavNow => 'Қазір';
+
+  @override
+  String get driverNavSpeedUnit => 'км/сағ';
+
+  @override
+  String driverNavMeters(int count) {
+    return '$count м';
+  }
+
+  @override
+  String driverNavKilometers(String distance) {
+    return '$distance км';
+  }
+
+  @override
+  String driverNavMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String driverNavArrival(String time) {
+    return 'Келу уақыты $time';
+  }
+
+  @override
   String get appName => 'SmartTaxi';
 
   @override

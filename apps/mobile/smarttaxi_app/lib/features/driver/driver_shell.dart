@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -31,6 +32,7 @@ import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/models.dart';
 import 'models/driver_location_sync.dart';
+import 'models/navigation_progress.dart';
 import 'models/driver_shell_helpers.dart';
 import 'screens/notifications/driver_notifications_screen.dart';
 import 'screens/rating/driver_rating_screen.dart';
@@ -42,8 +44,20 @@ import 'widgets/driver_order_widgets.dart';
 import 'widgets/driver_payout_widgets.dart';
 import 'widgets/driver_profile_widgets.dart';
 import 'widgets/driver_shell_chrome.dart';
+import 'widgets/navigator_panels.dart';
 
 const _appVersion = AppConfig.appVersion;
+
+// Fresh fixes are needed even while stopped at a traffic light. A 20m filter
+// made a healthy stationary device indistinguishable from a lost GPS signal.
+LocationSettings get _navigationLocationSettings =>
+    defaultTargetPlatform == TargetPlatform.android
+        ? AndroidSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 0,
+            intervalDuration: const Duration(seconds: 3))
+        : const LocationSettings(
+            accuracy: LocationAccuracy.high, distanceFilter: 0);
 
 // Darkens the OSM raster tile layer for dark theme, same treatment as
 // passenger_shell.dart's map — see the fuller note there for the maths
@@ -204,6 +218,7 @@ class _DriverShellState extends State<DriverShell> {
   })? _cachedManeuverHint;
   RoutePreview? _maneuverHintRoute;
   Coordinate? _maneuverHintPosition;
+  String? _maneuverHintLanguageCode;
   // Same cache shape as the maneuver hint above, for the live
   // remaining-distance/ETA projection used by _liveRouteProgress().
   ({double distanceMeters, double durationSeconds})? _cachedRouteProgress;
@@ -224,14 +239,32 @@ class _DriverShellState extends State<DriverShell> {
   // Shared by the real (online, dispatch) position stream and the
   // navigator-preview standalone stream below — one place for the
   // heading-trust rule so the two can never quietly drift apart.
-  void _applyPositionFix(Position position) {
+  bool _applyPositionFix(Position position) {
+    if (!position.latitude.isFinite ||
+        !position.longitude.isFinite ||
+        position.latitude.abs() > 90 ||
+        position.longitude.abs() > 180 ||
+        !navigationFixIsFresh(position.timestamp, DateTime.now()) ||
+        (_lastPosition != null &&
+            position.timestamp.isBefore(_lastPosition!.timestamp))) {
+      return false;
+    }
     _lastPosition = position;
     if (position.speed.isFinite &&
         position.speed >= _headingTrustSpeedMps &&
-        position.heading.isFinite) {
+        position.heading.isFinite &&
+        position.heading >= 0 &&
+        position.heading < 360) {
       _trustedHeading = position.heading;
     }
+    return true;
   }
+
+  bool get _hasNavigationFix =>
+      navigationFixIsFresh(_lastPosition?.timestamp, DateTime.now()) &&
+      _lastPosition!.accuracy.isFinite &&
+      _lastPosition!.accuracy >= 0 &&
+      _lastPosition!.accuracy <= 60;
 
   DriverStats? _driverStats;
   List<OrderSummary> _tripHistory = const [];
@@ -927,13 +960,12 @@ class _DriverShellState extends State<DriverShell> {
     );
     _locationSync = sync;
     _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high, distanceFilter: 20),
+      locationSettings: _navigationLocationSettings,
     ).listen((position) {
       if (!mounted || !identical(_locationSync, sync)) return;
-      if (mounted) {
-        setState(() => _applyPositionFix(position));
-      }
+      var accepted = false;
+      setState(() => accepted = _applyPositionFix(position));
+      if (!accepted) return;
       _checkCameraProximity(position);
       _checkSignProximity(position);
       _checkArrivalProximity(position);
@@ -955,8 +987,15 @@ class _DriverShellState extends State<DriverShell> {
         ),
       );
       if (!mounted || !identical(_locationSync, sync)) return false;
-      if (mounted) {
-        setState(() => _applyPositionFix(current));
+      var accepted = false;
+      setState(() => accepted = _applyPositionFix(current));
+      if (!accepted) {
+        // A newer stream fix may have beaten getCurrentPosition(). Still
+        // await its persistence before allowing the online workflow onward.
+        final latest = _lastPosition;
+        return latest != null &&
+            navigationFixIsFresh(latest.timestamp, DateTime.now()) &&
+            await sync.add(latest);
       }
       if (!await sync.add(current)) {
         if (mounted && identical(_locationSync, sync)) {
@@ -1203,32 +1242,11 @@ class _DriverShellState extends State<DriverShell> {
     return _metersBetween(p.latitude, p.longitude, closestLat, closestLng);
   }
 
-  static double _bearingBetween(LatLng a, LatLng b) {
-    final lat1 = a.latitude * math.pi / 180;
-    final lat2 = b.latitude * math.pi / 180;
-    final dLng = (b.longitude - a.longitude) * math.pi / 180;
-    final y = math.sin(dLng) * math.cos(lat2);
-    final x = math.cos(lat1) * math.sin(lat2) -
-        math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
-    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
-  }
-
-  // Signed difference in degrees, positive = turning right, negative = left,
-  // normalized to (-180, 180] so a bearing wrap (e.g. 350° -> 10°) reads as
-  // a small +20 turn instead of a huge -340.
-  static double _bearingDelta(double from, double to) {
-    var delta = (to - from) % 360;
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
-    return delta;
-  }
-
   // routing.service.js now asks OSRM for steps=true, so real turn-by-turn
   // data (actual street names, actual maneuver type — not a guess) is
   // available whenever the current route came from a live OSRM answer.
-  // Falls back to the old bearing-change heuristic only when steps is empty
-  // (the straight-line degraded-mode fallback route, which has no real
-  // steps to offer — see routing.service.js's straightLineRouteFallback).
+  // Without real steps, do not invent intersection instructions from bends
+  // in a polyline. The road overview remains available without turn prompts.
   ({
     String label,
     IconData icon,
@@ -1238,7 +1256,7 @@ class _DriverShellState extends State<DriverShell> {
   })? _nextManeuverHint() {
     final route = _driverRoute;
     final position = _currentCoordinate;
-    if (route == null || position == null) {
+    if (route == null || position == null || !_hasNavigationFix) {
       _cachedManeuverHint = null;
       _maneuverHintRoute = null;
       _maneuverHintPosition = null;
@@ -1250,7 +1268,9 @@ class _DriverShellState extends State<DriverShell> {
     // geometry/step scan entirely when nothing that could change the answer
     // has changed since the last call.
     final lastPosition = _maneuverHintPosition;
+    final languageCode = Localizations.localeOf(context).languageCode;
     if (identical(route, _maneuverHintRoute) &&
+        languageCode == _maneuverHintLanguageCode &&
         lastPosition != null &&
         _metersBetween(lastPosition.lat, lastPosition.lng, position.lat,
                 position.lng) <
@@ -1261,6 +1281,7 @@ class _DriverShellState extends State<DriverShell> {
     _cachedManeuverHint = result;
     _maneuverHintRoute = route;
     _maneuverHintPosition = position;
+    _maneuverHintLanguageCode = languageCode;
     return result;
   }
 
@@ -1276,7 +1297,10 @@ class _DriverShellState extends State<DriverShell> {
   ({double distanceMeters, double durationSeconds})? _liveRouteProgress() {
     final route = _driverRoute;
     final position = _currentCoordinate;
-    if (route == null || position == null || route.geometry.length < 2) {
+    if (route == null ||
+        position == null ||
+        route.geometry.length < 2 ||
+        !_hasNavigationFix) {
       _cachedRouteProgress = null;
       _routeProgressRoute = null;
       _routeProgressPosition = null;
@@ -1299,45 +1323,13 @@ class _DriverShellState extends State<DriverShell> {
 
   ({double distanceMeters, double durationSeconds})? _computeLiveRouteProgress(
       RoutePreview route, Coordinate position) {
-    final geometry = route.geometry;
-    final current = position.toLatLng();
-    var nearestIndex = 0;
-    var nearestDistance = double.infinity;
-    for (var i = 0; i < geometry.length - 1; i++) {
-      final distance =
-          _distanceToSegmentMeters(current, geometry[i], geometry[i + 1]);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = i;
-      }
-    }
-    // Same 120m staleness guard as _computeNextManeuverHint — a route this
-    // far from the driver is about to be replaced by _maybeRefreshDriverRoute
-    // anyway, so fall back to the last-fetched static totals instead of
-    // projecting nonsense progress onto a route the driver has left.
-    if (nearestDistance > 120) return null;
-
-    var remainingMeters = _metersBetween(
-      current.latitude,
-      current.longitude,
-      geometry[nearestIndex + 1].latitude,
-      geometry[nearestIndex + 1].longitude,
-    );
-    for (var i = nearestIndex + 1; i < geometry.length - 1; i++) {
-      remainingMeters += _metersBetween(
-        geometry[i].latitude,
-        geometry[i].longitude,
-        geometry[i + 1].latitude,
-        geometry[i + 1].longitude,
-      );
-    }
-    final totalMeters = route.distanceMeters;
-    final ratio =
-        totalMeters > 0 ? (remainingMeters / totalMeters).clamp(0.0, 1.0) : 0.0;
-    return (
-      distanceMeters: remainingMeters,
-      durationSeconds: route.durationSeconds * ratio,
-    );
+    final progress = navigationProgress(route, position);
+    return progress == null
+        ? null
+        : (
+            distanceMeters: progress.distanceMeters,
+            durationSeconds: progress.durationSeconds,
+          );
   }
 
   ({
@@ -1347,130 +1339,21 @@ class _DriverShellState extends State<DriverShell> {
     String? streetName,
     LatLng location,
   })? _computeNextManeuverHint(RoutePreview route, Coordinate position) {
-    final geometry = route.geometry;
-    if (geometry.length < 3) {
-      return null;
-    }
-    final current = position.toLatLng();
-
-    var nearestIndex = 0;
-    var nearestDistance = double.infinity;
-    for (var i = 0; i < geometry.length - 1; i++) {
-      final distance =
-          _distanceToSegmentMeters(current, geometry[i], geometry[i + 1]);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = i;
-      }
-    }
-    // More than ~120m off every segment means the drawn route is stale
-    // (already handled by _maybeRefreshDriverRoute's own reroute check) —
-    // don't guess a maneuver against a route that's about to be replaced.
-    if (nearestDistance > 120) return null;
-
-    final steps = route.steps;
-    if (steps.isNotEmpty) {
-      final fromSteps =
-          _nextManeuverFromSteps(steps, geometry, nearestIndex, current);
-      if (fromSteps != null) return fromSteps;
-    }
-    return _nextManeuverFromBearing(geometry, nearestIndex, current);
-  }
-
-  // Each step's real maneuver.location is matched to its nearest point on
-  // the already-drawn geometry, so "is this step still ahead of the driver"
-  // reuses the exact same route-progress signal (nearestIndex) as the
-  // bearing fallback below — one consistent notion of "where on the route
-  // the driver currently is" either way.
-  ({
-    String label,
-    IconData icon,
-    double distanceMeters,
-    String? streetName,
-    LatLng location,
-  })? _nextManeuverFromSteps(List<RouteStep> steps, List<LatLng> geometry,
-      int nearestIndex, LatLng current) {
-    for (final step in steps) {
-      // The depart step just marks the trip's starting point, not something
-      // to alert the driver about.
-      if (step.type == 'depart') continue;
-      final stepPoint = step.location.toLatLng();
-      var stepIndex = 0;
-      var stepNearestDistance = double.infinity;
-      for (var i = 0; i < geometry.length; i++) {
-        final distance = _metersBetween(geometry[i].latitude,
-            geometry[i].longitude, stepPoint.latitude, stepPoint.longitude);
-        if (distance < stepNearestDistance) {
-          stepNearestDistance = distance;
-          stepIndex = i;
-        }
-      }
-      if (stepIndex < nearestIndex) continue; // already passed
-      final (label, icon) = maneuverLabelAndIcon(
-          AppLocalizations.of(context), step.type, step.modifier,
-          exit: step.exit);
-      return (
-        label: label,
-        icon: icon,
-        distanceMeters: _metersBetween(current.latitude, current.longitude,
-            stepPoint.latitude, stepPoint.longitude),
-        streetName: step.streetName.isEmpty ? null : step.streetName,
-        location: stepPoint,
-      );
-    }
-    return null;
-  }
-
-  // Real turn data unavailable (straight-line fallback route, see
-  // routing.service.js's straightLineRouteFallback) — derive a maneuver
-  // from bearing changes in the plain geometry instead. Degraded but still
-  // genuinely derived from real geometry, not invented.
-  ({
-    String label,
-    IconData icon,
-    double distanceMeters,
-    String? streetName,
-    LatLng location,
-  })? _nextManeuverFromBearing(
-      List<LatLng> route, int nearestIndex, LatLng current) {
-    const lookaheadMeters = 800.0;
-    const turnThresholdDegrees = 28.0;
-    final baseBearing =
-        _bearingBetween(route[nearestIndex], route[nearestIndex + 1]);
-    var cumulative = _metersBetween(
-      current.latitude,
-      current.longitude,
-      route[nearestIndex + 1].latitude,
-      route[nearestIndex + 1].longitude,
+    final progress = navigationProgress(route, position);
+    if (progress == null) return null;
+    final next = nextNavigationStep(route, progress);
+    if (next == null) return null;
+    final step = next.step;
+    final (label, icon) = maneuverLabelAndIcon(
+        AppLocalizations.of(context), step.type, step.modifier,
+        exit: step.exit);
+    return (
+      label: label,
+      icon: icon,
+      distanceMeters: next.distanceMeters,
+      streetName: step.streetName.isEmpty ? null : step.streetName,
+      location: step.location.toLatLng(),
     );
-    for (var i = nearestIndex + 1;
-        i < route.length - 1 && cumulative < lookaheadMeters;
-        i++) {
-      final segmentBearing = _bearingBetween(route[i], route[i + 1]);
-      final delta = _bearingDelta(baseBearing, segmentBearing);
-      if (delta.abs() >= turnThresholdDegrees) {
-        final l10n = AppLocalizations.of(context);
-        final (label, icon) = delta.abs() >= 150
-            ? (l10n.driverManeuverUturn, Icons.u_turn_left_rounded)
-            : delta > 0
-                ? (l10n.driverManeuverTurnRight, Icons.turn_right_rounded)
-                : (l10n.driverManeuverTurnLeft, Icons.turn_left_rounded);
-        return (
-          label: label,
-          icon: icon,
-          distanceMeters: cumulative,
-          streetName: null,
-          location: route[i],
-        );
-      }
-      cumulative += _metersBetween(
-        route[i].latitude,
-        route[i].longitude,
-        route[i + 1].latitude,
-        route[i + 1].longitude,
-      );
-    }
-    return null;
   }
 
   bool _hasActiveDrivingLeg(String? status) =>
@@ -1479,7 +1362,9 @@ class _DriverShellState extends State<DriverShell> {
   Future<void> _maybeRefreshDriverRoute(Position position) async {
     if (!mounted) return;
     final order = _activeOrder;
-    if (order == null || !_hasActiveDrivingLeg(order.status)) {
+    if (order == null ||
+        !_hasActiveDrivingLeg(order.status) ||
+        !navigationFixIsFresh(position.timestamp, DateTime.now())) {
       _pendingRoutePosition = null;
       _routeRefreshTimer?.cancel();
       _routeRefreshTimer = null;
@@ -1721,32 +1606,30 @@ class _DriverShellState extends State<DriverShell> {
       _announcedManeuverStage = 0;
       return;
     }
-    const prepareAtMeters = 200.0;
-    const nowAtMeters = 40.0;
-    final key = '${(maneuver.location.latitude * 2000).round()}'
-        '_${(maneuver.location.longitude * 2000).round()}';
+    final key = '${maneuver.location.latitude.toStringAsFixed(6)}'
+        '_${maneuver.location.longitude.toStringAsFixed(6)}_${maneuver.label}';
     if (key != _announcedManeuverKey) {
       _announcedManeuverKey = key;
       _announcedManeuverStage = 0;
     }
-    if (_announcedManeuverStage >= 2) return;
+    final stage = navigationAnnouncementStage(
+        maneuver.distanceMeters, _announcedManeuverStage);
+    if (stage == _announcedManeuverStage) return;
+    _announcedManeuverStage = stage;
     final l10n = AppLocalizations.of(context);
     final streetSuffix = maneuver.streetName == null
         ? ''
         : l10n.driverStreetSuffix(maneuver.streetName!);
-    if (_announcedManeuverStage < 1 &&
-        maneuver.distanceMeters <= prepareAtMeters) {
-      _announcedManeuverStage = 1;
-      unawaited(_voice.announce(
-        l10n.driverManeuverIn200mVoice(
-            maneuver.label.toLowerCase(), streetSuffix),
-        dedupeKey: 'maneuver-$key-prepare',
-      ));
-    } else if (_announcedManeuverStage < 2 &&
-        maneuver.distanceMeters <= nowAtMeters) {
-      _announcedManeuverStage = 2;
+    if (stage == 2) {
       unawaited(
           _voice.announce(maneuver.label, dedupeKey: 'maneuver-$key-now'));
+    } else if (stage == 1) {
+      final meters = (maneuver.distanceMeters / 10).round() * 10;
+      unawaited(_voice.announce(
+        '${l10n.driverInDistanceLabel(l10n.driverNavMeters(meters))}, '
+        '${maneuver.label.toLowerCase()}$streetSuffix',
+        dedupeKey: 'maneuver-$key-prepare',
+      ));
     }
   }
 
@@ -3485,7 +3368,7 @@ class _DriverShellState extends State<DriverShell> {
 
   int? get _speedKmh {
     final position = _lastPosition;
-    if (position == null) return null;
+    if (position == null || !_hasNavigationFix) return null;
     final speed = position.speed;
     if (!speed.isFinite || speed < 0) return null;
     // speedAccuracy of exactly 0.0 means "not reported by this device" (see
@@ -5093,187 +4976,6 @@ class _NavigatorPointMarker extends StatelessWidget {
   }
 }
 
-class _NavSpeedDial extends StatelessWidget {
-  const _NavSpeedDial({
-    required this.speedKmh,
-    required this.speeding,
-    required this.label,
-  });
-
-  final int? speedKmh;
-  final bool speeding;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    // Round, like the instrument it stands in for. A rectangular card of the
-    // same size reads as one more panel among many; the circle is spotted
-    // without being looked for, which is the entire point of a speed readout.
-    final tint = speeding ? palette.danger : palette.brand;
-    return Container(
-      width: 72,
-      height: 72,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: speeding ? palette.dangerSoft : palette.brandSurface,
-        border: Border.all(color: tint.withValues(alpha: 0.45), width: 2),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            speedKmh == null ? '--' : '$speedKmh',
-            maxLines: 1,
-            style: TextStyle(
-              color: speeding ? palette.danger : palette.text,
-              fontSize: 26,
-              height: 1.05,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            label,
-            maxLines: 1,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Distance, time and clock arrival in one block, sized by content instead of
-// by an equal-thirds grid. "2.7 км" is what the driver checks constantly, so
-// it carries the weight; the minutes and the arrival clock sit under it as
-// context rather than competing for the same emphasis.
-class _NavRouteReadout extends StatelessWidget {
-  const _NavRouteReadout({
-    required this.distanceMeters,
-    required this.durationSeconds,
-    required this.idleLabel,
-  });
-
-  final double? distanceMeters;
-  final double? durationSeconds;
-  final String idleLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final meters = distanceMeters;
-    final distance = meters == null
-        ? '--'
-        : meters >= 1000
-            ? '${(meters / 1000).toStringAsFixed(1)} км'
-            : '${meters.round()} м';
-
-    final seconds = durationSeconds;
-    final minutes = seconds == null ? null : (seconds / 60).ceil();
-    // Arrival is the question behind "сколько ещё" — a driver answering a
-    // passenger says a time, not a duration. Computed off the live remaining
-    // duration, so it slides as traffic does.
-    final arrival = seconds == null
-        ? null
-        : DateTime.now().add(Duration(seconds: seconds.round()));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Flexible(
-              child: Text(
-                distance,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: palette.text,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            if (minutes != null) ...[
-              const SizedBox(width: 8),
-              Text(
-                '$minutes мин',
-                maxLines: 1,
-                style: TextStyle(
-                  color: palette.textSecondary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          arrival == null
-              ? idleLabel
-              : 'Прибытие в ${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: palette.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Real-road-sign styling (red ring, white fill, bold black number) is the
-// convention drivers already read at a glance on actual Kazakhstan/CIS
-// roads — a plain text card reading "Лимит: 60" made them parse a label
-// before the number registered.
-class _SpeedLimitSign extends StatelessWidget {
-  const _SpeedLimitSign({required this.limitKmh});
-
-  final int limitKmh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE0343A), width: 5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Text(
-        '$limitKmh',
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          height: 1,
-        ),
-      ),
-    );
-  }
-}
-
 /// Smart Navigator's dedicated full-screen presentation — pushed as a real
 /// route (see _DriverShellState._openFullScreenNavigator), not tab index 3.
 /// Deliberately reads state straight off the [_DriverShellState] it was
@@ -5301,7 +5003,6 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   bool _mapReady = false;
   bool _mapUnavailable = false;
   int _tileErrorCount = 0;
-  DateTime? _lastFixAt;
   // Navigator can be opened before the driver goes online.  In that case it
   // owns a short-lived location stream for map preview, so permission/service
   // failures must be shown as an actionable state instead of an endless
@@ -5352,9 +5053,6 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     _cameraAnim =
         AnimationController(vsync: this, duration: _cameraGlideDuration)
           ..addListener(_applyAnimatedCameraFrame);
-    if (widget.shell._currentCoordinate != null) {
-      _lastFixAt = DateTime.now();
-    }
     if (widget.shell._positionSub == null) {
       unawaited(_startStandalonePositionTracking());
     }
@@ -5387,13 +5085,20 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
       // being requested.
       if (!mounted || widget.shell._positionSub != null) return;
       _standalonePositionSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high, distanceFilter: 20),
+        locationSettings: _navigationLocationSettings,
       ).listen((position) {
         if (!mounted) return;
-        widget.shell.setState(() => widget.shell._applyPositionFix(position));
+        var accepted = false;
+        widget.shell.setState(
+            () => accepted = widget.shell._applyPositionFix(position));
+        if (!accepted) return;
         setState(() => _gpsStatusMessage = null);
         unawaited(widget.shell._maybeFetchOsmNavigation(position));
+      }, onError: (_) {
+        if (mounted) {
+          setState(() => _gpsStatusMessage =
+              AppLocalizations.of(context).driverLocationFetchFailed);
+        }
       });
     } catch (_) {
       // The navigator remains usable as a map preview, but the driver needs
@@ -5491,20 +5196,12 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
   void _tick() {
     if (!mounted) return;
     final current = widget.shell._currentCoordinate;
-    if (current != null) _lastFixAt = DateTime.now();
-    // _maybeRefreshDriverRoute is normally only triggered by the position
-    // stream, which Geolocator fires solely after 20m of movement (see the
-    // stream's distanceFilter) -- a driver stopped in traffic or waiting
-    // near the destination never moves that far, so the route/ETA it
-    // computed can sit frozen indefinitely even though the function's own
-    // 12-second staleness check would happily refresh it. This tick already
-    // runs unconditionally every 500ms, so use it as a movement-independent
-    // fallback trigger; the function's existing throttling (12s/4s floors,
-    // in-flight guard, active-order check) makes this a no-op almost every
-    // call.
-    final lastPosition = widget.shell._lastPosition;
-    if (lastPosition != null) {
-      unawaited(widget.shell._maybeRefreshDriverRoute(lastPosition));
+    // A UI repaint is not a GPS fix. The accepted Position.timestamp drives
+    // freshness; route refreshes are scheduled after acknowledged GPS writes.
+    if (_standalonePositionSub != null && widget.shell._positionSub != null) {
+      unawaited(_standalonePositionSub!.cancel());
+      _standalonePositionSub = null;
+      if (widget.shell._hasNavigationFix) _gpsStatusMessage = null;
     }
     if (_autoFollow && _mapReady && current != null) {
       final heading = widget.shell._currentHeading;
@@ -5558,12 +5255,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     }
   }
 
-  bool get _gpsLost {
-    final lastFix = _lastFixAt;
-    if (widget.shell._currentCoordinate == null) return true;
-    if (lastFix == null) return true;
-    return DateTime.now().difference(lastFix) > const Duration(seconds: 12);
-  }
+  bool get _gpsLost => !widget.shell._hasNavigationFix;
 
   @override
   Widget build(BuildContext context) {
@@ -5582,8 +5274,6 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     // in that case; this also removes the layout conflict where it and the
     // "GPS lost" banner would otherwise render at the same position.
     final showManeuverBanner = maneuver != null && !_gpsLost;
-    final speeding =
-        speedKmh != null && speedLimit != null && speedKmh > speedLimit;
     final route = shell._driverRoute?.geometry ?? const <LatLng>[];
     final alerts = shell._allNavigatorAlerts;
     final routeProgress = shell._liveRouteProgress();
@@ -5790,134 +5480,70 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
               ],
             ),
           ),
-          // Maneuver banner — its own row, always directly under the top
-          // controls regardless of whether a voice-warning popup is also
-          // showing right now (that one lives further down, see below).
-          if (showManeuverBanner)
-            Positioned(
-              top: topInset + 66,
-              left: 14,
-              right: 14,
-              child: _NextManeuverBanner(
-                label: maneuver.label,
-                icon: maneuver.icon,
-                distanceMeters: maneuver.distanceMeters,
-                streetName: maneuver.streetName,
+          Positioned(
+            top: topInset + 66,
+            left: 14,
+            right: 14,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.32),
+              child: SingleChildScrollView(
+                child: NavigatorStatusStack(
+                  status: _gpsStatusMessage != null
+                      ? InlineMessage(text: _gpsStatusMessage!)
+                      : _gpsLost
+                          ? const _GpsSearchingBanner()
+                          : shell._navigatorMessage != null
+                              ? InlineMessage(text: shell._navigatorMessage!)
+                              : null,
+                  maneuver: showManeuverBanner
+                      ? NavigatorManeuverBanner(
+                          label: maneuver.label,
+                          icon: maneuver.icon,
+                          distanceMeters: maneuver.distanceMeters,
+                          streetName: maneuver.streetName,
+                        )
+                      : null,
+                  warning: showVoiceBanner && !_gpsLost
+                      ? NavigatorRoadWarning(text: shell._navigatorBannerText!)
+                      : null,
+                ),
               ),
             ),
-          // Camera/sign proximity warning — a separate popup zone below the
-          // maneuver banner's row, so a warning firing mid-turn never
-          // covers the turn instruction it's warning about. The maneuver
-          // banner grew an extra line for the street name (real OSRM step
-          // data) after this offset was first calibrated for a fixed
-          // two-line banner — account for that extra line here too, or a
-          // long/present street name pushes the banner tall enough to clip
-          // into this one.
-          if (showVoiceBanner)
-            Positioned(
-              top: topInset +
-                  (!showManeuverBanner
-                      ? 66
-                      : (maneuver.streetName == null ? 140 : 160)),
-              left: 14,
-              right: 14,
-              child: _NavigatorVoiceBanner(text: shell._navigatorBannerText!),
-            ),
-          if (_gpsStatusMessage != null)
-            Positioned(
-              top: topInset + 66,
-              left: 14,
-              right: 14,
-              child: InlineMessage(text: _gpsStatusMessage!),
-            )
-          else if (_gpsLost)
-            Positioned(
-              top: topInset + 66,
-              left: 14,
-              right: 14,
-              child: const _GpsSearchingBanner(),
-            )
-          else if (shell._navigatorMessage != null)
-            Positioned(
-              top: topInset + 66,
-              left: 14,
-              right: 14,
-              child: InlineMessage(text: shell._navigatorMessage!),
-            ),
-          if (!_autoFollow)
-            Positioned(
-              right: 14,
-              bottom: bottomInset + 190,
-              child: _NavCircleButton(
-                icon: Icons.my_location_rounded,
-                semanticLabel: l10n.driverRecenterSemanticLabel,
-                onTap: _recenter,
-                filled: true,
-              ),
-            ),
-          // Bottom zone: target distance/ETA strip, then the speed cockpit —
-          // stacked in their own column so they never overlap the map
-          // controls above no matter the screen height.
+          ),
           Positioned(
             left: 14,
             right: 14,
             bottom: bottomInset + 14,
-            // One bottom panel, not a scatter of floating chips. Route
-            // distance/ETA and the speed readout used to be two separate
-            // cards stacked with a gap, which on a mostly-empty map read as
-            // debris in the corners rather than a cockpit. Every mainstream
-            // navigator keeps this as one bar, and so does this now: the
-            // target strip is the panel's top row and the speed sits
-            // directly under it, inside the same surface.
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.palette.card.withValues(alpha: 0.97),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: context.palette.border),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 18,
-                      offset: Offset(0, 8)),
-                ],
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (!_autoFollow) ...[
+                Align(
+                    alignment: Alignment.centerRight,
+                    child: _NavCircleButton(
+                      icon: Icons.my_location_rounded,
+                      semanticLabel: l10n.driverRecenterSemanticLabel,
+                      onTap: _recenter,
+                      filled: true,
+                    )),
+                const SizedBox(height: 10),
+              ],
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.36),
+                child: SingleChildScrollView(
+                    child: NavigatorTripPanel(
+                  targetLabel: targetLabel,
+                  targetIcon: targetIcon,
+                  speedKmh: speedKmh,
+                  speedLimit: _gpsLost ? null : speedLimit,
+                  distanceMeters: routeProgress?.distanceMeters,
+                  durationSeconds: routeProgress?.durationSeconds,
+                  idleLabel: _gpsLost
+                      ? l10n.driverSearchingGpsSignal
+                      : l10n.driverNavigatorNoRouteLabel,
+                )),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (targetLabel != null) ...[
-                    _NavTargetStrip(text: targetLabel, icon: targetIcon),
-                    const SizedBox(height: 12),
-                  ],
-                  // A speedometer dial, then the route figures, then the limit
-                  // sign — one continuous row rather than three boxed cells.
-                  // The boxed version had to give each number an equal third of
-                  // the width, which left "0" swimming in white space while
-                  // "2.7" was squeezed until it clipped away entirely.
-                  Row(
-                    children: [
-                      _NavSpeedDial(
-                        speedKmh: speedKmh,
-                        speeding: speeding,
-                        label: l10n.driverSpeedLabel,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _NavRouteReadout(
-                          distanceMeters: routeProgress?.distanceMeters,
-                          durationSeconds: routeProgress?.durationSeconds,
-                          idleLabel: l10n.driverNavigatorNoRouteLabel,
-                        ),
-                      ),
-                      if (speedLimit != null) ...[
-                        const SizedBox(width: 10),
-                        _SpeedLimitSign(limitKmh: speedLimit),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            ]),
           ),
         ],
       ),
@@ -6009,46 +5635,6 @@ class _NavCircleButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _NavTargetStrip extends StatelessWidget {
-  const _NavTargetStrip({required this.text, this.icon});
-
-  final String text;
-  // Whether this leg is a pickup or a drop-off is the one thing the address
-  // alone cannot say, and getting it wrong is the difference between driving
-  // to a passenger and driving away with none.
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    // Now a row inside the navigator's single bottom panel rather than a
-    // free-floating card, so it carries no surface or shadow of its own —
-    // two stacked shadows on top of each other read as a stack of debris.
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: Row(
-        children: [
-          Icon(icon ?? Icons.route_rounded, size: 18, color: palette.brandDeep),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: palette.text,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -7782,184 +7368,6 @@ Color _alertColor(String type) {
 // dedicated navigation app's maneuver strip (not a card matching the rest
 // of the cockpit), since this is the one thing a driver needs to read at
 // a glance while actually driving.
-class _NextManeuverBanner extends StatelessWidget {
-  const _NextManeuverBanner({
-    required this.label,
-    required this.icon,
-    required this.distanceMeters,
-    this.streetName,
-  });
-
-  final String label;
-  final IconData icon;
-  final double distanceMeters;
-  // Real OSRM step street name when available (routing.service.js's
-  // steps=true) — null for the bearing-heuristic fallback, which has no
-  // street data to offer, or when OSRM itself has no name for the way.
-  final String? streetName;
-
-  // Same 200m/40m tiers _checkManeuverVoiceAnnouncement uses to decide when
-  // to speak — reusing them here means the banner's visual escalation lands
-  // at the exact same moments as the "in 200m..."/"now" voice callouts,
-  // instead of a second, independently-tuned notion of "getting close".
-  int _urgencyTier() {
-    if (distanceMeters <= 40) return 2;
-    if (distanceMeters <= 200) return 1;
-    return 0;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final rounded = math.max(20, (distanceMeters / 20).round() * 20);
-    final distanceLabel = rounded >= 1000
-        ? '${(rounded / 1000).toStringAsFixed(1)} км'
-        : '$rounded м';
-    final tier = _urgencyTier();
-    final brand = context.palette.brand;
-    // Plain navy far away; as the turn gets close the card and icon circle
-    // pick up the app's accent and grow slightly, then go fully accent
-    // right at the turn — an AnimatedContainer/AnimatedScale eases each tier
-    // change instead of the size/color jumping in a single frame.
-    final cardColor = switch (tier) {
-      2 => Color.lerp(const Color(0xff10192e), brand, 0.22)!,
-      1 => Color.lerp(const Color(0xff10192e), brand, 0.10)!,
-      _ => const Color(0xff10192e),
-    };
-    final iconCircleColor = switch (tier) {
-      2 => brand,
-      1 => brand.withValues(alpha: 0.35),
-      _ => Colors.white.withValues(alpha: 0.14),
-    };
-    final iconColor = tier == 2 ? const Color(0xff10192e) : Colors.white;
-    final circleSize = 42.0 + tier * 4;
-    final iconSize = 24.0 + tier * 3;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutCubic,
-            width: circleSize,
-            height: circleSize,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: iconCircleColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: iconSize),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)
-                      .driverInDistanceLabel(distanceLabel),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (streetName != null && streetName!.isNotEmpty) ...[
-                  const SizedBox(height: 1),
-                  Text(
-                    streetName!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavigatorVoiceBanner extends StatelessWidget {
-  const _NavigatorVoiceBanner({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-          offset: Offset(0, (1 - value) * -8),
-          child: child,
-        ),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: palette.brandPale,
-          border: Border.all(color: palette.brand.withValues(alpha: 0.4)),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: palette.warning,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.speed_rounded,
-                  color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: palette.brandDeep,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 List<RoadAlert> _replaceAlert(List<RoadAlert> alerts, RoadAlert next) {
   final updated = [...alerts];

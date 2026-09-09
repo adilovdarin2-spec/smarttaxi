@@ -9,6 +9,32 @@ class AppLocalizationsUz extends AppLocalizations {
   AppLocalizationsUz([String locale = 'uz']) : super(locale);
 
   @override
+  String get driverNavNow => 'Hozir';
+
+  @override
+  String get driverNavSpeedUnit => 'km/soat';
+
+  @override
+  String driverNavMeters(int count) {
+    return '$count m';
+  }
+
+  @override
+  String driverNavKilometers(String distance) {
+    return '$distance km';
+  }
+
+  @override
+  String driverNavMinutes(int count) {
+    return '$count daq';
+  }
+
+  @override
+  String driverNavArrival(String time) {
+    return 'Yetib kelish $time';
+  }
+
+  @override
   String get appName => 'SmartTaxi';
 
   @override

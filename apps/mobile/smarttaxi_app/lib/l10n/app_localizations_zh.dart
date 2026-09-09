@@ -9,6 +9,32 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get driverNavNow => '现在';
+
+  @override
+  String get driverNavSpeedUnit => '公里/时';
+
+  @override
+  String driverNavMeters(int count) {
+    return '$count 米';
+  }
+
+  @override
+  String driverNavKilometers(String distance) {
+    return '$distance 公里';
+  }
+
+  @override
+  String driverNavMinutes(int count) {
+    return '$count 分钟';
+  }
+
+  @override
+  String driverNavArrival(String time) {
+    return '$time 到达';
+  }
+
+  @override
   String get appName => 'SmartTaxi';
 
   @override

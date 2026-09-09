@@ -1,5 +1,39 @@
 {
   "@@locale": "zh",
+  "driverNavNow": "现在",
+  "driverNavSpeedUnit": "公里/时",
+  "driverNavMeters": "{count} 米",
+  "driverNavKilometers": "{distance} 公里",
+  "driverNavMinutes": "{count} 分钟",
+  "driverNavArrival": "{time} 到达",
+  "@driverNavMeters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@driverNavKilometers": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "@driverNavMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@driverNavArrival": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "appName": "SmartTaxi",
   "@appName": {
     "description": "App name, shown in the OS task switcher"

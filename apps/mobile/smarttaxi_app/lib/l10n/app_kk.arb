@@ -1,5 +1,39 @@
 {
   "@@locale": "kk",
+  "driverNavNow": "Қазір",
+  "driverNavSpeedUnit": "км/сағ",
+  "driverNavMeters": "{count} м",
+  "driverNavKilometers": "{distance} км",
+  "driverNavMinutes": "{count} мин",
+  "driverNavArrival": "Келу уақыты {time}",
+  "@driverNavMeters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@driverNavKilometers": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "@driverNavMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@driverNavArrival": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "appName": "SmartTaxi",
   "continueLabel": "Жалғастыру",
   "cancel": "Бас тарту",

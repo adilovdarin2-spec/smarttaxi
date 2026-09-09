@@ -1,5 +1,39 @@
 {
   "@@locale": "uz",
+  "driverNavNow": "Hozir",
+  "driverNavSpeedUnit": "km/soat",
+  "driverNavMeters": "{count} m",
+  "driverNavKilometers": "{distance} km",
+  "driverNavMinutes": "{count} daq",
+  "driverNavArrival": "Yetib kelish {time}",
+  "@driverNavMeters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@driverNavKilometers": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "@driverNavMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@driverNavArrival": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "appName": "SmartTaxi",
   "@appName": {
     "description": "App name, shown in the OS task switcher"

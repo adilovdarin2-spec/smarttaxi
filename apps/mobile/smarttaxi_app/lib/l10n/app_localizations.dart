@@ -102,6 +102,42 @@ abstract class AppLocalizations {
     Locale('zh')
   ];
 
+  /// No description provided for @driverNavNow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас'**
+  String get driverNavNow;
+
+  /// No description provided for @driverNavSpeedUnit.
+  ///
+  /// In ru, this message translates to:
+  /// **'км/ч'**
+  String get driverNavSpeedUnit;
+
+  /// No description provided for @driverNavMeters.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} м'**
+  String driverNavMeters(int count);
+
+  /// No description provided for @driverNavKilometers.
+  ///
+  /// In ru, this message translates to:
+  /// **'{distance} км'**
+  String driverNavKilometers(String distance);
+
+  /// No description provided for @driverNavMinutes.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} мин'**
+  String driverNavMinutes(int count);
+
+  /// No description provided for @driverNavArrival.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прибытие в {time}'**
+  String driverNavArrival(String time);
+
   /// App name, shown in the OS task switcher
   ///
   /// In ru, this message translates to:
