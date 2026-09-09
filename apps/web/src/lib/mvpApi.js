@@ -1,7 +1,7 @@
-import { API_URL, api, clearToken, getToken, login as apiLogin, setToken } from "./api.js";
+import { API_URL, api, clearToken, getToken, login as apiLogin, setToken, subscribeSessionChanges } from "./api.js";
 import { createOrderWithRecovery } from "./orderCreation.js";
 
-export { clearToken, getToken };
+export { clearToken, getToken, subscribeSessionChanges };
 
 export async function loginUser(payload) {
   const data = await api("/api/auth/login/password", {

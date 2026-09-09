@@ -12,7 +12,7 @@ test('driver surfaces keep addresses, action hierarchy and payment gates', async
   globalThis.window = { location: { hostname: '127.0.0.1' } };
   const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   try {
-    const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
+    const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel, DriverEmptyState } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
     const order = { id: 'design-fixture', status: 'SEARCHING_DRIVER', tariff: 'Economy',
       estimatedPrice: 700, paymentMethod: 'CASH', distanceKm: 3.5, durationMin: 12,
       pickup: 'улица Бектасова, 12, главный вход со стороны двора', dropoff: 'улица Кожанова, 34' };
@@ -35,6 +35,15 @@ test('driver surfaces keep addresses, action hierarchy and payment gates', async
     const shift = renderToStaticMarkup(h(DriverShiftPanel, { title:'На линии', description:'Заказы появятся автоматически.', regions:[{id:'local',name:'Мырзакент'}],selectedRegionId:'local',earnings:{todayGrossKzt:9800,completedOrders:14},isWorking:true }));
     assert.match(shift, /aria-label="Рабочий регион"/);
     assert.match(shift, /class="app-button secondary [^"]*"[^>]*>Уйти с линии/);
+    const empty = renderToStaticMarkup(h(DriverEmptyState, {
+      title: 'No active trip',
+      text: 'Accept an order to start.',
+      action: 'See orders',
+      onAction: () => {},
+    }));
+    assert.match(empty, /driver-core-empty-rich/);
+    assert.match(empty, /No active trip/);
+    assert.match(empty, /class="app-button secondary [^"]*"[^>]*>See orders/);
   } finally {
     await server.close();
     if (previousWindow === undefined) delete globalThis.window;

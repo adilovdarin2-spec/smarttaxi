@@ -135,6 +135,12 @@
 .phone-frame.driver-core-phone.driver-design .driver-core-call { min-height: 48px !important; display: flex; align-items: center; justify-content: center; gap: 8px; color: #0b4fd1 !important; background: #f0f6ff !important; border: 1px solid #dbe6f7 !important; font-size: 14px !important; font-weight: 600 !important; text-decoration: none; box-shadow: none !important; }
 .phone-frame.driver-core-phone.driver-design .driver-core-call svg { width: 18px; height: 18px; }
 .phone-frame.driver-core-phone.driver-design .driver-core-empty { padding: 30px 20px !important; color: var(--driver-muted) !important; border: 1px solid var(--driver-line) !important; border-radius: 20px !important; background: #f8faff !important; font-size: 14px !important; font-weight: 400 !important; line-height: 1.5; box-shadow: none !important; }
+.phone-frame.driver-core-phone.driver-design .driver-core-empty-rich { display: flex; min-height: 210px; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 28px 22px !important; text-align: center; background: linear-gradient(180deg, #f8fbff 0%, #f3f7ff 100%) !important; }
+.phone-frame.driver-core-phone.driver-design .driver-core-empty-icon { display: grid; width: 52px; height: 52px; margin-bottom: 16px; place-items: center; color: #0b4fd1; border: 1px solid #d8e7ff; border-radius: 17px; background: #fff; box-shadow: 0 10px 24px rgba(29, 111, 255, .12); }
+.phone-frame.driver-core-phone.driver-design .driver-core-empty-icon svg { width: 24px; height: 24px; }
+.phone-frame.driver-core-phone.driver-design .driver-core-empty-rich strong { color: var(--driver-ink); font-size: 19px; font-weight: 700; letter-spacing: -.25px; }
+.phone-frame.driver-core-phone.driver-design .driver-core-empty-rich p { max-width: 270px; margin: 7px 0 0; color: var(--driver-muted); font-size: 13px; line-height: 1.5; }
+.phone-frame.driver-core-phone.driver-design .driver-core-empty-rich .app-button { width: 100%; margin-top: 18px; }
 .phone-frame.driver-core-phone.driver-design .driver-core-section-title { margin-bottom: 18px !important; }
 .phone-frame.driver-core-phone.driver-design .driver-core-section-title strong { color: var(--driver-ink) !important; font-size: 21px !important; font-weight: 700 !important; }
 .phone-frame.driver-core-phone.driver-design .driver-core-section-title > span { color: #0b4fd1; background: #eaf3ff; padding: 4px 9px; border-radius: 9px; font-size: 13px; }

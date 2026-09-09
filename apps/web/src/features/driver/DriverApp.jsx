@@ -48,6 +48,7 @@ import {
   selectDriverRegion,
   setDriverStatus,
   startTrip,
+  subscribeSessionChanges,
   updateDriverLocation
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
@@ -481,6 +482,29 @@ export function DriverShiftPanel({ title, description, regions, selectedRegionId
   </section>;
 }
 
+export function DriverEmptyState({
+  icon = "route",
+  title,
+  text,
+  action = "",
+  onAction,
+}) {
+  return (
+    <section className="driver-core-empty driver-core-empty-rich">
+      <span className="driver-core-empty-icon" aria-hidden="true">
+        <Icon name={icon} />
+      </span>
+      <strong>{title}</strong>
+      <p>{text}</p>
+      {action && onAction && (
+        <Button variant="secondary" onClick={onAction}>
+          {action}
+        </Button>
+      )}
+    </section>
+  );
+}
+
 export default function DriverApp() {
   const [logged, setLogged] = useState(Boolean(getToken()));
   const [auth, setAuth] = useState({ phone: "", password: "" });
@@ -511,6 +535,7 @@ export default function DriverApp() {
   const [roadAlertsError, setRoadAlertsError] = useState("");
   const [roadAlertForm, setRoadAlertForm] = useState({ type: "ROAD_HAZARD", comment: "" });
   const [roadAlertSubmitting, setRoadAlertSubmitting] = useState(false);
+  const [sessionRevision, setSessionRevision] = useState(0);
   const socketRef = useRef(null);
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -518,6 +543,41 @@ export default function DriverApp() {
     return () => { mountedRef.current = false; };
   }, []);
   const protectSession = useCallback(() => sessionGuard(getToken(), getToken, () => mountedRef.current), []);
+  const resetDriverSession = useCallback((loginMessage = "") => {
+    setLogged(false);
+    setAuth(current => ({ ...current, password: "" }));
+    setDriver(null);
+    setRegions([]);
+    setRegionsLoadFailed(false);
+    setSelectedRegionId("");
+    setIncomingOrders([]);
+    setActiveOrder(null);
+    setSettlementOrders([]);
+    setEarnings(null);
+    setDebt(null);
+    setRoadAlerts([]);
+    setRoadAlertsError("");
+    setRoadAlertsLoading(false);
+    setRoadAlertSubmitting(false);
+    setRoadAlertForm({ type: "ROAD_HAZARD", comment: "" });
+    setNavigationOrderId(null);
+    setDriverPosition(null);
+    setPublishedDriverPosition(null);
+    setLocationIssue(null);
+    setError("");
+    setActionLoading("");
+    setTab("line");
+    setAccountSection(null);
+    setLoginError(loginMessage);
+  }, []);
+
+  useEffect(() => subscribeSessionChanges(({ token }) => {
+    // localStorage is shared by the passenger and driver tabs. Never keep a
+    // previous driver's profile/orders painted after either tab replaces it.
+    resetDriverSession(token ? "Проверяем новый режим аккаунта…" : "");
+    setSessionRevision(revision => revision + 1);
+    setLogged(Boolean(token));
+  }), [resetDriverSession]);
 
   const currentRegion = useMemo(
     () => regions.find(region => regionKey(region) === selectedRegionId) || regions.find(region => regionKey(region) === driver?.currentRegionId),
@@ -611,16 +671,14 @@ export default function DriverApp() {
         if (!alive) return;
         if ([401, 403].includes(error.status)) {
           // Do not clear a valid rider/admin token shared with another tab.
-          setLogged(false);
-          setDriver(null);
-          setLoginError('Войдите в водительский аккаунт, чтобы открыть смену.');
+          resetDriverSession('Войдите в водительский аккаунт, чтобы открыть смену.');
         } else setError(formatError(error));
       })
       .finally(() => {
         if (alive) setLoading(false);
       });
     return () => { alive = false; };
-  }, [logged, refreshDriver]);
+  }, [logged, refreshDriver, resetDriverSession, sessionRevision]);
 
   useEffect(() => {
     if (!logged || !driver?.id) return undefined;
@@ -792,7 +850,11 @@ export default function DriverApp() {
     setLoginError("");
     try {
       const data = await loginUser(auth);
-      if (data.user?.role !== "DRIVER") throw new Error("Этот аккаунт не является водительским");
+      if (data.user?.role !== "DRIVER") {
+        resetDriverSession("Этот аккаунт не является водительским");
+        return;
+      }
+      setLoginError("");
       setLogged(true);
     } catch (error) {
       setLoginError(formatError(error));
@@ -803,25 +865,7 @@ export default function DriverApp() {
 
   function handleLogout() {
     clearToken();
-    setLogged(false);
-    setAuth(current => ({ ...current, password: "" }));
-    setDriver(null);
-    setRegions([]);
-    setSelectedRegionId("");
-    setIncomingOrders([]);
-    setActiveOrder(null);
-    setSettlementOrders([]);
-    setEarnings(null);
-    setDebt(null);
-    setRoadAlerts([]);
-    setRoadAlertsError("");
-    setRoadAlertsLoading(false);
-    setRoadAlertSubmitting(false);
-    setRoadAlertForm({ type: "ROAD_HAZARD", comment: "" });
-    setError("");
-    setActionLoading("");
-    setTab("line");
-    setAccountSection(null);
+    resetDriverSession();
   }
 
   const loadRoadAlerts = useCallback(async () => {
@@ -1089,9 +1133,15 @@ export default function DriverApp() {
                     loading={actionLoading}
                   />
                 )) : (
-                  <div className="driver-core-empty">
-                    {isOnline ? "Свободных заказов пока нет. Оставайтесь на линии." : "Выйдите на линию, чтобы видеть заказы."}
-                  </div>
+                  <DriverEmptyState
+                    icon="document"
+                    title={isOnline ? "Ждём ближайший заказ" : "Вы не на линии"}
+                    text={isOnline
+                      ? "Новый заказ появится здесь автоматически — обновлять экран не нужно."
+                      : "Выберите рабочий регион и выйдите на линию, чтобы получать заказы."}
+                    action={isOnline ? "" : "Перейти на линию"}
+                    onAction={() => setTab("line")}
+                  />
                 )}
               </section>
             )}
@@ -1100,7 +1150,14 @@ export default function DriverApp() {
               displayedOrder ? (
                 <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} onNavigate={order => setNavigationOrderId(order.id)} loading={actionLoading} />
               ) : (
-                <div className="driver-core-empty">Активной поездки нет.</div>
+                <DriverEmptyState
+                  title="Активной поездки нет"
+                  text={isOnline
+                    ? "Примите подходящий заказ — маршрут и все действия поездки появятся здесь."
+                    : "Сначала выйдите на линию, затем примите заказ для начала поездки."}
+                  action={isOnline ? "Смотреть заказы" : "Перейти на линию"}
+                  onAction={() => setTab(isOnline ? "orders" : "line")}
+                />
               )
             )}
 

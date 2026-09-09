@@ -60,6 +60,7 @@ import {
   setDriverPreference,
   initiateOrderPayment,
   submitDriverApplication,
+  subscribeSessionChanges,
   updateRecurringBookingStatus,
   uploadDriverApplicationDocument,
   validatePromoCode,
@@ -75,6 +76,7 @@ import {
   emptyFavoritesState,
 } from "./clientFavoritesState.js";
 import { cancelOrderWithRecovery } from "../../lib/orderCancellation.js";
+import { clientIdentity, EMPTY_RIDER } from "./clientSession.js";
 
 const cardPaymentsEnabled = import.meta.env.VITE_CARD_PAYMENTS_ENABLED === "true";
 
@@ -965,8 +967,9 @@ export default function ClientApp() {
   const [authMode, setAuthMode] = useState("phone");
   const [registerForm, setRegisterForm] = useState({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
   const [resetForm, setResetForm] = useState({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
-  const [rider, setRider] = useState({ name: "Пассажир", phone: "" });
+  const [rider, setRider] = useState(EMPTY_RIDER);
   const [authenticated, setAuthenticated] = useState(false);
+  const [sessionRevision, setSessionRevision] = useState(0);
   const authSession = authenticated ? getToken() : "";
   const liveRoute = useLiveDriverRoute(order, authSession);
   const [favorites, setFavorites] = useState([]);
@@ -1022,33 +1025,54 @@ export default function ClientApp() {
 
   useEffect(() => () => window.clearTimeout(mainMapReverseDebounceRef.current), []);
 
+  useEffect(() => subscribeSessionChanges(() => {
+    // A login, logout or mode switch in another tab replaces the shared token.
+    // Drop all role-specific presentation immediately; /auth/me below then
+    // rebuilds it only if the replacement token is genuinely a client token.
+    setAuthenticated(false);
+    setRider(EMPTY_RIDER);
+    setSection("profile");
+    setDrawerOpen(false);
+    setSessionRevision(revision => revision + 1);
+  }), []);
+
   useEffect(() => {
     const session = getToken();
-    if (!session) return undefined;
+    if (!session) {
+      setAuthenticated(false);
+      setRider(EMPTY_RIDER);
+      return undefined;
+    }
     let ignore = false;
+    setAuthenticated(false);
+    setRider(EMPTY_RIDER);
     getCurrentUser()
       .then(payload => {
         if (ignore || getToken() !== session) return;
-        const user = payload.user || {};
-        if (user.role !== "CLIENT") {
-        setAuthenticated(false);
-        setRider({ name: "Пассажир", phone: "" });
-        return;
-      }
-      setAuthenticated(true);
-      setRider({
-        name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
-        phone: user.phone || "",
-        baseRole: user.baseRole || user.role
-      });
+        const identity = clientIdentity(payload.user);
+        if (!identity) {
+          setAuthenticated(false);
+          setRider(EMPTY_RIDER);
+          setSection("profile");
+          setMessage("Открыт другой режим аккаунта. Войдите как пассажир или откройте кабинет водителя.");
+          return;
+        }
+        setAuthenticated(true);
+        setRider(identity);
+        setMessage("");
       })
       .catch(() => {
-        if (!ignore && getToken() === session) setAuthenticated(false);
+        if (!ignore && getToken() === session) {
+          setAuthenticated(false);
+          setRider(EMPTY_RIDER);
+          setSection("profile");
+          setMessage("Не удалось подтвердить сессию пассажира. Войдите ещё раз.");
+        }
       });
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [sessionRevision]);
 
   useEffect(() => {
     // Reload and login must recover the server's current trip before the
@@ -1443,11 +1467,15 @@ export default function ClientApp() {
     try {
       const payload = await loginUser({ phone: normalizeKzPhone(auth.phone), password: auth.password });
       const user = payload.user || {};
+      const identity = clientIdentity(user, auth.phone);
+      if (!identity) {
+        setAuthenticated(false);
+        setRider(EMPTY_RIDER);
+        setMessage("Этот аккаунт открыт в другом режиме. Используйте кабинет водителя.");
+        return;
+      }
       setAuthenticated(true);
-      setRider({
-        name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
-        phone: user.phone || auth.phone
-      });
+      setRider(identity);
       setMessage("");
       setSection("home");
     } catch (error) {
@@ -1525,11 +1553,15 @@ export default function ClientApp() {
         password: registerForm.password
       });
       const user = payload.user || {};
+      const identity = clientIdentity(user, registerForm.phone);
+      if (!identity) {
+        setAuthenticated(false);
+        setRider(EMPTY_RIDER);
+        setMessage("Сервис не подтвердил пассажирский аккаунт.");
+        return;
+      }
       setAuthenticated(true);
-      setRider({
-        name: user.name || registerForm.name || "Пассажир",
-        phone: user.phone || registerForm.phone
-      });
+      setRider({ ...identity, name: user.name || registerForm.name || identity.name });
       setAuth({ phone: user.phone || registerForm.phone, password: "" });
       setAuthMode("success");
       setRegisterForm({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
@@ -1606,11 +1638,15 @@ export default function ClientApp() {
         password: resetForm.password
       });
       const user = payload.user || {};
+      const identity = clientIdentity(user, resetForm.phone);
+      if (!identity) {
+        setAuthenticated(false);
+        setRider(EMPTY_RIDER);
+        setMessage("Пароль изменён, но аккаунт открыт в другом режиме. Используйте кабинет водителя.");
+        return;
+      }
       setAuthenticated(true);
-      setRider({
-        name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
-        phone: user.phone || resetForm.phone
-      });
+      setRider(identity);
       setAuth({ phone: user.phone || resetForm.phone, password: "" });
       setResetForm({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
       setAuthMode("success");
@@ -1947,7 +1983,7 @@ export default function ClientApp() {
     clearToken();
     setLoading(false);
     setAuthenticated(false);
-    setRider({ name: "Пассажир", phone: "" });
+    setRider(EMPTY_RIDER);
     setAuth({ phone: "", password: "" });
     setRegisterForm({ name: "", phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });
     setResetForm({ phone: "", code: "", password: "", repeat: "", smsSent: false, verificationToken: "", devCode: "" });

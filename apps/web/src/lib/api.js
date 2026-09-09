@@ -1,4 +1,10 @@
 import { sessionGuard } from './sessionGuard.js';
+import {
+  readSessionToken,
+  removeSessionToken,
+  subscribeSessionChanges,
+  writeSessionToken,
+} from './browserSession.js';
 
 const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const fallbackApiUrl = isLocalHost
@@ -6,9 +12,10 @@ const fallbackApiUrl = isLocalHost
   : "https://api.smarttaxi.kz";
 
 export const API_URL = (import.meta.env.VITE_API_URL || fallbackApiUrl).replace(/\/$/, "");
-export function getToken(){ return localStorage.getItem("smarttaxi_token") || ""; }
-export function setToken(token){ localStorage.setItem("smarttaxi_token", token); }
-export function clearToken(){ localStorage.removeItem("smarttaxi_token"); }
+export function getToken(){ return readSessionToken(); }
+export function setToken(token){ writeSessionToken(token); }
+export function clearToken(){ removeSessionToken(); }
+export { subscribeSessionChanges };
 export async function api(path, options = {}) {
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   // The browser must set the multipart boundary itself. Keeping the JSON
