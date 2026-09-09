@@ -783,6 +783,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerTripDetailTitle => 'Поездка';
 
   @override
+  String get passengerTripDetailsLabel => 'Детали поездки';
+
+  @override
   String get passengerTripShareTooltip => 'Поделиться чеком';
 
   @override
@@ -812,7 +815,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerSearchingSubtitleWithCount(int count) {
-    return 'Показываем $count ближайших свободных водителей';
+    return 'Водителей поблизости: $count. Ожидаем ответ';
   }
 
   @override

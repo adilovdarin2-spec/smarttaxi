@@ -1,5 +1,11 @@
 # Release checklist — actions only the business owner can do
 
+Current local evidence and build hashes are in
+[customer handoff, 2026-09-09](status/customer-handoff-2026-09-09.md).
+This checklist is not proof that production services or legal/store
+prerequisites have been approved. The owner's September handoff leaves
+SMS sender approval, merchant activation and legal decisions external.
+
 This is a list of things that **cannot be done from this repo or by an
 assistant** — they require a real legal identity, a payment method, a
 physical device/OS, or an account only the business owner can create and
@@ -85,11 +91,11 @@ the business owner must control and recover them.
 - Apply for a **Kaspi Pay merchant/business account** — this requires
   the ИП registration (§1) to already be complete, since Kaspi will ask
   for business registration documents as part of merchant onboarding.
-- Until this is approved and real API credentials exist, the app's
-  `CARD` payment option is backed by an explicit mock (see
-  `payment-provider.js` / `APP_STORE_READINESS.md`) — decide whether to
-  hide that option from the public release or ship it with a clear "coming
-  soon" state until real credentials are issued.
+- `CARD` is already hidden by default on web and Flutter. Do not enable
+  `VITE_CARD_PAYMENTS_ENABLED` / `CARD_PAYMENTS_ENABLED` until the actual
+  merchant API contract, credentials and webhook have been verified. A
+  development mock still exists server-side; it is not evidence of a real
+  payment integration. This handoff tests only local CASH settlement.
 - Once approved, the real Kaspi Pay API credentials go into the
   server's `.env` (not committed to git, per `SECURITY_CHECKLIST.md`) —
   wiring the credentials in is a code/config task that can be done once

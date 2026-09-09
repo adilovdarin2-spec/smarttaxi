@@ -789,6 +789,9 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerTripDetailTitle => 'Сапар';
 
   @override
+  String get passengerTripDetailsLabel => 'Сапар мәліметтері';
+
+  @override
   String get passengerTripShareTooltip => 'Түбіртекпен бөлісу';
 
   @override

@@ -790,6 +790,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerTripDetailTitle => 'Safar';
 
   @override
+  String get passengerTripDetailsLabel => 'Safar tafsilotlari';
+
+  @override
   String get passengerTripShareTooltip => 'Chek bilan ulashish';
 
   @override

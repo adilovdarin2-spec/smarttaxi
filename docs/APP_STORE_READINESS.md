@@ -2,6 +2,10 @@
 
 This repo is closer to Android pilot readiness than iOS store readiness.
 
+Latest local verification and exact artifacts: [customer handoff, 2026-09-09](status/customer-handoff-2026-09-09.md).
+The older dated checks below are historical, not confirmation of current
+production DNS, SMS sender approval, merchant readiness or store acceptance.
+
 Human-only actions (accounts, payments, physical signing) are tracked
 separately in
 [RELEASE_CHECKLIST_HUMAN_ACTIONS.md](RELEASE_CHECKLIST_HUMAN_ACTIONS.md) —
@@ -22,9 +26,8 @@ Current Android hardening (verified 2026-07-15 against
   **the release Gradle task now fails hard if that file is missing**
   (`build.gradle.kts` throws `GradleException` — stronger than just
   silently signing unsigned);
-- production API default is `https://api.smarttaxi.kz` **only when
-  explicitly passed via `--dart-define`** — see the build command and
-  warning below;
+- production API default in `AppConfig` is `https://api.smarttaxi.kz`;
+  `--dart-define` overrides it for an explicitly selected environment;
 - real, non-placeholder launcher icon/adaptive icon assets are in place
   (`assets/brand/smarttaxi_app_icon_2026.png`, wired into
   `mipmap-*/ic_launcher*.png`) — the "still needed" icon item from the
@@ -70,8 +73,8 @@ cd apps/mobile/smarttaxi_app
 flutter build appbundle --release --dart-define=API_BASE_URL=https://api.smarttaxi.kz --dart-define=SOCKET_URL=https://api.smarttaxi.kz
 ```
 
-**QA note**: the `--dart-define=API_BASE_URL=...` flag above is
-required, not optional. If a release build is run without it,
+**QA note**: explicitly select the endpoint for a reproducible build. If a
+release build is run without the override,
 [app_config.dart](../apps/mobile/smarttaxi_app/lib/core/config/app_config.dart)
 falls back to `https://api.smarttaxi.kz`. As of this check, that domain still
 needs production DNS/deployment verification (see `DEPLOYMENT_VPS.md`). Do

@@ -308,6 +308,7 @@
   "passengerDriverWaitingLocationLabel": "Haydovchi geolokatsiyasini kutmoqdamiz",
   "passengerDriverConnectedLabel": "Haydovchi aloqada",
   "passengerTripDetailTitle": "Safar",
+  "passengerTripDetailsLabel": "Safar tafsilotlari",
   "passengerTripShareTooltip": "Chek bilan ulashish",
   "passengerTripDistanceLabel": "Masofa",
   "passengerTripTotalLabel": "Jami",

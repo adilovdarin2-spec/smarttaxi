@@ -27,15 +27,16 @@ import '../../core/utils/active_locale.dart';
 import '../../core/utils/contact_phone.dart';
 import '../../core/utils/map_layers.dart';
 import '../../core/utils/passenger_map_viewport.dart';
+import '../../core/utils/passenger_startup.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/account_action_row.dart';
 import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/exit_on_double_back.dart';
 import '../../core/widgets/measure_size.dart';
-import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../core/widgets/tariff_choice_card.dart';
+import '../../core/widgets/trip_details_disclosure.dart';
 import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/models.dart';
@@ -234,6 +235,7 @@ class _PassengerShellState extends State<PassengerShell>
   bool _locationPermissionDeniedForever = false;
   bool _locationBlockDismissed = false;
   bool _startupLocationPromptShown = false;
+  late final Future<void> _initialOrderRestore;
   bool _skipNextLocationIntro = false;
   bool _mapPointPickerActive = false;
   bool _sheetMinimized = false;
@@ -464,7 +466,7 @@ class _PassengerShellState extends State<PassengerShell>
     // delayed the moment a rider relaunching/resuming mid-trip actually saw
     // their trip screen again, reading as "confirming the order didn't do
     // anything" for however many seconds that chain took.
-    unawaited(_restoreActiveOrder());
+    _initialOrderRestore = _restoreActiveOrder();
     // Best-effort cached fix, purely local (no network, no permission
     // prompt) -- lands before _loadRegions()'s network round trip so the
     // map's first real paint is already close to the rider's actual
@@ -1038,7 +1040,7 @@ class _PassengerShellState extends State<PassengerShell>
         ),
       );
     }
-    if (selected == null || !mounted) return null;
+    if (selected == null || !mounted || _order != null) return null;
     _applyRegion(selected, resetRoute: resetRoute);
     if (askLocationAfter) {
       _maybeAskLocationOnStart();
@@ -1158,13 +1160,20 @@ class _PassengerShellState extends State<PassengerShell>
     _startupLocationPromptShown = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 450));
-      if (!mounted || _pickup != null) return;
+      if (!await mayLocatePassenger(
+        orderRestoration: _initialOrderRestore,
+        isMounted: () => mounted,
+        hasOrder: () => _order != null,
+      )) {
+        return;
+      }
+      if (_pickup != null) return;
       final permission = await Geolocator.checkPermission();
-      if (!mounted || _pickup != null) return;
+      if (!mounted || _pickup != null || _order != null) return;
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         final approved = await _showLocationPermissionIntro();
-        if (!mounted) return;
+        if (!mounted || _order != null) return;
         if (approved != true) {
           await _useMapCenterAsPickup();
           return;
@@ -1521,6 +1530,16 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _usePhoneLocation() async {
+    // Restored/active orders own their pickup. A delayed startup GPS result
+    // must not open a region picker over the trip or rewrite that address.
+    if (!await mayLocatePassenger(
+      orderRestoration: _initialOrderRestore,
+      isMounted: () => mounted,
+      hasOrder: () => _order != null,
+    )) {
+      return;
+    }
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     setState(() {
       _error = null;
@@ -1529,7 +1548,7 @@ class _PassengerShellState extends State<PassengerShell>
     try {
       final serviceEnabled =
           kIsWeb ? true : await Geolocator.isLocationServiceEnabled();
-      if (!mounted) return;
+      if (!mounted || _order != null) return;
       if (!serviceEnabled) {
         setState(() {
           _error = l10n.passengerLocationServiceDisabledError;
@@ -1549,13 +1568,13 @@ class _PassengerShellState extends State<PassengerShell>
       }
 
       var permission = await Geolocator.checkPermission();
-      if (!mounted) return;
+      if (!mounted || _order != null) return;
       if (permission == LocationPermission.denied) {
         final skipIntro = _skipNextLocationIntro;
         _skipNextLocationIntro = false;
         final approved =
             skipIntro ? true : await _showLocationPermissionIntro();
-        if (!mounted) return;
+        if (!mounted || _order != null) return;
         if (approved != true) {
           setState(
             () => _error = l10n.passengerLocationSkippedManualPickText,
@@ -1570,6 +1589,7 @@ class _PassengerShellState extends State<PassengerShell>
         }
         permission = await Geolocator.requestPermission();
       }
+      if (!mounted || _order != null) return;
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         if (!mounted) return;
@@ -1593,21 +1613,21 @@ class _PassengerShellState extends State<PassengerShell>
         setState(() => _locationPermissionDeniedForever = false);
       }
       final point = await _getPreciseLocation();
-      if (!mounted) return;
+      if (!mounted || _order != null) return;
       final detectedRegion = _regionForPoint(point);
       if (!_startupRegionPromptShown &&
           detectedRegion != null &&
           _regions.length > 1) {
         _startupRegionPromptShown = true;
         final action = await _confirmDetectedRegion(detectedRegion);
-        if (!mounted) return;
+        if (!mounted || _order != null) return;
         if (action == _RegionConfirmAction.change) {
           final manualRegion = await _chooseRegion(
             resetRoute: true,
             title: l10n.passengerChooseRegionTitle,
             subtitle: l10n.passengerChooseRegionSubtitle,
           );
-          if (!mounted) return;
+          if (!mounted || _order != null) return;
           if (manualRegion == null || !manualRegion.contains(point)) {
             setState(() {
               _target = PointTarget.pickup;
@@ -1653,7 +1673,7 @@ class _PassengerShellState extends State<PassengerShell>
           label = address.label.trim();
         }
       } catch (_) {}
-      if (!mounted) return;
+      if (!mounted || _order != null) return;
       if (!_isUsablePassengerAddressLabel(label)) {
         // The mounted check used to sit *below* this branch, so a rider who
         // left the screen while reverseAddress was in flight and came back to
@@ -1672,7 +1692,7 @@ class _PassengerShellState extends State<PassengerShell>
       unawaited(_refreshNearbyDrivers(silent: true));
       await _refreshPreview();
     } catch (_) {
-      if (mounted) {
+      if (mounted && _order == null) {
         setState(
           () => _error = l10n.passengerLocationFailedPickManuallyError,
         );
@@ -3197,9 +3217,15 @@ class _PassengerShellState extends State<PassengerShell>
       'PAID',
       'RATED',
     }.contains(order.status);
-    final sheetFraction =
-        terminalSheet ? (compact ? 0.54 : 0.49) : (compact ? 0.44 : 0.40);
-    final routeMeta = driverRouteText ?? _orderRouteMeta(order);
+    // Once assigned, the driver identity, contact row, fare and details
+    // control must all fit before scrolling on the physical 360dp phone.
+    final sheetFraction = terminalSheet || order.driverId != null
+        ? (compact ? 0.54 : 0.49)
+        : (compact ? 0.44 : 0.40);
+    final routeMeta = const {'DRIVER_ARRIVED', 'WAITING_CLIENT'}
+            .contains(order.status)
+        ? l10n.passengerDriverArrivedWaitingBanner
+        : driverRouteText ?? _orderRouteMeta(order);
     return Stack(
       children: [
         Positioned.fill(
@@ -6180,27 +6206,35 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           '${widget.panelHeight.toStringAsFixed(1)}|$_viewportSize';
       // GPS/notification rebuilds and a user pan must not reset route framing.
       if (_lastRouteFitSignature == signature) return;
-      _homeFitGeneration++;
+      final generation = ++_homeFitGeneration;
       _lastRouteFitSignature = signature;
-      final padding = passengerRouteInsets(_viewportSize, widget.panelHeight);
+      bool isCurrent() =>
+          mounted &&
+          identical(controller, _controller) &&
+          generation == _homeFitGeneration &&
+          _lastRouteFitSignature == signature;
+      _homeCameraMoves++;
       try {
         _ignoreNextCameraIdle = true;
-        await controller.animateCamera(
-          native_map.CameraUpdate.newLatLngBounds(
-            passengerRouteBounds(points),
-            left: padding.left,
-            top: padding.top,
-            right: padding.right,
-            bottom: padding.bottom,
-          ),
-          duration: const Duration(milliseconds: 380),
+        final fitted = await fitPassengerRouteOverview(
+          current: controller.cameraPosition ??
+              native_map.CameraPosition(
+                  target: _nativePoint(widget.center),
+                  zoom: widget.zoom,
+                  tilt: 56),
+          points: points,
+          viewport: _viewportSize,
+          panelHeight: widget.panelHeight,
+          moveCamera: controller.moveCamera,
+          animateCamera: (update) => controller.animateCamera(update,
+              duration: const Duration(milliseconds: 380)),
+          isCurrent: isCurrent,
         );
-        // Keep the fitted overview. Reapplying a pitched CameraPosition here
-        // discards the bounds update's asymmetric padding on Android and
-        // puts the pickup under the tariff sheet (physical-device QA).
-        // Home/address exploration retains its pitched building view.
+        if (!fitted && isCurrent()) _lastRouteFitSignature = '';
       } catch (_) {
-        _lastRouteFitSignature = '';
+        if (isCurrent()) _lastRouteFitSignature = '';
+      } finally {
+        _homeCameraMoves--;
       }
       return;
     }
@@ -6475,12 +6509,13 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       await _syncRouteStyleLayer(controller);
       await controller.clearSymbols();
 
-      Future<void> symbol(LatLng point, String image, {double size = 0.65}) =>
+      Future<void> symbol(LatLng point, String image,
+              {double size = 0.65, String anchor = 'bottom'}) =>
           controller.addSymbol(
             native_map.SymbolOptions(
               geometry: _nativePoint(point),
               iconImage: image,
-              iconAnchor: 'bottom',
+              iconAnchor: anchor,
               iconSize: size,
             ),
           );
@@ -6506,10 +6541,15 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
       }
       final driver = widget.driver;
       if (driver != null) {
-        await symbol(driver.toLatLng(), _carImage, size: 0.12);
+        // The 1024px canvas contains a narrow top-view car. 0.12 made it
+        // wider than the street on the physical phone; center its body on
+        // the GPS fix instead of anchoring its rear bumper to the point.
+        await symbol(driver.toLatLng(), _carImage,
+            size: 0.05, anchor: 'center');
       } else {
         for (final nearby in widget.nearbyDrivers.take(5)) {
-          await symbol(nearby.toLatLng(), _carImage, size: 0.10);
+          await symbol(nearby.toLatLng(), _carImage,
+              size: 0.05, anchor: 'center');
         }
       }
     } catch (_) {
@@ -9713,13 +9753,6 @@ class _TripStatusPanel extends StatelessWidget {
                 const SizedBox(height: 12),
                 _StatusStepper(status: order.status),
                 const SizedBox(height: 12),
-                const _SearchProgressRows(),
-                const SizedBox(height: 12),
-                _TripRouteMiniCard(
-                  pickup: order.pickup,
-                  dropoff: order.dropoff,
-                ),
-                const SizedBox(height: 10),
                 _TripInfoRow(children: [
                   _TripInfoPill(
                     label: l10n.tariffLabel,
@@ -9759,6 +9792,19 @@ class _TripStatusPanel extends StatelessWidget {
                         : l10n.passengerCancelSearchButton),
                   ),
                 ],
+                const SizedBox(height: 10),
+                TripDetailsDisclosure(
+                  title: l10n.passengerTripDetailsLabel,
+                  child: Column(children: [
+                    TripAddressDetails(
+                        fromLabel: l10n.passengerFromLabel,
+                        toLabel: l10n.passengerToLabel,
+                        pickup: order.pickup,
+                        dropoff: order.dropoff),
+                    const SizedBox(height: 10),
+                    const _SearchProgressRows(),
+                  ]),
+                ),
               ],
             ),
           ),
@@ -9851,23 +9897,7 @@ class _TripStatusPanel extends StatelessWidget {
               const SizedBox(height: 12),
               _StatusStepper(status: order.status),
               const SizedBox(height: 12),
-              RouteFields(
-                pickupLabel: order.pickup,
-                dropoffLabel: order.dropoff,
-                onPickupTap: null,
-                onDropoffTap: null,
-                dark: isDark,
-              ),
-              if ((order.notes ?? '').isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _OrderNoteRow(note: order.notes),
-              ],
-              const SizedBox(height: 10),
               if (order.driverId != null) ...[
-                if (arrived) ...[
-                  const _ArrivedBanner(),
-                  const SizedBox(height: 10),
-                ],
                 _DriverContactCard(
                   name: order.driverName ?? '',
                   rating: order.driverRating,
@@ -9905,6 +9935,25 @@ class _TripStatusPanel extends StatelessWidget {
                     emphasis: true,
                   ),
               ]),
+              const SizedBox(height: 10),
+              TripDetailsDisclosure(
+                title: l10n.passengerTripDetailsLabel,
+                child: Column(children: [
+                  TripAddressDetails(
+                      fromLabel: l10n.passengerFromLabel,
+                      toLabel: l10n.passengerToLabel,
+                      pickup: order.pickup,
+                      dropoff: order.dropoff),
+                  if ((order.notes ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _OrderNoteRow(note: order.notes),
+                  ],
+                  if (arrived) ...[
+                    const SizedBox(height: 8),
+                    const _ArrivedBanner(),
+                  ],
+                ]),
+              ),
               if (error != null) ...[
                 const SizedBox(height: 12),
                 _InlineMessage(text: error!, danger: true, dark: isDark),

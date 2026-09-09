@@ -308,6 +308,7 @@
   "passengerDriverWaitingLocationLabel": "正在等待司机定位",
   "passengerDriverConnectedLabel": "司机已联系",
   "passengerTripDetailTitle": "行程",
+  "passengerTripDetailsLabel": "行程详情",
   "passengerTripShareTooltip": "分享行程单",
   "passengerTripDistanceLabel": "距离",
   "passengerTripTotalLabel": "总计",

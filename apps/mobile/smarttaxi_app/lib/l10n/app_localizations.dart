@@ -1507,6 +1507,12 @@ abstract class AppLocalizations {
   /// **'Поездка'**
   String get passengerTripDetailTitle;
 
+  /// No description provided for @passengerTripDetailsLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Детали поездки'**
+  String get passengerTripDetailsLabel;
+
   /// No description provided for @passengerTripShareTooltip.
   ///
   /// In ru, this message translates to:
@@ -1564,7 +1570,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerSearchingSubtitleWithCount.
   ///
   /// In ru, this message translates to:
-  /// **'Показываем {count} ближайших свободных водителей'**
+  /// **'Водителей поблизости: {count}. Ожидаем ответ'**
   String passengerSearchingSubtitleWithCount(int count);
 
   /// No description provided for @passengerSearchingSubtitleGeneric.

@@ -1,10 +1,67 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/maplibre_gl.dart' as native_map;
 import 'package:smarttaxi_app/core/utils/passenger_map_viewport.dart';
 import 'package:smarttaxi_app/core/widgets/measure_size.dart';
 
 void main() {
+  for (final panelHeight in [54.0, 541.0]) {
+    test('route normalizes pitch before bounds for panel $panelHeight',
+        () async {
+      final updates = <dynamic>[];
+      final result = await fitPassengerRouteOverview(
+        current: const native_map.CameraPosition(
+            target: native_map.LatLng(40.66, 68.54),
+            zoom: 17,
+            tilt: 56,
+            bearing: 20),
+        points: [const LatLng(40.66, 68.54), const LatLng(40.665, 68.545)],
+        viewport: const Size(360, 739),
+        panelHeight: panelHeight,
+        moveCamera: (update) async {
+          updates.add(update.toJson());
+          return true;
+        },
+        animateCamera: (update) async {
+          updates.add(update.toJson());
+          return true;
+        },
+        isCurrent: () => true,
+      );
+      expect(result, isTrue);
+      expect(updates.length, 2);
+      expect(updates[0][0], 'newCameraPosition');
+      expect(updates[0][1]['tilt'], 0);
+      expect(updates[0][1]['bearing'], 0);
+      expect(updates[0][1]['zoom'], 17);
+      expect(updates[1][0], 'newLatLngBounds');
+      expect(updates[1][5], panelHeight + 16);
+    });
+  }
+  test('superseded camera normalization cannot apply an obsolete bounds fit',
+      () async {
+    var current = true;
+    var fits = 0;
+    final result = await fitPassengerRouteOverview(
+      current: const native_map.CameraPosition(
+          target: native_map.LatLng(40.66, 68.54), tilt: 56),
+      points: [const LatLng(40.66, 68.54)],
+      viewport: const Size(360, 739),
+      panelHeight: 541,
+      moveCamera: (_) async {
+        current = false;
+        return true;
+      },
+      animateCamera: (_) async {
+        fits++;
+        return true;
+      },
+      isCurrent: () => current,
+    );
+    expect(result, isFalse);
+    expect(fits, 0);
+  });
   test('home pickup scrolls into the visible map without changing its zoom',
       () {
     const viewport = Size(360, 739);

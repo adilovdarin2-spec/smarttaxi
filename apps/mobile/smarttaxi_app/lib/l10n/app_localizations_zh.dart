@@ -732,6 +732,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerTripDetailTitle => '行程';
 
   @override
+  String get passengerTripDetailsLabel => '行程详情';
+
+  @override
   String get passengerTripShareTooltip => '分享行程单';
 
   @override

@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'core/api/api_client.dart';
 import 'core/auth/auth_store.dart';
+import 'core/auth/session_navigation.dart';
 import 'core/config/app_config.dart';
 import 'core/legal/legal_content.dart';
 import 'core/push/push_service.dart';
@@ -117,6 +118,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   static const _sessionBootstrapNetworkBudget = Duration(seconds: 2);
 
   AppSession _session = AppSession.splash;
+  final _sessionNavigation = SessionNavigation();
   String _accountLabel = '';
   String _accountPhone = '';
   String _accountId = '';
@@ -475,6 +477,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     };
     if (_session != AppSession.splash) _maybeShowUpdateNudge();
     return MaterialApp(
+      navigatorKey: _sessionNavigation.keyFor(_session),
       title: 'SmartTaxi',
       debugShowCheckedModeBanner: false,
       theme: buildSmartTaxiTheme(),

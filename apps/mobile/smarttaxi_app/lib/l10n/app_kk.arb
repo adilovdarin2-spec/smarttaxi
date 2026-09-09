@@ -305,6 +305,7 @@
   "passengerDriverWaitingLocationLabel": "Жүргізушінің геолокациясын күтудеміз",
   "passengerDriverConnectedLabel": "Жүргізуші байланыста",
   "passengerTripDetailTitle": "Сапар",
+  "passengerTripDetailsLabel": "Сапар мәліметтері",
   "passengerTripShareTooltip": "Түбіртекпен бөлісу",
   "passengerTripDistanceLabel": "Қашықтық",
   "passengerTripTotalLabel": "Барлығы",

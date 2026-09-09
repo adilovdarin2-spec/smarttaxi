@@ -308,6 +308,7 @@
   "passengerDriverWaitingLocationLabel": "Ожидаем геолокацию водителя",
   "passengerDriverConnectedLabel": "Водитель на связи",
   "passengerTripDetailTitle": "Поездка",
+  "passengerTripDetailsLabel": "Детали поездки",
   "passengerTripShareTooltip": "Поделиться чеком",
   "passengerTripDistanceLabel": "Расстояние",
   "passengerTripTotalLabel": "Итого",
@@ -317,7 +318,7 @@
   "passengerTripDateToday": "Сегодня",
   "passengerTripDateYesterday": "Вчера",
   "passengerTripShareTextPrefix": "Поездка SmartTaxi",
-  "passengerSearchingSubtitleWithCount": "Показываем {count} ближайших свободных водителей",
+  "passengerSearchingSubtitleWithCount": "Водителей поблизости: {count}. Ожидаем ответ",
   "@passengerSearchingSubtitleWithCount": {
     "placeholders": {
       "count": {

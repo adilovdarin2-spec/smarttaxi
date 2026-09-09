@@ -26,6 +26,39 @@ double passengerPointScrollY(Size viewport, double panelHeight) {
   return (padding.top - padding.bottom) / 2;
 }
 
+/// Fit an overview from a predictable projection. On the physical Android
+/// map a bounds update from a pitched camera can leave an endpoint outside
+/// the viewport when the sheet collapses. Normalize *before* fitting, never
+/// reapply a camera position afterwards (which loses asymmetric framing).
+/// A newer route/panel request supersedes either asynchronous step.
+Future<bool> fitPassengerRouteOverview({
+  required native_map.CameraPosition current,
+  required Iterable<LatLng> points,
+  required Size viewport,
+  required double panelHeight,
+  required Future<bool?> Function(native_map.CameraUpdate) moveCamera,
+  required Future<bool?> Function(native_map.CameraUpdate) animateCamera,
+  required bool Function() isCurrent,
+}) async {
+  final bounds = passengerRouteBounds(points);
+  final padding = passengerRouteInsets(viewport, panelHeight);
+  if (!isCurrent()) return false;
+  if (current.tilt.abs() > 0.01 || current.bearing.abs() > 0.01) {
+    await moveCamera(native_map.CameraUpdate.newCameraPosition(
+      native_map.CameraPosition(target: current.target, zoom: current.zoom),
+    ));
+    if (!isCurrent()) return false;
+  }
+  final moved = await animateCamera(native_map.CameraUpdate.newLatLngBounds(
+    bounds,
+    left: padding.left,
+    top: padding.top,
+    right: padding.right,
+    bottom: padding.bottom,
+  ));
+  return moved != false && isCurrent();
+}
+
 native_map.LatLngBounds passengerRouteBounds(Iterable<LatLng> points) {
   final valid = points
       .where((point) =>

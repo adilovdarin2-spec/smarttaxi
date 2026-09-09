@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-09",
+  "package": "kz.smarttaxi.app",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "productionPublished": false,
+  "artifacts": [
+    {
+      "file": "SmartTaxi-review-USB.apk",
+      "bytes": 288746350,
+      "sha256": "5610da7df3f2f66cb2af830ea4a7c1e0e57ff7f093d882678ee100de175d044b",
+      "mode": "debug",
+      "api": "http://127.0.0.1:4001",
+      "socket": "http://127.0.0.1:4001",
+      "web": "http://127.0.0.1:5175",
+      "requiresUsbReverse": true,
+      "installedOnPhone": false
+    },
+    {
+      "file": "SmartTaxi-installed-verified-LAN.apk",
+      "bytes": 288747678,
+      "sha256": "627db64063556aa213426b9ef3cab690c5d70d18dde651b269367639f5763a8b",
+      "mode": "debug",
+      "api": "http://192.168.8.135:4001",
+      "socket": "http://192.168.8.135:4001",
+      "web": "http://192.168.8.135:5175",
+      "installedOnPhone": true,
+      "limitations": ["LAN web origin is not exposed by the localhost-only QA nginx", "Missing final restored-GPS guard, arrived-status badge fix and session navigation reset"]
+    },
+    {
+      "file": "SmartTaxi-release.aab",
+      "bytes": 102412802,
+      "sha256": "50249984ee2a60d5e127f5f689cfaeec43ec772a8213724e299f848c8bf359ba",
+      "mode": "release",
+      "api": "https://api.smarttaxi.kz",
+      "socket": "https://api.smarttaxi.kz",
+      "web": "https://www.smarttaxi.kz",
+      "published": false,
+      "productionIntegrationVerified": false
+    },
+    {
+      "directory": "web",
+      "files": 124,
+      "bytes": 27349411,
+      "treeSha256": "f1fa8352b676d33bb68c492cd47ed62d12f4d5a53a5d1bd8290a1a9f363733ae",
+      "treeAlgorithm": "SHA256 of sorted lines: relative/path + space + file SHA256, joined by LF, no trailing LF",
+      "source": "smarttaxi-web-1:/usr/share/nginx/html",
+      "api": "http://localhost:4001"
+    }
+  ]
+}
