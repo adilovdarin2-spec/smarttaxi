@@ -46,7 +46,8 @@ class NavigatorManeuverBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: const Color(0xff102341),
+          gradient: const LinearGradient(
+              colors: [Color(0xff1d6fff), Color(0xff0b4fd1)]),
           borderRadius: BorderRadius.circular(22),
           boxShadow: const [
             BoxShadow(
@@ -57,7 +58,7 @@ class NavigatorManeuverBanner extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-                color: SmartTaxiColors.brand,
+                color: const Color(0x24ffffff),
                 borderRadius: BorderRadius.circular(16)),
             child: Icon(icon, color: Colors.white, size: 32)),
         const SizedBox(width: 14),
@@ -90,7 +91,7 @@ class NavigatorManeuverBanner extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        color: Color(0xffb9ceeb), fontSize: 13, height: 1.3)),
+                        color: Color(0xffeaf3ff), fontSize: 13, height: 1.3)),
               ],
             ])),
       ]),

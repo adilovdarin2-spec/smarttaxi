@@ -10,13 +10,13 @@
 .driver-navigator-toolbar div span { display: block; margin-top: 4px; font-size: 11px; color: #697c96; }
 .driver-navigator-gps { flex-shrink: 0; max-width: 80px; font-size: 10px; line-height: 1.3; font-weight: 700; color: #177659; text-align: right; }
 .driver-navigator-gps.uncertain { color: #946326; }
-.driver-navigator-maneuver { display: flex; align-items: center; gap: 14px; padding: 17px 16px; border-radius: 22px; background: #102341; color: white; box-shadow: 0 8px 22px #10234117; }
-.driver-navigator-arrow { width: 58px; height: 64px; flex-shrink: 0; display: grid; place-items: center; background: #1d6fff; border-radius: 17px; }
+.driver-navigator-maneuver { display: flex; align-items: center; gap: 14px; padding: 17px 16px; border-radius: 22px; background: linear-gradient(120deg, #1d6fff, #0b4fd1); color: white; box-shadow: 0 8px 22px #0b4fd117; }
+.driver-navigator-arrow { width: 58px; height: 64px; flex-shrink: 0; display: grid; place-items: center; background: #ffffff24; border-radius: 17px; }
 .driver-navigator-arrow svg { width: 38px; height: 38px; }
 .driver-navigator-maneuver > div { min-width: 0; }
 .driver-navigator-maneuver strong { font-size: clamp(23px, 7vw, 32px); line-height: 1.1; letter-spacing: -.8px; font-weight: 750; }
 .driver-navigator-maneuver h1 { margin: 7px 0 0; color: #fff; font-size: 15px; line-height: 1.3; font-weight: 650; letter-spacing: 0; }
-.driver-navigator-maneuver p { margin: 5px 0 0; font-size: 12px; line-height: 1.4; color: #c4d6ef; overflow-wrap: anywhere; }
+.driver-navigator-maneuver p { margin: 5px 0 0; font-size: 12px; line-height: 1.4; color: #eaf3ff; overflow-wrap: anywhere; }
 .driver-navigator-maneuver p:empty { display: none; }
 .driver-navigator-notice { padding: 15px; border: 1px solid #eddfc5; background: #fff8e9; color: #705225; border-radius: 19px; }
 .driver-navigator-notice > strong { font-size: 16px; }

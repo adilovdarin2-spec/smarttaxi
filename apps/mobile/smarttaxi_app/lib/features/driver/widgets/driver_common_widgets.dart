@@ -22,7 +22,30 @@ class FloatingNav extends StatelessWidget {
         color: context.palette.card,
         border: Border(top: BorderSide(color: context.palette.border)),
       ),
-      child: child,
+      child: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          height: 68,
+          elevation: 0,
+          backgroundColor: context.palette.card,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: context.palette.brandSurface,
+          indicatorShape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: states.contains(WidgetState.selected)
+                  ? context.palette.brandDeep
+                  : context.palette.textSecondary)),
+          iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+              size: 22,
+              color: states.contains(WidgetState.selected)
+                  ? context.palette.brand
+                  : context.palette.textSecondary)),
+        ),
+        child: child,
+      ),
     );
   }
 }
@@ -125,17 +148,16 @@ class DriverGradientButton extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    context.palette.brandSky,
                     context.palette.brand,
                     context.palette.brandDeep,
                   ],
                 ),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: active
                     ? [
                         BoxShadow(
                           color: context.palette.brand.withValues(
-                            alpha: highlighted ? 0.30 : 0.18,
+                            alpha: highlighted ? 0.30 : 0.12,
                           ),
                           blurRadius: highlighted ? 16 : 12,
                           spreadRadius: highlighted ? 1 : 0,
@@ -146,9 +168,9 @@ class DriverGradientButton extends StatelessWidget {
               ),
               child: Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   onTap: active ? onTap : null,
                   child: Container(
                     constraints: BoxConstraints(minHeight: height),
@@ -239,6 +261,21 @@ class DriverTripLayout extends StatelessWidget {
   }
 }
 
+/// One continuous trip sheet below the map, not a card inside another card.
+class DriverTripSheet extends StatelessWidget {
+  const DriverTripSheet({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+            color: context.palette.card,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24))),
+        child: child,
+      );
+}
+
 String driverTariffTitle(AppLocalizations l10n, String tariff) {
   switch (tariff.trim().toLowerCase()) {
     case 'economy':
@@ -327,7 +364,7 @@ class LoadingStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.palette.brandSurface,
         border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
         children: [

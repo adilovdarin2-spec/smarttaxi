@@ -9,6 +9,8 @@ import DriverNavigator from "./DriverNavigator.jsx";
 import { driverRouteMeta } from "./driverRoutePresentation.js";
 import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress.js";
 import { sessionGuard } from "../../lib/sessionGuard.js";
+import "./driverDesign.css";
+import { driverWaitingPresentation } from "./driverWaitingPresentation.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -330,8 +332,8 @@ function RegionSelector({ regions, selectedRegionId, onSelect, disabled }) {
   if (!regions.length) return null;
   return (
     <section className="driver-core-region-card">
-      <small>Рабочий регион</small>
-      <select value={selectedRegionId || ""} onChange={event => onSelect(event.target.value)} disabled={disabled}>
+      <Icon name="pin" />
+      <select aria-label="Рабочий регион" value={selectedRegionId || ""} onChange={event => onSelect(event.target.value)} disabled={disabled}>
         <option value="">Выберите регион</option>
         {regions.map(region => (
           <option key={region.id || regionKey(region)} value={regionKey(region)}>{regionName(region)}</option>
@@ -341,12 +343,12 @@ function RegionSelector({ regions, selectedRegionId, onSelect, disabled }) {
   );
 }
 
-function IncomingOrderCard({ order, onAccept, onReject, loading }) {
+export function IncomingOrderCard({ order, onAccept, onReject, loading }) {
   return (
     <article className="driver-core-order-card" data-order-id={order.id}>
       <div className="driver-core-order-top">
-        <span>{TARIFF_LABELS[order.tariff] || order.tariff}</span>
-        <strong><Money value={order.estimatedPrice} /></strong>
+        <h2>Новый заказ</h2>
+        <span className="driver-design-tariff">{TARIFF_LABELS[order.tariff] || order.tariff}</span>
       </div>
       <div className="driver-core-route-lines">
         <div>
@@ -364,29 +366,32 @@ function IncomingOrderCard({ order, onAccept, onReject, loading }) {
           </span>
         </div>
       </div>
-      <div className="driver-core-order-meta">
-        <span>{order.distanceKm ? `${order.distanceKm.toFixed(1)} км` : "Маршрут"}</span>
-        <span>{order.durationMin ? `${Math.round(order.durationMin)} мин` : "ETA"}</span>
+      <div className="driver-design-fare">
+        <div><strong><Money value={order.estimatedPrice} /></strong>
+          <small>{[order.distanceKm > 0 && `${order.distanceKm.toFixed(1)} км`,
+            order.durationMin > 0 && `${Math.max(1, Math.round(order.durationMin))} мин`].filter(Boolean).join(" · ") || "Маршрут уточняется"}</small>
+        </div>
         <span>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</span>
       </div>
       <div className="driver-core-card-actions">
-        <Button onClick={() => onAccept(order)} disabled={Boolean(loading)}>Принять</Button>
         <Button variant="secondary" onClick={() => onReject(order)} disabled={Boolean(loading)}>Пропустить</Button>
+        <Button onClick={() => onAccept(order)} disabled={Boolean(loading)}>{loading === "accept" ? "Принимаем…" : "Принять"}</Button>
       </div>
     </article>
   );
 }
 
-function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, onNavigate, loading }) {
+export function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, onNavigate, loading }) {
   const next = orderNextAction(order);
   const meta = driverRouteMeta(driverRoute, order.status);
   const awaitingPayment = ["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(order.status);
   return (
     <section className="driver-core-active" data-order-id={order.id}>
       <div className="driver-core-active-head">
-        <span>{statusLabel(order.status)}</span>
+        <h2>{statusLabel(order.status)}</h2>
         <strong><Money value={order.estimatedPrice} /></strong>
       </div>
+      {order.status === "WAITING_CLIENT" && <DriverWaitingCard key={order.id} order={order} />}
       <div className="driver-core-route-lines large">
         <div>
           <i className="pickup-dot" />
@@ -419,13 +424,8 @@ function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, on
         {awaitingPayment && <p className="driver-core-payment-note">{next
           ? "Поездка завершена. Подтвердите оплату после получения денег."
           : "Поездка завершена. Ожидаем подтверждения электронной оплаты."}</p>}
-        {next && (
-          <Button onClick={() => onAction(order, next)} disabled={Boolean(loading)}>
-            {loading === "next" ? "Сохраняем..." : next.label}
-          </Button>
-        )}
         {!awaitingPayment && <div className="driver-core-split-actions">
-          <a className="driver-core-call" href={order.rider_phone ? `tel:${order.rider_phone}` : undefined}>Позвонить</a>
+          {order.rider_phone && <a className="driver-core-call" href={`tel:${order.rider_phone}`}><Icon name="phone" /> Позвонить</a>}
           {canNoShow(order) && (
             <Button variant="secondary" onClick={() => onNoShow(order)} disabled={Boolean(loading)}>
               Клиент не вышел
@@ -438,8 +438,46 @@ function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoShow, on
           )}
         </div>}
       </div>
+      {next && <div className="driver-core-next-action">
+        <Button onClick={() => onAction(order, next)} disabled={Boolean(loading)}>
+          {loading === "next" ? "Сохраняем..." : next.label}
+        </Button>
+      </div>}
     </section>
   );
+}
+
+export function DriverWaitingCard({ order }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (order?.status !== 'WAITING_CLIENT') return undefined;
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, [order?.status, order?.id]);
+  const timer = driverWaitingPresentation(order, now);
+  if (!timer) return null;
+  return <div className={`driver-design-waiting ${timer.paid ? 'paid' : ''}`}>
+    <div className="driver-design-timer" style={{'--waiting-progress':`${(timer.paid ? 1 : timer.progress) * 360}deg`}}
+      role="timer" aria-label={`${timer.label}: ${timer.time}`}>
+      <strong aria-hidden="true">{timer.time}</strong>
+    </div>
+    <p>{timer.label}</p>
+  </div>;
+}
+
+export function DriverShiftPanel({ title, description, regions, selectedRegionId, onRegionSelect,
+  earnings, debt, isWorking, disabled, loading, onToggle }) {
+  return <section className="driver-core-line-card">
+    <div className="driver-design-shift-heading">
+      <h1>{title}</h1><span className={`driver-design-availability ${isWorking ? "online" : ""}`} aria-hidden="true" />
+    </div>
+    <RegionSelector regions={regions} selectedRegionId={selectedRegionId} onSelect={onRegionSelect} disabled={disabled} />
+    <p>{description}</p>
+    <EarningsStrip earnings={earnings} debt={debt} />
+    <Button variant={isWorking ? "secondary" : "primary"} onClick={onToggle} disabled={disabled}>
+      {loading ? "Сохраняем…" : (isWorking ? "Уйти с линии" : "Выйти на линию")}
+    </Button>
+  </section>;
 }
 
 export default function DriverApp() {
@@ -955,7 +993,7 @@ export default function DriverApp() {
   const mapTab = ["line", "orders", "active"].includes(tab);
 
   return (
-    <PhoneFrame className={`driver-core-phone driver-core-view-${tab}`}>
+    <PhoneFrame className={`driver-core-phone driver-design driver-core-view-${tab}`}>
       <DriverHeader driver={driver} activeOrder={activeOrder} currentRegion={currentRegion} onLogout={handleLogout} />
       {mapTab && error && <div className="driver-core-error driver-core-action-notice" role="alert">{error}</div>}
       {mapTab && <section className="driver-core-map-wrap">
@@ -985,14 +1023,6 @@ export default function DriverApp() {
           <div className="driver-core-loading">Загружаем смену...</div>
         ) : (
           <>
-            {tab === "line" && <EarningsStrip earnings={earnings} debt={debt} />}
-            {tab === "line" &&
-            <RegionSelector
-              regions={regions}
-              selectedRegionId={selectedRegionId}
-              onSelect={handleRegionSelect}
-              disabled={Boolean(actionLoading || activeOrder)}
-            />}
             {!regions.length && regionsLoadFailed && (
               <div className="driver-core-error">
                 Не удалось загрузить регионы.{" "}
@@ -1009,16 +1039,11 @@ export default function DriverApp() {
 
             {tab === "line" && (
               <section className="driver-core-home">
-                <div className="driver-core-line-card">
-                  <div>
-                    <small>Статус смены</small>
-                    <h1>{lineStatusTitle}</h1>
-                    <p>{activeOrder ? "Действия по текущей поездке доступны ниже." : isOnline ? "Новые заказы появятся автоматически." : "Выйдите на линию, чтобы получать заказы."}</p>
-                  </div>
-                  <Button onClick={handleStatusToggle} disabled={Boolean(actionLoading || activeOrder)}>
-                    {actionLoading === "status" ? "Сохраняем..." : (isWorking ? "Уйти с линии" : "Выйти на линию")}
-                  </Button>
-                </div>
+                <DriverShiftPanel title={lineStatusTitle}
+                  description={activeOrder ? "Действия по текущей поездке доступны ниже." : isOnline ? "Новые заказы появятся автоматически." : "Выйдите на линию, чтобы получать заказы."}
+                  regions={regions} selectedRegionId={selectedRegionId} onRegionSelect={handleRegionSelect}
+                  earnings={earnings} debt={debt} isWorking={isWorking}
+                  disabled={Boolean(actionLoading || activeOrder)} loading={actionLoading === "status"} onToggle={handleStatusToggle} />
                 {displayedOrder && <ActiveOrderPanel order={displayedOrder} driverRoute={driverRoute} onAction={handleNext} onCancel={handleCancel} onNoShow={handleNoShow} onNavigate={order => setNavigationOrderId(order.id)} loading={actionLoading} />}
                 {!activeOrder && isOnline && incomingOrders.slice(0, 1).map(order => (
                   <IncomingOrderCard

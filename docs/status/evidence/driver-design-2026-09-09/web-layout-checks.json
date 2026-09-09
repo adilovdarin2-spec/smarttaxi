@@ -1,0 +1,102 @@
+{
+  "fixtures": [
+    {
+      "state": "Входящий заказ",
+      "buttons": [
+        {
+          "background": "none",
+          "height": 52,
+          "text": "Пропустить",
+          "width": 129.078125
+        },
+        {
+          "background": "linear-gradient(115deg, rgb(29, 111, 255), rgb(11, 79, 209))",
+          "height": 52,
+          "text": "Принять",
+          "width": 154.921875
+        }
+      ],
+      "overflow": false,
+      "viewport": [
+        360,
+        800
+      ]
+    },
+    {
+      "state": "Ожидание",
+      "buttons": [
+        {
+          "background": "none",
+          "height": 66.5,
+          "text": "Клиент не вышел",
+          "width": 160
+        },
+        {
+          "background": "none",
+          "height": 66.5,
+          "text": "Отменить",
+          "width": 160
+        },
+        {
+          "background": "linear-gradient(115deg, rgb(29, 111, 255), rgb(11, 79, 209))",
+          "height": 52,
+          "text": "Начать поездку",
+          "width": 328
+        }
+      ],
+      "overflow": false,
+      "viewport": [
+        360,
+        800
+      ]
+    },
+    {
+      "state": "В поездке",
+      "buttons": [
+        {
+          "background": "none",
+          "height": 52,
+          "text": "Навигатор",
+          "width": 328
+        },
+        {
+          "background": "linear-gradient(115deg, rgb(29, 111, 255), rgb(11, 79, 209))",
+          "height": 52,
+          "text": "Завершить поездку",
+          "width": 328
+        }
+      ],
+      "overflow": false,
+      "viewport": [
+        360,
+        800
+      ]
+    },
+    {
+      "state": "Завершение",
+      "buttons": [
+        {
+          "background": "linear-gradient(115deg, rgb(29, 111, 255), rgb(11, 79, 209))",
+          "height": 52,
+          "text": "Подтвердить оплату",
+          "width": 328
+        }
+      ],
+      "overflow": false,
+      "viewport": [
+        360,
+        800
+      ]
+    }
+  ],
+  "income": {
+    "headerBottom": 56,
+    "labelColor": "rgb(96, 112, 135)",
+    "labelTop": 112,
+    "overflow": false,
+    "viewport": [
+      360,
+      800
+    ]
+  }
+}

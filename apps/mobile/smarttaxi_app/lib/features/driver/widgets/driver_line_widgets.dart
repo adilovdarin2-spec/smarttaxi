@@ -26,11 +26,10 @@ class DriverShiftHero extends StatelessWidget {
   final String? regionName;
   final VoidCallback? onToggle;
   final VoidCallback onRegionTap;
-  // The driver's own name reads friendlier than a static brand label and is
-  // usually shorter too — falls back to "Водитель SmartTaxi" if unset.
+  // Kept for callers that share profile data; identity is shown in the drawer
+  // so a long name does not crowd the region selector in the work sheet.
   final String? driverName;
-  // Formatted "N ₸" — null while stats are still loading, so the row
-  // collapses instead of showing a placeholder dash.
+  // Formatted "N ₸". Unknown totals stay a dash, never a fabricated zero.
   final String? todayEarnings;
   final Widget? sosButton;
   final bool embedded;
@@ -39,9 +38,6 @@ class DriverShiftHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final driverLabel = (driverName ?? '').trim().isNotEmpty
-        ? driverName!.trim()
-        : l10n.driverDrawerNameFallback;
     final shiftStatus = busy
         ? l10n.driverStatusBusy
         : online
@@ -61,8 +57,6 @@ class DriverShiftHero extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LineGlyph(online: online, busy: busy),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,37 +67,39 @@ class DriverShiftHero extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: palette.text,
-                        fontSize: embedded ? 24 : 21,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.35,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     InkWell(
                       onTap: onRegionTap,
                       borderRadius: BorderRadius.circular(10),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.place_rounded,
-                              size: 13, color: palette.textMuted),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              '$driverLabel · $placeLabel',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: palette.textSecondary,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
+                      child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 44),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.place_rounded,
+                                  size: 13, color: palette.textMuted),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  placeLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: palette.textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 16, color: palette.textMuted),
-                        ],
-                      ),
+                              Icon(Icons.keyboard_arrow_down_rounded,
+                                  size: 16, color: palette.textMuted),
+                            ],
+                          )),
                     ),
                   ],
                 ),
@@ -111,7 +107,7 @@ class DriverShiftHero extends StatelessWidget {
               if (sosButton != null) sosButton!,
             ],
           ),
-          SizedBox(height: embedded ? 8 : 12),
+          const SizedBox(height: 2),
           // One quiet totals row; status remains in the persistent header.
           Container(
             padding: EdgeInsets.symmetric(vertical: embedded ? 9 : 12),
@@ -120,9 +116,6 @@ class DriverShiftHero extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.account_balance_wallet_rounded,
-                    size: 18, color: palette.brandDeep),
-                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     l10n.driverTodayLabel,
@@ -138,15 +131,20 @@ class DriverShiftHero extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  todayEarnings ?? '—',
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: palette.text,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Flexible(
+                    flex: 2,
+                    child: Align(
+                        alignment: Alignment.centerRight,
+                        child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              todayEarnings ?? '—',
+                              maxLines: 1,
+                              style: TextStyle(
+                                  color: palette.text,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w600),
+                            )))),
               ],
             ),
           ),
@@ -158,7 +156,12 @@ class DriverShiftHero extends StatelessWidget {
                 onPressed: onToggle,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(56),
-                  foregroundColor: palette.text,
+                  foregroundColor: palette.brandDeep,
+                  backgroundColor: palette.brandSurface,
+                  textStyle: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600),
                   side: BorderSide(color: palette.border),
                 ),
                 child: loading
@@ -232,9 +235,8 @@ class DriverTodayStrip extends StatelessWidget {
     // Same three stats, one visual unit.
     return Container(
       decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.all(color: palette.border),
-        borderRadius: BorderRadius.circular(18),
+        color: palette.appBackground,
+        borderRadius: BorderRadius.circular(16),
       ),
       // IntrinsicHeight, not CrossAxisAlignment.stretch on the outer
       // ListView — this lives inside a vertically-scrolling ListView, which

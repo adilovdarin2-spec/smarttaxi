@@ -10,11 +10,14 @@ import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 import '../models/driver_shell_helpers.dart';
 import 'driver_common_widgets.dart';
+import 'driver_route_summary.dart';
 
 class DriverStatusStepper extends StatelessWidget {
-  const DriverStatusStepper({super.key, required this.status});
+  const DriverStatusStepper(
+      {super.key, required this.status, this.compact = false});
 
   final String status;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +51,24 @@ class DriverStatusStepper extends StatelessWidget {
     final index =
         rawIndex < 0 ? 0 : rawIndex.clamp(0, steps.length - 1).toInt();
     final palette = context.palette;
+    if (compact) {
+      return Semantics(
+          label: '${labels[index]}, ${index + 1}/${steps.length}',
+          child: Row(
+              children: List.generate(
+                  steps.length,
+                  (stepIndex) => Expanded(
+                        child: Container(
+                            height: 3,
+                            margin: EdgeInsets.only(
+                                right: stepIndex == steps.length - 1 ? 0 : 4),
+                            decoration: BoxDecoration(
+                                color: stepIndex <= index
+                                    ? palette.brand
+                                    : palette.border,
+                                borderRadius: BorderRadius.circular(4))),
+                      ))));
+    }
     // Connected dots + line, not six individually bordered boxes -- matches
     // the passenger app's trip-status stepper (_StatusStepper), which this
     // one predates and visually contradicted: six adjacent bordered
@@ -188,40 +209,27 @@ class OrderCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.palette.brandSurface,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.local_taxi_rounded,
-                    color: context.palette.brandDeep, size: 18),
-              ),
-              const SizedBox(width: 10),
               Expanded(
-                child: SectionLabel(
-                  title: l10n.driverNewOrderTitle,
-                  text: order.tariff == null || order.tariff!.isEmpty
-                      ? l10n.driverWorkingRegionLabel
-                      : l10n.driverTariffLabel(
-                          driverTariffTitle(l10n, order.tariff!)),
-                ),
+                child: Text(l10n.driverNewOrderTitle,
+                    style: TextStyle(
+                        color: context.palette.text,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -.4)),
               ),
-              StatusPill(
-                  label: statusLabel(l10n, order.status),
-                  tone: StatusTone.neutral),
+              if (order.tariff?.isNotEmpty == true)
+                Flexible(
+                    child: StatusPill(
+                        label: driverTariffTitle(l10n, order.tariff!),
+                        tone: StatusTone.info)),
             ],
           ),
-          const SizedBox(height: 10),
-          // Price + payment + route condensed into one compact block instead
-          // of three separate sections — the card was taking up most of the
-          // screen for a single order, which made scanning several at once
-          // awkward and left little room to see anything else on screen.
+          const SizedBox(height: 20),
+          DriverRouteSummary(pickup: order.pickup, dropoff: order.dropoff),
+          const SizedBox(height: 18),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
               color: context.palette.appBackground,
               borderRadius: BorderRadius.circular(14),
@@ -240,9 +248,10 @@ class OrderCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: context.palette.text,
-                                fontSize: 23,
-                                height: 1,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 26,
+                                height: 1.2,
+                                letterSpacing: -.6,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -296,8 +305,6 @@ class OrderCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           meta,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: context.palette.textSecondary,
                             fontSize: 12,
@@ -308,20 +315,6 @@ class OrderCard extends StatelessWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: 8),
-                Divider(height: 1, color: context.palette.border),
-                const SizedBox(height: 8),
-                _CompactRouteRow(
-                  icon: Icons.radio_button_checked_rounded,
-                  iconColor: context.palette.text,
-                  label: order.pickup,
-                ),
-                const SizedBox(height: 5),
-                _CompactRouteRow(
-                  icon: Icons.location_on_rounded,
-                  iconColor: context.palette.brand,
-                  label: order.dropoff,
-                ),
               ],
             ),
           ),
@@ -343,7 +336,17 @@ class OrderCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
+                flex: 2,
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 12),
+                      foregroundColor: context.palette.brandDeep,
+                      backgroundColor: context.palette.brandSurface,
+                      textStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
                   onPressed:
                       accepting || rejecting || offeringPrice ? null : onReject,
                   child: rejecting
@@ -356,8 +359,15 @@ class OrderCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 12),
+                      textStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
                   onPressed:
                       accepting || rejecting || offeringPrice ? null : onAccept,
                   child: accepting
@@ -475,41 +485,6 @@ class OrderCard extends StatelessWidget {
 // address-picker-style buttons (60px min-height each plus a connecting
 // line) — this card only ever displays these addresses, never lets the
 // driver edit them, so the compact form loses nothing.
-class _CompactRouteRow extends StatelessWidget {
-  const _CompactRouteRow({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 15, color: iconColor),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: context.palette.text,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class DriverOrderChip extends StatelessWidget {
   const DriverOrderChip({super.key, required this.icon, required this.label});
 
@@ -564,11 +539,13 @@ class DriverWaitingTimerCard extends StatefulWidget {
     required this.waitingStartedAt,
     required this.freeWaitingUntil,
     required this.waitingPricePerMinute,
+    this.now,
   });
 
   final DateTime waitingStartedAt;
   final DateTime? freeWaitingUntil;
   final int waitingPricePerMinute;
+  final DateTime Function()? now;
 
   @override
   State<DriverWaitingTimerCard> createState() => _DriverWaitingTimerCardState();
@@ -581,8 +558,9 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
   @override
   void initState() {
     super.initState();
+    _now = widget.now?.call() ?? DateTime.now();
     _timer = Timer.periodic(const Duration(seconds: 1),
-        (_) => setState(() => _now = DateTime.now()));
+        (_) => setState(() => _now = widget.now?.call() ?? DateTime.now()));
   }
 
   @override
@@ -606,63 +584,71 @@ class _DriverWaitingTimerCardState extends State<DriverWaitingTimerCard> {
     final billableMinutes =
         isPaid ? (_now.difference(freeUntil).inSeconds / 60).ceil() : 0;
     final owedKzt = billableMinutes * widget.waitingPricePerMinute;
+    final tone = isPaid ? context.palette.danger : context.palette.brand;
+    final totalSeconds =
+        freeUntil.difference(widget.waitingStartedAt).inSeconds;
+    final remainingSeconds = freeUntil.difference(_now).inSeconds;
+    final progress = totalSeconds > 0
+        ? (remainingSeconds / totalSeconds).clamp(0.0, 1.0)
+        : 0.0;
+    final time =
+        _fmt(isPaid ? _now.difference(freeUntil) : freeUntil.difference(_now));
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
       decoration: BoxDecoration(
-        color:
-            isPaid ? context.palette.dangerSoft : context.palette.brandSurface,
-        border: Border.all(
-            color: isPaid ? context.palette.danger : context.palette.border),
-        borderRadius: BorderRadius.circular(18),
+        color: context.palette.appBackground,
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(
-            isPaid ? Icons.timer_outlined : Icons.hourglass_top_rounded,
-            color: isPaid ? context.palette.danger : context.palette.brandDeep,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isPaid
-                      ? l10n.driverPaidWaitingLabel
-                      : l10n.driverFreeWaitingLabel,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isPaid
-                        ? context.palette.danger
-                        : context.palette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _fmt(isPaid
-                      ? _now.difference(freeUntil)
-                      : freeUntil.difference(_now)),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.text,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isPaid && widget.waitingPricePerMinute > 0)
-            Text(
-              '+$owedKzt ₸',
+          SizedBox(
+              width: 116,
+              height: 116,
+              child: Stack(alignment: Alignment.center, children: [
+                Positioned.fill(
+                    child: CircularProgressIndicator(
+                  value: isPaid ? 1 : progress,
+                  strokeWidth: 5,
+                  strokeCap: StrokeCap.round,
+                  color: tone,
+                  backgroundColor: context.palette.border,
+                  semanticsLabel:
+                      '${isPaid ? l10n.driverPaidWaitingLabel : l10n.driverFreeWaitingLabel}: $time',
+                )),
+                Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(time,
+                            style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -1,
+                                color: context.palette.text)))),
+              ])),
+          const SizedBox(height: 14),
+          Text(
+              isPaid
+                  ? l10n.driverPaidWaitingLabel
+                  : l10n.driverFreeWaitingLabel,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: context.palette.danger,
-              ),
-            ),
+                  color: isPaid ? tone : context.palette.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500)),
+          if (isPaid && widget.waitingPricePerMinute > 0)
+            Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  '+$owedKzt ₸',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: context.palette.danger,
+                  ),
+                )),
         ],
       ),
     );

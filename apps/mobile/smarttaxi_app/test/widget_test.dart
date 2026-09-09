@@ -889,7 +889,10 @@ void main() {
     expect(driver, contains('DriverTodayStrip'));
     expect(driver, contains('LocationNotice'));
     expect(driver, contains('DriverStatusStepper'));
-    expect(lineWidgets, contains('LineGlyph('));
+    // The shift's status is text, not a second oversized power badge.
+    // Real layout/tap coverage lives in driver_presentation_test.dart.
+    expect(lineWidgets, contains('shiftStatus'));
+    expect(lineWidgets, contains('onRegionTap'));
     expect(arb, contains('"driverLineRegionSectionTitle": "Рабочий регион"'));
     expect(driver, contains('Выйти на линию'));
     expect(lineWidgets, contains('driverGoOfflineButton'));

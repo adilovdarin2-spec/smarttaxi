@@ -27,7 +27,6 @@ import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/exit_on_double_back.dart';
 import '../../core/widgets/map_vehicle_marker.dart';
-import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/models.dart';
@@ -41,6 +40,7 @@ import 'screens/wallet/driver_wallet_screen.dart';
 import 'widgets/driver_common_widgets.dart';
 import 'widgets/driver_line_widgets.dart';
 import 'widgets/driver_order_widgets.dart';
+import 'widgets/driver_route_summary.dart';
 import 'widgets/driver_payout_widgets.dart';
 import 'widgets/driver_profile_widgets.dart';
 import 'widgets/driver_shell_chrome.dart';
@@ -3075,25 +3075,29 @@ class _DriverShellState extends State<DriverShell> {
     final tripMeta = liveMeta ??
         (_activeOrder == null ? null : routeMeta(l10n, _activeOrder!));
     final body = ListView(
-      padding: driverPagePadding(context),
+      padding: _activeOrder == null || _isTripFinished(_activeOrder!.status)
+          ? driverPagePadding(context)
+          : EdgeInsets.zero,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: TitleBlock(
-                  title: l10n.driverTripTitle, text: l10n.driverTripSubtitle),
-            ),
-            if (_activeOrder != null) ...[
-              const SizedBox(width: 10),
-              DriverSosButton(
-                  sosPhone: _sosPhone,
-                  api: widget.api,
-                  orderId: _activeOrder!.id),
+        if (_activeOrder == null) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TitleBlock(
+                    title: l10n.driverTripTitle, text: l10n.driverTripSubtitle),
+              ),
+              if (_activeOrder != null) ...[
+                const SizedBox(width: 10),
+                DriverSosButton(
+                    sosPhone: _sosPhone,
+                    api: widget.api,
+                    orderId: _activeOrder!.id),
+              ],
             ],
-          ],
-        ),
-        const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (_activeOrder == null)
           EmptyState(
               title: l10n.driverTripEmptyTitle,
@@ -3105,8 +3109,8 @@ class _DriverShellState extends State<DriverShell> {
                 order: _activeOrder!,
                 route: _driverRoute?.geometry ?? const [],
                 current: _currentCoordinate,
-                heading: _currentHeading),
-            const SizedBox(height: 12),
+                heading: _currentHeading,
+                edgeToEdge: true),
           ],
           if (_isTripFinished(_activeOrder!.status))
             DriverTripCompletionCard(
@@ -3115,17 +3119,58 @@ class _DriverShellState extends State<DriverShell> {
               onDone: _dismissActiveOrder,
             )
           else
-            PremiumCard(
+            DriverTripSheet(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    StatusPill(
-                        // A trip in progress is the normal working state,
-                        // same as the "Занят" pill in the header — brand
-                        // blue, not a warning amber.
-                        label: statusLabel(l10n, _activeOrder!.status),
-                        tone: StatusTone.info),
-                    const SizedBox(height: 14),
+                    Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Text(statusLabel(l10n, _activeOrder!.status),
+                                    style: TextStyle(
+                                        color: context.palette.text,
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -.4)),
+                                if (_activeOrder!.price != null) ...[
+                                  const SizedBox(height: 5),
+                                  Text(
+                                      formatDriverMoney(
+                                          _activeOrder!.price!.round()),
+                                      style: TextStyle(
+                                          color: context.palette.brandDeep,
+                                          fontSize: 23,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -.5)),
+                                ],
+                              ])),
+                          DriverSosButton(
+                              sosPhone: _sosPhone,
+                              api: widget.api,
+                              orderId: _activeOrder!.id),
+                        ]),
+                    const SizedBox(height: 12),
+                    DriverStatusStepper(
+                        status: _activeOrder!.status, compact: true),
+                    if (_activeOrder!.status == 'WAITING_CLIENT' &&
+                        _activeOrder!.waitingStartedAt != null) ...[
+                      const SizedBox(height: 16),
+                      DriverWaitingTimerCard(
+                        waitingStartedAt: _activeOrder!.waitingStartedAt!,
+                        freeWaitingUntil: _activeOrder!.freeWaitingUntil,
+                        waitingPricePerMinute:
+                            _activeOrder!.waitingPricePerMinute,
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    DriverRouteSummary(
+                        pickup: _activeOrder!.pickup,
+                        dropoff: _activeOrder!.dropoff),
+                    const SizedBox(height: 16),
                     if ((_activeOrder!.riderPhone ?? '').trim().isNotEmpty) ...[
                       Row(
                         children: [
@@ -3164,29 +3209,6 @@ class _DriverShellState extends State<DriverShell> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                    ],
-                    RouteFields(
-                        pickupLabel: _activeOrder!.pickup,
-                        dropoffLabel: _activeOrder!.dropoff,
-                        onPickupTap: null,
-                        onDropoffTap: null,
-                        dark: Theme.of(context).brightness == Brightness.dark),
-                    const SizedBox(height: 14),
-                    // The current destination and passenger are the pieces a
-                    // working driver needs before the historical progress
-                    // rail. Keeping the stepper after them makes both
-                    // addresses visible in the initial compact-phone
-                    // viewport while preserving the full lifecycle context.
-                    DriverStatusStepper(status: _activeOrder!.status),
-                    if (_activeOrder!.status == 'WAITING_CLIENT' &&
-                        _activeOrder!.waitingStartedAt != null) ...[
-                      const SizedBox(height: 12),
-                      DriverWaitingTimerCard(
-                        waitingStartedAt: _activeOrder!.waitingStartedAt!,
-                        freeWaitingUntil: _activeOrder!.freeWaitingUntil,
-                        waitingPricePerMinute:
-                            _activeOrder!.waitingPricePerMinute,
-                      ),
                     ],
                     if ((_activeOrder!.status == 'TRIP_STARTED' ||
                             _activeOrder!.status == 'IN_PROGRESS') &&
@@ -3227,12 +3249,6 @@ class _DriverShellState extends State<DriverShell> {
                           ],
                         ),
                       ),
-                    ],
-                    if (_activeOrder!.price != null) ...[
-                      const SizedBox(height: 14),
-                      Text('${_activeOrder!.price!.round()} ₸',
-                          style: const TextStyle(
-                              fontSize: 26, fontWeight: FontWeight.w600)),
                     ],
                     if (_activeOrder!.tariff != null &&
                         _activeOrder!.tariff!.isNotEmpty) ...[
@@ -5721,12 +5737,14 @@ class _TripMap extends StatefulWidget {
     required this.route,
     this.current,
     this.heading,
+    this.edgeToEdge = false,
   });
 
   final OrderSummary order;
   final List<LatLng> route;
   final Coordinate? current;
   final double? heading;
+  final bool edgeToEdge;
 
   @override
   State<_TripMap> createState() => _TripMapState();
@@ -5820,7 +5838,7 @@ class _TripMapState extends State<_TripMap> {
           )
         : null;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(widget.edgeToEdge ? 0 : 24),
       child: SizedBox(
         // On compact Android screens 246dp left only the passenger name
         // visible above the pinned lifecycle CTA. The map remains the
