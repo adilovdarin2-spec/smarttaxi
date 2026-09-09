@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { maplibregl } from './mapRuntime.js';
 import { Icon } from "../../core/icons.jsx";
 import { applyLibertyPresentation, hideDuplicateBuildings } from './mapPresentation.mjs';
+import { installMissingPoiFallbacks } from './missingPoiFallbacks.mjs';
 import { buildingAtPoint } from '../../../../../packages/shared/src/building-selection.js';
 
 const DEFAULT_CENTER = { lat: 40.844435, lng: 68.509021 };
@@ -129,50 +129,6 @@ function add3dBuildings(map) {
   } catch {
     // Styles without vector building layers are still valid map styles.
   }
-}
-
-// OpenFreeMap's otherwise excellent free vector style uses a handful of
-// data-driven POI sprite names that are not present in every deployed sprite
-// sheet (for example `office` and `sports_centre`).  Leaving them unresolved
-// makes MapLibre warn for every tile and creates visibly empty POI slots.
-// Supply one tiny neutral fallback locally: it is intentionally generic, but
-// always renders crisply and never adds another network request while a rider
-// is moving the map.
-function missingPoiImage() {
-  const size = 32;
-  const data = new Uint8Array(size * size * 4);
-  const center = (size - 1) / 2;
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const distance = Math.hypot(x - center, y - center);
-      if (distance > 13) continue;
-      const offset = (y * size + x) * 4;
-      const ring = distance > 9;
-      data[offset] = ring ? 29 : 255;
-      data[offset + 1] = ring ? 111 : 255;
-      data[offset + 2] = ring ? 255 : 255;
-      data[offset + 3] = 255;
-    }
-  }
-  return { width: size, height: size, data };
-}
-
-function installMissingPoiFallbacks(map) {
-  const onMissing = event => {
-    const id = event?.id;
-    // A style reload removes custom images. `hasImage` is therefore the
-    // authoritative guard; a remembered id would accidentally suppress the
-    // fallback on the next style instance.
-    if (!id || map.hasImage(id)) return;
-    try {
-      map.addImage(id, missingPoiImage(), { pixelRatio: 2 });
-    } catch {
-      // A style reload can race with this callback; it is safe to leave that
-      // particular icon to the next request instead of interrupting the map.
-    }
-  };
-  map.on("styleimagemissing", onMissing);
-  return () => map.off("styleimagemissing", onMissing);
 }
 
 function routeGeoJson(routePoints) {
@@ -337,6 +293,7 @@ export default function MapView({
   const pickerOverlayRef = useRef(null);
   const highlightedBuildingRef = useRef('');
   const mapRef = useRef(null);
+  const loadedMapRef = useRef(null);
   const centerMarkerElRef = useRef(null);
   const pickupMarkerElRef = useRef(null);
   const destinationMarkerElRef = useRef(null);
@@ -426,6 +383,9 @@ export default function MapView({
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined;
+    // Fast Refresh can retain React state while replacing the map instance.
+    // Never apply a route to the new style using the old map's ready flag.
+    setMapReady(false);
     const map = new maplibregl.Map({
       container: containerRef.current,
       style,
@@ -456,6 +416,7 @@ export default function MapView({
     map.touchZoomRotate.disableRotation();
 
     const onLoad = () => {
+      loadedMapRef.current = map;
       setMapReady(true);
       setMapError("");
       map.resize();
@@ -487,6 +448,7 @@ export default function MapView({
       });
       driverMarkerPointRef.current = null;
       removeMissingPoiFallbacks();
+      loadedMapRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -585,7 +547,7 @@ export default function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
+    if (!map || !mapReady || loadedMapRef.current !== map) return;
     const data = routeGeoJson(routePoints);
     if (!map.getSource("smarttaxi-route")) {
       map.addSource("smarttaxi-route", { type: "geojson", data });

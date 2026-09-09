@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { maplibregl } from '../map/mapRuntime.js';
 
 // A separate, admin-only map component rather than reusing
 // features/map/MapView.jsx — that component is built around exactly one
