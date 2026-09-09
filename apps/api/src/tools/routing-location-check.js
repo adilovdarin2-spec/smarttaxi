@@ -20,6 +20,7 @@ const {
   buildActiveLegRoute,
   buildDriverToPickupRoute,
   buildRoutePreview,
+  driverRouteBearing,
   filterGazetteerRowsToServiceArea,
   requestRoute,
   resolveActiveLeg,
@@ -253,7 +254,7 @@ const tariff = {
 };
 
 function mockFetch({ ok = true, route = {}, routes } = {}) {
-  return async () => ({
+  return async url => ({
     ok,
     async json() {
       return {
@@ -261,7 +262,7 @@ function mockFetch({ ok = true, route = {}, routes } = {}) {
         routes: routes || [{
           distance: 4200,
           duration: 720,
-          geometry: { type: "LineString", coordinates: [[69.1, 42.1], [69.2, 42.2]] },
+          geometry: { type: "LineString", coordinates: new URL(url).pathname.split("/").at(-1).split(";").map(point => point.split(",").map(Number)) },
           ...route
         }]
       };
@@ -450,6 +451,124 @@ const zeroRoute = await requestRoute({
     geometry: { type: "LineString", coordinates: [[69.11, 42.11], [69.11, 42.11]] } } })
 });
 assert.equal(zeroRoute.distanceMeters, 0, "an actual numeric zero at the same endpoint remains valid");
+
+// A formally valid LineString from another road/city must not win just
+// because the provider attaches a tiny duration to it.
+for (const coordinates of [
+  [[69.3, 42.3], [69.19, 42.19]],
+  [[69.11, 42.11], [69.3, 42.3]],
+  [[69.19, 42.19], [69.11, 42.11]]
+]) {
+  const selected = await requestRoute({
+    from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+    fetchImpl: mockFetch({ routes: [
+      { distance: 1, duration: 1, geometry: { type: "LineString", coordinates } },
+      validProviderRoute
+    ] })
+  });
+  assert.equal(selected.durationSeconds, 480, "distant/reversed endpoints cannot win fastest-route selection");
+}
+
+let boundedRouteUrl;
+await requestRoute({
+  from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+  fetchImpl: async url => { boundedRouteUrl = new URL(url); return mockFetch()(url); }
+});
+assert.equal(boundedRouteUrl.searchParams.get("radiuses"), "250;250", "a building pin cannot silently snap kilometres away");
+assert.equal(boundedRouteUrl.searchParams.get("bearings"), null, "passenger pickup has no invented direction");
+
+const fixTime = Date.parse("2026-09-09T10:00:00.000Z");
+const movingFix = { heading: 183, speed: 10, accuracy: 8, updated_at: new Date(fixTime) };
+assert.equal(driverRouteBearing(movingFix, fixTime + 1000), 183);
+assert.equal(driverRouteBearing({ ...movingFix, heading: "359.8", speed: "10", accuracy: "8" }, fixTime), 0, "database numeric strings and north wrap are supported");
+assert.equal(driverRouteBearing({ ...movingFix, heading: 0 }, fixTime), 0, "a real north bearing is not mistaken for a missing value");
+for (const change of [
+  { heading: null }, { heading: false }, { heading: "" }, { heading: [] }, { heading: -1 }, { heading: 361 },
+  { speed: null }, { speed: 0 }, { speed: 2.99 }, { speed: 121 },
+  { accuracy: null }, { accuracy: 26 }, { accuracy: -1 },
+  { updated_at: null }, { updated_at: "invalid" },
+  { updated_at: new Date(fixTime - 12001) }, { updated_at: new Date(fixTime + 5001) }
+]) {
+  assert.equal(driverRouteBearing({ ...movingFix, ...change }, fixTime), null, `unreliable course is ignored: ${JSON.stringify(change)}`);
+}
+
+let movingUrl;
+const captureMovingRoute = async url => { movingUrl = new URL(url); return mockFetch()(url); };
+const movingLocation = { driver_id: "driver-a", lat: 42.1, lng: 69.1, ...movingFix, updated_at: new Date() };
+const orientedRoute = await buildDriverToPickupRoute({
+  orderId: "order-accepted", user: { id: "driver-user", role: "DRIVER" },
+  executor: createExecutor({ locations: [movingLocation] }), fetchImpl: captureMovingRoute
+});
+assert.equal(orientedRoute.fallback, false);
+assert.equal(movingUrl.searchParams.get("bearings"), "183,45;", "live route starts in the actual travel direction; arrival is unconstrained");
+assert.equal(movingUrl.searchParams.get("radiuses"), "60;250", "moving GPS cannot snap to a distant parallel road");
+await buildActiveLegRoute({
+  order: { status: "TRIP_STARTED", dropoff_lat: 42.3, dropoff_lng: 69.3 },
+  driverLocation: movingLocation, fetchImpl: captureMovingRoute
+});
+assert.equal(movingUrl.searchParams.get("bearings"), "183,45;", "shared trip tracking uses the same departure policy as the navigator");
+
+await assert.rejects(() => requestRoute({
+  from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 }, originBearing: 183,
+  fetchImpl: mockFetch({ route: { ...validProviderRoute,
+    geometry: { type: "LineString", coordinates: [[69.1115, 42.11], [69.19, 42.19]] }
+  } })
+}), { code: "ROUTE_UNAVAILABLE" }, "even an Ok response cannot snap a moving car 120 metres away");
+
+let noSegmentCalls = 0;
+const noSegmentLeg = await buildActiveLegRoute({
+  order: { status: "TRIP_STARTED", dropoff_lat: 42.3, dropoff_lng: 69.3 }, driverLocation: movingLocation,
+  fetchImpl: async () => { noSegmentCalls++; return { ok: false, json: async () => ({ code: "NoSegment" }) }; }
+});
+assert.equal(noSegmentCalls, 1, "a failed directional snap is not retried with an opposite-direction route");
+assert.equal(noSegmentLeg.fallback, true);
+assert.deepEqual(noSegmentLeg.steps, [], "an unavailable road route never invents turns");
+
+// Exercise the actual cache path without opening Redis or a database.
+const { redis } = await import("../db/redis.js");
+const { env } = await import("../config/env.js");
+const cacheValues = new Map();
+const originalGet = redis.get;
+const originalSet = redis.set;
+const originalBase = env.ROUTING_BASE_URL;
+Object.defineProperty(redis, "isOpen", { configurable: true, value: true });
+redis.get = async key => cacheValues.get(key);
+redis.set = async (key, value) => { cacheValues.set(key, value); };
+try {
+  let providerCalls = 0;
+  const routeOptions = {
+    from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },
+    fetchImpl: async url => { providerCalls++; return mockFetch()(url); }
+  };
+  await requestRoute(routeOptions);
+  await requestRoute(routeOptions);
+  assert.equal(providerCalls, 1, "same validated route uses cache");
+  await requestRoute({ ...routeOptions, originBearing: 0 });
+  await requestRoute({ ...routeOptions, originBearing: 180 });
+  assert.equal(providerCalls, 3, "north, south and unbound passenger previews have separate cache entries");
+  await requestRoute({ ...routeOptions, originBearing: 360 });
+  assert.equal(providerCalls, 3, "360 and zero share the same north direction");
+  const unrestrictedKey = [...cacheValues.keys()].find(key => key.endsWith(":any"));
+  const corrupted = JSON.parse(cacheValues.get(unrestrictedKey));
+  corrupted.geometry.coordinates[0] = [70, 43];
+  cacheValues.set(unrestrictedKey, JSON.stringify(corrupted));
+  await requestRoute(routeOptions);
+  assert.equal(providerCalls, 4, "a corrupt/distant cached endpoint is revalidated and rebuilt");
+  env.ROUTING_BASE_URL = "http://another-routing.local";
+  await requestRoute(routeOptions);
+  assert.equal(providerCalls, 5, "a different road dataset/provider cannot reuse the old provider route");
+  cacheValues.clear();
+  await assert.rejects(() => requestRoute({ ...routeOptions, originBearing: 180,
+    fetchImpl: async () => ({ ok: false })
+  }), { code: "ROUTE_UNAVAILABLE" });
+  await requestRoute(routeOptions);
+  assert.equal(providerCalls, 6, "a failed south snap does not poison a passenger route's negative cache");
+} finally {
+  redis.get = originalGet;
+  redis.set = originalSet;
+  delete redis.isOpen;
+  env.ROUTING_BASE_URL = originalBase;
+}
 
 const parsedManeuvers = await requestRoute({
   from: { lat: 42.11, lng: 69.11 }, to: { lat: 42.19, lng: 69.19 },

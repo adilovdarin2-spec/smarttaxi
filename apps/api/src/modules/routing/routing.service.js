@@ -1,4 +1,5 @@
 import https from "node:https";
+import { createHash } from "node:crypto";
 import { normalizeBuildingGeometry, pointInBuilding } from '../../../../../packages/shared/src/building-selection.js';
 import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors.js";
@@ -1967,25 +1968,62 @@ function hasUsableRouteGeometry(geometry) {
   return geometry.coordinates.every(isRouteCoordinate);
 }
 
-function isUsableRoutePayload(route) {
-  return route?.providerStatus === "Ok" &&
-    isRouteMetric(route.distanceMeters) && isRouteMetric(route.durationSeconds) &&
-    hasUsableRouteGeometry(route?.geometry);
+// Address pins often sit inside a building/POI rather than on asphalt.
+// Allow a short access gap, but never silently route to a road kilometres
+// away. A moving driver's origin is tighter to avoid a parallel street.
+const ADDRESS_ROUTE_SNAP_METERS = 250;
+const MOVING_ROUTE_SNAP_METERS = 60;
+const ROUTE_BEARING_TOLERANCE = 45;
+
+function routeEndpointsMatch(geometry, origin, destination, originRadius) {
+  if (!hasUsableRouteGeometry(geometry)) return false;
+  const first = geometry.coordinates[0];
+  const last = geometry.coordinates.at(-1);
+  // One metre accommodates GeoJSON coordinate rounding at the radius edge.
+  return distanceKmBetween(origin, { lng: first[0], lat: first[1] }) * 1000 <= originRadius + 1 &&
+    distanceKmBetween(destination, { lng: last[0], lat: last[1] }) * 1000 <= ADDRESS_ROUTE_SNAP_METERS + 1;
 }
 
-export async function requestRoute({ from, to, fetchImpl = fetch }) {
+function isUsableRoutePayload(route, origin, destination, originRadius) {
+  return route?.providerStatus === "Ok" &&
+    isRouteMetric(route.distanceMeters) && isRouteMetric(route.durationSeconds) &&
+    routeEndpointsMatch(route.geometry, origin, destination, originRadius);
+}
+
+// GPS speed is m/s on both web (Geolocation) and Flutter (Geolocator).
+// Stationary/poor/stale fixes have no trustworthy travel direction. DB
+// numerics may arrive as strings; missing values must not turn into north/0.
+export function driverRouteBearing(location, now = Date.now()) {
+  if (!location) return null;
+  const metric = value => (typeof value === "number" || (typeof value === "string" && value.trim() !== ""))
+    && Number.isFinite(Number(value)) ? Number(value) : null;
+  const heading = metric(location.heading);
+  const speed = metric(location.speed);
+  const accuracy = metric(location.accuracy);
+  const timestamp = location.updated_at ?? location.updatedAt;
+  const updatedAt = timestamp instanceof Date ? timestamp.getTime()
+    : typeof timestamp === "string" ? Date.parse(timestamp) : NaN;
+  const age = now - updatedAt;
+  if (heading === null || heading < 0 || heading > 360 ||
+      speed === null || speed < 3 || speed > 120 ||
+      accuracy === null || accuracy < 0 || accuracy > 25 ||
+      !Number.isFinite(age) || age < -5000 || age > 12000) return null;
+  return Math.round(heading) % 360;
+}
+
+export async function requestRoute({ from, to, originBearing = null, fetchImpl = fetch }) {
   const origin = normalizePoint(from);
   const destination = normalizePoint(to);
   if (!env.ROUTING_BASE_URL) throw routeUnavailable("ROUTING_BASE_URL is not configured");
   const base = env.ROUTING_BASE_URL.replace(/\/$/, "");
-  // Keep the selection policy in the cache namespace. Earlier versions cached
-  // OSRM's first answer, even though its response order is not a product
-  // guarantee. A route and the fare based on it must use the same fastest
-  // candidate, never a provider-order accident.
-  // v2 also excludes responses accepted through JS null/boolean coercion.
-  const cacheKey = `route:osrm:fastest-v2:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}`;
+  const bearing = isRouteMetric(originBearing) && originBearing <= 360 ? Math.round(originBearing) % 360 : null;
+  const originRadius = bearing === null ? ADDRESS_ROUTE_SNAP_METERS : MOVING_ROUTE_SNAP_METERS;
+  // Different providers, opposing directions and unrestricted passenger
+  // previews must never share a cached route. v3 invalidates unbounded snaps.
+  const providerKey = createHash("sha256").update(base).digest("hex").slice(0, 16);
+  const cacheKey = `route:osrm:fastest-v3:${providerKey}:${roundedPointKey(origin, 5)}:${roundedPointKey(destination, 5)}:${bearing ?? "any"}`;
   const cached = await cacheGetJson(cacheKey);
-  if (isUsableRoutePayload(cached)) return cached;
+  if (isUsableRoutePayload(cached, origin, destination, originRadius)) return cached;
   // A hung/misbehaving OSRM would otherwise be re-hit on every single poll
   // (live driver routes re-fetch every ~8s) — a short negative cache keeps
   // repeat callers failing fast instead of each waiting out the 10s timeout.
@@ -1994,7 +2032,12 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   // steps=true so the client can show a real next-turn instruction (street
   // name + actual maneuver type) instead of guessing one from bearing
   // changes in the plain geometry — see parseSteps above.
-  const url = `${base}/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true&alternatives=true`;
+  // OSRM bearings constrain the departure, not the destination. Do not use
+  // curb/avoid-road flags that could invent extra detours for passenger pins.
+  // No retry without the bearing: that could instruct a moving driver to
+  // start backwards. Existing degraded tracking is safer than a fake turn.
+  const bearingQuery = bearing === null ? "" : `&bearings=${bearing},${ROUTE_BEARING_TOLERANCE};`;
+  const url = `${base}/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true&alternatives=true&radiuses=${originRadius};${ADDRESS_ROUTE_SNAP_METERS}${bearingQuery}`;
   let response;
   try {
     response = await getJson(url, { fetchImpl, timeoutMs: 10_000 });
@@ -2019,7 +2062,7 @@ export async function requestRoute({ from, to, fetchImpl = fetch }) {
   const candidates = (Array.isArray(data?.routes) ? data.routes : [])
     .filter(candidate =>
       isRouteMetric(candidate?.distance) && isRouteMetric(candidate?.duration) &&
-      hasUsableRouteGeometry(candidate.geometry)
+      routeEndpointsMatch(candidate.geometry, origin, destination, originRadius)
     )
     .sort((left, right) =>
       left.duration - right.duration || left.distance - right.distance
@@ -2059,18 +2102,17 @@ function straightLineRouteFallback(from, to) {
       type: "LineString",
       coordinates: [[Number(from.lng), Number(from.lat)], [Number(to.lng), Number(to.lat)]]
     },
-    // No real OSRM steps exist for a straight-line guess — the client falls
-    // back to its own bearing-based heuristic when steps is empty, same as
-    // it always did before this field existed.
+    // No real road instructions exist for this estimate. Consumers must not
+    // invent maneuvers from the bearing of its straight-line geometry.
     steps: [],
     providerStatus: "Fallback",
     fallback: true
   };
 }
 
-async function requestRouteWithFallback({ from, to, fetchImpl }) {
+async function requestRouteWithFallback({ from, to, originBearing = null, fetchImpl }) {
   try {
-    return await requestRoute({ from, to, fetchImpl });
+    return await requestRoute({ from, to, originBearing, fetchImpl });
   } catch (error) {
     if (error instanceof AppError && error.code === "ROUTE_UNAVAILABLE") {
       return straightLineRouteFallback(from, to);
@@ -2096,11 +2138,16 @@ export function resolveActiveLeg(order) {
 // headed right now. Falls back to a straight-line estimate when the routing
 // provider is unavailable so the map/ETA keeps working (degraded but live)
 // instead of going blank — safe here because this never feeds pricing.
-export async function buildActiveLegRoute({ order, driverLat, driverLng, fetchImpl = fetch }) {
+export async function buildActiveLegRoute({ order, driverLat, driverLng, driverLocation = null, fetchImpl = fetch }) {
+  if (driverLocation) {
+    driverLat = Number(driverLocation.lat);
+    driverLng = Number(driverLocation.lng);
+  }
   const { phase, targetLat, targetLng } = resolveActiveLeg(order);
   const route = await requestRouteWithFallback({
     from: { lat: driverLat, lng: driverLng },
     to: { lat: targetLat, lng: targetLng },
+    originBearing: driverRouteBearing(driverLocation),
     fetchImpl
   });
   return {
@@ -2286,27 +2333,17 @@ export async function buildDriverToPickupRoute({ orderId, user, executor = defau
   await assertCanAccessOrderLocation({ user, order, executor });
   if (!order.driver_id) throw new AppError("Driver is not assigned", 409, "DRIVER_NOT_ASSIGNED");
 
-  const { phase, targetLat, targetLng } = resolveActiveLeg(order);
+  resolveActiveLeg(order);
 
   const location = (await run(executor, "SELECT * FROM driver_locations WHERE driver_id=$1 ORDER BY updated_at DESC LIMIT 1", [order.driver_id])).rows[0];
   if (!location) throw new AppError("Driver location is unavailable", 409, "DRIVER_LOCATION_UNAVAILABLE");
-  const route = await requestRouteWithFallback({
-    from: { lat: Number(location.lat), lng: Number(location.lng) },
-    to: { lat: targetLat, lng: targetLng },
+  const route = await buildActiveLegRoute({
+    order,
+    driverLocation: location,
     fetchImpl
   });
   return {
-    phase,
-    distanceMeters: route.distanceMeters,
-    durationSeconds: route.durationSeconds,
-    geometry: route.geometry,
-    steps: route.steps || [],
-    providerStatus: route.providerStatus,
-    fallback: Boolean(route.fallback),
-    driverLat: Number(location.lat),
-    driverLng: Number(location.lng),
-    targetLat,
-    targetLng,
+    ...route,
     pickupLat: Number(order.pickup_lat),
     pickupLng: Number(order.pickup_lng)
   };

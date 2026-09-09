@@ -203,7 +203,8 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
              o.pickup_lat, o.pickup_lng, o.dropoff_lat, o.dropoff_lng,
              d.name AS driver_name, d.car_model AS driver_car_model, d.car_color AS driver_car_color, d.plate AS driver_plate,
              CASE WHEN d.id IS NULL THEN NULL ELSE ('/api/drivers/' || d.id::text || '/avatar') END AS driver_avatar_url,
-             dl.lat AS driver_lat, dl.lng AS driver_lng, dl.updated_at AS driver_location_updated_at
+             dl.lat AS driver_lat, dl.lng AS driver_lng, dl.updated_at AS driver_location_updated_at,
+             dl.heading AS driver_heading, dl.speed AS driver_speed, dl.accuracy AS driver_accuracy
       FROM orders o
       LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       LEFT JOIN driver_locations dl ON dl.driver_id=o.driver_id
@@ -217,7 +218,13 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
     let route = null;
     if (driverLocation) {
       try {
-        const leg = await buildActiveLegRoute({ order, driverLat: driverLocation.lat, driverLng: driverLocation.lng });
+        const leg = await buildActiveLegRoute({ order, driverLocation: {
+          ...driverLocation,
+          heading: order.driver_heading,
+          speed: order.driver_speed,
+          accuracy: order.driver_accuracy,
+          updated_at: order.driver_location_updated_at
+        } });
         route = {
           phase: leg.phase,
           distanceMeters: leg.distanceMeters,
