@@ -296,6 +296,7 @@ class AddressSuggestion {
     this.subtitle,
     this.city,
     this.region,
+    this.isResolved = true,
   });
 
   final String label;
@@ -303,13 +304,23 @@ class AddressSuggestion {
   final String? subtitle;
   final String? city;
   final String? region;
+  final bool isResolved;
 
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
+    final lat = double.tryParse('${json['lat']}');
+    final lng = double.tryParse('${json['lng']}');
     return AddressSuggestion(
       label: '${json['label'] ?? 'Точка на карте'}',
       subtitle: json['subtitle']?.toString(),
       city: json['city']?.toString(),
       region: json['region']?.toString(),
+      isResolved: json['fallback'] != true &&
+          lat != null &&
+          lat.isFinite &&
+          lat.abs() <= 90 &&
+          lng != null &&
+          lng.isFinite &&
+          lng.abs() <= 180,
       coordinate: Coordinate(
         lat: _toDouble(json['lat']),
         lng: _toDouble(json['lng']),

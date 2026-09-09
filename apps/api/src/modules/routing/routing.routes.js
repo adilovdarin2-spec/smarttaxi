@@ -29,7 +29,8 @@ const AddressSearchQuery = z.object({
 
 const ReverseAddressQuery = z.object({
   lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180)
+  lng: z.coerce.number().min(-180).max(180),
+  building: z.string().max(2500).optional()
 });
 
 const CatalogQuery = z.object({

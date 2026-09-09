@@ -15,6 +15,7 @@
 
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { env } from '../config/env.js';
 
 import {
   reverseAddress,
@@ -53,7 +54,7 @@ function gazetteer(rows) {
       ? rows.filter((row) => row.kind === "housenumber")
       : rows;
     if (!usable.length) return { rows: [] };
-    return { rows: [{ ...usable[0], distance_squared: 0 }] };
+    return { rows: usable.map(row => ({ ...row, distance_squared: 0 })) };
   };
 }
 
@@ -98,6 +99,91 @@ assert.equal(overHouse.label, "улица Абая, 14", "a road code resolves t
 assert.equal(overHouse.source, "gazetteer_reverse", "the local catalogue is credited as the source");
 assert.equal(overHouse.fallback, false, "a resolved house is not a fallback");
 assert.doesNotMatch(overHouse.label, /KZ[- ]?12/i, "the road code never reaches the rider");
+assert.equal(overHouse.lat, HOUSE.lat, 'the address keeps its own latitude, not the provider road coordinate');
+assert.equal(overHouse.lng, HOUSE.lng, 'the address keeps its own longitude');
+
+const roadResponse = nominatim('KZ-12, Мырзакент', { road: 'KZ-12', village: 'Мырзакент' });
+const unavailable = async () => { throw new Error('provider unavailable'); };
+const offlineHouse = await reverseAddress(PIN, unavailable, gazetteer([
+  { ...HOUSE, lat: PIN.lat + 0.0002 }
+]));
+assert.equal(offlineHouse.source, 'gazetteer_reverse', 'local addresses work during provider outages');
+assert.equal(offlineHouse.lat, PIN.lat + 0.0002);
+assert.match(offlineHouse.subtitle, /м от метки/, 'a nearby address is not presented as an exact footprint match');
+
+const farHouse = { ...HOUSE, lat: PIN.lat + 0.002 };
+const far = await reverseAddress(PIN, roadResponse, gazetteer([farHouse]));
+assert.equal(far.fallback, true, 'a house 220 metres away must not name the selected building');
+const corner = await reverseAddress(PIN, roadResponse, gazetteer([
+  { ...HOUSE, lat: PIN.lat + 0.0005, lng: PIN.lng + 0.00065 }
+]));
+assert.equal(corner.fallback, true, 'box corners outside the 60 metre radius are rejected');
+
+const nearestInMeters = await reverseAddress(PIN, roadResponse, gazetteer([
+  { ...HOUSE, label: 'улица Абая, 16', lat: PIN.lat + 0.0003, lng: PIN.lng },
+  { ...HOUSE, label: 'улица Абая, 18', lat: PIN.lat, lng: PIN.lng + 0.00035 }
+]));
+assert.equal(nearestInMeters.label, 'улица Абая, 18', 'longitude is scaled by latitude when choosing the nearest address');
+
+const skipUnusable = await reverseAddress(PIN, roadResponse, gazetteer([
+  { ...HOUSE, label: 'KZ-12' }, { ...HOUSE, label: ' ' }, HOUSE
+]));
+assert.equal(skipUnusable.label, HOUSE.label, 'an unusable closest row does not hide a real house');
+
+const distantProvider = await reverseAddress(PIN, async () => ({
+  ok: true,
+  async json() {
+    return { lat: farHouse.lat, lon: farHouse.lng, address: {
+      road: 'улица Абая', house_number: '14', village: 'Мырзакент'
+    } };
+  }
+}), gazetteer([]));
+assert.equal(distantProvider.fallback, true, 'provider house numbers do not override physical distance');
+assert.equal(distantProvider.lat, PIN.lat, 'unresolved responses keep the actual pin');
+
+const unprefixedStreet = await reverseAddress(PIN,
+  nominatim('Бектасова, Мырзакент', { road: 'Бектасова', village: 'Мырзакент' }),
+  gazetteer([]));
+assert.equal(unprefixedStreet.fallback, true, 'street metadata blocks a bare street without the word улица');
+
+const building = { type: 'Polygon', coordinates: [[
+  [68.5200,40.7000],[68.5203,40.7000],[68.5203,40.7004],[68.5200,40.7004],[68.5200,40.7000]
+]] };
+const inside = { ...HOUSE, label: 'улица Абая, 20', lat: PIN.lat + 0.00025, lng: PIN.lng };
+const neighbouringHouse = { ...HOUSE, label: 'улица Абая, 22', lat: PIN.lat, lng: PIN.lng - 0.0002 };
+const selected = await reverseAddress({ ...PIN, building }, roadResponse, gazetteer([neighbouringHouse, inside]));
+assert.equal(selected.label, inside.label, 'the selected footprint wins over a closer neighbouring house');
+assert.equal(selected.lat, inside.lat);
+assert.equal(selected.matchKind, 'selected-building');
+assert.equal(selected.kind, 'housenumber', 'a local house does not inherit the rejected road feature kind');
+assert.match(selected.subtitle, /В выбранном здании/);
+const missingBuildingAddress = await reverseAddress({ ...PIN, building },
+  async () => ({ ok:true, async json() { return {lat:neighbouringHouse.lat,lon:neighbouringHouse.lng,address:{road:'улица Абая',house_number:'22'}}; } }),
+  gazetteer([neighbouringHouse]));
+assert.equal(missingBuildingAddress.fallback, true, 'a neighbour from both local and remote sources cannot name this building');
+await assert.rejects(() => reverseAddress({ ...PIN, building: '{bad JSON' }, unavailable, gazetteer([])), {code:'INVALID_SELECTED_BUILDING'});
+await assert.rejects(() => reverseAddress({ ...PIN, lat: PIN.lat + 0.001, building }, unavailable, gazetteer([])), {code:'INVALID_SELECTED_BUILDING'});
+
+// Optional MapTiler remains covered without a real key or network request.
+const originalKey = env.MAPTILER_API_KEY;
+try {
+  env.MAPTILER_API_KEY = 'fixture-only-not-a-real-key';
+  const remote = { ...HOUSE, lat: PIN.lat + 0.003 };
+  const mapTilerFeature = point => ({center:[point.lng,point.lat],place_type:['address'],text:'улица Абая',properties:{street:'улица Абая',housenumber:'14',city:'Мырзакент'}});
+  const fallbackAfterDistantMapTiler = await reverseAddress(PIN, async url => ({
+    ok: true,
+    async json() {
+      return String(url).includes('maptiler') ? {features:[mapTilerFeature(remote)]}
+        : {lat:HOUSE.lat,lon:HOUSE.lng,address:{road:'улица Абая',house_number:'14',village:'Мырзакент'}};
+    }
+  }), gazetteer([]));
+  assert.equal(fallbackAfterDistantMapTiler.source, 'nominatim', 'an unresolved first provider does not stop the chain');
+  const mapTilerHouse = await reverseAddress(PIN, async () => ({ok:true,async json(){return {features:[mapTilerFeature(HOUSE)]};}}), gazetteer([]));
+  assert.equal(mapTilerHouse.lat, HOUSE.lat, 'MapTiler feature coordinates are not replaced by the query pin');
+  assert.equal(mapTilerHouse.lng, HOUSE.lng);
+} finally {
+  env.MAPTILER_API_KEY = originalKey;
+}
 
 // 2. A road code over nothing but fields. The rider must be told to move the
 //    pin, and `fallback` must say so — this is the flag the fallbackPoint
@@ -382,4 +468,4 @@ assert.match(
   "the web popular-address list excludes non-bookable catalogue points"
 );
 
-console.log(`Address selection checks ok: 7 map-pick cases, 3 search cases, ${REGION_SEED.length} region radii, catalogue index invariants`);
+console.log(`Address selection checks ok: proximity, footprint containment, provider recovery, search, ${REGION_SEED.length} region radii, catalogue invariants`);

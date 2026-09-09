@@ -675,13 +675,15 @@ void main() {
     // the spinner while the newer request is still running. The file already
     // used this guard for the live driver route.
     expect(
-      RegExp(r'requestId != _searchRequestId').allMatches(passenger).length,
+      RegExp(r'!_searchRequestGate\.accepts\(requestId\)')
+          .allMatches(passenger)
+          .length,
       greaterThanOrEqualTo(4),
       reason: 'both sheets must drop a response that a newer query superseded',
     );
     expect(
       passenger,
-      contains('if (mounted && requestId == _searchRequestId) {'),
+      contains('if (mounted && _searchRequestGate.accepts(requestId)) {'),
       reason: 'and only the newest request may clear the spinner',
     );
 

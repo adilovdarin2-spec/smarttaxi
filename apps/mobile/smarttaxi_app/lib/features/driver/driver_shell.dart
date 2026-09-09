@@ -25,6 +25,7 @@ import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/exit_on_double_back.dart';
+import '../../core/widgets/map_vehicle_marker.dart';
 import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
@@ -4911,33 +4912,14 @@ const _driverSelfCarAsset = 'assets/map/driver_car_topview_white.png';
 
 Widget _driverSelfMarkerContent(
   BuildContext context, {
-  double size = 46,
+  double size = 32,
   double rotationRadians = 0,
 }) {
-  // The source PNG is 1024x1024 (a raw export, never downscaled for actual
-  // use) — decoding it at full resolution for a marker rendered at ~46
-  // logical px, then re-rotating that full bitmap on every position update,
-  // is exactly the kind of decode/paint cost that shows up as map jank.
-  // cacheWidth/cacheHeight tell Flutter's image cache to decode at a size
-  // that still looks sharp on high-DPI screens (roughly 3x logical size)
-  // instead of the full source resolution — same pixels on screen, far less
-  // work to get there.
-  final cachePixels = (size * 3).round();
-  return Semantics(
-    label: AppLocalizations.of(context).driverYourCarSemanticLabel,
-    image: true,
-    child: Transform.rotate(
-      angle: rotationRadians,
-      child: Image.asset(
-        _driverSelfCarAsset,
-        width: size,
-        height: size,
-        cacheWidth: cachePixels,
-        cacheHeight: cachePixels,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const _NavigatorCurrentMarker(),
-      ),
-    ),
+  return MapVehicleMarker(
+    semanticLabel: AppLocalizations.of(context).driverYourCarSemanticLabel,
+    size: size,
+    rotationRadians: rotationRadians,
+    fallback: const _NavigatorCurrentMarker(),
   );
 }
 

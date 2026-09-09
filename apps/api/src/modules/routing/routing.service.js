@@ -1,4 +1,5 @@
 import https from "node:https";
+import { normalizeBuildingGeometry, pointInBuilding } from '../../../../../packages/shared/src/building-selection.js';
 import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors.js";
 import { redis } from "../../db/redis.js";
@@ -937,12 +938,12 @@ function shouldUseDevCertificateFallback(error) {
   return /CERT|VERIFY|TLS|UNABLE_TO_VERIFY|SELF_SIGNED|LEAF_SIGNATURE/i.test(`${code} ${message}`);
 }
 
-function getJsonViaHttps(url, { headers = {}, rejectUnauthorized = true } = {}) {
+function getJsonViaHttps(url, { headers = {}, rejectUnauthorized = true, timeoutMs = 20_000 } = {}) {
   return new Promise((resolve, reject) => {
     const request = https.get(url, {
       headers,
       rejectUnauthorized,
-      timeout: 20_000
+      timeout: timeoutMs
     }, response => {
       // Collect raw bytes and decode once at the end -- setEncoding("utf8")
       // decodes each TCP chunk independently, so a multi-byte character
@@ -991,7 +992,7 @@ async function getJson(url, { headers = {}, fetchImpl = fetch, timeoutMs = null 
     };
   } catch (error) {
     if (!shouldUseDevCertificateFallback(error)) throw error;
-    return getJsonViaHttps(url, { headers, rejectUnauthorized: false });
+    return getJsonViaHttps(url, { headers, rejectUnauthorized: false, timeoutMs: timeoutMs || 20_000 });
   }
 }
 
@@ -1090,7 +1091,8 @@ function publicAddressSuggestion(item) {
     region,
     lat,
     lng,
-    source: "nominatim"
+    source: "nominatim",
+    kind: poiName ? 'poi' : road ? (address.house_number ? 'housenumber' : 'street') : 'place'
   };
 }
 
@@ -1132,7 +1134,8 @@ function publicPhotonAddressSuggestion(feature) {
     region,
     lat,
     lng,
-    source: "photon"
+    source: "photon",
+    kind: poiName ? 'poi' : street ? (house ? 'housenumber' : 'street') : 'place'
   };
 }
 
@@ -1203,6 +1206,10 @@ function publicMapTilerAddressSuggestion(feature) {
     lat,
     lng,
     source: "maptiler",
+    kind: houseNumber && street ? 'housenumber'
+      : feature.place_type?.some(type => ['road', 'street'].includes(type)) ? 'street'
+        : feature.place_type?.some(type => ['place', 'locality', 'region', 'country', 'postal_code'].includes(type)) ? 'place'
+          : name && name !== street ? 'poi' : street ? 'street' : 'place',
     confidence: Number(properties.confidence ?? feature.relevance ?? 0.8)
   };
 }
@@ -1238,7 +1245,7 @@ async function searchAddressesWithMapTiler({ q, region, limit = 8 }, fetchImpl =
 async function reverseAddressWithMapTiler({ lat, lng }, fetchImpl = fetch) {
   if (!env.MAPTILER_API_KEY) return null;
   const point = normalizePoint({ lat, lng });
-  const cacheKey = `geo:maptiler:reverse:${roundedPointKey(point, 5)}`;
+  const cacheKey = `geo:maptiler:reverse:v2:${roundedPointKey(point, 5)}`;
   const cached = await cacheGetJson(cacheKey);
   if (cached) return cached;
   const url = new URL(`${env.MAPTILER_GEOCODING_URL.replace(/\/$/, "")}/${point.lng},${point.lat}.json`);
@@ -1250,26 +1257,17 @@ async function reverseAddressWithMapTiler({ lat, lng }, fetchImpl = fetch) {
   // Forward search's `limit` (searchAddressesWithMapTiler above) has no such
   // restriction; only reverse does. Only features[0] is ever used here
   // anyway, so there's nothing to gain from limiting result count.
-  const response = await getJson(url, { fetchImpl });
+  const response = await getJson(url, { fetchImpl, timeoutMs: 1500 });
   if (!response.ok) {
     await cacheSetJson(`${cacheKey}:failure`, { failed: true, status: response.status }, 30);
     return null;
   }
   const features = Array.isArray(response.data?.features) ? response.data.features : [];
   const suggestion = features.map(publicMapTilerAddressSuggestion).filter(Boolean)[0] || null;
-  // Reverse geocoding already knows the true location -- it's the point we
-  // asked about -- so the queried coordinates always win over whatever the
-  // matched feature itself carries. This matters because MapTiler's top
-  // match for a point can be a "road" kind feature representing an entire
-  // multi-country route relation (e.g. "Азиатский маршрут AH5", OSM
-  // r176922, spanning TM/UZ/CN/KG/TR/KZ) whose own `center` is that route's
-  // geometric centroid -- hundreds of km from the actual point queried
-  // (confirmed live: reverse-geocoding a point near the Uzbek border
-  // returned coordinates near Almaty). The label/name is still correct and
-  // useful ("you're on AH5"); only the coordinates need pinning back down.
+  // Preserve the matched object's coordinates. Replacing them with the query
+  // point made a distant feature look like an exact match. reverseAddress()
+  // rejects those remote centroids instead of giving them a false location.
   if (suggestion) {
-    suggestion.lat = point.lat;
-    suggestion.lng = point.lng;
     await cacheSetJson(cacheKey, suggestion, 600);
   }
   return suggestion;
@@ -1298,7 +1296,7 @@ async function reverseAddressWithPhoton({ lat, lng }, fetchImpl = fetch) {
   const url = new URL("https://photon.komoot.io/reverse");
   url.searchParams.set("lat", String(point.lat));
   url.searchParams.set("lon", String(point.lng));
-  const response = await getJson(url, { fetchImpl });
+  const response = await getJson(url, { fetchImpl, timeoutMs: 1500 });
   if (!response.ok) return null;
   const features = response.data?.features;
   if (!Array.isArray(features) || features.length === 0) return null;
@@ -1657,36 +1655,51 @@ function looksLikeRoadCode(label) {
   return ROAD_CODE.test(head);
 }
 
+const REVERSE_ADDRESS_RADIUS_METERS = 60;
+
 /// The nearest harvested address to a point, for when the geocoders answer
 /// with a road number. Reads from the same gazetteer the search box uses, so
 /// a dropped pin gets named the way a rider would name it.
 async function nearestGazetteerAddress(
   point,
-  maxMeters = 400,
+  maxMeters = REVERSE_ADDRESS_RADIUS_METERS,
   executor = defaultQuery,
-  { requireHouseNumber = false } = {}
+  { requireHouseNumber = false, building = null } = {}
 ) {
   // ~111 km per degree of latitude; longitude shrinks by cos(latitude).
   const latDelta = maxMeters / 111000;
   const lngDelta = maxMeters / (111000 * Math.cos((point.lat * Math.PI) / 180));
   const { rows } = await executor(
     `SELECT label, lat, lng, kind,
-            (lat - $1) * (lat - $1) + (lng - $2) * (lng - $2) AS distance_squared
+            (lat - $1) * (lat - $1) +
+              (lng - $2) * (lng - $2) * power(cos(radians($1)), 2) AS distance_squared
       FROM addresses
       WHERE lat BETWEEN $1 - $3 AND $1 + $3
         AND lng BETWEEN $2 - $4 AND $2 + $4
         AND ($5::boolean = false OR kind = 'housenumber')
+        AND kind IN ('housenumber', 'building', 'poi')
       ORDER BY
         CASE WHEN $5 THEN CASE kind WHEN 'housenumber' THEN 0 ELSE 1 END ELSE 0 END,
         -- Physical proximity comes first: a named shop twenty metres from
         -- the pin is more truthful than a house number 170 metres away.
-        (lat - $1) * (lat - $1) + (lng - $2) * (lng - $2),
+        distance_squared,
         CASE kind WHEN 'housenumber' THEN 0 WHEN 'building' THEN 1
                   WHEN 'poi' THEN 2 ELSE 3 END
-      LIMIT 1`,
+      LIMIT 64`,
     [point.lat, point.lng, latDelta, lngDelta, requireHouseNumber]
   );
-  const row = rows[0];
+  // The SQL box is only an index prefilter: its corners are outside the
+  // requested radius. Recheck in metres and skip unusable rows instead of
+  // letting an unnamed feature hide the next real address.
+  const row = rows
+    .filter(item => ['housenumber', 'building', 'poi'].includes(item.kind))
+    .filter(item => !requireHouseNumber || item.kind === 'housenumber')
+    .filter(item => isBookableAddressSuggestion(item, nearestLocalPlace(point)?.city))
+    .filter(item => !looksLikeRoadCode(item.label))
+    .map(item => ({ ...item, distance: distanceKmBetween(point, item) * 1000 }))
+    .filter(item => item.distance <= maxMeters)
+    .filter(item => !building || pointInBuilding({ lat: Number(item.lat), lng: Number(item.lng) }, building))
+    .sort((a, b) => a.distance - b.distance)[0];
   if (!row) return null;
   const label = String(row.label || "").trim();
   if (!label || looksLikeRoadCode(label)) return null;
@@ -1695,7 +1708,8 @@ async function nearestGazetteerAddress(
     title: label,
     kind: row.kind || "address",
     lat: Number(row.lat),
-    lng: Number(row.lng)
+    lng: Number(row.lng),
+    distanceMeters: Math.round(row.distance)
   };
 }
 
@@ -1704,8 +1718,24 @@ async function nearestGazetteerAddress(
 // database. It had no seam at all before, which is why the flag bug fixed in
 // this function survived: routing-location-check.js could assert the label a
 // rider sees but never the flag the client is told to gate on.
-export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor = defaultQuery) {
+export async function reverseAddress({ lat, lng, building: buildingInput }, fetchImpl = fetch, executor = defaultQuery) {
   const point = normalizePoint({ lat, lng });
+  let building = null;
+  let reverseRadius = REVERSE_ADDRESS_RADIUS_METERS;
+  if (buildingInput != null) {
+    try {
+      building = normalizeBuildingGeometry(typeof buildingInput === 'string' ? JSON.parse(buildingInput) : buildingInput);
+    } catch { /* Invalid caller-supplied geometry is rejected below. */ }
+    if (!building || !pointInBuilding(point, building)) {
+      throw new AppError('Invalid selected building', 400, 'INVALID_SELECTED_BUILDING');
+    }
+    const vertices = building.type === 'Polygon' ? building.coordinates.flat() : building.coordinates.flat(2);
+    const radius = Math.max(...vertices.map(([lng, lat]) => distanceKmBetween(point, { lat, lng }) * 1000));
+    if (radius > 500) {
+      throw new AppError('Selected building is too large', 400, 'INVALID_SELECTED_BUILDING');
+    }
+    reverseRadius = Math.max(reverseRadius, radius);
+  }
   const fallbackPoint = {
     // This is deliberately not an address. Clients treat it as a failed
     // resolution and keep confirmation disabled, rather than saving raw
@@ -1719,17 +1749,50 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor =
     lng: point.lng,
     source: "fallback",
     fallback: true,
-    confidence: 0.2
+    confidence: 0
   };
+  const localLookups = new Map();
+  const lookupLocal = (requireHouseNumber = false) => {
+    if (!localLookups.has(requireHouseNumber)) {
+      localLookups.set(requireHouseNumber, nearestGazetteerAddress(
+        point, reverseRadius, executor, { requireHouseNumber, building }
+      ).catch(() => null));
+    }
+    return localLookups.get(requireHouseNumber);
+  };
+  const located = (suggestion) => {
+    const distanceMeters = Math.round(distanceKmBetween(point, suggestion) * 1000);
+    const locality = suggestion.subtitle || nearestLocalPlace(point)?.city || '';
+    return {
+      ...suggestion,
+      fallback: false,
+      distanceMeters,
+      matchKind: building ? 'selected-building' : 'nearby-address',
+      subtitle: building ? ['В выбранном здании', locality].filter(Boolean).join(' · ') : distanceMeters > 10
+        ? [`${distanceMeters} м от метки`, locality].filter(Boolean).join(' · ')
+        : locality
+    };
+  };
+  // A catalogued house almost under the pin is both faster and more useful
+  // than a provider's nearest-road answer. POIs still use the provider chain
+  // below so they cannot silently replace a known street's missing number.
+  const exactLocalHouse = await lookupLocal(true);
+  if (exactLocalHouse && exactLocalHouse.distanceMeters <= 8) {
+    return located({ ...exactLocalHouse, source: 'gazetteer_reverse' });
+  }
   // Every provider below can answer with a road code; rather than repeat the
   // check three times, each result passes through here first.
   const named = async (suggestion) => {
-    if (!suggestion) return null;
+    if (!suggestion) {
+      const local = await lookupLocal();
+      return local ? located({ ...local, source: 'gazetteer_reverse' }) : null;
+    }
     const label = compactText(suggestion.label);
     const city = compactText(suggestion.city);
     // A settlement name alone is still not a pickup address. It commonly
     // appears after stripping a KZ-12 road code from a weak provider result.
-    const generic = !label || looksLikeRoadCode(label) || label === city ||
+    const generic = suggestion.kind === 'place' || !isBookableAddressSuggestion(suggestion, city) ||
+      !label || looksLikeRoadCode(label) || label === city ||
       /^(точка на карте|адрес не определ[её]н)$/i.test(label);
     // A street with no house number is not something a rider can give a
     // driver, and both clients already refuse it: passenger_shell.dart's
@@ -1741,29 +1804,23 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor =
     // returning a label the client is about to reject is how the rider ended
     // up looking at "улица Абая" on the card with the confirm button dead and
     // nothing on screen explaining why.
-    const bareStreet = !/\d/.test(label) &&
-      /^(?:ул\.?|улица|проспект|переулок|бульвар|шоссе|көшесі|даңғылы|көше)/i.test(label);
-    const local = generic || bareStreet
-      ? await nearestGazetteerAddress(
-        point,
-        400,
-        executor,
-        { requireHouseNumber: bareStreet }
-      ).catch(() => null)
+    const bareStreet = suggestion.kind === 'street' || (!/\d/.test(label) &&
+      /^(?:ул\.?|улица|проспект|переулок|бульвар|шоссе|көшесі|даңғылы|көше)/i.test(label));
+    const tooFar = distanceKmBetween(point, suggestion) * 1000 > reverseRadius ||
+      (building && !pointInBuilding(suggestion, building));
+    const local = generic || bareStreet || tooFar
+      ? await lookupLocal(bareStreet)
       : null;
     if (local) {
-      return {
-        ...suggestion,
-        label: local.label,
-        title: local.title,
-        subtitle: suggestion.subtitle || nearestLocalPlace(point)?.city || "",
+      return located({
+        ...local,
         source: "gazetteer_reverse"
-      };
+      });
     }
     // A bare street that found no house falls through to the guidance state
     // rather than being handed back: an honest "move the pin" beats a label
     // the client will silently refuse.
-    if (!generic && !bareStreet) return suggestion;
+    if (!generic && !bareStreet && !tooFar) return located(suggestion);
     // Nothing harvested within walking distance — much of Мақтаарал district
     // is fields. "Точка на карте" tells the rider exactly as much as the road
     // number did, without pretending to be an address they could give a
@@ -1773,21 +1830,23 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor =
       ...suggestion,
       label: "Адрес не определён",
       title: "Адрес не определён",
-      subtitle: place ? `Попробуйте передвинуть точку в пределах ${place}` : "Передвиньте точку к ближайшему зданию",
+      subtitle: building ? 'У этого здания нет точного адреса в доступных данных. Найдите его по названию или выберите другое здание.'
+        : place ? `Попробуйте передвинуть точку в пределах ${place}` : "Передвиньте точку к ближайшему зданию",
       source: "point_on_map",
       fallback: true,
-      confidence: 0
+      confidence: 0,
+      lat: point.lat,
+      lng: point.lng
     };
   };
-  const mapTiler = await named(
-    await reverseAddressWithMapTiler(point, fetchImpl).catch(() => null)
-  );
+  const mapTilerRaw = await reverseAddressWithMapTiler(point, fetchImpl).catch(() => null);
+  const mapTiler = mapTilerRaw ? await named(mapTilerRaw) : null;
   // fallback first, so a point_on_map result keeps its own `fallback: true`.
   // Stamping it last overwrote exactly the flag the fallbackPoint comment
   // above promises clients can gate confirmation on — the response said
   // "Адрес не определён", source "point_on_map", confidence 0, and
   // fallback false all at once.
-  if (mapTiler) return { fallback: false, ...mapTiler };
+  if (mapTiler && !mapTiler.fallback) return mapTiler;
   const url = new URL("https://nominatim.openstreetmap.org/reverse");
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("addressdetails", "1");
@@ -1795,7 +1854,7 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor =
   url.searchParams.set("lon", String(point.lng));
   let response;
   try {
-    response = await getJson(url, { headers: nominatimHeaders(), fetchImpl });
+    response = await getJson(url, { headers: nominatimHeaders(), fetchImpl, timeoutMs: 1500 });
   } catch {
     const fallback = await named(
       await reverseAddressWithPhoton(point, fetchImpl).catch(() => null)
@@ -1819,7 +1878,10 @@ export async function reverseAddress({ lat, lng }, fetchImpl = fetch, executor =
     if (fallback) return fallback;
     return fallbackPoint;
   }
-  return { source: "nominatim", fallback: false, ...suggestion };
+  if (!suggestion.fallback) return { source: "nominatim", ...suggestion };
+  const photonRaw = await reverseAddressWithPhoton(point, fetchImpl).catch(() => null);
+  const photon = photonRaw ? await named(photonRaw) : null;
+  return photon && !photon.fallback ? photon : suggestion;
 }
 
 async function resolveActiveRegionForPoint(pointInput, failureCode, executor) {

@@ -4,6 +4,7 @@ import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import TripDriverCard from './TripDriverCard.jsx';
 import { tripIdentity, tripApproach } from './tripPresentation.mjs';
+import { isResolvedAddressPoint } from './address-resolution.mjs';
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -533,7 +534,7 @@ function normalizeOrder(order) {
 }
 
 function normalizeAddress(address) {
-  if (!address) return null;
+  if (!isResolvedAddressPoint(address)) return null;
   const lat = Number(address.lat);
   const lng = Number(address.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -592,9 +593,10 @@ function mapAddressCacheKey(point) {
   const lat = Number(point?.lat);
   const lng = Number(point?.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "";
-  // Five decimals is roughly a metre: precise enough for an entrance, while
-  // still coalescing duplicate moveend/zoomend coordinates from the map.
-  return `${lat.toFixed(5)}:${lng.toFixed(5)}`;
+  // Include the footprint: an earlier nearby result must not bypass a later
+  // building-specific lookup after vector tiles arrive. Six decimals also
+  // avoid sharing one cache cell across the two sides of a building wall.
+  return `${lat.toFixed(6)}:${lng.toFixed(6)}:${JSON.stringify(point.building || null)}`;
 }
 
 function normalizeText(value) {
@@ -1644,7 +1646,7 @@ export default function ClientApp() {
       return;
     }
     const fallback = pendingMapAddress(candidatePoint, selectedRegionName);
-    const cacheKey = mapAddressCacheKey(candidatePoint);
+    const cacheKey = mapAddressCacheKey(point);
     const cached = cacheKey ? mainMapReverseCacheRef.current.get(cacheKey) : null;
     if (cached) {
       setMainMapCandidate(cached);
@@ -1973,6 +1975,9 @@ export default function ClientApp() {
         <AddressPicker
           mode={addressMode}
           region={selectedRegion}
+          initialPoint={addressMode === 'pickup'
+            ? pickup || (mainMapCandidateReady ? mainMapCandidate : null)
+            : addressMode === 'destination' ? destination || pickup : null}
           destinationRegions={intercityDestinationRegions}
           onBack={() => setAddressMode("")}
           onSelect={chooseAddress}
@@ -2914,7 +2919,7 @@ function PaymentSelector({ payment, setPayment }) {
   );
 }
 
-function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect }) {
+function AddressPicker({ mode, region, initialPoint, destinationRegions = [], onBack, onSelect }) {
   const [query, setQuery] = useState("");
   const [mapSelectionActive, setMapSelectionActive] = useState(false);
   const [results, setResults] = useState([]);
@@ -2940,7 +2945,8 @@ function AddressPicker({ mode, region, destinationRegions = [], onBack, onSelect
   const label = mode === "pickup" ? "Откуда?" : mode === "favorite" ? "Сохранить адрес" : "Куда едем?";
   const helper = mode === "pickup" ? "Выберите точку подачи" : mode === "favorite" ? "Выберите адрес для избранного" : selectableRegions.length > 1 ? "Город или межгород — выберите регион и точный адрес" : "Выберите точку назначения";
   const popular = useMemo(() => localAddressesForRegion(searchRegion).slice(0, 4), [searchRegion?.id, searchRegion?.code, searchRegion?.name]);
-  const pickerCenter = regionCenter(searchRegion) || regionCenter(fallbackRegion);
+  const pickerCenter = initialPoint && pointInRegion(initialPoint, searchRegion)
+    ? initialPoint : regionCenter(searchRegion) || regionCenter(fallbackRegion);
   const hasTypedQuery = query.trim().length >= 2;
   // On the first address screen the catalogue already has useful nearby
   // places. Showing both its list and the large map-confirmation card leaves

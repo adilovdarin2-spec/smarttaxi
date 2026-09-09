@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../features/driver/models/driver_document_models.dart';
@@ -238,13 +240,19 @@ class ApiClient {
     final items = _extractList(response.data, 'addresses');
     return items
         .map((item) => AddressSuggestion.fromJson(item))
+        .where((item) => item.isResolved)
         .toList(growable: false);
   }
 
-  Future<AddressSuggestion?> reverseAddress(Coordinate coordinate) async {
+  Future<AddressSuggestion?> reverseAddress(Coordinate coordinate,
+      {Map<String, dynamic>? building}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/routes/addresses/reverse',
-      queryParameters: {'lat': coordinate.lat, 'lng': coordinate.lng},
+      queryParameters: {
+        'lat': coordinate.lat,
+        'lng': coordinate.lng,
+        if (building != null) 'building': jsonEncode(building),
+      },
     );
     final data = response.data ?? {};
     final address = data['address'];

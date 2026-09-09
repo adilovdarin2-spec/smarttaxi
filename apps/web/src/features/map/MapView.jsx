@@ -3,9 +3,11 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Icon } from "../../core/icons.jsx";
 import { applyLibertyPresentation, hideDuplicateBuildings } from './mapPresentation.mjs';
+import { buildingAtPoint } from '../../../../../packages/shared/src/building-selection.js';
 
 const DEFAULT_CENTER = { lat: 40.844435, lng: 68.509021 };
 const DEFAULT_ZOOM = 16;
+const PICKER_ZOOM = 17.5;
 const OSM_TILE_URL = import.meta.env.VITE_OSM_TILE_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY || "";
 const MAPTILER_STYLE_URL = import.meta.env.VITE_MAPTILER_STYLE_URL || "";
@@ -330,6 +332,7 @@ export default function MapView({
 }) {
   const containerRef = useRef(null);
   const pickerOverlayRef = useRef(null);
+  const highlightedBuildingRef = useRef('');
   const mapRef = useRef(null);
   const centerMarkerElRef = useRef(null);
   const pickupMarkerElRef = useRef(null);
@@ -363,14 +366,43 @@ export default function MapView({
 
   function pickerCoordinate(map) {
     const point = map.unproject(pickerScreenPoint());
-    return { lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6)) };
+    const coordinate = { lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6)) };
+    try {
+      const layers = (map.getStyle()?.layers || [])
+        .filter(layer => layer['source-layer'] === 'building').map(layer => layer.id);
+      const features = layers.length ? map.queryRenderedFeatures({ layers }) : [];
+      coordinate.building = buildingAtPoint(features, coordinate);
+      containerRef.current.dataset.buildingSelection = JSON.stringify({
+        layers: layers.length, features: features.length,
+        firstType: features[0]?.geometry?.type,
+        selected: Boolean(coordinate.building)
+      });
+      const key = JSON.stringify(coordinate.building);
+      if (key !== highlightedBuildingRef.current) {
+        highlightedBuildingRef.current = key;
+        const data = { type: 'FeatureCollection', features: coordinate.building
+          ? [{type:'Feature',properties:{},geometry:coordinate.building}] : [] };
+        const sourceId = 'smarttaxi-selected-building';
+        if (map.getSource(sourceId)) map.getSource(sourceId).setData(data);
+        else {
+          map.addSource(sourceId, {type:'geojson', data});
+          const beforeId = firstLabelLayerId(map);
+          map.addLayer({id:sourceId,type:'fill',source:sourceId,
+            paint:{'fill-color':'#1D6FFF','fill-opacity':0.16}}, beforeId);
+          map.addLayer({id:`${sourceId}-outline`,type:'line',source:sourceId,
+            paint:{'line-color':'#1D6FFF','line-width':1.6}}, beforeId);
+        }
+      }
+    } catch { /* Raster/custom styles can still resolve by proximity. */ }
+    return coordinate;
   }
 
-  function centerUnderPicker(map, point, duration = 0) {
+  function centerUnderPicker(map, point, duration = 0, framePicker = false) {
     const tip = pickerScreenPoint();
     const canvas = map.getCanvas();
     map.easeTo({
       center: [point.lng, point.lat],
+      ...(framePicker ? { zoom: Math.max(map.getZoom(), PICKER_ZOOM), pitch: 32, bearing: 0 } : {}),
       offset: [tip[0] - canvas.clientWidth / 2, tip[1] - canvas.clientHeight / 2],
       duration
     });
@@ -417,7 +449,7 @@ export default function MapView({
       setMapReady(true);
       setMapError("");
       map.resize();
-      if (centerMarker) centerUnderPicker(map, centerPoint);
+      if (centerMarker) centerUnderPicker(map, centerPoint, 0, true);
       else fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
       // A map opened in address-picker mode can already be centred correctly,
       // in which case MapLibre does not emit `moveend`. Publish that initial
@@ -452,6 +484,10 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return undefined;
+    if (!centerMarker) {
+      map.getSource('smarttaxi-selected-building')?.setData({type:'FeatureCollection',features:[]});
+      highlightedBuildingRef.current = '';
+    }
     const clickHandler = event => {
       if (centerMarker) {
         centerUnderPicker(map, event.lngLat, 240);
@@ -494,7 +530,7 @@ export default function MapView({
         const next = pickerCoordinate(map);
         // Both `moveend` and `zoomend` are emitted for a pinch. Emit exactly
         // one semantic address lookup for the resulting coordinate.
-        const key = `${next.lat}:${next.lng}`;
+        const key = `${next.lat}:${next.lng}:${JSON.stringify(next.building || null)}`;
         if (key === lastPublishedCenter) return;
         lastPublishedCenter = key;
         onChange(next);
@@ -513,6 +549,9 @@ export default function MapView({
     map.on("zoomstart", markChanging);
     map.on("moveend", emitCenter);
     map.on("zoomend", emitCenter);
+    // Vector tiles can arrive after moveend. Revalidate the same pin once
+    // its footprint is available instead of keeping the earlier proximity guess.
+    map.on("idle", emitCenter);
     return () => {
       window.clearTimeout(timer);
       window.clearTimeout(fallbackTimer);
@@ -520,6 +559,7 @@ export default function MapView({
       map.off("zoomstart", markChanging);
       map.off("moveend", emitCenter);
       map.off("zoomend", emitCenter);
+      map.off("idle", emitCenter);
     };
   }, [centerMarker]);
 
@@ -528,7 +568,7 @@ export default function MapView({
     if (map && mapReady && centerMarker) {
       // A new region or explicit GPS selection must move the map as well as
       // its label. Passive reverse results must not be passed as this centre.
-      centerUnderPicker(map, centerPoint);
+      centerUnderPicker(map, centerPoint, 0, true);
     }
   }, [mapReady, centerMarker, centerPoint.lat, centerPoint.lng]);
 

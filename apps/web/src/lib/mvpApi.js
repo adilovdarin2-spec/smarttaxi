@@ -110,8 +110,9 @@ export function searchAddresses({ q, region, limit = 10 }) {
   return api(`/api/routes/addresses/search?${params.toString()}`);
 }
 
-export function reverseAddress({ lat, lng }) {
+export function reverseAddress({ lat, lng, building }) {
   const params = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+  if (building) params.set('building', JSON.stringify(building));
   return api(`/api/maps/reverse-geocode?${params.toString()}`);
 }
 

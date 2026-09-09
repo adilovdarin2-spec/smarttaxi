@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 import 'dart:ui' as ui;
@@ -26,6 +27,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/active_locale.dart';
 import '../../core/utils/contact_phone.dart';
 import '../../core/utils/map_layers.dart';
+import '../../core/utils/address_request_gate.dart';
+import '../../core/utils/building_selection.dart';
 import '../../core/utils/passenger_map_viewport.dart';
 import '../../core/utils/passenger_startup.dart';
 import '../../core/widgets/app_toast.dart';
@@ -379,7 +382,7 @@ class _PassengerShellState extends State<PassengerShell>
   StreamSubscription<Map<String, dynamic>>? _pushMessageSub;
   Timer? _socketFallbackPollTimer;
   int _nearbyDriversRequest = 0;
-  int _mapPickerReverseRequest = 0;
+  final _mapPickerRequestGate = AddressRequestGate();
   String _mapPickerAddressLabel = 'Точка на карте';
   // The reverse-geocoder returns the coordinate of the actual address/POI.
   // Keep it with the label: using only the free camera centre can display a
@@ -1669,7 +1672,9 @@ class _PassengerShellState extends State<PassengerShell>
       var label = '';
       try {
         final address = await widget.api.reverseAddress(point);
-        if (address != null && _isUsablePassengerAddressLabel(address.label)) {
+        if (address != null &&
+            address.isResolved &&
+            _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
         }
       } catch (_) {}
@@ -1769,6 +1774,7 @@ class _PassengerShellState extends State<PassengerShell>
         _target = target;
         _mapPointPickerActive = true;
         _mapCenter = center;
+        _mapZoom = math.max(_mapZoom ?? 16, 17.5);
         _mapPickerAddressLabel = l10n.passengerResolvingAddressLabel;
         _mapPickerResolvedCoordinate = null;
         _mapPickerAddressHint = null;
@@ -1797,6 +1803,11 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _confirmMapPointSelection() async {
+    if (!_mapPointPickerActive ||
+        _mapPickerAddressLoading ||
+        _mapPickerResolvedCoordinate == null) {
+      return;
+    }
     final point = _mapPickerResolvedCoordinate?.toLatLng() ??
         _mapCenter ??
         _selectedRegion?.center?.toLatLng() ??
@@ -1819,6 +1830,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   void _cancelMapPointSelection() {
     _mapPickerReverseDebounce?.cancel();
+    _mapPickerRequestGate.invalidate();
     setState(() {
       _mapPointPickerActive = false;
       _mapPickerResolvedCoordinate = null;
@@ -1827,15 +1839,18 @@ class _PassengerShellState extends State<PassengerShell>
     });
   }
 
-  void _handleMapCenterChanged(LatLng point, double zoom) {
+  void _handleMapCenterChanged(LatLng point, double zoom,
+      {Map<String, dynamic>? building}) {
     _mapCenter = point;
     _mapZoom = zoom;
     if (!_mapPointPickerActive) return;
-    _scheduleMapPickerReverse(point);
+    _scheduleMapPickerReverse(point, building: building);
   }
 
-  void _scheduleMapPickerReverse(LatLng point, {bool immediate = false}) {
+  void _scheduleMapPickerReverse(LatLng point,
+      {bool immediate = false, Map<String, dynamic>? building}) {
     _mapPickerReverseDebounce?.cancel();
+    final requestId = _mapPickerRequestGate.invalidate();
     if (mounted &&
         (!_mapPickerAddressLoading || _mapPickerAddressHint != null)) {
       // Clearing the hint as the map starts moving matters: leaving the old
@@ -1850,13 +1865,24 @@ class _PassengerShellState extends State<PassengerShell>
     final delay = immediate ? Duration.zero : const Duration(milliseconds: 340);
     _mapPickerReverseDebounce = Timer(
       delay,
-      () => unawaited(_resolveMapPickerAddress(point)),
+      () => unawaited(_resolveMapPickerAddress(point, requestId, building)),
     );
   }
 
-  Future<void> _resolveMapPickerAddress(LatLng point) async {
+  void _handleMapCenterChanging() {
+    if (!_mapPointPickerActive || !mounted) return;
+    _mapPickerReverseDebounce?.cancel();
+    _mapPickerRequestGate.invalidate();
+    setState(() {
+      _mapPickerAddressLoading = true;
+      _mapPickerResolvedCoordinate = null;
+      _mapPickerAddressHint = null;
+    });
+  }
+
+  Future<void> _resolveMapPickerAddress(
+      LatLng point, int requestId, Map<String, dynamic>? building) async {
     final l10n = AppLocalizations.of(context);
-    final requestId = ++_mapPickerReverseRequest;
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
     var label = l10n.passengerMapPointLabel;
     Coordinate? resolvedCoordinate;
@@ -1866,8 +1892,11 @@ class _PassengerShellState extends State<PassengerShell>
       label = l10n.passengerRegionNotServedYetLabel;
     } else {
       try {
-        final address = await widget.api.reverseAddress(coordinate);
-        if (address != null && _isUsablePassengerAddressLabel(address.label)) {
+        final address =
+            await widget.api.reverseAddress(coordinate, building: building);
+        if (address != null &&
+            address.isResolved &&
+            _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
           resolvedCoordinate = address.coordinate;
         } else {
@@ -1884,7 +1913,7 @@ class _PassengerShellState extends State<PassengerShell>
     }
     if (!mounted ||
         !_mapPointPickerActive ||
-        requestId != _mapPickerReverseRequest) {
+        !_mapPickerRequestGate.accepts(requestId)) {
       return;
     }
     setState(() {
@@ -1913,7 +1942,9 @@ class _PassengerShellState extends State<PassengerShell>
       resolvedLabel = l10n.passengerMapPointLabel;
       try {
         final address = await widget.api.reverseAddress(coordinate);
-        if (address != null && _isUsablePassengerAddressLabel(address.label)) {
+        if (address != null &&
+            address.isResolved &&
+            _isUsablePassengerAddressLabel(address.label)) {
           resolvedLabel = address.label.trim();
           coordinate = address.coordinate;
         }
@@ -2788,6 +2819,7 @@ class _PassengerShellState extends State<PassengerShell>
             // address-pick marker, then confirming via _confirmMapPointSelection.
             onTap: (_) {},
             onCenterChanged: _handleMapCenterChanged,
+            onCenterChanging: _handleMapCenterChanging,
             onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
             onRetryMap: _retryMap,
@@ -3222,10 +3254,10 @@ class _PassengerShellState extends State<PassengerShell>
     final sheetFraction = terminalSheet || order.driverId != null
         ? (compact ? 0.54 : 0.49)
         : (compact ? 0.44 : 0.40);
-    final routeMeta = const {'DRIVER_ARRIVED', 'WAITING_CLIENT'}
-            .contains(order.status)
-        ? l10n.passengerDriverArrivedWaitingBanner
-        : driverRouteText ?? _orderRouteMeta(order);
+    final routeMeta =
+        const {'DRIVER_ARRIVED', 'WAITING_CLIENT'}.contains(order.status)
+            ? l10n.passengerDriverArrivedWaitingBanner
+            : driverRouteText ?? _orderRouteMeta(order);
     return Stack(
       children: [
         Positioned.fill(
@@ -3246,6 +3278,7 @@ class _PassengerShellState extends State<PassengerShell>
             mapUnavailable: _mapTilesUnavailable,
             onTap: (_) {},
             onCenterChanged: _handleMapCenterChanged,
+            onCenterChanging: _handleMapCenterChanging,
             onTileError: _handleMapTileError,
             onUseLocation: _usePhoneLocation,
             onRetryMap: _retryMap,
@@ -5542,6 +5575,7 @@ class _MapCanvas extends StatefulWidget {
     required this.mapUnavailable,
     required this.onTap,
     required this.onCenterChanged,
+    required this.onCenterChanging,
     required this.onTileError,
     required this.onUseLocation,
     required this.onRetryMap,
@@ -5573,7 +5607,9 @@ class _MapCanvas extends StatefulWidget {
   final String? routeError;
   final bool mapUnavailable;
   final ValueChanged<LatLng> onTap;
-  final void Function(LatLng center, double zoom) onCenterChanged;
+  final void Function(LatLng center, double zoom,
+      {Map<String, dynamic>? building}) onCenterChanged;
+  final VoidCallback onCenterChanging;
   final VoidCallback onTileError;
   final VoidCallback onUseLocation;
   final VoidCallback onRetryMap;
@@ -5769,6 +5805,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                       panelHeight: widget.controlsBottom,
                       onTap: onTap,
                       onCenterChanged: onCenterChanged,
+                      onCenterChanging: widget.onCenterChanging,
                     )
                   : FlutterMap(
                       mapController: _mapController,
@@ -5777,7 +5814,16 @@ class _MapCanvasState extends State<_MapCanvas> {
                         initialZoom: zoom ??
                             (pickup == null && dropoff == null ? 12 : 14),
                         initialCameraFit: initialFit,
-                        onTap: (_, point) => onTap(point),
+                        onTap: (_, point) {
+                          if (showCenterMarker) {
+                            widget.onCenterChanging();
+                            final zoom = _mapController.camera.zoom;
+                            _mapController.move(point, zoom);
+                            onCenterChanged(point, zoom);
+                          } else {
+                            onTap(point);
+                          }
+                        },
                         onPositionChanged: (camera, hasGesture) {
                           if (hasGesture) {
                             onCenterChanged(camera.center, camera.zoom);
@@ -5986,6 +6032,7 @@ class _NativeMapLibreSurface extends StatefulWidget {
     required this.panelHeight,
     required this.onTap,
     required this.onCenterChanged,
+    required this.onCenterChanging,
   });
 
   final LatLng center;
@@ -5999,7 +6046,9 @@ class _NativeMapLibreSurface extends StatefulWidget {
   final bool pickingPoint;
   final double panelHeight;
   final ValueChanged<LatLng> onTap;
-  final void Function(LatLng center, double zoom) onCenterChanged;
+  final void Function(LatLng center, double zoom,
+      {Map<String, dynamic>? building}) onCenterChanged;
+  final VoidCallback onCenterChanging;
 
   @override
   State<_NativeMapLibreSurface> createState() => _NativeMapLibreSurfaceState();
@@ -6030,6 +6079,10 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   @override
   void didUpdateWidget(covariant _NativeMapLibreSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.pickingPoint != widget.pickingPoint) {
+      _lastPickerPointKey = '';
+      if (!widget.pickingPoint) _queueBuildingHighlight(null);
+    }
     // A deliberate new GPS/address selection may have the same coordinates.
     // It still needs to recenter after a user pan; ordinary rebuilds retain
     // the same immutable Coordinate instance and must not steal the camera.
@@ -6048,6 +6101,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   @override
   void dispose() {
     _cameraSyncTimer?.cancel();
+    _controller?.removeListener(_onCameraChanged);
     super.dispose();
   }
 
@@ -6292,7 +6346,9 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         (currentTarget.longitude - target.longitude).abs() > 0.00002;
     final zoomChanged =
         current == null || (current.zoom - widget.zoom).abs() > 0.08;
-    if (!targetChanged && !zoomChanged) return;
+    final pickerPitchChanged = widget.pickingPoint &&
+        (current == null || (current.tilt - 32).abs() > 0.5);
+    if (!targetChanged && !zoomChanged && !pickerPitchChanged) return;
 
     try {
       // MapLibre also emits an idle event for the old camera while a style
@@ -6304,7 +6360,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           native_map.CameraPosition(
             target: target,
             zoom: widget.zoom,
-            tilt: 52,
+            tilt: widget.pickingPoint ? 32 : 52,
           ),
         ),
         duration: const Duration(milliseconds: 380),
@@ -6560,6 +6616,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   }
 
   void _onStyleLoaded() {
+    _lastPickerPointKey = '';
     // The native view paints before its style, glyphs and vector tiles are
     // ready.  Keep that implementation detail behind a very small branded
     // loading veil instead of briefly exposing a grey/half-rendered map.
@@ -6612,7 +6669,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           native_map.CameraPosition(
             target: _nativePoint(widget.center),
             zoom: widget.zoom,
-            tilt: 56,
+            tilt: widget.pickingPoint ? 32 : 56,
           ),
         ),
         duration: const Duration(milliseconds: 320),
@@ -6623,7 +6680,48 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     }
   }
 
+  bool _cameraWasMoving = false;
+  int _pickerFeatureRequest = 0;
+  String _lastPickerPointKey = '';
+  Future<void> _buildingHighlightWork = Future<void>.value();
+  int _buildingHighlightRequest = 0;
+
+  void _queueBuildingHighlight(Map<String, dynamic>? geometry) {
+    final request = ++_buildingHighlightRequest;
+    _buildingHighlightWork = _buildingHighlightWork.then((_) async {
+      final controller = _controller;
+      if (!mounted ||
+          controller == null ||
+          request != _buildingHighlightRequest) {
+        return;
+      }
+      try {
+        await paintSelectedBuilding(controller, geometry);
+      } catch (_) {
+        // A style reload must not block the separately validated address.
+      }
+    });
+  }
+
+  void _onCameraChanged() {
+    final moving = _controller?.isCameraMoving ?? false;
+    if (moving && !_cameraWasMoving && widget.pickingPoint) {
+      _pickerFeatureRequest++;
+      _lastPickerPointKey = '';
+      _queueBuildingHighlight(null);
+      widget.onCenterChanging();
+    }
+    _cameraWasMoving = moving;
+  }
+
   void _onCameraIdle() {
+    if (widget.pickingPoint) {
+      // Framing also invalidates on move start. Do not ignore its final point
+      // and strand the confirmation button in its loading state.
+      _ignoreNextCameraIdle = false;
+      unawaited(_publishPickerPoint(++_pickerFeatureRequest));
+      return;
+    }
     if (_homeCameraMoves > 0) {
       _ignoreNextCameraIdle = false;
       return;
@@ -6638,6 +6736,36 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     if (target != null && zoom != null) {
       widget.onCenterChanged(LatLng(target.latitude, target.longitude), zoom);
     }
+  }
+
+  Future<void> _publishPickerPoint(int request) async {
+    final controller = _controller;
+    final camera = controller?.cameraPosition;
+    if (controller == null || camera == null) return;
+    Map<String, dynamic>? building;
+    try {
+      building = await buildingAtCameraTarget(controller, camera.target)
+          .timeout(const Duration(milliseconds: 700));
+    } catch (_) {
+      // Custom/raster styles may not expose a footprint. The API then uses
+      // its explicitly distance-limited nearby-address path, never an exact match.
+    }
+    if (!mounted ||
+        !widget.pickingPoint ||
+        request != _pickerFeatureRequest ||
+        controller.isCameraMoving) {
+      return;
+    }
+    final key = '${camera.target.latitude.toStringAsFixed(6)}:'
+        '${camera.target.longitude.toStringAsFixed(6)}:${jsonEncode(building)}';
+    if (key == _lastPickerPointKey) return;
+    _lastPickerPointKey = key;
+    _queueBuildingHighlight(building);
+    widget.onCenterChanged(
+      LatLng(camera.target.latitude, camera.target.longitude),
+      camera.zoom,
+      building: building,
+    );
   }
 
   @override
@@ -6656,20 +6784,37 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             initialCameraPosition: native_map.CameraPosition(
               target: _nativePoint(widget.center),
               zoom: widget.zoom,
-              tilt: 56,
+              tilt: widget.pickingPoint ? 32 : 56,
             ),
             compassEnabled: false,
             trackCameraPosition: true,
-            rotateGesturesEnabled: true,
-            tiltGesturesEnabled: true,
+            rotateGesturesEnabled: !widget.pickingPoint,
+            tiltGesturesEnabled: !widget.pickingPoint,
             onMapCreated: (controller) {
               _controller = controller;
+              controller.addListener(_onCameraChanged);
             },
             onStyleLoadedCallback: _onStyleLoaded,
-            onMapClick: (_, coordinates) => widget.onTap(
-              LatLng(coordinates.latitude, coordinates.longitude),
-            ),
+            onMapClick: (_, coordinates) {
+              if (widget.pickingPoint) {
+                // A tap positions the picker; only its explicit CTA commits.
+                // Directly applying it bypassed footprint resolution and made
+                // Android behave differently from the web picker.
+                unawaited(_controller?.animateCamera(
+                  native_map.CameraUpdate.newLatLng(coordinates),
+                  duration: const Duration(milliseconds: 240),
+                ));
+              } else {
+                widget
+                    .onTap(LatLng(coordinates.latitude, coordinates.longitude));
+              }
+            },
             onCameraIdle: _onCameraIdle,
+            onMapIdle: () {
+              if (widget.pickingPoint) {
+                unawaited(_publishPickerPoint(++_pickerFeatureRequest));
+              }
+            },
           ),
           IgnorePointer(
             child: AnimatedOpacity(
@@ -12185,8 +12330,7 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
   bool _loading = false;
   String? _error;
   List<AddressSuggestion> _results = const [];
-  // See the note on _AddressSearchSheetState._searchRequestId.
-  int _searchRequestId = 0;
+  final _searchRequestGate = AddressRequestGate();
 
   @override
   void dispose() {
@@ -12196,12 +12340,18 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
   }
 
   void _onChanged(String value) {
-    setState(() {});
+    _searchRequestGate.invalidate();
+    setState(() {
+      _loading = value.trim().length >= 2;
+      _results = const [];
+      _error = null;
+    });
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 360), () => _search(value));
   }
 
   Future<void> _search(String value) async {
+    final requestId = _searchRequestGate.invalidate();
     final query = value.trim();
     if (query.length < 2) {
       if (!mounted) return;
@@ -12212,7 +12362,6 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
       });
       return;
     }
-    final requestId = ++_searchRequestId;
     setState(() {
       _loading = true;
       _error = null;
@@ -12222,14 +12371,14 @@ class _SimpleAddressSearchSheetState extends State<_SimpleAddressSearchSheet> {
         query,
         region: widget.regionName,
       );
-      if (!mounted || requestId != _searchRequestId) return;
+      if (!mounted || !_searchRequestGate.accepts(requestId)) return;
       setState(() => _results = results);
     } catch (_) {
-      if (!mounted || requestId != _searchRequestId) return;
+      if (!mounted || !_searchRequestGate.accepts(requestId)) return;
       setState(() => _error =
           AppLocalizations.of(context).passengerAddressSearchNotFoundError);
     } finally {
-      if (mounted && requestId == _searchRequestId) {
+      if (mounted && _searchRequestGate.accepts(requestId)) {
         setState(() => _loading = false);
       }
     }
@@ -14485,12 +14634,8 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
   String? _error;
   List<AddressSuggestion> _results = const [];
   RegionOption? _searchRegion;
-  // Same guard the live driver route uses (_driverRouteRequestId). The 360 ms
-  // debounce narrows the window but does not close it: a slow request for
-  // "Абая" still lands after a fast one for "Абая 1" and repaints the list
-  // under a query the rider has already moved past, and its `finally` clears
-  // the spinner while the newer request is still in flight.
-  int _searchRequestId = 0;
+  // Invalidate at input time, including the debounce and clear-query windows.
+  final _searchRequestGate = AddressRequestGate();
 
   @override
   void initState() {
@@ -14506,7 +14651,12 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
   }
 
   void _onQueryChanged(String value) {
-    setState(() {});
+    _searchRequestGate.invalidate();
+    setState(() {
+      _loading = value.trim().length >= 2;
+      _results = const [];
+      _error = null;
+    });
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 360), () {
       _search(value);
@@ -14514,6 +14664,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
   }
 
   Future<void> _search(String value) async {
+    final requestId = _searchRequestGate.invalidate();
     final query = value.trim();
     if (query.length < 2) {
       if (!mounted) return;
@@ -14524,7 +14675,6 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
       });
       return;
     }
-    final requestId = ++_searchRequestId;
     setState(() {
       _loading = true;
       _error = null;
@@ -14534,16 +14684,16 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
         query,
         region: _searchRegion?.name,
       );
-      if (!mounted || requestId != _searchRequestId) return;
+      if (!mounted || !_searchRequestGate.accepts(requestId)) return;
       setState(() => _results = results);
     } catch (_) {
-      if (!mounted || requestId != _searchRequestId) return;
+      if (!mounted || !_searchRequestGate.accepts(requestId)) return;
       setState(() {
         _results = const [];
         _error = AppLocalizations.of(context).passengerAddressSearchError;
       });
     } finally {
-      if (mounted && requestId == _searchRequestId) {
+      if (mounted && _searchRequestGate.accepts(requestId)) {
         setState(() => _loading = false);
       }
     }
