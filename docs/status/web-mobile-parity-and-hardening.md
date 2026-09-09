@@ -1,5 +1,18 @@
 # SmartTaxi: web/mobile parity and hardening
 
+## Current scope correction — 2026-09-09
+
+This document's August verification is historical, not the current release gate.
+The statement below that only owner-controlled inputs remain must not be treated
+as proof that all technical/device work is complete. See the current
+[customer handoff](customer-handoff-2026-09-09.md) and
+[web driver account pass](web-driver-account-pass-2026-09-09.md).
+The latter adds eight server-backed driver account sections, acting-role mode
+switching, stale-session/write guards, render recovery and drawer keyboard support.
+Current tests: 94 web and 238 Flutter; API/build/analyze/readiness pass. Latest APK
+installation, physical road/background/push QA, full localization/theme/map parity,
+production deployment/provider validation and external release inputs remain open.
+
 ## Product source of truth
 
 The Flutter passenger application is the protected source of truth for

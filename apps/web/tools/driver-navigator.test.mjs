@@ -6,7 +6,7 @@ import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
 
 test('production navigator renders real instructions and prioritizes GPS/route failures', async () => {
-  const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true }, appType: 'custom' });
+  const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   try {
     const { default: Navigator } = await server.ssrLoadModule('/src/features/driver/DriverNavigator.jsx');
     const r = { phase: 'to_pickup', distanceMeters: 200, durationSeconds: 120,

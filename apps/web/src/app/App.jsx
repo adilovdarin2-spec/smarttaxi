@@ -1,4 +1,5 @@
 import React from "react";
+import { AccountTabBoundary, AppErrorBoundary } from './AppRecovery.jsx';
 
 // Each product surface owns a large UI tree (and the trip/admin surfaces also
 // pull in MapLibre). Loading all of them for the public landing page made the
@@ -37,5 +38,5 @@ export default function App() {
   // (including /order itself) keeps falling through to ClientApp as before,
   // so existing bookmarks/deep-links into the booking flow don't break.
   else if (path === "/" || path === "") Page = LandingPage;
-  return <React.Suspense fallback={<AppLoading />}><Page /></React.Suspense>;
+  return <AccountTabBoundary><AppErrorBoundary><React.Suspense fallback={<AppLoading />}><Page /></React.Suspense></AppErrorBoundary></AccountTabBoundary>;
 }

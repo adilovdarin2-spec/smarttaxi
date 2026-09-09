@@ -12,6 +12,7 @@ import { sessionGuard } from "../../lib/sessionGuard.js";
 import "./driverDesign.css";
 import { driverWaitingPresentation } from "./driverWaitingPresentation.js";
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
+const LazyDriverAccount = React.lazy(() => import('./DriverAccount.jsx'));
 
 function MapView(props) {
   return (
@@ -295,7 +296,7 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
   );
 }
 
-function DriverHeader({ driver, activeOrder, currentRegion, onLogout }) {
+function DriverHeader({ driver, activeOrder, currentRegion, onAccount }) {
   const status = activeOrder ? "BUSY" : (driver?.publicStatus || driver?.public_status || driver?.status || "OFFLINE");
   return (
     <header className="driver-core-header">
@@ -304,7 +305,7 @@ function DriverHeader({ driver, activeOrder, currentRegion, onLogout }) {
         <span>{regionName(currentRegion)}</span>
       </div>
       <div className={`driver-core-status ${status.toLowerCase()}`}>{statusLabel(status)}</div>
-      <button className="driver-core-logout" type="button" onClick={onLogout}>Выйти</button>
+      <button className="driver-core-logout" type="button" onClick={onAccount} aria-label="Открыть кабинет водителя"><Icon name="user" size={20} /></button>
     </header>
   );
 }
@@ -498,6 +499,7 @@ export default function DriverApp() {
   const [actionLoading, setActionLoading] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState("line");
+  const [accountSection, setAccountSection] = useState(null);
   const [navigationOrderId, setNavigationOrderId] = useState(null);
   const closeNavigation = useCallback(() => { setNavigationOrderId(null); setTab("active"); }, []);
   const [driverPosition, setDriverPosition] = useState(null);
@@ -606,7 +608,13 @@ export default function DriverApp() {
     setError("");
     refreshDriver()
       .catch(error => {
-        if (alive) setError(formatError(error));
+        if (!alive) return;
+        if ([401, 403].includes(error.status)) {
+          // Do not clear a valid rider/admin token shared with another tab.
+          setLogged(false);
+          setDriver(null);
+          setLoginError('Войдите в водительский аккаунт, чтобы открыть смену.');
+        } else setError(formatError(error));
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -813,6 +821,7 @@ export default function DriverApp() {
     setError("");
     setActionLoading("");
     setTab("line");
+    setAccountSection(null);
   }
 
   const loadRoadAlerts = useCallback(async () => {
@@ -982,6 +991,14 @@ export default function DriverApp() {
   if (!logged) {
     return <DriverLogin auth={auth} setAuth={setAuth} onSubmit={handleLogin} loading={loginLoading} error={loginError} />;
   }
+  if (accountSection) {
+    return <React.Suspense fallback={<PhoneFrame className="driver-account-phone"><div role="status">Открываем кабинет…</div></PhoneFrame>}>
+      <LazyDriverAccount key={session} driver={driver} activeOrder={displayedOrder} initialSection={accountSection}
+        onClose={() => setAccountSection(null)} onLogout={handleLogout}
+        incomingCount={isOnline ? incomingOrders.length : 0} onOrders={() => { setAccountSection(null); setTab('orders'); }}
+        onTrip={() => { setAccountSection(null); setTab('active'); }} />
+    </React.Suspense>;
+  }
   if (navigationActive) {
     return <PhoneFrame className="driver-navigation-phone"><DriverNavigator
       order={activeOrder} route={driverRoute} routeUnavailable={routeUnavailable} position={driverPosition} locationIssue={locationIssue}
@@ -994,7 +1011,7 @@ export default function DriverApp() {
 
   return (
     <PhoneFrame className={`driver-core-phone driver-design driver-core-view-${tab}`}>
-      <DriverHeader driver={driver} activeOrder={activeOrder} currentRegion={currentRegion} onLogout={handleLogout} />
+      <DriverHeader driver={driver} activeOrder={activeOrder} currentRegion={currentRegion} onAccount={() => setAccountSection('home')} />
       {mapTab && error && <div className="driver-core-error driver-core-action-notice" role="alert">{error}</div>}
       {mapTab && <section className="driver-core-map-wrap">
         <MapView
@@ -1167,6 +1184,8 @@ export default function DriverApp() {
                     <b>{earnings?.completedOrders || 0}</b>
                   </div>
                 </div>
+                <Button variant="secondary" onClick={() => setAccountSection('wallet')}>Открыть кошелёк и операции</Button>
+                <Button variant="secondary" onClick={() => setAccountSection('history')}>История поездок</Button>
               </section>
             )}
           </>

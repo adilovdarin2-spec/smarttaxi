@@ -2,6 +2,8 @@
 import { Icon } from "../../core/icons.jsx";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import AppModeButton from '../../components/ui/AppModeButton.jsx';
+import { containModalFocus } from '../../lib/modalFocus.js';
 import TripDriverCard from './TripDriverCard.jsx';
 import { tripIdentity, tripApproach } from './tripPresentation.mjs';
 import { isResolvedAddressPoint } from './address-resolution.mjs';
@@ -1035,7 +1037,8 @@ export default function ClientApp() {
       setAuthenticated(true);
       setRider({
         name: [user.name, user.surname].filter(Boolean).join(" ") || user.login || "Пассажир",
-        phone: user.phone || ""
+        phone: user.phone || "",
+        baseRole: user.baseRole || user.role
       });
       })
       .catch(() => {
@@ -1949,6 +1952,7 @@ export default function ClientApp() {
       {!addressMode && !authScreenActive && (
         <>
           <ClientHeader
+            menuOpen={drawerOpen}
             routeReady={section === "home" && Boolean(pickup && destination)}
             addressSelectionMode={section === "home" && !destination}
             route={route}
@@ -1983,7 +1987,7 @@ export default function ClientApp() {
           onSelect={chooseAddress}
         />
       ) : (
-        <main className="app-content passenger-content taxi-home-layout">
+        <main className="app-content passenger-content taxi-home-layout" inert={drawerOpen}>
           {order && !["home", "trips"].includes(section) && [
             "SEARCHING_DRIVER", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED"
           ].includes(publicStatus(order.public_status || order.status)) && (
@@ -2081,7 +2085,7 @@ export default function ClientApp() {
   );
 }
 
-function ClientHeader({ routeReady = false, addressSelectionMode = false, route, onMenu, onBell, onBackRoute }) {
+function ClientHeader({ menuOpen = false, routeReady = false, addressSelectionMode = false, route, onMenu, onBell, onBackRoute }) {
   if (routeReady) {
     // The map-first tariff view owns its own top bar. Rendering the generic
     // application header as well created two stacked "Выбор тарифа" headers
@@ -2092,7 +2096,7 @@ function ClientHeader({ routeReady = false, addressSelectionMode = false, route,
     return null;
   }
   return (
-    <header className="taxi-app-header premium-client-header reference-client-header address-mode">
+    <header className="taxi-app-header premium-client-header reference-client-header address-mode" inert={menuOpen}>
       <button type="button" className="client-icon-button" onClick={onMenu} aria-label="Открыть меню">
         <IconAsset name="menu" />
       </button>
@@ -2123,20 +2127,19 @@ function ActiveOrderBanner({ order, onClick }) {
 function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, onLogout }) {
   const title = authenticated ? formatKzPhoneDisplay(rider.phone) : "Войти в аккаунт";
   const subtitle = authenticated ? rider.name || "Пассажир" : "или зарегистрироваться";
+  const drawerRef = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
 
   useEffect(() => {
-    if (!open) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === "Escape") onClose?.();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+    if (!open || !drawerRef.current) return undefined;
+    return containModalFocus(drawerRef.current, () => closeRef.current?.());
+  }, [open]);
 
   return (
     <>
       <div className={`client-drawer-backdrop ${open ? "open" : ""}`} onClick={onClose} />
-      <aside className={`client-drawer ${open ? "open" : ""}`} aria-hidden={!open}>
+      <aside ref={drawerRef} className={`client-drawer ${open ? "open" : ""}`} role="dialog" aria-modal={open || undefined} aria-label="Меню SmartTaxi" tabIndex={-1} aria-hidden={!open} inert={!open}>
         <div className="client-drawer-brand-row">
           <div className="client-drawer-brand-lockup" aria-label="SmartTaxi">
             <span className="client-drawer-mark" aria-hidden="true">S</span>
@@ -2158,11 +2161,12 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
           </span>
           <Icon name="chevron" size={22} />
         </button>
+        {authenticated && rider.baseRole === 'DRIVER' && <div style={{padding:'12px 20px'}}><AppModeButton mode="driver" /></div>}
         <nav className="client-drawer-nav" aria-label="Меню клиента">
           {drawerMenuGroups.map((group, groupIndex) => (
             <div className="client-drawer-group" key={groupIndex}>
               <p className="client-drawer-group-title">{group.title}</p>
-              {group.items.map(({ key, label, icon, hint }) => (
+              {group.items.filter(item => item.key !== 'driverApplication' || rider.baseRole !== 'DRIVER').map(({ key, label, icon, hint }) => (
                 <button type="button" key={key} className={active === key ? "active" : ""} onClick={() => onSelect(key)}>
                   <span className="drawer-menu-icon"><Icon name={icon} size={25} /></span>
                   <span className="drawer-menu-copy">
