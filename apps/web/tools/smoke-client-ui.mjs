@@ -50,7 +50,7 @@ async function waitForVisibleRoute(page) {
 
 async function assertPickerAnchor(page) {
   const canvas = await page.locator(".maplibre-canvas-host").boundingBox();
-  const tail = await page.locator(".smarttaxi-center-picker .approved-address-marker-tail").boundingBox();
+  const tail = await page.locator(".smarttaxi-center-picker .approved-address-marker-badge svg > path:last-child").boundingBox();
   const sheet = await page.locator(".address-picker-sheet").boundingBox();
   assert(canvas && tail && sheet);
   assert(Math.abs(tail.x + tail.width / 2 - canvas.x - canvas.width / 2) < 1,
@@ -86,7 +86,7 @@ try {
   await destination.waitFor({ timeout: 30000 });
   assert(await destination.isEnabled());
   assert.equal(await page.locator('.final10-sheet-heading h1').evaluate(element => getComputedStyle(element).fontWeight), '600', 'Heading uses the restrained presentation hierarchy');
-  assert.equal(await page.locator('.final10-chip span').first().evaluate(element => getComputedStyle(element).color), 'rgb(66, 81, 106)', 'Quick actions remain readable neutral text');
+  assert.equal(await page.locator('.final10-chip span').first().evaluate(element => getComputedStyle(element).color), 'rgb(11, 79, 209)', 'Quick actions use the shared deep-blue accent');
   assert.equal(await page.locator('.smarttaxi-center-picker').count(), 1);
   assert.equal(await page.locator('.final10-marker-wrap').count(), 0, 'No decorative duplicate pickup pin');
   await assertOnScreen(destination, 844);
@@ -176,7 +176,7 @@ try {
     const box = await car.boundingBox();
     assert(box.width >= 76 && box.height >= 60, 'Original vehicle art stays large enough to identify');
   }
-  assert.equal(await page.locator('.tariff-v14-card-fare strong').count(), 2, 'Both tariffs keep their real right-aligned fare');
+  assert.equal(await page.locator('.tariff-v14-card-fare strong').count(), 2, 'Both tariffs show their real fare');
   await page.waitForFunction(() => [...document.querySelectorAll('.tariff-v14-card-fare strong')].every(element => element.textContent.includes('₸')));
   await page.locator(".tariff-v14-map .maplibregl-marker").first().waitFor();
   await waitForVisibleRoute(page);
@@ -186,6 +186,14 @@ try {
   await page.setViewportSize({ width: 360, height: 740 });
   await waitForVisibleRoute(page);
   await assertOnScreen(order, 740);
+  for (const card of await page.locator('.tariff-v14-card').all()) {
+    const title = await card.locator('.tariff-v14-card-copy b').boundingBox();
+    const fare = await card.locator('.tariff-v14-card-fare strong').boundingBox();
+    assert(title && fare && title.y + title.height <= fare.y, 'Tariff name and price have separate readable rows');
+    for (const element of await card.locator('.tariff-v14-card-copy b, .tariff-v14-card-fare strong').all()) {
+      assert(await element.evaluate(node => node.scrollWidth <= node.clientWidth + 1), 'Tariff labels must not be horizontally clipped');
+    }
+  }
   await page.screenshot({ path: path.join(output, "tariffs-360.png") });
   await page.getByRole("button", { name: /Способ оплаты/ }).click();
   await page.getByRole("heading", { name: "Как оплатить?", exact: true }).waitFor();

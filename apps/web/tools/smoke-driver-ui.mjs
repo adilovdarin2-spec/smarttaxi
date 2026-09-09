@@ -378,6 +378,35 @@ try {
   assert.equal(await page.evaluate(() => window.driverQaWatches.size), 1, "Geolocation watch must remain running while BUSY");
   mark("busy_geolocation_watch_retained");
   await assertLiveRoute("to_pickup", "accepted");
+  const passengerOrder = (await request('/api/orders/me/active', { auth: client.token })).order;
+  assert(passengerOrder.driver_plate, 'Seeded local driver has a real registration number');
+  assert.equal(await passenger.locator('.trip-driver-vehicle b').innerText(), passengerOrder.driver_plate);
+  assert((await passenger.locator('.trip-driver-vehicle').innerText()).includes(passengerOrder.driver_car_model), 'The assigned car model is immediately visible');
+  const detailsTrigger = passenger.getByRole('button', { name: 'Детали поездки', exact: true });
+  const detailsStyle = await detailsTrigger.evaluate(node => {
+    const style = getComputedStyle(node);
+    return { image: style.backgroundImage, color: style.backgroundColor, weight: style.fontWeight };
+  });
+  assert.deepEqual(detailsStyle, { image: 'none', color: 'rgb(255, 255, 255)', weight: '600' }, 'Trip details is a quiet secondary action even under the legacy CSS cascade');
+  await detailsTrigger.click();
+  const detailsDialog = passenger.getByRole('dialog', { name: 'Детали поездки', exact: true });
+  await detailsDialog.waitFor();
+  const publicOrderId = String(passengerOrder.short_id ?? passengerOrder.public_id ?? newOrder.id);
+  assert.equal(await detailsDialog.locator('.trip-details-clean-row').filter({ hasText: 'ID заказа' }).locator('strong').innerText(), `#${publicOrderId}`, 'Trip details show the actual server public ID without inventing or truncating it');
+  assert.equal(await detailsDialog.locator('.trip-driver-vehicle b').innerText(), passengerOrder.driver_plate);
+  for (const width of [390, 360]) {
+    await passenger.setViewportSize({ width, height: width === 390 ? 844 : 740 });
+    assert(await detailsDialog.evaluate(node => node.scrollWidth <= node.clientWidth + 1), 'Trip details must not overflow for a full UUID');
+    await passenger.screenshot({ path: path.join(output, `passenger-details-${width}.png`), animations: 'disabled' });
+  }
+  await detailsDialog.getByRole('button', { name: 'Закрыть', exact: true }).focus();
+  await passenger.keyboard.press('Shift+Tab');
+  assert(await detailsDialog.evaluate(node => node.contains(document.activeElement)), 'Trip details trap keyboard focus');
+  await passenger.keyboard.press('Escape');
+  assert.equal(await detailsDialog.count(), 0, 'Escape closes trip details');
+  assert(await detailsTrigger.evaluate(node => node === document.activeElement), 'Trip details restore focus to the opening control');
+  await passenger.setViewportSize({ width: 390, height: 844 });
+  mark('real_driver_identity_and_accessible_trip_details');
   // Revoke permission in this test browser during the accepted trip. The
   // server assignment and all legitimate trip actions must remain available.
   await context.clearPermissions();

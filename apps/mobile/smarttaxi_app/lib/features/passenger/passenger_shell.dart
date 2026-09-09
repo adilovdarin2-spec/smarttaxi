@@ -35,6 +35,7 @@ import '../../core/widgets/exit_on_double_back.dart';
 import '../../core/widgets/measure_size.dart';
 import '../../core/widgets/route_fields.dart';
 import '../../core/widgets/status_pill.dart';
+import '../../core/widgets/tariff_choice_card.dart';
 import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/models.dart';
@@ -6194,22 +6195,10 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           ),
           duration: const Duration(milliseconds: 380),
         );
-        // Bounds fitting resets the camera to a flat plan. Keep the route
-        // fully framed, then restore the pitched view that makes source-backed
-        // building heights visible above their real footprints.
-        final fitted = controller.cameraPosition;
-        if (fitted != null) {
-          await controller.animateCamera(
-            native_map.CameraUpdate.newCameraPosition(
-              native_map.CameraPosition(
-                target: fitted.target,
-                zoom: fitted.zoom,
-                tilt: 56,
-              ),
-            ),
-            duration: const Duration(milliseconds: 220),
-          );
-        }
+        // Keep the fitted overview. Reapplying a pitched CameraPosition here
+        // discards the bounds update's asymmetric padding on Android and
+        // puts the pickup under the tariff sheet (physical-device QA).
+        // Home/address exploration retains its pitched building view.
       } catch (_) {
         _lastRouteFitSignature = '';
       }
@@ -13661,6 +13650,11 @@ class _DriverContactCard extends StatelessWidget {
     final displayName =
         name.trim().isEmpty ? l10n.driverProfileNameFallback : name.trim();
     final hasPhone = (phone ?? '').trim().isNotEmpty;
+    final carLine = [carModel, carColor]
+        .whereType<String>()
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .join(', ');
     if (compact) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -13699,7 +13693,7 @@ class _DriverContactCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Icon(
                           Icons.star_rounded,
-                          color: palette.brand,
+                          color: palette.star,
                           size: 14,
                         ),
                         Text(
@@ -13713,6 +13707,16 @@ class _DriverContactCard extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (carLine.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(carLine,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: palette.textSecondary,
+                            fontSize: 11.5,
+                            height: 1.35)),
+                  ],
                   if ((plate ?? '').trim().isNotEmpty)
                     Text(
                       plate!.trim(),
@@ -13747,11 +13751,6 @@ class _DriverContactCard extends StatelessWidget {
         ),
       );
     }
-    final carLine = [carModel, carColor]
-        .whereType<String>()
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .join(', ');
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -13797,7 +13796,7 @@ class _DriverContactCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Icon(
                             Icons.star_rounded,
-                            color: palette.brand,
+                            color: palette.star,
                             size: 16,
                           ),
                           const SizedBox(width: 2),
@@ -15708,176 +15707,30 @@ class _TariffComparisonCard extends StatelessWidget {
                 filterQuality: FilterQuality.high,
                 errorBuilder: (_, __, ___) => fallback,
               );
+    if (!compact) {
+      return TariffChoiceCard(
+        title: _tariffTitleFor(l10n, item.classId),
+        subtitle: isDelivery ? 'до 20 кг' : (tripMeta ?? 'до 4 пассажиров'),
+        price: price == null ? 'Расчёт' : _formatTenge(price),
+        art: art,
+        selected: selected,
+        onTap: onTap,
+      );
+    }
     return Material(
-      color: Colors.transparent,
+      color: selected ? palette.brandSurface : palette.card,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          constraints: BoxConstraints(minHeight: compact ? 148 : 86),
-          padding: EdgeInsets.fromLTRB(
-            compact ? 11 : 11,
-            10,
-            compact ? 11 : 11,
-            10,
-          ),
+        child: Container(
+          padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
-            color: selected
-                ? palette.brand.withValues(alpha: dark ? 0.13 : 0.055)
-                : palette.card,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected ? palette.brand : palette.border,
-              width: selected ? 1.25 : 1,
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color:
-                          palette.brand.withValues(alpha: dark ? 0.10 : 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 5),
-                    ),
-                  ]
-                : null,
+            border:
+                Border.all(color: selected ? palette.brand : palette.border),
           ),
-          child: compact
-              ? _compactContent(context, art, price)
-              : Row(
-                  children: [
-                    Container(
-                      width: 84,
-                      height: 64,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? palette.brand
-                                .withValues(alpha: dark ? 0.16 : 0.09)
-                            : palette.appBackground,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: art,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _tariffTitleFor(l10n, item.classId),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: palette.text,
-                                    fontSize: 15,
-                                    height: 1.2,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            isDelivery
-                                ? 'до 20 кг'
-                                : (tripMeta ?? 'до 4 пассажиров'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: palette.textSecondary,
-                              fontSize: 10.5,
-                              height: 1.2,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          if (bestValue) ...[
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: palette.brand.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'Оптимальный',
-                                style: TextStyle(
-                                  color: palette.brandDeep,
-                                  fontSize: 9.5,
-                                  height: 1,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 11),
-                    SizedBox(
-                      width: 80,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            price == null ? 'Расчёт' : _formatTenge(price),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: palette.text,
-                              fontSize: 18.5,
-                              height: 1.1,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.5,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures()
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            isDelivery ? 'доставка' : 'за поездку',
-                            style: TextStyle(
-                              color: palette.textSecondary,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 21,
-                      height: 21,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected ? palette.brand : Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected ? palette.brand : palette.border,
-                          width: selected ? 0 : 1.5,
-                        ),
-                      ),
-                      child: selected
-                          ? const Icon(Icons.check_rounded,
-                              color: Colors.white, size: 17)
-                          : null,
-                    ),
-                  ],
-                ),
+          child: _compactContent(context, art, price),
         ),
       ),
     );

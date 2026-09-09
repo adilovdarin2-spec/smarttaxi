@@ -2,6 +2,8 @@
 import { Icon } from "../../core/icons.jsx";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import TripDriverCard from './TripDriverCard.jsx';
+import { tripIdentity, tripApproach } from './tripPresentation.mjs';
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 
 function MapView(props) {
@@ -2458,8 +2460,7 @@ function ReferenceTariffList({ rows, setTariff, route, offeredPriceKzt, minOffer
             <span className="tariff-v14-car"><img src={row.image} alt="" /></span>
             <span className="tariff-v14-card-copy">
               <b>{row.title}</b>
-              <small>{row.key === "Delivery" ? "▣  до 20 кг" : `◷  ${formatTripMin(route, "—")} · ${distanceKmFromRoute(route) || "—"} км`}</small>
-              {row.selected && row.key !== "Delivery" && <em>Оптимальный</em>}
+              <small>{row.key === "Delivery" ? "Посылки до 20 кг" : `${formatTripMin(route, "—")} · ${distanceKmFromRoute(route) || "—"} км`}</small>
             </span>
             <span className="tariff-v14-card-fare">
               <strong>{row.priceKzt ? <Money value={row.priceKzt} /> : "Расчёт"}</strong>
@@ -3339,7 +3340,6 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
   const hasDriver = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status) || order.driver_name;
   const cancelled = ["CANCELLED", "CANCELED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN"].includes(status);
   const driverName = order.driver_name || "Водитель SmartTaxi";
-  const carLine = driverVehicleLine(order);
   const driverPoint = clientDriverMapPoint(order, liveRoute);
   const stage = clientLifecycleStage(status, order, activeRoute);
   const statusTone = tripStatusTone(status);
@@ -3431,40 +3431,11 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
             <p>{driverEtaText(order, activeRoute)}</p>
           </header>
 
-          <section className="driver-found-driver-card" aria-label="Водитель">
-            <img className="driver-found-avatar" src={driverFoundAssets.avatar} alt="" />
-            <div className="driver-found-driver-copy">
-              <strong>{driverName}</strong>
-              <span className="driver-found-rating-line">
-                <Icon name="star" size={17} />
-                <b>{driverRatingLabel(order)}</b>
-                <i />
-                <em>{driverTripsLabel(order)}</em>
-              </span>
-              <span className="driver-found-verified">
-                <img src={driverFoundAssets.verified} alt="" />
-                Ваш водитель
-              </span>
-            </div>
-            {order.driver_phone ? (
-              <a className="driver-found-call-round" href={`tel:${order.driver_phone}`} aria-label="Позвонить водителю">
-                <img src={driverFoundAssets.phone} alt="" />
-              </a>
-            ) : (
-              <span className="driver-found-call-round inactive" aria-label="Телефон водителя появится после назначения">
-                <img src={driverFoundAssets.phone} alt="" />
-              </span>
-            )}
-          </section>
+          <TripDriverCard order={order} />
 
           <DriverFoundRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
 
-          <section className="driver-found-info-list">
-            <DriverFoundInfoRow icon={driverFoundAssets.wallet} label="Оплата" value={paymentLabel(order.payment_method)} />
-            <DriverFoundInfoRow icon={driverFoundAssets.priceTag} label="Стоимость" value={<Money value={tripPrice(order, estimate)} />} />
-          </section>
-
-          <QuickMessagesBar orderId={order.id} />
+          <DriverFoundMeta order={order} estimate={estimate} />
 
           <div className="driver-found-actions">
             <button type="button" className="driver-found-details-button" onClick={() => setDetailsOpen(true)}>
@@ -3482,15 +3453,14 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
               </span>
             )}
           </div>
+          <QuickMessagesBar orderId={order.id} />
         </section>
         <TripDetailsSheet
           open={detailsOpen}
           order={order}
           pickup={tripPickup}
           destination={tripDestination}
-          status={status}
-          driverName={driverName}
-          carLine={carLine}
+          route={activeRoute}
           estimate={estimate}
           onClose={() => setDetailsOpen(false)}
           onCancel={onCancel}
@@ -3516,37 +3486,9 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
         </header>
         <RideStatusRail status={status} />
         {hasDriver && (
-          <section className="driver-found-driver-card lifecycle-driver-card" aria-label="Водитель">
-            <img className="driver-found-avatar" src={driverFoundAssets.avatar} alt="" />
-            <div className="driver-found-driver-copy">
-              <strong>{driverName}</strong>
-              <span className="driver-found-rating-line">
-                <Icon name="star" size={17} />
-                <b>{driverRatingLabel(order)}</b>
-                <i />
-                <em>{driverTripsLabel(order)}</em>
-              </span>
-              <span className="driver-found-verified">
-                <img src={driverFoundAssets.verified} alt="" />
-                Ваш водитель
-              </span>
-            </div>
-            {stage.canContact && order.driver_phone ? (
-              <a className="driver-found-call-round" href={`tel:${order.driver_phone}`} aria-label="Позвонить водителю">
-                <img src={driverFoundAssets.phone} alt="" />
-              </a>
-            ) : (
-              <span className="driver-found-call-round inactive" aria-label="Звонок недоступен">
-                <img src={driverFoundAssets.phone} alt="" />
-              </span>
-            )}
-          </section>
+          <TripDriverCard order={order} canContact={stage.canContact} />
         )}
         <DriverFoundRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
-        <div className="trip-car-plate-row driver-found-car lifecycle-car-row">
-          <span>{carLine}</span>
-          <b>{orderTariffLabel(order, estimate)}</b>
-        </div>
         <DriverFoundMeta order={order} estimate={estimate} />
         <RideStatusNote status={status} order={order} destination={tripDestination} route={activeRoute} />
         {["CARD", "MIXED"].includes(order.payment_method) && ["TRIP_COMPLETED", "PAYMENT_PENDING"].includes(status) && (
@@ -3608,9 +3550,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
         order={order}
         pickup={tripPickup}
         destination={tripDestination}
-        status={status}
-        driverName={driverName}
-        carLine={carLine}
+        route={activeRoute}
         estimate={estimate}
         onClose={() => setDetailsOpen(false)}
         onCancel={onCancel}
@@ -3811,19 +3751,6 @@ function DriverFoundRouteCard({ pickup, dropoff }) {
   );
 }
 
-function DriverFoundInfoRow({ icon, label, value }) {
-  return (
-    <div className="driver-found-info-row">
-      <span className="driver-found-info-icon"><img src={icon} alt="" /></span>
-      <span>
-        <small>{label}</small>
-        <strong>{value}</strong>
-      </span>
-      <Icon name="chevron" size={21} />
-    </div>
-  );
-}
-
 function orderTariffLabel(order, estimate) {
   const raw = order?.tariff || estimate?.tariff?.displayName || estimate?.tariff?.display_name || estimate?.tariff?.name || "Economy";
   const key = cleanTariffKey({ name: raw, displayName: raw });
@@ -3865,21 +3792,6 @@ function driverEtaText(order, route = null) {
   if (Number.isFinite(eta) && eta > 0) return `Приедет через ${Math.ceil(eta)} мин`;
   if (publicStatus(order?.public_status || order?.status) === "DRIVER_GOING_TO_CLIENT") return "Водитель едет к точке подачи";
   return "Водитель подтвердил заказ";
-}
-
-function driverRatingLabel(order) {
-  const rating = Number(order?.driver_rating);
-  if (Number.isFinite(rating) && rating > 0) return rating.toFixed(1);
-  return "Новый";
-}
-
-function driverTripsLabel(order) {
-  const trips = Number(order?.driver_trips ?? order?.driverTrips ?? order?.driver_completed_orders ?? order?.driverCompletedOrders);
-  if (!Number.isFinite(trips) || trips <= 0) return "новый";
-  const last = Math.abs(Math.floor(trips)) % 10;
-  const lastTwo = Math.abs(Math.floor(trips)) % 100;
-  const suffix = last === 1 && lastTwo !== 11 ? "поездка" : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? "поездки" : "поездок";
-  return `${Math.floor(trips).toLocaleString("ru-RU")} ${suffix}`;
 }
 
 function driverVehicleLine(order) {
@@ -4123,9 +4035,12 @@ function DriverFoundMeta({ order, estimate }) {
   );
 }
 
-function TripDetailsSheet({ open, order, pickup, destination, status, driverName, carLine, estimate, onClose, onCancel, onSupport, canCancel = false, cancelDisabled }) {
+function TripDetailsSheet({ open, order, pickup, destination, route, estimate, onClose, onCancel, onSupport, canCancel = false, cancelDisabled }) {
   const [notice, setNotice] = useState("");
   const mountedRef = useRef(true);
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   useEffect(() => {
@@ -4134,30 +4049,39 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
 
   useEffect(() => {
     if (!open) return undefined;
+    const previousFocus = document.activeElement;
+    const dialog = dialogRef.current;
+    dialog?.querySelector('button')?.focus();
     function handleKeyDown(event) {
-      if (event.key === "Escape") onClose?.();
+      if (event.key === "Escape") { event.preventDefault(); onCloseRef.current?.(); }
+      if (event.key === 'Tab') {
+        const focusable = [...dialog.querySelectorAll('button:not(:disabled), a[href]')];
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
     }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+    dialog?.addEventListener("keydown", handleKeyDown);
+    return () => {
+      dialog?.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [open, order?.id]);
 
   if (!open) return null;
 
   const pickupText = pickup?.title || order.pickup_text || "Моё местоположение";
-  const pickupSubtext = pickup?.subtitle || "Атакент";
+  const pickupSubtext = pickup?.subtitle || "";
   const dropoffText = destination?.title || order.dropoff_text || "Пункт назначения";
-  const dropoffSubtext = destination?.subtitle || "Атакент";
+  const dropoffSubtext = destination?.subtitle || "";
   const tariffName = orderTariffLabel(order, estimate);
-  const carText = [order.driver_car_color || order.driverCarColor || "Белый", order.driver_car_model || order.driverCarModel || ""].filter(Boolean).join(" ") || carLine || "Белый KIA Rio";
-  const plate = order.driver_plate || order.vehicle_plate || order.car_plate || "123 ABC 02";
-  const eta = Number(order?.driver_eta_min ?? order?.driverEtaMin ?? order?.etaMin ?? 2);
-  const etaMin = Number.isFinite(eta) && eta > 0 ? Math.ceil(eta) : 2;
-  const approachKm = Number(order?.driver_distance_km ?? order?.driverDistanceKm ?? 0.4);
-  const approachText = `${etaMin} мин · ${String((Number.isFinite(approachKm) && approachKm > 0 ? approachKm : 0.4).toFixed(1)).replace(".", ",")} км от вас`;
-  const numericId = String(order.short_id || order.public_id || order.id || "").replace(/\D/g, "").slice(-4);
-  const orderId = `#${numericId || "4587"}`;
-  const driverDisplayName = order.driver_name ? driverName : "Водитель ещё не назначен";
-  const driverVerified = order.driver_name ? "Водитель проверен" : "Назначаем водителя";
+  const identity = tripIdentity(order);
+  const carText = identity.vehicle;
+  const plate = identity.plate;
+  const approachText = tripApproach(order, route);
+  const orderId = identity.orderId ? `#${identity.orderId}` : "Уточняется";
+  const driverDisplayName = identity.name;
   const shareText = `SmartTaxi ${orderId}: ${pickupText} → ${dropoffText}. ${driverDisplayName}, ${carText}, ${plate}.`;
 
   async function handleShare() {
@@ -4186,7 +4110,7 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
   return (
     <>
       <div className="trip-details-backdrop trip-details-reference-backdrop" onClick={onClose} />
-      <section className="trip-details-sheet trip-details-reference-sheet" role="dialog" aria-modal="true" aria-label="Детали поездки">
+      <section ref={dialogRef} className="trip-details-sheet trip-details-reference-sheet" role="dialog" aria-modal="true" aria-label="Детали поездки">
         <div className="trip-details-grip" aria-hidden="true" />
         <header className="trip-details-reference-header">
           <h2>Детали поездки</h2>
@@ -4200,46 +4124,18 @@ function TripDetailsSheet({ open, order, pickup, destination, status, driverName
           <div className="trip-details-route-copy">
             <small>Откуда</small>
             <strong>{pickupText}</strong>
-            <em>{pickupSubtext}</em>
+            {pickupSubtext && <em>{pickupSubtext}</em>}
             <small>Куда</small>
             <strong>{dropoffText}</strong>
-            <em>{dropoffSubtext}</em>
+            {dropoffSubtext && <em>{dropoffSubtext}</em>}
           </div>
         </section>
 
-        <section className="trip-details-driver-row" aria-label="Водитель">
-          <img className="trip-details-avatar" src={tripDetailsAssets.avatar} alt="" />
-          <div className="trip-details-driver-copy">
-            <strong>{driverDisplayName}</strong>
-            <span>
-              <Icon name="star" size={17} />
-              <b>{driverRatingLabel(order)}</b>
-              <i />
-              <em>{driverTripsLabel(order)}</em>
-            </span>
-            <small><img src={tripDetailsAssets.verified} alt="" />{driverVerified}</small>
-          </div>
-          {order.driver_phone ? (
-            <a className="trip-details-phone-button" href={`tel:${order.driver_phone}`} aria-label="Позвонить водителю">
-              <img src={tripDetailsAssets.phone} alt="" />
-            </a>
-          ) : (
-            <span className="trip-details-phone-button inactive" aria-label="Телефон водителя появится после назначения">
-              <img src={tripDetailsAssets.phone} alt="" />
-            </span>
-          )}
-        </section>
-
-        <section className="trip-details-car-row" aria-label="Автомобиль">
-          <div>
-            <strong>{carText}</strong>
-            <b>{plate}</b>
-          </div>
-          <span>{tariffName}</span>
-        </section>
+        <TripDriverCard order={order} />
 
         <section className="trip-details-clean-list" aria-label="Информация о поездке">
-          <TripDetailsCleanRow label="Подача" value={<><b>{etaMin} мин</b><span> · {approachText.replace(`${etaMin} мин · `, "")}</span></>} />
+          <TripDetailsCleanRow label="Подача" value={approachText} />
+          <TripDetailsCleanRow label="Тариф" value={tariffName} />
           <TripDetailsCleanRow label="Оплата" value={paymentLabel(order.payment_method)} />
           <TripDetailsCleanRow label="Стоимость" value={<Money value={tripPrice(order, estimate)} />} />
           <TripDetailsCleanRow label="ID заказа" value={orderId} />
