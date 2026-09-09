@@ -1598,7 +1598,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Ағымдағы сапар тарихы мен мәртебесі';
 
   @override
-  String get passengerWalletMenuSubtitle => 'Баланс және байланысқан карталар';
+  String get passengerWalletMenuSubtitle => 'Кэшбэк және өтінімдер тарихы';
 
   @override
   String get passengerPromoMenuSubtitle => 'Жеңілдікті тексеру және қолдану';
@@ -1629,11 +1629,42 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerWalletTitle => 'Әмиян';
 
   @override
-  String get passengerWalletSubtitle =>
-      'Баланс, толықтыру және байланысқан карталар';
+  String get passengerWalletCashbackUsage =>
+      'Сапар ақысын төлеуге пайдалануға болады';
 
   @override
-  String get passengerWalletBalanceLabel => 'Баланс';
+  String get passengerWalletAvailabilityTitle => 'Күтпеген ақша ұсталымы жоқ';
+
+  @override
+  String get passengerWalletUnavailable =>
+      'Онлайн толықтыру және банк картасын байланыстыру әзірге қолжетімсіз. Сапар ақысын қолма-қол немесе қолжетімді кэшбэкпен төлеуге болады.';
+
+  @override
+  String get passengerWalletHistoryNote =>
+      'Күтілудегі өтінімдер балансты толықтырмайды және автоматты түрде төленбейді.';
+
+  @override
+  String get passengerWalletNoRequests => 'Әзірге өтінімдер жоқ';
+
+  @override
+  String get passengerWalletSavedRecordsNote =>
+      'Төлем сервисіне байланыстырылмаған. Бұрын сақталған жазбаны жоюға болады.';
+
+  @override
+  String get passengerWalletRemovalUnconfirmed =>
+      'Жоюды растау мүмкін болмады. Қайталап көруден бұрын деректерді жаңартыңыз.';
+
+  @override
+  String get passengerWalletRecordRemoved => 'Сақталған карта жазбасы жойылды.';
+
+  @override
+  String get passengerWalletStatusUnknown => 'Мәртебе нақтылануда';
+
+  @override
+  String get passengerWalletSubtitle => 'Сапарларыңыз үшін кэшбэк';
+
+  @override
+  String get passengerWalletBalanceLabel => 'Қолжетімді кэшбэк';
 
   @override
   String get passengerWalletTopUpButton => 'Толықтыру';
@@ -1645,17 +1676,17 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerWalletTopUpRequestsTitle => 'Толықтыру өтінімдері';
 
   @override
-  String get passengerWalletCardsTitle => 'Байланысқан карталар';
+  String get passengerWalletCardsTitle => 'Сақталған карта жазбалары';
 
   @override
-  String get passengerWalletNoCards => 'Байланысқан карталар жоқ';
+  String get passengerWalletNoCards => 'Сақталған карталар жоқ';
 
   @override
   String get passengerWalletAddCardButton => 'Карта қосу';
 
   @override
   String get passengerWalletAddCardSubtitle =>
-      'Карта тек кейін төлем жасау үшін сақталады — қазір одан ештеңе есептелмейді.';
+      'Банк картасын байланыстыру әзірге қолжетімсіз. Карта нөмірін енгізудің қажеті жоқ.';
 
   @override
   String get passengerWalletDefaultBadge => 'Негізгі';
@@ -1700,7 +1731,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerWalletTopUpPendingNote =>
-      'Kaspi Pay арқылы төлеу мүмкіндігі кейінірек қосылады — өтінім сақталды және бұл мүмкіндік іске қосылған соң автоматты түрде өңделеді.';
+      'Күтілудегі өтінім балансты толықтырмайды және автоматты түрде төленбейді.';
 
   @override
   String get passengerWalletTopUpSubmitButton => 'Өтінім жасау';

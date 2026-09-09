@@ -1026,8 +1026,8 @@ class ApiClient {
         .toList(growable: false);
   }
 
-  // Store-only, Luhn-checked, never charged/tokenized — see
-  // client-wallet.service.js's addClientCard for the trust model.
+  // Legacy contract: the API now rejects this until real provider binding
+  // exists. Current wallet UI must not collect or submit a card number.
   Future<ClientCard> addClientCard({
     required String cardNumber,
     String? holderName,
@@ -1047,7 +1047,11 @@ class ApiClient {
 
   Future<void> removeClientCard(String id) async {
     await _attachToken();
-    await _dio.delete('/api/clients/me/wallet/cards/$id');
+    final response =
+        await _dio.delete<dynamic>('/api/clients/me/wallet/cards/$id');
+    if (response.data is! Map || response.data['removed'] != true) {
+      throw StateError('Card removal was not acknowledged');
+    }
   }
 
   Future<List<ClientCard>> setDefaultClientCard(String id) async {
@@ -1070,9 +1074,8 @@ class ApiClient {
         .toList(growable: false);
   }
 
-  // Records top-up intent only — no real gateway call happens yet (see
-  // client-wallet.service.js's createTopupRequest). The request stays
-  // PENDING until real Kaspi Pay top-up integration is wired in.
+  // Legacy contract, rejected by the API until a real wallet provider exists.
+  // Do not accumulate intents that cannot be credited to the wallet.
   Future<ClientTopupRequest> createClientTopupRequest({
     required int amountKzt,
   }) async {

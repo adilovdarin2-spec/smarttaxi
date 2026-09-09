@@ -1492,7 +1492,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerMyTripsMenuSubtitle => '当前行程记录和状态';
 
   @override
-  String get passengerWalletMenuSubtitle => '余额和绑定的银行卡';
+  String get passengerWalletMenuSubtitle => '返现与申请记录';
 
   @override
   String get passengerPromoMenuSubtitle => '查询并使用折扣';
@@ -1519,10 +1519,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerWalletTitle => '钱包';
 
   @override
-  String get passengerWalletSubtitle => '余额、充值和绑定的银行卡';
+  String get passengerWalletCashbackUsage => '可用于支付行程费用';
 
   @override
-  String get passengerWalletBalanceLabel => '余额';
+  String get passengerWalletAvailabilityTitle => '不会意外扣款';
+
+  @override
+  String get passengerWalletUnavailable => '暂不支持在线充值或绑定银行卡。您可以使用现金或可用返现支付行程费用。';
+
+  @override
+  String get passengerWalletHistoryNote => '待处理申请不会增加余额，也不会自动付款。';
+
+  @override
+  String get passengerWalletNoRequests => '暂无申请';
+
+  @override
+  String get passengerWalletSavedRecordsNote => '这些记录未绑定支付服务。您可以删除之前保存的记录。';
+
+  @override
+  String get passengerWalletRemovalUnconfirmed => '无法确认是否已删除。请刷新数据后再试。';
+
+  @override
+  String get passengerWalletRecordRemoved => '已删除保存的银行卡记录。';
+
+  @override
+  String get passengerWalletStatusUnknown => '状态待确认';
+
+  @override
+  String get passengerWalletSubtitle => '行程返现';
+
+  @override
+  String get passengerWalletBalanceLabel => '可用返现';
 
   @override
   String get passengerWalletTopUpButton => '充值';
@@ -1534,16 +1561,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerWalletTopUpRequestsTitle => '充值申请';
 
   @override
-  String get passengerWalletCardsTitle => '已绑定银行卡';
+  String get passengerWalletCardsTitle => '已保存的银行卡记录';
 
   @override
-  String get passengerWalletNoCards => '暂无绑定的银行卡';
+  String get passengerWalletNoCards => '暂无保存的银行卡';
 
   @override
   String get passengerWalletAddCardButton => '添加银行卡';
 
   @override
-  String get passengerWalletAddCardSubtitle => '银行卡仅用于保存以便日后支付——当前不会产生任何扣款。';
+  String get passengerWalletAddCardSubtitle => '暂不支持银行卡绑定，无需输入卡号。';
 
   @override
   String get passengerWalletDefaultBadge => '默认';
@@ -1586,8 +1613,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get passengerWalletTopUpPendingNote =>
-      '通过 Kaspi Pay 支付的功能稍后会在应用内上线——申请已保存,该功能上线后会自动处理。';
+  String get passengerWalletTopUpPendingNote => '待处理申请不会增加余额，也不会自动付款。';
 
   @override
   String get passengerWalletTopUpSubmitButton => '提交申请';

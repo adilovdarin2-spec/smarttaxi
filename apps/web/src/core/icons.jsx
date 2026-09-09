@@ -16,6 +16,8 @@ const paths = {
   route: <path d="M6 18c3 0 3-12 6-12s3 12 6 12M6 18h.01M18 18h.01" />,
   cash: <path d="M4 7h16v10H4Zm4 5h.01M16 12h.01M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />,
   card: <path d="M4 7h16v10H4Zm0 3h16" />,
+  wallet: <><path d="M4 7V5h14v3M4 7h16v13H4Z"/><path d="M20 12h-6v4h6M17 14h.01"/></>,
+  refresh: <><path d="M20 10a8 8 0 0 0-14-4L3 9m0-5v5h5M4 14a8 8 0 0 0 14 4l3-3m0 5v-5h-5"/></>,
   user: <path d="M20 20a8 8 0 0 0-16 0m12-11a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />,
   ticket: <><path d="M5 6h14v4a2 2 0 0 0 0 4v4H5v-4a2 2 0 0 0 0-4Z" /><path d="M9 9.5h.01M15 14.5h.01M15.5 8.5l-7 7" /></>,
   gift: <path d="M4 10h16v10H4Zm0 0h16M12 10v10M8 10c-2.3 0-2.5-4 0-4 1.5 0 2.5 2 4 4 1.5-2 2.5-4 4-4 2.5 0 2.3 4 0 4" />,

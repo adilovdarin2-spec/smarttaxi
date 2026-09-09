@@ -2938,7 +2938,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerWalletMenuSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Баланс и привязанные карты'**
+  /// **'Кешбэк и история заявок'**
   String get passengerWalletMenuSubtitle;
 
   /// No description provided for @passengerPromoMenuSubtitle.
@@ -2989,16 +2989,70 @@ abstract class AppLocalizations {
   /// **'Кошелёк'**
   String get passengerWalletTitle;
 
+  /// No description provided for @passengerWalletCashbackUsage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно использовать при оплате поездки'**
+  String get passengerWalletCashbackUsage;
+
+  /// No description provided for @passengerWalletAvailabilityTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без неожиданных списаний'**
+  String get passengerWalletAvailabilityTitle;
+
+  /// No description provided for @passengerWalletUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Онлайн-пополнение и привязка банковских карт пока недоступны. За поездку можно заплатить наличными или доступным кешбэком.'**
+  String get passengerWalletUnavailable;
+
+  /// No description provided for @passengerWalletHistoryNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидающие заявки не пополняют баланс и не будут оплачены автоматически.'**
+  String get passengerWalletHistoryNote;
+
+  /// No description provided for @passengerWalletNoRequests.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявок пока нет'**
+  String get passengerWalletNoRequests;
+
+  /// No description provided for @passengerWalletSavedRecordsNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не привязаны к платёжному сервису. Можно удалить ранее сохранённую запись.'**
+  String get passengerWalletSavedRecordsNote;
+
+  /// No description provided for @passengerWalletRemovalUnconfirmed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось подтвердить удаление. Обновите данные перед повторной попыткой.'**
+  String get passengerWalletRemovalUnconfirmed;
+
+  /// No description provided for @passengerWalletRecordRemoved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранённая запись карты удалена.'**
+  String get passengerWalletRecordRemoved;
+
+  /// No description provided for @passengerWalletStatusUnknown.
+  ///
+  /// In ru, this message translates to:
+  /// **'Статус уточняется'**
+  String get passengerWalletStatusUnknown;
+
   /// No description provided for @passengerWalletSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Баланс, пополнение и привязанные карты'**
+  /// **'Кешбэк за ваши поездки'**
   String get passengerWalletSubtitle;
 
   /// No description provided for @passengerWalletBalanceLabel.
   ///
   /// In ru, this message translates to:
-  /// **'Баланс'**
+  /// **'Доступный кешбэк'**
   String get passengerWalletBalanceLabel;
 
   /// No description provided for @passengerWalletTopUpButton.
@@ -3022,13 +3076,13 @@ abstract class AppLocalizations {
   /// No description provided for @passengerWalletCardsTitle.
   ///
   /// In ru, this message translates to:
-  /// **'Привязанные карты'**
+  /// **'Сохранённые записи карт'**
   String get passengerWalletCardsTitle;
 
   /// No description provided for @passengerWalletNoCards.
   ///
   /// In ru, this message translates to:
-  /// **'Нет привязанных карт'**
+  /// **'Нет сохранённых карт'**
   String get passengerWalletNoCards;
 
   /// No description provided for @passengerWalletAddCardButton.
@@ -3040,7 +3094,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerWalletAddCardSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Карта сохраняется только для последующей оплаты — сейчас с неё ничего не списывается.'**
+  /// **'Банковская привязка пока недоступна. Номер карты вводить не нужно.'**
   String get passengerWalletAddCardSubtitle;
 
   /// No description provided for @passengerWalletDefaultBadge.
@@ -3118,7 +3172,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerWalletTopUpPendingNote.
   ///
   /// In ru, this message translates to:
-  /// **'Оплата через Kaspi Pay появится в приложении позже — заявка сохранена и будет обработана автоматически, как только это станет доступно.'**
+  /// **'Ожидающая заявка не пополняет баланс и не будет оплачена автоматически.'**
   String get passengerWalletTopUpPendingNote;
 
   /// No description provided for @passengerWalletTopUpSubmitButton.

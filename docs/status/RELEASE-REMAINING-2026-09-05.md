@@ -6,6 +6,14 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 ## Verified local baseline
 
+Latest September 9 evidence: [passenger wallet readiness](client-wallet-readiness-2026-09-09.md).
+API checks, 102 web tests/build, 258 Flutter tests/analyze and new APK/AAB passed.
+New passenger card collection/uncredited top-up intents fail closed until real
+provider integration. Historical records remain owner-readable/removable; existing
+raw card data was not migrated and requires an owner-controlled retention decision.
+The newest APK is built, **not installed**; USB installation still requires device
+confirmation. Earlier installed-candidate evidence below is historical, not current.
+
 - API dependency policy and 36 checks; web 49 tests and production build.
 - Standard root-lock Docker images, healthy local API/web/PostgreSQL/Redis,
   actual isolated backup restoration. No database volume was removed.
@@ -78,6 +86,8 @@ these warnings did not prevent the current builds.
 
 ## Evidence index
 
+- [Passenger wallet readiness and new artifacts](client-wallet-readiness-2026-09-09.md)
+- [Web driver account, modes and recovery](web-driver-account-pass-2026-09-09.md)
 - [Composition, typography and map refinement](composition-redesign-2026-09-06.md)
 - [Current screen redesign and installed candidate](screen-redesign-2026-09-06.md)
 - [Current continuation](SESSION-2026-09-05-CONTINUATION.md)

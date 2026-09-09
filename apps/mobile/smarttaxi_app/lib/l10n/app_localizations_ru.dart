@@ -1590,7 +1590,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerMyTripsMenuSubtitle => 'История и статус текущей поездки';
 
   @override
-  String get passengerWalletMenuSubtitle => 'Баланс и привязанные карты';
+  String get passengerWalletMenuSubtitle => 'Кешбэк и история заявок';
 
   @override
   String get passengerPromoMenuSubtitle => 'Проверить и применить скидку';
@@ -1621,11 +1621,43 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerWalletTitle => 'Кошелёк';
 
   @override
-  String get passengerWalletSubtitle =>
-      'Баланс, пополнение и привязанные карты';
+  String get passengerWalletCashbackUsage =>
+      'Можно использовать при оплате поездки';
 
   @override
-  String get passengerWalletBalanceLabel => 'Баланс';
+  String get passengerWalletAvailabilityTitle => 'Без неожиданных списаний';
+
+  @override
+  String get passengerWalletUnavailable =>
+      'Онлайн-пополнение и привязка банковских карт пока недоступны. За поездку можно заплатить наличными или доступным кешбэком.';
+
+  @override
+  String get passengerWalletHistoryNote =>
+      'Ожидающие заявки не пополняют баланс и не будут оплачены автоматически.';
+
+  @override
+  String get passengerWalletNoRequests => 'Заявок пока нет';
+
+  @override
+  String get passengerWalletSavedRecordsNote =>
+      'Не привязаны к платёжному сервису. Можно удалить ранее сохранённую запись.';
+
+  @override
+  String get passengerWalletRemovalUnconfirmed =>
+      'Не удалось подтвердить удаление. Обновите данные перед повторной попыткой.';
+
+  @override
+  String get passengerWalletRecordRemoved =>
+      'Сохранённая запись карты удалена.';
+
+  @override
+  String get passengerWalletStatusUnknown => 'Статус уточняется';
+
+  @override
+  String get passengerWalletSubtitle => 'Кешбэк за ваши поездки';
+
+  @override
+  String get passengerWalletBalanceLabel => 'Доступный кешбэк';
 
   @override
   String get passengerWalletTopUpButton => 'Пополнить';
@@ -1637,17 +1669,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerWalletTopUpRequestsTitle => 'Заявки на пополнение';
 
   @override
-  String get passengerWalletCardsTitle => 'Привязанные карты';
+  String get passengerWalletCardsTitle => 'Сохранённые записи карт';
 
   @override
-  String get passengerWalletNoCards => 'Нет привязанных карт';
+  String get passengerWalletNoCards => 'Нет сохранённых карт';
 
   @override
   String get passengerWalletAddCardButton => 'Добавить карту';
 
   @override
   String get passengerWalletAddCardSubtitle =>
-      'Карта сохраняется только для последующей оплаты — сейчас с неё ничего не списывается.';
+      'Банковская привязка пока недоступна. Номер карты вводить не нужно.';
 
   @override
   String get passengerWalletDefaultBadge => 'Основная';
@@ -1693,7 +1725,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerWalletTopUpPendingNote =>
-      'Оплата через Kaspi Pay появится в приложении позже — заявка сохранена и будет обработана автоматически, как только это станет доступно.';
+      'Ожидающая заявка не пополняет баланс и не будет оплачена автоматически.';
 
   @override
   String get passengerWalletTopUpSubmitButton => 'Создать заявку';

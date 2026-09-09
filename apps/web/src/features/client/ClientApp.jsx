@@ -8,6 +8,7 @@ import TripDriverCard from './TripDriverCard.jsx';
 import { tripIdentity, tripApproach } from './tripPresentation.mjs';
 import { isResolvedAddressPoint } from './address-resolution.mjs';
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
+const LazyClientWallet = React.lazy(() => import('./ClientWalletSection.jsx'));
 
 function MapView(props) {
   return (
@@ -19,7 +20,6 @@ function MapView(props) {
 import { extraClientAddressCatalog, extraClientRegionPresets } from "./clientAddressBook.js";
 import {
   addFavoriteAddress,
-  addClientWalletCard,
   cancelPublicOrder,
   checkAuthPhone,
   clearToken,
@@ -28,15 +28,12 @@ import {
   createRecurringBooking,
   createSupportMessage,
   deleteFavoriteAddress,
-  deleteClientWalletCard,
   estimateTariff,
   getActiveRegions,
   getIntercityRoutes,
   getServiceSettings,
   getClientActiveOrder,
   getClientTripHistory,
-  getClientWallet,
-  getClientWalletCards,
   getOrderPaymentStatus,
   getCurrentUser,
   getDriverPreferences,
@@ -61,10 +58,8 @@ import {
   sendAuthSms,
   sendQuickMessage,
   setDriverPreference,
-  setDefaultClientWalletCard,
   initiateOrderPayment,
   submitDriverApplication,
-  createClientWalletTopup,
   updateRecurringBookingStatus,
   uploadDriverApplicationDocument,
   validatePromoCode,
@@ -100,7 +95,7 @@ const drawerMenuGroups = [
     title: "Сервисы",
     items: [
     { key: "notifications", label: "Уведомления", icon: "bell", hint: "Статусы и сообщения" },
-    { key: "wallet", label: "Кошелёк", icon: "card", hint: "Кешбэк и карты" },
+    { key: "wallet", label: "Кошелёк", icon: "wallet", hint: "Кешбэк и история" },
     { key: "promo", label: "Промокоды", icon: "ticket", hint: "Проверка кода" },
     { key: "referral", label: "Пригласить друга", icon: "gift", hint: "Реферальная программа" },
     { key: "support", label: "Поддержка", icon: "support", hint: "Помощь по поездке" },
@@ -2065,7 +2060,7 @@ export default function ClientApp() {
           {section === "notifications" && <NotificationsSection authenticated={authenticated} />}
           {section === "recurring" && <RecurringBookingsSection authenticated={authenticated} />}
           {section === "drivers" && <DriverPreferencesSection authenticated={authenticated} />}
-          {section === "wallet" && <WalletSection authenticated={authenticated} />}
+          {section === "wallet" && <WalletSection key={authSession || 'guest'} authenticated={authenticated} onLogin={() => setSection('profile')} />}
           {section === "promo" && <PromoSection regionId={backendRegionId || selectedRegionId} authenticated={authenticated} />}
           {section === "support" && <SupportSection activeOrderId={order?.id} authenticated={authenticated} />}
           {section === "driverApplication" && <DriverApplicationSection authenticated={authenticated} rider={rider} onLogin={() => setSection("profile")} />}
@@ -4798,49 +4793,8 @@ function DriverPreferencesSection({ authenticated }) {
   );
 }
 
-function WalletSection({ authenticated }) {
-  const [state, setState] = useState({ loading: true, error: "", wallet: null, cards: [], topup: "1000", cardNumber: "", holderName: "", saving: false });
-  const load = async () => {
-    if (!authenticated) return;
-    setState(current => ({ ...current, loading: true, error: "" }));
-    try {
-      const [wallet, cards] = await Promise.all([getClientWallet(), getClientWalletCards()]);
-      setState(current => ({ ...current, loading: false, error: "", wallet, cards: cards.cards || [] }));
-    } catch (error) { setState(current => ({ ...current, loading: false, error: formatError(error) })); }
-  };
-  useEffect(() => { load(); }, [authenticated]);
-  if (!authenticated) return <ClientAccessGate title="Кошелёк" text="Кешбэк, привязанные карты и заявки на пополнение." />;
-  async function requestTopup(event) {
-    event.preventDefault();
-    const amount = Number(state.topup);
-    if (!Number.isInteger(amount) || amount < 500) { setState(current => ({ ...current, error: "Минимальная сумма пополнения — 500 ₸" })); return; }
-    setState(current => ({ ...current, saving: true, error: "" }));
-    try { await createClientWalletTopup(amount); setState(current => ({ ...current, saving: false, error: "", topup: "", topupNotice: "Заявка на пополнение создана. Статус появится после обработки Kaspi Pay." })); }
-    catch (error) { setState(current => ({ ...current, saving: false, error: formatError(error) })); }
-  }
-  async function addCard(event) {
-    event.preventDefault();
-    if (!state.cardNumber.trim()) return;
-    setState(current => ({ ...current, saving: true, error: "" }));
-    try { const data = await addClientWalletCard({ cardNumber: state.cardNumber, holderName: state.holderName }); setState(current => ({ ...current, saving: false, cards: [...current.cards, data.card], cardNumber: "", holderName: "" })); }
-    catch (error) { setState(current => ({ ...current, saving: false, error: formatError(error) })); }
-  }
-  async function defaultCard(id) {
-    try { const data = await setDefaultClientWalletCard(id); setState(current => ({ ...current, cards: data.cards || current.cards })); }
-    catch (error) { setState(current => ({ ...current, error: formatError(error) })); }
-  }
-  async function removeCard(id) {
-    try { await deleteClientWalletCard(id); setState(current => ({ ...current, cards: current.cards.filter(card => card.id !== id) })); }
-    catch (error) { setState(current => ({ ...current, error: formatError(error) })); }
-  }
-  return (
-    <section className="screen-grid drawer-linked-screen client-data-screen">
-      <section className="screen-intro"><h1>Кошелёк</h1><p>Кешбэк SmartTaxi, карты и заявки на пополнение.</p></section>
-      <section className="app-card drawer-linked-card wallet-client-card">
-        {state.loading ? <p className="state-note">Загружаем кошелёк...</p> : <><div className="wallet-balance"><span>Доступный кешбэк</span><b>{Number(state.wallet?.balanceKzt || 0).toLocaleString("ru-RU")} ₸</b><small>Используется при оплате поездки</small></div>{state.error && <p className="state-note danger">{state.error}</p>}{state.topupNotice && <p className="state-note success">{state.topupNotice}</p>}<form className="client-mini-form" onSubmit={requestTopup}><label>Пополнить кошелёк, ₸<input inputMode="numeric" value={state.topup} onChange={event => setState(current => ({ ...current, topup: event.target.value.replace(/[^\d]/g, "") }))} /></label><Button className="primary-brand" disabled={state.saving}>{state.saving ? "Обрабатываем…" : "Создать заявку"}</Button></form><div className="client-card-heading"><b>Привязанные карты</b><small>Номер хранится только в маскированном виде</small></div>{state.cards.length ? <div className="client-data-list">{state.cards.map(card => <article className="client-recurring-card" key={card.id}><div><b>{card.maskedCardNumber}</b><small>{card.holderName || "Карта SmartTaxi"}</small><em>{card.isDefault ? "Основная карта" : ""}</em></div><div className="client-inline-actions">{!card.isDefault && <button type="button" onClick={() => defaultCard(card.id)}>Сделать основной</button>}<button type="button" className="danger" onClick={() => removeCard(card.id)}>Удалить</button></div></article>)}</div> : <p className="state-note">Карт пока нет.</p>}<form className="client-mini-form" onSubmit={addCard}><label>Номер карты<input inputMode="numeric" autoComplete="cc-number" value={state.cardNumber} onChange={event => setState(current => ({ ...current, cardNumber: event.target.value.replace(/[^\d ]/g, "") }))} placeholder="0000 0000 0000 0000" /></label><label>Имя владельца<input autoComplete="cc-name" value={state.holderName} onChange={event => setState(current => ({ ...current, holderName: event.target.value }))} placeholder="Как на карте" /></label><Button className="primary-brand" disabled={state.saving || !state.cardNumber.trim()}>Добавить карту</Button></form></>}
-      </section>
-    </section>
-  );
+function WalletSection(props) {
+  return <React.Suspense fallback={<p className="state-note" role="status">Загружаем кошелёк…</p>}><LazyClientWallet {...props}/></React.Suspense>;
 }
 
 function formatClientDate(value) {

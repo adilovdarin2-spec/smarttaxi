@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { runClientWalletReadinessSmoke } from "./client-wallet-readiness-smoke.js";
 
 const {
   MIN_TOPUP_KZT,
@@ -7,9 +8,11 @@ const {
   createTopupRequest,
   getClientWalletSummary,
   listClientCards,
+  listTopupRequests,
   removeClientCard,
   setDefaultClientCard
 } = await import("../modules/client-wallet/client-wallet.service.js");
+const { CLIENT_WALLET_CAPABILITIES, walletIntegrationGate } = await import("../modules/client-wallet/client-wallet-policy.js");
 
 // A tiny in-memory stand-in for the `executor` param (run() calls
 // executor.query(sql, params)) — enough to exercise the service without a
@@ -80,6 +83,9 @@ function fakeExecutor(state) {
         state.topupRequests.push(row);
         return { rows: [row] };
       }
+      if (sql.includes("SELECT * FROM client_topup_requests WHERE client_id=$1")) {
+        return { rows: state.topupRequests.filter(row => row.client_id === params[0]) };
+      }
       throw new Error(`fakeExecutor: unexpected query: ${sql}`);
     }
   };
@@ -89,7 +95,7 @@ function fakeExecutor(state) {
 {
   const executor = fakeExecutor({ clients: [{ id: "client-1", cashback_balance: 1500 }], cards: [], topupRequests: [] });
   const summary = await getClientWalletSummary("client-1", executor);
-  assert.deepEqual(summary, { balanceKzt: 1500, currency: "KZT" });
+  assert.deepEqual(summary, { balanceKzt: 1500, currency: "KZT", capabilities: { cardBinding: false, topUp: false } });
 
   await assert.rejects(
     () => getClientWalletSummary("client-missing", executor),
@@ -97,25 +103,23 @@ function fakeExecutor(state) {
   );
 }
 
-// --- addClientCard / listClientCards / removeClientCard / setDefaultClientCard ---
+// --- Existing records stay masked, owner-scoped and removable. No new PANs. ---
 {
-  const executor = fakeExecutor({ clients: [], cards: [], topupRequests: [] });
-
-  const first = await addClientCard({ clientId: "client-1", cardNumber: "4111 1111 1111 1111", holderName: "Ivan Ivanov" }, executor);
-  assert.equal(first.isDefault, true, "the first card a client adds becomes the default automatically");
-  assert.equal(first.maskedCardNumber, "•• •• •• 1111", "the raw card number is never returned, even right after entry");
-
-  const second = await addClientCard({ clientId: "client-1", cardNumber: "5500 0000 0000 0004" }, executor);
-  assert.equal(second.isDefault, false, "a second card does not silently displace the existing default");
+  const first = { id: 'old-1', client_id: 'client-1', card_number: '4111111111111111', is_default: true };
+  const second = { id: 'old-2', client_id: 'client-1', card_number: '5500000000000004', is_default: false };
+  const executor = fakeExecutor({ clients: [], cards: [first, second], topupRequests: [] });
 
   await assert.rejects(
     () => addClientCard({ clientId: "client-1", cardNumber: "4111111111111112" }, executor),
-    { code: "INVALID_CARD_NUMBER" },
-    "a Luhn-invalid card number is rejected the same way as driver payout cards"
+    { code: "CLIENT_WALLET_NOT_READY" },
+    "new card writes are unavailable, not a substitute for processor tokenization"
   );
 
   let cards = await listClientCards("client-1", executor);
   assert.equal(cards.length, 2);
+  assert.equal(cards[0].maskedCardNumber, "•• •• •• 1111");
+  assert.ok(!JSON.stringify(cards).includes(first.card_number));
+  assert.deepEqual(await listClientCards('another-client', executor), []);
 
   await setDefaultClientCard({ clientId: "client-1", id: second.id }, executor);
   cards = await listClientCards("client-1", executor);
@@ -133,19 +137,27 @@ function fakeExecutor(state) {
   );
 }
 
-// --- createTopupRequest: records intent only, no real gateway call ---
+// --- Disabled operations reject before ANY executor access, including old apps. ---
 {
-  const executor = fakeExecutor({ clients: [], cards: [], topupRequests: [] });
-
-  await assert.rejects(
-    () => createTopupRequest({ clientId: "client-1", amountKzt: MIN_TOPUP_KZT - 1 }, executor),
-    { code: "TOPUP_BELOW_MINIMUM" },
-    "below-minimum top-up amounts are rejected"
-  );
-
-  const request = await createTopupRequest({ clientId: "client-1", amountKzt: 5000 }, executor);
-  assert.equal(request.status, "PENDING", "a top-up request stays PENDING — no real gateway is wired to it yet");
-  assert.equal(request.method, "KASPI_PAY");
+  let calls = 0;
+  const executor = { query: async () => { calls++; throw Error('must not query'); } };
+  for (const amountKzt of [MIN_TOPUP_KZT - 1, 5000]) {
+    await assert.rejects(() => createTopupRequest({clientId:'client-1',amountKzt}, executor), {code:'CLIENT_WALLET_NOT_READY'});
+  }
+  await assert.rejects(() => addClientCard({clientId:'client-1',cardNumber:'4111111111111111'}, executor), {code:'CLIENT_WALLET_NOT_READY'});
+  assert.equal(calls, 0);
+  assert.ok(Object.isFrozen(CLIENT_WALLET_CAPABILITIES));
+  for (const feature of ['cardBinding', 'topUp']) {
+    let failure;
+    walletIntegrationGate(feature)({body:{get cardNumber(){ throw Error('must not inspect PAN'); }}}, {}, error => { failure = error; });
+    assert.equal(failure.code, 'CLIENT_WALLET_NOT_READY');
+    assert.equal(failure.status, 503);
+  }
+  const history = fakeExecutor({ clients: [], cards: [], topupRequests: [{id:'legacy-intent',client_id:'client-1',amount_kzt:5000,method:'KASPI_PAY',status:'PENDING'}] });
+  const rows = await listTopupRequests('client-1', history);
+  assert.equal(rows[0].status, 'PENDING');
+  assert.equal(rows[0].amountKzt, 5000);
+  assert.deepEqual(await listTopupRequests('another-client', history), []);
 }
 
 // --- structural checks: route/migration/server wiring exists ---
@@ -166,8 +178,31 @@ function fakeExecutor(state) {
   assert.ok(routesSource.includes('router.delete("/cards/:id"'), "DELETE /cards/:id route is registered");
   assert.ok(routesSource.includes('router.put("/cards/:id/default"'), "PUT /cards/:id/default route is registered");
   assert.ok(routesSource.includes('router.post("/topup-requests"'), "POST /topup-requests route is registered");
+  assert.match(routesSource, /router\.post\("\/cards", requireAuth, requireRole\("CLIENT"\), walletIntegrationGate\("cardBinding"\)\)/);
+  assert.match(routesSource, /router\.post\("\/topup-requests", requireAuth, requireRole\("CLIENT"\), walletIntegrationGate\("topUp"\)\)/);
 
   assert.ok(serverSource.includes('app.use("/api/clients/me/wallet", clientWalletRoutes)'), "client-wallet router must actually be mounted");
 }
 
-console.log("Client wallet/card-binding scaffold checks ok");
+// The live helper cannot log in to a remote or non-development API. Guard
+// tests use a recording transport only; no seed session is created here.
+{
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    return { status: 200, json: async () => ({ env: 'production', status: 'ok' }) };
+  };
+  for (const apiUrl of ['https://example.com', 'http://127.0.0.1.evil.test',
+    'http://localhost/api', 'http://user:password@localhost',
+    'http://127.0.0.1?target=remote', 'file:///localhost']) {
+    await assert.rejects(() => runClientWalletReadinessSmoke({ apiUrl, fetchImpl }));
+  }
+  assert.equal(requests.length, 0, 'invalid origins never reach the transport');
+  await assert.rejects(() => runClientWalletReadinessSmoke({ apiUrl: 'http://127.0.0.1:4001', fetchImpl }));
+  assert.equal(requests.length, 1, 'non-development health prevents login');
+  assert.equal(requests[0].options.method, 'GET');
+  assert.equal(requests[0].options.redirect, 'error', 'never forward QA login through a redirect');
+  assert.equal(requests[0].options.headers.Authorization, undefined);
+}
+
+console.log("Client wallet readiness gate and historical-data checks ok");

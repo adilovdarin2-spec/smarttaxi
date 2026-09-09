@@ -4,13 +4,11 @@ import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { walletIntegrationGate } from "./client-wallet-policy.js";
 import {
-  addClientCard,
-  createTopupRequest,
   getClientWalletSummary,
   listClientCards,
   listTopupRequests,
-  MIN_TOPUP_KZT,
   removeClientCard,
   setDefaultClientCard
 } from "./client-wallet.service.js";
@@ -39,33 +37,8 @@ router.get("/cards", requireAuth, requireRole("CLIENT"), async (req, res, next) 
   } catch (e) { next(e); }
 });
 
-// Store-only, same trust model as the driver payout card (wallet.service.js):
-// Luhn-checked to catch typos, never charged automatically, never tokenized
-// with a real processor. Real Kaspi Pay top-ups will reuse this record once
-// wired in — see client-wallet.service.js's createTopupRequest comment.
-router.post("/cards", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
-  try {
-    const body = z.object({
-      cardNumber: z.string().trim().min(1),
-      holderName: z.string().trim().min(1).max(120).optional()
-    }).parse(req.body);
-    const client = await getClientOrThrow(req.user.id);
-    const card = await addClientCard({
-      clientId: client.id,
-      cardNumber: body.cardNumber,
-      holderName: body.holderName
-    }, query);
-    await writeAudit(query, {
-      action: "client_card_added",
-      actorUserId: req.user.id,
-      entityType: "client",
-      entityId: client.id,
-      metadata: { cardId: card.id },
-      req
-    });
-    res.status(201).json({ card });
-  } catch (e) { next(e); }
-});
+// Fail closed for old app versions too, before parsing or persisting card data.
+router.post("/cards", requireAuth, requireRole("CLIENT"), walletIntegrationGate("cardBinding"));
 
 router.delete("/cards/:id", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
   try {
@@ -101,25 +74,7 @@ router.get("/topup-requests", requireAuth, requireRole("CLIENT"), async (req, re
   } catch (e) { next(e); }
 });
 
-// Records intent only — see client-wallet.service.js's createTopupRequest for
-// why this stays PENDING until real Kaspi Pay top-up integration exists.
-router.post("/topup-requests", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
-  try {
-    const body = z.object({
-      amountKzt: z.coerce.number().int().min(MIN_TOPUP_KZT)
-    }).parse(req.body);
-    const client = await getClientOrThrow(req.user.id);
-    const topupRequest = await createTopupRequest({ clientId: client.id, amountKzt: body.amountKzt }, query);
-    await writeAudit(query, {
-      action: "client_topup_requested",
-      actorUserId: req.user.id,
-      entityType: "client",
-      entityId: client.id,
-      metadata: { amountKzt: body.amountKzt },
-      req
-    });
-    res.status(201).json({ topupRequest });
-  } catch (e) { next(e); }
-});
+// A stored intent is not a payment. Historical rows remain available via GET.
+router.post("/topup-requests", requireAuth, requireRole("CLIENT"), walletIntegrationGate("topUp"));
 
 export default router;

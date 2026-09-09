@@ -1,5 +1,6 @@
 import { AppError } from "../../common/errors.js";
-import { normalizeCardNumber, maskCardNumber } from "../wallet/wallet.service.js";
+import { maskCardNumber } from "../wallet/wallet.service.js";
+import { CLIENT_WALLET_CAPABILITIES, requireClientWalletIntegration } from "./client-wallet-policy.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -12,19 +13,16 @@ function run(executor, sql, params = []) {
 
 export const MIN_TOPUP_KZT = 500;
 
-// This is a scaffold: cashback_balance is the only real spendable balance a
-// client has today (earned trip rebate, drawn down on cancellation/no-show
-// fees — see finance.service.js). There is no separate prepaid wallet yet.
-// Exposing it through a wallet-shaped summary (mirroring GET
-// /drivers/me/wallet) gives the mobile app one stable "balance" concept to
-// build a wallet screen against now, and a real top-up-funded balance can be
-// merged into this same shape later without changing the response contract.
+// This is the actual cashback balance used by cashback-payment.service.js
+// and finance.service.js, not a prepaid wallet or a pending top-up total.
+// Expose unavailable provider capabilities explicitly for both clients.
 export async function getClientWalletSummary(clientId, executor = defaultQuery) {
   const client = (await run(executor, "SELECT cashback_balance FROM clients WHERE id=$1", [clientId])).rows[0];
   if (!client) throw new AppError("Client profile not found", 404, "CLIENT_NOT_FOUND");
   return {
     balanceKzt: Number(client.cashback_balance || 0),
-    currency: "KZT"
+    currency: "KZT",
+    capabilities: CLIENT_WALLET_CAPABILITIES
   };
 }
 
@@ -46,20 +44,10 @@ export async function listClientCards(clientId, executor = defaultQuery) {
   return result.rows.map(publicClientCard);
 }
 
-// Card numbers are stored so a saved card can be reused/prefilled once real
-// Kaspi Pay top-ups are wired in — same store-only trust model this codebase
-// already applies to driver payout cards (wallet.service.js): Luhn-checked to
-// catch fat-finger typos, but never tokenized or charged automatically, and
-// never returned to the client unmasked after entry.
-export async function addClientCard({ clientId, cardNumber, holderName }, executor = defaultQuery) {
-  const normalized = normalizeCardNumber(cardNumber);
-  const existingCount = (await run(executor, "SELECT COUNT(*)::int count FROM client_cards WHERE client_id=$1", [clientId])).rows[0].count;
-  const created = (await run(executor, `
-    INSERT INTO client_cards(client_id, card_number, holder_name, is_default)
-    VALUES($1,$2,$3,$4)
-    RETURNING *
-  `, [clientId, normalized, holderName || null, existingCount === 0])).rows[0];
-  return publicClientCard(created);
+// Preserve the callable contract for old clients, but never persist a new PAN.
+// Existing records remain readable (masked) and removable by their owner.
+export async function addClientCard() {
+  requireClientWalletIntegration("cardBinding");
 }
 
 export async function removeClientCard({ clientId, id }, executor = defaultQuery) {
@@ -101,23 +89,10 @@ function publicTopupRequest(row) {
   };
 }
 
-// Deliberately just records intent: there is no real payment gateway wired
-// to wallet top-ups yet (Kaspi Pay integration is coming separately — see
-// payments/payment-provider.js for the order-payment equivalent, which this
-// mirrors the shape of so a real gateway call can replace this stub without
-// changing the request/response contract). The request is created PENDING
-// and stays there until that integration exists to move it to
-// COMPLETED/FAILED and credit the balance.
-export async function createTopupRequest({ clientId, amountKzt }, executor = defaultQuery) {
-  if (!Number.isInteger(amountKzt) || amountKzt < MIN_TOPUP_KZT) {
-    throw new AppError(`Minimum top-up is ${MIN_TOPUP_KZT} KZT`, 400, "TOPUP_BELOW_MINIMUM");
-  }
-  const created = (await run(executor, `
-    INSERT INTO client_topup_requests(client_id, amount_kzt, method, status)
-    VALUES($1,$2,'KASPI_PAY','PENDING')
-    RETURNING *
-  `, [clientId, amountKzt])).rows[0];
-  return publicTopupRequest(created);
+// No gateway credits these requests. Do not accumulate new permanent PENDING
+// intents or promise that a future integration will replay them automatically.
+export async function createTopupRequest() {
+  requireClientWalletIntegration("topUp");
 }
 
 export async function listTopupRequests(clientId, executor = defaultQuery) {

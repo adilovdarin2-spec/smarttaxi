@@ -1605,7 +1605,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerMyTripsMenuSubtitle => 'Joriy safar tarixi va holati';
 
   @override
-  String get passengerWalletMenuSubtitle => 'Balans va bog\'langan kartalar';
+  String get passengerWalletMenuSubtitle => 'Keshbek va so\'rovlar tarixi';
 
   @override
   String get passengerPromoMenuSubtitle => 'Chegirmani tekshirish va qo\'llash';
@@ -1637,11 +1637,43 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerWalletTitle => 'Hamyon';
 
   @override
-  String get passengerWalletSubtitle =>
-      'Balans, to\'ldirish va bog\'langan kartalar';
+  String get passengerWalletCashbackUsage =>
+      'Safar haqini to\'lash uchun ishlatish mumkin';
 
   @override
-  String get passengerWalletBalanceLabel => 'Balans';
+  String get passengerWalletAvailabilityTitle => 'Kutilmagan pul yechishlarsiz';
+
+  @override
+  String get passengerWalletUnavailable =>
+      'Onlayn to\'ldirish va bank kartasini bog\'lash hozircha mavjud emas. Safar haqini naqd yoki mavjud keshbek bilan to\'lashingiz mumkin.';
+
+  @override
+  String get passengerWalletHistoryNote =>
+      'Kutilayotgan so\'rovlar balansni to\'ldirmaydi va avtomatik to\'lanmaydi.';
+
+  @override
+  String get passengerWalletNoRequests => 'Hozircha so\'rovlar yo\'q';
+
+  @override
+  String get passengerWalletSavedRecordsNote =>
+      'To\'lov xizmatiga bog\'lanmagan. Avval saqlangan yozuvni o\'chirish mumkin.';
+
+  @override
+  String get passengerWalletRemovalUnconfirmed =>
+      'O\'chirishni tasdiqlab bo\'lmadi. Qayta urinishdan oldin ma\'lumotlarni yangilang.';
+
+  @override
+  String get passengerWalletRecordRemoved =>
+      'Saqlangan karta yozuvi o\'chirildi.';
+
+  @override
+  String get passengerWalletStatusUnknown => 'Holat aniqlanmoqda';
+
+  @override
+  String get passengerWalletSubtitle => 'Safarlaringiz uchun keshbek';
+
+  @override
+  String get passengerWalletBalanceLabel => 'Mavjud keshbek';
 
   @override
   String get passengerWalletTopUpButton => 'To\'ldirish';
@@ -1653,17 +1685,17 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerWalletTopUpRequestsTitle => 'To\'ldirish so\'rovlari';
 
   @override
-  String get passengerWalletCardsTitle => 'Bog\'langan kartalar';
+  String get passengerWalletCardsTitle => 'Saqlangan karta yozuvlari';
 
   @override
-  String get passengerWalletNoCards => 'Bog\'langan kartalar yo\'q';
+  String get passengerWalletNoCards => 'Saqlangan kartalar yo\'q';
 
   @override
   String get passengerWalletAddCardButton => 'Karta qo\'shish';
 
   @override
   String get passengerWalletAddCardSubtitle =>
-      'Karta faqat keyingi to\'lov uchun saqlanadi — hozir undan hech narsa yechilmaydi.';
+      'Bank kartasini bog\'lash hozircha mavjud emas. Karta raqamini kiritish shart emas.';
 
   @override
   String get passengerWalletDefaultBadge => 'Asosiy';
@@ -1709,7 +1741,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerWalletTopUpPendingNote =>
-      'Kaspi Pay orqali to\'lash imkoniyati keyinroq qo\'shiladi — so\'rov saqlandi va bu imkoniyat ishga tushgach avtomatik qayta ishlanadi.';
+      'Kutilayotgan so\'rov balansni to\'ldirmaydi va avtomatik to\'lanmaydi.';
 
   @override
   String get passengerWalletTopUpSubmitButton => 'So\'rov yaratish';

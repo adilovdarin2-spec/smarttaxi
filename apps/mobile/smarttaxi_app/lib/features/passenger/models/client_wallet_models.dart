@@ -20,9 +20,13 @@ class ClientWalletSummary {
   final String currency;
 
   factory ClientWalletSummary.fromJson(Map<String, dynamic> json) {
+    final balance = num.tryParse('${json['balanceKzt']}');
+    if (balance == null || !balance.isFinite || json['currency'] != 'KZT') {
+      throw const FormatException('Wallet balance is not confirmed');
+    }
     return ClientWalletSummary(
-      balanceKzt: _intOf(json['balanceKzt']),
-      currency: '${json['currency'] ?? 'KZT'}',
+      balanceKzt: balance.round(),
+      currency: 'KZT',
     );
   }
 }
@@ -46,10 +50,14 @@ class ClientCard {
   final DateTime createdAt;
 
   factory ClientCard.fromJson(Map<String, dynamic> json) {
+    final digits =
+        '${json['maskedCardNumber'] ?? ''}'.replaceAll(RegExp(r'\D'), '');
     return ClientCard(
       id: '${json['id']}',
       holderName: json['holderName']?.toString(),
-      maskedCardNumber: '${json['maskedCardNumber'] ?? ''}',
+      maskedCardNumber: digits.length >= 4
+          ? '•••• ${digits.substring(digits.length - 4)}'
+          : '••••',
       isDefault: json['isDefault'] == true,
       createdAt: _dateOf(json['createdAt']),
     );
