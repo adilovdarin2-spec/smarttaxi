@@ -40,6 +40,7 @@ import { calculatePromoDiscount, findValidPromoCode, recordPromoRedemption } fro
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
 import { spendOrderCashback, trySpendOrderCashback } from "./cashback-payment.service.js";
 import { assertDriverManualPaymentAllowed } from "../payments/manual-payment-policy.js";
+import { isClientCancellationAlreadyApplied } from "./client-cancellation-policy.js";
 
 const router = Router();
 // Anti-fraud: auto-suspend a driver whose rolling average drops below this
@@ -446,6 +447,17 @@ router.post("/:id/cancel-public", requireAuth, requireRole("CLIENT"), rateLimit(
       if (!owner) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
       if (normalizePhone(existing.rider_phone) !== normalizePhone(body.riderPhone)) {
         throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      }
+      // A lost HTTP response must not turn a safe retry into a second fee,
+      // history entry or audit event. The row lock serializes a concurrent
+      // retry; ownership and rider-phone checks still run before this branch.
+      if (isClientCancellationAlreadyApplied(existing.status)) {
+        return (await client.query(`
+          SELECT ${ORDER_SELECT}
+          FROM orders o
+          LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
+          WHERE o.id=$1
+        `, [existing.id])).rows[0];
       }
       if (!["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"].includes(existing.status)) {
         throw new AppError("Invalid order status transition", 409, "INVALID_STATUS_TRANSITION", {

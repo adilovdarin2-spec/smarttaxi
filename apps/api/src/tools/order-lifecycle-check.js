@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { createOrderCancelledTransaction } from "../modules/finance/finance.service.js";
 import { isOrderSearchTimedOut } from "../modules/orders/order-dispatch.service.js";
 import { assertDriverManualPaymentAllowed } from "../modules/payments/manual-payment-policy.js";
+import { isClientCancellationAlreadyApplied } from "../modules/orders/client-cancellation-policy.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
@@ -12,6 +13,31 @@ const dispatchService = readFileSync(join(root, "modules", "orders", "order-disp
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const financeService = readFileSync(join(root, "modules", "finance", "finance.service.js"), "utf8");
 const paymentsRoutes = readFileSync(join(root, "modules", "payments", "payments.routes.js"), "utf8");
+
+assert.equal(isClientCancellationAlreadyApplied("CANCELLED_BY_CLIENT"), true);
+for (const status of ["NEW", "SEARCHING_DRIVER", "CANCELLED_BY_DRIVER", "PAID", undefined]) {
+  assert.equal(isClientCancellationAlreadyApplied(status), false);
+}
+const publicCancelBlock = ordersRoutes.slice(
+  ordersRoutes.indexOf('router.post("/:id/cancel-public"'),
+  ordersRoutes.indexOf('router.get("/", requireAuth'),
+);
+const cancellationIdempotencyIndex = publicCancelBlock.indexOf(
+  "isClientCancellationAlreadyApplied(existing.status)",
+);
+assert.ok(
+  publicCancelBlock.indexOf('if (!owner) throw new AppError("Forbidden order"') <
+    cancellationIdempotencyIndex &&
+    publicCancelBlock.indexOf(
+      "normalizePhone(existing.rider_phone) !== normalizePhone(body.riderPhone)",
+    ) < cancellationIdempotencyIndex,
+  "an idempotent cancellation retry must still verify account ownership and rider phone",
+);
+assert.ok(
+  cancellationIdempotencyIndex <
+    publicCancelBlock.indexOf("createOrderCancelledTransaction(updated"),
+  "an already-applied client cancellation returns before fees/history/audit are written again",
+);
 
 // A driver's cash receipt is not an electronic provider confirmation. This
 // guard executes before any PAID status/payment/ledger write in updateStatus.

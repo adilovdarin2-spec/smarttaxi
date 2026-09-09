@@ -70,6 +70,11 @@ import { sanitizeAddressText } from "../../lib/text.js";
 import { clientDriverMapPoint, mergeClientDriverLocation, recoverClientActiveOrder } from "./clientTripLifecycle.js";
 import { useLiveDriverRoute } from "./useLiveDriverRoute.js";
 import { sessionGuard } from "../../lib/sessionGuard.js";
+import {
+  createClientFavoritesController,
+  emptyFavoritesState,
+} from "./clientFavoritesState.js";
+import { cancelOrderWithRecovery } from "../../lib/orderCancellation.js";
 
 const cardPaymentsEnabled = import.meta.env.VITE_CARD_PAYMENTS_ENABLED === "true";
 
@@ -965,7 +970,8 @@ export default function ClientApp() {
   const authSession = authenticated ? getToken() : "";
   const liveRoute = useLiveDriverRoute(order, authSession);
   const [favorites, setFavorites] = useState([]);
-  const [favoritesState, setFavoritesState] = useState({ loading: false, error: "" });
+  const [favoritesState, setFavoritesState] = useState(emptyFavoritesState);
+  const favoritesControllerRef = useRef(null);
   const socketRef = useRef(null);
   const mainMapReverseSeqRef = useRef(0);
   const mainMapReverseDebounceRef = useRef(0);
@@ -1340,8 +1346,41 @@ export default function ClientApp() {
   }, [incomingMessage]);
 
   useEffect(() => {
-    if (section === "favorites" && authenticated) loadFavorites();
-  }, [section, authenticated]);
+    if (!authSession) {
+      favoritesControllerRef.current = null;
+      setFavorites([]);
+      setFavoritesState(emptyFavoritesState);
+      return undefined;
+    }
+    // Never carry one account's saved places across an in-place session
+    // replacement while the new account's first read is still pending.
+    setFavorites([]);
+    setFavoritesState(emptyFavoritesState);
+    const controller = createClientFavoritesController({
+      api: {
+        load: getFavoriteAddresses,
+        create: addFavoriteAddress,
+        remove: deleteFavoriteAddress,
+      },
+      readToken: getToken,
+      formatError,
+      onChange: (next) => {
+        setFavorites(next.favorites);
+        setFavoritesState(next);
+      },
+    });
+    favoritesControllerRef.current = controller;
+    return () => {
+      controller.dispose();
+      if (favoritesControllerRef.current === controller) {
+        favoritesControllerRef.current = null;
+      }
+    };
+  }, [authSession]);
+
+  useEffect(() => {
+    if (section === "favorites" && authSession) loadFavorites();
+  }, [section, authSession]);
 
   function selectSection(next) {
     if (next === "driver") {
@@ -1709,46 +1748,24 @@ export default function ClientApp() {
   }
 
   async function loadFavorites() {
-    setFavoritesState({ loading: true, error: "" });
-    try {
-      const data = await getFavoriteAddresses();
-      setFavorites(data.favorites || data.addresses || []);
-      setFavoritesState({ loading: false, error: "" });
-    } catch (error) {
-      setFavoritesState({ loading: false, error: formatError(error) });
-    }
+    return favoritesControllerRef.current?.load();
   }
 
   async function saveFavoriteAddress(address) {
-    setFavoritesState(current => ({ ...current, error: "" }));
-    try {
-      await addFavoriteAddress({
-        label: "OTHER",
-        title: address.title || "Новый адрес",
-        addressText: address.subtitle || address.title || "",
-        lat: address.lat,
-        lng: address.lng
-      });
-      await loadFavorites();
-    } catch (error) {
-      setFavoritesState({ loading: false, error: formatError(error) });
+    const result = await favoritesControllerRef.current?.create({
+      label: "OTHER",
+      title: address.title || "Новый адрес",
+      addressText: address.subtitle || address.title || "",
+      lat: address.lat,
+      lng: address.lng,
+    });
+    if (result?.status === "blocked") {
+      setMessage("Сначала обновите избранные адреса.");
     }
   }
 
   async function deleteFavorite(favoriteId) {
-    // deletingId guards against a fast double-click firing two deletes for
-    // the same row before the list reloads and the button unmounts — the
-    // button itself was never disabled while the request was in flight.
-    if (favoritesState.deletingId) return;
-    setFavoritesState(current => ({ ...current, error: "", deletingId: favoriteId }));
-    try {
-      await deleteFavoriteAddress(favoriteId);
-      await loadFavorites();
-    } catch (error) {
-      setFavoritesState(current => ({ ...current, error: formatError(error) }));
-    } finally {
-      setFavoritesState(current => ({ ...current, deletingId: null }));
-    }
+    return favoritesControllerRef.current?.remove(favoriteId);
   }
 
   function canUseDestination(address) {
@@ -1892,15 +1909,28 @@ export default function ClientApp() {
 
   async function cancelOrder() {
     if (!order?.id || loading) return;
+    const orderId = order.id;
+    const isCurrent = sessionGuard(getToken(), getToken, () => mountedRef.current);
     setLoading(true);
     setMessage("");
     try {
-      const data = await cancelPublicOrder(order.id, rider.phone || auth.phone);
+      const data = await cancelOrderWithRecovery(
+        { orderId, riderPhone: rider.phone || auth.phone },
+        {
+          request: cancelPublicOrder,
+          readBack: getOrderStatusHistory,
+          readToken: getToken,
+          isAlive: () => mountedRef.current,
+        },
+      );
+      if (!isCurrent() || orderRef.current?.id !== orderId) return;
       setOrder(normalizeOrder(data.order));
     } catch (error) {
-      setMessage(formatError(error));
+      if (isCurrent() && orderRef.current?.id === orderId) {
+        setMessage(formatError(error));
+      }
     } finally {
-      setLoading(false);
+      if (isCurrent() && orderRef.current?.id === orderId) setLoading(false);
     }
   }
 
@@ -2051,6 +2081,7 @@ export default function ClientApp() {
               authenticated={authenticated}
               favorites={favorites}
               favoritesState={favoritesState}
+              onReload={loadFavorites}
               onPickOnMap={() => setAddressMode("favorite")}
               onDelete={deleteFavorite}
               onLogin={() => setSection("profile")}
@@ -5050,7 +5081,7 @@ function SettingsRow({ icon, title, text, muted = false, onClick }) {
     : <div className={className}>{content}</div>;
 }
 
-function FavoritesSection({ onHome, authenticated, favorites, favoritesState, onPickOnMap, onDelete, onLogin }) {
+function FavoritesSection({ onHome, authenticated, favorites, favoritesState, onPickOnMap, onDelete, onReload, onLogin }) {
   const favoriteIcon = { HOME: "home", WORK: "work" };
 
   if (!authenticated) {
@@ -5069,10 +5100,17 @@ function FavoritesSection({ onHome, authenticated, favorites, favoritesState, on
     <section className="screen-grid drawer-linked-screen">
       <section className="screen-intro"><h1>Избранное</h1><p>Сохранённые места для быстрых повторных поездок.</p></section>
       <section className="app-card drawer-linked-card">
-        {favoritesState.loading ? (
+        {favoritesState.error && (
+          <div className="state-note danger" role="alert">
+            <p>{favoritesState.error}</p>
+            <Button variant="secondary" className="wide" onClick={onReload} disabled={favoritesState.loading}>
+              {favoritesState.loading ? "Обновляем..." : "Обновить список"}
+            </Button>
+          </div>
+        )}
+        {favoritesState.notice && <p className="state-note success" role="status">{favoritesState.notice}</p>}
+        {favoritesState.loading && !favorites.length ? (
           <p className="state-note">Загружаем избранные адреса...</p>
-        ) : favoritesState.error ? (
-          <p className="state-note danger">{favoritesState.error}</p>
         ) : !favorites.length ? (
           <p className="state-note">Избранных адресов пока нет. Добавьте дом, работу или любимое место.</p>
         ) : (
@@ -5083,14 +5121,20 @@ function FavoritesSection({ onHome, authenticated, favorites, favoritesState, on
                 type="button"
                 className="admin-danger-button compact"
                 disabled={Boolean(favoritesState.deletingId)}
-                onClick={() => onDelete(favorite.id)}
+                onClick={() => {
+                  if (window.confirm(`Удалить «${favorite.title || "Адрес"}» из избранного?`)) {
+                    onDelete(favorite.id);
+                  }
+                }}
               >
                 {favoritesState.deletingId === favorite.id ? "Удаление..." : "Удалить"}
               </button>
             </div>
           ))
         )}
-        <Button className="wide primary-brand" onClick={onPickOnMap}>Выбрать адрес на карте</Button>
+        <Button className="wide primary-brand" onClick={onPickOnMap} disabled={favoritesState.loading || favoritesState.creating || Boolean(favoritesState.deletingId) || favoritesState.uncertain}>
+          {favoritesState.creating ? "Сохраняем..." : "Выбрать адрес на карте"}
+        </Button>
         <Button variant="secondary" className="wide" onClick={onHome}>На главную</Button>
       </section>
     </section>

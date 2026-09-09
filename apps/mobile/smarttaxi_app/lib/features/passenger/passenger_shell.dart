@@ -279,6 +279,7 @@ class _PassengerShellState extends State<PassengerShell>
   bool _favoriteAddressesLoading = false;
   bool _favoriteAddressesError = false;
   bool _creatingFavoriteAddress = false;
+  bool _favoriteAddressMutationUncertain = false;
   final Set<String> _favoriteAddressDeleting = {};
   List<DriverPreference> _driverPreferences = const [];
   bool _driverPreferencesLoading = false;
@@ -676,7 +677,13 @@ class _PassengerShellState extends State<PassengerShell>
     try {
       final addresses = await widget.api.getFavoriteAddresses();
       if (!mounted) return;
-      setState(() => _favoriteAddresses = addresses);
+      setState(() {
+        _favoriteAddresses = addresses;
+        // A successful authoritative refresh is the only safe way to unlock
+        // writes after a lost create/delete response that could not be
+        // reconciled. Retrying the POST itself could create a duplicate.
+        _favoriteAddressMutationUncertain = false;
+      });
     } catch (_) {
       if (mounted) setState(() => _favoriteAddressesError = true);
     } finally {
@@ -690,7 +697,7 @@ class _PassengerShellState extends State<PassengerShell>
     required String addressText,
     required Coordinate coordinate,
   }) async {
-    if (_creatingFavoriteAddress) return;
+    if (_creatingFavoriteAddress || _favoriteAddressMutationUncertain) return;
     setState(() => _creatingFavoriteAddress = true);
     try {
       final address = await widget.api.createFavoriteAddress(
@@ -705,6 +712,10 @@ class _PassengerShellState extends State<PassengerShell>
       if (mounted) Navigator.of(context).pop();
       AppToast.showSuccess(context,
           AppLocalizations.of(context).passengerAddressAddedToFavoritesToast);
+    } on FavoriteAddressMutationUnconfirmed catch (_) {
+      if (!mounted) return;
+      setState(() => _favoriteAddressMutationUncertain = true);
+      AppToast.showError(context, AppLocalizations.of(context).pullToRetry);
     } catch (error) {
       if (!mounted) return;
       AppToast.showError(
@@ -715,7 +726,10 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _deleteFavoriteAddress(FavoriteAddress address) async {
-    if (_favoriteAddressDeleting.contains(address.id)) return;
+    if (_favoriteAddressMutationUncertain ||
+        _favoriteAddressDeleting.contains(address.id)) {
+      return;
+    }
     setState(() => _favoriteAddressDeleting.add(address.id));
     try {
       await widget.api.deleteFavoriteAddress(address.id);
@@ -726,6 +740,10 @@ class _PassengerShellState extends State<PassengerShell>
           context,
           AppLocalizations.of(context)
               .passengerAddressRemovedFromFavoritesToast);
+    } on FavoriteAddressMutationUnconfirmed catch (_) {
+      if (!mounted) return;
+      setState(() => _favoriteAddressMutationUncertain = true);
+      AppToast.showError(context, AppLocalizations.of(context).pullToRetry);
     } catch (error) {
       if (!mounted) return;
       AppToast.showError(
@@ -2275,12 +2293,12 @@ class _PassengerShellState extends State<PassengerShell>
       _error = null;
     });
     try {
-      await widget.api.cancelPublicOrder(
+      final cancelled = await widget.api.cancelPublicOrder(
         _order!.id,
         riderPhone: widget.accountPhone,
       );
       if (!mounted) return;
-      _startNewPassengerTrip();
+      setState(() => _order = cancelled);
     } catch (error) {
       if (!mounted) return;
       setState(
@@ -4676,6 +4694,10 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _openAddFavoriteAddressSheet() async {
+    if (_favoriteAddressMutationUncertain) {
+      AppToast.showError(context, AppLocalizations.of(context).pullToRetry);
+      return;
+    }
     final picked = await showModalBottomSheet<AddressSuggestion>(
       context: context,
       isScrollControlled: true,
@@ -4727,6 +4749,7 @@ class _PassengerShellState extends State<PassengerShell>
 
   Widget _favoriteAddressesScreen() {
     final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
     return RefreshIndicator(
       color: context.palette.brandDeep,
       onRefresh: _loadFavoriteAddresses,
@@ -4742,12 +4765,52 @@ class _PassengerShellState extends State<PassengerShell>
           ),
           const SizedBox(height: 16),
           _BrandCtaButton(
-            enabled: !_creatingFavoriteAddress,
+            enabled:
+                !_creatingFavoriteAddress && !_favoriteAddressMutationUncertain,
             loading: false,
             text: l10n.passengerFavoritesAddButton,
             onTap: _openAddFavoriteAddressSheet,
           ),
           const SizedBox(height: 16),
+          if (_favoriteAddressMutationUncertain) ...[
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+              decoration: BoxDecoration(
+                color: palette.brandPale,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: palette.brand.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.sync_problem_rounded,
+                    color: palette.brandDeep,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      l10n.pullToRetry,
+                      style: TextStyle(
+                        color: palette.text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _favoriteAddressesLoading
+                        ? null
+                        : () => unawaited(_loadFavoriteAddresses()),
+                    child: Text(l10n.retry),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           if (_favoriteAddressesLoading && _favoriteAddresses.isEmpty)
             const _SkeletonList()
           else if (_favoriteAddressesError && _favoriteAddresses.isEmpty)

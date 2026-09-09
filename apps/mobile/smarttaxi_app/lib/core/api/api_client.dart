@@ -11,6 +11,16 @@ import '../auth/auth_store.dart';
 import '../config/app_config.dart';
 import 'api_transport.dart';
 
+class FavoriteAddressMutationUnconfirmed implements Exception {
+  const FavoriteAddressMutationUnconfirmed(this.cause);
+
+  final Object cause;
+
+  @override
+  String toString() =>
+      'Favorite address mutation could not be confirmed: $cause';
+}
+
 class ApiClient {
   ApiClient(this._authStore,
       {Dio? dio, Future<void> Function(Duration)? retryDelay})
@@ -437,11 +447,78 @@ class ApiClient {
         .toList();
   }
 
-  Future<void> cancelPublicOrder(String orderId,
+  Future<OrderSummary> cancelPublicOrder(String orderId,
       {required String riderPhone}) async {
     await _attachToken();
-    await _dio.post('/api/orders/$orderId/cancel-public',
-        data: {'riderPhone': riderPhone});
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/orders/$orderId/cancel-public',
+        data: {'riderPhone': riderPhone},
+      );
+      final order = response.data?['order'];
+      if (order is! Map) {
+        throw const FormatException('Cancellation was not acknowledged');
+      }
+      final result = OrderSummary.fromJson(Map<String, dynamic>.from(order));
+      if (result.id != orderId || result.status != 'CANCELLED_BY_CLIENT') {
+        throw const FormatException('Cancellation status is not confirmed');
+      }
+      return result;
+    } on DioException catch (error) {
+      final recovered = await _recoverCancelledOrder(error, orderId);
+      if (recovered != null) return recovered;
+      rethrow;
+    }
+  }
+
+  Future<OrderSummary?> _recoverCancelledOrder(
+      DioException error, String orderId) async {
+    final status = error.response?.statusCode;
+    final code = error.response?.data is Map
+        ? (error.response?.data as Map)['error']
+        : null;
+    final uncertain = error.response == null &&
+        const {
+          DioExceptionType.connectionTimeout,
+          DioExceptionType.sendTimeout,
+          DioExceptionType.receiveTimeout,
+          DioExceptionType.connectionError,
+        }.contains(error.type);
+    final serverFailure = status != null && status >= 500 && status < 600;
+    final legacyAlreadyApplied =
+        status == 409 && code == 'INVALID_STATUS_TRANSITION';
+    if (!uncertain && !serverFailure && !legacyAlreadyApplied) return null;
+
+    final authorization = error.requestOptions.headers['Authorization'];
+    if (authorization is! String || !authorization.startsWith('Bearer ')) {
+      return null;
+    }
+    Future<bool> stillOwnsSession() async {
+      if (_dio.options.headers['Authorization'] != authorization) return false;
+      final token = await _authStore.readToken();
+      return token != null &&
+          token.isNotEmpty &&
+          authorization == 'Bearer $token' &&
+          _dio.options.headers['Authorization'] == authorization;
+    }
+
+    try {
+      if (!await stillOwnsSession()) return null;
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/orders/$orderId/status-history',
+        options: Options(headers: {'Authorization': authorization}),
+      );
+      if (!await stillOwnsSession()) return null;
+      final order = response.data?['order'];
+      if (order is! Map) return null;
+      final result = OrderSummary.fromJson(Map<String, dynamic>.from(order));
+      return result.id == orderId && result.status == 'CANCELLED_BY_CLIENT'
+          ? result
+          : null;
+    } catch (_) {
+      // Read-back is evidence only. Never replay the cancellation here.
+      return null;
+    }
   }
 
   Future<void> rateOrder(
@@ -873,10 +950,7 @@ class ApiClient {
   Future<List<FavoriteAddress>> getFavoriteAddresses() async {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/favorites/addresses');
-    final items = _extractList(response.data, 'addresses');
-    return items
-        .map((item) => FavoriteAddress.fromJson(item))
-        .toList(growable: false);
+    return _parseFavoriteAddresses(response.data);
   }
 
   Future<FavoriteAddress> createFavoriteAddress({
@@ -887,25 +961,195 @@ class ApiClient {
     required double lng,
   }) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/favorites/addresses',
-      data: {
-        'label': label,
-        'title': title,
-        'addressText': addressText,
-        'lat': lat,
-        'lng': lng,
-      },
-    );
-    final data = response.data ?? {};
-    return FavoriteAddress.fromJson(
-        Map<String, dynamic>.from(data['address'] ?? data));
+    final payload = {
+      'label': label,
+      'title': title,
+      'addressText': addressText,
+      'lat': lat,
+      'lng': lng,
+    };
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/favorites/addresses',
+        data: payload,
+      );
+      try {
+        final data = response.data ?? {};
+        final raw = data['address'] ?? data;
+        if (raw is! Map) {
+          throw const FormatException(
+              'Favorite address creation was not acknowledged');
+        }
+        final address =
+            FavoriteAddress.fromJson(Map<String, dynamic>.from(raw));
+        if (!_isValidFavoriteAddress(address) ||
+            !_sameFavoriteAddress(
+              address,
+              label: label,
+              title: title,
+              addressText: addressText,
+              lat: lat,
+              lng: lng,
+            )) {
+          throw const FormatException(
+              'Favorite address creation returned a different address');
+        }
+        return address;
+      } on FormatException catch (error) {
+        final authorization = response.requestOptions.headers['Authorization'];
+        final recovered = await _recoverCreatedFavoriteAddress(
+          authorization,
+          label: label,
+          title: title,
+          addressText: addressText,
+          lat: lat,
+          lng: lng,
+        );
+        if (recovered != null) return recovered;
+        throw FavoriteAddressMutationUnconfirmed(error);
+      }
+    } on DioException catch (error) {
+      if (!_favoriteWriteNeedsReconciliation(error)) rethrow;
+      final recovered = await _recoverCreatedFavoriteAddress(
+        error.requestOptions.headers['Authorization'],
+        label: label,
+        title: title,
+        addressText: addressText,
+        lat: lat,
+        lng: lng,
+      );
+      if (recovered != null) return recovered;
+      throw FavoriteAddressMutationUnconfirmed(error);
+    }
   }
 
   Future<void> deleteFavoriteAddress(String id) async {
     await _attachToken();
-    await _dio.delete<void>('/api/favorites/addresses/$id');
+    try {
+      await _dio.delete<void>('/api/favorites/addresses/$id');
+    } on DioException catch (error) {
+      if (!_favoriteDeleteNeedsReconciliation(error)) rethrow;
+      final addresses = await _readFavoriteAddressesForRecovery(
+        error.requestOptions.headers['Authorization'],
+      );
+      if (addresses != null && !addresses.any((address) => address.id == id)) {
+        return;
+      }
+      throw FavoriteAddressMutationUnconfirmed(error);
+    }
   }
+
+  bool _favoriteWriteNeedsReconciliation(DioException error) {
+    final status = error.response?.statusCode;
+    final uncertain = error.response == null &&
+        const {
+          DioExceptionType.connectionTimeout,
+          DioExceptionType.sendTimeout,
+          DioExceptionType.receiveTimeout,
+          DioExceptionType.connectionError,
+        }.contains(error.type);
+    return uncertain || (status != null && status >= 500 && status < 600);
+  }
+
+  bool _favoriteDeleteNeedsReconciliation(DioException error) =>
+      _favoriteWriteNeedsReconciliation(error) ||
+      error.response?.statusCode == 404;
+
+  Future<FavoriteAddress?> _recoverCreatedFavoriteAddress(
+    Object? authorization, {
+    required String label,
+    required String title,
+    required String addressText,
+    required double lat,
+    required double lng,
+  }) async {
+    final addresses = await _readFavoriteAddressesForRecovery(authorization);
+    if (addresses == null) return null;
+    for (final address in addresses) {
+      if (_sameFavoriteAddress(
+        address,
+        label: label,
+        title: title,
+        addressText: addressText,
+        lat: lat,
+        lng: lng,
+      )) {
+        return address;
+      }
+    }
+    return null;
+  }
+
+  Future<List<FavoriteAddress>?> _readFavoriteAddressesForRecovery(
+      Object? authorization) async {
+    if (authorization is! String || !authorization.startsWith('Bearer ')) {
+      return null;
+    }
+
+    Future<bool> stillOwnsSession() async {
+      if (_dio.options.headers['Authorization'] != authorization) return false;
+      final token = await _authStore.readToken();
+      return token != null &&
+          token.isNotEmpty &&
+          authorization == 'Bearer $token' &&
+          _dio.options.headers['Authorization'] == authorization;
+    }
+
+    try {
+      if (!await stillOwnsSession()) return null;
+      final response = await _dio.get<dynamic>(
+        '/api/favorites/addresses',
+        options: Options(headers: {'Authorization': authorization}),
+      );
+      if (!await stillOwnsSession()) return null;
+      return _parseFavoriteAddresses(response.data);
+    } catch (_) {
+      // A reconciliation read is evidence only. Never replay the write.
+      return null;
+    }
+  }
+
+  List<FavoriteAddress> _parseFavoriteAddresses(dynamic data) {
+    final raw = data is List
+        ? data
+        : data is Map && data['addresses'] is List
+            ? data['addresses'] as List
+            : null;
+    if (raw == null || raw.any((item) => item is! Map)) {
+      throw const FormatException('Invalid favorite address list');
+    }
+    final addresses = raw
+        .map((item) =>
+            FavoriteAddress.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList(growable: false);
+    if (addresses.any((address) => !_isValidFavoriteAddress(address))) {
+      throw const FormatException('Invalid favorite address');
+    }
+    return addresses;
+  }
+
+  bool _isValidFavoriteAddress(FavoriteAddress address) =>
+      address.id.trim().isNotEmpty &&
+      address.id != 'null' &&
+      address.label.trim().isNotEmpty &&
+      address.title.trim().isNotEmpty &&
+      address.addressText.trim().isNotEmpty &&
+      address.lat.isFinite &&
+      address.lng.isFinite;
+
+  bool _sameFavoriteAddress(
+    FavoriteAddress address, {
+    required String label,
+    required String title,
+    required String addressText,
+    required double lat,
+    required double lng,
+  }) =>
+      address.label == label &&
+      address.title == title &&
+      address.addressText == addressText &&
+      (address.lat - lat).abs() <= 0.000001 &&
+      (address.lng - lng).abs() <= 0.000001;
 
   Future<List<DriverPreference>> getDriverPreferences() async {
     await _attachToken();

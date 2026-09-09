@@ -119,6 +119,16 @@ async function main() {
   const driver = await login("+77000000000", "123456");
   const cancelledOrderId = await cancelExistingDriverOrder(driver.token);
   if (cancelledOrderId) mark("driver_cleanup", { cancelledOrderId });
+  // The seeded driver is intentionally reused by local manual QA and may
+  // currently be assigned to any approved region. Pin this isolated smoke
+  // trip to the same region as its pickup instead of depending on mutable
+  // state left by a previous device/browser session.
+  await request("/api/drivers/me/region", {
+    method: "PATCH",
+    token: driver.token,
+    body: { regionId: atakent.id }
+  });
+  mark("driver_region_selected", { region: atakent.code });
   await request("/api/drivers/me/status", { method: "PATCH", token: driver.token, body: { status: "FREE" } });
   mark("driver_online");
 
