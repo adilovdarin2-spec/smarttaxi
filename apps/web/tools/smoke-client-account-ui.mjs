@@ -59,7 +59,13 @@ try {
     ["settings", "Настройки"], ["about", "О приложении"], ["regions", "Регион обслуживания"]
   ]) {
     await section(key, label);
-    const screen = page.locator(".app-content > .screen-grid, .app-content > .client-simple-section").last();
+    // The wallet is intentionally its own first-class screen component rather
+    // than a generic account grid. Keep it inside the same real-browser pass
+    // so a wallet refactor cannot silently truncate QA for every section that
+    // follows it.
+    const screen = page.locator(
+      ".app-content > .screen-grid, .app-content > .client-simple-section, .app-content > .client-wallet-screen"
+    ).last();
     await screen.waitFor();
     await page.waitForTimeout(600);
     for (const width of [390, 360]) {
@@ -111,6 +117,19 @@ try {
       await page.locator(".settings-row-premium").filter({ hasText: "Безопасность" }).click();
       await page.locator(".legal-card").waitFor();
       await section("settings", "Настройки");
+    }
+    if (key === "regions") {
+      const regionNames = await page.locator(".region-selection-list > button strong").allTextContents();
+      assert.equal(regionNames.length, 13, "All active local-development regions must be visible");
+      for (const expected of [
+        "Атакент (Ильич)", "Мырзакент (Славянка)", "Жетысай (Джетысай)",
+        "Шымкент (Чимкент)", "Киров (Кирово)", "Асыката (Асықата)",
+        "Достык (Достық)", "Ынтымак (Ынтымақ)", "Бирлик (Бірлік)",
+        "Фирдоуси (Фердоуси)", "Жана Жол (Жаңа жол)",
+        "Мақтаарал (Мактаарал)", "Атамекен (Ата мекен)"
+      ]) {
+        assert(regionNames.includes(expected), `Missing active region: ${expected}`);
+      }
     }
     evidence.push({ key, headings: await screen.locator("h1,h2").allTextContents() });
     console.log(`Checked account screen: ${key}`);

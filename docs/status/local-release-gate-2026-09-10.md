@@ -173,6 +173,19 @@ private-LAN ports. PostgreSQL and Redis remain loopback-only. A Wi-Fi APK must b
 built with matching `API_BASE_URL`, `SOCKET_URL` and `WEB_BASE_URL`; this is
 still a local development setup, not a production deployment.
 
+The current cable-free artifact is
+`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-10.apk` (288,886,709 bytes,
+SHA-256 `a158079381c2eda56e3786a750454e26a5ec276a7877b161eb4585d10a70617b`).
+It targets API/socket `http://192.168.8.135:4002` and web
+`http://192.168.8.135:5176`; APK Signature Scheme v2 verifies with one Android
+debug signer. The passenger home now exposes the current service region as a
+compact switcher. If the initial region request failed, tapping it retries the
+real API request; a failed refresh no longer destroys a previously loaded
+catalogue. The real-browser account pass covers all 15 account sections and
+asserts all 13 active regions are visible. Installation and physical-device
+verification of this new artifact remain pending because the phone was not
+connected during this pass.
+
 ## Remaining external/public-release gates
 
 1. Official region exports with `rka,label,lat,lng` and an immutable,

@@ -232,6 +232,7 @@ class _PassengerShellState extends State<PassengerShell>
   bool _loading = false;
   bool _previewLoading = false;
   bool _locationLoading = false;
+  bool _regionsLoading = false;
   bool _mapTilesUnavailable = false;
   bool _startupRegionPromptShown = false;
   bool _locationServiceDisabled = false;
@@ -908,6 +909,8 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _loadRegions() async {
+    if (_regionsLoading) return;
+    if (mounted) setState(() => _regionsLoading = true);
     try {
       final regions = await widget.api.getActiveRegions();
       if (!mounted) return;
@@ -948,13 +951,30 @@ class _PassengerShellState extends State<PassengerShell>
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _regions = const [];
-        _selectedRegion = null;
+        // A retry failure must not throw away a previously usable catalogue.
+        // On first launch both values are already empty; after a transient
+        // outage this preserves the regions the rider was actually using.
+        if (_regions.isEmpty) _selectedRegion = null;
         _mapCenter ??= _atakentFallbackCenter;
       });
       _maybeAskLocationOnStart();
+    } finally {
+      if (mounted) setState(() => _regionsLoading = false);
     }
     unawaited(_refreshNearbyDrivers(silent: true));
+  }
+
+  Future<void> _openRegionSelector() async {
+    if (_regions.isEmpty) await _loadRegions();
+    if (!mounted) return;
+    if (_regions.isEmpty) {
+      AppToast.showError(
+        context,
+        AppLocalizations.of(context).passengerActiveRegionsNotLoadedError,
+      );
+      return;
+    }
+    await _chooseRegion();
   }
 
   Future<void> _loadIntercityRoutes(String originRegionId) async {
@@ -2892,6 +2912,11 @@ class _PassengerShellState extends State<PassengerShell>
                       onConfirm: _confirmMapPointSelection,
                     )
                   : _OrderSheet(
+                      regionName: _selectedRegion?.name ??
+                          l10n.passengerSettingsRegionNotSelected,
+                      regionCount: _regions.length,
+                      regionsLoading: _regionsLoading,
+                      onRegionTap: () => unawaited(_openRegionSelector()),
                       pickupSource: _pickupSource,
                       dropoffSource: _dropoffSource,
                       pickupLabel: _pickupSource == PointSource.none
@@ -5142,7 +5167,7 @@ class _PassengerShellState extends State<PassengerShell>
               icon: Icons.location_city_outlined,
               text: _selectedRegion?.name ??
                   l10n.passengerSettingsRegionNotSelected,
-              onTap: () => unawaited(_chooseRegion()),
+              onTap: () => unawaited(_openRegionSelector()),
             ),
             _SettingsRow(
               title: l10n.passengerSettingsLogoutTitle,
@@ -8739,8 +8764,99 @@ class _OrderNoteRow extends StatelessWidget {
   }
 }
 
+class _RegionSwitcher extends StatelessWidget {
+  const _RegionSwitcher({
+    required this.regionName,
+    required this.regionCount,
+    required this.loading,
+    required this.onTap,
+  });
+
+  final String regionName;
+  final int regionCount;
+  final bool loading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final accessibleLabel = '${l10n.passengerSettingsRegionLabel}: $regionName';
+    return Semantics(
+      button: true,
+      label: accessibleLabel,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: loading ? null : onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            height: 42,
+            constraints: const BoxConstraints(maxWidth: 136),
+            padding: const EdgeInsets.symmetric(horizontal: 11),
+            decoration: BoxDecoration(
+              color: palette.brandSurface,
+              border: Border.all(color: palette.brand.withValues(alpha: 0.16)),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (loading)
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: palette.brandDeep,
+                    ),
+                  )
+                else
+                  Icon(
+                    regionCount == 0
+                        ? Icons.refresh_rounded
+                        : Icons.location_on_outlined,
+                    size: 18,
+                    color: palette.brandDeep,
+                  ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    regionName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: palette.brandDeep,
+                      fontSize: 12.5,
+                      height: 1.1,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (!loading && regionCount > 0) ...[
+                  const SizedBox(width: 3),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: palette.brandDeep,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OrderSheet extends StatelessWidget {
   const _OrderSheet({
+    required this.regionName,
+    required this.regionCount,
+    required this.regionsLoading,
+    required this.onRegionTap,
     required this.pickupSource,
     required this.dropoffSource,
     required this.pickupLabel,
@@ -8772,6 +8888,10 @@ class _OrderSheet extends StatelessWidget {
     required this.cta,
   });
 
+  final String regionName;
+  final int regionCount;
+  final bool regionsLoading;
+  final VoidCallback onRegionTap;
   final PointSource pickupSource;
   final PointSource dropoffSource;
   final String pickupLabel;
@@ -8954,9 +9074,23 @@ class _OrderSheet extends StatelessWidget {
               children: [
                 _SheetHandle(dark: isDark),
                 if (!routeSelected) ...[
-                  _OrderSheetHeading(
-                    title: l10n.passengerHomeWhereToTitle,
-                    eyebrow: l10n.passengerHomeGreeting,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: _OrderSheetHeading(
+                          title: l10n.passengerHomeWhereToTitle,
+                          eyebrow: l10n.passengerHomeGreeting,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _RegionSwitcher(
+                        regionName: regionName,
+                        regionCount: regionCount,
+                        loading: regionsLoading,
+                        onTap: onRegionTap,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   _SheetAddressEntryCard(
