@@ -2,8 +2,7 @@
 // This check needs no credentials and never sends a notification or request.
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import admin from "firebase-admin";
-import { deleteApp } from "firebase-admin/app";
+import { deleteApp, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 
 const require = createRequire(import.meta.url);
@@ -27,12 +26,12 @@ for (const dependency of ["express", "body-parser"]) {
     `${dependency} must resolve the patched qs version`);
 }
 
-// Match the application's namespace initialization; a bare modular app does
-// not have the legacy namespace service accessors that admin.messaging uses.
-const app = admin.initializeApp({ projectId: "smarttaxi-offline-runtime-check" }, "runtime-check");
+// Match the application's modular initialization without credentials or a
+// network request. Firebase Admin 14 intentionally removed legacy namespace
+// service accessors such as admin.messaging().
+const app = initializeApp({ projectId: "smarttaxi-offline-runtime-check" }, "runtime-check");
 try {
   const messaging = getMessaging(app);
-  assert.equal(admin.messaging(app), messaging);
   assert.equal(messaging.app, app);
   assert.equal(typeof messaging.sendEachForMulticast, "function");
 } finally {

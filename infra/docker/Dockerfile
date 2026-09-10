@@ -22,6 +22,9 @@ COPY apps/api/src ./apps/api/src
 COPY apps/api/data ./apps/api/data
 COPY packages/shared/src ./packages/shared/src
 WORKDIR /app/apps/api
+# Prove the exact production dependency set can initialize Firebase Messaging
+# while the unused optional Google Cloud SDKs stay out of the image.
+RUN node src/tools/runtime-dependencies-check.js
 # Keep the existing upload location/mount compatible while retaining npm's
 # workspace layout (including any nested dependencies introduced in the lock).
 RUN mkdir -p /app/uploads && ln -s /app/uploads uploads

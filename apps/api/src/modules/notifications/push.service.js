@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
-import admin from "firebase-admin";
+import { cert, initializeApp } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 import { env } from "../../config/env.js";
 
 let firebaseApp = null;
@@ -30,8 +31,8 @@ function getApp() {
       ? env.FIREBASE_SERVICE_ACCOUNT_JSON
       : readFileSync(env.FIREBASE_SERVICE_ACCOUNT_PATH, "utf8");
     const serviceAccount = JSON.parse(raw);
-    firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+    firebaseApp = initializeApp({
+      credential: cert(serviceAccount)
     });
     console.log(`[push] Firebase Admin initialized from ${source}`);
   } catch (error) {
@@ -61,7 +62,7 @@ export async function sendPushToTokens(tokens, { title, body, data = {} }) {
   const app = getApp();
   if (!app || tokens.length === 0) return { staleTokens: [] };
 
-  const response = await admin.messaging(app).sendEachForMulticast({
+  const response = await getMessaging(app).sendEachForMulticast({
     tokens,
     notification: { title, body },
     data: Object.fromEntries(
