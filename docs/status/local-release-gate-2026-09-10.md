@@ -118,6 +118,17 @@ external prerequisites below into completed work.
   130 tests still execute concurrently, but the run no longer emits misleading
   `server is being restarted or closed` dep-scan errors after a sibling test
   closes its own middleware server.
+- A fresh full regional route pass completed against the local Docker API on
+  2026-09-10: 37 requests produced 34 Economy/Delivery previews across all 13
+  regions plus intercity fixtures, with no failures. The only review item is
+  Maktaaral: public OSRM returns one 2.569 km/340 s route for two points about
+  255 m apart (endpoint snaps 60 m and 13 m). This is a provider road-graph/on-
+  road verification boundary, not an alternative-selection defect; SmartTaxi
+  must not invent an unverified shortcut.
+- The passenger browser smoke was repeated against the rebuilt local stack:
+  exact building/map selection, region recentering, two tariffs, payment sheet,
+  responsive 390x844/360x740 layouts and lost-create-response recovery passed.
+  The isolated local order was cancelled by the script after verification.
 
 ## Fresh Android QA artifact
 
@@ -136,15 +147,17 @@ external prerequisites below into completed work.
   `60a7e50aba6c8b0b42287e730d254aa9787c4f1a2d952bb8170d00c1bb1d60d3`.
   `jarsigner -verify` reports `jar verified`; no Play upload was performed.
 
-## Remaining device gate
+## Fresh physical-device install
 
-Both available SDK copies of `adb devices -l` returned an empty device list,
-including after `adb start-server`. A Windows PnP inspection also found no
-present Android, ADB, MTP, or portable-device interface; only generic USB
-composite/hub devices were exposed. Therefore no install, port reverse or new
-physical screenshots were attempted. When a device appears, the remaining local
-device task is to install this exact APK, reverse ports 4001/5175 and repeat the
-final passenger/driver recovery plus navigator/action checks.
+The connected Android phone (`2409BRN2CY`) appeared in ADB on 2026-09-10. The
+exact APK above was installed with `adb install -r` successfully; package
+`kz.smarttaxi.app` reports version `1.0.0`, target SDK 36 and update time
+2026-09-10 16:38 local. ADB reverse for ports 4001 and 5175 is active, the local
+Docker stack is healthy, and `MainActivity` was launched and confirmed as the
+foreground activity. A post-install screenshot confirms the native Russian
+login screen renders without clipping. Full moving-road/background/TTS/push
+coverage remains a separate physical acceptance gate; this install is local QA,
+not a production publication.
 
 ## Remaining external/public-release gates
 
