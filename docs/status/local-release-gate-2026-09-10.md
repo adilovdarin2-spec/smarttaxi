@@ -14,7 +14,7 @@ external prerequisites below into completed work.
   121,361 catalogue rows across 13 regions.
 - Web: 127/127 tests passed; Vite production build and bundled MapLibre worker
   check passed.
-- Flutter: `flutter analyze` reported no issues; 276/276 tests passed. The
+- Flutter: `flutter analyze` reported no issues; 277/277 tests passed. The
   suite includes a fail-closed Android API/signing/cleartext policy guard.
 - Native pickup/destination search now requests the Android street-address
   keyboard and full-address autofill hint, matching the web search semantics.
@@ -35,6 +35,12 @@ external prerequisites below into completed work.
   [`#804`](https://github.com/adilovdarin2-spec/smarttaxi/actions/runs/34452223996)
   passed all four jobs (`api`, `web`, `operations`, `mobile`) with no workflow
   annotations after that migration.
+- Remote GitHub Actions run
+  [`#810`](https://github.com/adilovdarin2-spec/smarttaxi/actions/runs/34468012222)
+  passed all four jobs after the mobile gate was strengthened to compile a real
+  debug APK on a clean runner. The first strict run correctly exposed the
+  absent ignored Firebase file; debug builds no longer fabricate or require
+  owner credentials, while release builds fail closed without the real file.
 - Production API dependency audit (`omit=dev,optional`): 0 vulnerabilities;
   Firebase Admin 14 modular Messaging is verified inside the minimal image at
   Docker build time.

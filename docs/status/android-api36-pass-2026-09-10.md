@@ -18,7 +18,7 @@ Google Play after 31 August 2026. The requirement is documented by the
 ## Verification
 
 - Flutter analyze: no issues.
-- Full Flutter suite: 276/276 passed, including the 4 Android release policy
+- Full Flutter suite: 277/277 passed, including the 5 Android release policy
   assertions.
 - Debug APK build: successful with local API/socket `127.0.0.1:4001` and web
   `127.0.0.1:5175`.
@@ -55,3 +55,12 @@ contents were not printed, copied into the repository or modified.
 
 The `mobile` GitHub Actions job now also runs a real debug APK compilation after
 analyze/tests, so a clean runner must resolve and compile the Android 16 target.
+The first clean compilation exposed that the ignored, owner-controlled
+`google-services.json` had been required even for debug builds. Gradle now
+resolves but conditionally applies the Google Services plugin: a clean debug
+checkout compiles without inventing Firebase credentials, while any release
+task still fails closed when either Firebase configuration or signing material
+is absent. Local debug and signed release bundle builds both passed after that
+change. Remote GitHub Actions
+[`#810`](https://github.com/adilovdarin2-spec/smarttaxi/actions/runs/34468012222)
+passed `api`, `web`, `operations` and the clean-runner `mobile` APK build.
