@@ -62,7 +62,9 @@ external prerequisites below into completed work.
 - The physical-device helper now recognizes the exact fresh local CASH fixture
   created by its own client-order command. Strict environment, loopback, fixture,
   age and active-order guards remain in place; its policy and command guards
-  pass 7/7 and 5/5 assertions respectively.
+  pass 7/7 and 5/5 assertions respectively. A fresh fixture also completed the
+  entire guarded lifecycle against Docker port 4001 and cleanup returned the
+  seed driver to `OFFLINE`.
 
 ## Fresh Android QA artifact
 

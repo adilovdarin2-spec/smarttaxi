@@ -27,7 +27,12 @@ the driver lifecycle.
   login or order mutation.
 - Complete API test chain passed, including 121,361 address rows across 13
   regions.
-- These checks did not create or mutate a database order.
+- A fresh generated fixture was then exercised end to end against the rebuilt
+  Docker API on port 4001: `inspect` found it and the guarded helper advanced it
+  through `DRIVER_FOUND`, approach, arrival, waiting, trip, completion and
+  `PAID`; the driver was returned to `OFFLINE`.
+- The unit and command-guard checks did not create or mutate a database order.
+  Only the explicitly described end-to-end run changed local development data.
 
 Installation and live lifecycle verification still require a device exposed to
 ADB. This report does not claim that the current APK was installed.
