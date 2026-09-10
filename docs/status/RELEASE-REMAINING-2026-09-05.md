@@ -95,6 +95,7 @@ these warnings did not prevent the current builds.
 ## Evidence index
 
 - [Current local release gate](local-release-gate-2026-09-10.md)
+- [Web map, address and route visual pass](web-map-route-visual-pass-2026-09-10.md)
 - [Physical-device QA helper safety and lifecycle fix](physical-device-qa-harness-pass-2026-09-10.md)
 - [Compatible Flutter dependency refresh](flutter-dependency-refresh-2026-09-10.md)
 - [Compatible Node dependency refresh](node-compatible-dependency-refresh-2026-09-10.md)
