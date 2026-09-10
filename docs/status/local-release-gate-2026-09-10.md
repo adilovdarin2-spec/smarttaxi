@@ -129,6 +129,12 @@ external prerequisites below into completed work.
   exact building/map selection, region recentering, two tariffs, payment sheet,
   responsive 390x844/360x740 layouts and lost-create-response recovery passed.
   The isolated local order was cancelled by the script after verification.
+- Building reverse lookup now tolerates at most five metres between an
+  address/entrance node and the selected vector-tile footprint. This covers
+  real OSM tile-edge simplification without assigning an address from the next
+  house: regression fixtures accept a 3-4 m edge gap and still reject a
+  neighbouring address about 17 m away. API tests, 131 web tests and the web
+  production build pass; the rebuilt local Docker API/web are healthy.
 
 ## Fresh Android QA artifact
 

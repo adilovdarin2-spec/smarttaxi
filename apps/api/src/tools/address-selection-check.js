@@ -161,6 +161,25 @@ const missingBuildingAddress = await reverseAddress({ ...PIN, building },
   async () => ({ ok:true, async json() { return {lat:neighbouringHouse.lat,lon:neighbouringHouse.lng,address:{road:'улица Абая',house_number:'22'}}; } }),
   gazetteer([neighbouringHouse]));
 assert.equal(missingBuildingAddress.fallback, true, 'a neighbour from both local and remote sources cannot name this building');
+const edgeAddress = { ...HOUSE, label: 'улица Абая, 24', lat: PIN.lat, lng: 68.51996 };
+const simplifiedEdge = await reverseAddress(
+  { ...PIN, building },
+  unavailable,
+  gazetteer([edgeAddress])
+);
+assert.equal(simplifiedEdge.label, edgeAddress.label, 'an address node a few metres outside a simplified tile footprint still names that building');
+assert.equal(simplifiedEdge.matchKind, 'selected-building');
+const remoteSimplifiedEdge = await reverseAddress(
+  { ...PIN, building },
+  async () => ({ ok: true, async json() { return {
+    lat: edgeAddress.lat,
+    lon: edgeAddress.lng,
+    address: { road: 'улица Абая', house_number: '24', village: 'Мырзакент' }
+  }; } }),
+  gazetteer([])
+);
+assert.match(remoteSimplifiedEdge.label, /^улица Абая, 24(?:,|$)/, 'a provider-confirmed address gets the same small edge tolerance');
+assert.equal(remoteSimplifiedEdge.fallback, false);
 await assert.rejects(() => reverseAddress({ ...PIN, building: '{bad JSON' }, unavailable, gazetteer([])), {code:'INVALID_SELECTED_BUILDING'});
 await assert.rejects(() => reverseAddress({ ...PIN, lat: PIN.lat + 0.001, building }, unavailable, gazetteer([])), {code:'INVALID_SELECTED_BUILDING'});
 

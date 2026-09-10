@@ -47,6 +47,41 @@ export function pointInBuilding(point, geometry) {
   return polygons.some(rings => inRing(point, rings[0]) && !rings.slice(1).some(ring => inRing(point, ring)));
 }
 
+// Address nodes and entrances can sit a few metres outside a vector-tile
+// footprint after tile simplification. Measure the real gap to the polygon
+// edge so the backend can tolerate that small cartographic mismatch without
+// borrowing an address from a neighbouring building.
+export function distanceToBuildingMeters(point, geometry) {
+  if (!geometry || !Number.isFinite(point?.lat) || !Number.isFinite(point?.lng)) return Infinity;
+  if (pointInBuilding(point, geometry)) return 0;
+  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+  if (!Array.isArray(polygons)) return Infinity;
+  const metersPerLatDegree = 111_132;
+  const metersPerLngDegree = 111_320 * Math.cos((point.lat * Math.PI) / 180);
+  let nearest = Infinity;
+  for (const rings of polygons) {
+    if (!Array.isArray(rings)) continue;
+    for (const ring of rings) {
+      if (!Array.isArray(ring)) continue;
+      for (let index = 1; index < ring.length; index += 1) {
+        const start = ring[index - 1];
+        const end = ring[index];
+        if (!Array.isArray(start) || !Array.isArray(end)) continue;
+        const ax = (start[0] - point.lng) * metersPerLngDegree;
+        const ay = (start[1] - point.lat) * metersPerLatDegree;
+        const bx = (end[0] - point.lng) * metersPerLngDegree;
+        const by = (end[1] - point.lat) * metersPerLatDegree;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const denominator = dx * dx + dy * dy;
+        const t = denominator > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / denominator)) : 0;
+        nearest = Math.min(nearest, Math.hypot(ax + t * dx, ay + t * dy));
+      }
+    }
+  }
+  return nearest;
+}
+
 export function buildingAtPoint(features, point) {
   for (const feature of features) {
     // Vector tiles merge many separate houses into one MultiPolygon. The

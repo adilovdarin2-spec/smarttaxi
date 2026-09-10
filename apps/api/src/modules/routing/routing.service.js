@@ -1,6 +1,6 @@
 import https from "node:https";
 import { createHash } from "node:crypto";
-import { normalizeBuildingGeometry, pointInBuilding } from '../../../../../packages/shared/src/building-selection.js';
+import { distanceToBuildingMeters, normalizeBuildingGeometry, pointInBuilding } from '../../../../../packages/shared/src/building-selection.js';
 import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors.js";
 import { redis } from "../../db/redis.js";
@@ -1657,6 +1657,15 @@ function looksLikeRoadCode(label) {
 }
 
 const REVERSE_ADDRESS_RADIUS_METERS = 60;
+// OpenMapTiles simplifies footprint edges independently from OSM address
+// nodes. A very small tolerance keeps a door/house number on that edge tied
+// to the selected building, while the existing exact-footprint rule still
+// rejects neighbouring houses across a normal yard or street.
+const BUILDING_ADDRESS_EDGE_TOLERANCE_METERS = 5;
+
+function belongsToSelectedBuilding(point, building) {
+  return !building || distanceToBuildingMeters(point, building) <= BUILDING_ADDRESS_EDGE_TOLERANCE_METERS;
+}
 
 /// The nearest harvested address to a point, for when the geocoders answer
 /// with a road number. Reads from the same gazetteer the search box uses, so
@@ -1699,7 +1708,7 @@ async function nearestGazetteerAddress(
     .filter(item => !looksLikeRoadCode(item.label))
     .map(item => ({ ...item, distance: distanceKmBetween(point, item) * 1000 }))
     .filter(item => item.distance <= maxMeters)
-    .filter(item => !building || pointInBuilding({ lat: Number(item.lat), lng: Number(item.lng) }, building))
+    .filter(item => belongsToSelectedBuilding({ lat: Number(item.lat), lng: Number(item.lng) }, building))
     .sort((a, b) => a.distance - b.distance)[0];
   if (!row) return null;
   const label = String(row.label || "").trim();
@@ -1808,7 +1817,7 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
     const bareStreet = suggestion.kind === 'street' || (!/\d/.test(label) &&
       /^(?:ул\.?|улица|проспект|переулок|бульвар|шоссе|көшесі|даңғылы|көше)/i.test(label));
     const tooFar = distanceKmBetween(point, suggestion) * 1000 > reverseRadius ||
-      (building && !pointInBuilding(suggestion, building));
+      !belongsToSelectedBuilding(suggestion, building);
     const local = generic || bareStreet || tooFar
       ? await lookupLocal(bareStreet)
       : null;

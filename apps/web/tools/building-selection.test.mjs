@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeBuildingGeometry, pointInBuilding, buildingAtPoint } from '../../../packages/shared/src/building-selection.js';
+import { normalizeBuildingGeometry, pointInBuilding, buildingAtPoint, distanceToBuildingMeters } from '../../../packages/shared/src/building-selection.js';
 
 // An L-shaped building with a courtyard: both differ from its bounding box.
 const outline = [[68,40],[68.003,40],[68.003,40.001],[68.001,40.001],[68.001,40.003],[68,40.003],[68,40]];
@@ -29,4 +29,12 @@ test('a tile merged MultiPolygon selects one building, not all its houses', () =
   const merged = {type:'MultiPolygon',coordinates:[...Array(100).fill(other),geometry.coordinates]};
   assert.equal(normalizeBuildingGeometry(merged), null, 'the whole tile is too large for a selection');
   assert.deepEqual(buildingAtPoint([{geometry:merged}], {lat:40.002,lng:68.0005}), geometry);
+});
+
+test('distance to a footprint distinguishes a simplified edge from a neighbouring house', () => {
+  assert.equal(distanceToBuildingMeters({lat:40.002,lng:68.0005}, geometry), 0);
+  const justOutside = distanceToBuildingMeters({lat:40.002,lng:67.99996}, geometry);
+  const neighbour = distanceToBuildingMeters({lat:40.002,lng:67.9998}, geometry);
+  assert(justOutside > 3 && justOutside < 4, 'a four-degree-decimal tile gap is only a few metres');
+  assert(neighbour > 16, 'a separate address across the yard stays well outside the tolerance');
 });
