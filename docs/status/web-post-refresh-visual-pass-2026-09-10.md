@@ -25,6 +25,9 @@ payment, SMS or order creation was used.
   action remained aligned and readable; no order was submitted.
 - Returning to driver mode restored the offline driver home without stale
   passenger data.
+- Pickup and destination search fields now expose distinct accessible names to
+  assistive technology and explicit street-address/search keyboard semantics.
+  The regression suite covers both labels and the mobile input hints.
 
 ## Map presentation
 

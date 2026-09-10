@@ -12,7 +12,7 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 124/124 tests passed; Vite production build and bundled MapLibre worker
+- Web: 125/125 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
 - Compatible Flutter runtime dependencies were refreshed and the resulting
@@ -48,6 +48,9 @@ external prerequisites below into completed work.
 - Read-only route selection was repeated after the dependency refresh in
   Atakent, Zhetysay and Myrzakent. API geometry/metrics matched the minimum-ETA
   OSRM candidate, and moving-driver departure bearings stayed constrained.
+- Pickup and destination address-search inputs have distinct accessible names,
+  plus mobile street-address/search keyboard hints; the new regression test is
+  included in the 125-test web gate above.
 
 ## Fresh Android QA artifact
 

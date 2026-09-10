@@ -3182,7 +3182,15 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], on
 
         {!mapSelectionActive && <label className="address-picker-searchbar">
           <Icon name="search" size={20} />
-          <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Введите улицу, дом или место" />
+          <input
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            placeholder="Введите улицу, дом или место"
+            aria-label={mode === "pickup" ? "Поиск точки подачи" : "Поиск пункта назначения"}
+            autoComplete="street-address"
+            inputMode="search"
+            enterKeyHint="search"
+          />
         </label>}
 
         <button type="button" className="address-picker-mode-toggle" onClick={() => setMapSelectionActive(value => !value)}>
