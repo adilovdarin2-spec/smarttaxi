@@ -43,6 +43,7 @@ import {
   getAdminSupport,
   getAdminTariffAnalytics,
   getAdminTariffs,
+  getToken,
   loginUser,
   markOperatorOrderStatus,
   previewAdminTariffPrice,
@@ -53,6 +54,7 @@ import {
   setAdminDriverCommissionOverride,
   setAdminPromoCodeStatus,
   setAdminTariffStatus,
+  subscribeSessionChanges,
   toggleAdminRegion,
   unblockAdminDriver,
   expireAdminRoadAlert,
@@ -62,6 +64,7 @@ import {
   updateAdminSettings,
   updateAdminTariff
 } from "../../lib/mvpApi.js";
+import { sessionSnapshotGuard } from "../../lib/browserSession.js";
 import { sanitizeAddressText } from "../../lib/text.js";
 
 const adminRoles = new Set(["OWNER", "FINANCE"]);
@@ -404,15 +407,44 @@ export default function AdminApp() {
   const [ratingScope, setRatingScope] = useState("all");
   const [ratingRaffleId, setRatingRaffleId] = useState("");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
+  const [sessionRevision, setSessionRevision] = useState(0);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+  const protectSession = useCallback(
+    () => sessionSnapshotGuard(getToken, () => mountedRef.current),
+    []
+  );
+  const resetAdminSession = useCallback((accessMessage = "") => {
+    setUser(null);
+    setDashboard(null);
+    setBootLoading(false);
+    setAccessError(accessMessage);
+    setLoginAuth({ phone: "", password: "" });
+    setLoginLoading(false);
+    setLoginError("");
+    setPageState({ loading: false, error: "", payload: null });
+    setModal(null);
+    setActionState({ loading: false, error: "", message: "" });
+    setDriverDetail({ loading: false, error: "", payload: null });
+    setLoadingMore(false);
+    setActive("dashboard");
+    setQuery("");
+    setDrawerOpen(false);
+  }, []);
 
   const canAccess = user && adminRoles.has(user.role);
   const currentPage = pageTitles[active] || pageTitles.dashboard;
 
   const loadDashboard = useCallback(async () => {
+    const isCurrent = protectSession();
     setBootLoading(true);
     setAccessError("");
     try {
       const data = await getAdminDashboard();
+      if (!isCurrent()) return;
       const resolvedUser = data.user || data.dashboard?.user || null;
       setDashboard(data);
       setUser(resolvedUser);
@@ -422,15 +454,16 @@ export default function AdminApp() {
         setAccessError("Текущий аккаунт не имеет доступа к этой панели. Войдите под владельцем или финансовым пользователем.");
       }
     } catch (error) {
-      setAccessError(readError(error));
+      if (isCurrent()) setAccessError(readError(error));
     } finally {
-      setBootLoading(false);
+      if (isCurrent()) setBootLoading(false);
     }
-  }, []);
+  }, [protectSession]);
 
   const loadPage = useCallback(async (page) => {
+    const isCurrent = protectSession();
     if (page === "dashboard") {
-      setPageState({ loading: false, error: "", payload: null });
+      if (isCurrent()) setPageState({ loading: false, error: "", payload: null });
       return;
     }
 
@@ -611,11 +644,11 @@ export default function AdminApp() {
     setPageState({ loading: true, error: "", payload: null });
     try {
       const payload = await loader();
-      setPageState({ loading: false, error: "", payload });
+      if (isCurrent()) setPageState({ loading: false, error: "", payload });
     } catch (error) {
-      setPageState({ loading: false, error: readError(error), payload: null });
+      if (isCurrent()) setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   // Fetches the next page from the server and appends it to whatever's
   // already loaded under itemsKey (e.g. "orders"), rather than replacing
@@ -625,6 +658,7 @@ export default function AdminApp() {
   // the dispatch picker) are left untouched.
   const [loadingMore, setLoadingMore] = useState(false);
   async function loadMoreItems(itemsKey, fetchNextPage) {
+    const isCurrent = protectSession();
     const payload = pageState.payload;
     if (!payload) return;
     const currentItems = payload[itemsKey] || [];
@@ -632,6 +666,7 @@ export default function AdminApp() {
     setLoadingMore(true);
     try {
       const data = await fetchNextPage(currentItems.length);
+      if (!isCurrent()) return;
       setPageState(current => ({
         ...current,
         payload: {
@@ -643,26 +678,32 @@ export default function AdminApp() {
         }
       }));
     } catch (error) {
-      setActionState({ loading: false, error: readError(error), message: "" });
+      if (isCurrent()) setActionState({ loading: false, error: readError(error), message: "" });
     } finally {
-      setLoadingMore(false);
+      if (isCurrent()) setLoadingMore(false);
     }
   }
 
   const refreshDriverDetail = useCallback(async (driverId) => {
     if (!driverId) return;
+    const isCurrent = protectSession();
     setDriverDetail({ loading: true, error: "", payload: null });
     try {
       const payload = await getAdminDriverDetail(driverId);
-      setDriverDetail({ loading: false, error: "", payload });
+      if (isCurrent()) setDriverDetail({ loading: false, error: "", payload });
     } catch (error) {
-      setDriverDetail({ loading: false, error: readError(error), payload: null });
+      if (isCurrent()) setDriverDetail({ loading: false, error: readError(error), payload: null });
     }
-  }, []);
+  }, [protectSession]);
+
+  useEffect(() => subscribeSessionChanges(({ token }) => {
+    resetAdminSession(token ? "Проверяем права нового аккаунта…" : "");
+    setSessionRevision(revision => revision + 1);
+  }), [resetAdminSession]);
 
   useEffect(() => {
     loadDashboard();
-  }, [loadDashboard]);
+  }, [loadDashboard, sessionRevision]);
 
   // Fires the instant any request comes back 401/SESSION_SUPERSEDED --
   // another device logged into this account and the backend invalidated
@@ -757,10 +798,7 @@ export default function AdminApp() {
     // which was especially wrong for the new forced-logout-on-another-
     // device-login path: getting kicked out of the panel shouldn't dump
     // you on the homepage.
-    setUser(null);
-    setDashboard(null);
-    setAccessError("");
-    setLoginAuth({ phone: "", password: "" });
+    resetAdminSession();
   }
 
   async function handleLogin(event) {
@@ -790,12 +828,13 @@ export default function AdminApp() {
   // { rethrow: true } from those 5 save functions lets their existing
   // local catch actually fire.
   async function runAction(work, successMessage, { rethrow = false } = {}) {
+    const isCurrent = protectSession();
     setActionState({ loading: true, error: "", message: "" });
     try {
       await work();
-      setActionState({ loading: false, error: "", message: successMessage || "Готово" });
+      if (isCurrent()) setActionState({ loading: false, error: "", message: successMessage || "Готово" });
     } catch (error) {
-      setActionState({ loading: false, error: readError(error), message: "" });
+      if (isCurrent()) setActionState({ loading: false, error: readError(error), message: "" });
       if (rethrow) throw error;
     }
   }
@@ -1103,7 +1142,7 @@ export default function AdminApp() {
 
   if (bootLoading) {
     return (
-      <main className="admin-control-shell">
+      <main className="admin-control-shell admin-access-shell">
         <section className="admin-access-card">
           <SmartTaxiLogo large />
           <h1>Загружаем панель</h1>
@@ -1116,7 +1155,7 @@ export default function AdminApp() {
 
   if (!canAccess) {
     return (
-      <main className="admin-control-shell">
+      <main className="admin-control-shell admin-access-shell">
         <section className="admin-access-card">
           <SmartTaxiLogo large />
           <h1>Войдите в панель управления</h1>

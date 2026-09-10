@@ -5,6 +5,7 @@ import {
   SESSION_TOKEN_KEY,
   readSessionToken,
   removeSessionToken,
+  sessionSnapshotGuard,
   subscribeSessionChanges,
   writeSessionToken,
 } from "../src/lib/browserSession.js";
@@ -84,4 +85,24 @@ test("passenger identity accepts only a client role and preserves the base role"
     baseRole: "DRIVER",
   });
   assert.deepEqual(EMPTY_RIDER, { name: "Пассажир", phone: "" });
+});
+
+test("session snapshot rejects late admin data after login, logout or unmount", () => {
+  let token = "owner-token";
+  let mounted = true;
+  const current = sessionSnapshotGuard(() => token, () => mounted);
+  assert.equal(current(), true);
+  token = "client-token";
+  assert.equal(current(), false);
+
+  const replacement = sessionSnapshotGuard(() => token, () => mounted);
+  mounted = false;
+  assert.equal(replacement(), false);
+
+  mounted = true;
+  token = "";
+  const anonymous = sessionSnapshotGuard(() => token, () => mounted);
+  assert.equal(anonymous(), true);
+  token = "driver-token";
+  assert.equal(anonymous(), false);
 });

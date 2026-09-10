@@ -4521,6 +4521,12 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.admin-control-shell.admin-access-shell {
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: clamp(16px, 4vw, 48px);
+}
+
 .admin-control-shell button,
 .admin-control-shell input,
 .admin-control-shell select {
@@ -4837,6 +4843,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: min(100%, 360px);
   margin-top: 18px;
 }
 

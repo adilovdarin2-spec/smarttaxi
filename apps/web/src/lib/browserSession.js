@@ -56,3 +56,8 @@ export function subscribeSessionChanges(listener, {
     eventTarget.removeEventListener("storage", onStorageChange);
   };
 }
+
+export function sessionSnapshotGuard(readToken, isAlive = () => true) {
+  const token = readToken();
+  return () => isAlive() && readToken() === token;
+}
