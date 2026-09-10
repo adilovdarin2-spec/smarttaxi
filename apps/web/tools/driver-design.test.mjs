@@ -12,7 +12,7 @@ test('driver surfaces keep addresses, action hierarchy and payment gates', async
   globalThis.window = { location: { hostname: '127.0.0.1' } };
   const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
   try {
-    const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel, DriverEmptyState } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
+    const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel, DriverEmptyState, DriverErrorNotice, DriverLoadUnavailable } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
     const order = { id: 'design-fixture', status: 'SEARCHING_DRIVER', tariff: 'Economy',
       estimatedPrice: 700, paymentMethod: 'CASH', distanceKm: 3.5, durationMin: 12,
       pickup: 'улица Бектасова, 12, главный вход со стороны двора', dropoff: 'улица Кожанова, 34' };
@@ -44,6 +44,22 @@ test('driver surfaces keep addresses, action hierarchy and payment gates', async
     assert.match(empty, /driver-core-empty-rich/);
     assert.match(empty, /No active trip/);
     assert.match(empty, /class="app-button secondary [^"]*"[^>]*>See orders/);
+    const recovery = renderToStaticMarkup(h(DriverErrorNotice, {
+      error: 'Не удалось подключиться. Проверьте интернет и попробуйте ещё раз.',
+      onRetry: () => {},
+    }));
+    assert.match(recovery, /role="alert"/);
+    assert.match(recovery, />Повторить</);
+    assert.match(
+      renderToStaticMarkup(h(DriverErrorNotice, {
+        error: 'Не удалось подключиться.', loading: true, onRetry: () => {},
+      })),
+      /disabled=""[^>]*>Проверяем…</,
+    );
+    const unavailable = renderToStaticMarkup(h(DriverLoadUnavailable));
+    assert.match(unavailable, /Не удалось загрузить смену/);
+    assert.match(unavailable, /суммы и заказы не показываются/);
+    assert.doesNotMatch(unavailable, /0(?:&nbsp;|\s)*₸|>0</);
   } finally {
     await server.close();
     if (previousWindow === undefined) delete globalThis.window;

@@ -5,6 +5,7 @@ import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import { useLiveDriverRouteState } from "../client/useLiveDriverRoute.js";
 import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
 import { driverLocationFeedback } from "./driverLocationFeedback.js";
+import { driverErrorMessage } from "./driverErrorPresentation.js";
 import DriverNavigator from "./DriverNavigator.jsx";
 import { driverRouteMeta } from "./driverRoutePresentation.js";
 import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress.js";
@@ -110,28 +111,6 @@ function roadAlertTypeLabel(type) {
   return ROAD_ALERT_TYPE_LABELS[type] || ROAD_ALERT_TYPE_LABELS.OTHER;
 }
 
-const ERROR_MESSAGES = {
-  INVALID_CREDENTIALS: "Неверный телефон или пароль",
-  DRIVER_REGION_NOT_SELECTED: "Выберите рабочий регион",
-  DRIVER_REGION_REQUIRED: "Выберите рабочий регион",
-  DRIVER_REGION_INACTIVE: "Регион временно отключен",
-  REGION_INACTIVE: "Регион временно отключен",
-  DRIVER_REGION_NOT_APPROVED: "Вы не одобрены для этого региона",
-  DRIVER_REGION_BLOCKED: "Работа в этом регионе заблокирована",
-  DRIVER_BLOCKED: "Профиль водителя заблокирован",
-  DRIVER_HAS_ACTIVE_ORDER: "Сначала завершите активный заказ",
-  DRIVER_OFFLINE: "Выйдите на линию, чтобы принять заказ",
-  DRIVER_ALREADY_HAS_ACTIVE_ORDER: "У вас уже есть активный заказ",
-  ORDER_REGION_MISMATCH: "Заказ относится к другому региону",
-  ORDER_ALREADY_ACCEPTED: "Заказ уже принят другим водителем",
-  ORDER_NOT_FOUND: "Заказ не найден",
-  DRIVER_PAYMENT_CONFIRMATION_FORBIDDEN: "Электронная оплата ожидает подтверждения платёжного сервиса",
-  SERVICE_UNAVAILABLE: "Сервис временно недоступен. Попробуйте ещё раз.",
-  INVALID_STATUS_TRANSITION: "Это действие сейчас недоступно",
-  FORBIDDEN: "Недостаточно прав для действия",
-  UNAUTHORIZED: "Войдите как водитель"
-};
-
 const STATUS_LABELS = {
   OFFLINE: "Не на линии",
   ONLINE: "На линии",
@@ -164,7 +143,19 @@ const PAYMENT_LABELS = {
 const TARIFF_LABELS = { Economy: "Эконом", Delivery: "Доставка" };
 
 function formatError(error) {
-  return ERROR_MESSAGES[error?.code] || error?.message || "Запрос не выполнен";
+  return driverErrorMessage(error);
+}
+
+export function DriverErrorNotice({ error, loading = false, onRetry }) {
+  if (!error) return null;
+  return (
+    <div className="driver-core-error driver-core-action-notice" role="alert">
+      <span>{error}</span>
+      <button type="button" disabled={loading} onClick={onRetry}>
+        {loading ? "Проверяем…" : "Повторить"}
+      </button>
+    </div>
+  );
 }
 
 function statusLabel(status) {
@@ -505,6 +496,16 @@ export function DriverEmptyState({
   );
 }
 
+export function DriverLoadUnavailable() {
+  return (
+    <DriverEmptyState
+      icon="refresh"
+      title="Не удалось загрузить смену"
+      text="Проверьте соединение и нажмите «Повторить» над картой. До ответа сервиса суммы и заказы не показываются."
+    />
+  );
+}
+
 export default function DriverApp() {
   const [logged, setLogged] = useState(Boolean(getToken()));
   const [auth, setAuth] = useState({ phone: "", password: "" });
@@ -657,6 +658,19 @@ export default function DriverApp() {
       ));
     }
   }, [protectSession]);
+
+  const retryDriverLoad = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await refreshDriver();
+      setError("");
+    } catch (error) {
+      setError(formatError(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, refreshDriver]);
 
   useEffect(() => {
     if (!logged) {
@@ -1056,7 +1070,13 @@ export default function DriverApp() {
   return (
     <PhoneFrame className={`driver-core-phone driver-design driver-core-view-${tab}`}>
       <DriverHeader driver={driver} activeOrder={activeOrder} currentRegion={currentRegion} onAccount={() => setAccountSection('home')} />
-      {mapTab && error && <div className="driver-core-error driver-core-action-notice" role="alert">{error}</div>}
+      {mapTab && (
+        <DriverErrorNotice
+          error={error}
+          loading={loading}
+          onRetry={retryDriverLoad}
+        />
+      )}
       {mapTab && <section className="driver-core-map-wrap">
         <MapView
           pickup={activeOrder?.pickupPoint}
@@ -1082,6 +1102,8 @@ export default function DriverApp() {
         )}
         {loading ? (
           <div className="driver-core-loading">Загружаем смену...</div>
+        ) : error && !driver ? (
+          <DriverLoadUnavailable />
         ) : (
           <>
             {!regions.length && regionsLoadFailed && (

@@ -12,7 +12,7 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 127/127 tests passed; Vite production build and bundled MapLibre worker
+- Web: 130/130 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 277/277 tests passed. The
   suite includes a fail-closed Android API/signing/cleartext policy guard.
@@ -79,13 +79,28 @@ external prerequisites below into completed work.
 - Read-only route selection was repeated after the dependency refresh in
   Atakent, Zhetysay and Myrzakent. API geometry/metrics matched the minimum-ETA
   OSRM candidate, and moving-driver departure bearings stayed constrained.
+- A second read-only route pass after the final Android CI fix again matched
+  the provider's minimum-duration candidate in Atakent, Zhetysay and Myrzakent.
+  Both 3° and 183° moving-driver fixtures departed on the requested bearing;
+  no account, order or GPS row was written.
+- A controlled local API outage was exercised in the real narrow driver web
+  account. The profile showed the dedicated retry card without losing the
+  account shell; after readiness returned (`db=ok`, `redis=PONG`, `osrm=ok`),
+  the same `Повторить` action restored the profile and vehicle without a page
+  reload. The API container was returned healthy and no volume was removed.
+- The same outage exposed raw browser copy (`Failed to fetch`) and fabricated
+  zero earnings/order totals on the first driver-line load. Driver errors now
+  map to product copy, the map notice has a real single-flight retry action,
+  and a first-load failure hides all unknown totals until the API responds.
+  The live rebuilt Docker web showed the localized notice, `Проверяем…` state
+  and successful in-place recovery to the real seeded-driver totals.
 - Pickup and destination address-search inputs have distinct accessible names,
   plus mobile street-address/search keyboard hints; the new regression test is
   included in the web gate above.
 - Driver offline, order, trip, road, earnings and account views were repeated in
   the live narrow web shell. The road-alert type and comment controls now have
   explicit accessible names; their regression check is included in the
-  126-test web gate above.
+  130-test web gate above.
 - The physical-device helper now recognizes the exact fresh local CASH fixture
   created by its own client-order command. Strict environment, loopback, fixture,
   age and active-order guards remain in place; its policy and command guards
@@ -100,7 +115,7 @@ external prerequisites below into completed work.
   catalogue request is still running: the result region is marked busy and
   displays `Ищем адреса …` until the resolved count is available.
 - Parallel SSR presentation tests now disable Vite dependency discovery. All
-  127 tests still execute concurrently, but the run no longer emits misleading
+  130 tests still execute concurrently, but the run no longer emits misleading
   `server is being restarted or closed` dep-scan errors after a sibling test
   closes its own middleware server.
 

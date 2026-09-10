@@ -24705,6 +24705,10 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   position: absolute;
   z-index: 6;
   inset: 76px 14px auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
   padding: 12px 14px;
   color: #8c3726;
   background: #fff8f5;
@@ -24713,6 +24717,22 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-size: 14px;
   line-height: 1.4;
   box-shadow: 0 4px 14px rgba(22, 42, 75, .08);
+}
+.phone-frame.driver-core-phone .driver-core-action-notice button {
+  min-height: 34px;
+  padding: 7px 11px;
+  color: #0b4fd1;
+  background: #fff;
+  border: 1px solid rgba(29, 111, 255, .22);
+  border-radius: 11px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(29, 111, 255, .08);
+}
+.phone-frame.driver-core-phone .driver-core-action-notice button:disabled {
+  cursor: default;
+  opacity: .62;
 }
 
 /* Match the passenger's original car asset without affecting address pins. */

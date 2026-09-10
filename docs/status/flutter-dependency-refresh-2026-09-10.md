@@ -18,7 +18,7 @@ Android toolchain migration was mixed into the release-gate build.
 ## Verification
 
 - `flutter analyze`: no issues.
-- Latest post-API-36 `flutter test`: 276/276 passed.
+- Latest post-API-36 `flutter test`: 277/277 passed.
 - A fresh debug APK built successfully against local API/socket
   `http://127.0.0.1:4001` and web `http://127.0.0.1:5175`.
 - `apksigner` verified APK Signature Scheme v2 with one Android Debug signer.

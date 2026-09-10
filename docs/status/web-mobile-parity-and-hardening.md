@@ -9,7 +9,7 @@ as proof that all technical/device work is complete. See the current
 [web driver account pass](web-driver-account-pass-2026-09-09.md).
 The latter adds eight server-backed driver account sections, acting-role mode
 switching, stale-session/write guards, render recovery and drawer keyboard support.
-Current tests: 127 web and 277 Flutter; API/build/analyze/readiness and a clean
+Current tests: 130 web and 277 Flutter; API/build/analyze/readiness and a clean
 GitHub-runner Android debug compilation pass. The API-36 release AAB also builds
 with the existing ignored owner signing/Firebase configuration. Latest APK
 installation, physical road/background/push QA, full localization/theme/map parity,
