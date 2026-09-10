@@ -5,6 +5,7 @@ import {
   SESSION_TOKEN_KEY,
   readSessionToken,
   removeSessionToken,
+  replaceSessionTokenIfCurrent,
   sessionSnapshotGuard,
   subscribeSessionChanges,
   writeSessionToken,
@@ -105,4 +106,24 @@ test("session snapshot rejects late admin data after login, logout or unmount", 
   assert.equal(anonymous(), true);
   token = "driver-token";
   assert.equal(anonymous(), false);
+});
+
+test("a late authentication response cannot overwrite a replacement session", () => {
+  let token = "owner-token";
+  const writes = [];
+  const options = {
+    readToken: () => token,
+    writeToken: nextToken => {
+      token = nextToken;
+      writes.push(nextToken);
+    }
+  };
+
+  assert.equal(replaceSessionTokenIfCurrent("owner-token", "driver-token", options), true);
+  assert.deepEqual(writes, ["driver-token"]);
+
+  token = "client-token";
+  assert.equal(replaceSessionTokenIfCurrent("driver-token", "stale-token", options), false);
+  assert.equal(token, "client-token");
+  assert.deepEqual(writes, ["driver-token"]);
 });

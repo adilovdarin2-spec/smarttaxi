@@ -61,3 +61,12 @@ export function sessionSnapshotGuard(readToken, isAlive = () => true) {
   const token = readToken();
   return () => isAlive() && readToken() === token;
 }
+
+export function replaceSessionTokenIfCurrent(expectedToken, nextToken, {
+  readToken = readSessionToken,
+  writeToken = writeSessionToken,
+} = {}) {
+  if (readToken() !== expectedToken) return false;
+  writeToken(nextToken);
+  return true;
+}

@@ -1,24 +1,33 @@
-import { API_URL, api, clearToken, getToken, login as apiLogin, setToken, subscribeSessionChanges } from "./api.js";
+import { API_URL, api, clearToken, getToken, setToken, subscribeSessionChanges } from "./api.js";
+import { replaceSessionTokenIfCurrent } from "./browserSession.js";
 import { createOrderWithRecovery } from "./orderCreation.js";
 
 export { clearToken, getToken, subscribeSessionChanges };
 
-export async function loginUser(payload) {
-  const data = await api("/api/auth/login/password", {
+function changedAuthenticationError() {
+  const error = new Error("Сессия изменилась в другой вкладке. Повторите вход для выбранного аккаунта.");
+  error.code = "SESSION_CHANGED_DURING_AUTH";
+  return error;
+}
+
+async function authenticate(path, payload) {
+  const initialToken = getToken();
+  const data = await api(path, {
     method: "POST",
     body: JSON.stringify(payload)
   });
-  setToken(data.token);
+  if (!replaceSessionTokenIfCurrent(initialToken, data.token, { readToken: getToken, writeToken: setToken })) {
+    throw changedAuthenticationError();
+  }
   return data;
 }
 
-export async function registerUser(payload) {
-  const data = await api("/api/auth/register/password", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-  setToken(data.token);
-  return data;
+export function loginUser(payload) {
+  return authenticate("/api/auth/login/password", payload);
+}
+
+export function registerUser(payload) {
+  return authenticate("/api/auth/register/password", payload);
 }
 
 export function checkAuthPhone(phone) {
@@ -49,13 +58,8 @@ export function requestPasswordReset(phone) {
   });
 }
 
-export async function confirmPasswordReset(payload) {
-  const data = await api("/api/auth/password/reset/confirm", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-  setToken(data.token);
-  return data;
+export function confirmPasswordReset(payload) {
+  return authenticate("/api/auth/password/reset/confirm", payload);
 }
 
 export function getCurrentUser() {
