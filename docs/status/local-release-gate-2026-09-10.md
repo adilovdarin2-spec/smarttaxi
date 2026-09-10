@@ -3,7 +3,7 @@
 ## Result
 
 All locally executable source, build and Docker gates passed on `dev` through
-`9d7a39c`. The local stack is suitable for another customer/demo QA round.
+`cc9c884`. The local stack is suitable for another customer/demo QA round.
 This is not authorization for production publication and does not convert the
 external prerequisites below into completed work.
 
@@ -14,7 +14,12 @@ external prerequisites below into completed work.
 - Web: 124/124 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
+- Compatible Flutter runtime dependencies were refreshed and the resulting
+  local-endpoint APK passed a fresh build and signature verification.
 - Docker: Compose configuration valid; API, web, PostgreSQL and Redis healthy.
+- Production API dependency audit (`omit=dev,optional`): 0 vulnerabilities;
+  Firebase Admin 14 modular Messaging is verified inside the minimal image at
+  Docker build time.
 - Readiness: `env=development`; DB `ok`, Redis `PONG`, OSRM `ok`.
 - Full local smoke: health/maps, local dev-SMS registration, region-scoped
   address selection, server route/fare, order create/reject/accept, arrival,
@@ -35,7 +40,7 @@ external prerequisites below into completed work.
 
 - File: `C:/dev/smarttaxi/SmartTaxi-release-gate-2026-09-10-USB.apk`
 - Size: 288,775,445 bytes.
-- SHA-256: `f12dc3cc1eb6589da254b9d7bc85458b80af5a0558e4a94912e81d5aca25b1d8`.
+- SHA-256: `b5bfe2b3ec07981b697d52ae9dded2b3e46587dd94de499234d2e09a923167c2`.
 - Signature: APK Signature Scheme v2 verified; one signer.
 - Endpoints: API/socket `http://127.0.0.1:4001`, web
   `http://127.0.0.1:5175`; requires ADB reverse and the local Docker stack.
