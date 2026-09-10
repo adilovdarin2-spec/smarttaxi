@@ -280,7 +280,7 @@ try {
     await page.setViewportSize(size);
     for (const name of ["Линия", "Заказы", "Поездка", "Дорога", "Доход"]) {
       await tab(name);
-      await onScreen(page.getByRole("button", { name: "Выйти", exact: true }));
+      await onScreen(page.getByRole("button", { name: "Открыть кабинет водителя", exact: true }));
       await shot(`driver-${name === "Линия" ? "line" : name === "Заказы" ? "orders" : name === "Поездка" ? "active" : name === "Дорога" ? "road" : "earnings"}-${size.width}`);
     }
   }

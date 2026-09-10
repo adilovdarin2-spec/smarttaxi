@@ -143,6 +143,13 @@ external prerequisites below into completed work.
   a POI. The rebuilt Docker API returned the catalogued `Заправка` in Бирлик as
   `selected-building`, while readiness was healthy and all 13 regions were
   available. The complete API regression suite passes.
+- The complete local driver/browser lifecycle was repeated after that rebuild:
+  seeded-driver login, online state, all five tabs at 390/360 px, incoming
+  order without reload, accept, live driver-to-pickup route, arrived/waiting,
+  trip route, completion and payment all passed. Passenger and driver maps
+  showed the real 40 px car marker, blue route and finish flag. The smoke
+  assertion now follows the accessible account-button name used by the current
+  header instead of the removed text-only `Выйти` control; 131 web tests pass.
 
 ## Fresh Android QA artifact
 
