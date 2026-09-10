@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main, dev ]
 
+permissions:
+  contents: read
+
 jobs:
   api:
     runs-on: ubuntu-latest
@@ -11,12 +14,13 @@ jobs:
       DATABASE_URL: postgres://ci:ci@localhost:5432/ci
       JWT_SECRET: ci_only_placeholder_secret_not_a_real_credential_32chars
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - run: node infra/scripts/tests/docker-build-policy-check.mjs
+      - run: node infra/scripts/tests/ci-action-policy-check.mjs
       - run: npm ci
       - run: npm run syntax
       - run: npm test
@@ -24,8 +28,8 @@ jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -36,7 +40,7 @@ jobs:
   operations:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: bash infra/scripts/tests/operations-check.sh
 
   mobile:
@@ -45,7 +49,7 @@ jobs:
       run:
         working-directory: apps/mobile/smarttaxi_app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           # Match the SDK the app is actually developed and released on.

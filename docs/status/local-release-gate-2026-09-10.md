@@ -27,6 +27,9 @@ external prerequisites below into completed work.
 - The local CI-equivalent operations gate passes on Windows/Git Bash again:
   shell scripts have consistent LF line endings, and `.gitattributes`
   preserves them across Windows checkouts.
+- GitHub Actions uses the current Node 24-based `checkout@v7` and
+  `setup-node@v7` actions with read-only repository permissions. A source guard
+  rejects a regression to deprecated action runtimes.
 - Production API dependency audit (`omit=dev,optional`): 0 vulnerabilities;
   Firebase Admin 14 modular Messaging is verified inside the minimal image at
   Docker build time.
