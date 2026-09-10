@@ -165,6 +165,14 @@ login screen renders without clipping. Full moving-road/background/TTS/push
 coverage remains a separate physical acceptance gate; this install is local QA,
 not a production publication.
 
+The USB build deliberately depends on `adb reverse`; disconnecting the phone
+removes that tunnel and produces one fallback region plus unavailable login and
+address selection. For a cable-free local demonstration, the opt-in
+`docker-compose.phone-qa.yml` override exposes only API/web on explicitly chosen
+private-LAN ports. PostgreSQL and Redis remain loopback-only. A Wi-Fi APK must be
+built with matching `API_BASE_URL`, `SOCKET_URL` and `WEB_BASE_URL`; this is
+still a local development setup, not a production deployment.
+
 ## Remaining external/public-release gates
 
 1. Official region exports with `rka,label,lat,lng` and an immutable,
