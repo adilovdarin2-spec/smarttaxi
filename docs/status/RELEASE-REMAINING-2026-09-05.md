@@ -7,7 +7,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 ## Verified local baseline
 
 Latest September 10 evidence: [local release gate](local-release-gate-2026-09-10.md).
-The complete API checks, 124 web tests/build, 272 Flutter tests/analyze and a
+The complete API checks, 126 web tests/build, 272 Flutter tests/analyze and a
 fresh local-endpoint APK passed.
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
@@ -27,8 +27,11 @@ evidence below is historical, not current.
   active/unpaid-trip restoration and stale-session isolation.
 - Native GPS queue/route ordering, presentation, transport and creation
   reconciliation plus passenger route framing and socket session isolation:
-  129 tests and clean analysis. The latest localhost redesign/home-camera
-  candidate was installed on the physical phone and hash-verified.
+  272 tests and clean analysis. Address search now exposes Android address
+  keyboard/autofill semantics and localized close/clear icon tooltips. The
+  newest localhost candidate is built and signature/hash-verified but remains
+  uninstalled because no ADB device is currently exposed; earlier physical
+  installation evidence remains historical.
 - Physical Android passenger pre-order screens and the driver lifecycle through
   manual local CASH receipt were exercised. The revised route/flag and home
   footer are visually confirmed; this does not close all native acceptance.
