@@ -12,7 +12,7 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 125/125 tests passed; Vite production build and bundled MapLibre worker
+- Web: 126/126 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
 - Compatible Flutter runtime dependencies were refreshed and the resulting
@@ -50,7 +50,11 @@ external prerequisites below into completed work.
   OSRM candidate, and moving-driver departure bearings stayed constrained.
 - Pickup and destination address-search inputs have distinct accessible names,
   plus mobile street-address/search keyboard hints; the new regression test is
-  included in the 125-test web gate above.
+  included in the web gate above.
+- Driver offline, order, trip, road, earnings and account views were repeated in
+  the live narrow web shell. The road-alert type and comment controls now have
+  explicit accessible names; their regression check is included in the
+  126-test web gate above.
 
 ## Fresh Android QA artifact
 

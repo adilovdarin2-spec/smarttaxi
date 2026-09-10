@@ -1168,6 +1168,7 @@ export default function DriverApp() {
                     <strong>Сообщить о дороге</strong>
                   </div>
                   <select
+                    aria-label="Тип дорожного события"
                     value={roadAlertForm.type}
                     onChange={event => setRoadAlertForm(current => ({ ...current, type: event.target.value }))}
                   >
@@ -1177,6 +1178,7 @@ export default function DriverApp() {
                   </select>
                   <input
                     type="text"
+                    aria-label="Комментарий к дорожному событию"
                     placeholder="Комментарий (необязательно)"
                     value={roadAlertForm.comment}
                     onChange={event => setRoadAlertForm(current => ({ ...current, comment: event.target.value }))}

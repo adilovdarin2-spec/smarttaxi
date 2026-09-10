@@ -28,6 +28,11 @@ payment, SMS or order creation was used.
 - Pickup and destination search fields now expose distinct accessible names to
   assistive technology and explicit street-address/search keyboard semantics.
   The regression suite covers both labels and the mobile input hints.
+- A second live pass covered driver offline home, incoming-orders empty state,
+  no-active-trip state, road alerts, earnings and the full driver account menu.
+  The compact layout remained aligned and readable throughout. The pass found
+  two unnamed road-alert form controls; the event type and optional comment now
+  expose explicit accessible names and are protected by a regression test.
 
 ## Map presentation
 
