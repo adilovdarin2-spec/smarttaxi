@@ -33,6 +33,11 @@ external prerequisites below into completed work.
   address selection, server route/fare, order create/reject/accept, arrival,
   waiting, trip, cash settlement, rating, protections and driver documents all
   completed. Final output: `Smoke full ok`.
+- The cross-platform host command `npm --prefix apps/api run smoke:qa-docker`
+  is fixed to the isolated Compose API on port 4001, so it cannot silently test
+  the older local stack on port 4000. Full smoke now also runs the read-only
+  minimum-ETA route-selection and departure-bearing checks before any order
+  lifecycle mutation.
 - Stage 2/3/9/11 now assert their own final `OFFLINE` cleanup. Stage 3 also
   asserts driver-cancel reopen semantics before performing a terminal client
   cancellation, so smoke no longer leaves its order in dispatch.

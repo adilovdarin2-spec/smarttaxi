@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 const scripts = [
   "smoke-health.js",
   "smoke-maps.js",
+  "smoke-route-selection.js",
   "stage2-smoke.js",
   "stage3-client-flow-smoke.js",
   "stage9-payment-rating-smoke.js",

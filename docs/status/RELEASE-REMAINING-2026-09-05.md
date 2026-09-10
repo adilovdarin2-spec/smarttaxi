@@ -54,6 +54,9 @@ evidence below is historical, not current.
 - Strict route/maneuver validation, correct missing intercity rate inheritance,
   and 34 actual local tariff previews across all 13 regions plus four intercity
   directions; the paired browser lifecycle also passed against that API.
+- The dedicated `smoke:qa-docker` command pins the host-side release smoke to
+  port 4001 and includes minimum-ETA route candidate validation, preventing an
+  accidental pass or failure against the older local port-4000 stack.
 
 ## Technical acceptance still to finish
 
