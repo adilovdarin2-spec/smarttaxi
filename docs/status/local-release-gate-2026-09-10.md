@@ -3,7 +3,8 @@
 ## Result
 
 All locally executable source, build and Docker gates passed on `dev` through
-`cc9c884`. The local stack is suitable for another customer/demo QA round.
+`7815c1e`, plus the compatible Node dependency refresh. The local stack is
+suitable for another customer/demo QA round.
 This is not authorization for production publication and does not convert the
 external prerequisites below into completed work.
 
@@ -20,6 +21,9 @@ external prerequisites below into completed work.
 - Production API dependency audit (`omit=dev,optional`): 0 vulnerabilities;
   Firebase Admin 14 modular Messaging is verified inside the minimal image at
   Docker build time.
+- Compatible API/web runtime packages were refreshed; API and web production
+  audits remain at 0 vulnerabilities and the rebuilt Compose services are
+  healthy.
 - Readiness: `env=development`; DB `ok`, Redis `PONG`, OSRM `ok`.
 - Full local smoke: health/maps, local dev-SMS registration, region-scoped
   address selection, server route/fare, order create/reject/accept, arrival,
@@ -35,6 +39,9 @@ external prerequisites below into completed work.
 - An open stale web bundle was deliberately exercised after a Docker image
   replacement: the safe recovery screen appeared and its reload action restored
   the authenticated driver session without replaying or cancelling an order.
+- Read-only route selection was repeated after the dependency refresh in
+  Atakent, Zhetysay and Myrzakent. API geometry/metrics matched the minimum-ETA
+  OSRM candidate, and moving-driver departure bearings stayed constrained.
 
 ## Fresh Android QA artifact
 
