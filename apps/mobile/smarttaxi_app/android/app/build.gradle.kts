@@ -6,7 +6,16 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
+    // A clean CI checkout intentionally has no owner Firebase configuration.
+    // Resolve the plugin here, then apply it only when google-services.json is
+    // present. Debug compilation stays reproducible while release builds fail
+    // closed below instead of silently shipping without push configuration.
+    id("com.google.gms.google-services") apply false
+}
+
+val hasGoogleServicesConfig = file("google-services.json").exists()
+if (hasGoogleServicesConfig) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 val keystoreProperties = Properties()
@@ -65,8 +74,12 @@ android {
 }
 
 gradle.taskGraph.whenReady {
-    if (!hasReleaseKeystore && allTasks.any { it.name.contains("Release", ignoreCase = true) }) {
+    val requestsRelease = allTasks.any { it.name.contains("Release", ignoreCase = true) }
+    if (!hasReleaseKeystore && requestsRelease) {
         throw GradleException("Release signing is required. Create android/key.properties from key.properties.example and point it to a private upload keystore.")
+    }
+    if (!hasGoogleServicesConfig && requestsRelease) {
+        throw GradleException("Release Firebase configuration is required. Add the owner-controlled android/app/google-services.json before building a release artifact.")
     }
 }
 

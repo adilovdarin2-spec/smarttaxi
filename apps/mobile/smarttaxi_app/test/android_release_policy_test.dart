@@ -30,6 +30,27 @@ void main() {
     );
   });
 
+  test('clean CI debug builds do not require production Firebase material', () {
+    expect(
+      gradle,
+      contains('id("com.google.gms.google-services") apply false'),
+    );
+    expect(
+      gradle,
+      contains('if (hasGoogleServicesConfig) {\n'
+          '    apply(plugin = "com.google.gms.google-services")\n'
+          '}'),
+    );
+    expect(
+      gradle,
+      contains(
+        'throw GradleException("Release Firebase configuration is required. '
+        'Add the owner-controlled android/app/google-services.json before '
+        'building a release artifact.")',
+      ),
+    );
+  });
+
   test('release traffic is encrypted while USB debug can use ADB reverse', () {
     expect(
       gradle,
