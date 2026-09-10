@@ -2,8 +2,8 @@
 
 ## Result
 
-All locally executable source, build and Docker gates passed on `dev` through
-`7815c1e`, plus the compatible Node dependency refresh. The local stack is
+All locally executable source, build and Docker gates passed on `dev`, including
+the compatible Flutter and Node dependency refreshes. The local stack is
 suitable for another customer/demo QA round.
 This is not authorization for production publication and does not convert the
 external prerequisites below into completed work.
@@ -59,6 +59,10 @@ external prerequisites below into completed work.
   the live narrow web shell. The road-alert type and comment controls now have
   explicit accessible names; their regression check is included in the
   126-test web gate above.
+- The physical-device helper now recognizes the exact fresh local CASH fixture
+  created by its own client-order command. Strict environment, loopback, fixture,
+  age and active-order guards remain in place; its policy and command guards
+  pass 7/7 and 5/5 assertions respectively.
 
 ## Fresh Android QA artifact
 

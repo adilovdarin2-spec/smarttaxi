@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isPhysicalDeviceQaOrder, PHYSICAL_DEVICE_QA } from './physical-device-qa-policy.js';
 
 // Companion to a real phone passenger session. It never logs in as that
 // passenger, bypasses authentication, or creates a production order/payment.
@@ -36,22 +37,25 @@ if (command === 'create-client-order') {
   const verified = await api('/api/auth/sms/verify', 'POST', { phone, purpose, code: sent.devCode });
   const client = await api('/api/auth/register/password', 'POST', {
     phone, verificationToken: verified.verificationToken,
-    name: 'Local phone driver QA', password: '123456'
+    name: PHYSICAL_DEVICE_QA.riderName, password: '123456'
   });
   assert.equal(client.user.role, 'CLIENT');
   token = client.token;
   const route = {
-    pickupLat: 40.662974, pickupLng: 68.553530,
-    dropoffLat: 40.664778, dropoffLng: 68.552768, tariff: 'Economy'
+    pickupLat: PHYSICAL_DEVICE_QA.pickupLat,
+    pickupLng: PHYSICAL_DEVICE_QA.pickupLng,
+    dropoffLat: PHYSICAL_DEVICE_QA.dropoffLat,
+    dropoffLng: PHYSICAL_DEVICE_QA.dropoffLng,
+    tariff: 'Economy'
   };
   const estimate = await api('/api/tariffs/estimate', 'POST', route);
   assert(estimate.priceKzt > 0 && estimate.distanceKm > 0);
   const created = await api('/api/orders', 'POST', {
-    ...route, riderName: 'Local phone driver QA', riderPhone: phone,
-    pickupText: 'улица Бектасова, 60, Мырзакент',
-    dropoffText: 'улица Кожанова, 34, Мырзакент',
+    ...route, riderName: PHYSICAL_DEVICE_QA.riderName, riderPhone: phone,
+    pickupText: PHYSICAL_DEVICE_QA.pickupText,
+    dropoffText: PHYSICAL_DEVICE_QA.dropoffText,
     paymentMethod: 'CASH', distanceKm: estimate.distanceKm,
-    durationMin: estimate.durationMin, notes: 'Local physical driver QA; stationary test order'
+    durationMin: estimate.durationMin, notes: PHYSICAL_DEVICE_QA.notes
   });
   console.log(JSON.stringify({ id: created.order.id, phone, status: created.order.public_status || created.order.status, localQaOnly: true }));
   process.exit(0);
@@ -80,12 +84,11 @@ if (command === 'prepare') {
   const incoming = (await api('/api/driver/orders/incoming')).orders;
   const history = (await api('/api/orders/me/driver-history?limit=30')).orders;
   const orders = [...incoming, ...(initial.activeOrder ? [initial.activeOrder] : []), ...history];
-  const isQa = order => order.rider_phone === '+77000000001' && order.payment_method === 'CASH';
   if (command === 'inspect') {
-    console.log(JSON.stringify({ active: initial.activeOrder?.id || null, orders: orders.filter(isQa).map(order => ({ id: order.id, status: order.public_status || order.status, pickup: order.pickup_text, dropoff: order.dropoff_text, pickupLat: order.pickup_lat, pickupLng: order.pickup_lng, dropoffLat: order.dropoff_lat, dropoffLng: order.dropoff_lng, createdAt: order.created_at })) }));
+    console.log(JSON.stringify({ active: initial.activeOrder?.id || null, orders: orders.filter(isPhysicalDeviceQaOrder).map(order => ({ id: order.id, status: order.public_status || order.status, pickup: order.pickup_text, dropoff: order.dropoff_text, pickupLat: order.pickup_lat, pickupLng: order.pickup_lng, dropoffLat: order.dropoff_lat, dropoffLng: order.dropoff_lng, createdAt: order.created_at })) }));
   } else {
     const order = orders.find(item => item.id === id);
-    assert(order && isQa(order), 'Only the seeded local phone passenger CASH order is in scope');
+    assert(order && isPhysicalDeviceQaOrder(order), 'Only an exact local physical-device QA CASH order is in scope');
     assert(Date.now() - new Date(order.created_at).getTime() < 6 * 60 * 60 * 1000, 'Refuse an old order');
     assert(!initial.activeOrder || initial.activeOrder.id === id, 'Never change another trip');
     const result = await api(`/api/orders/${id}/${action}`, 'POST', {});
