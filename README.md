@@ -21,15 +21,15 @@ cp .env.example .env
 ```bash
 docker compose up -d --build
 docker compose exec api npm run seed
-curl http://127.0.0.1:4000/api/health/ready
+curl http://127.0.0.1:4001/api/health/ready
 ```
 
 4. Open:
 
 ```txt
-Client: http://localhost:5173/
-Driver: http://localhost:5173/driver
-Owner:  http://localhost:5173/owner
+Client: http://localhost:5175/
+Driver: http://localhost:5175/driver
+Owner:  http://localhost:5175/owner
 ```
 
 ## Required Environment
@@ -47,6 +47,8 @@ API_DATABASE_URL=postgresql://smarttaxi:strong-password@postgres:5432/smarttaxi
 API_REDIS_URL=redis://redis:6379
 JWT_SECRET=random-64-character-production-secret
 CORS_ORIGINS=https://app.smarttaxi.kz,https://smarttaxi.kz
+SMARTTAXI_API_BIND_HOST=127.0.0.1
+SMARTTAXI_API_PORT=4001
 API_ORIGIN=https://api.smarttaxi.kz
 APP_ORIGIN=https://app.smarttaxi.kz
 VITE_GOOGLE_MAPS_BROWSER_KEY=
@@ -60,6 +62,11 @@ must point to ports reachable from Windows, for example `127.0.0.1:5433` and
 `127.0.0.1:6379`. For Docker Compose, the API container uses
 `API_DATABASE_URL` and `API_REDIS_URL`; keep those pointed at the Compose service
 names `postgres` and `redis`.
+
+Docker Compose publishes the API on `127.0.0.1:4001` by default, matching the
+local QA tooling and preventing the development SMS flow from being exposed to
+the LAN. An authorized deployment may override `SMARTTAXI_API_BIND_HOST`
+explicitly; do not do so for local development.
 
 Google Maps keys are optional for now. If they are empty, `/api/maps/estimate` returns a safe fallback estimate and the client app keeps working.
 

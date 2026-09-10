@@ -140,18 +140,13 @@ changed.
   `SOS_ALERT` in-app notification) is ready for it, but the surfacing on
   the admin/web side is a separate, not-yet-scoped follow-up. This
   session's scope was `apps/api` only.
-- **VPS deployment — API port not restricted to localhost**: discrepancy
-  between `docker-compose.yml` and the Nginx-fronted architecture the
-  checklist assumes. The `api` service publishes `ports: - "4000:4000"`
-  (all interfaces), not `127.0.0.1:4000:4000` like the `postgres`/`redis`
-  services correctly do. `infra/nginx/smarttaxi.conf` proxies to
-  `127.0.0.1:4000` assuming that's the only path in, but as configured the
-  API is also directly reachable on port 4000 from the public internet,
-  bypassing Nginx and TLS entirely unless an external firewall (e.g. VPS
-  provider security group or `ufw`) blocks it — `docs/DEPLOYMENT_VPS.md`
-  doesn't currently document a firewall step. Worth fixing before go-live:
-  either bind `127.0.0.1:4000:4000` in `docker-compose.yml`, or add an
-  explicit `ufw`/security-group step to the deployment doc.
+- **VPS/local Compose API exposure — resolved 2026-09-10**: the `api`
+  service now defaults to
+  `${SMARTTAXI_API_BIND_HOST:-127.0.0.1}:${SMARTTAXI_API_PORT:-4001}:4000`,
+  matching the loopback-only PostgreSQL, Redis and web bindings. This prevents
+  the development SMS flow from being reachable over the LAN and preserves the
+  Nginx-fronted deployment shape. A non-loopback bind remains an explicit,
+  authorized environment override and still requires TLS/firewall review.
 - **Driver document-approval gating — built, verified consistent, then
   deliberately reverted (all same night, 2026-07-15)**. Full trail in
   [qa-overnight-2026-07-15.md §0](status/qa-overnight-2026-07-15.md#0-driver-cant-go-online-without-approval-chain-tracked-across-serverwebmobile).

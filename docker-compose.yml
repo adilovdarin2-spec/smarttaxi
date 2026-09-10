@@ -99,7 +99,7 @@ services:
     volumes:
       - ./apps/api/secrets:/app/secrets:ro
     ports:
-      - "${SMARTTAXI_API_PORT:-4001}:4000"
+      - "${SMARTTAXI_API_BIND_HOST:-127.0.0.1}:${SMARTTAXI_API_PORT:-4001}:4000"
     depends_on:
       postgres:
         condition: service_healthy
