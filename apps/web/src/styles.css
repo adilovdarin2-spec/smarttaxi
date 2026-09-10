@@ -15322,9 +15322,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* Auth welcome clean photo revision. Only the first phone auth screen uses this. */
+/* Passenger auth hero: the same original premium blue/white map language as the app. */
 .taxi-client-shell .premium-auth-screen.auth-reference-welcome-screen {
-  grid-template-rows: 44px 0 minmax(360px, 42.5svh) auto auto;
+  grid-template-rows: 44px 0 minmax(300px, 36svh) auto auto;
   min-height: 100svh;
   padding: 0;
   overflow: hidden;
@@ -15341,21 +15341,25 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .auth-reference-welcome-screen .auth-welcome-hero {
   min-height: 0;
   height: 100%;
-  display: block;
-  padding: 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 46px 24px 0;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 42%, rgba(255,255,255,.1) 100%),
-    url("/ui/auth-clean-photo/background/auth_full_hero_background_clean.png") center top / cover no-repeat;
+    linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(234,243,255,.44) 48%, rgba(255,255,255,.92) 100%),
+    url("/ui/auth-welcome/auth_premium_hero.svg") center calc(100% - 6px) / calc(100% + 100px) auto no-repeat,
+    radial-gradient(circle at 50% 28%, rgba(101,163,255,.22), transparent 48%),
+    #f8fbff;
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-welcome-hero::before {
   content: "";
   position: absolute;
   inset: auto 0 0;
-  height: 112px;
-  background: url("/ui/auth-clean-photo/background/white_bottom_gradient_overlay.png") center bottom / 100% 100% no-repeat;
-  opacity: .92;
+  height: 88px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), #fff 88%);
+  opacity: 1;
   transform: none;
   border-radius: 0;
   mask-image: none;
@@ -15366,29 +15370,33 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-photo-brand {
-  display: none;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-s-mark {
-  width: 74px;
+  width: 58px;
   height: auto;
-  margin-left: 57px;
+  margin: 0 0 -6px;
   display: block;
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-brand-wordmark {
-  width: min(246px, 69vw);
+  width: min(220px, 64vw);
   height: auto;
   display: block;
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-welcome-hero .auth-photo-brand > p {
   margin: 0;
-  color: #4b5563;
-  font-size: 20px;
-  line-height: 27px;
-  font-weight: 500;
-  text-align: left;
+  color: #53627a;
+  font-size: 15px;
+  line-height: 21px;
+  font-weight: 650;
+  text-align: center;
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-route-hero-image,
@@ -15461,9 +15469,10 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-primary-button {
-  min-height: 74px;
-  border-radius: 20px;
-  font-size: 23px;
+  min-height: 62px;
+  border-radius: 18px;
+  font-size: 19px;
+  color: #fff;
   font-weight: 800;
   background: linear-gradient(180deg, #468dff 0%, #005ef6 100%);
   box-shadow: 0 18px 30px rgba(0, 94, 246, .25), inset 0 1px 0 rgba(255, 255, 255, .55);
@@ -15471,6 +15480,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-primary-button .auth-button-arrow {
   right: 31px;
+  filter: brightness(0) invert(1);
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-sms-notice {
@@ -15515,7 +15525,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 @media (max-width: 380px) {
   .taxi-client-shell .premium-auth-screen.auth-reference-welcome-screen {
-    grid-template-rows: 42px 0 minmax(294px, 36.8svh) auto auto;
+    grid-template-rows: 42px 0 minmax(270px, 34svh) auto auto;
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-status-bar {
@@ -15524,23 +15534,21 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-photo-brand {
-    left: 31px;
-    top: 88px;
     gap: 8px;
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-s-mark {
-    width: 60px;
-    margin-left: 48px;
+    width: 50px;
+    margin: 0 0 -8px;
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-brand-wordmark {
-    width: min(218px, 70vw);
+    width: min(198px, 62vw);
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-welcome-hero .auth-photo-brand > p {
-    font-size: 17px;
-    line-height: 24px;
+    font-size: 14px;
+    line-height: 20px;
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-panel {
@@ -15575,8 +15583,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-primary-button {
-    min-height: 68px;
-    font-size: 23px;
+    min-height: 58px;
+    font-size: 18px;
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-sms-notice {
