@@ -9,4 +9,13 @@ assert(
 );
 
 process.env.API_URL = qaApiUrl;
+
+const preflightResponse = await fetch(`${qaApiUrl}/api/health/ready`, {
+  signal: AbortSignal.timeout(10_000),
+});
+const readiness = await preflightResponse.json().catch(() => ({}));
+assert.equal(preflightResponse.ok, true, "QA Docker API is not ready");
+assert.equal(readiness.env, "development", "QA smoke requires NODE_ENV=development");
+assert.equal(readiness.checks?.sms, "dev", "QA smoke requires the local dev SMS provider");
+
 await import("./smoke-full.js");

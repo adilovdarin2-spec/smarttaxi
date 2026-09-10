@@ -9,6 +9,10 @@ const dockerSmoke = readFileSync(
   new URL("./smoke-qa-docker.js", import.meta.url),
   "utf8",
 );
+const routeSmoke = readFileSync(
+  new URL("./smoke-route-selection.js", import.meta.url),
+  "utf8",
+);
 
 assert.equal(
   packageJson.scripts["smoke:qa-docker"],
@@ -17,5 +21,10 @@ assert.equal(
 assert.match(fullSmoke, /"smoke-maps\.js",\s*"smoke-route-selection\.js",/);
 assert.match(dockerSmoke, /const qaApiUrl = "http:\/\/127\.0\.0\.1:4001"/);
 assert.match(dockerSmoke, /process\.env\.API_URL = qaApiUrl/);
+assert.match(dockerSmoke, /readiness\.env, "development"/);
+assert.match(dockerSmoke, /readiness\.checks\?\.sms, "dev"/);
+assert.match(dockerSmoke, /AbortSignal\.timeout\(10_000\)/);
+assert.match(routeSmoke, /const ROUTE_QA_ATTEMPTS = 3/);
+assert.match(routeSmoke, /health\.checks\?\.osrm === "ok"/);
 
-console.log("Smoke orchestration: 4 passed.");
+console.log("Smoke orchestration: 9 passed.");

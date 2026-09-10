@@ -23,5 +23,6 @@ console.log("Smoke health ok", {
   db: ready.checks.db,
   redis: ready.checks.redis,
   osrm: ready.checks.osrm,
+  sms: ready.checks.sms,
   maptiler: ready.checks.maptiler
 });

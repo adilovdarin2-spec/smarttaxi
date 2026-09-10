@@ -3,12 +3,19 @@ import { query } from "../../db/pool.js";
 import { redis } from "../../db/redis.js";
 import { env } from "../../config/env.js";
 import { buildMapsDiagnostics } from "../maps/maps.diagnostics.js";
+import { dependenciesReady, smsReadinessStatus } from "./health-readiness.js";
 
 const router = Router();
 const version = process.env.npm_package_version || "1.0.0";
 
 async function dependencyStatus() {
-  const checks = { db: "down", redis: "down", osrm: "disabled", maptiler: "not_configured" };
+  const checks = {
+    db: "down",
+    redis: "down",
+    osrm: "disabled",
+    maptiler: "not_configured",
+    sms: smsReadinessStatus(env)
+  };
   let dbTime = null;
 
   try {
@@ -34,9 +41,7 @@ async function dependencyStatus() {
   checks.mapSearch = maps.providers.search;
   checks.mapReverse = maps.providers.reverse;
 
-  const baseReady = checks.db === "ok" && checks.redis === "PONG";
-  const providerReady = env.NODE_ENV !== "production" || checks.osrm !== "fail";
-  const ready = baseReady && providerReady;
+  const ready = dependenciesReady(checks, env.NODE_ENV);
   return { ready, checks, dbTime, maps };
 }
 

@@ -42,7 +42,10 @@ external prerequisites below into completed work.
   is fixed to the isolated Compose API on port 4001, so it cannot silently test
   the older local stack on port 4000. Full smoke now also runs the read-only
   minimum-ETA route-selection and departure-bearing checks before any order
-  lifecycle mutation.
+  lifecycle mutation. A preflight now also requires development mode and the
+  dev SMS provider before it creates any QA account or order. The read-only
+  route probe tolerates two transient provider/network retries but still fails
+  closed when routing stays unavailable.
 - Stage 2/3/9/11 now assert their own final `OFFLINE` cleanup. Stage 3 also
   asserts driver-cancel reopen semantics before performing a terminal client
   cancellation, so smoke no longer leaves its order in dispatch.

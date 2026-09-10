@@ -8,13 +8,13 @@ SmartTaxi is a production-oriented taxi dispatch starter for Atakent:
 
 ## Local Start
 
-1. Copy environment file:
+1. The Compose defaults are suitable for isolated local development. If an
+   existing `.env` is present, verify `NODE_ENV=development` and
+   `SMS_PROVIDER=dev` before running local smoke tests. `.env.example` is the
+   production template; copying it unchanged intentionally disables dev SMS.
 
-```bash
-cp .env.example .env
-```
-
-2. For local Docker development, keep `NODE_ENV=development` or use the compose defaults. For production, fill real secrets before deploy.
+2. Never place production SMS/payment credentials in the local QA environment.
+   For production, fill the real secrets only as part of an authorized deploy.
 
 3. Start services:
 
@@ -67,6 +67,9 @@ Docker Compose publishes the API on `127.0.0.1:4001` by default, matching the
 local QA tooling and preventing the development SMS flow from being exposed to
 the LAN. An authorized deployment may override `SMARTTAXI_API_BIND_HOST`
 explicitly; do not do so for local development.
+
+`npm --prefix apps/api run smoke:qa-docker` additionally verifies readiness,
+`NODE_ENV=development` and the dev SMS provider before creating any QA data.
 
 Google Maps keys are optional for now. If they are empty, `/api/maps/estimate` returns a safe fallback estimate and the client app keeps working.
 

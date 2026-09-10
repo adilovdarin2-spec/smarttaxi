@@ -8,13 +8,34 @@ import { buildActiveLegRoute } from "../modules/routing/routing.service.js";
 const api = (process.env.API_URL || "http://127.0.0.1:4000").replace(/\/$/, "");
 assert.equal(env.NODE_ENV, "development", "route QA requires development mode");
 assert(["127.0.0.1", "localhost", "[::1]"].includes(new URL(api).hostname), "route QA API must be local");
-const pause = () => new Promise(resolve => setTimeout(resolve, 1200));
+const ROUTE_QA_ATTEMPTS = 3;
+const pause = (milliseconds = 1200) => new Promise(resolve => setTimeout(resolve, milliseconds));
 async function json(url, options = {}) {
-  const response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
-  assert(response.ok, `QA request failed (${response.status}): ${new URL(url).pathname}`);
-  return response.json();
+  let lastError;
+  for (let attempt = 1; attempt <= ROUTE_QA_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
+      if (response.ok) return response.json();
+      const retryable = response.status === 429 || response.status >= 500;
+      const error = new Error(`QA request failed (${response.status}): ${new URL(url).pathname}`);
+      error.retryable = retryable;
+      if (!retryable || attempt === ROUTE_QA_ATTEMPTS) throw error;
+      lastError = error;
+    } catch (error) {
+      lastError = error;
+      if (error.retryable === false || attempt === ROUTE_QA_ATTEMPTS) throw error;
+    }
+    await pause(1000 * attempt);
+  }
+  throw lastError;
 }
-const health = await json(`${api}/api/health/ready`);
+
+let health;
+for (let attempt = 1; attempt <= ROUTE_QA_ATTEMPTS; attempt += 1) {
+  health = await json(`${api}/api/health/ready`);
+  if (health.checks?.osrm === "ok") break;
+  if (attempt < ROUTE_QA_ATTEMPTS) await pause(1500 * attempt);
+}
 assert.equal(health.env, "development");
 assert.equal(health.checks?.db, "ok");
 assert.equal(health.checks?.osrm, "ok");
