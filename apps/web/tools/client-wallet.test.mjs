@@ -175,6 +175,7 @@ test("production wallet has no card entry or funding form; history, error recove
     root: fileURLToPath(new URL("..", import.meta.url)),
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: "custom",
+    optimizeDeps: { noDiscovery: true },
   });
   try {
     const { ClientWalletView, clientWalletApi } = await server.ssrLoadModule(

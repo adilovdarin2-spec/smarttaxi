@@ -10,7 +10,7 @@ test('driver surfaces keep addresses, action hierarchy and payment gates', async
   // log in or issue requests. Keep that browser input explicit in this test.
   const previousWindow = globalThis.window;
   globalThis.window = { location: { hostname: '127.0.0.1' } };
-  const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
+  const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
   try {
     const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel, DriverEmptyState } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
     const order = { id: 'design-fixture', status: 'SEARCHING_DRIVER', tariff: 'Economy',

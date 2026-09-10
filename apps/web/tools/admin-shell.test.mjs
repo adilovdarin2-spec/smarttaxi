@@ -14,6 +14,7 @@ test("admin loading and login use a centered full-viewport access shell", async 
     root,
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: "custom",
+    optimizeDeps: { noDiscovery: true },
   });
   try {
     const { default: AdminApp } = await server.ssrLoadModule("/src/features/admin/AdminApp.jsx");

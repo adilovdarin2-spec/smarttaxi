@@ -10,6 +10,7 @@ test("app recovery provides a safe reload without clearing session or replaying 
     root: fileURLToPath(new URL("..", import.meta.url)),
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: "custom",
+    optimizeDeps: { noDiscovery: true },
   });
   try {
     const { AppRecoveryScreen, AppErrorBoundary, isAccountStorageChange } =

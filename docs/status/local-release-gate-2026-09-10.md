@@ -72,6 +72,10 @@ external prerequisites below into completed work.
 - Address search no longer presents a transient false `0` while the remote
   catalogue request is still running: the result region is marked busy and
   displays `Ищем адреса …` until the resolved count is available.
+- Parallel SSR presentation tests now disable Vite dependency discovery. All
+  127 tests still execute concurrently, but the run no longer emits misleading
+  `server is being restarted or closed` dep-scan errors after a sibling test
+  closes its own middleware server.
 
 ## Fresh Android QA artifact
 

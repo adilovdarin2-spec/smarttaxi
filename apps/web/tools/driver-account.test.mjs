@@ -99,6 +99,7 @@ test("production account screens retain server data, replies, workflow gates and
     root: fileURLToPath(new URL("..", import.meta.url)),
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: "custom",
+    optimizeDeps: { noDiscovery: true },
   });
   try {
     const screens = await server.ssrLoadModule(
