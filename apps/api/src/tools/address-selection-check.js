@@ -50,9 +50,11 @@ const SHOP = {
 function gazetteer(rows) {
   return async (_sql, params) => {
     const requireHouseNumber = params[4] === true;
-    const usable = requireHouseNumber
-      ? rows.filter((row) => row.kind === "housenumber")
-      : rows;
+    const requirePoi = params[5] === true;
+    const usable = rows.filter((row) =>
+      (!requireHouseNumber || row.kind === "housenumber") &&
+      (!requirePoi || row.kind === "poi")
+    );
     if (!usable.length) return { rows: [] };
     return { rows: usable.map(row => ({ ...row, distance_squared: 0 })) };
   };
@@ -157,6 +159,22 @@ assert.equal(selected.lat, inside.lat);
 assert.equal(selected.matchKind, 'selected-building');
 assert.equal(selected.kind, 'housenumber', 'a local house does not inherit the rejected road feature kind');
 assert.match(selected.subtitle, /В выбранном здании/);
+const selectedPoi = await reverseAddress(
+  { ...PIN, building },
+  nominatim('улица Абая, Мырзакент', { road: 'улица Абая', village: 'Мырзакент' }),
+  gazetteer([SHOP])
+);
+assert.equal(selectedPoi.label, SHOP.label, 'a real POI inside the explicitly selected footprint names the building');
+assert.equal(selectedPoi.kind, 'poi');
+assert.equal(selectedPoi.fallback, false);
+assert.equal(selectedPoi.matchKind, 'selected-building');
+const selectedHouseBeforePoi = await reverseAddress(
+  { ...PIN, building },
+  unavailable,
+  gazetteer([SHOP, inside])
+);
+assert.equal(selectedHouseBeforePoi.label, inside.label, 'a house number in the selected footprint stays above its POI');
+assert.equal(selectedHouseBeforePoi.kind, 'housenumber');
 const missingBuildingAddress = await reverseAddress({ ...PIN, building },
   async () => ({ ok:true, async json() { return {lat:neighbouringHouse.lat,lon:neighbouringHouse.lng,address:{road:'улица Абая',house_number:'22'}}; } }),
   gazetteer([neighbouringHouse]));

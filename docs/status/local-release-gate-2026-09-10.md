@@ -135,6 +135,14 @@ external prerequisites below into completed work.
   house: regression fixtures accept a 3-4 m edge gap and still reject a
   neighbouring address about 17 m away. API tests, 131 web tests and the web
   production build pass; the rebuilt local Docker API/web are healthy.
+- A selected building can now use a real POI from the committed regional
+  catalogue when providers return only a bare street. The POI must fall inside
+  the exact footprint supplied by the map picker (with the same five-metre tile
+  simplification tolerance); without a footprint, a nearby shop is still
+  rejected. A house number inside that footprint remains higher priority than
+  a POI. The rebuilt Docker API returned the catalogued `Заправка` in Бирлик as
+  `selected-building`, while readiness was healthy and all 13 regions were
+  available. The complete API regression suite passes.
 
 ## Fresh Android QA artifact
 

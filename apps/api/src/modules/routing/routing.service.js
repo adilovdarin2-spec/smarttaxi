@@ -1674,7 +1674,7 @@ async function nearestGazetteerAddress(
   point,
   maxMeters = REVERSE_ADDRESS_RADIUS_METERS,
   executor = defaultQuery,
-  { requireHouseNumber = false, building = null } = {}
+  { requireHouseNumber = false, requirePoi = false, building = null } = {}
 ) {
   // ~111 km per degree of latitude; longitude shrinks by cos(latitude).
   const latDelta = maxMeters / 111000;
@@ -1687,6 +1687,7 @@ async function nearestGazetteerAddress(
       WHERE lat BETWEEN $1 - $3 AND $1 + $3
         AND lng BETWEEN $2 - $4 AND $2 + $4
         AND ($5::boolean = false OR kind = 'housenumber')
+        AND ($6::boolean = false OR kind = 'poi')
         AND kind IN ('housenumber', 'building', 'poi')
       ORDER BY
         CASE WHEN $5 THEN CASE kind WHEN 'housenumber' THEN 0 ELSE 1 END ELSE 0 END,
@@ -1696,7 +1697,7 @@ async function nearestGazetteerAddress(
         CASE kind WHEN 'housenumber' THEN 0 WHEN 'building' THEN 1
                   WHEN 'poi' THEN 2 ELSE 3 END
       LIMIT 64`,
-    [point.lat, point.lng, latDelta, lngDelta, requireHouseNumber]
+    [point.lat, point.lng, latDelta, lngDelta, requireHouseNumber, requirePoi]
   );
   // The SQL box is only an index prefilter: its corners are outside the
   // requested radius. Recheck in metres and skip unusable rows instead of
@@ -1704,6 +1705,7 @@ async function nearestGazetteerAddress(
   const row = rows
     .filter(item => ['housenumber', 'building', 'poi'].includes(item.kind))
     .filter(item => !requireHouseNumber || item.kind === 'housenumber')
+    .filter(item => !requirePoi || item.kind === 'poi')
     .filter(item => isBookableAddressSuggestion(item, nearestLocalPlace(point)?.city))
     .filter(item => !looksLikeRoadCode(item.label))
     .map(item => ({ ...item, distance: distanceKmBetween(point, item) * 1000 }))
@@ -1762,13 +1764,14 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
     confidence: 0
   };
   const localLookups = new Map();
-  const lookupLocal = (requireHouseNumber = false) => {
-    if (!localLookups.has(requireHouseNumber)) {
-      localLookups.set(requireHouseNumber, nearestGazetteerAddress(
-        point, reverseRadius, executor, { requireHouseNumber, building }
+  const lookupLocal = ({ requireHouseNumber = false, requirePoi = false } = {}) => {
+    const key = `${requireHouseNumber}:${requirePoi}`;
+    if (!localLookups.has(key)) {
+      localLookups.set(key, nearestGazetteerAddress(
+        point, reverseRadius, executor, { requireHouseNumber, requirePoi, building }
       ).catch(() => null));
     }
-    return localLookups.get(requireHouseNumber);
+    return localLookups.get(key);
   };
   const located = (suggestion) => {
     const distanceMeters = Math.round(distanceKmBetween(point, suggestion) * 1000);
@@ -1786,9 +1789,22 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
   // A catalogued house almost under the pin is both faster and more useful
   // than a provider's nearest-road answer. POIs still use the provider chain
   // below so they cannot silently replace a known street's missing number.
-  const exactLocalHouse = await lookupLocal(true);
+  const exactLocalHouse = await lookupLocal({ requireHouseNumber: true });
   if (exactLocalHouse && exactLocalHouse.distanceMeters <= 8) {
     return located({ ...exactLocalHouse, source: 'gazetteer_reverse' });
+  }
+  if (building && exactLocalHouse) {
+    return located({ ...exactLocalHouse, source: 'gazetteer_reverse' });
+  }
+  // A POI from the committed catalogue may safely name a footprint the rider
+  // explicitly selected. Keep this tied to the supplied building geometry:
+  // without that evidence a nearby shop must never replace a missing house
+  // number on an unrelated home or a bare street.
+  const selectedBuildingPoi = building
+    ? await lookupLocal({ requirePoi: true })
+    : null;
+  if (selectedBuildingPoi) {
+    return located({ ...selectedBuildingPoi, source: 'gazetteer_reverse' });
   }
   // Every provider below can answer with a road code; rather than repeat the
   // check three times, each result passes through here first.
@@ -1819,7 +1835,7 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
     const tooFar = distanceKmBetween(point, suggestion) * 1000 > reverseRadius ||
       !belongsToSelectedBuilding(suggestion, building);
     const local = generic || bareStreet || tooFar
-      ? await lookupLocal(bareStreet)
+      ? await lookupLocal({ requireHouseNumber: bareStreet })
       : null;
     if (local) {
       return located({
