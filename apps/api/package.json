@@ -35,7 +35,8 @@
     "smoke:stage9": "node src/tools/stage9-payment-rating-smoke.js",
     "smoke:stage11": "node src/tools/stage11-driver-core-smoke.js",
     "smoke:driver-wallet": "node src/tools/driver-wallet-smoke.js",
-    "smoke:driver-documents": "node src/tools/driver-documents-smoke.js"
+    "smoke:driver-documents": "node src/tools/driver-documents-smoke.js",
+    "cleanup:local-smoke": "node src/tools/cleanup-local-smoke-orders.js"
   },
   "dependencies": {
     "@sentry/node": "^10.65.0",

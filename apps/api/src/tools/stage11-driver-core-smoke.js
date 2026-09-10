@@ -263,6 +263,16 @@ async function main() {
   if (earnings.completedOrders < 1) throw new Error("Driver earnings did not include completed order");
   mark("driver_earnings", { completedOrders: earnings.completedOrders, gross: earnings.todayGrossKzt, debt: debt.debtKzt });
 
+  const finalOffline = await request("/api/driver/status/offline", {
+    method: "POST",
+    token: driverToken,
+    body: {}
+  });
+  if (finalOffline.driver.publicStatus !== "OFFLINE") {
+    throw new Error(`Smoke cleanup expected OFFLINE, got ${finalOffline.driver.publicStatus}`);
+  }
+  mark("driver_offline_cleanup", { publicStatus: finalOffline.driver.publicStatus });
+
   console.table(steps);
   console.log(`Stage 11 driver core smoke ok: ${API_URL}`);
 }

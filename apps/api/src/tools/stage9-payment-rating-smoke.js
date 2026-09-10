@@ -169,6 +169,16 @@ async function main() {
   }
   mark("status_history", { count: statuses.length, publicStatus: history.order.public_status });
 
+  const offline = await request("/api/driver/status/offline", {
+    method: "POST",
+    token: driver.token,
+    body: {}
+  });
+  if (offline.driver.publicStatus !== "OFFLINE") {
+    throw new Error(`Smoke cleanup expected OFFLINE, got ${offline.driver.publicStatus}`);
+  }
+  mark("driver_offline_cleanup", { publicStatus: offline.driver.publicStatus });
+
   console.table(steps);
   console.log(`Stage 9 payment/rating smoke ok: ${API_URL}`);
 }

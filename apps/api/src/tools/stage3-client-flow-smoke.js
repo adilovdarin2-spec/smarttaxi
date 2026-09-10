@@ -142,8 +142,31 @@ async function main() {
   }
   mark("client_status_history", { count: history.history.length, publicStatus: history.order.public_status });
 
-  await request(`/api/orders/${orderId}/cancel`, { method: "POST", token: driver.token });
-  mark("cleanup_cancel");
+  const reopened = await request(`/api/orders/${orderId}/cancel`, { method: "POST", token: driver.token });
+  if (reopened.order.public_status !== "SEARCHING_DRIVER") {
+    throw new Error(`Driver cancellation must reopen dispatch, got ${reopened.order.public_status}`);
+  }
+  mark("driver_cancel_reopened", { publicStatus: reopened.order.public_status });
+
+  const terminalCancellation = await request(`/api/orders/${orderId}/cancel-public`, {
+    method: "POST",
+    token: client.token,
+    body: { riderPhone: client.phone }
+  });
+  if (terminalCancellation.order.public_status !== "CANCELLED_BY_CLIENT") {
+    throw new Error(`Smoke cleanup expected CANCELLED_BY_CLIENT, got ${terminalCancellation.order.public_status}`);
+  }
+  mark("client_cleanup_cancel", { publicStatus: terminalCancellation.order.public_status });
+
+  const offline = await request("/api/driver/status/offline", {
+    method: "POST",
+    token: driver.token,
+    body: {}
+  });
+  if (offline.driver.publicStatus !== "OFFLINE") {
+    throw new Error(`Smoke cleanup expected OFFLINE, got ${offline.driver.publicStatus}`);
+  }
+  mark("driver_offline_cleanup", { publicStatus: offline.driver.publicStatus });
 
   console.table(steps);
   console.log(`Stage 3 client flow smoke ok: ${API_URL}`);

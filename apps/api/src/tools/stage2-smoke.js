@@ -157,6 +157,16 @@ async function main() {
   const history = await request(`/api/orders/${orderId}/status-history`, { token: client.token });
   mark("status_history", { count: history.history.length });
 
+  const offline = await request("/api/driver/status/offline", {
+    method: "POST",
+    token: driver.token,
+    body: {}
+  });
+  if (offline.driver.publicStatus !== "OFFLINE") {
+    throw new Error(`Smoke cleanup expected OFFLINE, got ${offline.driver.publicStatus}`);
+  }
+  mark("driver_offline_cleanup", { publicStatus: offline.driver.publicStatus });
+
   console.table(steps);
   console.log(`Stage 2 smoke ok: ${API_URL}`);
 }

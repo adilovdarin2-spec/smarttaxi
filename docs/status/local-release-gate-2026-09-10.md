@@ -29,7 +29,13 @@ external prerequisites below into completed work.
   address selection, server route/fare, order create/reject/accept, arrival,
   waiting, trip, cash settlement, rating, protections and driver documents all
   completed. Final output: `Smoke full ok`.
-- The reusable seed driver was explicitly returned to `OFFLINE` after smoke.
+- Stage 2/3/9/11 now assert their own final `OFFLINE` cleanup. Stage 3 also
+  asserts driver-cancel reopen semantics before performing a terminal client
+  cancellation, so smoke no longer leaves its order in dispatch.
+- A guarded local-only cleanup moved 18 historical exact-match Stage 2/3 smoke
+  orders to `CANCELLED_BY_OPERATOR` through the normal API (audit/history
+  retained, no rows deleted). Postcondition: 0 such open orders and the reusable
+  seed driver is `OFFLINE`.
 - Web CLIENT/DRIVER and OWNER/CLIENT token replacement was visually verified in
   live tabs without reload; stale role data was not retained. Late admin data
   and authentication responses are guarded against replacement sessions.
