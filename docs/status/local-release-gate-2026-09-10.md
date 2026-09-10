@@ -24,6 +24,9 @@ external prerequisites below into completed work.
 - Docker: Compose configuration valid; API, web, PostgreSQL and Redis healthy.
   All host-published QA ports are loopback-only by default, including the API
   on `127.0.0.1:4001`; an automated source guard prevents silent regression.
+- The local CI-equivalent operations gate passes on Windows/Git Bash again:
+  shell scripts have consistent LF line endings, and `.gitattributes`
+  preserves them across Windows checkouts.
 - Production API dependency audit (`omit=dev,optional`): 0 vulnerabilities;
   Firebase Admin 14 modular Messaging is verified inside the minimal image at
   Docker build time.
