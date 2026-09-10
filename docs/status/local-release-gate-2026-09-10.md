@@ -30,6 +30,10 @@ external prerequisites below into completed work.
 - GitHub Actions uses the current Node 24-based `checkout@v7` and
   `setup-node@v7` actions with read-only repository permissions. A source guard
   rejects a regression to deprecated action runtimes.
+- Remote GitHub Actions run
+  [`#804`](https://github.com/adilovdarin2-spec/smarttaxi/actions/runs/34452223996)
+  passed all four jobs (`api`, `web`, `operations`, `mobile`) with no workflow
+  annotations after that migration.
 - Production API dependency audit (`omit=dev,optional`): 0 vulnerabilities;
   Firebase Admin 14 modular Messaging is verified inside the minimal image at
   Docker build time.
@@ -126,6 +130,9 @@ final passenger/driver recovery plus navigator/action checks.
    duration, but cannot guarantee the fastest current-traffic route.
 6. Legal/entity decisions and approved translations; store-owner acceptance.
 7. Real-road navigation, TTS, background GPS/push and battery/device-matrix QA.
-8. iOS/Mac signing, TestFlight and App Store work.
+8. Android owner-controlled upload keystore, release signing and Play Console
+   publication. The USB demo artifact is deliberately debug-signed and the
+   Gradle release task fails closed when `android/key.properties` is absent.
+9. iOS/Mac signing, TestFlight and App Store work.
 
 The application does not fabricate any of these integrations or datasets.
