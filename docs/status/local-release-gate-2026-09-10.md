@@ -47,6 +47,11 @@ external prerequisites below into completed work.
 - Compatible API/web runtime packages were refreshed; API and web production
   audits remain at 0 vulnerabilities and the rebuilt Compose services are
   healthy.
+- Firebase Admin was advanced to the compatible 14.4.0 release after a fresh
+  advisory review. The deployable API dependency set (`--omit=dev` and
+  `--omit=optional`) audits at 0 vulnerabilities. A clean Docker rebuild also
+  passed its runtime boundary check: optional Firestore/Storage packages are
+  absent, while modular Firebase Messaging remains importable offline.
 - Readiness: `env=development`; DB `ok`, Redis `PONG`, OSRM `ok`.
 - Full local smoke: health/maps, local dev-SMS registration, region-scoped
   address selection, server route/fare, order create/reject/accept, arrival,
