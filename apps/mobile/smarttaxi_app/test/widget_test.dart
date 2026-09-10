@@ -538,6 +538,10 @@ void main() {
     expect(passenger,
         contains('!hasTypedQuery || (!_loading && _results.isEmpty)'));
     expect(passenger, contains('if (showMapPointChoice)'));
+    expect(passenger,
+        contains('keyboardType: TextInputType.streetAddress'));
+    expect(passenger,
+        contains('autofillHints: const [AutofillHints.fullStreetAddress]'));
     // Region choices may be numerous for an intercity destination, so they
     // must remain horizontally reachable rather than wrapping out of view.
     expect(passenger, contains('scrollDirection: Axis.horizontal'));

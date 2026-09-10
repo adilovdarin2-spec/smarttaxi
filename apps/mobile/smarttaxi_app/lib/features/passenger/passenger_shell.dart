@@ -14852,6 +14852,8 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                   TextField(
                     controller: _query,
                     autofocus: false,
+                    keyboardType: TextInputType.streetAddress,
+                    autofillHints: const [AutofillHints.fullStreetAddress],
                     style: TextStyle(
                       color: palette.text,
                       fontSize: 15,
