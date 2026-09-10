@@ -1426,6 +1426,7 @@ export default function ClientApp() {
       SMS_CODE_ATTEMPTS_EXCEEDED: "Слишком много попыток. Получите новый код",
       SMS_VERIFICATION_EXPIRED: "Подтверждение истекло. Получите новый код",
       USER_NOT_FOUND: "Аккаунт с таким номером не найден",
+      INVALID_AUTH_RESPONSE: "Сервис не подтвердил вход. Попробуйте ещё раз.",
       SESSION_CHANGED_DURING_AUTH: "Аккаунт изменился в другой вкладке. Повторите вход здесь."
     };
     return map[code] || "Не удалось выполнить действие. Проверьте соединение и попробуйте снова.";

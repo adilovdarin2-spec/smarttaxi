@@ -70,3 +70,17 @@ export function replaceSessionTokenIfCurrent(expectedToken, nextToken, {
   writeToken(nextToken);
   return true;
 }
+
+export function commitAuthenticationToken(expectedToken, nextToken, options) {
+  if (typeof nextToken !== "string" || !nextToken.trim()) {
+    const error = new Error("Сервис не подтвердил новую сессию. Повторите вход.");
+    error.code = "INVALID_AUTH_RESPONSE";
+    throw error;
+  }
+  if (!replaceSessionTokenIfCurrent(expectedToken, nextToken, options)) {
+    const error = new Error("Сессия изменилась в другой вкладке. Повторите вход для выбранного аккаунта.");
+    error.code = "SESSION_CHANGED_DURING_AUTH";
+    throw error;
+  }
+  return nextToken;
+}

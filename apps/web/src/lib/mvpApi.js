@@ -1,14 +1,8 @@
 import { API_URL, api, clearToken, getToken, setToken, subscribeSessionChanges } from "./api.js";
-import { replaceSessionTokenIfCurrent } from "./browserSession.js";
+import { commitAuthenticationToken } from "./browserSession.js";
 import { createOrderWithRecovery } from "./orderCreation.js";
 
 export { clearToken, getToken, subscribeSessionChanges };
-
-function changedAuthenticationError() {
-  const error = new Error("Сессия изменилась в другой вкладке. Повторите вход для выбранного аккаунта.");
-  error.code = "SESSION_CHANGED_DURING_AUTH";
-  return error;
-}
 
 async function authenticate(path, payload) {
   const initialToken = getToken();
@@ -16,9 +10,7 @@ async function authenticate(path, payload) {
     method: "POST",
     body: JSON.stringify(payload)
   });
-  if (!replaceSessionTokenIfCurrent(initialToken, data.token, { readToken: getToken, writeToken: setToken })) {
-    throw changedAuthenticationError();
-  }
+  commitAuthenticationToken(initialToken, data?.token, { readToken: getToken, writeToken: setToken });
   return data;
 }
 

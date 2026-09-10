@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  commitAuthenticationToken,
   SESSION_CHANGED_EVENT,
   SESSION_TOKEN_KEY,
   readSessionToken,
@@ -126,4 +127,25 @@ test("a late authentication response cannot overwrite a replacement session", ()
   assert.equal(replaceSessionTokenIfCurrent("driver-token", "stale-token", options), false);
   assert.equal(token, "client-token");
   assert.deepEqual(writes, ["driver-token"]);
+});
+
+test("authentication refuses a missing token without clearing the current account", () => {
+  let token = "client-token";
+  const options = {
+    readToken: () => token,
+    writeToken: nextToken => { token = nextToken; }
+  };
+
+  assert.throws(
+    () => commitAuthenticationToken("client-token", undefined, options),
+    error => error?.code === "INVALID_AUTH_RESPONSE"
+  );
+  assert.equal(token, "client-token");
+
+  token = "owner-token";
+  assert.throws(
+    () => commitAuthenticationToken("client-token", "stale-driver-token", options),
+    error => error?.code === "SESSION_CHANGED_DURING_AUTH"
+  );
+  assert.equal(token, "owner-token");
 });
