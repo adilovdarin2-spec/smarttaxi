@@ -1,7 +1,9 @@
 # Release checklist — actions only the business owner can do
 
-Current local evidence and build hashes are in
-[customer handoff, 2026-09-09](status/customer-handoff-2026-09-09.md).
+Current local evidence and the newest Android QA artifact hash are in the
+[local release gate, 2026-09-10](status/local-release-gate-2026-09-10.md).
+The September 9 customer handoff remains historical evidence for the earlier
+physically installed build.
 This checklist is not proof that production services or legal/store
 prerequisites have been approved. The owner's September handoff leaves
 SMS sender approval, merchant activation and legal decisions external.

@@ -6,13 +6,15 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 ## Verified local baseline
 
-Latest September 9 evidence: [passenger wallet readiness](client-wallet-readiness-2026-09-09.md).
-API checks, 102 web tests/build, 258 Flutter tests/analyze and new APK/AAB passed.
+Latest September 10 evidence: [local release gate](local-release-gate-2026-09-10.md).
+The complete API checks, 124 web tests/build, 272 Flutter tests/analyze and a
+fresh local-endpoint APK passed.
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
 raw card data was not migrated and requires an owner-controlled retention decision.
-The newest APK is built, **not installed**; USB installation still requires device
-confirmation. Earlier installed-candidate evidence below is historical, not current.
+The newest APK is built and signature-verified, **not installed**; both ADB
+copies currently return an empty device list. Earlier installed-candidate
+evidence below is historical, not current.
 
 - API dependency policy and 36 checks; web 49 tests and production build.
 - Standard root-lock Docker images, healthy local API/web/PostgreSQL/Redis,
@@ -59,7 +61,7 @@ confirmation. Earlier installed-candidate evidence below is historical, not curr
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
 | Production routing capacity | Agreed staging/self-hosted provider, data and capacity testing before rollout | Local readiness currently uses the public OSRM demo; no load test should target that shared service |
 | Deployment and remote CI acceptance | Read CI results; apply and verify an authorized staging/production configuration | No production deploy is authorized in this local QA pass; Railway root-context adoption still needs service settings migration |
-| Final Android release artifact | Owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | A newly built, verified signed local AAB is recorded in `release-qa-local-2026-09-08.md`; the phone QA APK remains development-only and no store upload is authorized. |
+| Final Android release artifact | Owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | The newest development-only USB candidate is `SmartTaxi-release-gate-2026-09-10-USB.apk` (signature and SHA-256 verified); it cannot become a store artifact and has not been installed because no ADB device is exposed. The earlier signed local AAB remains recorded in `release-qa-local-2026-09-08.md`; no store upload is authorized. |
 
 The current transport/recovery pass fixes unsafe native write replay, stale
 session-expiry callbacks and recovery after an uncertain order response in both
@@ -86,6 +88,10 @@ these warnings did not prevent the current builds.
 
 ## Evidence index
 
+- [Current local release gate](local-release-gate-2026-09-10.md)
+- [Compatible Flutter dependency refresh](flutter-dependency-refresh-2026-09-10.md)
+- [Compatible Node dependency refresh](node-compatible-dependency-refresh-2026-09-10.md)
+- [Post-refresh live web visual pass](web-post-refresh-visual-pass-2026-09-10.md)
 - [Passenger wallet readiness and new artifacts](client-wallet-readiness-2026-09-09.md)
 - [Web driver account, modes and recovery](web-driver-account-pass-2026-09-09.md)
 - [Composition, typography and map refinement](composition-redesign-2026-09-06.md)
