@@ -150,6 +150,12 @@ external prerequisites below into completed work.
   showed the real 40 px car marker, blue route and finish flag. The smoke
   assertion now follows the accessible account-button name used by the current
   header instead of the removed text-only `Выйти` control; 131 web tests pass.
+- The guarded `smoke:qa-docker` gate was then repeated end to end against port
+  4001. Health/maps, dev-SMS registration, minimum-ETA route probes, 13-region
+  address coverage, create/reject/accept, driver mode switching, arrived,
+  waiting, trip, cash settlement, rating and driver documents all passed. Every
+  stage reported its reusable seed driver back in `OFFLINE`; the LAN API/web
+  endpoints on 4002/5176 also respond successfully for the Wi-Fi QA artifact.
 
 ## Fresh Android QA artifact
 
