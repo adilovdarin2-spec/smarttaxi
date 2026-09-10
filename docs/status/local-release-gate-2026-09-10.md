@@ -2,8 +2,8 @@
 
 ## Result
 
-All locally executable source, build and Docker gates passed on `dev` at
-`7b72d7f`. The local stack is suitable for another customer/demo QA round.
+All locally executable source, build and Docker gates passed on `dev` through
+`9d7a39c`. The local stack is suitable for another customer/demo QA round.
 This is not authorization for production publication and does not convert the
 external prerequisites below into completed work.
 
@@ -11,7 +11,7 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 119/119 tests passed; Vite production build and bundled MapLibre worker
+- Web: 124/124 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
 - Docker: Compose configuration valid; API, web, PostgreSQL and Redis healthy.
@@ -21,8 +21,15 @@ external prerequisites below into completed work.
   waiting, trip, cash settlement, rating, protections and driver documents all
   completed. Final output: `Smoke full ok`.
 - The reusable seed driver was explicitly returned to `OFFLINE` after smoke.
-- Web CLIENT/DRIVER token replacement was visually verified in two live tabs
-  without reload; stale role data was not retained.
+- Web CLIENT/DRIVER and OWNER/CLIENT token replacement was visually verified in
+  live tabs without reload; stale role data was not retained. Late admin data
+  and authentication responses are guarded against replacement sessions.
+- Admin access was visually verified centered at 1280x720. Passenger entry was
+  visually verified at mobile width with the unified blue route/car hero, both
+  empty and valid phone-number states, and intact legal links.
+- An open stale web bundle was deliberately exercised after a Docker image
+  replacement: the safe recovery screen appeared and its reload action restored
+  the authenticated driver session without replaying or cancelling an order.
 
 ## Fresh Android QA artifact
 
@@ -37,10 +44,12 @@ external prerequisites below into completed work.
 ## Remaining device gate
 
 Both available SDK copies of `adb devices -l` returned an empty device list,
-including after `adb start-server`. Therefore no install, port reverse or new
-physical screenshots were attempted. When a device appears, the remaining
-local device task is to install this exact APK, reverse ports 4001/5175 and
-repeat the final passenger/driver recovery plus navigator/action checks.
+including after `adb start-server`. A Windows PnP inspection also found no
+present Android, ADB, MTP, or portable-device interface; only generic USB
+composite/hub devices were exposed. Therefore no install, port reverse or new
+physical screenshots were attempted. When a device appears, the remaining local
+device task is to install this exact APK, reverse ports 4001/5175 and repeat the
+final passenger/driver recovery plus navigator/action checks.
 
 ## Remaining external/public-release gates
 
