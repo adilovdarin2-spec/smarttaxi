@@ -9,4 +9,7 @@ test("pickup and destination address search expose explicit input semantics", as
   assert.match(source, /autoComplete="street-address"/);
   assert.match(source, /inputMode="search"/);
   assert.match(source, /enterKeyHint="search"/);
+  assert.match(source, /aria-busy=\{loading\}/);
+  assert.match(source, /loading && !results\.length \? "…" : results\.length/);
+  assert.match(source, /hasTypedQuery && loading && !results\.length \? "Ищем адреса"/);
 });

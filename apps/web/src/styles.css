@@ -23421,6 +23421,24 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: none;
 }
 
+/* The tariff preview is intentionally shallow. Keep the approved 64x86
+   address-picker cursor at full size everywhere else, but scale its confirmed
+   endpoint copy and the finish flag here so short routes stay visible between
+   the two markers instead of becoming a stack of oversized badges. */
+.taxi-client-shell .tariff-v14-map .smarttaxi-map-marker.native-address-pick-marker,
+.taxi-client-shell .tariff-v14-map .smarttaxi-map-marker.native-address-pick-marker > .approved-address-marker-badge,
+.taxi-client-shell .tariff-v14-map .smarttaxi-map-marker.native-address-pick-marker svg {
+  width: 44px;
+  height: 59px;
+}
+
+.taxi-client-shell .tariff-v14-map .finish-flag-map-marker,
+.taxi-client-shell .tariff-v14-map .finish-flag-marker-badge,
+.taxi-client-shell .tariff-v14-map .finish-flag-marker-badge svg {
+  width: 40px;
+  height: 52px;
+}
+
 /* Passenger tariff sheet: mirrors the approved map-first mobile reference.
    These rules intentionally replace the earlier tab/hero experiment with
    tangible tariff cards, a route card and one calm, primary action. */

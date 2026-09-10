@@ -12,7 +12,7 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 126/126 tests passed; Vite production build and bundled MapLibre worker
+- Web: 127/127 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
 - Native pickup/destination search now requests the Android street-address
@@ -65,6 +65,13 @@ external prerequisites below into completed work.
   pass 7/7 and 5/5 assertions respectively. A fresh fixture also completed the
   entire guarded lifecycle against Docker port 4001 and cleanup returned the
   seed driver to `OFFLINE`.
+- A live passenger route/tariff pass exposed oversized endpoint markers on the
+  shallow map preview. Only that preview now scales the pickup badge to 44x59
+  and the finish flag to 40x52, leaving the approved 64x86 address-picker cursor
+  unchanged. The short 0.7 km route remains readable between the markers.
+- Address search no longer presents a transient false `0` while the remote
+  catalogue request is still running: the result region is marked busy and
+  displays `Ищем адреса …` until the resolved count is available.
 
 ## Fresh Android QA artifact
 

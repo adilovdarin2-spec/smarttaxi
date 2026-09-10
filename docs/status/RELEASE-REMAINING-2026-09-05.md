@@ -7,7 +7,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 ## Verified local baseline
 
 Latest September 10 evidence: [local release gate](local-release-gate-2026-09-10.md).
-The complete API checks, 126 web tests/build, 272 Flutter tests/analyze and a
+The complete API checks, 127 web tests/build, 272 Flutter tests/analyze and a
 fresh local-endpoint APK passed.
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
@@ -23,6 +23,9 @@ evidence below is historical, not current.
   verified root-lock rebuild, offline API checks and local runtime readiness.
 - Browser passenger address/map selection, Economy/Delivery KZT estimates,
   payment selection and complete paired driver/passenger trip lifecycle.
+- Compact tariff previews keep the approved full-size picker cursor unchanged
+  while scaling confirmed endpoint copies so short routes remain visible;
+  address search reports an in-progress state instead of a false zero count.
 - Browser delayed/trailing GPS recovery, permission loss, failed actions,
   active/unpaid-trip restoration and stale-session isolation.
 - Native GPS queue/route ordering, presentation, transport and creation

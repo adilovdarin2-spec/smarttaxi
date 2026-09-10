@@ -3215,10 +3215,10 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], on
         {!mapSelectionActive && error && <p className="address-picker-note danger">{error}</p>}
         {!mapSelectionActive && !loading && query.trim().length >= 2 && !error && !results.length && <p className="address-picker-note">Не нашли точный адрес. Передвиньте карту и подтвердите точку.</p>}
 
-        {!mapSelectionActive && <section className="address-picker-results" aria-label={query.trim().length >= 2 ? "Результаты поиска" : "Популярные адреса"}>
+        {!mapSelectionActive && <section className="address-picker-results" aria-label={hasTypedQuery ? "Результаты поиска" : "Популярные адреса"} aria-busy={loading}>
           <header>
-            <strong>{query.trim().length >= 2 ? "Найденные адреса" : "Популярные рядом"}</strong>
-            <span>{results.length}</span>
+            <strong>{hasTypedQuery && loading && !results.length ? "Ищем адреса" : hasTypedQuery ? "Найденные адреса" : "Популярные рядом"}</strong>
+            <span>{loading && !results.length ? "…" : results.length}</span>
           </header>
           <div>
             {results.map(place => (
