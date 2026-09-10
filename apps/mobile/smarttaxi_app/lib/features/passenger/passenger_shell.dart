@@ -12724,6 +12724,7 @@ class _CreateRecurringBookingSheetState
                       right: 0,
                       child: IconButton(
                         onPressed: () => Navigator.pop(context),
+                        tooltip: l10n.close,
                         icon: Icon(Icons.close_rounded,
                             color: palette.textSecondary),
                       ),
@@ -14912,6 +14913,7 @@ class _AddressSearchSheetState extends State<_AddressSearchSheet> {
                                     color: palette.textMuted,
                                     size: 18,
                                   ),
+                                  tooltip: l10n.passengerClearAction,
                                   onPressed: () {
                                     _query.clear();
                                     _debounce?.cancel();

@@ -538,10 +538,18 @@ void main() {
     expect(passenger,
         contains('!hasTypedQuery || (!_loading && _results.isEmpty)'));
     expect(passenger, contains('if (showMapPointChoice)'));
-    expect(passenger,
-        contains('keyboardType: TextInputType.streetAddress'));
+    expect(passenger, contains('keyboardType: TextInputType.streetAddress'));
     expect(passenger,
         contains('autofillHints: const [AutofillHints.fullStreetAddress]'));
+    expect(
+      RegExp(r'tooltip: l10n\.passengerClearAction')
+          .allMatches(passenger)
+          .length,
+      greaterThanOrEqualTo(2),
+      reason: 'both address-search clear buttons need spoken names',
+    );
+    expect(passenger, contains('tooltip: l10n.close'),
+        reason: 'the recurring-route close icon needs a spoken name');
     // Region choices may be numerous for an intercity destination, so they
     // must remain horizontally reachable rather than wrapping out of view.
     expect(passenger, contains('scrollDirection: Axis.horizontal'));

@@ -17,6 +17,8 @@ external prerequisites below into completed work.
 - Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
 - Native pickup/destination search now requests the Android street-address
   keyboard and full-address autofill hint, matching the web search semantics.
+- Native recurring-route close and address-search clear icons now expose
+  localized spoken tooltips; the source guard covers both address clear paths.
 - Compatible Flutter runtime dependencies were refreshed and the resulting
   local-endpoint APK passed a fresh build and signature verification.
 - Docker: Compose configuration valid; API, web, PostgreSQL and Redis healthy.
@@ -61,8 +63,8 @@ external prerequisites below into completed work.
 ## Fresh Android QA artifact
 
 - File: `C:/dev/smarttaxi/SmartTaxi-release-gate-2026-09-10-USB.apk`
-- Size: 288,885,792 bytes.
-- SHA-256: `6eae29ccab4bd311467ce58ab9ccbe4f799ae021c542ba0445b41cea9a64f65e`.
+- Size: 288,883,364 bytes.
+- SHA-256: `ccd1f253826271ca88509355c3eec611b057b40f34eb33926f72a7d2c263078d`.
 - Signature: APK Signature Scheme v2 verified; one signer.
 - Endpoints: API/socket `http://127.0.0.1:4001`, web
   `http://127.0.0.1:5175`; requires ADB reverse and the local Docker stack.

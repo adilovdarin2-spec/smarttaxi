@@ -24,9 +24,10 @@ Android toolchain migration was mixed into the release-gate build.
 - `apksigner` verified APK Signature Scheme v2 with one Android Debug signer.
 - Artifact: `C:/dev/smarttaxi/SmartTaxi-release-gate-2026-09-10-USB.apk`
 - The same post-refresh artifact was rebuilt after the native address-input
-  parity fix (street-address keyboard and full-address autofill hint).
-- Size: 288,885,792 bytes.
-- SHA-256: `6eae29ccab4bd311467ce58ab9ccbe4f799ae021c542ba0445b41cea9a64f65e`.
+  parity fix (street-address keyboard, full-address autofill hint, and spoken
+  close/clear icon tooltips).
+- Size: 288,883,364 bytes.
+- SHA-256: `ccd1f253826271ca88509355c3eec611b057b40f34eb33926f72a7d2c263078d`.
 
 ## Deferred compatibility work
 
