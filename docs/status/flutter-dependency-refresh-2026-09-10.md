@@ -18,7 +18,7 @@ Android toolchain migration was mixed into the release-gate build.
 ## Verification
 
 - `flutter analyze`: no issues.
-- `flutter test`: 272/272 passed.
+- Latest post-API-36 `flutter test`: 276/276 passed.
 - A fresh debug APK built successfully against local API/socket
   `http://127.0.0.1:4001` and web `http://127.0.0.1:5175`.
 - `apksigner` verified APK Signature Scheme v2 with one Android Debug signer.
@@ -26,8 +26,11 @@ Android toolchain migration was mixed into the release-gate build.
 - The same post-refresh artifact was rebuilt after the native address-input
   parity fix (street-address keyboard, full-address autofill hint, and spoken
   close/clear icon tooltips).
+- The final USB artifact was rebuilt after the Android API 36 release-policy
+  update; its manifest reports `compileSdkVersion=36` and
+  `targetSdkVersion=36`.
 - Size: 288,883,364 bytes.
-- SHA-256: `ccd1f253826271ca88509355c3eec611b057b40f34eb33926f72a7d2c263078d`.
+- SHA-256: `8f70fc9c6a8c737ad82fb613fb40c93b4c1e757a38f1653226300619a0780399`.
 
 ## Deferred compatibility work
 

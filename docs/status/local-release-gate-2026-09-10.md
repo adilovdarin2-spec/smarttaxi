@@ -14,7 +14,8 @@ external prerequisites below into completed work.
   121,361 catalogue rows across 13 regions.
 - Web: 127/127 tests passed; Vite production build and bundled MapLibre worker
   check passed.
-- Flutter: `flutter analyze` reported no issues; 272/272 tests passed.
+- Flutter: `flutter analyze` reported no issues; 276/276 tests passed. The
+  suite includes a fail-closed Android API/signing/cleartext policy guard.
 - Native pickup/destination search now requests the Android street-address
   keyboard and full-address autofill hint, matching the web search semantics.
 - Native recurring-route close and address-search clear icons now expose
@@ -101,11 +102,18 @@ external prerequisites below into completed work.
 
 - File: `C:/dev/smarttaxi/SmartTaxi-release-gate-2026-09-10-USB.apk`
 - Size: 288,883,364 bytes.
-- SHA-256: `ccd1f253826271ca88509355c3eec611b057b40f34eb33926f72a7d2c263078d`.
+- SHA-256: `8f70fc9c6a8c737ad82fb613fb40c93b4c1e757a38f1653226300619a0780399`.
 - Signature: APK Signature Scheme v2 verified; one signer.
+- Manifest: compile/target SDK 36 (Android 16), minimum SDK 24.
 - Endpoints: API/socket `http://127.0.0.1:4001`, web
   `http://127.0.0.1:5175`; requires ADB reverse and the local Docker stack.
 - This debug APK is for USB QA/demo only, not a Play Store artifact.
+- A production-default, API-36 release AAB also builds successfully with the
+  existing ignored local signing configuration:
+  `C:/dev/smarttaxi/SmartTaxi-release-candidate-2026-09-10-api36.aab`,
+  102,624,707 bytes, SHA-256
+  `60a7e50aba6c8b0b42287e730d254aa9787c4f1a2d952bb8170d00c1bb1d60d3`.
+  `jarsigner -verify` reports `jar verified`; no Play upload was performed.
 
 ## Remaining device gate
 
@@ -130,9 +138,10 @@ final passenger/driver recovery plus navigator/action checks.
    duration, but cannot guarantee the fastest current-traffic route.
 6. Legal/entity decisions and approved translations; store-owner acceptance.
 7. Real-road navigation, TTS, background GPS/push and battery/device-matrix QA.
-8. Android owner-controlled upload keystore, release signing and Play Console
-   publication. The USB demo artifact is deliberately debug-signed and the
-   Gradle release task fails closed when `android/key.properties` is absent.
+8. Android signing custody and Play Console publication. An ignored local
+   signing configuration exists and the API-36 AAB builds successfully, while
+   Gradle still fails closed when `android/key.properties` is absent. The owner
+   must confirm secure backup/ownership of that key and perform Play acceptance.
 9. iOS/Mac signing, TestFlight and App Store work.
 
 The application does not fabricate any of these integrations or datasets.
