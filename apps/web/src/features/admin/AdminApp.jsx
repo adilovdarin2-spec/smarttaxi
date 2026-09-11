@@ -1,8 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
 import DriversLiveMap from "./DriversLiveMap.jsx";
+import StandsPage from "./StandsPage.jsx";
+import CancellationReviewsPage from "./CancellationReviewsPage.jsx";
+import { Badge, DataCard, Field, LoadingState, PageHeader, SegmentedFilter, StatePanel } from "./adminUi.jsx";
 import {
   adjustAdminDriverDebt,
+  createAdminStand,
+  deleteAdminStand,
+  decideAdminCancellationReview,
+  getAdminCancellationReviews,
+  getAdminStands,
+  updateAdminStand,
   assignAdminOrderDriver,
   blockAdminDriver,
   broadcastAdminNotification,
@@ -84,6 +93,8 @@ const navigation = [
   { key: "recurringBookings", label: "Регулярные поездки", eyebrow: "Постоянные привязки" },
   { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
   { key: "payouts", label: "Выплаты", eyebrow: "Заявки водителей на вывод" },
+  { key: "stands", label: "Стоянки", eyebrow: "Очереди водителей", ownerOnly: true },
+  { key: "cancellations", label: "Разбор отмен", eyebrow: "Отмены после подачи" },
   { key: "roadAlerts", label: "Дорога", eyebrow: "События и безопасность", ownerOnly: true },
   { key: "quality", label: "Качество", eyebrow: "Отзывы и рейтинг" },
   { key: "raffles", label: "Розыгрыши", eyebrow: "Конкурсы водителей" },
@@ -398,6 +409,10 @@ export default function AdminApp() {
   const [financeDatePreset, setFinanceDatePreset] = useState("30d");
   const [financeDateFrom, setFinanceDateFrom] = useState("");
   const [financeDateTo, setFinanceDateTo] = useState("");
+  const [standRegion, setStandRegion] = useState("");
+  const [cancellationStatus, setCancellationStatus] = useState("PENDING");
+  const [standActionError, setStandActionError] = useState("");
+  const [standBusy, setStandBusy] = useState(false);
   const [roadAlertStatus, setRoadAlertStatus] = useState("ACTIVE");
   const [roadAlertRegion, setRoadAlertRegion] = useState("all");
   const [supportStatus, setSupportStatus] = useState("OPEN");
@@ -555,6 +570,20 @@ export default function AdminApp() {
           dateRange: summary.status === "fulfilled" ? summary.value.dateRange || dateParams : dateParams
         };
       },
+      stands: async () => {
+        const [stands, regions] = await Promise.all([
+          getAdminStands({ includeInactive: true }),
+          getAdminRegions()
+        ]);
+        return { stands: stands.stands || [], regions: regions.regions || [] };
+      },
+      cancellations: async () => {
+        const data = await getAdminCancellationReviews({
+          reviewStatus: cancellationStatus !== "all" ? cancellationStatus : undefined,
+          limit: 100
+        });
+        return { audits: data.audits || [], cancellationSummary: data.summary || null };
+      },
       roadAlerts: async () => {
         const selectedRegionId = roadAlertRegion !== "all" ? roadAlertRegion : undefined;
         const [alerts, regions] = await Promise.all([
@@ -648,7 +677,7 @@ export default function AdminApp() {
     } catch (error) {
       if (isCurrent()) setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [cancellationStatus, financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   // Fetches the next page from the server and appends it to whatever's
   // already loaded under itemsKey (e.g. "orders"), rather than replacing
@@ -1030,6 +1059,48 @@ export default function AdminApp() {
     }, "CSV экспорт подготовлен");
   }
 
+  // The stand editor shows its own errors next to the form rather than in the
+  // global banner: the owner is looking at the map when the point lands
+  // outside the region, and that is where the reason has to appear.
+  async function saveStand(payload, standId) {
+    setStandBusy(true);
+    setStandActionError("");
+    try {
+      if (standId) {
+        await updateAdminStand(standId, payload);
+      } else {
+        await createAdminStand(payload);
+      }
+      await loadPage("stands");
+      setActionState({ loading: false, error: "", message: standId ? "Стоянка обновлена" : "Стоянка создана" });
+    } catch (error) {
+      setStandActionError(readError(error));
+    } finally {
+      setStandBusy(false);
+    }
+  }
+
+  async function removeStand(standId) {
+    setStandBusy(true);
+    setStandActionError("");
+    try {
+      await deleteAdminStand(standId);
+      await loadPage("stands");
+      setActionState({ loading: false, error: "", message: "Стоянка удалена" });
+    } catch (error) {
+      setStandActionError(readError(error));
+    } finally {
+      setStandBusy(false);
+    }
+  }
+
+  async function decideCancellation(auditId, payload) {
+    await runAction(async () => {
+      await decideAdminCancellationReview(auditId, payload);
+      await loadPage("cancellations");
+    }, "Решение записано");
+  }
+
   async function hideRoadAlert(alert) {
     await runAction(async () => {
       await expireAdminRoadAlert(alert.id);
@@ -1290,6 +1361,17 @@ export default function AdminApp() {
             onLoadMoreOrders={() => loadMoreItems("orders", offset => getAdminOrders({ status: orderStatus !== "all" ? orderStatus : undefined, offset }))}
             onLoadMoreDrivers={() => loadMoreItems("drivers", offset => getAdminDrivers({ offset }))}
             onLoadMoreAudit={() => loadMoreItems("logs", offset => getAdminAudit({ offset }))}
+            standRegion={standRegion}
+            setStandRegion={setStandRegion}
+            standBusy={standBusy}
+            standActionError={standActionError}
+            onCreateStand={payload => saveStand(payload, null)}
+            onUpdateStand={(standId, payload) => saveStand(payload, standId)}
+            onDeleteStand={removeStand}
+            cancellationStatus={cancellationStatus}
+            setCancellationStatus={setCancellationStatus}
+            onDecideCancellation={decideCancellation}
+            actionLoading={actionState.loading}
             tariffStatus={tariffStatus}
             setTariffStatus={setTariffStatus}
             tariffRegion={tariffRegion}
@@ -1765,6 +1847,33 @@ function AdminPage(props) {
   }
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
+  if (active === "stands") {
+    return (
+      <StandsPage
+        stands={asArray(payload, "stands")}
+        regions={asArray(payload, "regions")}
+        standRegion={props.standRegion}
+        setStandRegion={props.setStandRegion}
+        onCreateStand={props.onCreateStand}
+        onUpdateStand={props.onUpdateStand}
+        onDeleteStand={props.onDeleteStand}
+        busy={props.standBusy}
+        actionError={props.standActionError}
+      />
+    );
+  }
+  if (active === "cancellations") {
+    return (
+      <CancellationReviewsPage
+        audits={asArray(payload, "audits")}
+        summary={payload?.cancellationSummary || null}
+        cancellationStatus={props.cancellationStatus}
+        setCancellationStatus={props.setCancellationStatus}
+        onDecideCancellation={props.onDecideCancellation}
+        busy={props.actionLoading}
+      />
+    );
+  }
   if (active === "roadAlerts") return <RoadAlertsPage alerts={asArray(payload, "alerts")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "quality") {
     return (
@@ -1820,21 +1929,6 @@ function AdminPage(props) {
     );
   }
   return <StatePanel title="Нет данных для отображения" text="Выберите раздел меню или обновите страницу." />;
-}
-
-function PageHeader({ title, subtitle, action, children }) {
-  return (
-    <section className="admin-section-header">
-      <div>
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-      </div>
-      <div className="admin-section-actions">
-        {children}
-        {action}
-      </div>
-    </section>
-  );
 }
 
 function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEditRegion, onToggleRegion, canManageOwnerOnly }) {
@@ -4695,73 +4789,10 @@ function ModalFrame({ title, onClose, children, wide = false, error }) {
   );
 }
 
-function SegmentedFilter({ value, onChange, items }) {
-  return (
-    <div className="admin-segmented-filter">
-      {items.map(([key, label]) => (
-        <button key={key} type="button" className={value === key ? "active" : ""} onClick={() => onChange(key)}>
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
-function Field({ label, value, onChange, type = "text" }) {
-  return (
-    <label className="admin-field">
-      <span>{label}</span>
-      <input type={type} value={value} onChange={event => onChange(event.target.value)} />
-    </label>
-  );
-}
-
-function DataCard({ title, text, action, children }) {
-  return (
-    <section className="admin-data-card">
-      <header>
-        <div>
-          <h2>{title}</h2>
-          <p>{text}</p>
-        </div>
-        {action}
-      </header>
-      {children}
-    </section>
-  );
-}
-
-function LoadingState() {
-  return (
-    <section className="admin-data-card">
-      <div className="admin-skeleton-row" />
-      <div className="admin-skeleton-row short" />
-      <div className="admin-skeleton-row" />
-    </section>
-  );
-}
-
-function StatePanel({ title, text, action, onAction }) {
-  return (
-    <section className="admin-state-panel">
-      <div className="admin-state-mark" />
-      <h2>{title}</h2>
-      <p>{text}</p>
-      {action && (
-        <button type="button" className="admin-secondary-button" onClick={onAction}>
-          {action}
-        </button>
-      )}
-    </section>
-  );
-}
 
 function InlineMessage({ text, danger = false }) {
   return <div className={`admin-inline-message ${danger ? "danger" : ""}`}>{text}</div>;
-}
-
-function Badge({ tone = "muted", children }) {
-  return <span className={`admin-badge ${tone}`}>{children}</span>;
 }
 
 function InfoLine({ label, value }) {

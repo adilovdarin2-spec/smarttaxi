@@ -24852,3 +24852,398 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     min-height: 34px;
   }
 }
+
+/* --- Stands: drawing a stand on the map ------------------------------- */
+
+.stand-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.stand-editor-form header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.stand-map-wrap {
+  position: relative;
+  height: 420px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  margin: 14px 0 18px;
+}
+
+.stand-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.stand-map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-warm);
+  color: var(--admin-secondary);
+  font-weight: 700;
+}
+
+.stand-map-hint {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  max-width: 60%;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-text);
+  box-shadow: 0 8px 20px rgba(20, 20, 20, 0.12);
+}
+
+.stand-map-radius {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(20, 20, 20, 0.14);
+}
+
+.stand-map-radius label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--admin-text);
+  white-space: nowrap;
+}
+
+.stand-map-radius input[type="range"] {
+  flex: 1;
+  accent-color: var(--admin-brand);
+}
+
+.stand-map-radius output {
+  min-width: 62px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--admin-brand-deep);
+}
+
+.stand-map-pin {
+  width: 20px;
+  height: 20px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #ffffff;
+  background: var(--admin-brand);
+  box-shadow: 0 4px 10px rgba(20, 20, 20, 0.3);
+}
+
+.stand-map-pin.intercity {
+  background: #7c3aed;
+}
+
+.stand-map-pin.editing {
+  width: 26px;
+  height: 26px;
+  cursor: grab;
+}
+
+.stand-editor-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stand-editor-fields .admin-field.wide,
+.admin-field.wide {
+  grid-column: 1 / -1;
+}
+
+.admin-field.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+
+.stand-editor-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.admin-inline-error {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: var(--admin-danger);
+  font-weight: 600;
+}
+
+.stand-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stand-list li button {
+  width: 100%;
+  text-align: left;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stand-list li.selected button {
+  border-color: var(--admin-brand);
+  box-shadow: 0 0 0 3px var(--admin-brand-soft);
+}
+
+.stand-list-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stand-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--admin-secondary);
+}
+
+/* --- Cancellation review ---------------------------------------------- */
+
+.cancellation-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cancellation-summary-row > div {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cancellation-summary-row > div.danger strong {
+  color: var(--admin-danger);
+}
+
+.cancellation-summary-row strong {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--admin-text);
+}
+
+.cancellation-summary-row span {
+  font-size: 13px;
+  color: var(--admin-secondary);
+}
+
+.cancellation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cancellation-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cancellation-card.open {
+  border-color: var(--admin-border-strong);
+}
+
+.cancellation-card-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cancellation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cancellation-summary span {
+  font-size: 13px;
+  color: var(--admin-secondary);
+}
+
+.cancellation-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--admin-secondary);
+}
+
+.cancellation-card-body {
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cancellation-signals {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cancellation-signals li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--admin-warm);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.cancellation-signals li.positive {
+  background: #f0fdf4;
+}
+
+.cancellation-signals li.muted {
+  color: var(--admin-muted);
+}
+
+.cancellation-signals em {
+  font-style: normal;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.cancellation-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+}
+
+.cancellation-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px dashed var(--admin-border);
+  padding-bottom: 6px;
+}
+
+.cancellation-facts dt {
+  color: var(--admin-secondary);
+  font-size: 13px;
+}
+
+.cancellation-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: right;
+}
+
+.cancellation-note {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--admin-warm);
+  border-radius: 12px;
+  font-style: italic;
+}
+
+.cancellation-note.muted {
+  color: var(--admin-secondary);
+  font-style: normal;
+}
+
+.cancellation-decision {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cancellation-decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cancellation-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--admin-secondary);
+}
+
+@media (max-width: 1100px) {
+  .stand-editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cancellation-summary-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .stand-editor-fields,
+  .cancellation-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cancellation-card-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .cancellation-meta {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+}

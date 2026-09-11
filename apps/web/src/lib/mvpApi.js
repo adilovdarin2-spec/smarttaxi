@@ -778,3 +778,129 @@ export function getAdminReferrals() {
 export function getAdminRecurringBookings(params = {}) {
   return api(`/api/admin/recurring-bookings${queryString(params)}`);
 }
+
+/* ----------------------------------------------------------- taxi stands */
+
+export function getStands(params = {}) {
+  return api(`/api/stands${queryString(params)}`);
+}
+
+export function getStand(standId) {
+  return api(`/api/stands/${standId}`);
+}
+
+export function reserveStandSeat(entryId, payload) {
+  return api(`/api/stands/entries/${entryId}/reserve`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getMyStandReservation() {
+  return api("/api/stands/reservations/me");
+}
+
+export function cancelStandReservation(reservationId) {
+  return api(`/api/stands/reservations/${reservationId}`, { method: "DELETE" });
+}
+
+export function getDriverStands(params = {}) {
+  return api(`/api/driver/stands${queryString(params)}`);
+}
+
+export function getDriverStandQueue(standId) {
+  return api(`/api/driver/stands/${standId}/queue`);
+}
+
+export function getMyStandPlace() {
+  return api("/api/driver/stands/me");
+}
+
+export function joinStandQueue(standId, payload) {
+  return api(`/api/driver/stands/${standId}/join`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateStandOffer(entryId, payload) {
+  return api(`/api/driver/stands/entries/${entryId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function addStandSeats(entryId, payload) {
+  return api(`/api/driver/stands/entries/${entryId}/seats`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function releaseStandSeats(entryId, seats = 1) {
+  return api(`/api/driver/stands/entries/${entryId}/seats`, {
+    method: "DELETE",
+    body: JSON.stringify({ seats })
+  });
+}
+
+export function departStandQueue(entryId) {
+  return api(`/api/driver/stands/entries/${entryId}/depart`, { method: "POST" });
+}
+
+export function leaveStandQueue(entryId) {
+  return api(`/api/driver/stands/entries/${entryId}/leave`, { method: "POST" });
+}
+
+export function handOverStandTurn(entryId, toDriverId) {
+  return api(`/api/driver/stands/entries/${entryId}/handover`, {
+    method: "POST",
+    body: JSON.stringify({ toDriverId })
+  });
+}
+
+export function publishStandPresence(payload) {
+  return api("/api/driver/stands/presence", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function respondStandReservation(reservationId, accept) {
+  return api(`/api/driver/stands/reservations/${reservationId}/${accept ? "accept" : "decline"}`, {
+    method: "POST"
+  });
+}
+
+export function getAdminStands(params = {}) {
+  return api(`/api/admin/stands${queryString(params)}`);
+}
+
+export function createAdminStand(payload) {
+  return api("/api/admin/stands", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateAdminStand(standId, payload) {
+  return api(`/api/admin/stands/${standId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteAdminStand(standId) {
+  return api(`/api/admin/stands/${standId}`, { method: "DELETE" });
+}
+
+export function getAdminCancellationReviews(params = {}) {
+  return api(`/api/admin/cancellation-reviews${queryString(params)}`);
+}
+
+export function decideAdminCancellationReview(auditId, payload) {
+  return api(`/api/admin/cancellation-reviews/${auditId}/review`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
