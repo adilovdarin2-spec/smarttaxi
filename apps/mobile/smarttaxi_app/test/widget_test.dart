@@ -221,6 +221,10 @@ void main() {
       expect(passenger, contains('regionsLoadFailed: _regionsLoadFailed'));
       expect(passenger,
           contains('onRetryRegions: () => unawaited(_loadRegions())'));
+      expect(passenger, contains('Future<void>? _regionsLoadFuture'));
+      expect(passenger, contains('if (pending != null) return pending'));
+      expect(passenger, contains('final request = _loadRegionsRequest()'));
+      expect(passenger, isNot(contains('if (_regionsLoading) return')));
       expect(passenger, contains('onRegionTap'));
       expect(passenger, contains('_openRegionSelector'));
       expect(

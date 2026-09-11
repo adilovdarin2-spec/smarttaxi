@@ -102,8 +102,10 @@ external prerequisites below into completed work.
 - Flutter passenger bootstrap now keeps that contract too: a failed catalogue
   request sets a visible premium recovery card, its action retries the real
   API call, and the first address tap performs the same preflight instead of
-  opening an unusable regionless search sheet. Five widget cases cover 320px,
-  light/dark, 1.0/1.6 text scale and the disabled loading action.
+  opening an unusable regionless search sheet. Concurrent startup/tap callers
+  now await one shared catalogue Future instead of treating the already-running
+  request as a failure. Five widget cases cover 320px, light/dark, 1.0/1.6 text
+  scale and the disabled loading action.
 - The same outage exposed raw browser copy (`Failed to fetch`) and fabricated
   zero earnings/order totals on the first driver-line load. Driver errors now
   map to product copy, the map notice has a real single-flight retry action,
@@ -217,8 +219,8 @@ built with matching `API_BASE_URL`, `SOCKET_URL` and `WEB_BASE_URL`; this is
 still a local development setup, not a production deployment.
 
 The current cable-free artifact is
-`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-11.apk` (288,889,830 bytes,
-SHA-256 `edb5c429ade6c370fab918dc96a48ee92f6979b0fe1267c6303aae34d0fd0597`).
+`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-11.apk` (288,889,861 bytes,
+SHA-256 `8a8881fd8dd3a104c482a9bf66d8b3f2110fd2aa5e21765094686c0138d58007`).
 It targets API/socket `http://192.168.8.135:4002` and web
 `http://192.168.8.135:5176`; APK Signature Scheme v2 verifies with one Android
 debug signer. The passenger home now exposes the current service region as a

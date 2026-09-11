@@ -235,6 +235,7 @@ class _PassengerShellState extends State<PassengerShell>
   bool _locationLoading = false;
   bool _regionsLoading = false;
   bool _regionsLoadFailed = false;
+  Future<void>? _regionsLoadFuture;
   bool _mapTilesUnavailable = false;
   bool _startupRegionPromptShown = false;
   bool _locationServiceDisabled = false;
@@ -910,8 +911,15 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
-  Future<void> _loadRegions() async {
-    if (_regionsLoading) return;
+  Future<void> _loadRegions() {
+    final pending = _regionsLoadFuture;
+    if (pending != null) return pending;
+    final request = _loadRegionsRequest();
+    _regionsLoadFuture = request;
+    return request;
+  }
+
+  Future<void> _loadRegionsRequest() async {
     if (mounted) setState(() => _regionsLoading = true);
     try {
       final regions = await widget.api.getActiveRegions();
@@ -963,6 +971,7 @@ class _PassengerShellState extends State<PassengerShell>
       });
       _maybeAskLocationOnStart();
     } finally {
+      _regionsLoadFuture = null;
       if (mounted) setState(() => _regionsLoading = false);
     }
     unawaited(_refreshNearbyDrivers(silent: true));
