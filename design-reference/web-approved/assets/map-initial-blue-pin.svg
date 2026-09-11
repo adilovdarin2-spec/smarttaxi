@@ -1,0 +1,11 @@
+<svg width="44" height="54" viewBox="0 0 44 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="smarttaxiInitialBluePin" x1="8" y1="4" x2="36" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#63A0FF"/>
+      <stop offset="1" stop-color="#0B4FD1"/>
+    </linearGradient>
+  </defs>
+  <path d="M22 51s17-16.4 17-30.2C39 10.7 31.4 3 22 3S5 10.7 5 20.8C5 34.6 22 51 22 51Z" fill="url(#smarttaxiInitialBluePin)" stroke="#FFFFFF" stroke-width="3"/>
+  <circle cx="22" cy="20.5" r="7" fill="#FFFFFF"/>
+  <circle cx="22" cy="20.5" r="3.5" fill="#1D6FFF"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg width="64" height="86" viewBox="0 0 64 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="smarttaxiSquareMarkerGrad" x1="4" y1="2" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#63A0FF"/>
+      <stop offset="1" stop-color="#0B4FD1"/>
+    </linearGradient>
+    <linearGradient id="smarttaxiSquareTailGrad" x1="32" y1="64" x2="32" y2="86" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D6FFF"/>
+      <stop offset="1" stop-color="#0B4FD1"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="20" fill="url(#smarttaxiSquareMarkerGrad)"/>
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="#FFFFFF" fill-opacity=".88"/>
+  <path d="M10 22C10 14 16.5 8 24 6.5" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="14" y="24" width="7" height="7" fill="#63A0FF" fill-opacity=".55"/>
+  <rect x="23" y="24" width="7" height="7" fill="#1D6FFF" fill-opacity=".9"/>
+  <rect x="18" y="33" width="7" height="7" fill="#63A0FF" fill-opacity=".35"/>
+  <text x="42" y="35" text-anchor="middle" dominant-baseline="central" font-family="Manrope, Arial, sans-serif" font-weight="800" font-size="29" fill="url(#smarttaxiSquareMarkerGrad)">S</text>
+  <path d="M26 62H38V68L32 84L26 68Z" fill="url(#smarttaxiSquareTailGrad)"/>
+</svg>

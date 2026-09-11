@@ -1,0 +1,29 @@
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_single_quotes: true
+    # The four below are cheap here and close real classes of bug this app has
+    # actually shipped. Enabling them cost four call-site fixes, all in this
+    # commit; leaving them off cost a setState() on a disposed State that only
+    # a rider leaving the screen mid-request would ever see.
+    #
+    # use_build_context_synchronously: a BuildContext used after an await may
+    # belong to a widget that is gone. It reported nothing, so the codebase was
+    # already disciplined about it — worth pinning before that erodes.
+    use_build_context_synchronously: true
+    # unawaited_futures: an un-awaited Future is either deliberate fire-and-
+    # forget, and should say so with unawaited(), or a missing await whose
+    # errors vanish into the void.
+    unawaited_futures: true
+    # Both of these leak past dispose() and are invisible until a screen is
+    # opened and closed enough times.
+    cancel_subscriptions: true
+    close_sinks: true

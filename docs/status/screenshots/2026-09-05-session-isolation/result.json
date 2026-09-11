@@ -1,0 +1,15 @@
+[
+  {
+    "step": "actual_old_session_rejected_after_new_login",
+    "status": 401
+  },
+  {
+    "step": "new_session_and_driver_screen_preserved"
+  },
+  {
+    "step": "actual_current_session_supersession_still_logs_out"
+  },
+  {
+    "step": "passed"
+  }
+]

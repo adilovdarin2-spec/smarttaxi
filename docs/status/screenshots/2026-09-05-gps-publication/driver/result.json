@@ -1,0 +1,312 @@
+[
+  {
+    "step": "local_frontend_verified",
+    "web": "http://127.0.0.1:5175",
+    "api": "http://127.0.0.1:4001",
+    "mode": "built-web",
+    "server": "nginx/1.31.5"
+  },
+  {
+    "step": "simulated_browser_gps_sent_to_real_api",
+    "latitude": 40.8458,
+    "longitude": 68.5041
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "driver initial location",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "all_five_tabs_visible",
+    "widths": [
+      390,
+      360
+    ]
+  },
+  {
+    "step": "real_road_event_visible_and_expired"
+  },
+  {
+    "step": "passenger_search_recovered_after_open"
+  },
+  {
+    "step": "incoming_without_reload",
+    "elapsedMs": 2173,
+    "orderId": "358bc172-1192-4c77-91e6-9f2990774f7e"
+  },
+  {
+    "step": "failed_accept_preserves_order"
+  },
+  {
+    "step": "failed_reject_preserves_order"
+  },
+  {
+    "step": "successful_accept_survives_profile_refresh_failure"
+  },
+  {
+    "step": "busy_geolocation_watch_retained"
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "driver",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "driver",
+    "label": "accepted",
+    "phase": "to_pickup",
+    "points": 5,
+    "bluePixels": 323
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "passenger",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "passenger",
+    "label": "accepted",
+    "phase": "to_pickup",
+    "points": 5,
+    "bluePixels": 370
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "driver",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "driver",
+    "label": "longitude-only movement",
+    "phase": "to_pickup",
+    "points": 3,
+    "bluePixels": 130
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "passenger",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "passenger",
+    "label": "longitude-only movement",
+    "phase": "to_pickup",
+    "points": 3,
+    "bluePixels": 110
+  },
+  {
+    "step": "delayed_location_write_reconciled_before_route"
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "driver",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "driver",
+    "label": "trailing GPS fix",
+    "phase": "to_pickup",
+    "points": 3,
+    "bluePixels": 87
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "passenger",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "passenger",
+    "label": "trailing GPS fix",
+    "phase": "to_pickup",
+    "points": 3,
+    "bluePixels": 71
+  },
+  {
+    "step": "trailing_location_published_without_another_tick"
+  },
+  {
+    "step": "longitude_only_movement_routed_without_latitude_change"
+  },
+  {
+    "step": "failed_cancel_preserves_order"
+  },
+  {
+    "step": "DRIVER_GOING_TO_CLIENT"
+  },
+  {
+    "step": "DRIVER_ARRIVED"
+  },
+  {
+    "step": "failed_no-show_preserves_order"
+  },
+  {
+    "step": "WAITING_CLIENT"
+  },
+  {
+    "step": "TRIP_STARTED"
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "driver",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "driver",
+    "label": "trip started",
+    "phase": "to_dropoff",
+    "points": 13,
+    "bluePixels": 600
+  },
+  {
+    "step": "finish_flag_visible_above_map",
+    "browser": "driver",
+    "viewBox": "0 0 58 76",
+    "width": 58,
+    "height": 76,
+    "paintedWidth": 36.5,
+    "paintedHeight": 66,
+    "contained": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "blueCells": 8,
+    "whiteCells": 8
+  },
+  {
+    "step": "loaded_car_image_visible",
+    "browser": "passenger",
+    "src": "/map/driver_car_topview_white.png",
+    "naturalWidth": 1024,
+    "naturalHeight": 1024,
+    "width": 40,
+    "height": 40,
+    "withinMarker": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "objectFit": "contain"
+  },
+  {
+    "step": "live_route_verified",
+    "browser": "passenger",
+    "label": "trip started",
+    "phase": "to_dropoff",
+    "points": 13,
+    "bluePixels": 685
+  },
+  {
+    "step": "finish_flag_visible_above_map",
+    "browser": "passenger",
+    "viewBox": "0 0 58 76",
+    "width": 58,
+    "height": 76,
+    "paintedWidth": 36.5,
+    "paintedHeight": 66,
+    "contained": true,
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "blueCells": 8,
+    "whiteCells": 8
+  },
+  {
+    "step": "TRIP_COMPLETED"
+  },
+  {
+    "step": "passenger_unpaid_trip_recovered_after_reload"
+  },
+  {
+    "step": "new_payment_recovered_after_reload"
+  },
+  {
+    "step": "PAID"
+  },
+  {
+    "step": "successful_accept_through_payment"
+  },
+  {
+    "step": "passenger_account_surfaces_read_only"
+  },
+  {
+    "step": "passed"
+  }
+]

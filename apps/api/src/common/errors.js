@@ -1,3 +1,5 @@
+import { captureError } from "./sentry.js";
+
 export class AppError extends Error {
   constructor(message, status = 400, code = "BAD_REQUEST", details = undefined) {
     super(message);
@@ -25,7 +27,10 @@ export function errorHandler(err, req, res, _next) {
   }
 
   const status = err.status || 500;
-  if (status >= 500) console.error("[ERROR]", err);
+  if (status >= 500) {
+    console.error("[ERROR]", err);
+    captureError(err, { path: req.originalUrl, method: req.method });
+  }
 
   res.status(status).json({
     error: err.code || "INTERNAL_ERROR",

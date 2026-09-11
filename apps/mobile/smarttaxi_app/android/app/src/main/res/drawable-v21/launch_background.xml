@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background color plus a small centered logo mark instead of a full-screen
+     bitmap: on a slow cold start this native splash can be visible for over
+     a second before the Flutter engine attaches, and a bare color read as a
+     frozen/blank screen. The supplied bitmap is explicitly sized to 96dp,
+     matching Flutter StartupScreen without an oversized logo transition. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/smarttaxi_background" />
+    <item android:gravity="center" android:width="96dp" android:height="96dp">
+        <bitmap
+            android:src="@drawable/smarttaxi_splash_icon"
+            android:gravity="fill" />
+    </item>
+</layer-list>

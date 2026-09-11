@@ -1,0 +1,19 @@
+{
+  "colors": {
+    "brand": "#1D6FFF",
+    "brandDark": "#0B4FD1",
+    "text": "#111111",
+    "muted": "#6B7280",
+    "pale": "#EAF3FF",
+    "white": "#FFFFFF"
+  },
+  "sizes": {
+    "iconSmall": 16,
+    "iconNormal": 20,
+    "iconAction": 24,
+    "mapMarker": "28-34px",
+    "buttonHeight": "48-52px",
+    "driverActionHeight": "52-56px",
+    "bottomSheetRadius": 24
+  }
+}

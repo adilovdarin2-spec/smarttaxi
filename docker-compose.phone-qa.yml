@@ -1,0 +1,8 @@
+services:
+  api:
+    ports:
+      - "${SMARTTAXI_PHONE_QA_BIND_HOST:?Set SMARTTAXI_PHONE_QA_BIND_HOST to the private LAN address}:${SMARTTAXI_PHONE_QA_API_PORT:-4002}:4000"
+
+  web:
+    ports:
+      - "${SMARTTAXI_PHONE_QA_BIND_HOST:?Set SMARTTAXI_PHONE_QA_BIND_HOST to the private LAN address}:${SMARTTAXI_PHONE_QA_WEB_PORT:-5176}:80"

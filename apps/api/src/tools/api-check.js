@@ -1,49 +1,125 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import "./syntax-check.js";
+import "./auth-seed-check.js";
+import "./regions-check.js";
+import "./driver-approval-check.js";
+import "./tariffs-orders-check.js";
+import "./dispatch-realtime-check.js";
+import "./routing-location-check.js";
+import "./admin-tariffs-check.js";
+import "./finance-ledger-check.js";
+import "./road-alerts-check.js";
+import "./official-addresses-check.js";
+import "./service-settings-check.js";
+import fs from "node:fs";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
-const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
-const orders = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
-const auth = readFileSync(join(root, "modules", "auth", "auth.routes.js"), "utf8");
-const finance = readFileSync(join(root, "modules", "finance", "finance.routes.js"), "utf8");
-const drivers = readFileSync(join(root, "modules", "drivers", "drivers.routes.js"), "utf8");
-const maps = readFileSync(join(root, "modules", "maps", "maps.routes.js"), "utf8");
-const env = readFileSync(join(root, "config", "env.js"), "utf8");
-
-const checks = [
-  ["audit table", /CREATE TABLE IF NOT EXISTS audit_logs/i.test(schema)],
-  ["audit indexes", /idx_audit_logs_created_at/i.test(schema)],
-  ["order transition guard", /assertTransition/i.test(orders)],
-  ["completed requires in progress", /COMPLETED:\s*\["IN_PROGRESS"\]/.test(orders)],
-  ["double accept guard", /ORDER_ALREADY_ACCEPTED/.test(orders) && /FOR UPDATE/.test(orders)],
-  ["driver availability codes", /DRIVER_OFFLINE/.test(orders) && /DRIVER_BUSY/.test(orders) && /DRIVER_BLOCKED/.test(orders)],
-  ["driver own order guard", /FORBIDDEN_ORDER/.test(orders)],
-  ["invalid transition code", /INVALID_STATUS_TRANSITION/.test(orders)],
-  ["public order rate limit", /orders-create/.test(orders)],
-  ["order status history", /order_status_history/.test(orders)],
-  ["driver busy on accept", /status='BUSY'/.test(orders)],
-  ["driver free on completion", /status='FREE'/.test(orders)],
-  ["cashback transaction on complete", /cashback_transactions/.test(orders) && /cashback_balance/.test(orders)],
-  ["driver debt on cash kaspi", /driver_debts/.test(orders) && /CASH/.test(orders) && /KASPI/.test(orders)],
-  ["driver card balance", /balance=balance\+\(\$1-\$2\)/.test(orders)],
-  ["order audit logs", /order_created/.test(orders) && /order_completed/.test(orders)],
-  ["auth rate limit", /auth-login/.test(auth)],
-  ["auth audit logs", /login_success/.test(auth) && /login_failed/.test(auth)],
-  ["finance completed revenue", /SUM\(price\) FILTER \(WHERE status='COMPLETED'\)/.test(finance)],
-  ["finance audit endpoint", /audit-logs/.test(finance)],
-  ["driver stats completed orders", /completed_orders/.test(drivers) && /status='COMPLETED'/.test(drivers)],
-  ["driver active order endpoint", /\/me\/active-order/.test(drivers) && /activeOrder/.test(drivers)],
-  ["maps fallback estimate", /estimateRoute/.test(maps) && /provider: "fallback"/.test(maps)],
-  ["maps price source response", /LOWER\(name\)=LOWER\(\$1\)/.test(maps) && /source: "fallback"/.test(maps) && /price/.test(maps) && /\.\.\.estimate/.test(maps)],
-  ["env validation", /requiredUrl\("DATABASE_URL"\)/.test(env) && /jwtSecret/.test(env) && /CORS_ORIGINS: corsOrigins/.test(env)]
-];
-
-const failed = checks.filter(([, ok]) => !ok);
-if (failed.length) {
-  for (const [name] of failed) console.error(`Backend check failed: ${name}`);
-  process.exit(1);
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
 }
 
-console.log("API hardening checks ok");
+function read(path) {
+  return fs.readFileSync(new URL(path, import.meta.url), "utf8");
+}
+
+const adminAppUrl = new URL("../../../web/src/features/admin/AdminApp.jsx", import.meta.url);
+const adminApiUrl = new URL("../../../web/src/lib/mvpApi.js", import.meta.url);
+const hasWebSource = fs.existsSync(adminAppUrl) && fs.existsSync(adminApiUrl);
+const adminApp = hasWebSource ? fs.readFileSync(adminAppUrl, "utf8") : "";
+const adminApi = hasWebSource ? fs.readFileSync(adminApiUrl, "utf8") : "";
+
+if (hasWebSource) {
+[
+  "Главная",
+  "Регионы",
+  "Водители",
+  "Заявки",
+  "Заказы",
+  "Тарифы",
+  "Финансы",
+  "Настройки",
+  "Журнал",
+  "Поддержка"
+].forEach(section => assert(adminApp.includes(section), `Admin shell missing ${section}`));
+
+[
+  "getAdminDashboard",
+  "getAdminRegions",
+  "createAdminRegion",
+  "updateAdminRegion",
+  "toggleAdminRegion",
+  "getAdminDrivers",
+  "getAdminDriverDetail",
+  "blockAdminDriver",
+  "unblockAdminDriver",
+  "getAdminDriverRegions",
+  "updateAdminDriverRegion",
+  "getAdminDriverApplications",
+  "updateAdminDriverApplication",
+  "getAdminTariffs",
+  "createAdminTariff",
+  "updateAdminTariff",
+  "setAdminTariffStatus",
+  "getAdminTariffAnalytics",
+  "previewAdminTariffPrice",
+  "getAdminFinanceSummary",
+  "getAdminFinanceDriverDebts",
+  "getAdminFinanceReports",
+  "getAdminFinanceTransactions",
+  "adjustAdminDriverDebt",
+  "exportAdminFinanceTransactionsCsv",
+  "getAdminOrders",
+  "getAdminAudit",
+  "getAdminSettings"
+].forEach(fn => assert(adminApi.includes(`function ${fn}`), `Admin API wrapper missing ${fn}`));
+
+[
+  "DRIVER_ORDERS",
+  "OPERATOR_TICKETS",
+  "Lorem ipsum",
+  "╨",
+  "╤",
+  "тЖТ"
+].forEach(token => assert(!adminApp.includes(token), `Admin shell contains forbidden token ${token}`));
+
+[
+  "Когда клиент или водитель отправит обращение, оно появится здесь для обработки.",
+  "Нет данных для отображения",
+  "Не удалось загрузить данные",
+  "Текущий аккаунт не имеет доступа к этой панели"
+].forEach(copy => assert(adminApp.includes(copy), `Admin shell missing honest state copy: ${copy}`));
+
+[
+  "Добавить регион",
+  "Граница региона, координаты полигона",
+  "Быстрый шаблон региона",
+  "Редактировать",
+  "Активировать",
+  "Отключить",
+  "Карточка водителя",
+  "Региональный доступ",
+  "Причина блокировки",
+  "Доступ к региону одобрен",
+  "Заявка водителя",
+  "Отклонить"
+].forEach(copy => assert(adminApp.includes(copy), `Admin operations UI missing ${copy}`));
+} else {
+  console.warn("Admin shell web-source checks skipped: apps/web is not present in this runtime image");
+}
+
+const adminRoutes = read("../modules/admin/admin.routes.js");
+[
+  'router.get("/drivers/:id"',
+  'router.patch("/drivers/:id/block"',
+  'router.get("/drivers/:id/regions"',
+  'router.patch("/drivers/:id/regions"',
+  'router.patch("/driver-applications/:id"'
+].forEach(route => assert(adminRoutes.includes(route), `Admin route missing ${route}`));
+
+const redisDb = read("../db/redis.js");
+assert(redisDb.includes('env.NODE_ENV === "production"'), "Redis connect should stay strict in production");
+assert(redisDb.includes("API will run in degraded mode"), "Redis connect should allow degraded local API startup");
+
+const rateLimiter = read("../common/rateLimit.js");
+assert(rateLimiter.includes("Redis fallback"), "Rate limiter should document Redis fallback behavior");
+assert(!rateLimiter.includes("next(error);"), "Rate limiter must not turn Redis fallback into API 500 responses");
+
+console.log("Milestone 1, 2, 3, 4, auth/seed, routing/location and admin control checks ok");

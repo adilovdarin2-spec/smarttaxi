@@ -1,0 +1,406 @@
+[
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Изменить данные через поддержку"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Профиль и автомобиль",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "История поездок",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Рейтинг и отзывы",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Регулярные поездки",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Прочитать все · 10"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      },
+      {
+        "height": 52,
+        "label": "Отметить прочитанным"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Уведомления",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Отправить на проверку"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Документы",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Отправить обращение"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Поддержка",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Пополнить"
+      },
+      {
+        "height": 52,
+        "label": "Вывести"
+      },
+      {
+        "height": 52,
+        "label": "Показать ещё операции"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Кошелёк",
+    "width": 360
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Вернуться на линию"
+      },
+      {
+        "height": 73,
+        "label": "Профиль и автомобильВаши данные для поездок"
+      },
+      {
+        "height": 87.59375,
+        "label": "История поездокМаршруты, стоимость и оплата"
+      },
+      {
+        "height": 73,
+        "label": "КошелёкБаланс, операции и заявки"
+      },
+      {
+        "height": 73,
+        "label": "Рейтинг и отзывыОценки ваших пассажиров"
+      },
+      {
+        "height": 73,
+        "label": "ДокументыЗагрузка и статус проверки"
+      },
+      {
+        "height": 87.59375,
+        "label": "Регулярные поездкиРасписание постоянных клиентов"
+      },
+      {
+        "height": 73,
+        "label": "УведомленияПоездки и новости аккаунта"
+      },
+      {
+        "height": 86.59375,
+        "label": "ПоддержкаОбращения и ответы оператора"
+      },
+      {
+        "height": 52,
+        "label": "Заказать поездку как пассажир"
+      },
+      {
+        "height": 52,
+        "label": "Выйти из аккаунта"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Кабинет водителя",
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 67.1875,
+        "label": "Изменить данные через поддержку"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Профиль и автомобиль",
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Отправить на проверку"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Документы",
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Пополнить"
+      },
+      {
+        "height": 52,
+        "label": "Вывести"
+      },
+      {
+        "height": 52,
+        "label": "Показать ещё операции"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Кошелёк",
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      },
+      {
+        "height": 52,
+        "label": "Отправить обращение"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Поддержка",
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "label": "Назад в кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Закрыть кабинет"
+      },
+      {
+        "height": 44,
+        "label": "Обновить данные"
+      }
+    ],
+    "overflow": false,
+    "panelOverflow": false,
+    "screen": "Рейтинг и отзывы",
+    "width": 360
+  }
+]

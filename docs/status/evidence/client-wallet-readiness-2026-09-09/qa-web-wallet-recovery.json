@@ -1,0 +1,29 @@
+{
+  "uncertain": {
+    "message": "Не удалось подтвердить удаление. Обновите данные перед повторной попыткой.",
+    "overflow": false,
+    "removals": "Тестовых удалений: 1",
+    "repeatDisabled": true,
+    "width": 320
+  },
+  "recovered": {
+    "errorCount": 0,
+    "overflow": false,
+    "removals": "Тестовых удалений: 1",
+    "repeatDisabled": false,
+    "width": 320
+  },
+  "failedRead": {
+    "balanceCount": 0,
+    "error": "Не удалось загрузить кошелёк. Обновите данные — баланс не подтверждён.",
+    "overflow": false,
+    "width": 320
+  },
+  "final": {
+    "balanceCount": 1,
+    "errorCount": 0,
+    "overflow": false,
+    "removals": "Тестовых удалений: 1",
+    "width": 320
+  }
+}

@@ -8,28 +8,28 @@ SmartTaxi is a production-oriented taxi dispatch starter for Atakent:
 
 ## Local Start
 
-1. Copy environment file:
+1. The Compose defaults are suitable for isolated local development. If an
+   existing `.env` is present, verify `NODE_ENV=development` and
+   `SMS_PROVIDER=dev` before running local smoke tests. `.env.example` is the
+   production template; copying it unchanged intentionally disables dev SMS.
 
-```bash
-cp .env.example .env
-```
-
-2. For local Docker development, keep `NODE_ENV=development` or use the compose defaults. For production, fill real secrets before deploy.
+2. Never place production SMS/payment credentials in the local QA environment.
+   For production, fill the real secrets only as part of an authorized deploy.
 
 3. Start services:
 
 ```bash
 docker compose up -d --build
 docker compose exec api npm run seed
-curl http://127.0.0.1:4000/api/health/ready
+curl http://127.0.0.1:4001/api/health/ready
 ```
 
 4. Open:
 
 ```txt
-Client: http://localhost:5173/client
-Driver: http://localhost:5173/driver
-Owner:  http://localhost:5173/owner
+Client: http://localhost:5175/
+Driver: http://localhost:5175/driver
+Owner:  http://localhost:5175/owner
 ```
 
 ## Required Environment
@@ -40,10 +40,15 @@ Fill `.env` from `.env.example`:
 POSTGRES_DB=smarttaxi
 POSTGRES_USER=smarttaxi
 POSTGRES_PASSWORD=strong-password
-DATABASE_URL=postgresql://smarttaxi:strong-password@postgres:5432/smarttaxi
-REDIS_URL=redis://redis:6379
+POSTGRES_PORT=5433
+DATABASE_URL=postgresql://smarttaxi:strong-password@127.0.0.1:5433/smarttaxi
+REDIS_URL=redis://127.0.0.1:6379
+API_DATABASE_URL=postgresql://smarttaxi:strong-password@postgres:5432/smarttaxi
+API_REDIS_URL=redis://redis:6379
 JWT_SECRET=random-64-character-production-secret
 CORS_ORIGINS=https://app.smarttaxi.kz,https://smarttaxi.kz
+SMARTTAXI_API_BIND_HOST=127.0.0.1
+SMARTTAXI_API_PORT=4001
 API_ORIGIN=https://api.smarttaxi.kz
 APP_ORIGIN=https://app.smarttaxi.kz
 VITE_GOOGLE_MAPS_BROWSER_KEY=
@@ -52,7 +57,34 @@ GOOGLE_MAPS_SERVER_KEY=
 
 `JWT_SECRET` must be at least 32 characters. In production, do not use demo values.
 
+For local host runs (`npm --prefix apps/api run dev`), `DATABASE_URL` and `REDIS_URL`
+must point to ports reachable from Windows, for example `127.0.0.1:5433` and
+`127.0.0.1:6379`. For Docker Compose, the API container uses
+`API_DATABASE_URL` and `API_REDIS_URL`; keep those pointed at the Compose service
+names `postgres` and `redis`.
+
+Docker Compose publishes the API on `127.0.0.1:4001` by default, matching the
+local QA tooling and preventing the development SMS flow from being exposed to
+the LAN. An authorized deployment may override `SMARTTAXI_API_BIND_HOST`
+explicitly; do not do so for local development.
+
+`npm --prefix apps/api run smoke:qa-docker` additionally verifies readiness,
+`NODE_ENV=development` and the dev SMS provider before creating any QA data.
+
 Google Maps keys are optional for now. If they are empty, `/api/maps/estimate` returns a safe fallback estimate and the client app keeps working.
+
+## SMS Provider
+
+Local development uses the built-in dev SMS code flow. For real SMS on VPS, keep the Infobip token only in `.env` or server secrets:
+
+```txt
+SMS_PROVIDER=infobip
+SMS_FROM=ServiceSMS
+INFOBIP_BASE_URL=https://YOUR_INFOBIP_SUBDOMAIN.api.infobip.com
+INFOBIP_API_KEY=YOUR_INFOBIP_APP_KEY
+```
+
+Do not commit the real `INFOBIP_API_KEY`. If `SMS_PROVIDER=infobip` is enabled and delivery fails, `/api/auth/sms/send` returns a clean backend error instead of pretending the SMS was sent.
 
 ## VPS Deploy
 
