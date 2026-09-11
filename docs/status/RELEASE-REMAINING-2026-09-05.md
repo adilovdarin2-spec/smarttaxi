@@ -6,16 +6,19 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 ## Verified local baseline
 
-Latest September 10/11 evidence: [local release gate](local-release-gate-2026-09-10.md).
+Latest September 10/11 evidence: [local release gate](local-release-gate-2026-09-10.md)
+and [taxi stands and cancellation review](stands-and-cancellation-review-2026-09-11.md),
+the first physical-device pass since the phone was reconnected.
 The complete API checks, 134 web tests/build, 283 Flutter tests/analyze and a
 fresh local-endpoint APK passed.
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
 raw card data was not migrated and requires an owner-controlled retention decision.
-The newest cable-free APK is built and signature-verified, **not installed**;
-physical-device verification is intentionally pending while the current work
-continues without the phone. Earlier installed-candidate evidence below is
-historical, not current.
+The phone is connected again. The current cable-free APK
+() is installed and was driven through
+login, all 13 regions, address and map selection, and both new stand screens on
+the device; see the stand evidence above. Moving-GPS, background and permission-
+revocation acceptance is still open.
 
 - API dependency policy and 36 checks; web 49 tests and production build.
 - Standard root-lock Docker images, healthy local API/web/PostgreSQL/Redis,
@@ -63,7 +66,9 @@ historical, not current.
 
 | Item | What closes it | Current constraint |
 |---|---|---|
-| Passenger/driver visual parity | Continue the remaining physical-device permission and recovery-state comparison against the current reference boards | Web passenger region-bootstrap failure is visually checked at 390x844 on both home and address picker, with an in-context retry that restores all 13 regions without reload. Flutter now exposes the matching recovery card and prevents a regionless address sheet; 320px light/dark and large-text widget cases pass. The connected phone already covers the native happy path, but real permission revocation/background transitions still require the phone. |
+| Passenger/driver visual parity | Continue the remaining physical-device permission and recovery-state comparison against the current reference boards | Region-bootstrap recovery is checked on web at 390x844 and in Flutter with 320px light/dark and large-text cases. On 2026-09-11 the connected phone also confirmed login, all 13 regions, address search and map selection on the current build, and drove both new stand screens end to end. Real permission revocation and background transitions still require the phone. |
+| Taxi stands (стоянки) | Owner draws the real lines in each region; then a working day on a real stand with several drivers | Built and verified on the connected phone: geofenced joining, the offer, phone and app seats, handing a turn over, departure, and the rider's map/sheet/reservation. See [stands and cancellation review](stands-and-cancellation-review-2026-09-11.md). Two demo stands exist in Мырзакент only; nothing is drawn for the other twelve regions, and no real line has been run yet. |
+| Cancellation review | Owner works the queue for a few weeks, then the risk threshold and signal weights are retuned against what actually shows up | Every cancellation that reached a driver is now scored and filed; the driver states a reason and the rider can say the driver asked them to cancel. Nothing is charged automatically, by decision. The threshold (25) and weights are reasoned, not data-derived, and a follow-up observation of where the car went is recorded 8 minutes later. |
 | Driver account in passenger mode | Closed — live local API check plus `stage11-driver-core-smoke.js` cover driver → passenger → driver, client wallet and recurring bookings | The acting token is correctly CLIENT-scoped in passenger mode while the persisted account stays DRIVER. Wallet and recurring bookings return `200`; the former 403/404 note was superseded by the current route/token contract. |
 | Native automatic dispatch after account switch | Closed — observe the new driver order without manual refresh on the revised APK | A newly registered local rider's order appeared in the already-signed-in, online driver app and was accepted/completed through the native driver UI. The library-level stale-session reproduction also fails before and passes after the fix. |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
@@ -98,6 +103,7 @@ these warnings did not prevent the current builds.
 
 ## Evidence index
 
+- [Taxi stands and cancellation review](stands-and-cancellation-review-2026-09-11.md)
 - [Current local release gate](local-release-gate-2026-09-10.md)
 - [Web map, address and route visual pass](web-map-route-visual-pass-2026-09-10.md)
 - [Physical-device QA helper safety and lifecycle fix](physical-device-qa-harness-pass-2026-09-10.md)
