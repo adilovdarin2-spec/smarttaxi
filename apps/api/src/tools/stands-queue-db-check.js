@@ -50,6 +50,14 @@ async function makeDriver(regionId, index) {
     RETURNING *
   `, [user.id, user.name, user.phone, `QA${tag}${index}`.toUpperCase().slice(0, 10), regionId])).rows[0];
   created.drivers.push(driver.id);
+  // A stand belongs to one region and the service now refuses a driver who
+  // was never approved to work there — the same rule dispatch already
+  // enforces. These fixtures have to clear it like a real driver does.
+  await query(`
+    INSERT INTO driver_region_approvals(driver_id, region_id, status, approved_at)
+    VALUES($1,$2,'APPROVED',NOW())
+    ON CONFLICT (driver_id, region_id) DO UPDATE SET status='APPROVED', approved_at=NOW()
+  `, [driver.id, regionId]);
   return driver;
 }
 
@@ -135,6 +143,16 @@ async function main() {
   const last = (await listLiveEntries(stand.id))[0];
   await leaveQueue({ driver: two, entryId: last.id, reason: "DRIVER_LEFT" });
   assert.deepEqual(await positions(stand.id), [], "the line is empty");
+
+  // --- standing at the place is not the same as being allowed to work there
+  const stranger = await makeDriver(region.id, 4);
+  await query("DELETE FROM driver_region_approvals WHERE driver_id=$1", [stranger.id]);
+  await assert.rejects(
+    () => joinQueue({ driver: stranger, standId: stand.id, ...at }),
+    (error) => error.code === "DRIVER_REGION_NOT_APPROVED",
+    "a driver never approved for this region must not advertise seats from it"
+  );
+  console.log("[queue-db-check] unapproved driver refused at the stand");
 
   console.log("Stand queue DB checks ok: order, promotion, handover swap, geofence grace, sweep");
 }

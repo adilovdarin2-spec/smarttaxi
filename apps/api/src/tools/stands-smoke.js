@@ -82,8 +82,23 @@ async function main() {
   }, "owner login");
   const ownerToken = ownerLogin.token;
 
+  // The stand has to sit in the region the seeded driver is actually approved
+  // for: a stand belongs to one region, and the service refuses a driver who
+  // was never cleared to work there.
+  const driverLogin = await expectOk("/api/auth/login/password", {
+    method: "POST",
+    body: {
+      phone: process.env.DEFAULT_DRIVER_PHONE || "+77000000000",
+      password: process.env.DEFAULT_DRIVER_PASSWORD || "123456"
+    }
+  }, "seeded driver login");
+  const driverToken = driverLogin.token;
+  const driverProfile = await expectOk("/api/driver/profile", { token: driverToken }, "driver profile");
+  const driverRegionId =
+    driverProfile.driver.currentRegionId || driverProfile.driver.current_region_id;
+
   const regions = await expectOk("/api/regions/active", {}, "regions");
-  const region = regions.regions.find((row) => row.code === "MYRZAKENT") || regions.regions[0];
+  const region = regions.regions.find((row) => row.id === driverRegionId) || regions.regions[0];
   assert.ok(region, "no active region to place a stand in");
 
   const standName = `QA стоянка ${suffix()}`;
@@ -133,11 +148,15 @@ async function main() {
   log("rider refused from the driver side with", notADriver.status, notADriver.payload.error || "");
 
   // --- the seeded driver runs the real line ----------------------------
-  const seededDriver = await expectOk("/api/auth/login/password", {
-    method: "POST",
-    body: { phone: process.env.DEFAULT_DRIVER_PHONE || "+77000000000", password: process.env.DEFAULT_DRIVER_PASSWORD || "123456" }
-  }, "seeded driver login");
-  const driverToken = seededDriver.token;
+  // Clear whatever a previous run left first: the shared seeded driver can
+  // only hold one place at a time, and a leftover one would make every
+  // assertion below about the wrong stand.
+  const me = await expectOk("/api/driver/stands/me", { token: driverToken }, "driver stand state");
+  if (me.entry) {
+    await expectOk(`/api/driver/stands/entries/${me.entry.id}/leave`, { method: "POST", token: driverToken }, "leave stale line");
+    log("cleared a leftover place from an earlier run");
+  }
+  await expectOk("/api/driver/status/offline", { method: "POST", token: driverToken, body: {} }, "driver offline");
 
   // A place in a line is a working driver's place: taking one while offline
   // would advertise a car that cannot be dispatched.
@@ -151,11 +170,9 @@ async function main() {
   log("offline join refused");
   await expectOk("/api/driver/status/online", { method: "POST", token: driverToken }, "driver online");
 
-  const me = await expectOk("/api/driver/stands/me", { token: driverToken }, "driver stand state");
-  if (me.entry) {
-    await expectOk(`/api/driver/stands/entries/${me.entry.id}/leave`, { method: "POST", token: driverToken }, "leave stale line");
-    log("cleared a leftover place from an earlier run");
-  }
+  // Region approval is checked too, but the seeded driver is approved for
+  // every region, so it cannot be demonstrated over HTTP here — that case is
+  // driven with purpose-built fixtures in stands-queue-db-check.js.
 
   // Standing somewhere else is not standing here.
   const farAway = await api(`/api/driver/stands/${stand.id}/join`, {

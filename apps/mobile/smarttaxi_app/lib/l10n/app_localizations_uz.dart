@@ -4126,12 +4126,22 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String standCarsInLine(int count) {
-    return 'Navbatda $count ta mashina';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Navbatda $count ta mashina',
+    );
+    return '$_temp0';
   }
 
   @override
   String standFreeSeatsShort(int count) {
-    return '$count ta joy bo‘sh';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta joy bo‘sh',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4170,7 +4180,12 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String standWaitTurnText(int count) {
-    return 'Navbatni kuting. Oldingizda $count ta mashina.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Navbatni kuting. Oldingizda $count ta mashina.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4251,7 +4266,12 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String standRequestSeats(int count) {
-    return '$count ta joy';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta joy',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4283,7 +4303,12 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String standSeatsFreeCount(int count) {
-    return '$count ta bo‘sh joy';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta bo‘sh joy',
+    );
+    return '$_temp0';
   }
 
   @override

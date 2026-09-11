@@ -7384,13 +7384,13 @@ abstract class AppLocalizations {
   /// No description provided for @standCarsInLine.
   ///
   /// In ru, this message translates to:
-  /// **'{count} машин в очереди'**
+  /// **'{count, plural, one{{count} машина в очереди} few{{count} машины в очереди} many{{count} машин в очереди} other{{count} машины в очереди}}'**
   String standCarsInLine(int count);
 
   /// No description provided for @standFreeSeatsShort.
   ///
   /// In ru, this message translates to:
-  /// **'{count} мест свободно'**
+  /// **'{count, plural, one{{count} место свободно} few{{count} места свободно} many{{count} мест свободно} other{{count} места свободно}}'**
   String standFreeSeatsShort(int count);
 
   /// No description provided for @standDistanceMeters.
@@ -7450,7 +7450,7 @@ abstract class AppLocalizations {
   /// No description provided for @standWaitTurnText.
   ///
   /// In ru, this message translates to:
-  /// **'Ждите очередь. Перед вами {count} машин.'**
+  /// **'{count, plural, one{Ждите очередь. Перед вами {count} машина.} few{Ждите очередь. Перед вами {count} машины.} many{Ждите очередь. Перед вами {count} машин.} other{Ждите очередь. Перед вами {count} машины.}}'**
   String standWaitTurnText(int count);
 
   /// No description provided for @standSeatsLabel.
@@ -7600,7 +7600,7 @@ abstract class AppLocalizations {
   /// No description provided for @standRequestSeats.
   ///
   /// In ru, this message translates to:
-  /// **'{count} мест(а)'**
+  /// **'{count, plural, one{{count} место} few{{count} места} many{{count} мест} other{{count} места}}'**
   String standRequestSeats(int count);
 
   /// No description provided for @standAcceptRequest.
@@ -7654,7 +7654,7 @@ abstract class AppLocalizations {
   /// No description provided for @standSeatsFreeCount.
   ///
   /// In ru, this message translates to:
-  /// **'{count} свободных мест'**
+  /// **'{count, plural, one{{count} свободное место} few{{count} свободных места} many{{count} свободных мест} other{{count} свободных места}}'**
   String standSeatsFreeCount(int count);
 
   /// No description provided for @standPricePerSeatValue.

@@ -133,7 +133,7 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, _) => _StandSheet(
+        builder: (context, _) => PassengerStandSheet(
           view: _open,
           reservation: _reservation,
           busy: _busy,
@@ -390,7 +390,7 @@ class _StandList extends StatelessWidget {
             const SizedBox(height: 12),
           ],
           if (reservation != null) ...[
-            _ReservationBanner(
+            PassengerStandReservationBanner(
               reservation: reservation!,
               busy: busy,
               onCancel: onCancelReservation,
@@ -439,6 +439,7 @@ class _StandList extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -491,8 +492,9 @@ class _StandList extends StatelessWidget {
   }
 }
 
-class _ReservationBanner extends StatelessWidget {
-  const _ReservationBanner({
+class PassengerStandReservationBanner extends StatelessWidget {
+  const PassengerStandReservationBanner({
+    super.key,
     required this.reservation,
     required this.busy,
     required this.onCancel,
@@ -582,8 +584,9 @@ class _ReservationBanner extends StatelessWidget {
   }
 }
 
-class _StandSheet extends StatelessWidget {
-  const _StandSheet({
+class PassengerStandSheet extends StatelessWidget {
+  const PassengerStandSheet({
+    super.key,
     required this.view,
     required this.reservation,
     required this.busy,
@@ -682,7 +685,7 @@ class _StandSheet extends StatelessWidget {
               )
             else
               for (final entry in boarding)
-                _StandCarCard(
+                PassengerStandCarCard(
                   entry: entry,
                   busy: busy,
                   alreadyReserved: reservation != null,
@@ -701,8 +704,9 @@ class _StandSheet extends StatelessWidget {
   }
 }
 
-class _StandCarCard extends StatelessWidget {
-  const _StandCarCard({
+class PassengerStandCarCard extends StatelessWidget {
+  const PassengerStandCarCard({
+    super.key,
     required this.entry,
     required this.busy,
     required this.alreadyReserved,
@@ -731,10 +735,18 @@ class _StandCarCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Destination, price and free seats sit on one line when they fit
+          // and stack when they do not: at 1.6 text scale on a 320px phone the
+          // seat count alone is wider than half the card.
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            runSpacing: 8,
             children: [
-              Expanded(
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 140),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -839,32 +851,63 @@ class _SeatCountSheet extends StatelessWidget {
         color: palette.card,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.standReserveSeatsTitle,
-            style: TextStyle(
-              color: palette.text,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
+      // The gesture bar sits over the bottom of a bottom sheet, and these
+      // chips are the only thing on this one — without the safe area the
+      // rider taps the system navigation instead of a seat.
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final value in options)
-                ChoiceChip(
-                  label: Text('$value'),
-                  selected: false,
-                  onSelected: (_) => Navigator.of(context).pop(value),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: palette.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                l10n.standReserveSeatsTitle,
+                style: TextStyle(
+                  color: palette.text,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final value in options)
+                    SizedBox(
+                      width: 56,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(value),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: Text('$value'),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

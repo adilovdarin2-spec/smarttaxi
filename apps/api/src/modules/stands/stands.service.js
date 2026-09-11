@@ -1,5 +1,6 @@
 import { query as defaultQuery, tx } from "../../db/pool.js";
 import { AppError } from "../../common/errors.js";
+import { assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
 
 // A stand is the physical place drivers already queue at off-app: the
 // межгород line by the bazaar, the по городу line by the bus station. The
@@ -317,6 +318,11 @@ export async function joinQueue({ driver, standId, lat, lng, destinationLabel, d
   return tx(async (client) => {
     const stand = await loadStand(standId, client);
     if (!stand.is_active) throw new AppError("Stand is closed", 409, "STAND_INACTIVE");
+    // Standing at the place is not the same as being allowed to work there.
+    // A stand sits in exactly one region, and a driver advertising seats out
+    // of a region they were never approved for would be taking passengers
+    // outside every check the dispatch side already enforces.
+    await assertDriverRegionApproved(driver, stand.region_id, client);
     assertInsideStand(stand, { lat, lng });
 
     const existing = (await client.query(`
@@ -581,9 +587,11 @@ export async function handOverTurn({ driver, entryId, toDriverId }) {
       return { standId: entry.stand_id, mode: "SWAP", targetDriverId: toDriverId, stand };
     }
 
-    // Not in the line yet: they have to actually be at the stand, same rule
-    // as joining normally. Their last published position is the only fact the
-    // server has about where they are.
+    // Not in the line yet: they have to clear exactly what joining normally
+    // clears — approved for this stand's region, and actually standing there.
+    // Their last published position is the only fact the server has about
+    // where they are.
+    await assertDriverRegionApproved(target, stand.region_id, client);
     const location = (await client.query(
       "SELECT lat, lng FROM driver_locations WHERE driver_id=$1",
       [toDriverId]

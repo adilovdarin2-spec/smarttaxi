@@ -4089,12 +4089,22 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String standCarsInLine(int count) {
-    return 'Кезекте $count көлік';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Кезекте $count көлік',
+    );
+    return '$_temp0';
   }
 
   @override
   String standFreeSeatsShort(int count) {
-    return '$count орын бос';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count орын бос',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4131,7 +4141,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String standWaitTurnText(int count) {
-    return 'Кезекті күтіңіз. Алдыңызда $count көлік.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Кезекті күтіңіз. Алдыңызда $count көлік.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4210,7 +4225,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String standRequestSeats(int count) {
-    return '$count орын';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count орын',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4241,7 +4261,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String standSeatsFreeCount(int count) {
-    return '$count бос орын';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count бос орын',
+    );
+    return '$_temp0';
   }
 
   @override

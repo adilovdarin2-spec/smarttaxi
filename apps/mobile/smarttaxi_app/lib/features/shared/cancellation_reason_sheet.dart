@@ -113,7 +113,12 @@ class _CancellationReasonSheetState extends State<_CancellationReasonSheet> {
         widget.isDriver ? driverCancelReasonCodes : clientCancelReasonCodes;
     final label = widget.isDriver ? driverCancelReasonLabel : clientCancelReasonLabel;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      // The note field raises the keyboard and the gesture bar sits under the
+      // buttons; both have to be cleared or the confirm button is unreachable.
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).viewPadding.bottom,
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: palette.card,

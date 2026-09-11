@@ -215,11 +215,20 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
             await _refreshPosition();
             await _load();
           },
-          child: _loading && _stands.isEmpty && !_place.isInLine
-              ? const Center(child: CircularProgressIndicator())
-              : ListView(
+          // Always a scrollable list, never a bare Center: pull-to-refresh has
+          // to work on an empty screen too, which is exactly the screen a
+          // driver is looking at when something is wrong.
+          child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   children: [
+                    if (_loading) ...[
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                    ],
                     if (_error != null) ...[
                       InlineMessage(text: _error!, danger: true),
                       const SizedBox(height: 12),
@@ -229,7 +238,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
                       const SizedBox(height: 12),
                     ],
                     if (_place.isInLine)
-                      _MyPlaceSection(
+                      DriverStandPlaceSection(
                         place: _place,
                         presence: _presence,
                         busy: _busy,
@@ -242,7 +251,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
                         onRespond: _respondToReservation,
                       )
                     else
-                      _StandListSection(
+                      DriverStandListSection(
                         stands: _stands,
                         position: _position,
                         isOnline: widget.isOnline,
@@ -392,8 +401,9 @@ class _StandOffer {
   final String comment;
 }
 
-class _StandListSection extends StatelessWidget {
-  const _StandListSection({
+class DriverStandListSection extends StatelessWidget {
+  const DriverStandListSection({
+    super.key,
     required this.stands,
     required this.position,
     required this.isOnline,
@@ -410,7 +420,6 @@ class _StandListSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final palette = context.palette;
     if (stands.isEmpty) {
       return PremiumCard(
         child: TitleBlock(title: l10n.standNoneTitle, text: l10n.standNoneText),
@@ -431,10 +440,6 @@ class _StandListSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        Text(
-          l10n.standJoinTooFar,
-          style: TextStyle(color: palette.textMuted, fontSize: 12.5),
-        ),
       ],
     );
   }
@@ -543,8 +548,9 @@ class _StandCard extends StatelessWidget {
   }
 }
 
-class _MyPlaceSection extends StatelessWidget {
-  const _MyPlaceSection({
+class DriverStandPlaceSection extends StatelessWidget {
+  const DriverStandPlaceSection({
+    super.key,
     required this.place,
     required this.presence,
     required this.busy,
@@ -709,38 +715,60 @@ class _SeatCounter extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: palette.border),
       ),
-      child: Row(
+      // The count above, the two controls below: this app's buttons are
+      // full-width by theme (minimumSize Size.fromHeight(56)), so one placed
+      // beside anything else in a Row forces an infinite width and takes the
+      // whole screen's layout down with it. Every button here is either
+      // Expanded or given a width of its own.
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.standSeatsLabel,
-                  style: TextStyle(color: palette.textSecondary, fontSize: 12.5),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.standSeatsValue(entry.takenSeats, entry.totalSeats),
-                  style: TextStyle(
-                    color: palette.text,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          Text(
+            l10n.standSeatsLabel,
+            style: TextStyle(color: palette.textSecondary, fontSize: 12.5),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.standSeatsValue(entry.takenSeats, entry.totalSeats),
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          IconButton.filledTonal(
-            onPressed: !busy && enabled && entry.takenSeats > 0 ? onRelease : null,
-            icon: const Icon(Icons.remove),
-            tooltip: l10n.standReleaseSeat,
-          ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed: !busy && enabled && !entry.isFull ? onAdd : null,
-            icon: const Icon(Icons.person_add_alt_1_rounded),
-            label: Text(l10n.standAddSeat),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              SizedBox(
+                width: 56,
+                height: 52,
+                child: OutlinedButton(
+                  onPressed:
+                      !busy && enabled && entry.takenSeats > 0 ? onRelease : null,
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(56, 52),
+                  ),
+                  child: Semantics(
+                    label: l10n.standReleaseSeat,
+                    button: true,
+                    child: const Icon(Icons.remove),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: FilledButton.icon(
+                    onPressed: !busy && enabled && !entry.isFull ? onAdd : null,
+                    icon: const Icon(Icons.person_add_alt_1_rounded),
+                    label: Text(l10n.standAddSeat),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -771,6 +799,7 @@ class _OfferSummary extends StatelessWidget {
           children: [
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -906,6 +935,7 @@ class _QueueRow extends StatelessWidget {
           ),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -1024,8 +1054,12 @@ class _StandOfferSheetState extends State<_StandOfferSheet> {
     // it would strand a rider who is already counted in.
     final minSeats = (widget.entry?.takenSeats ?? 0).clamp(1, 20).toInt();
     return Padding(
+      // Two different things eat the bottom of this sheet: the keyboard while
+      // the driver types a price, and the gesture bar once it closes. The
+      // save button has to clear both.
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).viewPadding.bottom,
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -1130,8 +1164,10 @@ class _SeatSourceSheet extends StatelessWidget {
         color: palette.card,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      child: SafeArea(
+        top: false,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1157,6 +1193,7 @@ class _SeatSourceSheet extends StatelessWidget {
             onTap: () => Navigator.of(context).pop('WALK_IN'),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1176,8 +1213,10 @@ class _GiveTurnSheet extends StatelessWidget {
         color: palette.card,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      child: SafeArea(
+        top: false,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1214,6 +1253,7 @@ class _GiveTurnSheet extends StatelessWidget {
               ),
             ),
         ],
+        ),
       ),
     );
   }

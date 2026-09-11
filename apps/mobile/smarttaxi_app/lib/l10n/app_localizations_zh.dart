@@ -3833,12 +3833,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String standCarsInLine(int count) {
-    return '排队 $count 辆车';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '排队 $count 辆车',
+    );
+    return '$_temp0';
   }
 
   @override
   String standFreeSeatsShort(int count) {
-    return '空位 $count 个';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '空位 $count 个',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3874,7 +3884,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String standWaitTurnText(int count) {
-    return '请等待。您前面还有 $count 辆车。';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '请等待。您前面还有 $count 辆车。',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3953,7 +3968,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String standRequestSeats(int count) {
-    return '$count 个座位';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个座位',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3984,7 +4004,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String standSeatsFreeCount(int count) {
-    return '$count 个空位';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个空位',
+    );
+    return '$_temp0';
   }
 
   @override

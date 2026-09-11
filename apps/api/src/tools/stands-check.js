@@ -163,6 +163,14 @@ const migrations = read("../db/migrations.js");
 
 const service = read("../modules/stands/stands.service.js");
 assert.ok(service.includes("FOR UPDATE"), "queue mutations must lock the row they move");
+// Standing at the place is not the same as being allowed to work there: a
+// stand belongs to exactly one region, and both ways into a line have to
+// check that the driver was approved for it.
+assert.equal(
+  (service.match(/await assertDriverRegionApproved\(/g) || []).length,
+  2,
+  "joining and receiving a handed-over turn must both check region approval"
+);
 assert.ok(
   service.includes("status IN ('PENDING','CONFIRMED')") || service.includes("status='PENDING'"),
   "pending seats must be held against the free-seat count"

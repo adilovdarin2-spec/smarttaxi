@@ -1763,7 +1763,7 @@
   "standLoadFailed": "Не удалось загрузить стоянки",
   "standKindCity": "По городу",
   "standKindIntercity": "Межгород",
-  "standCarsInLine": "{count} машин в очереди",
+  "standCarsInLine": "{count, plural, one{{count} машина в очереди} few{{count} машины в очереди} many{{count} машин в очереди} other{{count} машины в очереди}}",
   "@standCarsInLine": {
     "placeholders": {
       "count": {
@@ -1771,7 +1771,7 @@
       }
     }
   },
-  "standFreeSeatsShort": "{count} мест свободно",
+  "standFreeSeatsShort": "{count, plural, one{{count} место свободно} few{{count} места свободно} many{{count} мест свободно} other{{count} места свободно}}",
   "@standFreeSeatsShort": {
     "placeholders": {
       "count": {
@@ -1802,7 +1802,7 @@
   },
   "standYourTurnTitle": "Ваша очередь",
   "standYourTurnText": "Набирайте пассажиров. Когда машина заполнится — выезжайте.",
-  "standWaitTurnText": "Ждите очередь. Перед вами {count} машин.",
+  "standWaitTurnText": "{count, plural, one{Ждите очередь. Перед вами {count} машина.} few{Ждите очередь. Перед вами {count} машины.} many{Ждите очередь. Перед вами {count} машин.} other{Ждите очередь. Перед вами {count} машины.}}",
   "@standWaitTurnText": {
     "placeholders": {
       "count": {
@@ -1844,7 +1844,7 @@
   "standGiveTurnHasSeats": "Сначала освободите занятые места.",
   "standQueueTitle": "Очередь",
   "standRequestsTitle": "Заявки на места",
-  "standRequestSeats": "{count} мест(а)",
+  "standRequestSeats": "{count, plural, one{{count} место} few{{count} места} many{{count} мест} other{{count} места}}",
   "@standRequestSeats": {
     "placeholders": {
       "count": {
@@ -1870,7 +1870,7 @@
   "standSheetCars": "Машины на стоянке",
   "standSheetEmpty": "Сейчас на стоянке нет машин, готовых принять пассажиров.",
   "standReserveSeat": "Забронировать место",
-  "standSeatsFreeCount": "{count} свободных мест",
+  "standSeatsFreeCount": "{count, plural, one{{count} свободное место} few{{count} свободных места} many{{count} свободных мест} other{{count} свободных места}}",
   "@standSeatsFreeCount": {
     "placeholders": {
       "count": {

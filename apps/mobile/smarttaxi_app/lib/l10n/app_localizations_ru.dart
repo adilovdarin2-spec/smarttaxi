@@ -4086,12 +4086,28 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String standCarsInLine(int count) {
-    return '$count машин в очереди';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count машины в очереди',
+      many: '$count машин в очереди',
+      few: '$count машины в очереди',
+      one: '$count машина в очереди',
+    );
+    return '$_temp0';
   }
 
   @override
   String standFreeSeatsShort(int count) {
-    return '$count мест свободно';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count места свободно',
+      many: '$count мест свободно',
+      few: '$count места свободно',
+      one: '$count место свободно',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4129,7 +4145,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String standWaitTurnText(int count) {
-    return 'Ждите очередь. Перед вами $count машин.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ждите очередь. Перед вами $count машины.',
+      many: 'Ждите очередь. Перед вами $count машин.',
+      few: 'Ждите очередь. Перед вами $count машины.',
+      one: 'Ждите очередь. Перед вами $count машина.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4208,7 +4232,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String standRequestSeats(int count) {
-    return '$count мест(а)';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count места',
+      many: '$count мест',
+      few: '$count места',
+      one: '$count место',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4240,7 +4272,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String standSeatsFreeCount(int count) {
-    return '$count свободных мест';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count свободных места',
+      many: '$count свободных мест',
+      few: '$count свободных места',
+      one: '$count свободное место',
+    );
+    return '$_temp0';
   }
 
   @override
