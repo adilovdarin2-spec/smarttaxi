@@ -217,10 +217,18 @@ void main() {
       expect(passenger, contains('l10n.passengerHomeWhereToTitle'));
       expect(passenger, contains('l10n.passengerHomeGreeting'));
       expect(passenger, contains('_RegionSwitcher'));
+      expect(passenger, contains('PassengerRegionConnectionNotice'));
+      expect(passenger, contains('regionsLoadFailed: _regionsLoadFailed'));
+      expect(passenger,
+          contains('onRetryRegions: () => unawaited(_loadRegions())'));
       expect(passenger, contains('onRegionTap'));
       expect(passenger, contains('_openRegionSelector'));
       expect(
           passenger, contains('if (_regions.isEmpty) await _loadRegions();'));
+      expect(
+        passenger,
+        contains('AppToast.showError(context, l10n.serverUnavailable)'),
+      );
       expect(passenger, contains('_QuickAddressChoices'));
       expect(passenger, contains('l10n.passengerQuickFavorites'));
       expect(passenger, contains('l10n.passengerChooseDropoffLabel'));

@@ -44,6 +44,7 @@ import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/models.dart';
 import 'screens/wallet/client_wallet_screen.dart';
+import 'widgets/passenger_region_connection_notice.dart';
 
 // Product-owned illustrations keep the premium card presentation distinct
 // without copying artwork from the visual references.
@@ -233,6 +234,7 @@ class _PassengerShellState extends State<PassengerShell>
   bool _previewLoading = false;
   bool _locationLoading = false;
   bool _regionsLoading = false;
+  bool _regionsLoadFailed = false;
   bool _mapTilesUnavailable = false;
   bool _startupRegionPromptShown = false;
   bool _locationServiceDisabled = false;
@@ -937,6 +939,7 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() {
         _regions = regions;
         _selectedRegion = activeRegion;
+        _regionsLoadFailed = false;
         // ??= not = -- a cached-location seed or an in-flight pan/GPS
         // result may have already landed a better center than the
         // region's administrative point; don't jump away from it.
@@ -955,6 +958,7 @@ class _PassengerShellState extends State<PassengerShell>
         // On first launch both values are already empty; after a transient
         // outage this preserves the regions the rider was actually using.
         if (_regions.isEmpty) _selectedRegion = null;
+        _regionsLoadFailed = true;
         _mapCenter ??= _atakentFallbackCenter;
       });
       _maybeAskLocationOnStart();
@@ -1757,6 +1761,17 @@ class _PassengerShellState extends State<PassengerShell>
   Future<void> _selectPoint({required PointTarget target}) async {
     final l10n = AppLocalizations.of(context);
     setState(() => _target = target);
+    // Address selection is region-scoped. On a cold launch the first tap can
+    // race the catalogue request; retry it here and fail visibly instead of
+    // opening a search sheet that can neither validate nor confirm a point.
+    if (_regions.isEmpty) {
+      await _loadRegions();
+      if (!mounted) return;
+      if (_regions.isEmpty) {
+        AppToast.showError(context, l10n.serverUnavailable);
+        return;
+      }
+    }
     // The initial region request and the first destination tap can race on a
     // cold launch.  Resolve the enabled directions before taking the sheet's
     // immutable region snapshot, otherwise a rider briefly sees only their
@@ -2916,6 +2931,8 @@ class _PassengerShellState extends State<PassengerShell>
                           l10n.passengerSettingsRegionNotSelected,
                       regionCount: _regions.length,
                       regionsLoading: _regionsLoading,
+                      regionsLoadFailed: _regionsLoadFailed,
+                      onRetryRegions: () => unawaited(_loadRegions()),
                       onRegionTap: () => unawaited(_openRegionSelector()),
                       pickupSource: _pickupSource,
                       dropoffSource: _dropoffSource,
@@ -8856,6 +8873,8 @@ class _OrderSheet extends StatelessWidget {
     required this.regionName,
     required this.regionCount,
     required this.regionsLoading,
+    required this.regionsLoadFailed,
+    required this.onRetryRegions,
     required this.onRegionTap,
     required this.pickupSource,
     required this.dropoffSource,
@@ -8891,6 +8910,8 @@ class _OrderSheet extends StatelessWidget {
   final String regionName;
   final int regionCount;
   final bool regionsLoading;
+  final bool regionsLoadFailed;
+  final VoidCallback onRetryRegions;
   final VoidCallback onRegionTap;
   final PointSource pickupSource;
   final PointSource dropoffSource;
@@ -8974,6 +8995,13 @@ class _OrderSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (regionsLoadFailed) ...[
+                            PassengerRegionConnectionNotice(
+                              loading: regionsLoading,
+                              onRetry: onRetryRegions,
+                            ),
+                            const SizedBox(height: 10),
+                          ],
                           _RouteSummaryCard(
                             pickupLabel: pickupLabel,
                             dropoffLabel: dropoffLabel,
@@ -9073,6 +9101,13 @@ class _OrderSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SheetHandle(dark: isDark),
+                if (regionsLoadFailed) ...[
+                  PassengerRegionConnectionNotice(
+                    loading: regionsLoading,
+                    onRetry: onRetryRegions,
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (!routeSelected) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,

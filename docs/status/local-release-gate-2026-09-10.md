@@ -14,7 +14,7 @@ external prerequisites below into completed work.
   121,361 catalogue rows across 13 regions.
 - Web: 134/134 tests passed; Vite production build and bundled MapLibre worker
   check passed.
-- Flutter: `flutter analyze` reported no issues; 278/278 tests passed. The
+- Flutter: `flutter analyze` reported no issues; 283/283 tests passed. The
   suite includes a fail-closed Android API/signing/cleartext policy guard.
 - Native pickup/destination search now requests the Android street-address
   keyboard and full-address autofill hint, matching the web search semantics.
@@ -99,6 +99,11 @@ external prerequisites below into completed work.
   `/api/regions/active` request without reloading the page. A compiled-browser
   failure/recovery run observed two requests, removed the warning only after
   the second succeeded and restored all 13 active regions.
+- Flutter passenger bootstrap now keeps that contract too: a failed catalogue
+  request sets a visible premium recovery card, its action retries the real
+  API call, and the first address tap performs the same preflight instead of
+  opening an unusable regionless search sheet. Five widget cases cover 320px,
+  light/dark, 1.0/1.6 text scale and the disabled loading action.
 - The same outage exposed raw browser copy (`Failed to fetch`) and fabricated
   zero earnings/order totals on the first driver-line load. Driver errors now
   map to product copy, the map notice has a real single-flight retry action,
