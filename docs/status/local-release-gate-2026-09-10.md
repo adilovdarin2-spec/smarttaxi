@@ -217,8 +217,8 @@ built with matching `API_BASE_URL`, `SOCKET_URL` and `WEB_BASE_URL`; this is
 still a local development setup, not a production deployment.
 
 The current cable-free artifact is
-`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-11.apk` (288,885,251 bytes,
-SHA-256 `f37525301fb37a366e9c685e1f2f126aa5950a3cc77161f3a6591ee6ff3d3228`).
+`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-11.apk` (288,889,830 bytes,
+SHA-256 `edb5c429ade6c370fab918dc96a48ee92f6979b0fe1267c6303aae34d0fd0597`).
 It targets API/socket `http://192.168.8.135:4002` and web
 `http://192.168.8.135:5176`; APK Signature Scheme v2 verifies with one Android
 debug signer. The passenger home now exposes the current service region as a
