@@ -42,7 +42,9 @@ import '../../core/widgets/tariff_choice_card.dart';
 import '../../core/widgets/trip_details_disclosure.dart';
 import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
+import '../shared/cancellation_reason_sheet.dart';
 import '../shared/models.dart';
+import 'screens/stands/passenger_stands_screen.dart';
 import 'screens/wallet/client_wallet_screen.dart';
 import 'widgets/passenger_region_connection_notice.dart';
 
@@ -2318,19 +2320,27 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _confirmCancelOrder() async {
     if (_order == null) return;
+    final driverAssigned = _order!.driverId != null;
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _CancelConfirmSheet(driverAssigned: _order!.driverId != null),
+      builder: (_) => _CancelConfirmSheet(driverAssigned: driverAssigned),
     );
-    if (confirmed == true) {
-      await _cancelOrder();
+    if (confirmed != true) return;
+    // Once a driver is on the way, why the rider is cancelling matters:
+    // "водитель попросил отменить" is the rider's half of a trip taken off
+    // the books, and nothing else in the system can see it. Before a driver
+    // is assigned there is nobody to explain, so nothing is asked.
+    CancellationReason? reason;
+    if (driverAssigned && mounted) {
+      reason = await askCancellationReason(context, isDriver: false);
+      if (reason == null) return;
     }
+    await _cancelOrder(reason: reason);
   }
 
-  Future<void> _cancelOrder() async {
+  Future<void> _cancelOrder({CancellationReason? reason}) async {
     if (_order == null) return;
     setState(() {
       _loading = true;
@@ -2340,6 +2350,8 @@ class _PassengerShellState extends State<PassengerShell>
       final cancelled = await widget.api.cancelPublicOrder(
         _order!.id,
         riderPhone: widget.accountPhone,
+        reasonCode: reason?.code,
+        reasonNote: reason?.note,
       );
       if (!mounted) return;
       setState(() => _order = cancelled);
@@ -2569,6 +2581,22 @@ class _PassengerShellState extends State<PassengerShell>
     return null;
   }
 
+  // Stands are a different way to travel, not another tab of the booking
+  // flow: a full-screen route the rider enters and leaves, the same shape
+  // the driver side uses.
+  Future<void> _openStands() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => PassengerStandsScreen(
+          api: widget.api,
+          socket: widget.sockets,
+          regionId: _selectedRegion?.id,
+          regionCenter: _selectedRegion?.center,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openDriverEntry() async {
     final opened = await widget.onOpenDriverMode();
     if (!opened && mounted) {
@@ -2727,6 +2755,10 @@ class _PassengerShellState extends State<PassengerShell>
           onDriver: () {
             Navigator.pop(context);
             _openDriverEntry();
+          },
+          onStands: () {
+            Navigator.pop(context);
+            unawaited(_openStands());
           },
           onLogout: () {
             Navigator.pop(context);
@@ -17212,6 +17244,7 @@ class _SmartDrawer extends StatelessWidget {
     required this.driverLabel,
     required this.onSelect,
     required this.onDriver,
+    required this.onStands,
     required this.onLogout,
   });
 
@@ -17221,6 +17254,7 @@ class _SmartDrawer extends StatelessWidget {
   final String driverLabel;
   final ValueChanged<PassengerTab> onSelect;
   final VoidCallback onDriver;
+  final VoidCallback onStands;
   final VoidCallback onLogout;
 
   @override
@@ -17414,6 +17448,12 @@ class _SmartDrawer extends StatelessWidget {
                     label: l10n.passengerDrawerPromoCodes,
                     active: active == PassengerTab.promoCodes,
                     onTap: () => onSelect(PassengerTab.promoCodes),
+                  ),
+                  _DrawerItem(
+                    icon: Icons.local_taxi_rounded,
+                    label: l10n.standsPassengerTitle,
+                    active: false,
+                    onTap: onStands,
                   ),
                   _DrawerItem(
                     icon: Icons.event_repeat_rounded,

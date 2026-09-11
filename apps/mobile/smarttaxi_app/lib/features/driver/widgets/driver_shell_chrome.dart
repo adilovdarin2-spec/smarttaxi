@@ -91,6 +91,7 @@ class DriverDrawer extends StatelessWidget {
     required this.onAbout,
     required this.onSettings,
     required this.onRoadAlerts,
+    required this.onStands,
     required this.onLogout,
     required this.onRecurringBookings,
     this.regionName,
@@ -110,6 +111,7 @@ class DriverDrawer extends StatelessWidget {
   final VoidCallback onAbout;
   final VoidCallback onSettings;
   final VoidCallback onRoadAlerts;
+  final VoidCallback onStands;
   final VoidCallback onLogout;
   final VoidCallback onRecurringBookings;
   final String? regionName;
@@ -272,6 +274,11 @@ class DriverDrawer extends StatelessWidget {
                 icon: Icons.notifications_rounded,
                 active: false,
                 onTap: onNotifications),
+            DrawerItem(
+                label: l10n.standScreenTitle,
+                icon: Icons.local_taxi_rounded,
+                active: false,
+                onTap: onStands),
             DrawerItem(
                 label: l10n.driverDrawerRoadAlerts,
                 icon: Icons.shield_rounded,

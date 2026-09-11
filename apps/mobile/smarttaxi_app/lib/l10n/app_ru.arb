@@ -1755,5 +1755,161 @@
   "driverRegionsLoadFailedMessage": "Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.",
   "driverRegionsRetryAction": "Обновить",
   "authTagline": "ГОРОДСКОЕ ТАКСИ",
-  "passengerMapPointNoAddressHint": "Передвиньте точку к ближайшему дому или объекту"
+  "passengerMapPointNoAddressHint": "Передвиньте точку к ближайшему дому или объекту",
+  "standScreenTitle": "Стоянка",
+  "standNearbyTitle": "Стоянки рядом",
+  "standNoneTitle": "Стоянок нет",
+  "standNoneText": "В этом регионе стоянки ещё не добавлены.",
+  "standLoadFailed": "Не удалось загрузить стоянки",
+  "standKindCity": "По городу",
+  "standKindIntercity": "Межгород",
+  "standCarsInLine": "{count} машин в очереди",
+  "@standCarsInLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "standFreeSeatsShort": "{count} мест свободно",
+  "@standFreeSeatsShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "standDistanceMeters": "{count} м",
+  "@standDistanceMeters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "standJoinButton": "Встать в очередь",
+  "standJoinTooFar": "Подойдите к стоянке, чтобы встать в очередь",
+  "standJoinNeedsLocation": "Включите геолокацию, чтобы встать в очередь",
+  "standJoinNeedsOnline": "Выйдите на линию, чтобы встать в очередь",
+  "standYourPlaceTitle": "Ваше место в очереди",
+  "standPositionLabel": "{position}-й в очереди",
+  "@standPositionLabel": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "standYourTurnTitle": "Ваша очередь",
+  "standYourTurnText": "Набирайте пассажиров. Когда машина заполнится — выезжайте.",
+  "standWaitTurnText": "Ждите очередь. Перед вами {count} машин.",
+  "@standWaitTurnText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "standSeatsLabel": "Места",
+  "standSeatsValue": "{taken} из {total}",
+  "@standSeatsValue": {
+    "placeholders": {
+      "taken": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "standAddSeat": "+1 место",
+  "standReleaseSeat": "Освободить место",
+  "standSeatSourceTitle": "Как заняли место?",
+  "standSeatSourcePhone": "Позвонили",
+  "standSeatSourceWalkIn": "Подошли к машине",
+  "standOfferTitle": "Куда и почём",
+  "standDestinationLabel": "Направление",
+  "standDestinationHint": "Например: Шымкент",
+  "standPriceLabel": "Цена за место, ₸",
+  "standTotalSeatsLabel": "Мест в машине",
+  "standCommentLabel": "Комментарий",
+  "standCommentHint": "Например: выезжаю по заполнению",
+  "standDepartButton": "Выехать",
+  "standDepartConfirmTitle": "Выехать со стоянки?",
+  "standDepartConfirmText": "Ваше место займёт следующий водитель.",
+  "standLeaveButton": "Выйти из очереди",
+  "standGiveTurnButton": "Отдать очередь",
+  "standGiveTurnTitle": "Кому отдать очередь",
+  "standGiveTurnEmpty": "В очереди нет других водителей.",
+  "standGiveTurnHasSeats": "Сначала освободите занятые места.",
+  "standQueueTitle": "Очередь",
+  "standRequestsTitle": "Заявки на места",
+  "standRequestSeats": "{count} мест(а)",
+  "@standRequestSeats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "standAcceptRequest": "Подтвердить",
+  "standDeclineRequest": "Отказать",
+  "standOutsideWarning": "Вы вне зоны стоянки ({distance} м). Место освободится через {minutes} мин.",
+  "@standOutsideWarning": {
+    "placeholders": {
+      "distance": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "standActionFailed": "Не удалось выполнить действие",
+  "standsPassengerTitle": "Стоянки",
+  "standSheetCars": "Машины на стоянке",
+  "standSheetEmpty": "Сейчас на стоянке нет машин, готовых принять пассажиров.",
+  "standReserveSeat": "Забронировать место",
+  "standSeatsFreeCount": "{count} свободных мест",
+  "@standSeatsFreeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "standPricePerSeatValue": "{price} ₸ за место",
+  "@standPricePerSeatValue": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "standNoPriceYet": "Цена по договорённости",
+  "standDestinationUnknown": "Направление не указано",
+  "standReservationPending": "Ждём подтверждения водителя",
+  "standReservationConfirmed": "Место подтверждено",
+  "standReservationCancel": "Отменить бронь",
+  "standYourReservationTitle": "Ваша бронь на стоянке",
+  "standReserveSeatsTitle": "Сколько мест?",
+  "standCallToConfirm": "Позвоните водителю и скажите, когда подойдёте.",
+  "cancelReasonDriverTitle": "Почему отменяете поездку?",
+  "cancelReasonNotice": "Отмены после подачи машины проверяет диспетчер.",
+  "cancelReasonClientNoShow": "Пассажир не вышел",
+  "cancelReasonClientAsked": "Пассажир попросил отменить",
+  "cancelReasonWrongAddress": "Неверный адрес",
+  "cancelReasonCarProblem": "Поломка машины",
+  "cancelReasonTooFar": "Слишком далеко ехать",
+  "cancelReasonOther": "Другая причина",
+  "cancelReasonNoteHint": "Что произошло (необязательно)",
+  "cancelReasonSubmit": "Отменить поездку",
+  "cancelReasonKeep": "Не отменять",
+  "clientCancelReasonTitle": "Почему отменяете?",
+  "clientCancelReasonChangedMind": "Передумал ехать",
+  "clientCancelReasonDriverAsked": "Водитель попросил отменить",
+  "clientCancelReasonWaited": "Долго жду машину",
+  "clientCancelReasonFoundAnother": "Нашёл другую машину",
+  "clientCancelReasonOther": "Другая причина",
+  "clientCancelReasonNotice": "Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер."
 }

@@ -7338,6 +7338,486 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Передвиньте точку к ближайшему дому или объекту'**
   String get passengerMapPointNoAddressHint;
+
+  /// No description provided for @standScreenTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоянка'**
+  String get standScreenTitle;
+
+  /// No description provided for @standNearbyTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоянки рядом'**
+  String get standNearbyTitle;
+
+  /// No description provided for @standNoneTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоянок нет'**
+  String get standNoneTitle;
+
+  /// No description provided for @standNoneText.
+  ///
+  /// In ru, this message translates to:
+  /// **'В этом регионе стоянки ещё не добавлены.'**
+  String get standNoneText;
+
+  /// No description provided for @standLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить стоянки'**
+  String get standLoadFailed;
+
+  /// No description provided for @standKindCity.
+  ///
+  /// In ru, this message translates to:
+  /// **'По городу'**
+  String get standKindCity;
+
+  /// No description provided for @standKindIntercity.
+  ///
+  /// In ru, this message translates to:
+  /// **'Межгород'**
+  String get standKindIntercity;
+
+  /// No description provided for @standCarsInLine.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} машин в очереди'**
+  String standCarsInLine(int count);
+
+  /// No description provided for @standFreeSeatsShort.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} мест свободно'**
+  String standFreeSeatsShort(int count);
+
+  /// No description provided for @standDistanceMeters.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} м'**
+  String standDistanceMeters(int count);
+
+  /// No description provided for @standJoinButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Встать в очередь'**
+  String get standJoinButton;
+
+  /// No description provided for @standJoinTooFar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подойдите к стоянке, чтобы встать в очередь'**
+  String get standJoinTooFar;
+
+  /// No description provided for @standJoinNeedsLocation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Включите геолокацию, чтобы встать в очередь'**
+  String get standJoinNeedsLocation;
+
+  /// No description provided for @standJoinNeedsOnline.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйдите на линию, чтобы встать в очередь'**
+  String get standJoinNeedsOnline;
+
+  /// No description provided for @standYourPlaceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше место в очереди'**
+  String get standYourPlaceTitle;
+
+  /// No description provided for @standPositionLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'{position}-й в очереди'**
+  String standPositionLabel(int position);
+
+  /// No description provided for @standYourTurnTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваша очередь'**
+  String get standYourTurnTitle;
+
+  /// No description provided for @standYourTurnText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Набирайте пассажиров. Когда машина заполнится — выезжайте.'**
+  String get standYourTurnText;
+
+  /// No description provided for @standWaitTurnText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждите очередь. Перед вами {count} машин.'**
+  String standWaitTurnText(int count);
+
+  /// No description provided for @standSeatsLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Места'**
+  String get standSeatsLabel;
+
+  /// No description provided for @standSeatsValue.
+  ///
+  /// In ru, this message translates to:
+  /// **'{taken} из {total}'**
+  String standSeatsValue(int taken, int total);
+
+  /// No description provided for @standAddSeat.
+  ///
+  /// In ru, this message translates to:
+  /// **'+1 место'**
+  String get standAddSeat;
+
+  /// No description provided for @standReleaseSeat.
+  ///
+  /// In ru, this message translates to:
+  /// **'Освободить место'**
+  String get standReleaseSeat;
+
+  /// No description provided for @standSeatSourceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как заняли место?'**
+  String get standSeatSourceTitle;
+
+  /// No description provided for @standSeatSourcePhone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонили'**
+  String get standSeatSourcePhone;
+
+  /// No description provided for @standSeatSourceWalkIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подошли к машине'**
+  String get standSeatSourceWalkIn;
+
+  /// No description provided for @standOfferTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Куда и почём'**
+  String get standOfferTitle;
+
+  /// No description provided for @standDestinationLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Направление'**
+  String get standDestinationLabel;
+
+  /// No description provided for @standDestinationHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например: Шымкент'**
+  String get standDestinationHint;
+
+  /// No description provided for @standPriceLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена за место, ₸'**
+  String get standPriceLabel;
+
+  /// No description provided for @standTotalSeatsLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мест в машине'**
+  String get standTotalSeatsLabel;
+
+  /// No description provided for @standCommentLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комментарий'**
+  String get standCommentLabel;
+
+  /// No description provided for @standCommentHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например: выезжаю по заполнению'**
+  String get standCommentHint;
+
+  /// No description provided for @standDepartButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выехать'**
+  String get standDepartButton;
+
+  /// No description provided for @standDepartConfirmTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выехать со стоянки?'**
+  String get standDepartConfirmTitle;
+
+  /// No description provided for @standDepartConfirmText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше место займёт следующий водитель.'**
+  String get standDepartConfirmText;
+
+  /// No description provided for @standLeaveButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти из очереди'**
+  String get standLeaveButton;
+
+  /// No description provided for @standGiveTurnButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отдать очередь'**
+  String get standGiveTurnButton;
+
+  /// No description provided for @standGiveTurnTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кому отдать очередь'**
+  String get standGiveTurnTitle;
+
+  /// No description provided for @standGiveTurnEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'В очереди нет других водителей.'**
+  String get standGiveTurnEmpty;
+
+  /// No description provided for @standGiveTurnHasSeats.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сначала освободите занятые места.'**
+  String get standGiveTurnHasSeats;
+
+  /// No description provided for @standQueueTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очередь'**
+  String get standQueueTitle;
+
+  /// No description provided for @standRequestsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки на места'**
+  String get standRequestsTitle;
+
+  /// No description provided for @standRequestSeats.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} мест(а)'**
+  String standRequestSeats(int count);
+
+  /// No description provided for @standAcceptRequest.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердить'**
+  String get standAcceptRequest;
+
+  /// No description provided for @standDeclineRequest.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отказать'**
+  String get standDeclineRequest;
+
+  /// No description provided for @standOutsideWarning.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы вне зоны стоянки ({distance} м). Место освободится через {minutes} мин.'**
+  String standOutsideWarning(int distance, int minutes);
+
+  /// No description provided for @standActionFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось выполнить действие'**
+  String get standActionFailed;
+
+  /// No description provided for @standsPassengerTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоянки'**
+  String get standsPassengerTitle;
+
+  /// No description provided for @standSheetCars.
+  ///
+  /// In ru, this message translates to:
+  /// **'Машины на стоянке'**
+  String get standSheetCars;
+
+  /// No description provided for @standSheetEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас на стоянке нет машин, готовых принять пассажиров.'**
+  String get standSheetEmpty;
+
+  /// No description provided for @standReserveSeat.
+  ///
+  /// In ru, this message translates to:
+  /// **'Забронировать место'**
+  String get standReserveSeat;
+
+  /// No description provided for @standSeatsFreeCount.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} свободных мест'**
+  String standSeatsFreeCount(int count);
+
+  /// No description provided for @standPricePerSeatValue.
+  ///
+  /// In ru, this message translates to:
+  /// **'{price} ₸ за место'**
+  String standPricePerSeatValue(String price);
+
+  /// No description provided for @standNoPriceYet.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена по договорённости'**
+  String get standNoPriceYet;
+
+  /// No description provided for @standDestinationUnknown.
+  ///
+  /// In ru, this message translates to:
+  /// **'Направление не указано'**
+  String get standDestinationUnknown;
+
+  /// No description provided for @standReservationPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём подтверждения водителя'**
+  String get standReservationPending;
+
+  /// No description provided for @standReservationConfirmed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Место подтверждено'**
+  String get standReservationConfirmed;
+
+  /// No description provided for @standReservationCancel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить бронь'**
+  String get standReservationCancel;
+
+  /// No description provided for @standYourReservationTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваша бронь на стоянке'**
+  String get standYourReservationTitle;
+
+  /// No description provided for @standReserveSeatsTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сколько мест?'**
+  String get standReserveSeatsTitle;
+
+  /// No description provided for @standCallToConfirm.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвоните водителю и скажите, когда подойдёте.'**
+  String get standCallToConfirm;
+
+  /// No description provided for @cancelReasonDriverTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Почему отменяете поездку?'**
+  String get cancelReasonDriverTitle;
+
+  /// No description provided for @cancelReasonNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмены после подачи машины проверяет диспетчер.'**
+  String get cancelReasonNotice;
+
+  /// No description provided for @cancelReasonClientNoShow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пассажир не вышел'**
+  String get cancelReasonClientNoShow;
+
+  /// No description provided for @cancelReasonClientAsked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пассажир попросил отменить'**
+  String get cancelReasonClientAsked;
+
+  /// No description provided for @cancelReasonWrongAddress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверный адрес'**
+  String get cancelReasonWrongAddress;
+
+  /// No description provided for @cancelReasonCarProblem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поломка машины'**
+  String get cancelReasonCarProblem;
+
+  /// No description provided for @cancelReasonTooFar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком далеко ехать'**
+  String get cancelReasonTooFar;
+
+  /// No description provided for @cancelReasonOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'Другая причина'**
+  String get cancelReasonOther;
+
+  /// No description provided for @cancelReasonNoteHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Что произошло (необязательно)'**
+  String get cancelReasonNoteHint;
+
+  /// No description provided for @cancelReasonSubmit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поездку'**
+  String get cancelReasonSubmit;
+
+  /// No description provided for @cancelReasonKeep.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не отменять'**
+  String get cancelReasonKeep;
+
+  /// No description provided for @clientCancelReasonTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Почему отменяете?'**
+  String get clientCancelReasonTitle;
+
+  /// No description provided for @clientCancelReasonChangedMind.
+  ///
+  /// In ru, this message translates to:
+  /// **'Передумал ехать'**
+  String get clientCancelReasonChangedMind;
+
+  /// No description provided for @clientCancelReasonDriverAsked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель попросил отменить'**
+  String get clientCancelReasonDriverAsked;
+
+  /// No description provided for @clientCancelReasonWaited.
+  ///
+  /// In ru, this message translates to:
+  /// **'Долго жду машину'**
+  String get clientCancelReasonWaited;
+
+  /// No description provided for @clientCancelReasonFoundAnother.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нашёл другую машину'**
+  String get clientCancelReasonFoundAnother;
+
+  /// No description provided for @clientCancelReasonOther.
+  ///
+  /// In ru, this message translates to:
+  /// **'Другая причина'**
+  String get clientCancelReasonOther;
+
+  /// No description provided for @clientCancelReasonNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер.'**
+  String get clientCancelReasonNotice;
 }
 
 class _AppLocalizationsDelegate

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:latlong2/latlong.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -1517,4 +1519,372 @@ Coordinate? _coordinateFromFields(
   }
   if (lat == null || lng == null) return null;
   return Coordinate(lat: lat, lng: lng);
+}
+
+/// A stand is a real place drivers queue at — the межгород or по городу line
+/// by the bazaar. The owner draws it on the map as a point plus a radius, and
+/// that radius is the geofence a driver has to physically be inside to hold a
+/// place in the line.
+class TaxiStand {
+  const TaxiStand({
+    required this.id,
+    required this.regionId,
+    required this.name,
+    required this.kind,
+    required this.lat,
+    required this.lng,
+    required this.radiusM,
+    required this.boardingSlots,
+    required this.defaultSeats,
+    required this.driversCount,
+    required this.freeSeats,
+    required this.isActive,
+    this.note = '',
+    this.distanceM,
+  });
+
+  final String id;
+  final String regionId;
+  final String name;
+  final String kind;
+  final double lat;
+  final double lng;
+  final int radiusM;
+  final int boardingSlots;
+  final int defaultSeats;
+  final int driversCount;
+  final int freeSeats;
+  final bool isActive;
+  final String note;
+  final int? distanceM;
+
+  bool get isIntercity => kind == 'INTERCITY';
+
+  LatLng toLatLng() => LatLng(lat, lng);
+
+  /// True once the driver's own position is inside the circle the owner drew.
+  /// The server enforces the same rule; this only decides whether the app
+  /// offers the button at all, so a driver is never sent into a refusal.
+  bool containsPoint(Coordinate point) {
+    return standDistanceMeters(lat, lng, point.lat, point.lng) <= radiusM;
+  }
+
+  int distanceFrom(Coordinate point) =>
+      standDistanceMeters(lat, lng, point.lat, point.lng).round();
+
+  factory TaxiStand.fromJson(Map<String, dynamic> json) {
+    return TaxiStand(
+      id: '${json['id'] ?? ''}',
+      regionId: '${json['regionId'] ?? json['region_id'] ?? ''}',
+      name: '${json['name'] ?? ''}',
+      kind: '${json['kind'] ?? 'CITY'}',
+      lat: _toDouble(json['lat']),
+      lng: _toDouble(json['lng']),
+      radiusM: _toDouble(json['radiusM'] ?? json['radius_m'] ?? 120).round(),
+      boardingSlots:
+          _toDouble(json['boardingSlots'] ?? json['boarding_slots'] ?? 1)
+              .round(),
+      defaultSeats:
+          _toDouble(json['defaultSeats'] ?? json['default_seats'] ?? 4).round(),
+      driversCount: _toDouble(json['driversCount'] ?? 0).round(),
+      freeSeats: _toDouble(json['freeSeats'] ?? 0).round(),
+      isActive: json['isActive'] != false,
+      note: '${json['note'] ?? ''}',
+      distanceM: json['distanceM'] == null
+          ? null
+          : _toDouble(json['distanceM']).round(),
+    );
+  }
+}
+
+/// One car's place in a stand's line. The rider projection carries the driver
+/// and their number; the driver projection adds the queue bookkeeping and the
+/// seat requests waiting on them.
+class StandQueueEntry {
+  const StandQueueEntry({
+    required this.id,
+    required this.standId,
+    required this.driverId,
+    required this.status,
+    required this.totalSeats,
+    required this.takenSeats,
+    required this.driverName,
+    required this.driverPhone,
+    required this.carModel,
+    required this.carColor,
+    required this.plate,
+    this.position,
+    this.destinationLabel = '',
+    this.pricePerSeat,
+    this.comment = '',
+    this.rating,
+    this.reservations = const <StandSeatReservation>[],
+  });
+
+  final String id;
+  final String standId;
+  final String driverId;
+  final String status;
+  final int totalSeats;
+  final int takenSeats;
+  final String driverName;
+  final String driverPhone;
+  final String carModel;
+  final String carColor;
+  final String plate;
+  final int? position;
+  final String destinationLabel;
+  final int? pricePerSeat;
+  final String comment;
+  final double? rating;
+  final List<StandSeatReservation> reservations;
+
+  /// Free seats are always derived, never read from the payload: the total and
+  /// the taken count are the only two numbers that are authoritative.
+  int get freeSeats => (totalSeats - takenSeats).clamp(0, totalSeats).toInt();
+
+  bool get isBoarding => status == 'BOARDING';
+
+  bool get isFull => freeSeats <= 0;
+
+  String get carLabel =>
+      [carColor, carModel].where((part) => part.isNotEmpty).join(' ');
+
+  List<StandSeatReservation> get pendingReservations => reservations
+      .where((reservation) => reservation.isPending)
+      .toList(growable: false);
+
+  factory StandQueueEntry.fromJson(Map<String, dynamic> json) {
+    final driver = json['driver'] is Map
+        ? Map<String, dynamic>.from(json['driver'] as Map)
+        : const <String, dynamic>{};
+    final reservations = json['reservations'];
+    return StandQueueEntry(
+      id: '${json['id'] ?? ''}',
+      standId: '${json['standId'] ?? ''}',
+      driverId: '${json['driverId'] ?? ''}',
+      status: '${json['status'] ?? 'WAITING'}',
+      totalSeats: _toDouble(json['totalSeats'] ?? 4).round(),
+      takenSeats: _toDouble(json['takenSeats'] ?? 0).round(),
+      driverName: '${driver['name'] ?? ''}',
+      driverPhone: '${driver['phone'] ?? ''}',
+      carModel: '${driver['carModel'] ?? ''}',
+      carColor: '${driver['carColor'] ?? ''}',
+      plate: '${driver['plate'] ?? ''}',
+      position:
+          json['position'] == null ? null : _toDouble(json['position']).round(),
+      destinationLabel: '${json['destinationLabel'] ?? ''}',
+      pricePerSeat: json['pricePerSeat'] == null
+          ? null
+          : _toDouble(json['pricePerSeat']).round(),
+      comment: '${json['comment'] ?? ''}',
+      rating: _nullableDouble(driver['rating']),
+      reservations: reservations is List
+          ? reservations
+              .whereType<Map>()
+              .map((item) => StandSeatReservation.fromJson(
+                  Map<String, dynamic>.from(item)))
+              .toList(growable: false)
+          : const <StandSeatReservation>[],
+    );
+  }
+}
+
+/// A seat somebody claimed. APP rows wait for the driver to confirm; PHONE and
+/// WALK_IN rows are what the driver's own "+1 место" button writes, so a seat
+/// taken at the car window is still an auditable row and not a bare counter.
+class StandSeatReservation {
+  const StandSeatReservation({
+    required this.id,
+    required this.entryId,
+    required this.standId,
+    required this.seats,
+    required this.status,
+    required this.source,
+    this.pickupLabel = '',
+    this.comment = '',
+    this.clientName = '',
+    this.clientPhone = '',
+    this.standName = '',
+    this.driverName = '',
+    this.driverPhone = '',
+    this.carModel = '',
+    this.carColor = '',
+    this.plate = '',
+    this.expiresAt,
+  });
+
+  final String id;
+  final String entryId;
+  final String standId;
+  final int seats;
+  final String status;
+  final String source;
+  final String pickupLabel;
+  final String comment;
+  final String clientName;
+  final String clientPhone;
+  final String standName;
+  final String driverName;
+  final String driverPhone;
+  final String carModel;
+  final String carColor;
+  final String plate;
+  final DateTime? expiresAt;
+
+  bool get isPending => status == 'PENDING';
+  bool get isConfirmed => status == 'CONFIRMED';
+
+  String get carLabel =>
+      [carColor, carModel].where((part) => part.isNotEmpty).join(' ');
+
+  factory StandSeatReservation.fromJson(Map<String, dynamic> json) {
+    final client = json['client'] is Map
+        ? Map<String, dynamic>.from(json['client'] as Map)
+        : const <String, dynamic>{};
+    final driver = json['driver'] is Map
+        ? Map<String, dynamic>.from(json['driver'] as Map)
+        : const <String, dynamic>{};
+    return StandSeatReservation(
+      id: '${json['id'] ?? ''}',
+      entryId: '${json['entryId'] ?? ''}',
+      standId: '${json['standId'] ?? ''}',
+      seats: _toDouble(json['seats'] ?? 1).round(),
+      status: '${json['status'] ?? 'PENDING'}',
+      source: '${json['source'] ?? 'APP'}',
+      pickupLabel: '${json['pickupLabel'] ?? ''}',
+      comment: '${json['comment'] ?? ''}',
+      clientName: '${client['name'] ?? ''}',
+      clientPhone: '${client['phone'] ?? ''}',
+      standName: '${json['standName'] ?? ''}',
+      driverName: '${driver['name'] ?? ''}',
+      driverPhone: '${driver['phone'] ?? ''}',
+      carModel: '${driver['carModel'] ?? ''}',
+      carColor: '${driver['carColor'] ?? ''}',
+      plate: '${driver['plate'] ?? ''}',
+      expiresAt: DateTime.tryParse('${json['expiresAt'] ?? ''}'),
+    );
+  }
+}
+
+/// A stand and the cars standing in it, as one screen reads it.
+class StandQueueView {
+  const StandQueueView({required this.stand, required this.entries});
+
+  final TaxiStand stand;
+  final List<StandQueueEntry> entries;
+
+  StandQueueEntry? entryForDriver(String driverId) {
+    for (final entry in entries) {
+      if (entry.driverId == driverId) return entry;
+    }
+    return null;
+  }
+
+  List<StandQueueEntry> get boarding =>
+      entries.where((entry) => entry.isBoarding).toList(growable: false);
+
+  factory StandQueueView.fromJson(Map<String, dynamic> json) {
+    final standJson = json['stand'] is Map
+        ? Map<String, dynamic>.from(json['stand'] as Map)
+        : const <String, dynamic>{};
+    final entries = json['entries'];
+    return StandQueueView(
+      stand: TaxiStand.fromJson(standJson),
+      entries: entries is List
+          ? entries
+              .whereType<Map>()
+              .map((item) =>
+                  StandQueueEntry.fromJson(Map<String, dynamic>.from(item)))
+              .toList(growable: false)
+          : const <StandQueueEntry>[],
+    );
+  }
+}
+
+/// What the driver's own stand screen needs: their place, the stand it is in,
+/// and the rest of the line around it.
+class MyStandPlace {
+  const MyStandPlace({this.entry, this.stand, this.queue = const []});
+
+  final StandQueueEntry? entry;
+  final TaxiStand? stand;
+  final List<StandQueueEntry> queue;
+
+  bool get isInLine => entry != null;
+
+  factory MyStandPlace.fromJson(Map<String, dynamic> json) {
+    final entryJson = json['entry'];
+    final standJson = json['stand'];
+    final queue = json['queue'];
+    return MyStandPlace(
+      entry: entryJson is Map
+          ? StandQueueEntry.fromJson(Map<String, dynamic>.from(entryJson))
+          : null,
+      stand: standJson is Map
+          ? TaxiStand.fromJson(Map<String, dynamic>.from(standJson))
+          : null,
+      queue: queue is List
+          ? queue
+              .whereType<Map>()
+              .map((item) =>
+                  StandQueueEntry.fromJson(Map<String, dynamic>.from(item)))
+              .toList(growable: false)
+          : const <StandQueueEntry>[],
+    );
+  }
+}
+
+/// The same haversine the server checks the geofence with. Kept here rather
+/// than imported from a map package so the number the driver is shown and the
+/// number the server refuses on cannot drift apart.
+double standDistanceMeters(
+    double lat1, double lng1, double lat2, double lng2) {
+  const earthRadius = 6371000.0;
+  double toRad(double degrees) => degrees * math.pi / 180;
+  final dLat = toRad(lat2 - lat1);
+  final dLng = toRad(lng2 - lng1);
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(toRad(lat1)) *
+          math.cos(toRad(lat2)) *
+          math.sin(dLng / 2) *
+          math.sin(dLng / 2);
+  return 2 * earthRadius * math.asin(math.min(1, math.sqrt(a)));
+}
+
+/// The server's answer to the driver app's heartbeat while it holds a place:
+/// whether the car is still inside the stand's circle, how far off it is, and
+/// how long it may stay away before the place is released. Shown to the
+/// driver rather than acted on silently — losing your turn without warning is
+/// the worst thing this feature could do to somebody.
+class StandPresence {
+  const StandPresence({
+    required this.entryId,
+    required this.standId,
+    this.inside,
+    this.distanceM,
+    this.graceMinutes,
+  });
+
+  final String entryId;
+  final String standId;
+  final bool? inside;
+  final int? distanceM;
+  final int? graceMinutes;
+
+  bool get isOutside => inside == false;
+
+  factory StandPresence.fromJson(Map<String, dynamic> json) {
+    return StandPresence(
+      entryId: '${json['entryId'] ?? ''}',
+      standId: '${json['standId'] ?? ''}',
+      inside: json['inside'] is bool ? json['inside'] as bool : null,
+      distanceM: json['distanceM'] == null
+          ? null
+          : _toDouble(json['distanceM']).round(),
+      graceMinutes: json['graceMinutes'] == null
+          ? null
+          : _toDouble(json['graceMinutes']).round(),
+    );
+  }
 }

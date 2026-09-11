@@ -441,8 +441,16 @@ void main() {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
 
     expect(api, contains('required String riderPhone'));
-    expect(api, contains("'riderPhone': riderPhone"));
-    expect(api, contains("data: {'riderPhone': riderPhone}"));
+    // The contract is that the rider's own phone is always part of the
+    // cancellation body — not that it is the only thing in it. The body now
+    // also carries the stated reason (including "the driver asked me to
+    // cancel"), so asserting the exact one-line literal would fail on
+    // formatting while the contract itself is intact.
+    expect(api, contains("'riderPhone': riderPhone,"));
+    expect(
+      api.replaceAll(RegExp(r'\s+'), ' '),
+      contains("cancel-public', data: { 'riderPhone': riderPhone,"),
+    );
     expect(passenger, contains('accountPhone'));
     expect(passenger, contains('l10n.passengerLoginRequiredForOrderError'));
   });

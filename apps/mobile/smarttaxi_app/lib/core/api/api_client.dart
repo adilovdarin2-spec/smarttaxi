@@ -447,13 +447,22 @@ class ApiClient {
         .toList();
   }
 
-  Future<OrderSummary> cancelPublicOrder(String orderId,
-      {required String riderPhone}) async {
+  Future<OrderSummary> cancelPublicOrder(
+    String orderId, {
+    required String riderPhone,
+    String? reasonCode,
+    String? reasonNote,
+  }) async {
     await _attachToken();
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/orders/$orderId/cancel-public',
-        data: {'riderPhone': riderPhone},
+        data: {
+          'riderPhone': riderPhone,
+          if (reasonCode != null) 'reasonCode': reasonCode,
+          if (reasonNote != null && reasonNote.isNotEmpty)
+            'reasonNote': reasonNote,
+        },
       );
       final order = response.data?['order'];
       if (order is! Map) {
@@ -765,8 +774,23 @@ class ApiClient {
       _postOrderAction('/api/orders/$orderId/complete');
   Future<OrderSummary> noShow(String orderId) =>
       _postOrderAction('/api/orders/$orderId/no-show');
-  Future<OrderSummary> cancelDriverOrder(String orderId) =>
-      _postOrderAction('/api/orders/$orderId/cancel');
+  /// The reason is the only thing separating "the rider never came out" from a
+  /// trip quietly taken off the books, and the server cannot tell them apart on
+  /// its own. Optional so an older flow still works, but its absence is itself
+  /// recorded and counts against the cancellation in review.
+  Future<OrderSummary> cancelDriverOrder(
+    String orderId, {
+    String? reasonCode,
+    String? reasonNote,
+  }) =>
+      _postOrderAction(
+        '/api/orders/$orderId/cancel',
+        body: {
+          if (reasonCode != null) 'reasonCode': reasonCode,
+          if (reasonNote != null && reasonNote.isNotEmpty)
+            'reasonNote': reasonNote,
+        },
+      );
   Future<OrderSummary> markOrderPaid(String orderId) =>
       _postOrderAction('/api/orders/$orderId/mark-paid');
 
@@ -1654,9 +1678,10 @@ class ApiClient {
     return DriverRatingSummary.fromJson(response.data ?? {});
   }
 
-  Future<OrderSummary> _postOrderAction(String path) async {
+  Future<OrderSummary> _postOrderAction(String path,
+      {Map<String, dynamic>? body}) async {
     await _attachToken();
-    final response = await _dio.post<Map<String, dynamic>>(path);
+    final response = await _dio.post<Map<String, dynamic>>(path, data: body);
     final data = response.data ?? {};
     return OrderSummary.fromJson(
         Map<String, dynamic>.from(data['order'] ?? data));
@@ -1682,5 +1707,267 @@ class ApiClient {
           .toList(growable: false);
     }
     return const [];
+  }
+
+  // --- Taxi stands ------------------------------------------------------
+  // The rider side reads stands and claims seats; the driver side holds a
+  // place in the line. Both talk to the same stand, through endpoints that
+  // return deliberately different projections of it — a rider is never given
+  // another rider's details, and the driver's own queue bookkeeping never
+  // reaches the rider's screen.
+
+  Future<List<TaxiStand>> getStands({
+    String? regionId,
+    Coordinate? near,
+  }) async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>(
+      '/api/stands',
+      queryParameters: {
+        if (regionId != null) 'regionId': regionId,
+        if (near != null) 'lat': near.lat,
+        if (near != null) 'lng': near.lng,
+      },
+    );
+    final items = _extractList(response.data, 'stands');
+    return items.map(TaxiStand.fromJson).toList(growable: false);
+  }
+
+  Future<StandQueueView> getStandQueue(String standId) async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/stands/$standId');
+    return StandQueueView.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  Future<StandSeatReservation> reserveStandSeat(
+    String entryId, {
+    int seats = 1,
+    String? pickupLabel,
+    Coordinate? pickup,
+    String? comment,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<dynamic>(
+      '/api/stands/entries/$entryId/reserve',
+      data: {
+        'seats': seats,
+        if (pickupLabel != null && pickupLabel.isNotEmpty)
+          'pickupLabel': pickupLabel,
+        if (pickup != null) 'pickupLat': pickup.lat,
+        if (pickup != null) 'pickupLng': pickup.lng,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      },
+    );
+    return StandSeatReservation.fromJson(
+      _mapFrom(response.data, 'reservation'),
+    );
+  }
+
+  Future<StandSeatReservation?> getMyStandReservation() async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/stands/reservations/me');
+    final data = response.data;
+    if (data is! Map || data['reservation'] is! Map) return null;
+    return StandSeatReservation.fromJson(
+      Map<String, dynamic>.from(data['reservation'] as Map),
+    );
+  }
+
+  Future<void> cancelStandReservation(String reservationId) async {
+    await _attachToken();
+    await _dio.delete<dynamic>('/api/stands/reservations/$reservationId');
+  }
+
+  Future<List<TaxiStand>> getDriverStands({
+    String? regionId,
+    Coordinate? at,
+  }) async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>(
+      '/api/driver/stands',
+      queryParameters: {
+        if (regionId != null) 'regionId': regionId,
+        if (at != null) 'lat': at.lat,
+        if (at != null) 'lng': at.lng,
+      },
+    );
+    final items = _extractList(response.data, 'stands');
+    return items.map(TaxiStand.fromJson).toList(growable: false);
+  }
+
+  Future<MyStandPlace> getMyStandPlace() async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/driver/stands/me');
+    return MyStandPlace.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  Future<StandQueueView> getDriverStandQueue(String standId) async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/driver/stands/$standId/queue');
+    return StandQueueView.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  Future<MyStandPlace> joinStandQueue(
+    String standId, {
+    required Coordinate at,
+    String? destinationLabel,
+    String? destinationRegionId,
+    int? pricePerSeat,
+    int? totalSeats,
+    String? comment,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<dynamic>(
+      '/api/driver/stands/$standId/join',
+      data: {
+        'lat': at.lat,
+        'lng': at.lng,
+        if (destinationLabel != null && destinationLabel.isNotEmpty)
+          'destinationLabel': destinationLabel,
+        if (destinationRegionId != null)
+          'destinationRegionId': destinationRegionId,
+        if (pricePerSeat != null) 'pricePerSeat': pricePerSeat,
+        if (totalSeats != null) 'totalSeats': totalSeats,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      },
+    );
+    return MyStandPlace.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  Future<MyStandPlace> updateStandOffer(
+    String entryId, {
+    String? destinationLabel,
+    String? destinationRegionId,
+    int? pricePerSeat,
+    int? totalSeats,
+    String? comment,
+  }) async {
+    await _attachToken();
+    final response = await _dio.patch<dynamic>(
+      '/api/driver/stands/entries/$entryId',
+      data: {
+        if (destinationLabel != null) 'destinationLabel': destinationLabel,
+        if (destinationRegionId != null)
+          'destinationRegionId': destinationRegionId,
+        if (pricePerSeat != null) 'pricePerSeat': pricePerSeat,
+        if (totalSeats != null) 'totalSeats': totalSeats,
+        if (comment != null) 'comment': comment,
+      },
+    );
+    return MyStandPlace.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  /// The "+1 место" button. `source` records how the seat was actually taken,
+  /// so a full car can be explained afterwards.
+  Future<MyStandPlace> addStandSeats(
+    String entryId, {
+    int seats = 1,
+    String source = 'WALK_IN',
+    String? comment,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<dynamic>(
+      '/api/driver/stands/entries/$entryId/seats',
+      data: {
+        'seats': seats,
+        'source': source,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      },
+    );
+    return MyStandPlace.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  Future<MyStandPlace> releaseStandSeats(String entryId, {int seats = 1}) async {
+    await _attachToken();
+    final response = await _dio.delete<dynamic>(
+      '/api/driver/stands/entries/$entryId/seats',
+      data: {'seats': seats},
+    );
+    return MyStandPlace.fromJson(
+      response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : const {},
+    );
+  }
+
+  Future<void> departStandQueue(String entryId) async {
+    await _attachToken();
+    await _dio.post<dynamic>('/api/driver/stands/entries/$entryId/depart');
+  }
+
+  Future<void> leaveStandQueue(String entryId) async {
+    await _attachToken();
+    await _dio.post<dynamic>('/api/driver/stands/entries/$entryId/leave');
+  }
+
+  Future<void> handOverStandTurn(String entryId, String toDriverId) async {
+    await _attachToken();
+    await _dio.post<dynamic>(
+      '/api/driver/stands/entries/$entryId/handover',
+      data: {'toDriverId': toDriverId},
+    );
+  }
+
+  /// Heartbeat while the driver holds a place. Returns null when they hold
+  /// none, so the caller can stop publishing instead of guessing.
+  Future<StandPresence?> publishStandPresence(Coordinate? at) async {
+    await _attachToken();
+    final response = await _dio.post<dynamic>(
+      '/api/driver/stands/presence',
+      data: {
+        'lat': at?.lat,
+        'lng': at?.lng,
+      },
+    );
+    final data = response.data;
+    if (data is! Map || data['presence'] is! Map) return null;
+    return StandPresence.fromJson(
+      Map<String, dynamic>.from(data['presence'] as Map),
+    );
+  }
+
+  Future<StandSeatReservation> respondToStandReservation(
+    String reservationId, {
+    required bool accept,
+  }) async {
+    await _attachToken();
+    final response = await _dio.post<dynamic>(
+      '/api/driver/stands/reservations/$reservationId/${accept ? 'accept' : 'decline'}',
+    );
+    return StandSeatReservation.fromJson(
+      _mapFrom(response.data, 'reservation'),
+    );
+  }
+
+  Map<String, dynamic> _mapFrom(dynamic data, String key) {
+    if (data is Map && data[key] is Map) {
+      return Map<String, dynamic>.from(data[key] as Map);
+    }
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return const {};
   }
 }

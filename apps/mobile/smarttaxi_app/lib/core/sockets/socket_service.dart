@@ -34,6 +34,7 @@ class SocketService {
   // would silently stop after any reconnect until the screen was rebuilt.
   bool _wantsDrivers = false;
   final Set<String> _wantedOrders = {};
+  final Set<String> _wantedStands = {};
 
   final _connectionController = StreamController<bool>.broadcast();
 
@@ -58,6 +59,9 @@ class SocketService {
       for (final orderId in _wantedOrders) {
         socket.emit('join_order', orderId);
       }
+      for (final standId in _wantedStands) {
+        socket.emit('join_stand', standId);
+      }
     });
     socket.onDisconnect((_) => _connectionController.add(false));
     socket.onConnectError((_) => _connectionController.add(false));
@@ -79,6 +83,49 @@ class SocketService {
   void leaveOrder(String orderId) {
     _wantedOrders.remove(orderId);
   }
+
+  /// A stand's line is small and changes for everyone at once — a car leaves
+  /// and every position behind it moves — so the server pushes the whole line
+  /// rather than a delta, and this room is how it arrives.
+  void joinStand(String standId) {
+    _wantedStands.add(standId);
+    _socket?.emit('join_stand', standId);
+  }
+
+  void leaveStand(String standId) {
+    _wantedStands.remove(standId);
+    _socket?.emit('leave_stand', standId);
+  }
+
+  /// The rider's view of a line. Never carries another rider's details.
+  void onStandQueueUpdate(void Function(dynamic data) handler) {
+    _socket?.on('stand_queue_updated', handler);
+  }
+
+  /// The driver's view of the same line, with the seat requests waiting on
+  /// them. The server only sends this to sockets it has confirmed are
+  /// drivers, so the two must stay separate events rather than one payload.
+  void onDriverStandQueueUpdate(void Function(dynamic data) handler) {
+    _socket?.on('stand_queue_updated_driver', handler);
+  }
+
+  /// Things that happen to this one person rather than to the line: a seat
+  /// request arrives, their turn starts, their place is gone.
+  void onStandPersonalEvent(void Function(String event, dynamic data) handler) {
+    for (final event in _standPersonalEvents) {
+      _socket?.on(event, (data) => handler(event, data));
+    }
+  }
+
+  static const _standPersonalEvents = [
+    'stand_reservation_created',
+    'stand_reservation_cancelled',
+    'stand_reservation_confirmed',
+    'stand_reservation_declined',
+    'stand_reservation_expired',
+    'stand_turn_started',
+    'stand_place_lost',
+  ];
 
   void onOrderUpdate(void Function(dynamic data) handler) {
     _socket?.on('order_update', handler);
@@ -114,6 +161,11 @@ class SocketService {
     _socket?.off('driver_location_updated');
     _socket?.off('driver_location_update');
     _socket?.off('order.driver_price_offer_queued');
+    _socket?.off('stand_queue_updated');
+    _socket?.off('stand_queue_updated_driver');
+    for (final event in _standPersonalEvents) {
+      _socket?.off(event);
+    }
   }
 
   void dispose() {
@@ -122,5 +174,6 @@ class SocketService {
     _socket = null;
     _wantsDrivers = false;
     _wantedOrders.clear();
+    _wantedStands.clear();
   }
 }

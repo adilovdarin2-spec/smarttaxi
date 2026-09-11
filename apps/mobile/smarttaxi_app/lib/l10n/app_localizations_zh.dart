@@ -3809,4 +3809,264 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passengerMapPointNoAddressHint => '请将标记移到最近的建筑或地点';
+
+  @override
+  String get standScreenTitle => '候客点';
+
+  @override
+  String get standNearbyTitle => '附近的候客点';
+
+  @override
+  String get standNoneTitle => '暂无候客点';
+
+  @override
+  String get standNoneText => '该地区尚未添加候客点。';
+
+  @override
+  String get standLoadFailed => '无法加载候客点';
+
+  @override
+  String get standKindCity => '市内';
+
+  @override
+  String get standKindIntercity => '城际';
+
+  @override
+  String standCarsInLine(int count) {
+    return '排队 $count 辆车';
+  }
+
+  @override
+  String standFreeSeatsShort(int count) {
+    return '空位 $count 个';
+  }
+
+  @override
+  String standDistanceMeters(int count) {
+    return '$count 米';
+  }
+
+  @override
+  String get standJoinButton => '加入排队';
+
+  @override
+  String get standJoinTooFar => '请走近候客点后再加入排队';
+
+  @override
+  String get standJoinNeedsLocation => '请开启定位后再加入排队';
+
+  @override
+  String get standJoinNeedsOnline => '请先上线再加入排队';
+
+  @override
+  String get standYourPlaceTitle => '您的排队位置';
+
+  @override
+  String standPositionLabel(int position) {
+    return '排队第 $position 位';
+  }
+
+  @override
+  String get standYourTurnTitle => '轮到您了';
+
+  @override
+  String get standYourTurnText => '开始接客。车坐满后即可发车。';
+
+  @override
+  String standWaitTurnText(int count) {
+    return '请等待。您前面还有 $count 辆车。';
+  }
+
+  @override
+  String get standSeatsLabel => '座位';
+
+  @override
+  String standSeatsValue(int taken, int total) {
+    return '$taken/$total';
+  }
+
+  @override
+  String get standAddSeat => '+1 位';
+
+  @override
+  String get standReleaseSeat => '释放一个座位';
+
+  @override
+  String get standSeatSourceTitle => '座位是怎么被占用的？';
+
+  @override
+  String get standSeatSourcePhone => '电话预订';
+
+  @override
+  String get standSeatSourceWalkIn => '现场上车';
+
+  @override
+  String get standOfferTitle => '去向与价格';
+
+  @override
+  String get standDestinationLabel => '方向';
+
+  @override
+  String get standDestinationHint => '例如：奇姆肯特';
+
+  @override
+  String get standPriceLabel => '每座价格（₸）';
+
+  @override
+  String get standTotalSeatsLabel => '车内座位数';
+
+  @override
+  String get standCommentLabel => '备注';
+
+  @override
+  String get standCommentHint => '例如：坐满即走';
+
+  @override
+  String get standDepartButton => '发车';
+
+  @override
+  String get standDepartConfirmTitle => '确认从候客点发车？';
+
+  @override
+  String get standDepartConfirmText => '您的位置将由下一位司机接替。';
+
+  @override
+  String get standLeaveButton => '退出排队';
+
+  @override
+  String get standGiveTurnButton => '让出位置';
+
+  @override
+  String get standGiveTurnTitle => '把位置让给谁';
+
+  @override
+  String get standGiveTurnEmpty => '排队中没有其他司机。';
+
+  @override
+  String get standGiveTurnHasSeats => '请先释放已占用的座位。';
+
+  @override
+  String get standQueueTitle => '排队';
+
+  @override
+  String get standRequestsTitle => '座位申请';
+
+  @override
+  String standRequestSeats(int count) {
+    return '$count 个座位';
+  }
+
+  @override
+  String get standAcceptRequest => '确认';
+
+  @override
+  String get standDeclineRequest => '拒绝';
+
+  @override
+  String standOutsideWarning(int distance, int minutes) {
+    return '您已离开候客点范围（$distance 米）。位置将在 $minutes 分钟后释放。';
+  }
+
+  @override
+  String get standActionFailed => '操作失败';
+
+  @override
+  String get standsPassengerTitle => '候客点';
+
+  @override
+  String get standSheetCars => '候客点的车辆';
+
+  @override
+  String get standSheetEmpty => '目前候客点没有可接客的车辆。';
+
+  @override
+  String get standReserveSeat => '预订座位';
+
+  @override
+  String standSeatsFreeCount(int count) {
+    return '$count 个空位';
+  }
+
+  @override
+  String standPricePerSeatValue(String price) {
+    return '每座 $price ₸';
+  }
+
+  @override
+  String get standNoPriceYet => '价格面议';
+
+  @override
+  String get standDestinationUnknown => '未填写方向';
+
+  @override
+  String get standReservationPending => '等待司机确认';
+
+  @override
+  String get standReservationConfirmed => '座位已确认';
+
+  @override
+  String get standReservationCancel => '取消预订';
+
+  @override
+  String get standYourReservationTitle => '您在候客点的预订';
+
+  @override
+  String get standReserveSeatsTitle => '需要几个座位？';
+
+  @override
+  String get standCallToConfirm => '请致电司机并告知您何时到达。';
+
+  @override
+  String get cancelReasonDriverTitle => '为什么要取消这次行程？';
+
+  @override
+  String get cancelReasonNotice => '司机到达后的取消将由调度员审核。';
+
+  @override
+  String get cancelReasonClientNoShow => '乘客未出现';
+
+  @override
+  String get cancelReasonClientAsked => '乘客要求取消';
+
+  @override
+  String get cancelReasonWrongAddress => '地址有误';
+
+  @override
+  String get cancelReasonCarProblem => '车辆故障';
+
+  @override
+  String get cancelReasonTooFar => '距离太远';
+
+  @override
+  String get cancelReasonOther => '其他原因';
+
+  @override
+  String get cancelReasonNoteHint => '发生了什么（选填）';
+
+  @override
+  String get cancelReasonSubmit => '取消行程';
+
+  @override
+  String get cancelReasonKeep => '不取消';
+
+  @override
+  String get clientCancelReasonTitle => '为什么要取消？';
+
+  @override
+  String get clientCancelReasonChangedMind => '改变主意了';
+
+  @override
+  String get clientCancelReasonDriverAsked => '司机要求取消';
+
+  @override
+  String get clientCancelReasonWaited => '等车太久';
+
+  @override
+  String get clientCancelReasonFoundAnother => '已找到其他车';
+
+  @override
+  String get clientCancelReasonOther => '其他原因';
+
+  @override
+  String get clientCancelReasonNotice => '如果司机要求您取消订单，请在此标注。此类情况将由调度员审核。';
 }

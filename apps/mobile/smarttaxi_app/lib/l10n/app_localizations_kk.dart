@@ -4065,4 +4065,268 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get passengerMapPointNoAddressHint =>
       'Нүктені жақын үйге немесе нысанға жылжытыңыз';
+
+  @override
+  String get standScreenTitle => 'Тұрақ';
+
+  @override
+  String get standNearbyTitle => 'Жақын тұрақтар';
+
+  @override
+  String get standNoneTitle => 'Тұрақтар жоқ';
+
+  @override
+  String get standNoneText => 'Бұл өңірге тұрақтар әлі қосылмаған.';
+
+  @override
+  String get standLoadFailed => 'Тұрақтарды жүктеу мүмкін болмады';
+
+  @override
+  String get standKindCity => 'Қала бойынша';
+
+  @override
+  String get standKindIntercity => 'Қалааралық';
+
+  @override
+  String standCarsInLine(int count) {
+    return 'Кезекте $count көлік';
+  }
+
+  @override
+  String standFreeSeatsShort(int count) {
+    return '$count орын бос';
+  }
+
+  @override
+  String standDistanceMeters(int count) {
+    return '$count м';
+  }
+
+  @override
+  String get standJoinButton => 'Кезекке тұру';
+
+  @override
+  String get standJoinTooFar => 'Кезекке тұру үшін тұраққа жақындаңыз';
+
+  @override
+  String get standJoinNeedsLocation => 'Кезекке тұру үшін геолокацияны қосыңыз';
+
+  @override
+  String get standJoinNeedsOnline => 'Кезекке тұру үшін желіге шығыңыз';
+
+  @override
+  String get standYourPlaceTitle => 'Кезектегі орныңыз';
+
+  @override
+  String standPositionLabel(int position) {
+    return 'Кезекте $position-ші';
+  }
+
+  @override
+  String get standYourTurnTitle => 'Сіздің кезегіңіз';
+
+  @override
+  String get standYourTurnText =>
+      'Жолаушы жинаңыз. Көлік толғанда жолға шығыңыз.';
+
+  @override
+  String standWaitTurnText(int count) {
+    return 'Кезекті күтіңіз. Алдыңызда $count көлік.';
+  }
+
+  @override
+  String get standSeatsLabel => 'Орындар';
+
+  @override
+  String standSeatsValue(int taken, int total) {
+    return '$total орыннан $taken';
+  }
+
+  @override
+  String get standAddSeat => '+1 орын';
+
+  @override
+  String get standReleaseSeat => 'Орынды босату';
+
+  @override
+  String get standSeatSourceTitle => 'Орын қалай алынды?';
+
+  @override
+  String get standSeatSourcePhone => 'Телефон соқты';
+
+  @override
+  String get standSeatSourceWalkIn => 'Көлікке келді';
+
+  @override
+  String get standOfferTitle => 'Қайда және қанша';
+
+  @override
+  String get standDestinationLabel => 'Бағыт';
+
+  @override
+  String get standDestinationHint => 'Мысалы: Шымкент';
+
+  @override
+  String get standPriceLabel => 'Бір орын бағасы, ₸';
+
+  @override
+  String get standTotalSeatsLabel => 'Көліктегі орын саны';
+
+  @override
+  String get standCommentLabel => 'Түсініктеме';
+
+  @override
+  String get standCommentHint => 'Мысалы: толғанда шығамын';
+
+  @override
+  String get standDepartButton => 'Жолға шығу';
+
+  @override
+  String get standDepartConfirmTitle => 'Тұрақтан шығасыз ба?';
+
+  @override
+  String get standDepartConfirmText => 'Орныңызды келесі жүргізуші алады.';
+
+  @override
+  String get standLeaveButton => 'Кезектен шығу';
+
+  @override
+  String get standGiveTurnButton => 'Кезекті беру';
+
+  @override
+  String get standGiveTurnTitle => 'Кезекті кімге бересіз';
+
+  @override
+  String get standGiveTurnEmpty => 'Кезекте басқа жүргізушілер жоқ.';
+
+  @override
+  String get standGiveTurnHasSeats => 'Алдымен алынған орындарды босатыңыз.';
+
+  @override
+  String get standQueueTitle => 'Кезек';
+
+  @override
+  String get standRequestsTitle => 'Орынға өтінімдер';
+
+  @override
+  String standRequestSeats(int count) {
+    return '$count орын';
+  }
+
+  @override
+  String get standAcceptRequest => 'Растау';
+
+  @override
+  String get standDeclineRequest => 'Бас тарту';
+
+  @override
+  String standOutsideWarning(int distance, int minutes) {
+    return 'Сіз тұрақ аймағынан тыссыз ($distance м). Орын $minutes мин кейін босайды.';
+  }
+
+  @override
+  String get standActionFailed => 'Әрекетті орындау мүмкін болмады';
+
+  @override
+  String get standsPassengerTitle => 'Тұрақтар';
+
+  @override
+  String get standSheetCars => 'Тұрақтағы көліктер';
+
+  @override
+  String get standSheetEmpty => 'Қазір тұрақта жолаушы алуға дайын көлік жоқ.';
+
+  @override
+  String get standReserveSeat => 'Орын брондау';
+
+  @override
+  String standSeatsFreeCount(int count) {
+    return '$count бос орын';
+  }
+
+  @override
+  String standPricePerSeatValue(String price) {
+    return 'Орнына $price ₸';
+  }
+
+  @override
+  String get standNoPriceYet => 'Баға келісім бойынша';
+
+  @override
+  String get standDestinationUnknown => 'Бағыт көрсетілмеген';
+
+  @override
+  String get standReservationPending => 'Жүргізушінің растауын күтудеміз';
+
+  @override
+  String get standReservationConfirmed => 'Орын расталды';
+
+  @override
+  String get standReservationCancel => 'Броньды болдырмау';
+
+  @override
+  String get standYourReservationTitle => 'Тұрақтағы броныңыз';
+
+  @override
+  String get standReserveSeatsTitle => 'Қанша орын?';
+
+  @override
+  String get standCallToConfirm =>
+      'Жүргізушіге қоңырау шалып, қашан келетініңізді айтыңыз.';
+
+  @override
+  String get cancelReasonDriverTitle => 'Сапарды неге тоқтатасыз?';
+
+  @override
+  String get cancelReasonNotice =>
+      'Көлік келгеннен кейінгі бас тартуларды диспетчер тексереді.';
+
+  @override
+  String get cancelReasonClientNoShow => 'Жолаушы шықпады';
+
+  @override
+  String get cancelReasonClientAsked => 'Жолаушы бас тартуды сұрады';
+
+  @override
+  String get cancelReasonWrongAddress => 'Мекенжай дұрыс емес';
+
+  @override
+  String get cancelReasonCarProblem => 'Көлік бұзылды';
+
+  @override
+  String get cancelReasonTooFar => 'Тым алыс';
+
+  @override
+  String get cancelReasonOther => 'Басқа себеп';
+
+  @override
+  String get cancelReasonNoteHint => 'Не болды (міндетті емес)';
+
+  @override
+  String get cancelReasonSubmit => 'Сапарды тоқтату';
+
+  @override
+  String get cancelReasonKeep => 'Тоқтатпау';
+
+  @override
+  String get clientCancelReasonTitle => 'Неге бас тартасыз?';
+
+  @override
+  String get clientCancelReasonChangedMind => 'Баруымды өзгерттім';
+
+  @override
+  String get clientCancelReasonDriverAsked => 'Жүргізуші бас тартуды сұрады';
+
+  @override
+  String get clientCancelReasonWaited => 'Көлікті ұзақ күттім';
+
+  @override
+  String get clientCancelReasonFoundAnother => 'Басқа көлік таптым';
+
+  @override
+  String get clientCancelReasonOther => 'Басқа себеп';
+
+  @override
+  String get clientCancelReasonNotice =>
+      'Егер жүргізуші тапсырысты тоқтатуды сұраса — осында белгілеңіз. Мұндай жағдайларды диспетчер тексереді.';
 }

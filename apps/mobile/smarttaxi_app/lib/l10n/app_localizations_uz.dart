@@ -4102,4 +4102,274 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get passengerMapPointNoAddressHint =>
       'Nuqtani eng yaqin uy yoki obyektga suring';
+
+  @override
+  String get standScreenTitle => 'To‘xtash joyi';
+
+  @override
+  String get standNearbyTitle => 'Yaqindagi to‘xtash joylari';
+
+  @override
+  String get standNoneTitle => 'To‘xtash joylari yo‘q';
+
+  @override
+  String get standNoneText => 'Bu hududda to‘xtash joylari hali qo‘shilmagan.';
+
+  @override
+  String get standLoadFailed => 'To‘xtash joylarini yuklab bo‘lmadi';
+
+  @override
+  String get standKindCity => 'Shahar bo‘ylab';
+
+  @override
+  String get standKindIntercity => 'Shaharlararo';
+
+  @override
+  String standCarsInLine(int count) {
+    return 'Navbatda $count ta mashina';
+  }
+
+  @override
+  String standFreeSeatsShort(int count) {
+    return '$count ta joy bo‘sh';
+  }
+
+  @override
+  String standDistanceMeters(int count) {
+    return '$count m';
+  }
+
+  @override
+  String get standJoinButton => 'Navbatga turish';
+
+  @override
+  String get standJoinTooFar =>
+      'Navbatga turish uchun to‘xtash joyiga yaqinlashing';
+
+  @override
+  String get standJoinNeedsLocation =>
+      'Navbatga turish uchun joylashuvni yoqing';
+
+  @override
+  String get standJoinNeedsOnline => 'Navbatga turish uchun liniyaga chiqing';
+
+  @override
+  String get standYourPlaceTitle => 'Navbatdagi o‘rningiz';
+
+  @override
+  String standPositionLabel(int position) {
+    return 'Navbatda $position-chi';
+  }
+
+  @override
+  String get standYourTurnTitle => 'Sizning navbatingiz';
+
+  @override
+  String get standYourTurnText =>
+      'Yo‘lovchi to‘plang. Mashina to‘lgach, yo‘lga chiqing.';
+
+  @override
+  String standWaitTurnText(int count) {
+    return 'Navbatni kuting. Oldingizda $count ta mashina.';
+  }
+
+  @override
+  String get standSeatsLabel => 'Joylar';
+
+  @override
+  String standSeatsValue(int taken, int total) {
+    return '$total tadan $taken ta';
+  }
+
+  @override
+  String get standAddSeat => '+1 joy';
+
+  @override
+  String get standReleaseSeat => 'Joyni bo‘shatish';
+
+  @override
+  String get standSeatSourceTitle => 'Joy qanday band qilindi?';
+
+  @override
+  String get standSeatSourcePhone => 'Qo‘ng‘iroq qilishdi';
+
+  @override
+  String get standSeatSourceWalkIn => 'Mashinaga kelishdi';
+
+  @override
+  String get standOfferTitle => 'Qayerga va qanchaga';
+
+  @override
+  String get standDestinationLabel => 'Yo‘nalish';
+
+  @override
+  String get standDestinationHint => 'Masalan: Shimkent';
+
+  @override
+  String get standPriceLabel => 'Bir joy narxi, ₸';
+
+  @override
+  String get standTotalSeatsLabel => 'Mashinadagi joylar soni';
+
+  @override
+  String get standCommentLabel => 'Izoh';
+
+  @override
+  String get standCommentHint => 'Masalan: to‘lgach jo‘nayman';
+
+  @override
+  String get standDepartButton => 'Yo‘lga chiqish';
+
+  @override
+  String get standDepartConfirmTitle => 'To‘xtash joyidan chiqasizmi?';
+
+  @override
+  String get standDepartConfirmText =>
+      'O‘rningizni keyingi haydovchi egallaydi.';
+
+  @override
+  String get standLeaveButton => 'Navbatdan chiqish';
+
+  @override
+  String get standGiveTurnButton => 'Navbatni berish';
+
+  @override
+  String get standGiveTurnTitle => 'Navbatni kimga berasiz';
+
+  @override
+  String get standGiveTurnEmpty => 'Navbatda boshqa haydovchilar yo‘q.';
+
+  @override
+  String get standGiveTurnHasSeats =>
+      'Avval band qilingan joylarni bo‘shating.';
+
+  @override
+  String get standQueueTitle => 'Navbat';
+
+  @override
+  String get standRequestsTitle => 'Joy uchun so‘rovlar';
+
+  @override
+  String standRequestSeats(int count) {
+    return '$count ta joy';
+  }
+
+  @override
+  String get standAcceptRequest => 'Tasdiqlash';
+
+  @override
+  String get standDeclineRequest => 'Rad etish';
+
+  @override
+  String standOutsideWarning(int distance, int minutes) {
+    return 'Siz to‘xtash joyi hududidan tashqaridasiz ($distance m). Joy $minutes daqiqadan so‘ng bo‘shaydi.';
+  }
+
+  @override
+  String get standActionFailed => 'Amalni bajarib bo‘lmadi';
+
+  @override
+  String get standsPassengerTitle => 'To‘xtash joylari';
+
+  @override
+  String get standSheetCars => 'To‘xtash joyidagi mashinalar';
+
+  @override
+  String get standSheetEmpty =>
+      'Hozir to‘xtash joyida yo‘lovchi olishga tayyor mashina yo‘q.';
+
+  @override
+  String get standReserveSeat => 'Joy band qilish';
+
+  @override
+  String standSeatsFreeCount(int count) {
+    return '$count ta bo‘sh joy';
+  }
+
+  @override
+  String standPricePerSeatValue(String price) {
+    return 'Bir joyga $price ₸';
+  }
+
+  @override
+  String get standNoPriceYet => 'Narx kelishuv asosida';
+
+  @override
+  String get standDestinationUnknown => 'Yo‘nalish ko‘rsatilmagan';
+
+  @override
+  String get standReservationPending => 'Haydovchining tasdig‘ini kutyapmiz';
+
+  @override
+  String get standReservationConfirmed => 'Joy tasdiqlandi';
+
+  @override
+  String get standReservationCancel => 'Bandlovni bekor qilish';
+
+  @override
+  String get standYourReservationTitle => 'To‘xtash joyidagi bandlovingiz';
+
+  @override
+  String get standReserveSeatsTitle => 'Nechta joy?';
+
+  @override
+  String get standCallToConfirm =>
+      'Haydovchiga qo‘ng‘iroq qilib, qachon kelishingizni ayting.';
+
+  @override
+  String get cancelReasonDriverTitle => 'Nima uchun safarni bekor qilyapsiz?';
+
+  @override
+  String get cancelReasonNotice =>
+      'Mashina yetib kelgandan keyingi bekor qilishlar dispetcher tomonidan tekshiriladi.';
+
+  @override
+  String get cancelReasonClientNoShow => 'Yo‘lovchi chiqmadi';
+
+  @override
+  String get cancelReasonClientAsked => 'Yo‘lovchi bekor qilishni so‘radi';
+
+  @override
+  String get cancelReasonWrongAddress => 'Manzil noto‘g‘ri';
+
+  @override
+  String get cancelReasonCarProblem => 'Mashina buzildi';
+
+  @override
+  String get cancelReasonTooFar => 'Juda uzoq';
+
+  @override
+  String get cancelReasonOther => 'Boshqa sabab';
+
+  @override
+  String get cancelReasonNoteHint => 'Nima bo‘ldi (ixtiyoriy)';
+
+  @override
+  String get cancelReasonSubmit => 'Safarni bekor qilish';
+
+  @override
+  String get cancelReasonKeep => 'Bekor qilmaslik';
+
+  @override
+  String get clientCancelReasonTitle => 'Nima uchun bekor qilyapsiz?';
+
+  @override
+  String get clientCancelReasonChangedMind => 'Borishdan voz kechdim';
+
+  @override
+  String get clientCancelReasonDriverAsked =>
+      'Haydovchi bekor qilishni so‘radi';
+
+  @override
+  String get clientCancelReasonWaited => 'Mashinani uzoq kutdim';
+
+  @override
+  String get clientCancelReasonFoundAnother => 'Boshqa mashina topdim';
+
+  @override
+  String get clientCancelReasonOther => 'Boshqa sabab';
+
+  @override
+  String get clientCancelReasonNotice =>
+      'Agar haydovchi buyurtmani bekor qilishni so‘rasa — shu yerda belgilang. Bunday holatlarni dispetcher tekshiradi.';
 }

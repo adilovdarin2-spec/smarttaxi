@@ -29,12 +29,14 @@ import '../../core/widgets/exit_on_double_back.dart';
 import '../../core/widgets/map_vehicle_marker.dart';
 import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
+import '../shared/cancellation_reason_sheet.dart';
 import '../shared/models.dart';
 import 'models/driver_location_sync.dart';
 import 'models/navigation_progress.dart';
 import 'models/driver_shell_helpers.dart';
 import 'screens/notifications/driver_notifications_screen.dart';
 import 'screens/rating/driver_rating_screen.dart';
+import 'screens/stand/driver_stand_screen.dart';
 import 'screens/support/driver_support_screen.dart';
 import 'screens/wallet/driver_wallet_screen.dart';
 import 'widgets/driver_common_widgets.dart';
@@ -1993,6 +1995,30 @@ class _DriverShellState extends State<DriverShell> {
     _showDriverFullSheet(() => DriverNotificationsScreen(api: widget.api));
   }
 
+  // Standing in a line is a mode, not a panel: pushed as a real full-screen
+  // route the same way the navigator is, so the driver reads it as "I am at
+  // the stand now" rather than "I switched tabs".
+  Future<void> _openStands() async {
+    final scaffold = _scaffoldKey.currentState;
+    if (scaffold?.isDrawerOpen ?? false) {
+      Navigator.pop(context);
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => DriverStandScreen(
+          api: widget.api,
+          socket: widget.sockets,
+          regionId: _regionId,
+          isOnline: _online,
+          initialPosition: _lastPosition != null
+              ? Coordinate(
+                  lat: _lastPosition!.latitude, lng: _lastPosition!.longitude)
+              : (_regionHintPosition ?? _currentRegionCenter()),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openRoadAlerts() async {
     final scaffold = _scaffoldKey.currentState;
     if (scaffold?.isDrawerOpen ?? false) {
@@ -2582,6 +2608,7 @@ class _DriverShellState extends State<DriverShell> {
           onAbout: () => _showDriverFullSheet(_driverAboutContent),
           onSettings: () => _showDriverFullSheet(_driverSettingsContent),
           onRoadAlerts: () => unawaited(_openRoadAlerts()),
+          onStands: () => unawaited(_openStands()),
           onRecurringBookings: () =>
               _showDriverFullSheet(_driverRecurringBookingsContent),
           onLogout: () async {
@@ -3318,16 +3345,23 @@ class _DriverShellState extends State<DriverShell> {
                           onPressed: _tripActionLabel != null
                               ? null
                               : () async {
-                                  final confirmed = await _confirmDriverAction(
-                                    title: l10n.driverCancelTripConfirmTitle,
-                                    message: l10n.driverCancelTripConfirmText,
-                                    confirmLabel: l10n.driverTripCancelButton,
+                                  // The reason sheet replaces the old yes/no
+                                  // confirmation: it already asks whether to
+                                  // go through with it, and the answer is the
+                                  // one fact review cannot reconstruct later.
+                                  final reason = await askCancellationReason(
+                                    context,
+                                    isDriver: true,
                                   );
-                                  if (confirmed) {
-                                    unawaited(_tripAction(
-                                        l10n.driverTripCancelButton,
-                                        widget.api.cancelDriverOrder));
-                                  }
+                                  if (reason == null) return;
+                                  unawaited(_tripAction(
+                                    l10n.driverTripCancelButton,
+                                    (orderId) => widget.api.cancelDriverOrder(
+                                      orderId,
+                                      reasonCode: reason.code,
+                                      reasonNote: reason.note,
+                                    ),
+                                  ));
                                 },
                           child: Text(l10n.driverTripCancelButton)),
                     ],

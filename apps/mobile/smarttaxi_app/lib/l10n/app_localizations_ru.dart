@@ -4062,4 +4062,270 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get passengerMapPointNoAddressHint =>
       'Передвиньте точку к ближайшему дому или объекту';
+
+  @override
+  String get standScreenTitle => 'Стоянка';
+
+  @override
+  String get standNearbyTitle => 'Стоянки рядом';
+
+  @override
+  String get standNoneTitle => 'Стоянок нет';
+
+  @override
+  String get standNoneText => 'В этом регионе стоянки ещё не добавлены.';
+
+  @override
+  String get standLoadFailed => 'Не удалось загрузить стоянки';
+
+  @override
+  String get standKindCity => 'По городу';
+
+  @override
+  String get standKindIntercity => 'Межгород';
+
+  @override
+  String standCarsInLine(int count) {
+    return '$count машин в очереди';
+  }
+
+  @override
+  String standFreeSeatsShort(int count) {
+    return '$count мест свободно';
+  }
+
+  @override
+  String standDistanceMeters(int count) {
+    return '$count м';
+  }
+
+  @override
+  String get standJoinButton => 'Встать в очередь';
+
+  @override
+  String get standJoinTooFar => 'Подойдите к стоянке, чтобы встать в очередь';
+
+  @override
+  String get standJoinNeedsLocation =>
+      'Включите геолокацию, чтобы встать в очередь';
+
+  @override
+  String get standJoinNeedsOnline => 'Выйдите на линию, чтобы встать в очередь';
+
+  @override
+  String get standYourPlaceTitle => 'Ваше место в очереди';
+
+  @override
+  String standPositionLabel(int position) {
+    return '$position-й в очереди';
+  }
+
+  @override
+  String get standYourTurnTitle => 'Ваша очередь';
+
+  @override
+  String get standYourTurnText =>
+      'Набирайте пассажиров. Когда машина заполнится — выезжайте.';
+
+  @override
+  String standWaitTurnText(int count) {
+    return 'Ждите очередь. Перед вами $count машин.';
+  }
+
+  @override
+  String get standSeatsLabel => 'Места';
+
+  @override
+  String standSeatsValue(int taken, int total) {
+    return '$taken из $total';
+  }
+
+  @override
+  String get standAddSeat => '+1 место';
+
+  @override
+  String get standReleaseSeat => 'Освободить место';
+
+  @override
+  String get standSeatSourceTitle => 'Как заняли место?';
+
+  @override
+  String get standSeatSourcePhone => 'Позвонили';
+
+  @override
+  String get standSeatSourceWalkIn => 'Подошли к машине';
+
+  @override
+  String get standOfferTitle => 'Куда и почём';
+
+  @override
+  String get standDestinationLabel => 'Направление';
+
+  @override
+  String get standDestinationHint => 'Например: Шымкент';
+
+  @override
+  String get standPriceLabel => 'Цена за место, ₸';
+
+  @override
+  String get standTotalSeatsLabel => 'Мест в машине';
+
+  @override
+  String get standCommentLabel => 'Комментарий';
+
+  @override
+  String get standCommentHint => 'Например: выезжаю по заполнению';
+
+  @override
+  String get standDepartButton => 'Выехать';
+
+  @override
+  String get standDepartConfirmTitle => 'Выехать со стоянки?';
+
+  @override
+  String get standDepartConfirmText => 'Ваше место займёт следующий водитель.';
+
+  @override
+  String get standLeaveButton => 'Выйти из очереди';
+
+  @override
+  String get standGiveTurnButton => 'Отдать очередь';
+
+  @override
+  String get standGiveTurnTitle => 'Кому отдать очередь';
+
+  @override
+  String get standGiveTurnEmpty => 'В очереди нет других водителей.';
+
+  @override
+  String get standGiveTurnHasSeats => 'Сначала освободите занятые места.';
+
+  @override
+  String get standQueueTitle => 'Очередь';
+
+  @override
+  String get standRequestsTitle => 'Заявки на места';
+
+  @override
+  String standRequestSeats(int count) {
+    return '$count мест(а)';
+  }
+
+  @override
+  String get standAcceptRequest => 'Подтвердить';
+
+  @override
+  String get standDeclineRequest => 'Отказать';
+
+  @override
+  String standOutsideWarning(int distance, int minutes) {
+    return 'Вы вне зоны стоянки ($distance м). Место освободится через $minutes мин.';
+  }
+
+  @override
+  String get standActionFailed => 'Не удалось выполнить действие';
+
+  @override
+  String get standsPassengerTitle => 'Стоянки';
+
+  @override
+  String get standSheetCars => 'Машины на стоянке';
+
+  @override
+  String get standSheetEmpty =>
+      'Сейчас на стоянке нет машин, готовых принять пассажиров.';
+
+  @override
+  String get standReserveSeat => 'Забронировать место';
+
+  @override
+  String standSeatsFreeCount(int count) {
+    return '$count свободных мест';
+  }
+
+  @override
+  String standPricePerSeatValue(String price) {
+    return '$price ₸ за место';
+  }
+
+  @override
+  String get standNoPriceYet => 'Цена по договорённости';
+
+  @override
+  String get standDestinationUnknown => 'Направление не указано';
+
+  @override
+  String get standReservationPending => 'Ждём подтверждения водителя';
+
+  @override
+  String get standReservationConfirmed => 'Место подтверждено';
+
+  @override
+  String get standReservationCancel => 'Отменить бронь';
+
+  @override
+  String get standYourReservationTitle => 'Ваша бронь на стоянке';
+
+  @override
+  String get standReserveSeatsTitle => 'Сколько мест?';
+
+  @override
+  String get standCallToConfirm =>
+      'Позвоните водителю и скажите, когда подойдёте.';
+
+  @override
+  String get cancelReasonDriverTitle => 'Почему отменяете поездку?';
+
+  @override
+  String get cancelReasonNotice =>
+      'Отмены после подачи машины проверяет диспетчер.';
+
+  @override
+  String get cancelReasonClientNoShow => 'Пассажир не вышел';
+
+  @override
+  String get cancelReasonClientAsked => 'Пассажир попросил отменить';
+
+  @override
+  String get cancelReasonWrongAddress => 'Неверный адрес';
+
+  @override
+  String get cancelReasonCarProblem => 'Поломка машины';
+
+  @override
+  String get cancelReasonTooFar => 'Слишком далеко ехать';
+
+  @override
+  String get cancelReasonOther => 'Другая причина';
+
+  @override
+  String get cancelReasonNoteHint => 'Что произошло (необязательно)';
+
+  @override
+  String get cancelReasonSubmit => 'Отменить поездку';
+
+  @override
+  String get cancelReasonKeep => 'Не отменять';
+
+  @override
+  String get clientCancelReasonTitle => 'Почему отменяете?';
+
+  @override
+  String get clientCancelReasonChangedMind => 'Передумал ехать';
+
+  @override
+  String get clientCancelReasonDriverAsked => 'Водитель попросил отменить';
+
+  @override
+  String get clientCancelReasonWaited => 'Долго жду машину';
+
+  @override
+  String get clientCancelReasonFoundAnother => 'Нашёл другую машину';
+
+  @override
+  String get clientCancelReasonOther => 'Другая причина';
+
+  @override
+  String get clientCancelReasonNotice =>
+      'Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер.';
 }
