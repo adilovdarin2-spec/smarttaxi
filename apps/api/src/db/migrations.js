@@ -941,7 +941,163 @@ const statements = [
     FROM regions origin
     CROSS JOIN regions destination
     WHERE origin.is_active=true AND destination.is_active=true AND origin.id <> destination.id
-    ON CONFLICT (origin_region_id, destination_region_id) DO NOTHING`
+    ON CONFLICT (origin_region_id, destination_region_id) DO NOTHING`,
+
+  // --- Taxi stands (стоянки) ---
+  // A stand is a real physical place drivers queue at — the межгород/по городу
+  // lines that already exist off-app. The owner draws it on the map (point +
+  // radius), and that radius is the geofence a driver must physically be inside
+  // to join or hold a place in the line, so nobody joins the queue from home.
+  `CREATE TABLE IF NOT EXISTS taxi_stands (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'CITY' CHECK (kind IN ('CITY','INTERCITY')),
+    lat NUMERIC(10,6) NOT NULL,
+    lng NUMERIC(10,6) NOT NULL,
+    radius_m INTEGER NOT NULL DEFAULT 120 CHECK (radius_m BETWEEN 20 AND 2000),
+    boarding_slots INTEGER NOT NULL DEFAULT 1 CHECK (boarding_slots BETWEEN 1 AND 10),
+    default_seats INTEGER NOT NULL DEFAULT 4 CHECK (default_seats BETWEEN 1 AND 20),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    note TEXT,
+    created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_taxi_stands_region_active ON taxi_stands(region_id, is_active)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_taxi_stands_region_name ON taxi_stands(region_id, lower(name))",
+
+  // One row per driver's place in a stand's line. queue_seq (not joined_at) is
+  // the ordering key, because handing your turn to the driver next to you has
+  // to move exactly one place without renumbering the rest of the line — the
+  // receiving entry simply takes the giver's seq. WAITING/BOARDING are the two
+  // live states; the partial unique index below is what enforces "a driver
+  // holds a place in exactly one line at a time".
+  `CREATE TABLE IF NOT EXISTS taxi_stand_queue_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    stand_id UUID NOT NULL REFERENCES taxi_stands(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'WAITING'
+      CHECK (status IN ('WAITING','BOARDING','DEPARTED','LEFT','EXPIRED')),
+    queue_seq BIGINT NOT NULL,
+    destination_label TEXT,
+    destination_region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
+    price_per_seat INTEGER CHECK (price_per_seat IS NULL OR price_per_seat >= 0),
+    total_seats INTEGER NOT NULL DEFAULT 4 CHECK (total_seats BETWEEN 1 AND 20),
+    taken_seats INTEGER NOT NULL DEFAULT 0 CHECK (taken_seats >= 0),
+    comment TEXT,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    boarding_started_at TIMESTAMPTZ,
+    departed_at TIMESTAMPTZ,
+    left_at TIMESTAMPTZ,
+    left_reason TEXT,
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_lat NUMERIC(10,6),
+    last_lng NUMERIC(10,6),
+    received_turn_from_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+    gave_turn_to_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CHECK (taken_seats <= total_seats)
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_stand_queue_one_live_per_driver
+     ON taxi_stand_queue_entries(driver_id)
+     WHERE status IN ('WAITING','BOARDING')`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_stand_queue_live_seq
+     ON taxi_stand_queue_entries(stand_id, queue_seq)
+     WHERE status IN ('WAITING','BOARDING')`,
+  "CREATE INDEX IF NOT EXISTS idx_stand_queue_stand_status_seq ON taxi_stand_queue_entries(stand_id, status, queue_seq)",
+  "CREATE INDEX IF NOT EXISTS idx_stand_queue_driver_created ON taxi_stand_queue_entries(driver_id, created_at DESC)",
+  // A driver who drives away keeps their place for a short grace period —
+  // stepping out of the geofence for a minute (fuel, a shop) must not cost
+  // them the line, but leaving for good has to. outside_since is when the
+  // last heartbeat first landed outside the radius; the sweeper drops the
+  // entry once that has held long enough.
+  "ALTER TABLE taxi_stand_queue_entries ADD COLUMN IF NOT EXISTS outside_since TIMESTAMPTZ",
+
+  // Seats a rider claimed. APP rows start PENDING and wait for the driver to
+  // confirm; PHONE/WALK_IN rows are what the driver's own "+1 место" button
+  // writes, so a seat taken over the phone is still an auditable row rather
+  // than an untraceable counter bump. taken_seats on the entry is maintained
+  // alongside these rows inside the same transaction.
+  `CREATE TABLE IF NOT EXISTS taxi_stand_seat_reservations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    entry_id UUID NOT NULL REFERENCES taxi_stand_queue_entries(id) ON DELETE CASCADE,
+    stand_id UUID NOT NULL REFERENCES taxi_stands(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+    seats INTEGER NOT NULL DEFAULT 1 CHECK (seats BETWEEN 1 AND 8),
+    status TEXT NOT NULL DEFAULT 'PENDING'
+      CHECK (status IN ('PENDING','CONFIRMED','DECLINED','CANCELLED','EXPIRED','BOARDED')),
+    source TEXT NOT NULL DEFAULT 'APP' CHECK (source IN ('APP','PHONE','WALK_IN')),
+    pickup_label TEXT,
+    pickup_lat NUMERIC(10,6),
+    pickup_lng NUMERIC(10,6),
+    comment TEXT,
+    expires_at TIMESTAMPTZ,
+    confirmed_at TIMESTAMPTZ,
+    declined_at TIMESTAMPTZ,
+    cancelled_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_stand_reservations_entry_status ON taxi_stand_seat_reservations(entry_id, status)",
+  "CREATE INDEX IF NOT EXISTS idx_stand_reservations_client_created ON taxi_stand_seat_reservations(client_id, created_at DESC)",
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_stand_reservations_one_live_per_client
+     ON taxi_stand_seat_reservations(client_id)
+     WHERE client_id IS NOT NULL AND status IN ('PENDING','CONFIRMED')`,
+
+  // --- Cancellation review ---
+  // Drivers who find a rider through the app and then cancel (or talk the rider
+  // into cancelling) so the trip never books a commission are what this
+  // records. Nothing is charged automatically: each cancellation is scored from
+  // facts the server already holds — how long after arrival, how close the car
+  // was, whether the same driver/rider pair keeps doing it — and the owner
+  // decides. signals is the human-readable evidence list shown in review.
+  `CREATE TABLE IF NOT EXISTS order_cancellation_audits (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+    region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
+    cancelled_by TEXT NOT NULL CHECK (cancelled_by IN ('DRIVER','CLIENT','OPERATOR','SYSTEM')),
+    actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    from_status TEXT NOT NULL,
+    reason_code TEXT,
+    reason_note TEXT,
+    risk_score INTEGER NOT NULL DEFAULT 0 CHECK (risk_score BETWEEN 0 AND 100),
+    signals JSONB NOT NULL DEFAULT '[]'::jsonb,
+    order_price INTEGER,
+    service_commission INTEGER,
+    seconds_since_accept INTEGER,
+    seconds_since_arrival INTEGER,
+    driver_distance_to_pickup_m INTEGER,
+    driver_lat NUMERIC(10,6),
+    driver_lng NUMERIC(10,6),
+    follow_up_status TEXT NOT NULL DEFAULT 'PENDING'
+      CHECK (follow_up_status IN ('PENDING','OBSERVED','SKIPPED')),
+    follow_up_checked_at TIMESTAMPTZ,
+    follow_up_distance_from_pickup_m INTEGER,
+    follow_up_distance_to_dropoff_m INTEGER,
+    review_status TEXT NOT NULL DEFAULT 'PENDING'
+      CHECK (review_status IN ('PENDING','CLEARED','CONFIRMED_FRAUD','DISMISSED')),
+    reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    review_note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_cancellation_audits_review ON order_cancellation_audits(review_status, risk_score DESC, created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_cancellation_audits_driver ON order_cancellation_audits(driver_id, created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_cancellation_audits_client ON order_cancellation_audits(client_id, created_at DESC)",
+  "CREATE INDEX IF NOT EXISTS idx_cancellation_audits_follow_up ON order_cancellation_audits(follow_up_status, created_at)",
+  // The driver's own stated reason, captured at the moment of cancellation:
+  // "rider never came out" is a legitimate cancellation and has to be
+  // distinguishable in review from a silent one.
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancel_reason_code TEXT",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancel_reason_note TEXT"
+
 ];
 
 export async function runMigrations() {

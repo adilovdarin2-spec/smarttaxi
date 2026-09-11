@@ -37,6 +37,12 @@ import favoritesRoutes from "./modules/favorites/favorites.routes.js";
 import referralsRoutes from "./modules/referrals/referrals.routes.js";
 import recurringBookingsRoutes from "./modules/recurring-bookings/recurring-bookings.routes.js";
 import appVersionRoutes from "./modules/app-version/app-version.routes.js";
+import standsRoutes, { driverStandsRouter } from "./modules/stands/stands.routes.js";
+import adminStandsRoutes from "./modules/stands/stands.admin.routes.js";
+import cancellationReviewRoutes from "./modules/orders/cancellation-review.routes.js";
+import { standRegionRoom, standRoom } from "./modules/stands/stands.service.js";
+import { startStandsSweeper } from "./modules/stands/stands.scheduler.js";
+import { startCancellationReviewScheduler } from "./modules/orders/cancellation-review.scheduler.js";
 import { startRecurringBookingsScheduler } from "./modules/recurring-bookings/recurring-bookings.scheduler.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
 import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
@@ -100,6 +106,47 @@ io.use(async (socket, next) => {
   next();
 });
 io.on("connection", socket => {
+  // Every authenticated socket lands in its own room. Several features have
+  // to reach one specific person rather than a region or an order — a seat
+  // reservation waiting on this driver, a rider whose car just left the
+  // stand — and without this each of them would have to hunt for the right
+  // socket by hand.
+  if (socket.user?.id) socket.join(`user:${socket.user.id}`);
+  socket.on("join_stand", async payload => {
+    try {
+      if (!socket.user) return;
+      const standId = typeof payload === "string" ? payload : payload?.standId;
+      if (!standId) return;
+      const stand = (await query("SELECT id, region_id, is_active FROM taxi_stands WHERE id=$1", [standId])).rows[0];
+      if (!stand?.is_active) return;
+      socket.join(standRoom(stand.id));
+      // Drivers get a second, wider room: their view of the line carries the
+      // seat reservations and phone numbers a rider must never receive.
+      if (socket.user.role === "DRIVER") socket.join(`${standRoom(stand.id)}:drivers`);
+    } catch (error) {
+      // Without this the stand screen silently stops moving — positions,
+      // free seats and newly arrived cars all travel over this room only.
+      console.error("[socket] join_stand failed", error);
+    }
+  });
+  socket.on("leave_stand", payload => {
+    const standId = typeof payload === "string" ? payload : payload?.standId;
+    if (!standId) return;
+    socket.leave(standRoom(standId));
+    socket.leave(`${standRoom(standId)}:drivers`);
+  });
+  socket.on("join_region_stands", async payload => {
+    try {
+      if (!socket.user) return;
+      const regionId = typeof payload === "string" ? payload : payload?.regionId;
+      if (!regionId) return;
+      const region = (await query("SELECT id, is_active FROM regions WHERE id=$1", [regionId])).rows[0];
+      if (!region?.is_active) return;
+      socket.join(standRegionRoom(region.id));
+    } catch (error) {
+      console.error("[socket] join_region_stands failed", error);
+    }
+  });
   socket.on("join_dispatch", async payload => {
     try {
       if (!["OWNER", "FINANCE"].includes(socket.user?.role)) return;
@@ -223,6 +270,10 @@ app.use("/api/favorites", favoritesRoutes);
 app.use("/api/referrals", referralsRoutes);
 app.use("/api/recurring-bookings", recurringBookingsRoutes);
 app.use("/api/app-version", appVersionRoutes);
+app.use("/api/stands", standsRoutes);
+app.use("/api/driver/stands", driverStandsRouter);
+app.use("/api/admin/stands", adminStandsRoutes);
+app.use("/api/admin/cancellation-reviews", cancellationReviewRoutes);
 app.get("/", (_req, res) => res.json({ app: "SmartTaxi API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);
@@ -232,6 +283,8 @@ async function bootstrap() {
   await runMigrations();
   await query("SELECT 1");
   startRecurringBookingsScheduler(io);
+  startStandsSweeper(io);
+  startCancellationReviewScheduler();
   server.listen(env.API_PORT, () => console.log(`[API] SmartTaxi running on ${env.API_PORT}`));
   // Detached, and after the listener is up: loading ~100k address rows must
   // never delay the health check or hold the port closed. It skips itself

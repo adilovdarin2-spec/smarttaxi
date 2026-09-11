@@ -736,3 +736,116 @@ BEGIN
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
+-- --- Taxi stands (стоянки) ---------------------------------------------
+-- Mirrors migrations.js; see there for why each column exists. A stand is a
+-- point plus a radius the owner draws on the map, and that radius is the
+-- geofence a driver must be inside to hold a place in the line.
+
+CREATE TABLE IF NOT EXISTS taxi_stands (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'CITY' CHECK (kind IN ('CITY','INTERCITY')),
+  lat NUMERIC(10,6) NOT NULL,
+  lng NUMERIC(10,6) NOT NULL,
+  radius_m INTEGER NOT NULL DEFAULT 120 CHECK (radius_m BETWEEN 20 AND 2000),
+  boarding_slots INTEGER NOT NULL DEFAULT 1 CHECK (boarding_slots BETWEEN 1 AND 10),
+  default_seats INTEGER NOT NULL DEFAULT 4 CHECK (default_seats BETWEEN 1 AND 20),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  note TEXT,
+  created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS taxi_stand_queue_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  stand_id UUID NOT NULL REFERENCES taxi_stands(id) ON DELETE CASCADE,
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'WAITING'
+    CHECK (status IN ('WAITING','BOARDING','DEPARTED','LEFT','EXPIRED')),
+  queue_seq BIGINT NOT NULL,
+  destination_label TEXT,
+  destination_region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
+  price_per_seat INTEGER CHECK (price_per_seat IS NULL OR price_per_seat >= 0),
+  total_seats INTEGER NOT NULL DEFAULT 4 CHECK (total_seats BETWEEN 1 AND 20),
+  taken_seats INTEGER NOT NULL DEFAULT 0 CHECK (taken_seats >= 0),
+  comment TEXT,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  boarding_started_at TIMESTAMPTZ,
+  departed_at TIMESTAMPTZ,
+  left_at TIMESTAMPTZ,
+  left_reason TEXT,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_lat NUMERIC(10,6),
+  last_lng NUMERIC(10,6),
+  outside_since TIMESTAMPTZ,
+  received_turn_from_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  gave_turn_to_driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (taken_seats <= total_seats)
+);
+
+CREATE TABLE IF NOT EXISTS taxi_stand_seat_reservations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_id UUID NOT NULL REFERENCES taxi_stand_queue_entries(id) ON DELETE CASCADE,
+  stand_id UUID NOT NULL REFERENCES taxi_stands(id) ON DELETE CASCADE,
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  seats INTEGER NOT NULL DEFAULT 1 CHECK (seats BETWEEN 1 AND 8),
+  status TEXT NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING','CONFIRMED','DECLINED','CANCELLED','EXPIRED','BOARDED')),
+  source TEXT NOT NULL DEFAULT 'APP' CHECK (source IN ('APP','PHONE','WALK_IN')),
+  pickup_label TEXT,
+  pickup_lat NUMERIC(10,6),
+  pickup_lng NUMERIC(10,6),
+  comment TEXT,
+  expires_at TIMESTAMPTZ,
+  confirmed_at TIMESTAMPTZ,
+  declined_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- --- Cancellation review ------------------------------------------------
+-- One row per cancellation that reached a driver. Nothing here moves money:
+-- it records what happened, scores how much it looks like a trip taken off
+-- the books, and waits for the owner's verdict.
+
+CREATE TABLE IF NOT EXISTS order_cancellation_audits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
+  cancelled_by TEXT NOT NULL CHECK (cancelled_by IN ('DRIVER','CLIENT','OPERATOR','SYSTEM')),
+  actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  from_status TEXT NOT NULL,
+  reason_code TEXT,
+  reason_note TEXT,
+  risk_score INTEGER NOT NULL DEFAULT 0 CHECK (risk_score BETWEEN 0 AND 100),
+  signals JSONB NOT NULL DEFAULT '[]'::jsonb,
+  order_price INTEGER,
+  service_commission INTEGER,
+  seconds_since_accept INTEGER,
+  seconds_since_arrival INTEGER,
+  driver_distance_to_pickup_m INTEGER,
+  driver_lat NUMERIC(10,6),
+  driver_lng NUMERIC(10,6),
+  follow_up_status TEXT NOT NULL DEFAULT 'PENDING'
+    CHECK (follow_up_status IN ('PENDING','OBSERVED','SKIPPED')),
+  follow_up_checked_at TIMESTAMPTZ,
+  follow_up_distance_from_pickup_m INTEGER,
+  follow_up_distance_to_dropoff_m INTEGER,
+  review_status TEXT NOT NULL DEFAULT 'PENDING'
+    CHECK (review_status IN ('PENDING','CLEARED','CONFIRMED_FRAUD','DISMISSED')),
+  reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMPTZ,
+  review_note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

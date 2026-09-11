@@ -41,8 +41,35 @@ import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.
 import { spendOrderCashback, trySpendOrderCashback } from "./cashback-payment.service.js";
 import { assertDriverManualPaymentAllowed } from "../payments/manual-payment-policy.js";
 import { isClientCancellationAlreadyApplied } from "./client-cancellation-policy.js";
+import { recordCancellationAudit } from "./cancellation-review.service.js";
 
 const router = Router();
+// Why the trip was cancelled, in the words each side would actually use.
+// These are the only facts separating a rider who never came out from a trip
+// quietly taken off the books, so they are captured at the moment of the tap
+// rather than reconstructed later.
+export const DRIVER_CANCEL_REASONS = [
+  "CLIENT_NO_SHOW",
+  "CLIENT_ASKED",
+  "WRONG_ADDRESS",
+  "CAR_PROBLEM",
+  "TOO_FAR",
+  "OTHER"
+];
+export const CLIENT_CANCEL_REASONS = [
+  "CHANGED_MIND",
+  "DRIVER_ASKED_TO_CANCEL",
+  "WAITED_TOO_LONG",
+  "FOUND_ANOTHER_CAR",
+  "WRONG_ADDRESS",
+  "OTHER"
+];
+const CANCELLED_BY_FOR_STATUS = {
+  CANCELLED_BY_CLIENT: "CLIENT",
+  CANCELLED_BY_DRIVER: "DRIVER",
+  CANCELLED_BY_OPERATOR: "OPERATOR",
+  NO_SHOW: "DRIVER"
+};
 // Anti-fraud: auto-suspend a driver whose rolling average drops below this
 // once they have enough reviews that it isn't just one bad trip.
 const DRIVER_AUTO_BLOCK_RATING_THRESHOLD = 3.0;
@@ -438,8 +465,15 @@ router.post("/:id/cancel-public", requireAuth, requireRole("CLIENT"), rateLimit(
   try {
     const { id } = IdParam.parse(req.params);
     const body = z.object({
-      riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone")
+      riderPhone: z.string().trim().min(6).max(32).regex(/^\+?[0-9 ()-]+$/, "invalid phone"),
+      // Asked for once the driver is already on the way. "Водитель попросил
+      // отменить" is the answer that matters: it is the rider's side of the
+      // same off-book trip a driver cancellation hides, and it is invisible
+      // to the server any other way.
+      reasonCode: z.enum(CLIENT_CANCEL_REASONS).optional(),
+      reasonNote: z.string().trim().max(300).optional()
     }).parse(req.body);
+    let auditContext = null;
     const order = await tx(async (client) => {
       const existing = (await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
       if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
@@ -466,7 +500,16 @@ router.post("/:id/cancel-public", requireAuth, requireRole("CLIENT"), rateLimit(
         });
       }
 
-      const updated = (await client.query("UPDATE orders SET status='CANCELLED_BY_CLIENT', cancelled_at=NOW() WHERE id=$1 RETURNING *", [existing.id])).rows[0];
+      const updated = (await client.query(`
+        UPDATE orders
+        SET status='CANCELLED_BY_CLIENT',
+            cancelled_at=NOW(),
+            last_cancel_reason_code=$2,
+            last_cancel_reason_note=$3
+        WHERE id=$1
+        RETURNING *
+      `, [existing.id, body.reasonCode || null, body.reasonNote || null])).rows[0];
+      auditContext = { order: updated, fromStatus: existing.status };
       if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
       await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
       await createOrderCancelledTransaction(updated, null, client);
@@ -485,6 +528,19 @@ router.post("/:id/cancel-public", requireAuth, requireRole("CLIENT"), rateLimit(
         WHERE o.id=$1
       `, [updated.id])).rows[0];
     });
+    // Filed outside the transaction on purpose: a cancellation the rider
+    // asked for must succeed even if the review bookkeeping cannot be
+    // written, and recordCancellationAudit never throws back at us.
+    if (auditContext) {
+      await recordCancellationAudit({
+        order: auditContext.order,
+        cancelledBy: "CLIENT",
+        actorUserId: req.user.id,
+        fromStatus: auditContext.fromStatus,
+        reasonCode: body.reasonCode || null,
+        reasonNote: body.reasonNote || null
+      });
+    }
     emitOrderUpdated(req.io, order);
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
@@ -1145,6 +1201,7 @@ async function updateStatus(req, res, next, status) {
     // every other notify call here happens after tx() returns, not inside).
     let cashbackEarned = 0;
     let referralBonusResult = null;
+    let auditContext = null;
     const order = await tx(async (client) => {
       const driver = req.user.role === "DRIVER" ? (await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id])).rows[0] : null;
       if (req.user.role === "DRIVER" && !driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
@@ -1349,6 +1406,11 @@ async function updateStatus(req, res, next, status) {
         if (updated.driver_id) await client.query("UPDATE drivers SET status='FREE' WHERE id=$1", [updated.driver_id]);
         await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
         await createOrderCancelledTransaction(updated, req.user.id, client);
+        auditContext = {
+          order: updated,
+          fromStatus: existing.status,
+          cancelledBy: CANCELLED_BY_FOR_STATUS[status] || "OPERATOR"
+        };
       }
       await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,$2,$3,$4)", [existing.id, status, `Status changed to ${status}`, req.user.id]);
       if (status === "TRIP_COMPLETED" && updated.status === "PAID") {
@@ -1369,6 +1431,16 @@ async function updateStatus(req, res, next, status) {
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });
+    if (auditContext) {
+      await recordCancellationAudit({
+        order: auditContext.order,
+        cancelledBy: auditContext.cancelledBy,
+        actorUserId: req.user.id,
+        fromStatus: auditContext.fromStatus,
+        reasonCode: auditContext.order.last_cancel_reason_code || null,
+        reasonNote: auditContext.order.last_cancel_reason_note || null
+      });
+    }
     emitOrderUpdated(req.io, order);
     if (status === "DRIVER_ARRIVED") {
       notifyOrderClient(order, {
@@ -1439,6 +1511,15 @@ router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (r
   }
   try {
     const { id } = IdParam.parse(req.params);
+    // The reason is the difference between a rider who never came out and a
+    // trip being taken off the books, and the server cannot tell them apart
+    // on its own. Optional so an older client build still works, but its
+    // absence is itself a review signal.
+    const body = z.object({
+      reasonCode: z.enum(DRIVER_CANCEL_REASONS).optional(),
+      reasonNote: z.string().trim().max(300).optional()
+    }).parse(req.body || {});
+    let auditContext = null;
     const order = await tx(async (client) => {
       const driver = (await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id])).rows[0];
       if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
@@ -1470,10 +1551,20 @@ router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (r
             paid_waiting_started_at=NULL,
             waiting_price_per_minute=NULL,
             last_cancelled_by_driver_id=$1,
-            last_cancelled_by_driver_at=NOW()
+            last_cancelled_by_driver_at=NOW(),
+            last_cancel_reason_code=$3,
+            last_cancel_reason_note=$4
         WHERE id=$2
         RETURNING *
-      `, [driver.id, existing.id])).rows[0];
+      `, [driver.id, existing.id, body.reasonCode || null, body.reasonNote || null])).rows[0];
+      // Captured before the row is stripped of driver_id/accepted_at above:
+      // the audit needs the trip as it stood at the moment of cancellation,
+      // not the reopened shell that goes back into dispatch.
+      auditContext = {
+        order: { ...existing, last_cancel_reason_code: body.reasonCode || null },
+        fromStatus: existing.status,
+        driverId: driver.id
+      };
       await client.query("UPDATE drivers SET status='FREE', last_seen_at=NOW() WHERE id=$1", [driver.id]);
       await client.query("UPDATE payments SET status='CANCELLED', updated_at=NOW() WHERE order_id=$1 AND status IN ('PENDING','PROCESSING')", [updated.id]);
       await client.query(
@@ -1495,6 +1586,17 @@ router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (r
         WHERE o.id=$1
       `, [existing.id])).rows[0];
     });
+    if (auditContext) {
+      await recordCancellationAudit({
+        order: auditContext.order,
+        cancelledBy: "DRIVER",
+        actorUserId: req.user.id,
+        fromStatus: auditContext.fromStatus,
+        reasonCode: body.reasonCode || null,
+        reasonNote: body.reasonNote || null,
+        driverId: auditContext.driverId
+      });
+    }
     emitOrderUpdated(req.io, order, "order_driver_cancelled");
     notifyOrderClient(order, {
       title: "Водитель сменился",
