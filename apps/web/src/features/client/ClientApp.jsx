@@ -936,6 +936,7 @@ export default function ClientApp() {
   const [regions, setRegions] = useState([]);
   const [regionsLoading, setRegionsLoading] = useState(true);
   const [regionsError, setRegionsError] = useState("");
+  const [regionsReloadKey, setRegionsReloadKey] = useState(0);
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [intercityRoutes, setIntercityRoutes] = useState([]);
   const [intercityLoading, setIntercityLoading] = useState(false);
@@ -956,6 +957,11 @@ export default function ClientApp() {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+
+  function retryRegions() {
+    if (regionsLoading) return;
+    setRegionsReloadKey(value => value + 1);
+  }
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [incomingMessage, setIncomingMessage] = useState(null);
@@ -1144,7 +1150,7 @@ export default function ClientApp() {
       })
       .finally(() => !ignore && setRegionsLoading(false));
     return () => { ignore = true; };
-  }, []);
+  }, [regionsReloadKey]);
 
   useEffect(() => {
     if (!selectedRegionId || !canShowTariffs || regionsLoading) {
@@ -2042,6 +2048,9 @@ export default function ClientApp() {
         <AddressPicker
           mode={addressMode}
           region={selectedRegion}
+          regionsLoading={regionsLoading}
+          regionsError={regionsError}
+          onRetryRegions={retryRegions}
           initialPoint={addressMode === 'pickup'
             ? pickup || (mainMapCandidateReady ? mainMapCandidate : null)
             : addressMode === 'destination' ? destination || pickup : null}
@@ -2069,6 +2078,9 @@ export default function ClientApp() {
               mainMapCandidateReady={mainMapCandidateReady}
               selectedRegion={selectedRegion}
               selectedRegionName={selectedRegionName}
+              regionsLoading={regionsLoading}
+              regionsError={regionsError}
+              onRetryRegions={retryRegions}
               onUseLocation={useCurrentLocation}
               onPickup={() => setAddressMode("pickup")}
               onDestination={openDestinationFromMain}
@@ -2125,7 +2137,7 @@ export default function ClientApp() {
               onLogin={() => setSection("profile")}
             />
           )}
-          {section === "regions" && <RegionSection regions={regions} selectedRegionId={selectedRegion?.id || selectedRegionId} onSelect={selectServiceRegion} onHome={() => setSection("home")} />}
+          {section === "regions" && <RegionSection regions={regions} selectedRegionId={selectedRegion?.id || selectedRegionId} onSelect={selectServiceRegion} onHome={() => setSection("home")} regionsLoading={regionsLoading} regionsError={regionsError} onRetryRegions={retryRegions} />}
           {section === "notifications" && <NotificationsSection authenticated={authenticated} />}
           {section === "recurring" && <RecurringBookingsSection authenticated={authenticated} />}
           {section === "drivers" && <DriverPreferencesSection authenticated={authenticated} />}
@@ -2255,6 +2267,23 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
   );
 }
 
+function RegionConnectionNotice({ loading, error, onRetry, compact = false }) {
+  if (!error) return null;
+  return (
+    <section className={`region-connection-notice${compact ? " compact" : ""}`} role="alert" aria-live="assertive">
+      <span className="region-connection-notice-icon" aria-hidden="true"><Icon name="refresh" size={20} /></span>
+      <span className="region-connection-notice-copy">
+        <strong>Нет связи с сервером</strong>
+        <small>Адреса, тарифы и заказ станут доступны после восстановления подключения.</small>
+      </span>
+      <button type="button" onClick={onRetry} disabled={loading}>
+        <Icon name="refresh" size={16} />
+        {loading ? "Проверяем" : "Повторить"}
+      </button>
+    </section>
+  );
+}
+
 function ReferenceHomeSection(props) {
   const {
     pickup,
@@ -2268,6 +2297,9 @@ function ReferenceHomeSection(props) {
     mainMapCandidateReady,
     selectedRegion,
     selectedRegionName,
+    regionsLoading,
+    regionsError,
+    onRetryRegions,
     onUseLocation,
     onPickup,
     onDestination,
@@ -2346,6 +2378,7 @@ function ReferenceHomeSection(props) {
         </header>
         <section className="tariff-v12-sheet tariff-v14-sheet">
           <div className="tariff-v14-grip" aria-hidden="true" />
+          <RegionConnectionNotice loading={regionsLoading} error={regionsError} onRetry={onRetryRegions} compact />
           <ReferenceRouteCard pickup={pickup} destination={destination} onEdit={onDestination} />
           <header className="tariff-v14-section-title">
             <div>
@@ -2431,6 +2464,7 @@ function ReferenceHomeSection(props) {
 
       <section className="final10-panel" aria-label="Выбор адреса">
         <div className="final10-grabber" aria-hidden="true" />
+        <RegionConnectionNotice loading={regionsLoading} error={regionsError} onRetry={onRetryRegions} compact />
         <header className="final10-sheet-heading">
           <small>Здравствуйте!</small>
           <h1>Куда едем?</h1>
@@ -2987,7 +3021,7 @@ function PaymentSelector({ payment, setPayment }) {
   );
 }
 
-function AddressPicker({ mode, region, initialPoint, destinationRegions = [], onBack, onSelect }) {
+function AddressPicker({ mode, region, initialPoint, destinationRegions = [], regionsLoading, regionsError, onRetryRegions, onBack, onSelect }) {
   const [query, setQuery] = useState("");
   const [mapSelectionActive, setMapSelectionActive] = useState(false);
   const [results, setResults] = useState([]);
@@ -3157,6 +3191,7 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], on
       </button>
       <section className={`address-picker-sheet ${mapSelectionActive ? "address-picker-sheet--map" : hasTypedQuery ? "address-picker-sheet--searching" : ""}`} aria-label="Выбор адреса">
         <div className="address-picker-grip" aria-hidden="true" />
+        <RegionConnectionNotice loading={regionsLoading} error={regionsError} onRetry={onRetryRegions} compact />
         <header className="address-picker-title-row">
           <div>
             <span className="address-picker-eyebrow"><i />{mode === "pickup" ? "Точка подачи" : "Пункт назначения"}</span>
@@ -3247,7 +3282,7 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], on
   );
 }
 
-function RegionSection({ regions, selectedRegionId, onSelect, onHome }) {
+function RegionSection({ regions, selectedRegionId, onSelect, onHome, regionsLoading, regionsError, onRetryRegions }) {
   const activeRegions = regions.filter(region => region.isActive !== false);
   return (
     <section className="screen-grid region-selection-screen">
@@ -3255,6 +3290,7 @@ function RegionSection({ regions, selectedRegionId, onSelect, onHome }) {
         <h1>Регион обслуживания</h1>
         <p>Выберите город или район, где будет выполняться поездка.</p>
       </section>
+      <RegionConnectionNotice loading={regionsLoading} error={regionsError} onRetry={onRetryRegions} />
       <section className="app-card region-selection-card">
         <div className="client-card-heading"><b>Доступные регионы</b><small>{activeRegions.length}</small></div>
         <div className="region-selection-list">

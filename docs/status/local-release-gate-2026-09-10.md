@@ -12,7 +12,7 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 132/132 tests passed; Vite production build and bundled MapLibre worker
+- Web: 134/134 tests passed; Vite production build and bundled MapLibre worker
   check passed.
 - Flutter: `flutter analyze` reported no issues; 278/278 tests passed. The
   suite includes a fail-closed Android API/signing/cleartext policy guard.
@@ -93,6 +93,12 @@ external prerequisites below into completed work.
   account shell; after readiness returned (`db=ok`, `redis=PONG`, `osrm=ok`),
   the same `Повторить` action restored the profile and vehicle without a page
   reload. The API container was returned healthy and no volume was removed.
+- Passenger region bootstrap now has the same explicit recovery quality: an
+  initial catalogue failure shows a premium in-context connection card on the
+  home, address-picker and region screens, and retries the actual
+  `/api/regions/active` request without reloading the page. A compiled-browser
+  failure/recovery run observed two requests, removed the warning only after
+  the second succeeded and restored all 13 active regions.
 - The same outage exposed raw browser copy (`Failed to fetch`) and fabricated
   zero earnings/order totals on the first driver-line load. Driver errors now
   map to product copy, the map notice has a real single-flight retry action,

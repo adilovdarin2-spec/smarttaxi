@@ -24767,3 +24767,88 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   width: 58px;
   height: 76px;
 }
+
+/* Honest, actionable recovery when the service-region catalogue is offline. */
+.taxi-client-shell .region-connection-notice {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  margin: 0;
+  padding: 12px;
+  color: #12345f;
+  background: linear-gradient(135deg, #f2f7ff 0%, #ffffff 100%);
+  border: 1px solid rgba(29, 111, 255, .2);
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(11, 79, 209, .08);
+}
+.taxi-client-shell .region-connection-notice.compact {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 15px;
+}
+.taxi-client-shell .region-connection-notice-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  background: linear-gradient(145deg, #1d6fff, #0b4fd1);
+  border-radius: 13px;
+  box-shadow: 0 7px 16px rgba(29, 111, 255, .22);
+}
+.taxi-client-shell .region-connection-notice.compact .region-connection-notice-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+}
+.taxi-client-shell .region-connection-notice-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.taxi-client-shell .region-connection-notice-copy strong {
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 850;
+}
+.taxi-client-shell .region-connection-notice-copy small {
+  color: #65748b;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 650;
+}
+.taxi-client-shell .region-connection-notice button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 8px 11px;
+  color: #0b4fd1;
+  background: #fff;
+  border: 1px solid rgba(29, 111, 255, .22);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(29, 111, 255, .08);
+}
+.taxi-client-shell .region-connection-notice button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+@media (max-width: 380px) {
+  .taxi-client-shell .region-connection-notice,
+  .taxi-client-shell .region-connection-notice.compact {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .taxi-client-shell .region-connection-notice button {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 34px;
+  }
+}

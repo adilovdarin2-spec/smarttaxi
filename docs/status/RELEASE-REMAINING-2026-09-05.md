@@ -7,7 +7,7 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 ## Verified local baseline
 
 Latest September 10/11 evidence: [local release gate](local-release-gate-2026-09-10.md).
-The complete API checks, 132 web tests/build, 278 Flutter tests/analyze and a
+The complete API checks, 134 web tests/build, 278 Flutter tests/analyze and a
 fresh local-endpoint APK passed.
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
@@ -63,7 +63,7 @@ historical, not current.
 
 | Item | What closes it | Current constraint |
 |---|---|---|
-| Passenger/driver visual parity | Continue the remaining nested error and recovery-state comparison against the current reference boards | The connected phone now covers native passenger home, address picker, route, driver-found, active trip, receipt and rating in the local lifecycle, plus the driver line, incoming order, navigator, profile, settings and both themes. Shared styling and happy-path screens do not replace dedicated visual checks for every error/recovery state. |
+| Passenger/driver visual parity | Continue the remaining native nested error and recovery-state comparison against the current reference boards | Web passenger region-bootstrap failure is now visually checked at 390x844 on both home and address picker, with an in-context retry that restores all 13 regions without reload. The connected phone already covers native passenger home, address picker, route, driver-found, active trip, receipt and rating in the local lifecycle, plus the driver line, incoming order, navigator, profile, settings and both themes. Physical permission/recovery states still require the phone. |
 | Driver account in passenger mode | Closed — live local API check plus `stage11-driver-core-smoke.js` cover driver → passenger → driver, client wallet and recurring bookings | The acting token is correctly CLIENT-scoped in passenger mode while the persisted account stays DRIVER. Wallet and recurring bookings return `200`; the former 403/404 note was superseded by the current route/token contract. |
 | Native automatic dispatch after account switch | Closed — observe the new driver order without manual refresh on the revised APK | A newly registered local rider's order appeared in the already-signed-in, online driver app and was accepted/completed through the native driver UI. The library-level stale-session reproduction also fails before and passes after the fix. |
 | Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
