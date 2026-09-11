@@ -12,9 +12,9 @@ external prerequisites below into completed work.
 
 - API: complete `npm test` chain passed, including address invariants for
   121,361 catalogue rows across 13 regions.
-- Web: 130/130 tests passed; Vite production build and bundled MapLibre worker
+- Web: 132/132 tests passed; Vite production build and bundled MapLibre worker
   check passed.
-- Flutter: `flutter analyze` reported no issues; 277/277 tests passed. The
+- Flutter: `flutter analyze` reported no issues; 278/278 tests passed. The
   suite includes a fail-closed Android API/signing/cleartext policy guard.
 - Native pickup/destination search now requests the Android street-address
   keyboard and full-address autofill hint, matching the web search semantics.
@@ -161,6 +161,12 @@ external prerequisites below into completed work.
   waiting, trip, cash settlement, rating and driver documents all passed. Every
   stage reported its reusable seed driver back in `OFFLINE`; the LAN API/web
   endpoints on 4002/5176 also respond successfully for the Wi-Fi QA artifact.
+- Building detection under the fixed map picker is now local on both clients:
+  web and Flutter query only a 48x48 px neighbourhood around the marker tip,
+  instead of decoding every rendered building or a 256x256 area. Exact polygon
+  containment, courtyards and merged-tile component selection remain enforced.
+  The rebuilt Docker web passed the real client map/address smoke; 132 web and
+  278 Flutter tests pass with clean analysis.
 
 ## Fresh Android QA artifact
 
@@ -200,8 +206,8 @@ built with matching `API_BASE_URL`, `SOCKET_URL` and `WEB_BASE_URL`; this is
 still a local development setup, not a production deployment.
 
 The current cable-free artifact is
-`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-10.apk` (288,886,709 bytes,
-SHA-256 `a158079381c2eda56e3786a750454e26a5ec276a7877b161eb4585d10a70617b`).
+`C:/dev/smarttaxi/SmartTaxi-customer-WiFi-2026-09-11.apk` (288,885,251 bytes,
+SHA-256 `f37525301fb37a366e9c685e1f2f126aa5950a3cc77161f3a6591ee6ff3d3228`).
 It targets API/socket `http://192.168.8.135:4002` and web
 `http://192.168.8.135:5176`; APK Signature Scheme v2 verifies with one Android
 debug signer. The passenger home now exposes the current service region as a

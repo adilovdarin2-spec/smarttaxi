@@ -337,7 +337,13 @@ export default function MapView({
     try {
       const layers = (map.getStyle()?.layers || [])
         .filter(layer => layer['source-layer'] === 'building').map(layer => layer.id);
-      const features = layers.length ? map.queryRenderedFeatures({ layers }) : [];
+      // Only a footprint crossing the picker tip can be selected. Querying
+      // the entire viewport made dense city tiles unnecessarily expensive
+      // and could delay reverse geocoding even though every unrelated
+      // building was discarded immediately afterwards.
+      const [pickerX, pickerY] = pickerScreenPoint();
+      const featureBox = [[pickerX - 24, pickerY - 24], [pickerX + 24, pickerY + 24]];
+      const features = layers.length ? map.queryRenderedFeatures(featureBox, { layers }) : [];
       coordinate.building = buildingAtPoint(features, coordinate);
       containerRef.current.dataset.buildingSelection = JSON.stringify({
         layers: layers.length, features: features.length,

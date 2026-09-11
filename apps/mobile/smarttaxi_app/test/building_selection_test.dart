@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as native_map;
 import 'package:smarttaxi_app/core/utils/building_selection.dart';
+import 'dart:math' as math;
+import 'dart:ui';
 
 void main() {
   final outline = [
@@ -62,6 +64,16 @@ void main() {
     expect(buildingComponentAtPoint(merged, 40.002, 68.0005),
         normalizeBuildingGeometry(raw));
   });
+  test('camera picker queries only the local building area', () async {
+    final controller = _BuildingQueryMap(raw);
+    final selected = await buildingAtCameraTarget(
+        controller, const native_map.LatLng(40.002, 68.0005));
+    expect(selected, normalizeBuildingGeometry(raw));
+    expect(controller.queryRect, isNotNull);
+    expect(controller.queryRect!.width, 48);
+    expect(controller.queryRect!.height, 48);
+    expect(controller.queryRect!.center, const Offset(180, 260));
+  });
   test('selected footprint excludes L-shaped notch and inner courtyard', () {
     final geometry = normalizeBuildingGeometry(raw)!;
     expect(pointInBuilding(40.002, 68.0005, geometry), isTrue);
@@ -100,6 +112,32 @@ void main() {
     })!;
     expect(pointInBuilding(40.002, 68.0005, multi), isTrue);
   });
+}
+
+class _BuildingQueryMap extends Fake
+    implements native_map.MapLibreMapController {
+  _BuildingQueryMap(this.geometry);
+
+  final Map<String, dynamic> geometry;
+  Rect? queryRect;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #getLayerIds) {
+      return Future.value(<String>['building', 'road_name']);
+    }
+    if (invocation.memberName == #toScreenLocation) {
+      return Future.value(const math.Point<double>(180, 260));
+    }
+    if (invocation.memberName == #queryRenderedFeaturesInRect) {
+      queryRect = invocation.positionalArguments[0] as Rect;
+      expect(invocation.positionalArguments[1], <String>['building']);
+      return Future.value(<Map<String, dynamic>>[
+        {'geometry': geometry}
+      ]);
+    }
+    return super.noSuchMethod(invocation);
+  }
 }
 
 class _BuildingMap extends Fake implements native_map.MapLibreMapController {

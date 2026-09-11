@@ -112,8 +112,11 @@ Future<Map<String, dynamic>?> buildingAtCameraTarget(
   final features = await controller.queryRenderedFeaturesInRect(
     Rect.fromCenter(
         center: Offset(screen.x.toDouble(), screen.y.toDouble()),
-        width: 256,
-        height: 256),
+        // Only the footprint under the fixed picker can match. Keeping this
+        // local avoids decoding a dense screenful of unrelated buildings on
+        // mid-range Android devices before the 700 ms selection deadline.
+        width: 48,
+        height: 48),
     layerIds,
     null,
   );

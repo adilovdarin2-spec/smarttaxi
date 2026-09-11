@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
 import { normalizeBuildingGeometry, pointInBuilding, buildingAtPoint, distanceToBuildingMeters } from '../../../packages/shared/src/building-selection.js';
 
 // An L-shaped building with a courtyard: both differ from its bounding box.
@@ -37,4 +38,12 @@ test('distance to a footprint distinguishes a simplified edge from a neighbourin
   const neighbour = distanceToBuildingMeters({lat:40.002,lng:67.9998}, geometry);
   assert(justOutside > 3 && justOutside < 4, 'a four-degree-decimal tile gap is only a few metres');
   assert(neighbour > 16, 'a separate address across the yard stays well outside the tolerance');
+});
+
+test('web picker limits rendered-feature work to the marker neighbourhood', () => {
+  const source = fs.readFileSync(new URL('../src/features/map/MapView.jsx', import.meta.url), 'utf8');
+  assert.match(source, /queryRenderedFeatures\(featureBox, \{ layers \}\)/);
+  assert.match(source, /pickerX - 24[\s\S]*pickerY - 24[\s\S]*pickerX \+ 24[\s\S]*pickerY \+ 24/);
+  assert.doesNotMatch(source, /queryRenderedFeatures\(\{ layers \}\)/,
+    'building selection must not decode every rendered footprint in the viewport');
 });
