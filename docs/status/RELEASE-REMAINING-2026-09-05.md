@@ -15,7 +15,7 @@ New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
 raw card data was not migrated and requires an owner-controlled retention decision.
 The phone is connected again. The current cable-free APK
-() is installed and was driven through
+(`SmartTaxi-stands-WiFi-2026-09-11.apk`) is installed and was driven through
 login, all 13 regions, address and map selection, and both new stand screens on
 the device; see the stand evidence above. Moving-GPS, background and permission-
 revocation acceptance is still open.
