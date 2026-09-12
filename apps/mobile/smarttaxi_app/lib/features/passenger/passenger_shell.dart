@@ -6540,16 +6540,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: [
-          '<',
-          [
-            'coalesce',
-            ['get', 'render_height'],
-            ['get', 'height'],
-            0,
-          ],
-          9,
-        ],
+        filter: flatBuildingFilter,
         enableInteraction: false,
       );
       await controller.addFillLayer(
@@ -6563,16 +6554,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: [
-          '<',
-          [
-            'coalesce',
-            ['get', 'render_height'],
-            ['get', 'height'],
-            0,
-          ],
-          9,
-        ],
+        filter: flatBuildingFilter,
         enableInteraction: false,
       );
       await controller.addFillExtrusionLayer(
@@ -6610,16 +6592,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         // stay on top of houses as they do in the reference.
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: [
-          '>=',
-          [
-            'coalesce',
-            ['get', 'render_height'],
-            ['get', 'height'],
-            0,
-          ],
-          9,
-        ],
+        filter: extrudedBuildingFilter,
         enableInteraction: false,
       );
       await hideDuplicateLibertyBuildings(controller);

@@ -777,18 +777,35 @@ void main() {
     expect(helper, contains('await controller.getLayerIds()'));
   });
 
-  test('low residential footprints are not rendered as generic 3D boxes', () {
+  test('a one-storey town is drawn as buildings, not as a plan', () {
     final passenger = _read('lib/features/passenger/passenger_shell.dart');
     final driver = _read('lib/features/driver/driver_shell.dart');
+    final layers = _read('lib/core/utils/map_layers.dart');
+
+    // The cut-off used to be nine metres — three storeys. Of the 2319
+    // buildings around Атакент that carry a height, 2305 are single-storey,
+    // so nine metres left nine of them standing and flattened the town.
+    expect(layers, contains('const double extrudedFromMetres = 3;'));
+    expect(layers.contains(', 9,'), isFalse,
+        reason: 'the old three-storey cut-off must not come back');
+
+    // Both shells and the web map share one threshold, so a building cannot be
+    // flat on the phone and solid in the browser.
+    for (final source in [passenger, driver]) {
+      expect(source, contains('filter: flatBuildingFilter'));
+      expect(source, contains('filter: extrudedBuildingFilter'));
+      expect(source, contains('fillExtrusionHeight:'),
+          reason: 'a building is drawn at the height somebody recorded');
+    }
+
+    // A footprint with no recorded height still stays flat: drawing it would
+    // be inventing a building nobody measured.
+    expect(layers, contains("['get', 'render_height']"));
+    expect(layers, contains('0,'));
+
+    // The flat plan view is kept for exactly those unmeasured footprints.
     expect(passenger, contains("'smarttaxi-low-buildings'"));
     expect(driver, contains("'smarttaxi-driver-low-buildings'"));
-    expect(passenger, contains("'smarttaxi-low-building-shadow'"));
-    expect(driver, contains("'smarttaxi-driver-low-building-shadow'"));
-    for (final source in [passenger, driver]) {
-      expect(source, contains("['get', 'render_height']"));
-      expect(source, contains('fillExtrusionHeight:'),
-          reason: 'Measured tall buildings retain real 3D height.');
-    }
   });
 
   test('passenger route is a style layer below labels, not an annotation', () {

@@ -132,3 +132,29 @@ Future<String?> resolveLabelAnchorLayerId(
   }
   return null;
 }
+
+/// Volume is for buildings whose height is actually recorded; a footprint with
+/// no height stays a flat outline, because inventing one would draw a building
+/// nobody measured.
+///
+/// The cut-off used to be nine metres, which is three storeys. These towns are
+/// made of one-storey houses: in Атакент 2305 of the 2319 buildings that carry
+/// a height are single-storey, so nine metres left nine of them standing and
+/// flattened the rest of the town. A single storey is about 3.66 m in the
+/// OpenMapTiles schema, so sitting just under that lets a one-storey house read
+/// as a building rather than as a paving slab.
+const double extrudedFromMetres = 3;
+
+/// The height OpenMapTiles recorded for a building, or zero when it has none.
+const List<Object> measuredBuildingHeight = <Object>[
+  'coalesce',
+  <Object>['get', 'render_height'],
+  <Object>['get', 'height'],
+  0,
+];
+
+/// Buildings drawn flat: their height is below a storey, or unknown.
+const List<Object> flatBuildingFilter = <Object>['<', measuredBuildingHeight, extrudedFromMetres];
+
+/// Buildings given volume: a storey tall or more, by a height somebody recorded.
+const List<Object> extrudedBuildingFilter = <Object>['>=', measuredBuildingHeight, extrudedFromMetres];
