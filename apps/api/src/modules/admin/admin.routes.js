@@ -45,6 +45,8 @@ import {
   reviewDriverDocument
 } from "../driver-documents/driver-documents.service.js";
 import { UPLOAD_ROOT } from "../driver-documents/upload.middleware.js";
+import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
+import { announceStandRelease } from "../stands/stands.notify.js";
 import {
   ACTIVE_ORDER_STATUSES,
   OPEN_ORDER_STATUSES,
@@ -619,6 +621,7 @@ router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER"), async (req
       isBlocked: z.boolean(),
       reason: z.string().trim().max(300).optional().default("")
     }).parse(req.body);
+    let standRelease = null;
     const driver = await tx(async client => {
       const before = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
       if (!before) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
@@ -631,6 +634,18 @@ router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER"), async (req
         WHERE id=$2
         RETURNING *
       `, [body.isBlocked, params.id])).rows[0];
+      // Blocking already forces the driver offline, but a place in a stand
+      // line is held separately and outlived it: the car stayed in the queue,
+      // and riders kept seeing it as loading — with its free seats and the
+      // driver's phone number — so they could ring a blocked driver and get
+      // in. Released inside the same transaction, like every other path that
+      // makes the place untrue.
+      if (body.isBlocked) {
+        standRelease = await releaseStandPlaceForDriver(
+          { driverId: params.id, reason: "DRIVER_BLOCKED" },
+          client
+        );
+      }
       await writeAudit(client, {
         action: body.isBlocked ? "driver_blocked" : "driver_unblocked",
         actorUserId: req.user.id,
@@ -641,6 +656,7 @@ router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER"), async (req
       });
       return updated;
     });
+    await announceStandRelease(req.io, standRelease);
     res.json({ driver });
   } catch (error) { next(error); }
 });

@@ -274,7 +274,11 @@ driverStandsRouter.post(
       const params = IdParam.parse(req.params);
       const body = JoinBody.parse(req.body || {});
       const driver = await loadDriver(req.user.id);
-      if (driver.current_region_id && driver.status === "OFFLINE") {
+      // A place in a line is a working driver's place: taking one while
+      // offline advertises a car that dispatch cannot reach. This used to be
+      // conditional on having a region selected, so a driver with none — which
+      // is the state a blocked driver is left in — walked straight past it.
+      if (driver.status === "OFFLINE") {
         throw new AppError("Go online before taking a place in the line", 409, "DRIVER_OFFLINE");
       }
       const { entryId } = await joinQueue({ driver, standId: params.id, ...body });

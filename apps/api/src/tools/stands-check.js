@@ -288,4 +288,38 @@ assert.ok(
 // The sweeper writes NO_SIGNAL, so that is the key the wording must be under.
 assert.ok(service.includes("'NO_SIGNAL'"), "the sweeper's reason and the notice's key must match");
 
+// Blocking a driver forces them offline, but a place in a line is held
+// separately and used to outlive it: the car stayed in the queue and riders
+// kept seeing it as loading, with its free seats and the driver's phone
+// number, so they could ring a blocked driver and get in.
+const adminPanel = read("../modules/admin/admin.routes.js");
+assert.ok(
+  adminPanel.includes('reason: "DRIVER_BLOCKED"'),
+  "blocking a driver must release their place in a stand line"
+);
+assert.ok(
+  adminPanel.includes("await announceStandRelease(req.io, standRelease);"),
+  "the line has to be told, or the rider screens keep the car until they refresh"
+);
+// Only on the way in: unblocking must not disturb a line the driver has since
+// rejoined.
+const blockRoute = adminPanel.slice(adminPanel.indexOf('router.patch("/drivers/:id/block"'));
+assert.ok(
+  /if \(body\.isBlocked\) \{\s+standRelease = await releaseStandPlaceForDriver\(/.test(blockRoute),
+  "releasing the place must be conditional on actually blocking"
+);
+
+// Being offline is enough to refuse a place, on its own. The check used to
+// also require a selected region, so a driver with none — the state blocking
+// leaves them in — walked past it and advertised a car dispatch cannot reach.
+const standRoutes = read("../modules/stands/stands.routes.js");
+assert.ok(
+  standRoutes.includes('if (driver.status === "OFFLINE") {'),
+  "an offline driver must be refused a place whatever their region"
+);
+assert.ok(
+  !standRoutes.includes('driver.current_region_id && driver.status === "OFFLINE"'),
+  "the region must not be able to short-circuit the offline check"
+);
+
 console.log("Taxi stand checks ok: geofence, audience separation, boarding slots, seat holds, admin and socket wiring");
