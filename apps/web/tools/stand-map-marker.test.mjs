@@ -75,3 +75,19 @@ test("opening the stands screen does not download MapLibre with it", () => {
   assert.match(section, /React\.lazy\(\(\) => import\("\.\.\/map\/MapView\.jsx"\)\)/);
   assert.doesNotMatch(section, /^import MapView from/m);
 });
+
+test("a one-storey town is drawn as buildings, not as a plan", () => {
+  // The cut-off used to be nine metres — three storeys. In Атакент 2305 of the
+  // 2319 buildings that carry a height are single-storey, so nine metres left
+  // nine of them standing and flattened the whole town.
+  const source = readFileSync(new URL("../src/features/map/MapView.jsx", import.meta.url), "utf8");
+  assert.match(source, /const EXTRUDED_FROM_METRES = 3;/);
+  // One constant, so the flat fills and the extrusion can never disagree about
+  // which buildings each of them owns.
+  assert.equal((source.match(/EXTRUDED_FROM_METRES/g) || []).length, 4);
+  assert.doesNotMatch(source, /measuredHeight, 9\]/, "the old three-storey cut-off must not come back");
+
+  // A footprint with no recorded height still stays flat: drawing it would be
+  // inventing a building nobody measured.
+  assert.match(source, /\["coalesce", \["get", "render_height"\], \["get", "height"\], 0\]/);
+});

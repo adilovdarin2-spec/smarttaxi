@@ -57,6 +57,12 @@ function firstLabelLayerId(map) {
   return layers.find((layer) => layer.type === "symbol" && layer.layout?.["text-field"])?.id;
 }
 
+// A single storey is about 3.66 m in the OpenMapTiles schema, which derives
+// render_height from building:levels when a building has no measured height.
+// Sitting just under that is what lets a one-storey house read as a building
+// rather than as a paving slab.
+const EXTRUDED_FROM_METRES = 3;
+
 function add3dBuildings(map) {
   // A configured MapTiler/vector style exposes building source layers. When
   // present, turn its building fills into an extrusion layer. The public OSM
@@ -68,10 +74,16 @@ function add3dBuildings(map) {
     if (!buildingLayer || map.getLayer("smarttaxi-3d-buildings")) return;
     const measuredHeight = ["coalesce", ["get", "render_height"], ["get", "height"], 0];
     const labelAnchor = firstLabelLayerId(map);
-    // Small private houses have an accurate footprint but rarely have enough
-    // height metadata to read as architecture in a vector map. Rendering all
-    // of them as prisms created a field of toy boxes. Keep their real outline
-    // as a calm plan view and reserve volume for measured multi-storey homes.
+    // Volume is for buildings whose height is actually recorded; a footprint
+    // with no height stays a flat outline, because inventing one would draw a
+    // building that nobody measured.
+    //
+    // The cut-off used to be nine metres, which is three storeys. These towns
+    // are made of one-storey houses: in Атакент 2305 of the 2319 buildings
+    // that carry a height are single-storey, so nine metres left nine of them
+    // standing and flattened the rest of the town. The heights are real — OSM
+    // records the floors — so the map can show the place as it is. Anything a
+    // storey tall or more now gets its own volume.
     if (!map.getLayer("smarttaxi-low-building-shadow")) {
       map.addLayer({
         id: "smarttaxi-low-building-shadow",
@@ -79,7 +91,7 @@ function add3dBuildings(map) {
         source: buildingLayer.source,
         "source-layer": buildingLayer["source-layer"],
         minzoom: 13,
-        filter: ["<", measuredHeight, 9],
+        filter: ["<", measuredHeight, EXTRUDED_FROM_METRES],
         paint: {
           "fill-color": "#9fb8d3",
           "fill-opacity": 0.24,
@@ -95,7 +107,7 @@ function add3dBuildings(map) {
         source: buildingLayer.source,
         "source-layer": buildingLayer["source-layer"],
         minzoom: 13,
-        filter: ["<", measuredHeight, 9],
+        filter: ["<", measuredHeight, EXTRUDED_FROM_METRES],
         paint: {
           "fill-color": "#e5eff9",
           "fill-outline-color": "#aec5df",
@@ -109,7 +121,7 @@ function add3dBuildings(map) {
       source: buildingLayer.source,
       "source-layer": buildingLayer["source-layer"],
       minzoom: 13,
-      filter: [">=", measuredHeight, 9],
+      filter: [">=", measuredHeight, EXTRUDED_FROM_METRES],
       paint: {
         // A slightly stronger blue-grey material lets real roof outlines and
         // facade shading read at navigation pitch; the earlier near-white
