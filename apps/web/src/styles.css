@@ -26118,3 +26118,10 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 .cancellation-open-driver:hover { color: var(--admin-danger); }
 .cancellation-open-driver:focus-visible { outline: 2px solid var(--admin-brand); outline-offset: 2px; border-radius: 4px; }
+
+/* A shortcut with nothing saved behind it ------------------------------ */
+
+/* Дом and Работа lead somewhere only once the rider has saved that address.
+   Until then the chip is visibly quieter, and tapping it goes to the page
+   where the address is set rather than to a blank search. */
+.final10-chip.unset { opacity: .62; }

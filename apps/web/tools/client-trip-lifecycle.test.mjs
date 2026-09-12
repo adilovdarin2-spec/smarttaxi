@@ -367,3 +367,25 @@ test("a search nobody answers says so instead of claiming to be active", () => {
   assert.match(screen, /Продолжаем искать/);
   assert.match(screen, /Отменить заказ/);
 });
+
+test("Дом and Работа go to the address the rider saved", () => {
+  // Both chips used to call the same handler as the empty "Куда" field, so a
+  // rider who had saved their home address and tapped Дом got a blank address
+  // search. The shortcut promised something it never did.
+  const source = readFileSync(new URL("../src/features/client/ClientApp.jsx", import.meta.url), "utf8");
+  assert.match(source, /onClick=\{\(\) => onFavoriteShortcut\?\.\("HOME"\)\}/);
+  assert.match(source, /onClick=\{\(\) => onFavoriteShortcut\?\.\("WORK"\)\}/);
+  assert.doesNotMatch(
+    source,
+    /<Icon name="home" size=\{16\} \/>[\s\S]{0,40}<span>Дом<\/span>[\s\S]{0,80}onClick=\{onDestination\}/,
+    "the chip must not fall back to the blank address picker",
+  );
+
+  // With nothing saved it goes where the address is set, rather than to a
+  // search that never explains why it is empty.
+  assert.match(source, /if \(!saved\) \{\s*\n\s*setSection\("favorites"\);/);
+
+  // And the saved address has to be loaded before the rider opens that page,
+  // or the chip on the home screen has nothing to resolve.
+  assert.match(source, /section === "favorites" \|\| section === "home"/);
+});

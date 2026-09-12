@@ -1415,8 +1415,10 @@ export default function ClientApp() {
     };
   }, [authSession]);
 
+  // The home screen's Дом and Работа chips are these same saved addresses, so
+  // they have to be loaded before the rider is on the favourites page.
   useEffect(() => {
-    if (section === "favorites" && authSession) loadFavorites();
+    if ((section === "favorites" || section === "home") && authSession) loadFavorites();
   }, [section, authSession]);
 
   function selectSection(next) {
@@ -2106,6 +2108,29 @@ export default function ClientApp() {
               onUseLocation={useCurrentLocation}
               onPickup={() => setAddressMode("pickup")}
               onDestination={openDestinationFromMain}
+              favoriteAddresses={favorites}
+              onFavoriteShortcut={label => {
+                const saved = favorites.find(row => String(row.label).toUpperCase() === label);
+                // Nothing saved yet: sending the rider to a blank address
+                // search is what these chips used to do, and it never explained
+                // why. Take them where the address is actually set instead.
+                if (!saved) {
+                  setSection("favorites");
+                  return;
+                }
+                const next = normalizeAddress({
+                  title: saved.title,
+                  subtitle: saved.addressText || saved.address_text,
+                  lat: Number(saved.lat),
+                  lng: Number(saved.lng)
+                });
+                if (!next || !canUseDestination(next)) return;
+                if (!pickup) {
+                  const center = regionCenter(selectedRegion) || regionCenter(fallbackRegion);
+                  if (center) setPickup({ title: "Моё местоположение", subtitle: selectedRegionName, ...center });
+                }
+                setDestination(next);
+              }}
               onMapPick={updateMainMapCandidate}
               onMapMoving={markMainMapMoving}
               onClearDestination={() => {
@@ -2323,6 +2348,8 @@ function RegionConnectionNotice({ loading, error, onRetry, compact = false }) {
 
 function ReferenceHomeSection(props) {
   const {
+    favoriteAddresses = [],
+    onFavoriteShortcut,
     pickup,
     destination,
     route,
@@ -2464,6 +2491,10 @@ function ReferenceHomeSection(props) {
     );
   }
 
+  const savedFor = (label) => favoriteAddresses.find(row => String(row.label).toUpperCase() === label);
+  const savedHome = savedFor("HOME");
+  const savedWork = savedFor("WORK");
+
   return (
     <section className="client-reference-screen final10-exact-state final10-standard-home">
       <div className="final10-glow-a" aria-hidden="true" />
@@ -2527,11 +2558,25 @@ function ReferenceHomeSection(props) {
         </div>
 
         <div className="final10-quick-row" aria-label="Быстрый выбор адреса">
-          <button type="button" className="final10-chip tappable tap-soft" onClick={onDestination}>
+          {/* These used to call the same handler as the empty "Куда" field, so
+              a rider who had saved their home address and tapped Дом got a
+              blank address search — the shortcut promised something it never
+              did. */}
+          <button
+            type="button"
+            className={`final10-chip tappable tap-soft${savedHome ? "" : " unset"}`}
+            onClick={() => onFavoriteShortcut?.("HOME")}
+            title={savedHome ? savedHome.title : "Адрес дома ещё не сохранён"}
+          >
             <Icon name="home" size={16} />
             <span>Дом</span>
           </button>
-          <button type="button" className="final10-chip tappable tap-soft" onClick={onDestination}>
+          <button
+            type="button"
+            className={`final10-chip tappable tap-soft${savedWork ? "" : " unset"}`}
+            onClick={() => onFavoriteShortcut?.("WORK")}
+            title={savedWork ? savedWork.title : "Рабочий адрес ещё не сохранён"}
+          >
             <Icon name="work" size={16} />
             <span>Работа</span>
           </button>
