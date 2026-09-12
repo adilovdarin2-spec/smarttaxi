@@ -3530,6 +3530,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
   }
 
   if (status === "SEARCHING_DRIVER") {
+    const searchTimedOut = Boolean(order.search_timed_out);
     return (
       <section className="trip-stage-screen trip-searching-screen">
         <TripMapCard pickup={tripPickup} destination={tripDestination} route={route} status="" mode="searching" />
@@ -3537,9 +3538,21 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
           <div className="search-driver-grip" aria-hidden="true" />
           <header className="search-driver-head">
             <div>
-              <h1>Ищем водителя для вас</h1>
-              <p>Предлагаем ваш заказ доступным водителям</p>
-              <span className="search-driver-nearby-pill">Поиск активен</span>
+              {/* The server marks the search as timed out once the order has
+                  been open long enough that nobody is plausibly coming. The
+                  phone app has always said so; without this the browser sat on
+                  "Поиск активен" indefinitely while a rider waited for a car
+                  that no driver had even seen. Cancelling is still free here —
+                  nobody has accepted. */}
+              <h1>{searchTimedOut ? "Водителей рядом нет" : "Ищем водителя для вас"}</h1>
+              <p>
+                {searchTimedOut
+                  ? "Сейчас нет свободных водителей поблизости. Подождите ещё или отмените заказ — отмена бесплатная, машину никто не принял."
+                  : "Предлагаем ваш заказ доступным водителям"}
+              </p>
+              <span className={`search-driver-nearby-pill${searchTimedOut ? " waiting" : ""}`}>
+                {searchTimedOut ? "Продолжаем искать" : "Поиск активен"}
+              </span>
             </div>
             <img className="search-driver-car-route" src={carImages.Economy} alt="" loading="eager" decoding="async" />
           </header>

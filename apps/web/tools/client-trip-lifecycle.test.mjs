@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import {
   clientRoutePhase,
   clientDriverMapPoint,
@@ -344,4 +345,25 @@ test("missing or invalid routing GPS never turns into a zero coordinate marker",
     {}, { driverLat: null, driverLng: null }, { driverLat: "", driverLng: "" },
     { driverLat: 91, driverLng: 68.32 }, { driverLat: 40.82, driverLng: NaN }
   ]) assert.equal(clientDriverMapPoint(assigned, { ...liveRoute, ...coordinates }), null);
+});
+
+test("a search nobody answers says so instead of claiming to be active", () => {
+  // The server flags an order as timed out once it has been open long enough
+  // that no driver is plausibly coming. The phone app has always shown that;
+  // the browser kept saying "Поиск активен" indefinitely, so a rider waited on
+  // a car that no driver had even seen.
+  const source = readFileSync(new URL("../src/features/client/ClientApp.jsx", import.meta.url), "utf8");
+  const branch = source.slice(source.indexOf('if (status === "SEARCHING_DRIVER")'));
+  const screen = branch.slice(0, branch.indexOf("if (cancelled)"));
+
+  assert.match(screen, /const searchTimedOut = Boolean\(order\.search_timed_out\)/,
+    "the screen must read the server's own flag, not a local timer");
+  assert.match(screen, /searchTimedOut \? "Водителей рядом нет" : "Ищем водителя для вас"/);
+  // Cancelling is free at this point because nobody has accepted, and the
+  // rider should be told that rather than left guessing what it will cost.
+  assert.match(screen, /отмена бесплатная/);
+  // It must stay a live order, not read as a failure: the next driver to come
+  // online still sees it.
+  assert.match(screen, /Продолжаем искать/);
+  assert.match(screen, /Отменить заказ/);
 });

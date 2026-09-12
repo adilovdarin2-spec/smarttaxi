@@ -26090,3 +26090,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: #5a6a85;
 }
 .driver-quick-message-note.danger { color: #c62828; }
+
+/* The search has been open long enough that nobody is coming --------- */
+
+/* Still searching, but honestly: the pill stops claiming activity it cannot
+   evidence, without turning into an error — the order is still live and the
+   next driver to come online will see it. */
+.search-driver-nearby-pill.waiting {
+  background: #fff4e5;
+  color: #9a5b00;
+}
