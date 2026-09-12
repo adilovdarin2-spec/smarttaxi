@@ -18,7 +18,7 @@ const deferred = () => {
 const httpError = (status, code = "ERROR") =>
   Object.assign(Error(code), { status, code });
 
-function fixture({ send = async () => cancelled, read = async () => cancelled } = {}) {
+function fixture({ send = async () => cancelled, read = async () => cancelled, reason = null } = {}) {
   let token = "session-a";
   let alive = true;
   const calls = [];
@@ -26,7 +26,7 @@ function fixture({ send = async () => cancelled, read = async () => cancelled } 
     calls,
     cancel: () =>
       cancelOrderWithRecovery(
-        { orderId: "order-1", riderPhone: "+77000000001" },
+        { orderId: "order-1", riderPhone: "+77000000001", reason },
         {
           request: async (...args) => {
             calls.push(["POST", ...args]);
@@ -52,12 +52,25 @@ function fixture({ send = async () => cancelled, read = async () => cancelled } 
 test("confirmed cancellation uses one POST and validates the exact order", async () => {
   const f = fixture();
   assert.deepEqual(await f.cancel(), cancelled);
-  assert.deepEqual(f.calls, [["POST", "order-1", "+77000000001"]]);
+  // The third argument is the stated reason, null when none was asked for —
+  // a rider cancelling before a driver is assigned has nobody to explain
+  // themselves to. The rider's own phone is still always sent.
+  assert.deepEqual(f.calls, [["POST", "order-1", "+77000000001", null]]);
   for (const response of [active, {}, { order: { id: "other", status: "CANCELLED_BY_CLIENT" } }]) {
     await assert.rejects(
       fixture({ send: async () => response, read: async () => active }).cancel(),
     );
   }
+});
+
+test("the stated reason reaches the server unchanged", async () => {
+  // "Водитель попросил отменить" is the rider's half of a trip taken off the
+  // books; losing it between the dialog and the request would make the whole
+  // review queue blind to that side.
+  const reason = { reasonCode: "DRIVER_ASKED_TO_CANCEL", reasonNote: "сказал отменить" };
+  const f = fixture({ reason });
+  assert.deepEqual(await f.cancel(), cancelled);
+  assert.deepEqual(f.calls, [["POST", "order-1", "+77000000001", reason]]);
 });
 
 test("a missing cancellation acknowledgement reconciles instead of replaying", async () => {

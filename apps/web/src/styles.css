@@ -25247,3 +25247,728 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     flex-wrap: wrap;
   }
 }
+
+/* --- Cancellation reason dialog (rider and driver) -------------------- */
+
+.cancel-reason-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(12, 18, 32, 0.46);
+  backdrop-filter: blur(6px);
+  padding: 16px;
+}
+
+.cancel-reason-dialog {
+  width: min(420px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 24px 60px rgba(10, 20, 40, 0.3);
+}
+
+.cancel-reason-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.cancel-reason-notice {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #666666;
+}
+
+.cancel-reason-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+
+.cancel-reason-options label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #141414;
+}
+
+.cancel-reason-options label.selected {
+  background: #eaf3ff;
+  font-weight: 600;
+}
+
+.cancel-reason-options input {
+  width: 20px;
+  height: 20px;
+  accent-color: #1d6fff;
+}
+
+.cancel-reason-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #666666;
+}
+
+.cancel-reason-note input {
+  padding: 12px 14px;
+  border: 1px solid #dce8ff;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #141414;
+}
+
+.cancel-reason-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancel-reason-actions button {
+  flex: 1;
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-reason-keep {
+  background: #ffffff;
+  border: 1px solid #dce8ff;
+  color: #141414;
+}
+
+.cancel-reason-submit {
+  background: #1d6fff;
+  border: 0;
+  color: #ffffff;
+}
+
+.cancel-reason-submit:disabled {
+  background: #b9d3ff;
+  cursor: not-allowed;
+}
+
+/* --- Driver stands panel --------------------------------------------- */
+
+.driver-stands {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 12px;
+}
+
+.driver-stand-card,
+.driver-stand-place,
+.driver-stand-request {
+  background: #ffffff;
+  border: 1px solid #e6edf8;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.driver-stand-card header,
+.driver-stand-place header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.driver-stand-card header strong,
+.driver-stand-place header strong {
+  font-size: 17px;
+  color: #141414;
+}
+
+.driver-stand-card header span.near {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.driver-stand-place header span.turn {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.driver-stand-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.driver-stand-chips span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef6ff;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #566579;
+}
+
+.driver-stand-note,
+.driver-stand-blocked,
+.driver-stand-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #666666;
+}
+
+.driver-stand-join,
+.driver-stand-form-actions .primary,
+.driver-stand-place-actions .primary,
+.driver-stand-seat-actions .primary,
+.driver-stand-request-actions .primary {
+  background: #1d6fff;
+  border: 0;
+  color: #ffffff;
+  border-radius: 14px;
+  min-height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.driver-stand-join:disabled,
+.driver-stand-form-actions button:disabled,
+.driver-stand-place-actions button:disabled,
+.driver-stand-seat-actions button:disabled,
+.driver-stand-request-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.driver-stand-inline-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #1d6fff;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
+.driver-stand-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.driver-stand-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  color: #666666;
+}
+
+.driver-stand-form input,
+.driver-stand-form select {
+  padding: 11px 13px;
+  border: 1px solid #dce8ff;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #141414;
+}
+
+.driver-stand-form-actions,
+.driver-stand-place-actions,
+.driver-stand-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.driver-stand-form-actions button,
+.driver-stand-place-actions button,
+.driver-stand-request-actions button {
+  flex: 1 1 120px;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid #dce8ff;
+  background: #ffffff;
+  color: #141414;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.driver-stand-seats {
+  background: #f4f8ff;
+  border: 1px solid #e6edf8;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.driver-stand-seats > span {
+  font-size: 12.5px;
+  color: #666666;
+}
+
+.driver-stand-seats > strong {
+  font-size: 24px;
+  color: #141414;
+}
+
+.driver-stand-seat-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.driver-stand-seat-actions button {
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid #dce8ff;
+  background: #ffffff;
+  color: #141414;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+}
+
+.driver-stand-seat-actions button:first-child {
+  flex: 0 0 56px;
+  font-size: 22px;
+}
+
+.driver-stand-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+  padding: 13px 14px;
+  border: 1px solid #dce8ff;
+  border-radius: 14px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.driver-stand-offer span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #141414;
+}
+
+.driver-stand-offer em {
+  font-style: normal;
+  font-size: 13.5px;
+  color: #1d6fff;
+  font-weight: 600;
+}
+
+.driver-stand-handover {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.driver-stand-handover button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #dce8ff;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.driver-stand-handover em {
+  font-style: normal;
+  color: #9a9a9a;
+  font-size: 12.5px;
+  margin-left: auto;
+}
+
+.driver-stand-requests,
+.driver-stand-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.driver-stand-request em {
+  font-style: normal;
+  font-size: 12.5px;
+  color: #9a9a9a;
+}
+
+.driver-stand-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid #e6edf8;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.driver-stand-queue-row.me {
+  border-color: #1d6fff;
+  background: #f4f8ff;
+}
+
+.driver-stand-queue-row > strong {
+  width: 22px;
+  color: #566579;
+}
+
+.driver-stand-queue-row em {
+  font-style: normal;
+  color: #9a9a9a;
+  font-size: 12.5px;
+}
+
+.driver-stand-queue-row b {
+  margin-left: auto;
+  color: #566579;
+  font-size: 13px;
+}
+
+.driver-stand-empty {
+  background: #ffffff;
+  border: 1px solid #e6edf8;
+  border-radius: 18px;
+  padding: 22px 18px;
+  text-align: center;
+  color: #666666;
+}
+
+/* --- Rider stands section -------------------------------------------- */
+
+.client-stands {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.client-stands-header h1 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.client-stands-header p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #666666;
+}
+
+.client-stand-error {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.client-stand-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.client-stand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e6edf8;
+  border-radius: 16px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.client-stand-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.client-stand-row-main strong {
+  font-size: 16px;
+  color: #141414;
+}
+
+.client-stand-row-main em {
+  font-style: normal;
+  font-size: 13px;
+  color: #666666;
+}
+
+.client-stand-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eafaf0;
+  color: #16a34a;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.client-stand-badge.muted {
+  background: #eef2f7;
+  color: #9a9a9a;
+}
+
+.client-stand-reservation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid #dce8ff;
+  border-radius: 18px;
+  background: #f4f8ff;
+}
+
+.client-stand-reservation.confirmed {
+  border-color: #16a34a;
+  background: #eafaf0;
+}
+
+.client-stand-reservation strong {
+  font-size: 15px;
+  color: #141414;
+}
+
+.client-stand-reservation span,
+.client-stand-reservation p {
+  margin: 0;
+  font-size: 13px;
+  color: #666666;
+}
+
+.client-stand-reservation em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d6fff;
+}
+
+.client-stand-reservation.confirmed em {
+  color: #16a34a;
+}
+
+.client-stand-reservation-actions,
+.client-stand-car-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.client-stand-call {
+  flex: 1 1 120px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dce8ff;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #141414;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.client-stand-primary {
+  flex: 1 1 140px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: #1d6fff;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.client-stand-primary:disabled {
+  background: #b9d3ff;
+  cursor: not-allowed;
+}
+
+.client-stand-ghost {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #dce8ff;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #141414;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.client-stand-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 18px;
+  border: 1px solid #e6edf8;
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  color: #666666;
+}
+
+.client-stand-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(12, 18, 32, 0.46);
+  backdrop-filter: blur(6px);
+}
+
+.client-stand-sheet {
+  width: min(460px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.client-stand-sheet header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-stand-sheet h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  color: #141414;
+}
+
+.client-stand-sheet header span {
+  font-size: 13px;
+  color: #666666;
+}
+
+.client-stand-sheet h3 {
+  margin: 6px 0 0;
+  font-size: 16px;
+  color: #141414;
+}
+
+.client-stand-close {
+  border: 0;
+  background: #eef2f7;
+  color: #141414;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.client-stand-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: #9a9a9a;
+}
+
+.client-stand-car {
+  border: 1px solid #e6edf8;
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.client-stand-car p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #666666;
+}
+
+.client-stand-car-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.client-stand-car-head strong {
+  display: block;
+  font-size: 17px;
+  color: #141414;
+}
+
+.client-stand-car-head em {
+  font-style: normal;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1d6fff;
+}
+
+.client-stand-car-actions select {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid #dce8ff;
+  border-radius: 14px;
+  font-size: 15px;
+  color: #141414;
+  background: #ffffff;
+}
+
+/* Section headers wrap before the title is crushed ------------------- */
+
+/* A header with several filters beside it (Стоянки, Разбор отмен) used to
+   squeeze the page title into a two-word column on a narrow desktop window,
+   because the flex row let the title shrink to nothing. The title keeps a
+   readable minimum and the controls drop to their own line instead. */
+.admin-section-header {
+  flex-wrap: wrap;
+}
+
+.admin-section-header > div:first-child {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.admin-section-actions {
+  flex: 0 1 auto;
+}

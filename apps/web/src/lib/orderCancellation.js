@@ -19,12 +19,12 @@ function validCancelledOrder(data, orderId) {
 }
 
 export async function cancelOrderWithRecovery(
-  { orderId, riderPhone },
+  { orderId, riderPhone, reason = null },
   { request, readBack, readToken, isAlive = () => true },
 ) {
   const isCurrent = sessionGuard(readToken(), readToken, isAlive);
   try {
-    const data = await request(orderId, riderPhone);
+    const data = await request(orderId, riderPhone, reason);
     if (!isCurrent()) throw Object.assign(new Error("stale cancellation"), { name: "AbortError" });
     const order = validCancelledOrder(data, orderId);
     if (!order) {

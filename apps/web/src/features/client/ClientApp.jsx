@@ -76,6 +76,9 @@ import {
   emptyFavoritesState,
 } from "./clientFavoritesState.js";
 import { cancelOrderWithRecovery } from "../../lib/orderCancellation.js";
+import CancellationReasonDialog from "../shared/CancellationReasonDialog.jsx";
+import ClientStandsSection from "./ClientStandsSection.jsx";
+import { riderMustGiveReason } from "../shared/cancellationReasons.js";
 import { clientIdentity, EMPTY_RIDER } from "./clientSession.js";
 
 const cardPaymentsEnabled = import.meta.env.VITE_CARD_PAYMENTS_ENABLED === "true";
@@ -94,6 +97,7 @@ const drawerMenuGroups = [
     { key: "regions", label: "Регион обслуживания", icon: "pin", hint: "Города и районы" },
     { key: "trips", label: "История поездок", icon: "history", hint: "Статусы и детали" },
     { key: "favorites", label: "Избранные адреса", icon: "heart", hint: "Дом, работа, места" },
+    { key: "stands", label: "Стоянки", icon: "pin", hint: "Машины по городу и межгород" },
     { key: "recurring", label: "Регулярные поездки", icon: "clock", hint: "Повторяющиеся маршруты" },
     { key: "drivers", label: "Мои водители", icon: "user", hint: "Избранные и заблокированные" }
     ]
@@ -963,6 +967,7 @@ export default function ClientApp() {
     setRegionsReloadKey(value => value + 1);
   }
   const [loading, setLoading] = useState(false);
+  const [cancelReasonOpen, setCancelReasonOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [incomingMessage, setIncomingMessage] = useState(null);
   const seenNotificationIdsRef = useRef(new Set());
@@ -1951,15 +1956,26 @@ export default function ClientApp() {
     }
   }
 
-  async function cancelOrder() {
+  // Once a driver is on the way the rider is asked why — nothing is cancelled
+  // until they answer, and backing out of the dialog keeps the trip.
+  function cancelOrder() {
     if (!order?.id || loading) return;
+    if (riderMustGiveReason(order)) {
+      setCancelReasonOpen(true);
+      return;
+    }
+    return cancelOrderWithReason(null);
+  }
+
+  async function cancelOrderWithReason(reason) {
+    if (!order?.id) return;
     const orderId = order.id;
     const isCurrent = sessionGuard(getToken(), getToken, () => mountedRef.current);
     setLoading(true);
     setMessage("");
     try {
       const data = await cancelOrderWithRecovery(
-        { orderId, riderPhone: rider.phone || auth.phone },
+        { orderId, riderPhone: rider.phone || auth.phone, reason },
         {
           request: cancelPublicOrder,
           readBack: getOrderStatusHistory,
@@ -1969,9 +1985,13 @@ export default function ClientApp() {
       );
       if (!isCurrent() || orderRef.current?.id !== orderId) return;
       setOrder(normalizeOrder(data.order));
+      setCancelReasonOpen(false);
     } catch (error) {
       if (isCurrent() && orderRef.current?.id === orderId) {
         setMessage(formatError(error));
+        // The dialog closes on failure too: the error belongs on the trip
+        // screen, not behind a modal the rider then has to dismiss twice.
+        setCancelReasonOpen(false);
       }
     } finally {
       if (isCurrent() && orderRef.current?.id === orderId) setLoading(false);
@@ -2138,6 +2158,14 @@ export default function ClientApp() {
             />
           )}
           {section === "regions" && <RegionSection regions={regions} selectedRegionId={selectedRegion?.id || selectedRegionId} onSelect={selectServiceRegion} onHome={() => setSection("home")} regionsLoading={regionsLoading} regionsError={regionsError} onRetryRegions={retryRegions} />}
+          {section === "stands" && (
+            <ClientStandsSection
+              authenticated={authenticated}
+              regionId={backendRegionId || selectedRegionId}
+              onLogin={() => setSection("profile")}
+              onHome={() => setSection("home")}
+            />
+          )}
           {section === "notifications" && <NotificationsSection authenticated={authenticated} />}
           {section === "recurring" && <RecurringBookingsSection authenticated={authenticated} />}
           {section === "drivers" && <DriverPreferencesSection authenticated={authenticated} />}
@@ -2157,6 +2185,13 @@ export default function ClientApp() {
           {section === "legalSafety" && <LegalSection type="safety" />}
         </main>
       )}
+      <CancellationReasonDialog
+        open={cancelReasonOpen}
+        isDriver={false}
+        busy={loading}
+        onCancel={() => setCancelReasonOpen(false)}
+        onConfirm={cancelOrderWithReason}
+      />
     </PhoneFrame>
   );
 }

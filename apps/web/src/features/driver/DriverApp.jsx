@@ -7,6 +7,8 @@ import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
 import { driverLocationFeedback } from "./driverLocationFeedback.js";
 import { driverErrorMessage } from "./driverErrorPresentation.js";
 import DriverNavigator from "./DriverNavigator.jsx";
+import DriverStandsPanel from "./DriverStandsPanel.jsx";
+import CancellationReasonDialog from "../shared/CancellationReasonDialog.jsx";
 import { driverRouteMeta } from "./driverRoutePresentation.js";
 import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress.js";
 import { sessionGuard } from "../../lib/sessionGuard.js";
@@ -80,6 +82,7 @@ const DRIVER_TABS = [
   ["line", "Линия", "home"],
   ["orders", "Заказы", "document"],
   ["active", "Поездка", "route"],
+  ["stands", "Стоянка", "home"],
   ["road", "Дорога", "shield"],
   ["money", "Доход", "cash"]
 ];
@@ -528,6 +531,7 @@ export default function DriverApp() {
   const [navigationOrderId, setNavigationOrderId] = useState(null);
   const closeNavigation = useCallback(() => { setNavigationOrderId(null); setTab("active"); }, []);
   const [driverPosition, setDriverPosition] = useState(null);
+  const [cancelReasonOrder, setCancelReasonOrder] = useState(null);
   const [publishedDriverPosition, setPublishedDriverPosition] = useState(null);
   const [locationIssue, setLocationIssue] = useState(null);
   const [locationAttempt, setLocationAttempt] = useState(0);
@@ -1032,8 +1036,18 @@ export default function DriverApp() {
     await withAction("next", () => next.fn(order.id));
   }
 
-  async function handleCancel(order) {
-    const result = await withAction("cancel", () => cancelDriverOrder(order.id));
+  // The reason sheet replaces a plain confirmation: it already asks whether to
+  // go through with it, and the answer is the one fact review cannot
+  // reconstruct afterwards. Dismissing it keeps the trip.
+  function handleCancel(order) {
+    setCancelReasonOrder(order);
+  }
+
+  async function confirmCancelWithReason(reason) {
+    const order = cancelReasonOrder;
+    if (!order) return;
+    const result = await withAction("cancel", () => cancelDriverOrder(order.id, reason));
+    setCancelReasonOrder(null);
     if (!result) return;
     setActiveOrder(null);
     setTab("line");
@@ -1183,6 +1197,15 @@ export default function DriverApp() {
               )
             )}
 
+            {tab === "stands" && (
+              <DriverStandsPanel
+                regionId={selectedRegionId}
+                isOnline={isOnline}
+                position={driverPosition}
+                onGoToLine={() => setTab("line")}
+              />
+            )}
+
             {tab === "road" && (
               <section className="driver-core-road">
                 <form className="driver-core-road-form" onSubmit={submitRoadAlert}>
@@ -1287,6 +1310,13 @@ export default function DriverApp() {
           </button>
         ))}
       </nav>
+      <CancellationReasonDialog
+        open={Boolean(cancelReasonOrder)}
+        isDriver
+        busy={actionLoading === "cancel"}
+        onCancel={() => setCancelReasonOrder(null)}
+        onConfirm={confirmCancelWithReason}
+      />
     </PhoneFrame>
   );
 }

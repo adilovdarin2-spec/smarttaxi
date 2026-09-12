@@ -160,10 +160,17 @@ export function getClientActiveOrder() {
   return api("/api/orders/me/active");
 }
 
-export function cancelPublicOrder(orderId, riderPhone) {
+// `reason` is only asked for once a driver is on the way — see
+// riderMustGiveReason. "Водитель попросил отменить" is the rider's half of a
+// trip taken off the books and is invisible to the server any other way.
+export function cancelPublicOrder(orderId, riderPhone, reason = null) {
   return api(`/api/orders/${orderId}/cancel-public`, {
     method: "POST",
-    body: JSON.stringify({ riderPhone })
+    body: JSON.stringify({
+      riderPhone,
+      ...(reason?.reasonCode ? { reasonCode: reason.reasonCode } : {}),
+      ...(reason?.reasonNote ? { reasonNote: reason.reasonNote } : {})
+    })
   });
 }
 
@@ -296,8 +303,17 @@ export function markOrderPaid(orderId) {
   return api(`/api/driver/orders/${orderId}/mark-paid`, { method: "POST" });
 }
 
-export function cancelDriverOrder(orderId) {
-  return api(`/api/driver/orders/${orderId}/cancel`, { method: "POST" });
+// The stated reason separates "the rider never came out" from a trip quietly
+// taken off the books; the server cannot tell them apart on its own, and its
+// absence is itself recorded against the cancellation.
+export function cancelDriverOrder(orderId, reason = null) {
+  return api(`/api/driver/orders/${orderId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({
+      ...(reason?.reasonCode ? { reasonCode: reason.reasonCode } : {}),
+      ...(reason?.reasonNote ? { reasonNote: reason.reasonNote } : {})
+    })
+  });
 }
 
 export function noShowDriverOrder(orderId) {
