@@ -39,7 +39,7 @@ function minutes(seconds) {
   return `${Math.round(seconds / 60)} мин`;
 }
 
-function AuditCard({ audit, onDecide, busy }) {
+function AuditCard({ audit, onDecide, onOpenDriver, busy }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const decided = audit.reviewStatus !== "PENDING";
@@ -139,6 +139,18 @@ function AuditCard({ audit, onDecide, busy }) {
               </div>
               <p className="cancellation-hint">
                 Подтверждение не списывает деньги. Штраф или блокировку водителя проводите на страницах «Финансы» и «Водители».
+                {audit.driverId && onOpenDriver && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="cancellation-open-driver"
+                      onClick={() => onOpenDriver(audit)}
+                    >
+                      Открыть водителя
+                    </button>
+                  </>
+                )}
               </p>
             </div>
           )}
@@ -154,6 +166,7 @@ export default function CancellationReviewsPage({
   cancellationStatus,
   setCancellationStatus,
   onDecideCancellation,
+  onOpenDriver,
   busy
 }) {
   return (
@@ -191,7 +204,7 @@ export default function CancellationReviewsPage({
       ) : (
         <div className="cancellation-list">
           {audits.map((audit) => (
-            <AuditCard key={audit.id} audit={audit} onDecide={onDecideCancellation} busy={busy} />
+            <AuditCard key={audit.id} audit={audit} onDecide={onDecideCancellation} onOpenDriver={onOpenDriver} busy={busy} />
           ))}
         </div>
       )}

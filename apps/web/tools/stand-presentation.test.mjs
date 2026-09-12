@@ -159,3 +159,21 @@ test("both web apps offer only the lines their own side may send", () => {
   const driver = read("../src/features/driver/DriverApp.jsx");
   assert.match(driver, /<DriverQuickMessages orderId=\{order\.id\} \/>/);
 });
+
+test("a confirmed case leads to the driver it is about", () => {
+  // Confirming a violation deliberately moves no money — the fine and the block
+  // are the owner's own decision elsewhere. Saying so and then leaving them to
+  // find the driver by hand among a region's worth of them is where the
+  // hand-off used to stop.
+  const page = read("../src/features/admin/CancellationReviewsPage.jsx");
+  assert.match(page, /Подтверждение не списывает деньги/, "the page must keep saying it moves no money");
+  assert.match(page, /onClick=\{\(\) => onOpenDriver\(audit\)\}/);
+  // Only when there is a driver to open: an operator-cancelled order has none.
+  assert.match(page, /\{audit\.driverId && onOpenDriver &&/);
+
+  const app = read("../src/features/admin/AdminApp.jsx");
+  assert.match(app, /function openDriverFromCase\(audit\)/);
+  // It must go through selectPage, which is the single gate that keeps a
+  // non-OWNER out of owner-only pages.
+  assert.match(app, /selectPage\("drivers"\);\s*\n\s*setQuery\(needle\)/);
+});

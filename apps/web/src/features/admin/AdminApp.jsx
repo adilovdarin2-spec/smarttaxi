@@ -804,6 +804,18 @@ export default function AdminApp() {
 
   const regions = asArray(pageState.payload, "regions");
 
+  // Confirming a violation deliberately moves no money — the fine and the block
+  // are the owner's own decision on the Drivers and Finance pages. Saying so
+  // and then leaving them to find the driver by hand among everyone in the
+  // region is where that hand-off used to end. This carries the driver across
+  // with the case still in mind.
+  function openDriverFromCase(audit) {
+    const needle = audit?.driverPhone || audit?.driverName;
+    if (!needle) return;
+    selectPage("drivers");
+    setQuery(needle);
+  }
+
   function selectPage(key) {
     // Central gate against every entry point that can jump pages (nav,
     // dashboard tiles, problem-item "action" buttons) — the nav list
@@ -1369,6 +1381,7 @@ export default function AdminApp() {
             onUpdateStand={(standId, payload) => saveStand(payload, standId)}
             onDeleteStand={removeStand}
             cancellationStatus={cancellationStatus}
+            onOpenDriverFromCase={openDriverFromCase}
             setCancellationStatus={setCancellationStatus}
             onDecideCancellation={decideCancellation}
             actionLoading={actionState.loading}
@@ -1870,6 +1883,7 @@ function AdminPage(props) {
         cancellationStatus={props.cancellationStatus}
         setCancellationStatus={props.setCancellationStatus}
         onDecideCancellation={props.onDecideCancellation}
+        onOpenDriver={props.onOpenDriverFromCase}
         busy={props.actionLoading}
       />
     );

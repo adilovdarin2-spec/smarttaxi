@@ -26100,3 +26100,21 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: #fff4e5;
   color: #9a5b00;
 }
+
+/* From a confirmed case to the driver it is about ---------------------- */
+
+/* The hint says where the fine and the block are done; this carries the owner
+   there with that driver already found, instead of leaving them to pick the
+   name out of a region's worth of drivers by hand. */
+.cancellation-open-driver {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--admin-brand);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cancellation-open-driver:hover { color: var(--admin-danger); }
+.cancellation-open-driver:focus-visible { outline: 2px solid var(--admin-brand); outline-offset: 2px; border-radius: 4px; }
