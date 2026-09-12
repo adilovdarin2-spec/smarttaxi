@@ -26056,3 +26056,37 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: #eef2f8;
 }
 .client-stands-map > * { height: 100%; }
+
+/* Quick messages on the driver's order card ---------------------------- */
+
+/* The phone driver has had these since the feature shipped; without them a
+   driver working from a laptop could only ring the rider. */
+.driver-quick-messages { margin-top: 10px; }
+
+.driver-quick-message-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.driver-quick-message-bar button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #dce8ff;
+  border-radius: 999px;
+  background: #f7faff;
+  color: #17233b;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.driver-quick-message-bar button:hover:not(:disabled) { border-color: #1d6fff; }
+.driver-quick-message-bar button:focus-visible { outline: 2px solid #1d6fff; outline-offset: 2px; }
+.driver-quick-message-bar button:disabled { opacity: .5; cursor: not-allowed; }
+
+.driver-quick-message-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #5a6a85;
+}
+.driver-quick-message-note.danger { color: #c62828; }

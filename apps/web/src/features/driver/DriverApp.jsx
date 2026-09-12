@@ -35,11 +35,12 @@ import {
   getDriverActiveOrder,
   getDriverDebt,
   getDriverEarningsToday,
-  getDriverOrders,
   getDriverOrderHistory,
+  getDriverOrders,
   getDriverProfile,
   getDriverRegions,
   getDriverRoadAlerts,
+  getQuickMessages,
   getToken,
   loginUser,
   markDriverArrived,
@@ -49,6 +50,7 @@ import {
   noShowDriverOrder,
   rejectDriverOrder,
   selectDriverRegion,
+  sendQuickMessage,
   setDriverStatus,
   startTrip,
   subscribeSessionChanges,
@@ -291,6 +293,60 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
   );
 }
 
+// Which lines this side may send is the server's call — the text is rendered
+// to the rider — so the list is fetched rather than written here a second time.
+function DriverQuickMessages({ orderId }) {
+  const [options, setOptions] = useState([]);
+  const [sendingKey, setSendingKey] = useState("");
+  const [sent, setSent] = useState("");
+  const [error, setError] = useState("");
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getQuickMessages()
+      .then(data => { if (!cancelled && mountedRef.current) setOptions(data.messages || []); })
+      .catch(() => { /* The bar stays hidden; the call button is still there. */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function send(code, label) {
+    if (sendingKey) return;
+    setSendingKey(code);
+    setError("");
+    try {
+      await sendQuickMessage(orderId, code);
+      if (mountedRef.current) setSent(label);
+    } catch (sendError) {
+      if (mountedRef.current) setError(formatError(sendError));
+    } finally {
+      if (mountedRef.current) setSendingKey("");
+    }
+  }
+
+  if (!options.length) return null;
+
+  return (
+    <div className="driver-quick-messages">
+      <div className="driver-quick-message-bar" role="group" aria-label="Быстрые сообщения пассажиру">
+        {options.map(item => (
+          <button
+            type="button"
+            key={item.code}
+            disabled={Boolean(sendingKey)}
+            onClick={() => send(item.code, item.label)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {sent && !error && <p className="driver-quick-message-note">Отправлено: {sent}</p>}
+      {error && <p className="driver-quick-message-note danger" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 function DriverHeader({ driver, activeOrder, currentRegion, onAccount }) {
   const status = activeOrder ? "BUSY" : (driver?.publicStatus || driver?.public_status || driver?.status || "OFFLINE");
   return (
@@ -420,6 +476,11 @@ export function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoS
         {awaitingPayment && <p className="driver-core-payment-note">{next
           ? "Поездка завершена. Подтвердите оплату после получения денег."
           : "Поездка завершена. Ожидаем подтверждения электронной оплаты."}</p>}
+        {/* The phone app has let a driver send these since the feature shipped;
+            the browser had only the call button, so a driver on a laptop had
+            no way to say "я приехал" short of ringing the rider. */}
+        {["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "TRIP_STARTED"].includes(order.status) &&
+          <DriverQuickMessages orderId={order.id} />}
         {!awaitingPayment && <div className="driver-core-split-actions">
           {order.rider_phone && <a className="driver-core-call" href={`tel:${order.rider_phone}`}><Icon name="phone" /> Позвонить</a>}
           {canNoShow(order) && (

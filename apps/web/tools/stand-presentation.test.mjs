@@ -138,3 +138,24 @@ test("both web panels get live updates, not only a poll", () => {
   assert.match(driver, /setInterval\(\(\) => load\(\{ silent: true \}\), REFRESH_INTERVAL_MS\)/);
   assert.match(client, /setInterval\(\(\) => load\(\{ silent: true \}\), REFRESH_INTERVAL_MS\)/);
 });
+
+test("both web apps offer only the lines their own side may send", () => {
+  // The server decides who may say what, because the text is rendered to the
+  // other party. Keeping a second copy of the list in the app is how the two
+  // drifted into offering each other's lines in the first place.
+  for (const path of [
+    "../src/features/client/ClientApp.jsx",
+    "../src/features/driver/DriverApp.jsx",
+  ]) {
+    const source = read(path);
+    assert.match(source, /getQuickMessages\(\)/, `${path} must ask the server for its vocabulary`);
+    assert.doesNotMatch(
+      source,
+      /code: "(I_ARRIVED|ON_MY_WAY|PLEASE_COME_OUT|WAITING_AT_ENTRANCE)"/,
+      `${path} must not carry its own copy of the vocabulary`,
+    );
+  }
+  // A driver on a laptop could previously only ring the rider.
+  const driver = read("../src/features/driver/DriverApp.jsx");
+  assert.match(driver, /<DriverQuickMessages orderId=\{order\.id\} \/>/);
+});
