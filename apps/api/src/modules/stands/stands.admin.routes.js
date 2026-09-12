@@ -6,6 +6,7 @@ import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { normalizePoint, pointInPolygon } from "../regions/regions.service.js";
 import { listStands, publicStand, standQueueView, standRegionRoom, standRoom } from "./stands.service.js";
+import { notifyDroppedDrivers, notifyStrandedRiders } from "./stands.notify.js";
 
 // Stands are drawn on the map, not typed in: the owner drops a pin and drags
 // a radius. The API therefore takes a point and a radius in metres and
@@ -162,17 +163,21 @@ router.patch("/:id", async (req, res, next) => {
 
     // Closing a stand has to clear the line with it, or riders keep seeing
     // cars that are no longer offered anywhere in the app.
+    let closedEntries = [];
+    let closedReservations = [];
     if (updated.is_active === false && existing.is_active === true) {
-      await query(`
+      closedEntries = (await query(`
         UPDATE taxi_stand_queue_entries
         SET status='EXPIRED', left_at=NOW(), left_reason='STAND_CLOSED', updated_at=NOW()
         WHERE stand_id=$1 AND status IN ('WAITING','BOARDING')
-      `, [id]);
-      await query(`
+        RETURNING *
+      `, [id])).rows;
+      closedReservations = (await query(`
         UPDATE taxi_stand_seat_reservations
         SET status='CANCELLED', cancelled_at=NOW(), updated_at=NOW()
         WHERE stand_id=$1 AND status IN ('PENDING','CONFIRMED')
-      `, [id]);
+        RETURNING *
+      `, [id])).rows;
     }
 
     await writeAudit(query, {
@@ -186,6 +191,12 @@ router.patch("/:id", async (req, res, next) => {
     const payload = { stand: publicStand(updated) };
     req.io?.to(standRegionRoom(updated.region_id)).emit("stand_updated", payload);
     req.io?.to(standRoom(id)).emit("stand_updated", payload);
+    // A driver standing in that line and a rider holding a seat in one of its
+    // cars both just lost something through no action of their own. Without
+    // this they found out by watching the screen empty: stand_updated above
+    // says the stand changed, not that your place or your seat is gone.
+    await notifyDroppedDrivers(req.io, closedEntries);
+    await notifyStrandedRiders(req.io, closedReservations, { reason: "STAND_CLOSED" });
     res.json(payload);
   } catch (error) {
     next(error);

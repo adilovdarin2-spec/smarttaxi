@@ -1,6 +1,5 @@
 import { query } from "../../db/pool.js";
-import { notifyUser } from "../notifications/notification.service.js";
-import { broadcastStand, notifyStrandedRiders } from "./stands.notify.js";
+import { broadcastStand, notifyDroppedDrivers, notifyStrandedRiders } from "./stands.notify.js";
 import { sweepStaleQueueEntries } from "./stands.service.js";
 
 // A place in a stand line is a claim about the physical world: this car is
@@ -10,32 +9,6 @@ import { sweepStaleQueueEntries } from "./stands.service.js";
 const SWEEP_INTERVAL_MS = 60_000;
 
 let intervalHandle = null;
-
-async function notifyDroppedDrivers(io, expiredEntries) {
-  for (const entry of expiredEntries) {
-    const row = (await query(`
-      SELECT d.user_id, s.name stand_name
-      FROM drivers d
-      JOIN taxi_stands s ON s.id=$2
-      WHERE d.id=$1
-    `, [entry.driver_id, entry.stand_id])).rows[0];
-    if (!row?.user_id) continue;
-    const left = entry.left_reason === "LEFT_AREA";
-    io?.to(`user:${row.user_id}`).emit("stand_place_lost", {
-      standId: entry.stand_id,
-      entryId: entry.id,
-      reason: entry.left_reason
-    });
-    notifyUser(row.user_id, {
-      title: "Вы вышли из очереди",
-      body: left
-        ? `Вы уехали со стоянки «${row.stand_name}», место освободилось.`
-        : `Приложение потеряло связь, место на стоянке «${row.stand_name}» освободилось.`,
-      type: "STAND_PLACE_LOST",
-      data: { standId: entry.stand_id, reason: entry.left_reason }
-    }).catch((error) => console.error("[push] stand place lost failed", error));
-  }
-}
 
 export async function standsSweepTick(io) {
   const { expired, strandedByEntry, expiredReservations, touchedStands } = await sweepStaleQueueEntries(query);

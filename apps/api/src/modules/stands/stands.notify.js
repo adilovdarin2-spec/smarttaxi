@@ -50,22 +50,71 @@ export async function notifyPromotedDrivers(io, promotedEntryIds, standId) {
   }
 }
 
-/// Riders whose car is gone. Told plainly that the car left rather than left
-/// holding a reservation that quietly stopped meaning anything.
-export async function notifyStrandedRiders(io, reservations) {
+/// Drivers whose place is gone through no action of their own: they drove out
+/// of the stand and stayed out, the app stopped reporting where they were, or
+/// the owner closed the stand under them. Each is a different thing to be told,
+/// and none of them should be discovered by watching the screen empty.
+const PLACE_LOST_BODY = {
+  LEFT_AREA: (stand) => `Вы уехали со стоянки «${stand}», место освободилось.`,
+  STAND_CLOSED: (stand) => `Стоянку «${stand}» закрыли. Очередь снята, место больше не занято.`,
+  NO_SIGNAL: (stand) => `Приложение потеряло связь, место на стоянке «${stand}» освободилось.`
+};
+
+export async function notifyDroppedDrivers(io, expiredEntries) {
+  for (const entry of expiredEntries || []) {
+    if (!entry?.driver_id) continue;
+    const row = (await query(`
+      SELECT d.user_id, s.name stand_name
+      FROM drivers d
+      JOIN taxi_stands s ON s.id=$2
+      WHERE d.id=$1
+    `, [entry.driver_id, entry.stand_id])).rows[0];
+    if (!row?.user_id) continue;
+    const body = (PLACE_LOST_BODY[entry.left_reason] || PLACE_LOST_BODY.NO_SIGNAL)(row.stand_name);
+    io?.to(`user:${row.user_id}`).emit("stand_place_lost", {
+      standId: entry.stand_id,
+      entryId: entry.id,
+      reason: entry.left_reason
+    });
+    notifyUser(row.user_id, {
+      title: entry.left_reason === "STAND_CLOSED" ? "Стоянка закрыта" : "Вы вышли из очереди",
+      body,
+      type: "STAND_PLACE_LOST",
+      data: { standId: entry.stand_id, reason: entry.left_reason }
+    }).catch((error) => console.error("[push] stand place lost failed", error));
+  }
+}
+
+/// Riders whose seat is gone. Told what actually happened and what is left to
+/// do about it: a rider whose car drove off can pick another one at the same
+/// stand, but a rider whose stand was closed has nothing there to pick.
+const SEAT_LOST_COPY = {
+  STAND_CLOSED: {
+    title: "Стоянка закрыта",
+    body: "Стоянку закрыли, бронь снята. Закажите машину обычным заказом."
+  },
+  DEFAULT: {
+    title: "Бронь на стоянке снята",
+    body: "Машина уехала. Выберите другую машину на стоянке."
+  }
+};
+
+export async function notifyStrandedRiders(io, reservations, { reason } = {}) {
+  const copy = SEAT_LOST_COPY[reason] || SEAT_LOST_COPY.DEFAULT;
   for (const reservation of reservations || []) {
     if (!reservation.client_id) continue;
     const row = (await query("SELECT user_id FROM clients WHERE id=$1", [reservation.client_id])).rows[0];
     if (!row?.user_id) continue;
     io?.to(`user:${row.user_id}`).emit("stand_reservation_cancelled", {
       standId: reservation.stand_id,
-      reservationId: reservation.id
+      reservationId: reservation.id,
+      reason: reason || null
     });
     notifyUser(row.user_id, {
-      title: "Место на стоянке освободилось",
-      body: "Машина уехала. Выберите другую машину на стоянке.",
+      title: copy.title,
+      body: copy.body,
       type: "STAND_RESERVATION_CANCELLED",
-      data: { standId: reservation.stand_id, reservationId: reservation.id }
+      data: { standId: reservation.stand_id, reservationId: reservation.id, reason: reason || null }
     }).catch((error) => console.error("[push] stand stranded rider failed", error));
   }
 }

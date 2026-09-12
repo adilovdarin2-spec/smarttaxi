@@ -257,4 +257,35 @@ assert.ok(
   assert.ok(body.includes("throw translateUniqueViolation(error);"), `${fn} must translate a lost insert race`);
 });
 
+// Closing a stand takes a driver's place and a rider's seat away through no
+// action of their own. Both used to find out by watching the screen empty: the
+// generic stand_updated says the stand changed, not that your place is gone.
+assert.ok(
+  adminRoutes.includes("RETURNING *") && adminRoutes.includes("left_reason='STAND_CLOSED'"),
+  "closing a stand must keep the rows it cleared so the people behind them can be told"
+);
+assert.ok(
+  adminRoutes.includes("await notifyDroppedDrivers(req.io, closedEntries);"),
+  "a driver whose line was closed must be told"
+);
+assert.ok(
+  adminRoutes.includes('await notifyStrandedRiders(req.io, closedReservations, { reason: "STAND_CLOSED" });'),
+  "a rider whose seat was closed must be told, and told which case it was"
+);
+
+// Each way of losing a place is a different thing to be told. "Машина уехала.
+// Выберите другую машину" is wrong when the whole stand just closed — there is
+// no other car there to choose.
+const notify = read("../modules/stands/stands.notify.js");
+for (const reason of ["LEFT_AREA", "STAND_CLOSED", "NO_SIGNAL"]) {
+  assert.ok(notify.includes(`${reason}:`), `a place lost to ${reason} needs its own wording`);
+}
+assert.ok(notify.includes("SEAT_LOST_COPY"), "a seat lost to a closed stand needs its own wording");
+assert.ok(
+  notify.includes("Закажите машину обычным заказом"),
+  "a rider at a closed stand must be pointed somewhere that still exists"
+);
+// The sweeper writes NO_SIGNAL, so that is the key the wording must be under.
+assert.ok(service.includes("'NO_SIGNAL'"), "the sweeper's reason and the notice's key must match");
+
 console.log("Taxi stand checks ok: geofence, audience separation, boarding slots, seat holds, admin and socket wiring");
