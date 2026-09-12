@@ -87,6 +87,49 @@ assert.ok(
   driverAskedToCancel.riskScore >= REVIEW_THRESHOLD,
   `a rider cancelling at the driver's request must reach review, got ${driverAskedToCancel.riskScore}`
 );
+// It must be named, not merely add up. This is the scheme the whole review
+// exists for, and the owner needs to see it said plainly rather than infer it
+// from the generic signals a reasonless cancellation also produces.
+const namedAccusation = driverAskedToCancel.signals.find((s) => s.code === "CLIENT_SAYS_DRIVER_ASKED");
+assert.ok(namedAccusation, "the rider's accusation must be its own signal");
+assert.match(namedAccusation.label, /водител/i, "the signal must read as a sentence the owner can act on");
+
+// A rider has nothing to gain by saying it, so it must weigh more than simply
+// giving no reason at all.
+const silentRiderCancel = scoreCancellation({
+  cancelledBy: "CLIENT",
+  fromStatus: "DRIVER_ARRIVED",
+  reasonCode: "CHANGED_MIND",
+  paymentMethod: "CASH",
+  secondsSinceAccept: 300,
+  secondsSinceArrival: 60,
+  driverDistanceToPickupM: 10,
+  waitingStarted: false,
+  driverRepeatCount: 0,
+  pairRepeatCount: 0
+});
+assert.ok(
+  driverAskedToCancel.riskScore > silentRiderCancel.riskScore,
+  "naming the driver must weigh more than a rider simply changing their mind"
+);
+
+// A driver's own cancellation can never carry the rider's accusation.
+const driverSide = scoreCancellation({
+  cancelledBy: "DRIVER",
+  fromStatus: "DRIVER_ARRIVED",
+  reasonCode: "DRIVER_ASKED_TO_CANCEL",
+  paymentMethod: "CASH",
+  secondsSinceAccept: 300,
+  secondsSinceArrival: 60,
+  driverDistanceToPickupM: 10,
+  waitingStarted: false,
+  driverRepeatCount: 0,
+  pairRepeatCount: 0
+});
+assert.ok(
+  !driverSide.signals.some((s) => s.code === "CLIENT_SAYS_DRIVER_ASKED"),
+  "only the rider can accuse the driver of asking"
+);
 
 // The same two people cancelling on each other repeatedly is the pattern a
 // single trip can never show.

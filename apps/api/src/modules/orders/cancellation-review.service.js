@@ -81,6 +81,18 @@ export function scoreCancellation({
       label: "Водитель не указал причину отмены"
     });
   }
+  // The whole scheme this review exists for, named by the person it was done
+  // to: the driver takes the rider, then asks them to cancel so no commission
+  // is charged. A rider has nothing to gain by saying it — they lose their car
+  // either way — which is what makes it worth more than the generic signals
+  // that would otherwise be all the owner sees.
+  if (cancelledBy === "CLIENT" && reasonCode === "DRIVER_ASKED_TO_CANCEL") {
+    signals.push({
+      code: "CLIENT_SAYS_DRIVER_ASKED",
+      weight: 35,
+      label: "Пассажир говорит, что отменить попросил сам водитель"
+    });
+  }
   if (reasonCode === "CLIENT_NO_SHOW") {
     signals.push({
       code: "CLAIMED_NO_SHOW",
