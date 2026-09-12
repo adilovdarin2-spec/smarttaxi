@@ -6,7 +6,10 @@ build
 coverage
 qa_screenshots
 output
-data
+# The API ships its harvested address gazetteer inside the image
+# (apps/api/Dockerfile copies it); a bare `data` rule excluded that too,
+# so the build could not find it. Only a root-level data dir is skipped.
+/data
 .codex_runtime_logs
 .codex_tmp_auth_refs
 .codex_tmp_client_pack

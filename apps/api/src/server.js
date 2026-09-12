@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { env } from "./config/env.js";
 import { connectRedis } from "./db/redis.js";
 import { query, pool } from "./db/pool.js";
+import { spawn } from "node:child_process";
 import { runMigrations } from "./db/migrations.js";
 import { loadHarvestedAddresses } from "./tools/load-addresses.js";
 import { errorHandler, notFound } from "./common/errors.js";
@@ -282,10 +283,39 @@ async function bootstrap() {
   await connectRedis();
   await runMigrations();
   await query("SELECT 1");
+  // A managed host gives no way to run a one-off command before the first
+  // boot, so a brand-new database comes up with the schema and no accounts at
+  // all — nobody can sign in, including the owner. Turning this on for the
+  // first deploy creates them; the seed refuses outright unless real passwords
+  // were configured, and it is written with ON CONFLICT DO UPDATE, so leaving
+  // it on is wasteful rather than destructive. Default is off.
+  if (process.env.SEED_ON_BOOT === "true") {
+    // A separate process on purpose: seed.js runs on import and closes its own
+    // pool when it finishes, which would take this server's database
+    // connections down with it.
+    await new Promise((resolve) => {
+      const seeder = spawn(process.execPath, [new URL("./seeds/seed.js", import.meta.url).pathname], {
+        stdio: "inherit",
+        env: process.env
+      });
+      seeder.on("exit", (code) => {
+        console.log(`[seed] SEED_ON_BOOT finished with code ${code}`);
+        resolve();
+      });
+      seeder.on("error", (error) => {
+        console.error("[seed] SEED_ON_BOOT could not start", error);
+        resolve();
+      });
+    });
+  }
   startRecurringBookingsScheduler(io);
   startStandsSweeper(io);
   startCancellationReviewScheduler();
-  server.listen(env.API_PORT, () => console.log(`[API] SmartTaxi running on ${env.API_PORT}`));
+  // Bind every interface explicitly. Without a host Node listens on the IPv6
+// wildcard, and a platform proxy that dials the container over IPv4 — which is
+// what Railway's edge does — gets a refused connection and serves 503 while the
+// container itself looks perfectly healthy in the logs.
+server.listen(env.API_PORT, "0.0.0.0", () => console.log(`[API] SmartTaxi running on ${env.API_PORT}`));
   // Detached, and after the listener is up: loading ~100k address rows must
   // never delay the health check or hold the port closed. It skips itself
   // once the table already holds what the files contain, so this does real

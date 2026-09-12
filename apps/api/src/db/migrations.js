@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { query } from "./pool.js";
 import { REGION_SEED } from "../modules/routing/region-geo.js";
 
@@ -1100,7 +1101,33 @@ const statements = [
 
 ];
 
+// The base tables live in schema.sql, which a local Postgres container applies
+// once from docker-entrypoint-initdb.d. A managed database — Railway's, or any
+// other host's — never runs that, so the migrations below (which only ALTER
+// those tables) failed on the very first boot with "relation drivers does not
+// exist" and the container restarted forever.
+//
+// Applying it here makes the API able to provision an empty database on its
+// own. Every statement in schema.sql is CREATE ... IF NOT EXISTS, so running it
+// on every boot is a no-op once the tables are there, and it can never
+// overwrite data.
+async function ensureBaseSchema() {
+  const schemaPath = new URL("./schema.sql", import.meta.url);
+  let sql;
+  try {
+    sql = await readFile(schemaPath, "utf8");
+  } catch (error) {
+    // A deployment that ships without schema.sql is still valid when the
+    // database was provisioned some other way; the migrations below will say
+    // so plainly if it was not.
+    console.warn("[db] schema.sql not found, relying on an existing schema", error.code);
+    return;
+  }
+  await query(sql);
+}
+
 export async function runMigrations() {
+  await ensureBaseSchema();
   for (const sql of statements) {
     await query(sql);
   }

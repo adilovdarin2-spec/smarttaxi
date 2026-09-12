@@ -29,3 +29,9 @@ data/osrm/*
 # session, not project files.
 tmp-*
 *.out.log
+
+# The routing graph is derived from a public OSM extract and is built inside
+# the routing image (see osrm-build/Dockerfile), so neither the 212 MB source
+# nor the prepared graph belongs in a clone.
+osrm-build/*.osm.pbf
+osrm-build/prepared/
