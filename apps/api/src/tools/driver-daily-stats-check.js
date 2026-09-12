@@ -30,4 +30,17 @@ for (const [file,path] of [["drivers.routes.js","/me/stats"],["driver-core.route
   assert.match(handler,/requireAuth, requireRole\("DRIVER"\)/);
   assert.match(handler,/await driverDailyStats\(driver.id, query\)/, "Both clients must share the same aggregation");
 }
+// A driver's trip count and their earnings must agree about what "finished"
+// means. The profile used to read a trips_count column that does not exist,
+// so `|| 0` reported zero trips for every driver forever.
+const core = readFileSync(new URL("../modules/drivers/driver-core.routes.js", import.meta.url), "utf8");
+assert.match(core, /WHERE driver_id=\$1 AND status = ANY\(\$2::text\[\]\)/, "trips must be counted from orders");
+assert.match(core, /DRIVER_COMPLETED_STATUSES\]\)\)\.rows\[0\]/, "the trip count must reuse the earnings status list, not a second copy");
+assert.match(
+  core,
+  /tripsCount: driver\.trips_count == null \? null : Number\(driver\.trips_count\)/,
+  "a profile that did not count trips must say null, never a false zero"
+);
+assert.doesNotMatch(core, /trips_count \|\| 0/, "the false-zero fallback must not come back");
+
 console.log("Driver daily stats checks ok: paid/rated parity, legacy, cancellation, scope and endpoint wiring");

@@ -4,7 +4,7 @@ import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
-import { driverDailyStats } from "./driver-daily-stats.service.js";
+import { driverDailyStats, DRIVER_COMPLETED_STATUSES } from "./driver-daily-stats.service.js";
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
 import { announceStandRelease } from "../stands/stands.notify.js";
 import {
@@ -54,7 +54,11 @@ function publicDriver(driver) {
     status: driver.status,
     publicStatus: publicDriverStatus(driver),
     rating: driver.rating,
-    tripsCount: driver.trips_count || 0,
+    // There is no trips_count column: this used to read `|| 0`, so every
+    // driver's profile reported zero completed trips forever, however many
+    // they had actually driven. Only the routes that count it can say, and
+    // null means "not loaded here" rather than the false "none".
+    tripsCount: driver.trips_count == null ? null : Number(driver.trips_count),
     vehicleModel: driver.car_model,
     vehicleColor: driver.car_color,
     plateNumber: driver.plate,
@@ -95,11 +99,31 @@ async function activeOrderForDriver(driver, executor = query) {
   `, [driver.id, ACTIVE_ORDER_STATUSES])).rows[0] || null;
 }
 
+// Trips a driver has actually finished. Counted on the indexed driver_id
+// rather than denormalised — it measures well under a millisecond and cannot
+// drift away from the orders it describes. Which statuses count is the same
+// list the daily earnings use, so a driver's trip count and their earnings
+// can never disagree about what finished.
+async function completedTripsForDriver(driverId, executor = query) {
+  const row = (await run(executor, `
+    SELECT COUNT(*)::int AS trips
+    FROM orders
+    WHERE driver_id=$1 AND status = ANY($2::text[])
+  `, [driverId, DRIVER_COMPLETED_STATUSES])).rows[0];
+  return row?.trips ?? 0;
+}
+
 router.get("/profile", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const driver = await syncDriverAvailability(await getDriverForUser(req.user.id), query);
-    const activeOrder = await activeOrderForDriver(driver);
-    res.json({ driver: publicDriver(driver), activeOrder: publicOrder(activeOrder) });
+    const [activeOrder, tripsCount] = await Promise.all([
+      activeOrderForDriver(driver),
+      completedTripsForDriver(driver.id)
+    ]);
+    res.json({
+      driver: publicDriver({ ...driver, trips_count: tripsCount }),
+      activeOrder: publicOrder(activeOrder)
+    });
   } catch (e) { next(e); }
 });
 
