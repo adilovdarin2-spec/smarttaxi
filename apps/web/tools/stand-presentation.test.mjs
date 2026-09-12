@@ -117,3 +117,24 @@ test("the stand panels never show one audience the other's data", () => {
   assert.doesNotMatch(client, /\.client\?\.phone/);
   assert.doesNotMatch(client, /queueSeq/);
 });
+
+test("both web panels get live updates, not only a poll", () => {
+  // The phone updates over sockets. A web driver waiting out a 20-second poll
+  // leaves a rider standing at the car wondering whether the booking arrived.
+  const driver = read("../src/features/driver/DriverStandsPanel.jsx");
+  assert.match(driver, /socket\.emit\("join_stand", \{ standId \}\)/);
+  assert.match(driver, /"stand_reservation_created"/);
+  // The room must be left, or a driver who moves between stands keeps
+  // receiving another line's updates for as long as the tab lives.
+  assert.match(driver, /socket\.emit\("leave_stand", \{ standId \}\)/);
+  assert.match(driver, /socket\.disconnect\(\)/);
+
+  const client = read("../src/features/client/ClientStandsSection.jsx");
+  assert.match(client, /socket\.emit\("join_region_stands", \{ regionId \}\)/);
+  assert.match(client, /"stand_reservation_confirmed"/);
+  assert.match(client, /socket\.disconnect\(\)/);
+
+  // The interval stays as the fallback for a dropped socket.
+  assert.match(driver, /setInterval\(\(\) => load\(\{ silent: true \}\), REFRESH_INTERVAL_MS\)/);
+  assert.match(client, /setInterval\(\(\) => load\(\{ silent: true \}\), REFRESH_INTERVAL_MS\)/);
+});

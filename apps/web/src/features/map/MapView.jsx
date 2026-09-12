@@ -4,6 +4,11 @@ import { Icon } from "../../core/icons.jsx";
 import { applyLibertyPresentation, hideDuplicateBuildings } from './mapPresentation.mjs';
 import { installMissingPoiFallbacks } from './missingPoiFallbacks.mjs';
 import { buildingAtPoint } from '../../../../../packages/shared/src/building-selection.js';
+import { freeSeatsLabel } from '../shared/standFormat.mjs';
+
+// A stable identity for "no stands", so the marker effect below does not see a
+// new array on every parent render and tear its pins down each time.
+const EMPTY_STANDS = [];
 
 const DEFAULT_CENTER = { lat: 40.844435, lng: 68.509021 };
 const DEFAULT_ZOOM = 16;
@@ -230,6 +235,38 @@ function finishFlagMarkerElement() {
   return element;
 }
 
+// A stand is a place people already know, so its pin carries the one number
+// that decides whether it is worth walking to: seats free right now. Zero free
+// seats is still worth showing — the line exists, the next car is coming — but
+// it is muted so a full stand is not mistaken for an open one.
+function updateStandMarkerElement(element, stand) {
+  const seats = Number(stand.freeSeats) || 0;
+  element.classList.toggle("muted", seats <= 0);
+  element.setAttribute(
+    "aria-label",
+    seats > 0 ? `${stand.name}: ${freeSeatsLabel(seats)}` : `${stand.name}: свободных мест нет`
+  );
+  // Written as text, never as markup: both the count and the stand name are
+  // data — the name is typed by the owner in the admin editor.
+  const count = element.querySelector(".stand-map-marker-badge > b");
+  if (count) count.textContent = String(seats);
+  const name = element.querySelector(".stand-map-marker-name");
+  if (name) name.textContent = stand.name || "Стоянка";
+}
+
+function standMarkerElement(stand, onClick) {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = "stand-map-marker";
+  element.innerHTML = `<span class="stand-map-marker-badge"><b></b></span><span class="stand-map-marker-name"></span>`;
+  updateStandMarkerElement(element, stand);
+  element.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onClick?.(stand.id);
+  });
+  return element;
+}
+
 function featurePreview(map, point) {
   try {
     const box = [
@@ -251,6 +288,39 @@ function featurePreview(map, point) {
   }
 }
 
+function fitSubject(map, { standPoints, routePoints, pickupPoint, destinationPoint, driverPoint, centerPoint, compact }) {
+  // A map whose subject is the stands must frame the stands; otherwise the
+  // route, then the endpoints, then wherever we are centred.
+  if (standPoints?.length) {
+    fitMap(map, standPoints, compact);
+    return;
+  }
+  fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
+}
+
+// These paddings were chosen for a map that fills most of a phone screen, and
+// on a short one — the 220px strip above the stand list — they add up to more
+// than the map is tall, so fitBounds cannot satisfy them and leaves points
+// outside the frame. Never let the padding claim more than a third of an axis.
+function fitPadding(map, compact) {
+  const base = compact
+    ? { top: 82, right: 52, bottom: 52, left: 52 }
+    : { top: 90, right: 46, bottom: 110, left: 46 };
+  const canvas = map.getCanvas();
+  const height = canvas?.clientHeight || 0;
+  const width = canvas?.clientWidth || 0;
+  if (!height || !width) return base;
+  const capVertical = height / 5;
+  const capHorizontal = width / 5;
+  const scale = (value, cap) => Math.max(8, Math.min(value, cap));
+  return {
+    top: scale(base.top, capVertical),
+    bottom: scale(base.bottom, capVertical),
+    left: scale(base.left, capHorizontal),
+    right: scale(base.right, capHorizontal)
+  };
+}
+
 function fitMap(map, points, compact) {
   const valid = points.filter(Boolean);
   if (valid.length >= 2) {
@@ -259,7 +329,7 @@ function fitMap(map, points, compact) {
       new maplibregl.LngLatBounds([valid[0].lng, valid[0].lat], [valid[0].lng, valid[0].lat])
     );
     map.fitBounds(bounds, {
-      padding: compact ? { top: 82, right: 52, bottom: 52, left: 52 } : { top: 90, right: 46, bottom: 110, left: 46 },
+      padding: fitPadding(map, compact),
       maxZoom: 16,
       duration: 650
     });
@@ -271,6 +341,8 @@ function fitMap(map, points, compact) {
 }
 
 export default function MapView({
+  stands = EMPTY_STANDS,
+  onStandClick,
   pickup,
   destination,
   driver,
@@ -299,6 +371,7 @@ export default function MapView({
   const destinationMarkerElRef = useRef(null);
   const driverMarkerElRef = useRef(null);
   const driverMarkerPointRef = useRef(null);
+  const standMarkersRef = useRef(new Map());
   const onCenterChangeRef = useRef(onCenterChange);
   const onCenterChangingRef = useRef(onCenterChanging);
   const onMapPickRef = useRef(onMapPick);
@@ -311,6 +384,10 @@ export default function MapView({
   const driverPoint = validPoint(driver);
   const centerPoint = validPoint(center) || pickupPoint || destinationPoint || DEFAULT_CENTER;
   const routePoints = routeCoordinates(route);
+  const standPoints = useMemo(
+    () => stands.map(validPoint).filter(Boolean),
+    [stands]
+  );
   const style = useMemo(() => mapStyle(), []);
 
   function followCar(map, duration = 500) {
@@ -428,7 +505,7 @@ export default function MapView({
       map.resize();
       if (centerMarker) centerUnderPicker(map, centerPoint, 0, true);
       else if (navigationMode && followDriver && driverPoint) followCar(map, 0);
-      else fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
+      else fitSubject(map, { standPoints, routePoints, pickupPoint, destinationPoint, driverPoint, centerPoint, compact });
       // A map opened in address-picker mode can already be centred correctly,
       // in which case MapLibre does not emit `moveend`. Publish that initial
       // point explicitly so the sheet resolves a real address instead of
@@ -452,6 +529,8 @@ export default function MapView({
         ref.current?.remove();
         ref.current = null;
       });
+      standMarkersRef.current.forEach(marker => marker.remove());
+      standMarkersRef.current.clear();
       driverMarkerPointRef.current = null;
       removeMissingPoiFallbacks();
       loadedMapRef.current = null;
@@ -651,13 +730,49 @@ export default function MapView({
     }
   }, [mapReady, addressControls, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, navigationMode, centerPoint.lat, centerPoint.lng]);
 
+  // Stand pins live on their own, keyed by stand id: the free-seat count
+  // changes every time a driver takes a passenger, and recreating every pin on
+  // each of those updates would make the whole set blink.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const markers = standMarkersRef.current;
+    const seen = new Set();
+    for (const stand of stands) {
+      const point = validPoint(stand);
+      if (!point) continue;
+      seen.add(stand.id);
+      const existing = markers.get(stand.id);
+      if (existing) {
+        existing.marker.setLngLat([point.lng, point.lat]);
+        // Only the number changes as the line fills, so write it into the pin
+        // that is already there instead of building a new one.
+        updateStandMarkerElement(existing.marker.getElement(), stand);
+        continue;
+      }
+      const marker = new maplibregl.Marker({ element: standMarkerElement(stand, onStandClick), anchor: "bottom" })
+        .setLngLat([point.lng, point.lat])
+        .addTo(map);
+      markers.set(stand.id, { marker });
+    }
+    for (const [id, entry] of markers) {
+      if (seen.has(id)) continue;
+      entry.marker.remove();
+      markers.delete(id);
+    }
+  }, [mapReady, stands, onStandClick]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     if (navigationMode) { followCar(map); return; }
+    if (standPoints.length) {
+      fitSubject(map, { standPoints, routePoints, pickupPoint, destinationPoint, driverPoint, centerPoint, compact });
+      return;
+    }
     if (centerMarker && !routePoints.length && !pickupPoint && !destinationPoint && !driverPoint) return;
-    fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
-  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, centerPoint.lat, centerPoint.lng, route, compact, navigationMode, followDriver]);
+    fitSubject(map, { standPoints, routePoints, pickupPoint, destinationPoint, driverPoint, centerPoint, compact });
+  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, centerPoint.lat, centerPoint.lng, route, compact, navigationMode, followDriver, standPoints]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -675,12 +790,12 @@ export default function MapView({
       map.resize();
       if (navigationMode) followCar(map, 0);
       else if (!centerMarker) {
-        fitMap(map, routePoints.length ? routePoints : [pickupPoint, destinationPoint, driverPoint, centerPoint], compact);
+        fitSubject(map, { standPoints, routePoints, pickupPoint, destinationPoint, driverPoint, centerPoint, compact });
       }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, centerPoint.lat, centerPoint.lng, route, compact, navigationMode, followDriver]);
+  }, [mapReady, centerMarker, pickupPoint?.lat, pickupPoint?.lng, destinationPoint?.lat, destinationPoint?.lng, driverPoint?.lat, driverPoint?.lng, driver?.heading, centerPoint.lat, centerPoint.lng, route, compact, navigationMode, followDriver, standPoints]);
 
   useEffect(() => {
     const map = mapRef.current;

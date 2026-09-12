@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../../core/icons.jsx";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
@@ -1000,6 +1000,7 @@ export default function ClientApp() {
     || fallbackRegion;
   const selectedRegionName = selectedRegion?.name || fallbackRegion.name;
   const backendRegionId = backendRegionIdFor(regions, selectedRegionId, selectedRegion);
+
   const intercityDestinationRegions = useMemo(() => {
     const allowedIds = new Set(intercityRoutes.map(route => route.destinationRegionId));
     return [selectedRegion, ...regions.filter(region => allowedIds.has(region.id))]

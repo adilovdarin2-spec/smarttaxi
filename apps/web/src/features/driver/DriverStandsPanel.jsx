@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createSocket } from "../../lib/socket.js";
 import {
   addStandSeats,
   departStandQueue,
@@ -78,6 +79,35 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
     const timer = setInterval(() => load({ silent: true }), REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [load]);
+
+  // A booking request arrives while the driver is looking at this screen, and
+  // waiting out the poll makes the rider stand there wondering. The socket is
+  // what the phone app uses; the interval above stays as the safety net for a
+  // dropped connection.
+  const standId = place.stand?.id || null;
+  useEffect(() => {
+    const socket = createSocket();
+    const refresh = () => load({ silent: true });
+    const join = () => {
+      if (standId) socket.emit("join_stand", { standId });
+      if (regionId) socket.emit("join_region_stands", { regionId });
+    };
+    socket.on("connect", join);
+    [
+      "stand_queue_updated_driver",
+      "stand_queue_updated",
+      "stand_reservation_created",
+      "stand_reservation_cancelled",
+      "stand_reservation_expired",
+      "stand_turn_started",
+      "stand_place_lost"
+    ].forEach(event => socket.on(event, refresh));
+    join();
+    return () => {
+      if (standId) socket.emit("leave_stand", { standId });
+      socket.disconnect();
+    };
+  }, [standId, regionId, load]);
 
   // Holding a place is a claim about where the car physically is, so the app
   // keeps saying so while this panel is open.

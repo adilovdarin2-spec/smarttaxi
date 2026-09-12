@@ -25972,3 +25972,68 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-section-actions {
   flex: 0 1 auto;
 }
+
+/* Stand pins on the passenger map -------------------------------------- */
+
+/* A stand is a place people already know by sight, so its pin names it and
+   carries the one number that decides whether to walk over: seats free right
+   now. A full line keeps its pin — the next car is coming — but greys out, so
+   it cannot be mistaken for an open one at a glance. */
+.stand-map-marker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid rgba(11, 79, 209, .18);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 32, 64, .18);
+  font: inherit;
+  color: #0f2040;
+  cursor: pointer;
+  max-width: 190px;
+}
+.stand-map-marker:hover { border-color: rgba(11, 79, 209, .45); }
+.stand-map-marker:focus-visible { outline: 2px solid #1d6fff; outline-offset: 2px; }
+
+.stand-map-marker-badge {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #1d6fff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stand-map-marker-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stand-map-marker.muted { color: #5a6a85; }
+.stand-map-marker.muted .stand-map-marker-badge { background: #97a3b8; }
+
+/* The stands screen's own map ------------------------------------------- */
+
+/* Riders know these lines by where they are before they know them by name,
+   so the places come first and the list underneath is the detail. */
+.client-stands-map {
+  /* Tall enough that a town's stands fit between the pin at the top and the
+     one at the bottom; a short strip leaves fitBounds no room and pushes the
+     farthest stand out of frame. */
+  height: 300px;
+  margin: 0 0 14px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #eef2f8;
+}
+.client-stands-map > * { height: 100%; }

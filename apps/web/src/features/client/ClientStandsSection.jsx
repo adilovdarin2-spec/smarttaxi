@@ -1,4 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createSocket } from "../../lib/socket.js";
+
+// MapLibre is a megabyte of JavaScript. The rest of this screen — the lines,
+// the cars, the phone numbers — must not wait on it, and a rider who never
+// opens Стоянки should never download it. Same lazy boundary the client app
+// uses for its own maps.
+const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
+
+function StandsMap(props) {
+  return (
+    <React.Suspense fallback={<div className="map-deferred-fallback" role="status">Подготавливаем карту…</div>}>
+      <LazyMapView {...props} />
+    </React.Suspense>
+  );
+}
 import {
   cancelStandReservation,
   getMyStandReservation,
@@ -68,6 +83,28 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
     const timer = setInterval(() => load({ silent: true }), REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [authenticated, load]);
+
+  // Free seats are the whole reason to look at this screen, and they change as
+  // other people take them. The interval above remains the fallback.
+  useEffect(() => {
+    if (!authenticated) return undefined;
+    const socket = createSocket();
+    const refresh = () => load({ silent: true });
+    const join = () => {
+      if (regionId) socket.emit("join_region_stands", { regionId });
+      if (openIdRef.current) socket.emit("join_stand", { standId: openIdRef.current });
+    };
+    socket.on("connect", join);
+    [
+      "stand_queue_updated",
+      "stand_reservation_confirmed",
+      "stand_reservation_declined",
+      "stand_reservation_cancelled",
+      "stand_reservation_expired"
+    ].forEach(event => socket.on(event, refresh));
+    join();
+    return () => socket.disconnect();
+  }, [authenticated, regionId, load]);
 
   async function openStandById(standId) {
     setActionError("");
@@ -152,6 +189,12 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
             </button>
           </div>
         </article>
+      )}
+
+      {stands.length > 0 && (
+        <div className="client-stands-map">
+          <StandsMap stands={stands} onStandClick={openStandById} compact />
+        </div>
       )}
 
       {loading && !stands.length ? (
