@@ -294,12 +294,17 @@ function StandCard({ stand, position, isOnline, busy, onJoin, onGoToLine }) {
             Встать в очередь
           </button>
           {blocked && (
-            <p className="driver-stand-blocked">
-              {blocked}
+            <div className="driver-stand-blocked">
+              <p>{blocked}</p>
+              {/* The way out of the refusal is an action, not a word inside the
+                  sentence explaining it: as a link in running text it was a
+                  16px-tall target on the phone this driver is holding. */}
               {!isOnline && onGoToLine && (
-                <> · <button type="button" className="driver-stand-inline-link" onClick={onGoToLine}>Перейти на линию</button></>
+                <button type="button" className="driver-stand-blocked-action" onClick={onGoToLine}>
+                  Перейти на линию
+                </button>
               )}
-            </p>
+            </div>
           )}
         </>
       )}

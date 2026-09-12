@@ -1096,16 +1096,41 @@ router.post("/:id/price-offer/driver-respond", requireAuth, requireRole("DRIVER"
 // Fixed vocabulary, not free text — keeps this a lightweight status ping
 // (no chat UI, no moderation surface to build) while still covering the
 // handful of things riders and drivers actually need to say mid-trip.
-const QUICK_MESSAGES = {
-  I_ARRIVED: "Я приехал",
+//
+// The two sides do not say the same things. One shared list let a rider send
+// "Уже еду к вам" and "Пожалуйста, выходите" to the driver, and a driver send
+// "Жду у входа" — each arrives at the other party as a sentence they cannot
+// act on. What a side may say is decided here, not in the app, because the
+// text is rendered to somebody else.
+const CLIENT_QUICK_MESSAGES = {
+  COMING_OUT: "Уже выхожу",
   WAITING_AT_ENTRANCE: "Жду у входа",
   RUNNING_LATE_2MIN: "Опаздываю на 2 минуты",
-  PLEASE_COME_OUT: "Пожалуйста, выходите",
-  ON_MY_WAY: "Уже еду к вам"
+  PLEASE_WAIT: "Подождите, пожалуйста"
 };
+
+const DRIVER_QUICK_MESSAGES = {
+  I_ARRIVED: "Я приехал",
+  ON_MY_WAY: "Уже еду к вам",
+  PLEASE_COME_OUT: "Пожалуйста, выходите",
+  RUNNING_LATE_2MIN: "Опаздываю на 2 минуты"
+};
+
+const QUICK_MESSAGES = { ...CLIENT_QUICK_MESSAGES, ...DRIVER_QUICK_MESSAGES };
+
+export function quickMessagesForRole(role) {
+  return role === "DRIVER" ? DRIVER_QUICK_MESSAGES : CLIENT_QUICK_MESSAGES;
+}
 
 const QuickMessageBody = z.object({
   messageKey: z.enum(Object.keys(QUICK_MESSAGES))
+});
+
+// The apps ask the server what this side is allowed to say, so the buttons on
+// screen and the rule enforced below cannot drift apart.
+router.get("/quick-messages", requireAuth, requireRole("CLIENT", "DRIVER"), (req, res) => {
+  const allowed = quickMessagesForRole(req.user.role);
+  res.json({ messages: Object.entries(allowed).map(([code, label]) => ({ code, label })) });
 });
 
 router.post("/:id/quick-message", requireAuth, requireRole("CLIENT", "DRIVER"), rateLimit({ prefix: "orders-quick-message", windowMs: 60_000, max: 10 }), async (req, res, next) => {
@@ -1131,7 +1156,14 @@ router.post("/:id/quick-message", requireAuth, requireRole("CLIENT", "DRIVER"), 
       notifyDriver = false;
     }
 
-    const text = QUICK_MESSAGES[body.messageKey];
+    const allowed = quickMessagesForRole(req.user.role);
+    if (!allowed[body.messageKey]) {
+      throw new AppError("Message is not available for this role", 400, "QUICK_MESSAGE_NOT_ALLOWED", {
+        messageKey: body.messageKey,
+        allowed: Object.keys(allowed)
+      });
+    }
+    const text = allowed[body.messageKey];
     const payload = { title: notifyDriver ? "Сообщение от клиента" : "Сообщение от водителя", body: text, type: "QUICK_MESSAGE", data: { messageKey: body.messageKey } };
     (notifyDriver ? notifyOrderDriver(order, payload) : notifyOrderClient(order, payload))
       .catch((error) => console.error("[push] quick-message notify failed", error));

@@ -1043,19 +1043,16 @@ class AppLocalizationsZh extends AppLocalizations {
       '拨打电话的同时,系统会将您的行程号和位置信息一并发送给客服';
 
   @override
-  String get quickMessageArrived => '我到了';
-
-  @override
   String get quickMessageWaitingAtEntrance => '我在门口等您';
 
   @override
+  String get quickMessageComingOut => '我这就下来';
+
+  @override
+  String get quickMessagePleaseWait => '请稍等';
+
+  @override
   String get quickMessageRunningLate2Min => '我会晚到 2 分钟';
-
-  @override
-  String get quickMessagePleaseComeOut => '请出来一下';
-
-  @override
-  String get quickMessageOnMyWay => '我已经在路上了';
 
   @override
   String get passengerChatFallbackTitle => '聊天';
@@ -3512,9 +3509,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get driverQuickMessageArrived => '我到了';
-
-  @override
-  String get driverQuickMessageWaitingAtEntrance => '我在门口等您';
 
   @override
   String get driverQuickMessageRunningLate2Min => '我会晚到 2 分钟';

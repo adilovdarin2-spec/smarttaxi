@@ -1121,19 +1121,16 @@ class AppLocalizationsUz extends AppLocalizations {
       'Safar raqami va koordinatalaringiz bilan murojaat qo\'ng\'iroq bilan bir vaqtda qo\'llab-quvvatlash xizmatiga yuboriladi';
 
   @override
-  String get quickMessageArrived => 'Men keldim';
-
-  @override
   String get quickMessageWaitingAtEntrance => 'Kirish oldida kutmoqdaman';
 
   @override
+  String get quickMessageComingOut => 'Hozir chiqaman';
+
+  @override
+  String get quickMessagePleaseWait => 'Iltimos, kuting';
+
+  @override
   String get quickMessageRunningLate2Min => '2 daqiqaga kechikmoqdaman';
-
-  @override
-  String get quickMessagePleaseComeOut => 'Iltimos, chiqing';
-
-  @override
-  String get quickMessageOnMyWay => 'Sizga tomon yo\'ldaman';
 
   @override
   String get passengerChatFallbackTitle => 'Chat';
@@ -3785,9 +3782,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverQuickMessageArrived => 'Men keldim';
-
-  @override
-  String get driverQuickMessageWaitingAtEntrance => 'Kirish oldida kutmoqdaman';
 
   @override
   String get driverQuickMessageRunningLate2Min => '2 daqiqaga kechikmoqdaman';

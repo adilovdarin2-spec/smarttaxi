@@ -1110,19 +1110,16 @@ class AppLocalizationsRu extends AppLocalizations {
       'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком';
 
   @override
-  String get quickMessageArrived => 'Я приехал';
-
-  @override
   String get quickMessageWaitingAtEntrance => 'Жду у входа';
 
   @override
+  String get quickMessageComingOut => 'Уже выхожу';
+
+  @override
+  String get quickMessagePleaseWait => 'Подождите, пожалуйста';
+
+  @override
   String get quickMessageRunningLate2Min => 'Опаздываю на 2 минуты';
-
-  @override
-  String get quickMessagePleaseComeOut => 'Пожалуйста, выходите';
-
-  @override
-  String get quickMessageOnMyWay => 'Уже еду к вам';
 
   @override
   String get passengerChatFallbackTitle => 'Чат';
@@ -3747,9 +3744,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverQuickMessageArrived => 'Я приехал';
-
-  @override
-  String get driverQuickMessageWaitingAtEntrance => 'Жду у входа';
 
   @override
   String get driverQuickMessageRunningLate2Min => 'Опаздываю на 2 минуты';

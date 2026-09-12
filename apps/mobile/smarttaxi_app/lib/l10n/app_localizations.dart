@@ -2083,35 +2083,29 @@ abstract class AppLocalizations {
   /// **'Заявка с номером поездки и вашими координатами уходит в поддержку одновременно со звонком'**
   String get passengerSupportWillBeNotifiedText;
 
-  /// No description provided for @quickMessageArrived.
-  ///
-  /// In ru, this message translates to:
-  /// **'Я приехал'**
-  String get quickMessageArrived;
-
   /// No description provided for @quickMessageWaitingAtEntrance.
   ///
   /// In ru, this message translates to:
   /// **'Жду у входа'**
   String get quickMessageWaitingAtEntrance;
 
+  /// No description provided for @quickMessageComingOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уже выхожу'**
+  String get quickMessageComingOut;
+
+  /// No description provided for @quickMessagePleaseWait.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подождите, пожалуйста'**
+  String get quickMessagePleaseWait;
+
   /// No description provided for @quickMessageRunningLate2Min.
   ///
   /// In ru, this message translates to:
   /// **'Опаздываю на 2 минуты'**
   String get quickMessageRunningLate2Min;
-
-  /// No description provided for @quickMessagePleaseComeOut.
-  ///
-  /// In ru, this message translates to:
-  /// **'Пожалуйста, выходите'**
-  String get quickMessagePleaseComeOut;
-
-  /// No description provided for @quickMessageOnMyWay.
-  ///
-  /// In ru, this message translates to:
-  /// **'Уже еду к вам'**
-  String get quickMessageOnMyWay;
 
   /// No description provided for @passengerChatFallbackTitle.
   ///
@@ -6774,12 +6768,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Я приехал'**
   String get driverQuickMessageArrived;
-
-  /// No description provided for @driverQuickMessageWaitingAtEntrance.
-  ///
-  /// In ru, this message translates to:
-  /// **'Жду у входа'**
-  String get driverQuickMessageWaitingAtEntrance;
 
   /// No description provided for @driverQuickMessageRunningLate2Min.
   ///

@@ -1118,19 +1118,16 @@ class AppLocalizationsKk extends AppLocalizations {
       'Сапар нөмірі мен координаттарыңыз бар өтінім қоңыраумен бірге қолдау қызметіне жіберіледі';
 
   @override
-  String get quickMessageArrived => 'Мен келдім';
-
-  @override
   String get quickMessageWaitingAtEntrance => 'Кіреберісте күтудемін';
 
   @override
+  String get quickMessageComingOut => 'Қазір шығамын';
+
+  @override
+  String get quickMessagePleaseWait => 'Күте тұрыңызшы';
+
+  @override
   String get quickMessageRunningLate2Min => '2 минутқа кешігемін';
-
-  @override
-  String get quickMessagePleaseComeOut => 'Шығыңызшы';
-
-  @override
-  String get quickMessageOnMyWay => 'Сізге қарай келе жатырмын';
 
   @override
   String get passengerChatFallbackTitle => 'Чат';
@@ -3749,9 +3746,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverQuickMessageArrived => 'Мен келдім';
-
-  @override
-  String get driverQuickMessageWaitingAtEntrance => 'Кіреберісте күтудемін';
 
   @override
   String get driverQuickMessageRunningLate2Min => '2 минутқа кешігемін';

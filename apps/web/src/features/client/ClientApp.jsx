@@ -56,6 +56,7 @@ import {
   reverseAddress,
   searchAddresses,
   sendAuthSms,
+  getQuickMessages,
   sendQuickMessage,
   setDriverPreference,
   initiateOrderPayment,
@@ -3834,19 +3835,22 @@ function PriceOfferCard({ order, onOrderUpdate }) {
   );
 }
 
-const quickMessageOptions = [
-  { code: "I_ARRIVED", label: "Я приехал" },
-  { code: "WAITING_AT_ENTRANCE", label: "Жду у входа" },
-  { code: "RUNNING_LATE_2MIN", label: "Опаздываю на 2 минуты" },
-  { code: "PLEASE_COME_OUT", label: "Пожалуйста, выходите" },
-  { code: "ON_MY_WAY", label: "Уже еду к вам" }
-];
-
 function QuickMessagesBar({ orderId }) {
   const [sendingKey, setSendingKey] = useState("");
   const [error, setError] = useState("");
+  const [options, setOptions] = useState([]);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
+
+  // A rider and a driver do not say the same things. The server decides which
+  // side may say what, so the list is fetched rather than written here twice.
+  useEffect(() => {
+    let cancelled = false;
+    getQuickMessages()
+      .then(data => { if (!cancelled && mountedRef.current) setOptions(data.messages || []); })
+      .catch(() => { /* The bar simply stays hidden; it is not how a trip is run. */ });
+    return () => { cancelled = true; };
+  }, []);
 
   async function send(code) {
     if (sendingKey) return;
@@ -3861,10 +3865,12 @@ function QuickMessagesBar({ orderId }) {
     }
   }
 
+  if (!options.length) return null;
+
   return (
     <div>
       <div className="quick-message-bar" role="group" aria-label="Быстрые сообщения водителю">
-        {quickMessageOptions.map(item => (
+        {options.map(item => (
           <button type="button" key={item.code} disabled={Boolean(sendingKey)} onClick={() => send(item.code)}>
             {item.label}
           </button>

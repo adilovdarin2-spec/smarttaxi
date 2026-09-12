@@ -15,6 +15,10 @@ export const API_URL = (import.meta.env.VITE_API_URL || fallbackApiUrl).replace(
 export function getToken(){ return readSessionToken(); }
 export function setToken(token){ writeSessionToken(token); }
 export function clearToken(){ removeSessionToken(); }
+
+// A 401 carrying one of these means the credential itself is finished, as
+// opposed to a permission problem on one endpoint.
+const DEAD_TOKEN_CODES = new Set(["SESSION_SUPERSEDED", "INVALID_TOKEN", "TOKEN_EXPIRED", "UNAUTHORIZED"]);
 export { subscribeSessionChanges };
 export async function api(path, options = {}) {
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
@@ -33,14 +37,17 @@ export async function api(path, options = {}) {
     error.status = response.status;
     error.code = data.error;
     error.details = data.details;
-    if (response.status === 401 && data.error === "SESSION_SUPERSEDED" && requestIsCurrent()) {
-      // Backend rotated session_version because another device just logged
-      // into this account (see common/auth.js's requireAuth) -- every
-      // token issued before that is now rejected. Without this, whichever
-      // admin/driver/client web tab was open just shows this one request's
-      // error inline instead of dropping the user back to a login screen,
-      // and keeps quietly failing every request after it the same way.
-      // A delayed response for a previous token must not evict a newer login.
+    if (response.status === 401 && DEAD_TOKEN_CODES.has(data.error) && requestIsCurrent()) {
+      // The token we sent is no longer accepted, and no amount of retrying
+      // will change that. SESSION_SUPERSEDED is another device signing into
+      // this account (see common/auth.js's requireAuth); INVALID_TOKEN is a
+      // token that no longer verifies at all, which is what every rider gets
+      // once theirs passes its seven-day expiry. Both used to be handled
+      // differently: only the first dropped the user back to a login screen,
+      // so an expired token left the app showing a signed-in home screen
+      // whose every request failed silently — an active trip simply became
+      // invisible. A delayed response for a previous token must not evict a
+      // newer login, which is what requestIsCurrent guards.
       clearToken();
       window.dispatchEvent(new CustomEvent("smarttaxi:session-expired"));
     }

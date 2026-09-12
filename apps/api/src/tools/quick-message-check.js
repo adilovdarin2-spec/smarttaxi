@@ -20,17 +20,50 @@ assert(
 );
 
 // The whole point of this feature is a fixed vocabulary — no free text ever
-// reaches the other party. Pin the exact key set and the fact that the body
-// schema is a closed z.enum (not z.string()), so a future edit can't quietly
-// open it up to arbitrary messages without this check failing.
-const expectedKeys = ["I_ARRIVED", "WAITING_AT_ENTRANCE", "RUNNING_LATE_2MIN", "PLEASE_COME_OUT", "ON_MY_WAY"];
-const quickMessagesBlockMatch = routes.match(/const QUICK_MESSAGES = \{([\s\S]*?)\};/);
-assert(quickMessagesBlockMatch, "QUICK_MESSAGES vocabulary map must exist in orders.routes.js");
-const quickMessagesBlock = quickMessagesBlockMatch[1];
-expectedKeys.forEach(key => assert(quickMessagesBlock.includes(key), `QUICK_MESSAGES is missing expected key ${key}`));
+// reaches the other party. Pin the exact key set per audience and the fact
+// that the body schema is a closed z.enum (not z.string()), so a future edit
+// can't quietly open it up to arbitrary messages without this check failing.
+const CLIENT_KEYS = ["COMING_OUT", "WAITING_AT_ENTRANCE", "RUNNING_LATE_2MIN", "PLEASE_WAIT"];
+const DRIVER_KEYS = ["I_ARRIVED", "ON_MY_WAY", "PLEASE_COME_OUT", "RUNNING_LATE_2MIN"];
+
+function vocabulary(name) {
+  const match = routes.match(new RegExp("const " + name + " = \\{([\\s\\S]*?)\\};"));
+  assert(match, `${name} vocabulary map must exist in orders.routes.js`);
+  return (match[1].match(/^\s*([A-Z0-9_]+):/gm) || []).map(line => line.trim().replace(":", ""));
+}
+
+const clientKeys = vocabulary("CLIENT_QUICK_MESSAGES");
+const driverKeys = vocabulary("DRIVER_QUICK_MESSAGES");
 assert(
-  (quickMessagesBlock.match(/^\s*[A-Z0-9_]+:/gm) || []).length === expectedKeys.length,
-  "QUICK_MESSAGES must contain exactly the documented 5 keys — a new key here needs a matching doc/QA update"
+  JSON.stringify(clientKeys) === JSON.stringify(CLIENT_KEYS),
+  `CLIENT_QUICK_MESSAGES must be exactly ${CLIENT_KEYS.join(", ")} — got ${clientKeys.join(", ")}`
+);
+assert(
+  JSON.stringify(driverKeys) === JSON.stringify(DRIVER_KEYS),
+  `DRIVER_QUICK_MESSAGES must be exactly ${DRIVER_KEYS.join(", ")} — got ${driverKeys.join(", ")}`
+);
+
+// The two sides do not say the same things. A rider offered "Уже еду к вам" or
+// "Пожалуйста, выходите" sends the driver a sentence only a driver can act on,
+// which is what one shared list used to allow.
+for (const key of ["I_ARRIVED", "ON_MY_WAY", "PLEASE_COME_OUT"]) {
+  assert(!clientKeys.includes(key), `${key} is a driver's line and must not be offered to a rider`);
+}
+assert(!driverKeys.includes("WAITING_AT_ENTRANCE"), "WAITING_AT_ENTRANCE is the rider's line, not the driver's");
+
+// Which side may say what is decided by the server, because the text is
+// rendered to somebody else. An app that offers the wrong button is refused.
+assert(
+  routes.includes("const allowed = quickMessagesForRole(req.user.role);"),
+  "quick-message must resolve the allowed vocabulary from the sender's role"
+);
+assert(
+  routes.includes('throw new AppError("Message is not available for this role", 400, "QUICK_MESSAGE_NOT_ALLOWED"'),
+  "quick-message must refuse a code belonging to the other side"
+);
+assert(
+  routes.includes('router.get("/quick-messages", requireAuth, requireRole("CLIENT", "DRIVER")'),
+  "apps must be able to ask the server which messages this side may send"
 );
 
 assert(routes.includes("messageKey: z.enum(Object.keys(QUICK_MESSAGES))"), "quick-message body must validate messageKey against a closed enum, not free text");

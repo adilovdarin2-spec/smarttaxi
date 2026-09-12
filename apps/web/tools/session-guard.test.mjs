@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { sessionGuard } from '../src/lib/sessionGuard.js';
+import { readFileSync } from 'node:fs';
 
 test('only a mounted operation with its original non-empty token remains current', () => {
   let token = 'session-a';
@@ -50,4 +51,18 @@ test('old success, error and finally callbacks cannot change the next driver scr
   if (current()) state.error = 'old-request-error';
   if (current()) state.loading = '';
   assert.deepEqual(state, { driver: 'new-driver', error: '', loading: 'new-action' });
+});
+
+test("a token that simply expired ends the session like any other dead token", () => {
+  // Tokens last seven days. Handling only SESSION_SUPERSEDED left a returning
+  // rider on a signed-in home screen whose every request failed with 401 and
+  // nothing on screen said so — their active trip silently disappeared.
+  const source = readFileSync(new URL("../src/lib/api.js", import.meta.url), "utf8");
+  assert.match(source, /const DEAD_TOKEN_CODES = new Set\(\[/);
+  for (const code of ["SESSION_SUPERSEDED", "INVALID_TOKEN", "TOKEN_EXPIRED", "UNAUTHORIZED"]) {
+    assert.ok(source.includes(`"${code}"`), `${code} must end the session`);
+  }
+  assert.match(source, /response\.status === 401 && DEAD_TOKEN_CODES\.has\(data\.error\) && requestIsCurrent\(\)/);
+  // A late response for a previous token must still never evict a newer login.
+  assert.match(source, /requestIsCurrent\(\)/);
 });

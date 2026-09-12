@@ -193,6 +193,12 @@ export function respondPriceOffer(orderId, accept) {
   });
 }
 
+// What this side is allowed to say comes from the server, so the buttons on
+// screen and the rule the server enforces cannot drift apart.
+export function getQuickMessages() {
+  return api("/api/orders/quick-messages");
+}
+
 export function sendQuickMessage(orderId, messageKey) {
   return api(`/api/orders/${orderId}/quick-message`, {
     method: "POST",

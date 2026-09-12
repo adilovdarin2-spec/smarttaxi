@@ -6082,12 +6082,13 @@ class _DriverQuickMessageSheet extends StatefulWidget {
 }
 
 class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
+  // "Жду у входа" is the rider's line, not the driver's; the server refuses it
+  // from this side. What is left is what a driver actually needs to say.
   Map<String, String> _messages(AppLocalizations l10n) => {
         'I_ARRIVED': l10n.driverQuickMessageArrived,
-        'WAITING_AT_ENTRANCE': l10n.driverQuickMessageWaitingAtEntrance,
-        'RUNNING_LATE_2MIN': l10n.driverQuickMessageRunningLate2Min,
-        'PLEASE_COME_OUT': l10n.driverQuickMessagePleaseComeOut,
         'ON_MY_WAY': l10n.driverQuickMessageOnMyWay,
+        'PLEASE_COME_OUT': l10n.driverQuickMessagePleaseComeOut,
+        'RUNNING_LATE_2MIN': l10n.driverQuickMessageRunningLate2Min,
       };
 
   String? _sending;

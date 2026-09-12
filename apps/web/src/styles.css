@@ -4690,14 +4690,23 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .admin-user-chip-logout {
-  margin-top: 2px;
-  padding: 0;
+  /* Signing out is a one-word button in the corner of the header; at the bare
+     text size it was a 20px-tall target. The padding is pulled back out with a
+     negative margin so the header layout is unchanged. */
+  margin: -6px -8px 0;
+  padding: 6px 8px;
   border: none;
   background: none;
   color: var(--admin-brand);
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.admin-user-chip-logout:focus-visible {
+  outline: 2px solid var(--admin-brand);
+  outline-offset: 1px;
+  border-radius: 6px;
 }
 
 .admin-user-chip-logout:hover {
@@ -25455,15 +25464,25 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   cursor: not-allowed;
 }
 
-.driver-stand-inline-link {
-  background: none;
-  border: 0;
-  padding: 0;
+/* The refusal is now a block: the sentence and, under it, the way out of it. */
+.driver-stand-blocked > p { margin: 0; }
+
+.driver-stand-blocked-action {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 1px solid #bcd4ff;
+  border-radius: 12px;
+  background: #f2f7ff;
   color: #1d6fff;
-  text-decoration: underline;
-  cursor: pointer;
   font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
+.driver-stand-blocked-action:hover { border-color: #1d6fff; }
+.driver-stand-blocked-action:focus-visible { outline: 2px solid #1d6fff; outline-offset: 2px; }
 
 .driver-stand-form {
   display: flex;

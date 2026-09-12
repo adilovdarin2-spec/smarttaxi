@@ -359,4 +359,43 @@ void main() {
             (error) => error.response?.statusCode, 'HTTP status', 401)));
     expect(expired, 0);
   });
+
+  // Tokens last seven days. When only SESSION_SUPERSEDED ended the session, a
+  // rider coming back after that sat on a signed-in screen whose every request
+  // failed with 401 and nothing said so — their active trip simply vanished.
+  for (final code in const ['INVALID_TOKEN', 'TOKEN_EXPIRED', 'UNAUTHORIZED']) {
+    test('$code ends the session the same as being signed in elsewhere',
+        () async {
+      final store = MemoryAuthStore('test-session');
+      final adapter = TestAdapter((_) async => jsonResponse({'error': code}, 401));
+      final dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:1'))
+        ..httpClientAdapter = adapter;
+      final api = ApiClient(store, dio: dio);
+      var expired = 0;
+      api.onSessionExpired = () => expired++;
+      addTearDown(() => dio.close(force: true));
+      await expectLater(
+          api.me(),
+          throwsA(isA<DioException>().having(
+              (error) => error.response?.statusCode, 'HTTP status', 401)));
+      expect(expired, 1);
+    });
+  }
+
+  test('a 401 about one endpoint does not sign the rider out', () async {
+    final store = MemoryAuthStore('test-session');
+    final adapter =
+        TestAdapter((_) async => jsonResponse({'error': 'FORBIDDEN_ORDER'}, 401));
+    final dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:1'))
+      ..httpClientAdapter = adapter;
+    final api = ApiClient(store, dio: dio);
+    var expired = 0;
+    api.onSessionExpired = () => expired++;
+    addTearDown(() => dio.close(force: true));
+    await expectLater(
+        api.me(),
+        throwsA(isA<DioException>().having(
+            (error) => error.response?.statusCode, 'HTTP status', 401)));
+    expect(expired, 0);
+  });
 }

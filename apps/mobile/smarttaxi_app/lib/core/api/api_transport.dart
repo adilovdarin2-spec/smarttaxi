@@ -1,5 +1,17 @@
 import 'package:dio/dio.dart';
 
+// A 401 carrying one of these means the token itself is finished, as opposed
+// to a permission problem on one endpoint. Only SESSION_SUPERSEDED used to
+// count, so a token that simply reached its seven-day expiry left the app on a
+// signed-in screen whose every request failed silently — an active trip just
+// became invisible.
+const Set<String> _deadTokenCodes = {
+  'SESSION_SUPERSEDED',
+  'INVALID_TOKEN',
+  'TOKEN_EXPIRED',
+  'UNAUTHORIZED',
+};
+
 /// Transport recovery must not replay actions or affect a replacement session.
 void installApiTransportGuards(
   Dio dio, {
@@ -52,7 +64,7 @@ void installApiTransportGuards(
         : null;
     final authorization = error.requestOptions.headers['Authorization'];
     if (error.response?.statusCode == 401 &&
-        code == 'SESSION_SUPERSEDED' &&
+        _deadTokenCodes.contains(code) &&
         authorization is String &&
         authorization.startsWith('Bearer ') &&
         authorization.length > 7 &&

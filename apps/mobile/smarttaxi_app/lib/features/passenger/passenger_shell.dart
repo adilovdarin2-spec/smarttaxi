@@ -13825,12 +13825,15 @@ class _ChatEntry {
   final DateTime at;
 }
 
+// A rider and a driver do not say the same things. Offering one shared list
+// let a rider send the driver "Уже еду к вам" and "Пожалуйста, выходите" —
+// sentences only the driver can act on. The server refuses the other side's
+// codes; this is the same list it allows for a rider.
 Map<String, String> _quickMessages(AppLocalizations l10n) => {
-      'I_ARRIVED': l10n.quickMessageArrived,
+      'COMING_OUT': l10n.quickMessageComingOut,
       'WAITING_AT_ENTRANCE': l10n.quickMessageWaitingAtEntrance,
       'RUNNING_LATE_2MIN': l10n.quickMessageRunningLate2Min,
-      'PLEASE_COME_OUT': l10n.quickMessagePleaseComeOut,
-      'ON_MY_WAY': l10n.quickMessageOnMyWay,
+      'PLEASE_WAIT': l10n.quickMessagePleaseWait,
     };
 
 class _ChatSheet extends StatefulWidget {
