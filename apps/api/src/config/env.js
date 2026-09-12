@@ -44,6 +44,22 @@ function boolEnv(name, fallback = false) {
   return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
 }
 
+// Goes into a `SET TIME ZONE` statement, which takes a literal rather than a
+// parameter, so it is checked here: a real IANA zone the runtime recognises,
+// and nothing that could carry anything else into that statement.
+function serviceTimezone() {
+  const value = (process.env.SERVICE_TIMEZONE || "Asia/Almaty").trim();
+  if (!/^[A-Za-z][A-Za-z0-9+_-]*(?:\/[A-Za-z0-9+_-]+)*$/.test(value)) {
+    throw new Error(`Invalid env SERVICE_TIMEZONE: ${value} is not an IANA time zone name`);
+  }
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+  } catch {
+    throw new Error(`Invalid env SERVICE_TIMEZONE: ${value} is not a time zone this runtime knows`);
+  }
+  return value;
+}
+
 function jwtSecret() {
   const value = required("JWT_SECRET");
   if (value.length < 32) throw new Error("Invalid env JWT_SECRET: minimum 32 characters");
@@ -86,6 +102,11 @@ export const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "365d",
   CORS_ORIGINS: corsOrigins(),
   RATE_LIMIT_ENABLED: boolEnv("RATE_LIMIT_ENABLED", true),
+  // Every region this service runs in keeps the same clock, and "today" has to
+  // mean the same day to a driver, to the owner's reports and to a recurring
+  // booking. The database stores absolute instants (TIMESTAMPTZ), so this only
+  // decides where a day starts — it never moves a stored time.
+  SERVICE_TIMEZONE: serviceTimezone(),
   MAPTILER_API_KEY: process.env.MAPTILER_API_KEY || "",
   MAPTILER_STYLE_URL: process.env.MAPTILER_STYLE_URL || "https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY}",
   MAPTILER_GEOCODING_URL: process.env.MAPTILER_GEOCODING_URL || "https://api.maptiler.com/geocoding",
