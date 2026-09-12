@@ -184,6 +184,9 @@ const _iconBanknote = 'assets/icons/banknote.svg';
 const _iconCreditCard = 'assets/icons/credit_card.svg';
 const _atakentFallbackCenter = LatLng(40.84719, 68.503834);
 const _appVersion = AppConfig.appVersion;
+// Host only: the full URL carries no secret, but the host is what actually
+// answers "which backend is this build wired to".
+final _apiHost = Uri.tryParse(AppConfig.apiBaseUrl)?.host ?? AppConfig.apiBaseUrl;
 
 class PassengerShell extends StatefulWidget {
   const PassengerShell({
@@ -1733,12 +1736,19 @@ class _PassengerShellState extends State<PassengerShell>
       } catch (_) {}
       if (!mounted || _order != null) return;
       if (!_isUsablePassengerAddressLabel(label)) {
-        // The mounted check used to sit *below* this branch, so a rider who
-        // left the screen while reverseAddress was in flight and came back to
-        // an unusable label got setState() on a disposed State. The success
-        // path was guarded; this one was not.
-        setState(() => _error = l10n.passengerLocationFailedPickManuallyError);
-        return;
+        // The position itself is good — the service was on, the permission was
+        // granted, the fix succeeded and the point was already checked against
+        // the serviced region above. Only the reverse lookup came back with
+        // nothing a person would recognise, which is ordinary away from a
+        // named street.
+        //
+        // This used to refuse the whole thing with "Не удалось получить
+        // геолокацию", which then showed the rider "Можно включить GPS для
+        // точной подачи" — advice to switch on something already on, while
+        // their own location silently failed to be selected. The driver
+        // navigates to the coordinates regardless, so the point is taken and
+        // labelled for what it honestly is.
+        label = l10n.passengerMyLocationLabel;
       }
       setState(() {
         _pickup = point;
@@ -1881,15 +1891,16 @@ class _PassengerShellState extends State<PassengerShell>
         : _mapPickerAddressLabel.trim().isEmpty
             ? null
             : _mapPickerAddressLabel.trim();
-    if (knownLabel == null || !_isUsablePassengerAddressLabel(knownLabel)) {
-      if (mounted) {
-        setState(() => _error =
-            'Не удалось определить адрес. Передвиньте карту к ближайшему дому или объекту.');
-      }
-      return;
-    }
+    // No named building under the marker is not a reason to refuse the point —
+    // in most of these villages OSM has the street but no house numbers, and
+    // there is no nearer house to move the map to. Hand the coordinate on
+    // without a preferred label and let it be taken as "Точка на карте".
+    final usableLabel =
+        knownLabel != null && _isUsablePassengerAddressLabel(knownLabel)
+            ? knownLabel
+            : null;
     _mapPickerReverseDebounce?.cancel();
-    await _applyMapTap(point, preferredLabel: knownLabel);
+    await _applyMapTap(point, preferredLabel: usableLabel);
   }
 
   void _cancelMapPointSelection() {
@@ -2014,14 +2025,18 @@ class _PassengerShellState extends State<PassengerShell>
         }
       } catch (_) {}
     }
+    // A point the rider deliberately put the marker on is a real pickup: the
+    // coordinates are exact and the region was already checked above. Only the
+    // reverse lookup may have found no named building, which is ordinary in the
+    // villages this service runs in — six of the thirteen regions have streets
+    // in OSM but almost no house numbers.
+    //
+    // This used to set "Точка на карте" as the fallback and then hand it to
+    // _isUsablePassengerAddressLabel, which rejects that exact string — so the
+    // screen refused its own default and told the rider to move the map to the
+    // nearest house, with no house anywhere to move to. The guard belongs on
+    // labels that came back from geocoding, not on the one we chose ourselves.
     final label = resolvedLabel ?? l10n.passengerMapPointLabel;
-    if (!_isUsablePassengerAddressLabel(label)) {
-      if (mounted) {
-        setState(() => _error =
-            'Не удалось определить адрес. Передвиньте карту к ближайшему дому или объекту.');
-      }
-      return false;
-    }
     final applied = await _applyPoint(
       target,
       coordinate,
@@ -5294,6 +5309,16 @@ class _PassengerShellState extends State<PassengerShell>
               title: l10n.passengerSettingsVersionLabel,
               icon: Icons.info_outline_rounded,
               text: _appVersion,
+            ),
+            // Which server this build talks to. Two builds of the same version
+            // can point at completely different backends — a QA build at a
+            // machine on somebody's home network, a release at the public API —
+            // and from the inside they look identical right up until nothing
+            // loads. Showing it turns "у меня не работает" into one glance.
+            _SettingsRow(
+              title: 'Сервер',
+              icon: Icons.dns_outlined,
+              text: _apiHost,
             ),
             _SettingsRow(
               title: l10n.passengerSettingsLegalTitle,
@@ -9207,8 +9232,11 @@ class _MapPointPickerSheet extends StatelessWidget {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     final isPickup = target == PointTarget.pickup;
-    final canConfirm =
-        !addressLoading && _isUsablePassengerAddressLabel(addressLabel);
+    // Only wait for the lookup to finish. Whether it found a named address
+    // decides what the point is called, not whether the rider may choose it:
+    // requiring a name left the button dead on every point in the regions that
+    // have no house numbers.
+    final canConfirm = !addressLoading;
     return _HomeOrderPanel(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.98, end: 1),
