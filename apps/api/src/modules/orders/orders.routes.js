@@ -42,6 +42,7 @@ import { spendOrderCashback, trySpendOrderCashback } from "./cashback-payment.se
 import { assertDriverManualPaymentAllowed } from "../payments/manual-payment-policy.js";
 import { isClientCancellationAlreadyApplied } from "./client-cancellation-policy.js";
 import { recordCancellationAudit } from "./cancellation-review.service.js";
+import { announceStandRelease } from "../stands/stands.notify.js";
 
 const router = Router();
 // Why the trip was cancelled, in the words each side would actually use.
@@ -821,8 +822,10 @@ router.post("/:id/rate-client", requireAuth, requireRole("DRIVER"), async (req, 
 router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
+    let standRelease = null;
     const order = await tx(async (client) => {
       const accepted = await acceptOrderForDriver({ orderId: id, userId: req.user.id, executor: client });
+      standRelease = accepted.standRelease;
       await writeAudit(client, {
         action: "order_accepted",
         actorUserId: req.user.id,
@@ -838,6 +841,10 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
         WHERE o.id=$1
       `, [accepted.order.id])).rows[0];
     });
+    // Announced after the transaction commits, like every other push here:
+    // the driver's stand place is already gone, and telling people about it
+    // must never be able to roll that back.
+    await announceStandRelease(req.io, standRelease);
     emitOrderUpdated(req.io, order, "order_accepted");
     notifyOrderClient(order, {
       title: "Водитель найден",

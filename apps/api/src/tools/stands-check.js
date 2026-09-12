@@ -176,6 +176,24 @@ assert.ok(
   "pending seats must be held against the free-seat count"
 );
 
+// A place in a line is released for the driver the moment it stops being true,
+// not left for the sweeper: going off the line, and accepting a dispatch order.
+const driverCore = read("../modules/drivers/driver-core.routes.js");
+const dispatch = read("../modules/orders/order-dispatch.service.js");
+const orders = read("../modules/orders/orders.routes.js");
+assert.ok(
+  driverCore.includes("releaseStandPlaceForDriver(") && driverCore.includes("DRIVER_OFFLINE"),
+  "going off the line must release the stand place"
+);
+assert.ok(
+  dispatch.includes("releaseStandPlaceForDriver(") && dispatch.includes("ACCEPTED_ORDER"),
+  "accepting a dispatch order must release the stand place"
+);
+assert.ok(
+  orders.includes("announceStandRelease(req.io, standRelease)"),
+  "the released place must be announced to the line and the stranded riders"
+);
+
 const routes = read("../modules/stands/stands.routes.js");
 [
   'requireRole("CLIENT")',

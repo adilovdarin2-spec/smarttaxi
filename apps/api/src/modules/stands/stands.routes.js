@@ -7,6 +7,12 @@ import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
 import { notifyUser } from "../notifications/notification.service.js";
 import {
+  broadcastStand,
+  notifyPromotedDrivers,
+  notifyReservationOutcome,
+  notifyStrandedRiders
+} from "./stands.notify.js";
+import {
   activeReservationForClient,
   addSeatsManually,
   cancelReservation,
@@ -25,8 +31,6 @@ import {
   reserveSeat,
   respondToReservation,
   standQueueView,
-  standRegionRoom,
-  standRoom,
   touchPresence,
   updateOffer
 } from "./stands.service.js";
@@ -106,29 +110,8 @@ async function loadClient(userId) {
   return rider;
 }
 
-// Everything that changes a line pushes the whole line, not a delta: a stand
-// screen is small, the update has to be correct for every viewer regardless of
-// which events they missed, and positions shift for people who did nothing.
-async function broadcastStand(io, standId) {
-  if (!io) return;
-  const stand = await loadStand(standId);
-  const [driverView, clientView] = await Promise.all([
-    standQueueView(standId, { audience: "DRIVER" }),
-    standQueueView(standId, { audience: "CLIENT" })
-  ]);
-  io.to(standRoom(standId)).emit("stand_queue_updated", clientView);
-  io.to(standRegionRoom(stand.region_id)).emit("stand_queue_updated", clientView);
-  io.to(`${standRoom(standId)}:drivers`).emit("stand_queue_updated_driver", driverView);
-}
-
 async function driverUserId(driverId) {
   const row = (await query("SELECT user_id FROM drivers WHERE id=$1", [driverId])).rows[0];
-  return row?.user_id || null;
-}
-
-async function clientUserId(clientId) {
-  if (!clientId) return null;
-  const row = (await query("SELECT user_id FROM clients WHERE id=$1", [clientId])).rows[0];
   return row?.user_id || null;
 }
 
@@ -461,58 +444,3 @@ driverStandsRouter.post("/reservations/:reservationId/decline", async (req, res,
     next(error);
   }
 });
-
-async function notifyPromotedDrivers(io, promotedEntryIds, standId) {
-  if (!promotedEntryIds?.length) return;
-  const rows = (await query(`
-    SELECT e.id, d.user_id, s.name stand_name
-    FROM taxi_stand_queue_entries e
-    JOIN drivers d ON d.id=e.driver_id
-    JOIN taxi_stands s ON s.id=e.stand_id
-    WHERE e.id = ANY($1::uuid[])
-  `, [promotedEntryIds])).rows;
-  for (const row of rows) {
-    if (!row.user_id) continue;
-    io?.to(`user:${row.user_id}`).emit("stand_turn_started", { standId, entryId: row.id });
-    notifyUser(row.user_id, {
-      title: "Ваша очередь",
-      body: `Вы первый на стоянке «${row.stand_name}». Можно набирать пассажиров.`,
-      type: "STAND_TURN_STARTED",
-      data: { standId, entryId: row.id }
-    }).catch((error) => console.error("[push] stand promotion failed", error));
-  }
-}
-
-async function notifyStrandedRiders(io, reservations) {
-  for (const reservation of reservations || []) {
-    const userId = await clientUserId(reservation.client_id);
-    if (!userId) continue;
-    io?.to(`user:${userId}`).emit("stand_reservation_cancelled", {
-      standId: reservation.stand_id,
-      reservationId: reservation.id
-    });
-    notifyUser(userId, {
-      title: "Место на стоянке освободилось",
-      body: "Машина уехала. Выберите другую машину на стоянке.",
-      type: "STAND_RESERVATION_CANCELLED",
-      data: { standId: reservation.stand_id, reservationId: reservation.id }
-    }).catch((error) => console.error("[push] stand stranded rider failed", error));
-  }
-}
-
-async function notifyReservationOutcome(io, reservation, accepted) {
-  const userId = await clientUserId(reservation.client_id);
-  if (!userId) return;
-  io?.to(`user:${userId}`).emit(accepted ? "stand_reservation_confirmed" : "stand_reservation_declined", {
-    standId: reservation.stand_id,
-    reservationId: reservation.id
-  });
-  notifyUser(userId, {
-    title: accepted ? "Место подтверждено" : "Водитель отказал",
-    body: accepted
-      ? "Водитель подтвердил ваше место. Подходите к машине."
-      : "Водитель не подтвердил место. Выберите другую машину.",
-    type: accepted ? "STAND_RESERVATION_CONFIRMED" : "STAND_RESERVATION_DECLINED",
-    data: { standId: reservation.stand_id, reservationId: reservation.id }
-  }).catch((error) => console.error("[push] stand reservation outcome failed", error));
-}

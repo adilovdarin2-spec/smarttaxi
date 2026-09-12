@@ -1,5 +1,6 @@
 import { AppError } from "../../common/errors.js";
 import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
 
 export const ORDER_STATUSES = [
   "SEARCHING_DRIVER",
@@ -422,7 +423,16 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
     [existing.id, userId]
   );
 
-  return { order, driver: updatedDriver };
+  // A car that just took a dispatch order is on its way to that rider, so its
+  // place in a stand line stops being true the moment it accepts. Released
+  // inside this same transaction: the two facts must never disagree, or a
+  // rider at the stand calls a car that is already driving elsewhere.
+  const standRelease = await releaseStandPlaceForDriver(
+    { driverId: driver.id, reason: "ACCEPTED_ORDER" },
+    executor
+  );
+
+  return { order, driver: updatedDriver, standRelease };
 }
 
 // Shared core for putting a specific driver's price into the single

@@ -149,6 +149,13 @@ function createExecutor() {
         }
         return { rows: rows.sort((a, b) => b.created_at - a.created_at).slice(0, limit) };
       }
+      if (/FROM taxi_stand_queue_entries/i.test(sql)) {
+        // Accepting an order gives up any place the driver held in a stand
+        // line (see releaseStandPlaceForDriver). None of these fixtures is
+        // standing in a line, so the lookup finds nothing and the release is
+        // a no-op — which is exactly the common case in production too.
+        return { rows: [] };
+      }
       if (/SELECT DISTINCT ON \(type\) type, status\s+FROM driver_documents/i.test(sql)) {
         // This file's fixtures aren't about document review — every driver
         // here is treated as fully document-approved (see

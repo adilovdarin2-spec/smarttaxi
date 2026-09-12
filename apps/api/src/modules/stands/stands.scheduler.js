@@ -1,12 +1,7 @@
 import { query } from "../../db/pool.js";
 import { notifyUser } from "../notifications/notification.service.js";
-import {
-  publicStand,
-  standQueueView,
-  standRegionRoom,
-  standRoom,
-  sweepStaleQueueEntries
-} from "./stands.service.js";
+import { broadcastStand, notifyStrandedRiders } from "./stands.notify.js";
+import { sweepStaleQueueEntries } from "./stands.service.js";
 
 // A place in a stand line is a claim about the physical world: this car is
 // standing here, right now. Nothing else in the system notices when that
@@ -15,21 +10,6 @@ import {
 const SWEEP_INTERVAL_MS = 60_000;
 
 let intervalHandle = null;
-
-async function broadcast(io, standId) {
-  if (!io) return;
-  try {
-    const [clientView, driverView] = await Promise.all([
-      standQueueView(standId, { audience: "CLIENT" }),
-      standQueueView(standId, { audience: "DRIVER" })
-    ]);
-    io.to(standRoom(standId)).emit("stand_queue_updated", clientView);
-    io.to(standRegionRoom(clientView.stand.regionId)).emit("stand_queue_updated", clientView);
-    io.to(`${standRoom(standId)}:drivers`).emit("stand_queue_updated_driver", driverView);
-  } catch (error) {
-    console.error("[stands] broadcast after sweep failed", { standId, error });
-  }
-}
 
 async function notifyDroppedDrivers(io, expiredEntries) {
   for (const entry of expiredEntries) {
@@ -57,24 +37,6 @@ async function notifyDroppedDrivers(io, expiredEntries) {
   }
 }
 
-async function notifyStrandedRiders(io, reservations) {
-  for (const reservation of reservations) {
-    if (!reservation.client_id) continue;
-    const row = (await query("SELECT user_id FROM clients WHERE id=$1", [reservation.client_id])).rows[0];
-    if (!row?.user_id) continue;
-    io?.to(`user:${row.user_id}`).emit("stand_reservation_cancelled", {
-      standId: reservation.stand_id,
-      reservationId: reservation.id
-    });
-    notifyUser(row.user_id, {
-      title: "Бронь отменена",
-      body: "Машина уехала со стоянки. Выберите другую машину.",
-      type: "STAND_RESERVATION_CANCELLED",
-      data: { standId: reservation.stand_id, reservationId: reservation.id }
-    }).catch((error) => console.error("[push] stand stranded rider failed", error));
-  }
-}
-
 export async function standsSweepTick(io) {
   const { expired, strandedByEntry, expiredReservations, touchedStands } = await sweepStaleQueueEntries(query);
   if (expired.length) await notifyDroppedDrivers(io, expired);
@@ -93,7 +55,7 @@ export async function standsSweepTick(io) {
     ...expiredReservations.map((row) => row.stand_id)
   ]);
   for (const standId of standsToRefresh) {
-    await broadcast(io, standId);
+    await broadcastStand(io, standId);
   }
   return { expired: expired.length, expiredReservations: expiredReservations.length };
 }
@@ -111,5 +73,3 @@ export function stopStandsSweeper() {
   if (intervalHandle) clearInterval(intervalHandle);
   intervalHandle = null;
 }
-
-export { publicStand };

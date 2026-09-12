@@ -796,6 +796,34 @@ export async function cancelReservation({ rider, reservationId }) {
   });
 }
 
+// A place in a line says "this car is standing here, ready to fill up". Two
+// things make that untrue the moment they happen and are not the driver
+// pressing "выйти": going off the line, and accepting a dispatch order. Both
+// call this, inside their own transaction, so a rider never calls a car whose
+// driver has closed the app or is already on their way to someone else.
+export async function releaseStandPlaceForDriver({ driverId, reason }, executor) {
+  const entry = (await run(executor, `
+    SELECT * FROM taxi_stand_queue_entries
+    WHERE driver_id=$1 AND status IN ${LIVE_STATUSES}
+    FOR UPDATE
+  `, [driverId])).rows[0];
+  if (!entry) return null;
+  const updated = (await run(executor, `
+    UPDATE taxi_stand_queue_entries
+    SET status='LEFT', left_at=NOW(), left_reason=$2, updated_at=NOW()
+    WHERE id=$1
+    RETURNING *
+  `, [entry.id, reason])).rows[0];
+  const strandedRows = (await run(executor, `
+    UPDATE taxi_stand_seat_reservations
+    SET status='CANCELLED', cancelled_at=NOW(), updated_at=NOW()
+    WHERE entry_id=$1 AND status IN ('PENDING','CONFIRMED')
+    RETURNING *
+  `, [entry.id])).rows;
+  const promoted = await refreshBoardingSlots(entry.stand_id, executor);
+  return { entry: updated, standId: entry.stand_id, promoted, strandedRows };
+}
+
 export async function activeReservationForClient(clientId, executor) {
   return (await run(executor, `
     SELECT res.*, s.name stand_name, d.name driver_name, d.phone driver_phone,

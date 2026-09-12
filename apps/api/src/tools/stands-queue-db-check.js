@@ -7,6 +7,7 @@ import {
   joinQueue,
   leaveQueue,
   listLiveEntries,
+  releaseStandPlaceForDriver,
   sweepStaleQueueEntries,
   touchPresence
 } from "../modules/stands/stands.service.js";
@@ -144,8 +145,33 @@ async function main() {
   await leaveQueue({ driver: two, entryId: last.id, reason: "DRIVER_LEFT" });
   assert.deepEqual(await positions(stand.id), [], "the line is empty");
 
+  // --- a place is given up for the driver when it stops being true
+  // Two things make "this car is standing here" false without the driver
+  // pressing anything: going off the line, and accepting a dispatch order.
+  const four = await makeDriver(region.id, 4);
+  await joinQueue({ driver: four, standId: stand.id, ...at });
+  assert.deepEqual(await positions(stand.id), ["4:BOARDING"]);
+  const offlineRelease = await releaseStandPlaceForDriver(
+    { driverId: four.id, reason: "DRIVER_OFFLINE" },
+    query
+  );
+  assert.equal(offlineRelease.entry.left_reason, "DRIVER_OFFLINE");
+  assert.deepEqual(await positions(stand.id), [], "going off the line gives up the place");
+
+  await joinQueue({ driver: four, standId: stand.id, ...at });
+  const busyRelease = await releaseStandPlaceForDriver(
+    { driverId: four.id, reason: "ACCEPTED_ORDER" },
+    query
+  );
+  assert.equal(busyRelease.entry.left_reason, "ACCEPTED_ORDER");
+  assert.deepEqual(await positions(stand.id), [], "accepting an order gives up the place");
+  // Releasing a place nobody holds is a no-op, not an error: both callers run
+  // on every driver, most of whom are not in any line.
+  assert.equal(await releaseStandPlaceForDriver({ driverId: four.id, reason: "DRIVER_OFFLINE" }, query), null);
+  console.log("[queue-db-check] place released on going offline and on accepting an order");
+
   // --- standing at the place is not the same as being allowed to work there
-  const stranger = await makeDriver(region.id, 4);
+  const stranger = await makeDriver(region.id, 5);
   await query("DELETE FROM driver_region_approvals WHERE driver_id=$1", [stranger.id]);
   await assert.rejects(
     () => joinQueue({ driver: stranger, standId: stand.id, ...at }),

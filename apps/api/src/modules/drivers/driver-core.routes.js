@@ -5,6 +5,8 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { driverDailyStats } from "./driver-daily-stats.service.js";
+import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
+import { announceStandRelease } from "../stands/stands.notify.js";
 import {
   assertDriverCanGoOnline,
   assertDriverDispatchReady
@@ -128,6 +130,15 @@ router.post("/status/offline", requireAuth, requireRole("DRIVER"), async (req, r
     const activeOrder = await activeOrderForDriver(driver);
     if (activeOrder) throw new AppError("Driver has active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
     const updated = (await query("UPDATE drivers SET status='OFFLINE', last_seen_at=NOW() WHERE id=$1 RETURNING *", [driver.id])).rows[0];
+    // A place in a stand line means "this car is here and ready to fill up".
+    // Going off the line makes that false immediately, so it is released now
+    // rather than left for the presence sweeper's much longer timeout — a
+    // rider must not call a car whose driver has finished for the day.
+    const release = await releaseStandPlaceForDriver(
+      { driverId: driver.id, reason: "DRIVER_OFFLINE" },
+      query
+    );
+    await announceStandRelease(req.io, release);
     await writeAudit(query, {
       action: "driver_offline",
       actorUserId: req.user.id,
