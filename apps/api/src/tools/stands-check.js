@@ -234,4 +234,27 @@ assert.ok(
 assert.ok(OUT_OF_RANGE_GRACE_MINUTES >= 3 && OUT_OF_RANGE_GRACE_MINUTES <= 30);
 assert.ok(RESERVATION_TTL_MINUTES >= 5 && RESERVATION_TTL_MINUTES <= 30);
 
+// Two requests arriving together both read "no place yet" and both insert;
+// the partial unique index rejects the loser. Unhandled, that reached the
+// driver as a 500 and a generic "server error" instead of the same plain
+// "вы уже в очереди" the sequential path gives.
+assert.ok(
+  service.includes('const UNIQUE_VIOLATION = "23505";'),
+  "the unique-violation translator must be present"
+);
+["idx_stand_queue_one_live_per_driver", "idx_stand_reservations_one_live_per_client"].forEach((index) => {
+  assert.ok(service.includes(index), `${index} must be translated into its rule, not surfaced raw`);
+  assert.ok(
+    migrations.includes(index),
+    `${index} is referenced by the translator but no longer created`
+  );
+});
+["joinQueue", "reserveSeat"].forEach((fn) => {
+  const start = service.indexOf(`export async function ${fn}(`);
+  assert.ok(start > 0, `${fn} must exist`);
+  const body = service.slice(start, service.indexOf("\nexport ", start + 1));
+  assert.ok(body.includes("return await tx("), `${fn} must await its transaction or the catch never sees the rejection`);
+  assert.ok(body.includes("throw translateUniqueViolation(error);"), `${fn} must translate a lost insert race`);
+});
+
 console.log("Taxi stand checks ok: geofence, audience separation, boarding slots, seat holds, admin and socket wiring");

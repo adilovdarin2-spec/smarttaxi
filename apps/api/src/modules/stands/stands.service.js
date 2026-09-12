@@ -155,6 +155,27 @@ export function publicReservation(row, { audience = "DRIVER" } = {}) {
 
 const LIVE_STATUSES = "('WAITING','BOARDING')";
 
+// The "one live place per driver" and "one live reservation per client" rules
+// are enforced by partial unique indexes as well as by a read before the
+// insert. That read locks nothing when there is no row yet, so two requests
+// arriving together both see a free slot and both insert — the index then
+// rejects the loser with a raw 23505, which reached the driver as a 500 and a
+// generic "server error" instead of the same plain refusal the sequential path
+// gives. Translate those violations back into the rule they enforce.
+const UNIQUE_VIOLATION = "23505";
+const INDEX_CONFLICTS = {
+  idx_stand_queue_one_live_per_driver: () =>
+    new AppError("You are already in a stand line", 409, "STAND_ALREADY_QUEUED"),
+  idx_stand_reservations_one_live_per_client: () =>
+    new AppError("You already hold a seat at a stand", 409, "STAND_RESERVATION_EXISTS")
+};
+
+function translateUniqueViolation(error) {
+  if (error?.code !== UNIQUE_VIOLATION) return error;
+  const build = INDEX_CONFLICTS[error.constraint];
+  return build ? build() : error;
+}
+
 const ENTRY_SELECT = `
   e.*, d.name driver_name, d.phone driver_phone, d.car_model, d.car_color, d.plate, d.rating
 `;
@@ -315,57 +336,61 @@ export async function loadLiveEntryForDriver(driverId, executor) {
 }
 
 export async function joinQueue({ driver, standId, lat, lng, destinationLabel, destinationRegionId, pricePerSeat, totalSeats, comment }) {
-  return tx(async (client) => {
-    const stand = await loadStand(standId, client);
-    if (!stand.is_active) throw new AppError("Stand is closed", 409, "STAND_INACTIVE");
-    // Standing at the place is not the same as being allowed to work there.
-    // A stand sits in exactly one region, and a driver advertising seats out
-    // of a region they were never approved for would be taking passengers
-    // outside every check the dispatch side already enforces.
-    await assertDriverRegionApproved(driver, stand.region_id, client);
-    assertInsideStand(stand, { lat, lng });
+  try {
+    return await tx(async (client) => {
+      const stand = await loadStand(standId, client);
+      if (!stand.is_active) throw new AppError("Stand is closed", 409, "STAND_INACTIVE");
+      // Standing at the place is not the same as being allowed to work there.
+      // A stand sits in exactly one region, and a driver advertising seats out
+      // of a region they were never approved for would be taking passengers
+      // outside every check the dispatch side already enforces.
+      await assertDriverRegionApproved(driver, stand.region_id, client);
+      assertInsideStand(stand, { lat, lng });
 
-    const existing = (await client.query(`
-      SELECT * FROM taxi_stand_queue_entries
-      WHERE driver_id=$1 AND status IN ${LIVE_STATUSES}
-      FOR UPDATE
-    `, [driver.id])).rows[0];
-    if (existing) {
-      if (existing.stand_id === standId) {
-        throw new AppError("You are already in this line", 409, "STAND_ALREADY_QUEUED", { entryId: existing.id });
+      const existing = (await client.query(`
+        SELECT * FROM taxi_stand_queue_entries
+        WHERE driver_id=$1 AND status IN ${LIVE_STATUSES}
+        FOR UPDATE
+      `, [driver.id])).rows[0];
+      if (existing) {
+        if (existing.stand_id === standId) {
+          throw new AppError("You are already in this line", 409, "STAND_ALREADY_QUEUED", { entryId: existing.id });
+        }
+        throw new AppError("You are already in another stand line", 409, "STAND_QUEUED_ELSEWHERE", {
+          entryId: existing.id,
+          standId: existing.stand_id
+        });
       }
-      throw new AppError("You are already in another stand line", 409, "STAND_QUEUED_ELSEWHERE", {
-        entryId: existing.id,
-        standId: existing.stand_id
-      });
-    }
 
-    const seats = Number(totalSeats || stand.default_seats);
-    const seq = await nextQueueSeq(standId, client);
-    const inserted = (await client.query(`
-      INSERT INTO taxi_stand_queue_entries(
-        stand_id, driver_id, region_id, status, queue_seq,
-        destination_label, destination_region_id, price_per_seat, total_seats,
-        comment, last_seen_at, last_lat, last_lng
-      )
-      VALUES($1,$2,$3,'WAITING',$4,$5,$6,$7,$8,$9,NOW(),$10,$11)
-      RETURNING *
-    `, [
-      standId,
-      driver.id,
-      stand.region_id,
-      seq,
-      destinationLabel || null,
-      destinationRegionId || null,
-      pricePerSeat ?? null,
-      seats,
-      comment || null,
-      lat,
-      lng
-    ])).rows[0];
-    await refreshBoardingSlots(standId, client);
-    return { stand, entryId: inserted.id };
-  });
+      const seats = Number(totalSeats || stand.default_seats);
+      const seq = await nextQueueSeq(standId, client);
+      const inserted = (await client.query(`
+        INSERT INTO taxi_stand_queue_entries(
+          stand_id, driver_id, region_id, status, queue_seq,
+          destination_label, destination_region_id, price_per_seat, total_seats,
+          comment, last_seen_at, last_lat, last_lng
+        )
+        VALUES($1,$2,$3,'WAITING',$4,$5,$6,$7,$8,$9,NOW(),$10,$11)
+        RETURNING *
+      `, [
+        standId,
+        driver.id,
+        stand.region_id,
+        seq,
+        destinationLabel || null,
+        destinationRegionId || null,
+        pricePerSeat ?? null,
+        seats,
+        comment || null,
+        lat,
+        lng
+      ])).rows[0];
+      await refreshBoardingSlots(standId, client);
+      return { stand, entryId: inserted.id };
+    });
+  } catch (error) {
+    throw translateUniqueViolation(error);
+  }
 }
 
 export async function updateOffer({ driver, entryId, patch }) {
@@ -664,59 +689,63 @@ export async function touchPresence({ driverId, lat, lng }, executor) {
 }
 
 export async function reserveSeat({ client: rider, entryId, seats, pickupLabel, pickupLat, pickupLng, comment }) {
-  return tx(async (dbClient) => {
-    const entry = (await dbClient.query(`
-      SELECT e.*, s.name stand_name
-      FROM taxi_stand_queue_entries e
-      JOIN taxi_stands s ON s.id=e.stand_id
-      WHERE e.id=$1
-      FOR UPDATE OF e
-    `, [entryId])).rows[0];
-    if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
-    if (entry.status !== "BOARDING") {
-      throw new AppError("This car is not taking passengers yet", 409, "STAND_ENTRY_NOT_BOARDING", { status: entry.status });
-    }
-    const existing = (await dbClient.query(`
-      SELECT * FROM taxi_stand_seat_reservations
-      WHERE client_id=$1 AND status IN ('PENDING','CONFIRMED')
-    `, [rider.id])).rows[0];
-    if (existing) {
-      throw new AppError("You already hold a seat", 409, "STAND_RESERVATION_EXISTS", {
-        reservationId: existing.id,
-        entryId: existing.entry_id
-      });
-    }
-    // Pending seats are held against the same free-seat count confirmed ones
-    // draw down, or two riders could each be promised the last seat.
-    const pending = (await dbClient.query(`
-      SELECT COALESCE(SUM(seats), 0) held
-      FROM taxi_stand_seat_reservations
-      WHERE entry_id=$1 AND status='PENDING' AND (expires_at IS NULL OR expires_at > NOW())
-    `, [entryId])).rows[0];
-    const free = Number(entry.total_seats) - Number(entry.taken_seats) - Number(pending.held);
-    if (seats > free) {
-      throw new AppError("Not enough free seats", 409, "STAND_NOT_ENOUGH_SEATS", { freeSeats: Math.max(0, free) });
-    }
-    const created = (await dbClient.query(`
-      INSERT INTO taxi_stand_seat_reservations(
-        entry_id, stand_id, driver_id, client_id, seats, status, source,
-        pickup_label, pickup_lat, pickup_lng, comment, expires_at
-      )
-      VALUES($1,$2,$3,$4,$5,'PENDING','APP',$6,$7,$8,$9, NOW() + INTERVAL '${RESERVATION_TTL_MINUTES} minutes')
-      RETURNING *
-    `, [
-      entryId,
-      entry.stand_id,
-      entry.driver_id,
-      rider.id,
-      seats,
-      pickupLabel || null,
-      pickupLat ?? null,
-      pickupLng ?? null,
-      comment || null
-    ])).rows[0];
-    return { reservation: created, entry, standId: entry.stand_id };
-  });
+  try {
+    return await tx(async (dbClient) => {
+      const entry = (await dbClient.query(`
+        SELECT e.*, s.name stand_name
+        FROM taxi_stand_queue_entries e
+        JOIN taxi_stands s ON s.id=e.stand_id
+        WHERE e.id=$1
+        FOR UPDATE OF e
+      `, [entryId])).rows[0];
+      if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
+      if (entry.status !== "BOARDING") {
+        throw new AppError("This car is not taking passengers yet", 409, "STAND_ENTRY_NOT_BOARDING", { status: entry.status });
+      }
+      const existing = (await dbClient.query(`
+        SELECT * FROM taxi_stand_seat_reservations
+        WHERE client_id=$1 AND status IN ('PENDING','CONFIRMED')
+      `, [rider.id])).rows[0];
+      if (existing) {
+        throw new AppError("You already hold a seat", 409, "STAND_RESERVATION_EXISTS", {
+          reservationId: existing.id,
+          entryId: existing.entry_id
+        });
+      }
+      // Pending seats are held against the same free-seat count confirmed ones
+      // draw down, or two riders could each be promised the last seat.
+      const pending = (await dbClient.query(`
+        SELECT COALESCE(SUM(seats), 0) held
+        FROM taxi_stand_seat_reservations
+        WHERE entry_id=$1 AND status='PENDING' AND (expires_at IS NULL OR expires_at > NOW())
+      `, [entryId])).rows[0];
+      const free = Number(entry.total_seats) - Number(entry.taken_seats) - Number(pending.held);
+      if (seats > free) {
+        throw new AppError("Not enough free seats", 409, "STAND_NOT_ENOUGH_SEATS", { freeSeats: Math.max(0, free) });
+      }
+      const created = (await dbClient.query(`
+        INSERT INTO taxi_stand_seat_reservations(
+          entry_id, stand_id, driver_id, client_id, seats, status, source,
+          pickup_label, pickup_lat, pickup_lng, comment, expires_at
+        )
+        VALUES($1,$2,$3,$4,$5,'PENDING','APP',$6,$7,$8,$9, NOW() + INTERVAL '${RESERVATION_TTL_MINUTES} minutes')
+        RETURNING *
+      `, [
+        entryId,
+        entry.stand_id,
+        entry.driver_id,
+        rider.id,
+        seats,
+        pickupLabel || null,
+        pickupLat ?? null,
+        pickupLng ?? null,
+        comment || null
+      ])).rows[0];
+      return { reservation: created, entry, standId: entry.stand_id };
+    });
+  } catch (error) {
+    throw translateUniqueViolation(error);
+  }
 }
 
 export async function respondToReservation({ driver, reservationId, accept }) {
