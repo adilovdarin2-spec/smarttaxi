@@ -1833,5 +1833,24 @@
   "clientCancelReasonWaited": "等车太久",
   "clientCancelReasonFoundAnother": "已找到其他车",
   "clientCancelReasonOther": "其他原因",
-  "clientCancelReasonNotice": "如果司机要求您取消订单，请在此标注。此类情况将由调度员审核。"
+  "clientCancelReasonNotice": "如果司机要求您取消订单，请在此标注。此类情况将由调度员审核。",
+  "updateRequiredTitle": "需要更新应用",
+  "updateRequiredText": "SmartTaxi 已发布新版本。此版本不再受支持，请更新应用以继续使用。",
+  "updateButton": "更新",
+  "updateAvailableTitle": "有可用更新",
+  "updateAvailableText": "新版本 {version} 已经可用。",
+  "@updateAvailableText": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateLater": "稍后",
+  "tariffBadgeValue": "划算",
+  "tariffDeliveryWeight": "最多 20 公斤",
+  "tariffUpToFourPassengers": "最多 4 位乘客",
+  "settingsServerLabel": "服务器",
+  "pickupChoosePrompt": "请选择上车地点",
+  "dropoffEnterPrompt": "请输入目的地"
 }

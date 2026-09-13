@@ -5316,7 +5316,7 @@ class _PassengerShellState extends State<PassengerShell>
             // and from the inside they look identical right up until nothing
             // loads. Showing it turns "у меня не работает" into one glance.
             _SettingsRow(
-              title: 'Сервер',
+              title: l10n.settingsServerLabel,
               icon: Icons.dns_outlined,
               text: _apiHost,
             ),
@@ -9428,28 +9428,6 @@ class _MapPointPickerSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-bool _isUsablePassengerAddressLabel(String value) {
-  final label = value.trim();
-  if (label.isEmpty) return false;
-  if (RegExp(r'^(?:точка на карте|адрес не определ[её]н)$',
-          caseSensitive: false)
-      .hasMatch(label)) {
-    return false;
-  }
-  // A bare street tells the driver neither which entrance nor which house
-  // the passenger selected. Map picking must resolve to a real address
-  // such as "улица Бектасова, 15"; a named POI remains valid, but a street
-  // label without a house number must make the rider move the pin instead.
-  final bareStreet = RegExp(
-    r'^(?:ул(?:ица)?\.?|проспект|переулок|бульвар|шоссе|көшесі|даңғылы)\s+',
-    caseSensitive: false,
-  ).hasMatch(label);
-  if (bareStreet && !RegExp(r'\d').hasMatch(label)) return false;
-  return !RegExp(r'^(?:kz|ah|[а-яa-z]{1,3})[\s-]?\d+[а-яa-z]?$',
-          caseSensitive: false)
-      .hasMatch(label);
 }
 
 class _PanelEntrance extends StatelessWidget {
@@ -16135,7 +16113,7 @@ class _TariffComparisonCard extends StatelessWidget {
                   color: palette.brandDeep, size: 11),
               const SizedBox(width: 4),
               Text(
-                'Выгодно',
+                l10n.tariffBadgeValue,
                 style: TextStyle(
                   color: palette.brandDeep,
                   fontSize: 10,
@@ -16190,7 +16168,9 @@ class _TariffComparisonCard extends StatelessWidget {
     if (!compact) {
       return TariffChoiceCard(
         title: _tariffTitleFor(l10n, item.classId),
-        subtitle: isDelivery ? 'до 20 кг' : (tripMeta ?? 'до 4 пассажиров'),
+        subtitle: isDelivery
+            ? l10n.tariffDeliveryWeight
+            : (tripMeta ?? l10n.tariffUpToFourPassengers),
         price: price == null ? 'Расчёт' : _formatTenge(price),
         art: art,
         selected: selected,

@@ -4362,4 +4362,43 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get clientCancelReasonNotice =>
       'Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер.';
+
+  @override
+  String get updateRequiredTitle => 'Нужно обновить приложение';
+
+  @override
+  String get updateRequiredText =>
+      'Вышла новая версия SmartTaxi. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.';
+
+  @override
+  String get updateButton => 'Обновить';
+
+  @override
+  String get updateAvailableTitle => 'Доступно обновление';
+
+  @override
+  String updateAvailableText(String version) {
+    return 'Новая версия $version уже доступна.';
+  }
+
+  @override
+  String get updateLater => 'Позже';
+
+  @override
+  String get tariffBadgeValue => 'Выгодно';
+
+  @override
+  String get tariffDeliveryWeight => 'до 20 кг';
+
+  @override
+  String get tariffUpToFourPassengers => 'до 4 пассажиров';
+
+  @override
+  String get settingsServerLabel => 'Сервер';
+
+  @override
+  String get pickupChoosePrompt => 'Выберите точку подачи';
+
+  @override
+  String get dropoffEnterPrompt => 'Введите адрес назначения';
 }

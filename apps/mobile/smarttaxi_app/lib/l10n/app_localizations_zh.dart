@@ -4088,4 +4088,42 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get clientCancelReasonNotice => '如果司机要求您取消订单，请在此标注。此类情况将由调度员审核。';
+
+  @override
+  String get updateRequiredTitle => '需要更新应用';
+
+  @override
+  String get updateRequiredText => 'SmartTaxi 已发布新版本。此版本不再受支持，请更新应用以继续使用。';
+
+  @override
+  String get updateButton => '更新';
+
+  @override
+  String get updateAvailableTitle => '有可用更新';
+
+  @override
+  String updateAvailableText(String version) {
+    return '新版本 $version 已经可用。';
+  }
+
+  @override
+  String get updateLater => '稍后';
+
+  @override
+  String get tariffBadgeValue => '划算';
+
+  @override
+  String get tariffDeliveryWeight => '最多 20 公斤';
+
+  @override
+  String get tariffUpToFourPassengers => '最多 4 位乘客';
+
+  @override
+  String get settingsServerLabel => '服务器';
+
+  @override
+  String get pickupChoosePrompt => '请选择上车地点';
+
+  @override
+  String get dropoffEnterPrompt => '请输入目的地';
 }

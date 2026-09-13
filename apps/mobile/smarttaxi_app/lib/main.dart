@@ -1569,6 +1569,7 @@ class _UpdateRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return PopScope(
       canPop: false,
       child: Material(
@@ -1597,8 +1598,8 @@ class _UpdateRequiredScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'Нужно обновить приложение',
+                  Text(
+                    l10n.updateRequiredTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: SmartTaxiColors.authInk,
@@ -1610,9 +1611,7 @@ class _UpdateRequiredScreen extends StatelessWidget {
                   Text(
                     (info.updateNotes?.trim().isNotEmpty ?? false)
                         ? info.updateNotes!.trim()
-                        : 'Вышла новая версия SmartTaxi. Эта версия '
-                            'больше не поддерживается — обновите '
-                            'приложение, чтобы продолжить пользоваться.',
+                        : l10n.updateRequiredText,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: SmartTaxiColors.authMuted,
@@ -1627,7 +1626,7 @@ class _UpdateRequiredScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: onUpdate,
                       icon: const Icon(Icons.system_update_rounded),
-                      label: const Text('Обновить'),
+                      label: Text(l10n.updateButton),
                     ),
                   ),
                 ],
@@ -1652,6 +1651,7 @@ class _UpdateAvailableSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -1696,8 +1696,8 @@ class _UpdateAvailableSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Доступно обновление',
+                      Text(
+                        l10n.updateAvailableTitle,
                         style: TextStyle(
                           color: SmartTaxiColors.text,
                           fontSize: 18,
@@ -1708,8 +1708,7 @@ class _UpdateAvailableSheet extends StatelessWidget {
                       Text(
                         (info.updateNotes?.trim().isNotEmpty ?? false)
                             ? info.updateNotes!.trim()
-                            : 'Новая версия ${info.latestVersion} уже '
-                                'доступна.',
+                            : l10n.updateAvailableText(info.latestVersion),
                         style: const TextStyle(
                           color: SmartTaxiColors.textSecondary,
                           fontSize: 13,
@@ -1728,14 +1727,14 @@ class _UpdateAvailableSheet extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Позже'),
+                    child: Text(l10n.updateLater),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: onUpdate,
-                    child: const Text('Обновить'),
+                    child: Text(l10n.updateButton),
                   ),
                 ),
               ],

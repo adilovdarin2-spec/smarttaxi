@@ -4391,4 +4391,43 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get clientCancelReasonNotice =>
       'Agar haydovchi buyurtmani bekor qilishni so‘rasa — shu yerda belgilang. Bunday holatlarni dispetcher tekshiradi.';
+
+  @override
+  String get updateRequiredTitle => 'Ilovani yangilash kerak';
+
+  @override
+  String get updateRequiredText =>
+      'SmartTaxi\'ning yangi versiyasi chiqdi. Bu versiya endi qo\'llab-quvvatlanmaydi — foydalanishni davom ettirish uchun ilovani yangilang.';
+
+  @override
+  String get updateButton => 'Yangilash';
+
+  @override
+  String get updateAvailableTitle => 'Yangilanish mavjud';
+
+  @override
+  String updateAvailableText(String version) {
+    return 'Yangi $version versiyasi allaqachon mavjud.';
+  }
+
+  @override
+  String get updateLater => 'Keyinroq';
+
+  @override
+  String get tariffBadgeValue => 'Foydali';
+
+  @override
+  String get tariffDeliveryWeight => '20 kg gacha';
+
+  @override
+  String get tariffUpToFourPassengers => '4 nafar yo\'lovchigacha';
+
+  @override
+  String get settingsServerLabel => 'Server';
+
+  @override
+  String get pickupChoosePrompt => 'Olib ketish nuqtasini tanlang';
+
+  @override
+  String get dropoffEnterPrompt => 'Borish manzilini kiriting';
 }

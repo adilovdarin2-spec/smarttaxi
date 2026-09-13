@@ -7806,6 +7806,78 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер.'**
   String get clientCancelReasonNotice;
+
+  /// No description provided for @updateRequiredTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужно обновить приложение'**
+  String get updateRequiredTitle;
+
+  /// No description provided for @updateRequiredText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вышла новая версия SmartTaxi. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.'**
+  String get updateRequiredText;
+
+  /// No description provided for @updateButton.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get updateButton;
+
+  /// No description provided for @updateAvailableTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступно обновление'**
+  String get updateAvailableTitle;
+
+  /// No description provided for @updateAvailableText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая версия {version} уже доступна.'**
+  String updateAvailableText(String version);
+
+  /// No description provided for @updateLater.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позже'**
+  String get updateLater;
+
+  /// No description provided for @tariffBadgeValue.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выгодно'**
+  String get tariffBadgeValue;
+
+  /// No description provided for @tariffDeliveryWeight.
+  ///
+  /// In ru, this message translates to:
+  /// **'до 20 кг'**
+  String get tariffDeliveryWeight;
+
+  /// No description provided for @tariffUpToFourPassengers.
+  ///
+  /// In ru, this message translates to:
+  /// **'до 4 пассажиров'**
+  String get tariffUpToFourPassengers;
+
+  /// No description provided for @settingsServerLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер'**
+  String get settingsServerLabel;
+
+  /// No description provided for @pickupChoosePrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите точку подачи'**
+  String get pickupChoosePrompt;
+
+  /// No description provided for @dropoffEnterPrompt.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите адрес назначения'**
+  String get dropoffEnterPrompt;
 }
 
 class _AppLocalizationsDelegate

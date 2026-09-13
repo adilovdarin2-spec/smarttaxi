@@ -1909,5 +1909,24 @@
   "clientCancelReasonWaited": "Долго жду машину",
   "clientCancelReasonFoundAnother": "Нашёл другую машину",
   "clientCancelReasonOther": "Другая причина",
-  "clientCancelReasonNotice": "Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер."
+  "clientCancelReasonNotice": "Если водитель просит отменить заказ — отметьте это здесь. Такие случаи проверяет диспетчер.",
+  "updateRequiredTitle": "Нужно обновить приложение",
+  "updateRequiredText": "Вышла новая версия SmartTaxi. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.",
+  "updateButton": "Обновить",
+  "updateAvailableTitle": "Доступно обновление",
+  "updateAvailableText": "Новая версия {version} уже доступна.",
+  "@updateAvailableText": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateLater": "Позже",
+  "tariffBadgeValue": "Выгодно",
+  "tariffDeliveryWeight": "до 20 кг",
+  "tariffUpToFourPassengers": "до 4 пассажиров",
+  "settingsServerLabel": "Сервер",
+  "pickupChoosePrompt": "Выберите точку подачи",
+  "dropoffEnterPrompt": "Введите адрес назначения"
 }

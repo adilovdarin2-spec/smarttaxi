@@ -4348,4 +4348,43 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get clientCancelReasonNotice =>
       'Егер жүргізуші тапсырысты тоқтатуды сұраса — осында белгілеңіз. Мұндай жағдайларды диспетчер тексереді.';
+
+  @override
+  String get updateRequiredTitle => 'Қолданбаны жаңарту қажет';
+
+  @override
+  String get updateRequiredText =>
+      'SmartTaxi-дың жаңа нұсқасы шықты. Бұл нұсқа енді қолдау көрмейді — пайдалануды жалғастыру үшін қолданбаны жаңартыңыз.';
+
+  @override
+  String get updateButton => 'Жаңарту';
+
+  @override
+  String get updateAvailableTitle => 'Жаңарту қолжетімді';
+
+  @override
+  String updateAvailableText(String version) {
+    return '$version жаңа нұсқасы қолжетімді.';
+  }
+
+  @override
+  String get updateLater => 'Кейінірек';
+
+  @override
+  String get tariffBadgeValue => 'Тиімді';
+
+  @override
+  String get tariffDeliveryWeight => '20 кг дейін';
+
+  @override
+  String get tariffUpToFourPassengers => '4 жолаушыға дейін';
+
+  @override
+  String get settingsServerLabel => 'Сервер';
+
+  @override
+  String get pickupChoosePrompt => 'Мінетін нүктені таңдаңыз';
+
+  @override
+  String get dropoffEnterPrompt => 'Бару мекенжайын енгізіңіз';
 }

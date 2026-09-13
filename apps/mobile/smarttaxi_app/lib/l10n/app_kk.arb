@@ -1830,5 +1830,24 @@
   "clientCancelReasonWaited": "Көлікті ұзақ күттім",
   "clientCancelReasonFoundAnother": "Басқа көлік таптым",
   "clientCancelReasonOther": "Басқа себеп",
-  "clientCancelReasonNotice": "Егер жүргізуші тапсырысты тоқтатуды сұраса — осында белгілеңіз. Мұндай жағдайларды диспетчер тексереді."
+  "clientCancelReasonNotice": "Егер жүргізуші тапсырысты тоқтатуды сұраса — осында белгілеңіз. Мұндай жағдайларды диспетчер тексереді.",
+  "updateRequiredTitle": "Қолданбаны жаңарту қажет",
+  "updateRequiredText": "SmartTaxi-дың жаңа нұсқасы шықты. Бұл нұсқа енді қолдау көрмейді — пайдалануды жалғастыру үшін қолданбаны жаңартыңыз.",
+  "updateButton": "Жаңарту",
+  "updateAvailableTitle": "Жаңарту қолжетімді",
+  "updateAvailableText": "{version} жаңа нұсқасы қолжетімді.",
+  "@updateAvailableText": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateLater": "Кейінірек",
+  "tariffBadgeValue": "Тиімді",
+  "tariffDeliveryWeight": "20 кг дейін",
+  "tariffUpToFourPassengers": "4 жолаушыға дейін",
+  "settingsServerLabel": "Сервер",
+  "pickupChoosePrompt": "Мінетін нүктені таңдаңыз",
+  "dropoffEnterPrompt": "Бару мекенжайын енгізіңіз"
 }
