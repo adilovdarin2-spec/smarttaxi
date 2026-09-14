@@ -37,4 +37,7 @@ rsvg-convert -w 180  -h 180  $BRAND/baisapar_icon.svg -o $BRAND/baisapar_apple_t
 rsvg-convert -w 192  -h 192  $BRAND/baisapar_icon.svg -o $BRAND/baisapar_icon_192.png
 rsvg-convert -w 512  -h 512  $BRAND/baisapar_icon.svg -o $BRAND/baisapar_icon_512.png
 
+# Google Play's feature graphic, at the one size the console accepts.
+rsvg-convert -w 1024 -h 500 $BRAND/baisapar_play_feature.svg -o $BRAND/baisapar_play_feature.png
+
 echo "brand rasterised"

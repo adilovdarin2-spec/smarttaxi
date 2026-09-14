@@ -129,6 +129,34 @@ def lockup_svg(first, second, h=200):
               f'    <path d="{MARK_ICON}" fill="url(#gold)"/>\n  </g>\n'
             + f'  <g transform="translate({icon + gapx:.1f},0)">\n{words}\n  </g>\n</svg>\n')
 
+def feature_graphic():
+    """Google Play's feature graphic, at the one size the console accepts.
+
+    The store crops this differently on every surface it appears on, so the
+    lockup sits in the middle 62% and nothing else goes near an edge.
+    """
+    icon = TOP * 1.34
+    gapx = TOP * 0.30
+    block = icon + gapx + ADV
+    k = 1024 * 0.62 / block
+    x = (1024 - block * k) / 2
+    words = "\n".join(
+        f'      <path d="{d}" fill="#FFFFFF"/>' for ch, _x, d in GLYPHS)
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500"'
+        ' width="1024" height="500" role="img" aria-label="BaiSapar">\n'
+        '  <title>BaiSapar</title>\n'
+        + DEFS
+        + '  <rect width="1024" height="500" fill="url(#fld)"/>\n'
+        + f'  <g transform="translate({x:.1f},250) scale({k:.5f})">\n'
+        + f'    <g transform="translate(0,{-icon / 2:.1f}) scale({icon / 1024:.5f})">\n'
+        + '      <rect width="1024" height="1024" rx="232" fill="#FFFFFF" fill-opacity="0.08"/>\n'
+        + f'      <path d="{MARK_ICON}" fill="url(#gold)"/>\n'
+        + '    </g>\n'
+        + f'    <g transform="translate({icon + gapx:.1f},{TOP / 2:.1f})">\n'
+        + words + '\n    </g>\n  </g>\n</svg>\n')
+
+
 OUT = ROOT / "apps/web/public/brand"
 OUT.mkdir(parents=True, exist_ok=True)
 files = {
@@ -140,6 +168,7 @@ files = {
  "baisapar_wordmark_light.svg": wordmark_svg("#FFFFFF", "#FFFFFF"),
  "baisapar_lockup.svg": lockup_svg(INK, INK),
  "baisapar_lockup_light.svg": lockup_svg("#FFFFFF", "#FFFFFF"),
+ "baisapar_play_feature.svg": feature_graphic(),
 }
 for name, svg in files.items():
     (OUT / name).write_text(svg, encoding="utf-8")

@@ -36,6 +36,7 @@ happens to have elsewhere. That is what the previous wordmark did.
 | `android/.../mipmap-anydpi-v26/*.xml` + `drawable/ic_launcher_*.xml` | Android 8+ adaptive icon, and the Android 13+ themed icon |
 | `android/.../drawable/baisapar_splash_icon.png` | the native launch screen |
 | `apps/mobile/.../assets/brand/*.png` | the app's own screens |
+| `apps/web/public/brand/baisapar_play_feature.png` | Google Play's feature graphic (1024×500) |
 
 ## Colours
 
