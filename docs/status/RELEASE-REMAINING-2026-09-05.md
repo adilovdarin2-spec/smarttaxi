@@ -103,6 +103,7 @@ these warnings did not prevent the current builds.
 
 ## Evidence index
 
+- [BaiSapar post-Claude release audit](post-claude-release-audit-2026-09-15.md)
 - [Taxi stands and cancellation review](stands-and-cancellation-review-2026-09-11.md)
 - [Current local release gate](local-release-gate-2026-09-10.md)
 - [Web map, address and route visual pass](web-map-route-visual-pass-2026-09-10.md)
