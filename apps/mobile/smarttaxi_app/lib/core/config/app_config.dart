@@ -3,9 +3,14 @@ class AppConfig {
   // APP_LATEST_VERSION/APP_MIN_SUPPORTED_VERSION by the update-check screen
   // (main.dart), and shown as-is in both shells' "О приложении"/Settings.
   static const appVersion = '1.0.0';
+  // The public backend. This is the service's own hosting address until
+  // baisapar.kz is registered and pointed at it; a build that names no
+  // API_BASE_URL must still reach a server that exists, because the previous
+  // default was a domain that had stopped resolving and every such build
+  // came up unable to load a single region.
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.smarttaxi.kz',
+    defaultValue: 'https://smarttaxi-api-production-c518.up.railway.app',
   );
   static const socketUrl = String.fromEnvironment(
     'SOCKET_URL',
@@ -19,13 +24,12 @@ class AppConfig {
     'CARD_PAYMENTS_ENABLED',
     defaultValue: false,
   );
-  // Public web app used for the "поделиться поездкой" tracking link. Must be
-  // www (not the bare apex) -- ps.kz's panel can't put a CNAME on the apex
-  // record (it already carries the zone's NS/MX/TXT records), so the apex
-  // has no working DNS entry at all; only the www subdomain resolves.
+  // Public web app used for the "поделиться поездкой" tracking link — the
+  // person receiving it opens this in a browser, so it has to be a public
+  // address rather than the machine the build was made on.
   static const webBaseUrl = String.fromEnvironment(
     'WEB_BASE_URL',
-    defaultValue: 'https://www.smarttaxi.kz',
+    defaultValue: 'https://smarttaxi-web-production.up.railway.app',
   );
   // Crash/error monitoring (Sentry). Empty disables reporting entirely —
   // see main.dart's SentryFlutter.init call.

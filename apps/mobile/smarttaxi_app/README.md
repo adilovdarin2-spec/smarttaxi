@@ -1,6 +1,6 @@
-# SmartTaxi Flutter
+# BaiSapar Flutter
 
-Пассажирское и водительское мобильное приложение SmartTaxi. Бэкенд, PostgreSQL
+Пассажирское и водительское мобильное приложение BaiSapar. Бэкенд, PostgreSQL
 и Redis запускаются из корня репозитория через Docker Compose.
 
 ## Локальный запуск с Docker

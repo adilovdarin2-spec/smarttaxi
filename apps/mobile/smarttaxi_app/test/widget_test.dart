@@ -34,7 +34,10 @@ String _visibleSource(String source) {
 
 void main() {
   test('map configuration is explicit and attributed', () {
-    expect(AppConfig.apiBaseUrl, 'https://api.smarttaxi.kz');
+    // A build with no --dart-define must still reach a live backend.
+    expect(AppConfig.apiBaseUrl, startsWith('https://'));
+    expect(AppConfig.apiBaseUrl, isNot(contains('smarttaxi.kz')));
+    expect(AppConfig.webBaseUrl, startsWith('https://'));
     expect(AppConfig.osmTileUrl, contains('{z}'));
     expect(AppConfig.osmTileUrl, contains('{x}'));
     expect(AppConfig.osmTileUrl, contains('{y}'));
