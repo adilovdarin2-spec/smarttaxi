@@ -33,7 +33,7 @@ export default function LandingPage() {
         <div className="landing-shell landing-header-row">
           <div className="landing-brand">
             <img src="/brand/baisapar_icon.svg" alt="BaiSapar" />
-            <span>Smart<em>Taxi</em></span>
+            <span>Bai<em>Sapar</em></span>
           </div>
           <nav className="landing-nav">
             <a href="#features">Возможности</a>

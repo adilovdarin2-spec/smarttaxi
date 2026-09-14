@@ -161,7 +161,7 @@ const baseIcons = {
   authLogo: `/brand/baisapar_lockup.svg`,
   sMark: `/brand/baisapar_icon.svg`,
   pin: `${baseUi}/svg/target_location.svg`,
-  mark: `${baseUi}/svg/logo_mark_pin_car.svg`,
+  mark: `/brand/baisapar_icon.svg`,
   menu: `${baseUi}/svg/menu.svg`,
   bell: `${baseUi}/svg/bell.svg`,
   pickup: `${baseUi}/svg/pickup_marker.svg`,
@@ -2282,7 +2282,7 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
           <div className="client-drawer-brand-lockup" aria-label="BaiSapar">
             <span className="client-drawer-mark" aria-hidden="true">S</span>
             <span>
-              <strong>Smart<span>Taxi</span></strong>
+              <strong>Bai<span>Sapar</span></strong>
               <small>Ваш комфорт</small>
             </span>
           </div>

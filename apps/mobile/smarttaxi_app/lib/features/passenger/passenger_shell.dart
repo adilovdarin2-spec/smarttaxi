@@ -6348,7 +6348,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     canvas.drawRect(const ui.Rect.fromLTWH(44, 56, 10, 10), blueLight);
     final text = TextPainter(
       text: const TextSpan(
-        text: 'S',
+        text: 'B',
         style: TextStyle(
           color: Color(0xff1d6fff),
           fontSize: 50,
@@ -7587,7 +7587,7 @@ class _ApprovedMapPickerMarker extends StatelessWidget {
                           shaderCallback: (bounds) =>
                               _badgeGradient.createShader(bounds),
                           child: const Text(
-                            'S',
+                            'B',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 29 * _unit,
