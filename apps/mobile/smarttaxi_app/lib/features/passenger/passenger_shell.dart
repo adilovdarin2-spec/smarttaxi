@@ -186,7 +186,8 @@ const _atakentFallbackCenter = LatLng(40.84719, 68.503834);
 const _appVersion = AppConfig.appVersion;
 // Host only: the full URL carries no secret, but the host is what actually
 // answers "which backend is this build wired to".
-final _apiHost = Uri.tryParse(AppConfig.apiBaseUrl)?.host ?? AppConfig.apiBaseUrl;
+final _apiHost =
+    Uri.tryParse(AppConfig.apiBaseUrl)?.host ?? AppConfig.apiBaseUrl;
 
 class PassengerShell extends StatefulWidget {
   const PassengerShell({
@@ -6008,7 +6009,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                             urlTemplate: AppConfig.osmTileUrl,
                             subdomains: const ['a', 'b', 'c', 'd'],
                             retinaMode: true,
-                            userAgentPackageName: 'com.smarttaxi.app',
+                            userAgentPackageName: 'kz.baisapar.app',
                             errorTileCallback: (_, __, ___) => onTileError(),
                           ),
                         ),

@@ -26126,7 +26126,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
    frame stays 390px wide — widening it would break each one. What was wrong on
    a laptop was the framing around it: a narrow strip stranded in an empty pale
    field, which reads as a broken mobile site rather than as a product.
-   
+
    On a wide screen the page now presents the device deliberately: a darker
    branded ground, a real bezel with depth, and the product named beside it, so
    a client looking over your shoulder sees an app being demonstrated. */

@@ -4091,7 +4091,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                             urlTemplate: AppConfig.osmTileUrl,
                             subdomains: const ['a', 'b', 'c', 'd'],
                             retinaMode: true,
-                            userAgentPackageName: 'com.smarttaxi.app',
+                            userAgentPackageName: 'kz.baisapar.app',
                             errorTileCallback: (_, __, ___) =>
                                 widget.onTileError(),
                           ),
@@ -5371,7 +5371,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                           urlTemplate: AppConfig.osmTileUrl,
                           subdomains: const ['a', 'b', 'c', 'd'],
                           retinaMode: true,
-                          userAgentPackageName: 'com.smarttaxi.app',
+                          userAgentPackageName: 'kz.baisapar.app',
                           errorTileCallback: (_, __, ___) {
                             if (_mapUnavailable) return;
                             _tileErrorCount++;
@@ -5867,7 +5867,7 @@ class _TripMapState extends State<_TripMap> {
                       urlTemplate: AppConfig.osmTileUrl,
                       subdomains: const ['a', 'b', 'c', 'd'],
                       retinaMode: true,
-                      userAgentPackageName: 'com.smarttaxi.app'),
+                      userAgentPackageName: 'kz.baisapar.app'),
                 ),
                 if (widget.route.isNotEmpty)
                   PolylineLayer(polylines: [
@@ -7073,7 +7073,7 @@ class _RoadAlertMap extends StatelessWidget {
                       urlTemplate: AppConfig.osmTileUrl,
                       subdomains: const ['a', 'b', 'c', 'd'],
                       retinaMode: true,
-                      userAgentPackageName: 'com.smarttaxi.app',
+                      userAgentPackageName: 'kz.baisapar.app',
                       errorTileCallback: (_, __, ___) => onTileError(),
                     ),
                   ),

@@ -34,6 +34,19 @@ void main() {
     final manifest =
         File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
     expect(manifest, contains('android:name=".MainActivity"'));
+
+    for (final path in [
+      'lib/features/passenger/passenger_shell.dart',
+      'lib/features/passenger/screens/stands/passenger_stands_screen.dart',
+      'lib/features/driver/driver_shell.dart',
+    ]) {
+      final source = File(path).readAsStringSync();
+      expect(source, contains("userAgentPackageName: '$id'"),
+          reason: '$path must identify BaiSapar to map tile providers');
+      expect(
+          source, isNot(contains("userAgentPackageName: 'com.smarttaxi.app'")),
+          reason: '$path must not send the retired package id');
+    }
   });
 
   test('Android release remains fail-closed without owner signing material',

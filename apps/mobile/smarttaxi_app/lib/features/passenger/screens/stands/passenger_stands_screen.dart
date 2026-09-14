@@ -55,7 +55,8 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
   void initState() {
     super.initState();
     unawaited(_load());
-    _refreshTimer = Timer.periodic(_refreshInterval, (_) => _load(silent: true));
+    _refreshTimer =
+        Timer.periodic(_refreshInterval, (_) => _load(silent: true));
     widget.socket.onStandQueueUpdate((_) => _load(silent: true));
     widget.socket.onStandPersonalEvent((_, __) => _load(silent: true));
   }
@@ -234,7 +235,7 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
                         urlTemplate: AppConfig.osmTileUrl,
                         subdomains: const ['a', 'b', 'c', 'd'],
                         retinaMode: true,
-                        userAgentPackageName: 'com.smarttaxi.app',
+                        userAgentPackageName: 'kz.baisapar.app',
                       ),
                       MarkerLayer(
                         markers: [
@@ -417,7 +418,8 @@ class _StandList extends StatelessWidget {
                   Text(
                     l10n.standNoneText,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: palette.textSecondary, fontSize: 13),
+                    style:
+                        TextStyle(color: palette.textSecondary, fontSize: 13),
                   ),
                 ],
               ),
@@ -680,7 +682,8 @@ class PassengerStandSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   l10n.standSheetEmpty,
-                  style: TextStyle(color: palette.textSecondary, fontSize: 13.5),
+                  style:
+                      TextStyle(color: palette.textSecondary, fontSize: 13.5),
                 ),
               )
             else
@@ -763,7 +766,8 @@ class PassengerStandCarCard extends StatelessWidget {
                     Text(
                       entry.pricePerSeat == null
                           ? l10n.standNoPriceYet
-                          : l10n.standPricePerSeatValue('${entry.pricePerSeat}'),
+                          : l10n
+                              .standPricePerSeatValue('${entry.pricePerSeat}'),
                       style: TextStyle(
                         color: palette.brand,
                         fontSize: 14.5,
@@ -845,7 +849,8 @@ class _SeatCountSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final options = List<int>.generate(maxSeats.clamp(1, 8), (index) => index + 1);
+    final options =
+        List<int>.generate(maxSeats.clamp(1, 8), (index) => index + 1);
     return Container(
       decoration: BoxDecoration(
         color: palette.card,
@@ -929,9 +934,8 @@ class _Notice extends StatelessWidget {
         color: danger ? palette.dangerSoft : palette.brandSurface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: danger
-              ? palette.danger.withValues(alpha: 0.3)
-              : palette.border,
+          color:
+              danger ? palette.danger.withValues(alpha: 0.3) : palette.border,
         ),
       ),
       child: Text(
