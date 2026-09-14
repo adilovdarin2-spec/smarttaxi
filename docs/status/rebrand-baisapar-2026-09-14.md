@@ -75,7 +75,7 @@ Android наконец получил иконку, которую просит 
 - APK: `https://smarttaxi-web-production.up.railway.app/dl/BaiSapar.apk`
   (старая ссылка `/dl/SmartTaxi.apk` отдаёт тот же файл, чтобы уже разосланные
   ссылки не сломались). SHA-256
-  `3ed4dcda72b639acec200a15b949598407c66a23ce48d50d6fa2a104deff4b46`,
+  `3b074c6fad51a8f9936bf05528cc61d50b9a7540015eadf04bada5e1bf448045`,
   скачанный файл сверен с собранным побайтно.
 
 Проверки: `npm test` (API), 161 тест веба, `flutter analyze` без замечаний,
