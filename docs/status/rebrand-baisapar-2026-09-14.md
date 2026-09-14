@@ -73,9 +73,10 @@ Android наконец получил иконку, которую просит 
 - Сайт: `https://smarttaxi-web-production.up.railway.app` — заголовок и иконка
   новые.
 - APK: `https://smarttaxi-web-production.up.railway.app/dl/BaiSapar.apk`
+  (пакет `kz.baisapar.app` — встаёт рядом со старым приложением, не поверх)
   (старая ссылка `/dl/SmartTaxi.apk` отдаёт тот же файл, чтобы уже разосланные
   ссылки не сломались). SHA-256
-  `3b074c6fad51a8f9936bf05528cc61d50b9a7540015eadf04bada5e1bf448045`,
+  `2757ca0c4715d911226592da411d4a7daf6ef0b176ac9ea1bfd26f130594fd84`,
   скачанный файл сверен с собранным побайтно.
 
 Проверки: `npm test` (API), 161 тест веба, `flutter analyze` без замечаний,
