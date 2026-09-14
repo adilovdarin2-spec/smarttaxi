@@ -201,7 +201,7 @@ async function overpassQuery(ql) {
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
               "Accept": "*/*",
-              "User-Agent": "SmartTaxi-Driver-App/1.0 (+https://smarttaxi.kz)"
+              "User-Agent": "BaiSapar-Driver-App/1.0 (+https://baisapar.kz)"
             },
             body: `data=${encodeURIComponent(ql)}`,
             signal: controller.signal

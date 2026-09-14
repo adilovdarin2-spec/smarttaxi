@@ -49,7 +49,7 @@ router.get("/live", (_req, res) => {
   res.json({
     ok: true,
     status: "ok",
-    app: "SmartTaxi",
+    app: "BaiSapar",
     version,
     env: env.NODE_ENV,
     city: env.CITY,
@@ -62,7 +62,7 @@ router.get("/ready", async (_req, res) => {
   res.status(status.ready ? 200 : 503).json({
     ok: status.ready,
     status: status.ready ? "ok" : "degraded",
-    app: "SmartTaxi",
+    app: "BaiSapar",
     version,
     env: env.NODE_ENV,
     city: env.CITY,
@@ -78,7 +78,7 @@ router.get("/", async (_req, res) => {
   res.status(status.ready ? 200 : 503).json({
     ok: status.ready,
     status: status.ready ? "ok" : "degraded",
-    app: "SmartTaxi",
+    app: "BaiSapar",
     version,
     env: env.NODE_ENV,
     city: env.CITY,

@@ -32,7 +32,7 @@ export default function LandingPage() {
       <header className="landing-header">
         <div className="landing-shell landing-header-row">
           <div className="landing-brand">
-            <img src="/brand/smarttaxi_app_icon_2026.png" alt="SmartTaxi" />
+            <img src="/brand/baisapar_icon.svg" alt="BaiSapar" />
             <span>Smart<em>Taxi</em></span>
           </div>
           <nav className="landing-nav">
@@ -50,7 +50,7 @@ export default function LandingPage() {
           <span className="landing-eyebrow"><Icon name="pin" size={14} /> Такси в вашем городе</span>
           <h1>Поездка за пару минут,<br /><em>без лишних шагов</em></h1>
           <p className="lead">
-            SmartTaxi показывает цену ещё до заказа, находит ближайшего свободного
+            BaiSapar показывает цену ещё до заказа, находит ближайшего свободного
             водителя и ведёт всю поездку на карте — прямо в браузере, без установки
             приложения.
           </p>
@@ -92,7 +92,7 @@ export default function LandingPage() {
 
       <section id="features" className="landing-section landing-shell">
         <div className="landing-section-head">
-          <h2>Почему выбирают SmartTaxi</h2>
+          <h2>Почему выбирают BaiSapar</h2>
           <p>Всё, что важно в поездке — цена, скорость и безопасность — видно сразу.</p>
         </div>
         <div className="landing-features">
@@ -152,8 +152,8 @@ export default function LandingPage() {
         <div className="landing-footer-grid">
           <div>
             <div className="landing-footer-brand">
-              <img src="/brand/smarttaxi_app_icon_2026.png" alt="SmartTaxi" />
-              <span>SmartTaxi</span>
+              <img src="/brand/baisapar_icon.svg" alt="BaiSapar" />
+              <span>BaiSapar</span>
             </div>
             <p className="muted">Сервис поездок для клиентов и водителей. Наличные и Kaspi, поддержка 24/7.</p>
           </div>
@@ -180,7 +180,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="landing-footer-bottom">
-          <span>© {new Date().getFullYear()} SmartTaxi</span>
+          <span>© {new Date().getFullYear()} BaiSapar</span>
           <span>Казахстан</span>
         </div>
       </footer>

@@ -1,7 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../../core/icons.jsx";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
-import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import AppModeButton from '../../components/ui/AppModeButton.jsx';
 import { containModalFocus } from '../../lib/modalFocus.js';
 import TripDriverCard from './TripDriverCard.jsx';
@@ -114,7 +114,7 @@ const drawerMenuGroups = [
     { key: "driverApplication", label: "Стать водителем", icon: "trips", hint: "Заявка и документы" },
     { key: "faq", label: "FAQ", icon: "chat", hint: "Вопросы и ответы" },
     { key: "settings", label: "Настройки", icon: "settings", hint: "Аккаунт и приложение" },
-    { key: "about", label: "О приложении", icon: "info", hint: "SmartTaxi" }
+    { key: "about", label: "О приложении", icon: "info", hint: "BaiSapar" }
     ]
   },
   {
@@ -157,9 +157,9 @@ const searchDriverUi = "/ui/search-driver";
 const driverFoundUi = "/ui/driver-found";
 const tripDetailsUi = "/ui/trip-details";
 const baseIcons = {
-  logo: `${baseUi}/svg/smarttaxi_logo_text.svg`,
-  authLogo: `${baseUi}/svg/smarttaxi_auth_logo.svg`,
-  sMark: `${authWelcomeUi}/svg/brand/smarttaxi_s_mark.svg`,
+  logo: `/brand/baisapar_lockup.svg`,
+  authLogo: `/brand/baisapar_lockup.svg`,
+  sMark: `/brand/baisapar_icon.svg`,
   pin: `${baseUi}/svg/target_location.svg`,
   mark: `${baseUi}/svg/logo_mark_pin_car.svg`,
   menu: `${baseUi}/svg/menu.svg`,
@@ -197,8 +197,8 @@ const baseIcons = {
   tariffRadio: `${fixedTariffUi}/unselected_radio.svg`
 };
 const authWelcomeAssets = {
-  wordmark: `${authWelcomeUi}/svg/brand/smarttaxi_wordmark.svg`,
-  sMark: `${authWelcomeUi}/svg/brand/smarttaxi_s_mark.svg`,
+  wordmark: `/brand/baisapar_wordmark.svg`,
+  sMark: `/brand/baisapar_icon.svg`,
   heroPhoto: `${authWelcomeUi}/background/auth_hero_photo_soft.png`,
   bottomOverlay: `${authWelcomeUi}/background/white_bottom_gradient_overlay.png`,
   arrowRight: `${authWelcomeUi}/svg/icons/arrow_right.svg`,
@@ -570,7 +570,7 @@ function normalizeAddress(address) {
   // into the formatted string, but the curated local catalog entries only
   // carry separate city/region fields -- those used to fall back to
   // "city OR region", so the region name (which region of several
-  // SmartTaxi operates in) never actually reached the screen for them.
+  // BaiSapar operates in) never actually reached the screen for them.
   // Append it whenever it isn't already implied by what's shown.
   const combinedText = `${title} ${base}`.toLowerCase();
   const subtitle = regionName && !combinedText.includes(regionName.toLowerCase())
@@ -1824,7 +1824,7 @@ export default function ClientApp() {
   function canUseDestination(address) {
     const destinationRegion = regionForAddress(address, regions);
     if (!destinationRegion) {
-      setMessage("Этот адрес находится вне активных регионов SmartTaxi.");
+      setMessage("Этот адрес находится вне активных регионов BaiSapar.");
       return false;
     }
     const destinationRegionId = backendRegionIdFor(regions, destinationRegion.id, destinationRegion);
@@ -2238,8 +2238,8 @@ function ClientHeader({ menuOpen = false, routeReady = false, addressSelectionMo
       <button type="button" className="client-icon-button" onClick={onMenu} aria-label="Открыть меню">
         <IconAsset name="menu" />
       </button>
-      <div className="reference-brand-chip" aria-label="SmartTaxi">
-        <span>SmartTaxi</span>
+      <div className="reference-brand-chip" aria-label="BaiSapar">
+        <span>BaiSapar</span>
       </div>
       <button type="button" className="client-icon-button notification" onClick={onBell} aria-label="Уведомления">
         <Icon name="bell" size={20} />
@@ -2277,9 +2277,9 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
   return (
     <>
       <div className={`client-drawer-backdrop ${open ? "open" : ""}`} onClick={onClose} />
-      <aside ref={drawerRef} className={`client-drawer ${open ? "open" : ""}`} role="dialog" aria-modal={open || undefined} aria-label="Меню SmartTaxi" tabIndex={-1} aria-hidden={!open} inert={!open}>
+      <aside ref={drawerRef} className={`client-drawer ${open ? "open" : ""}`} role="dialog" aria-modal={open || undefined} aria-label="Меню BaiSapar" tabIndex={-1} aria-hidden={!open} inert={!open}>
         <div className="client-drawer-brand-row">
-          <div className="client-drawer-brand-lockup" aria-label="SmartTaxi">
+          <div className="client-drawer-brand-lockup" aria-label="BaiSapar">
             <span className="client-drawer-mark" aria-hidden="true">S</span>
             <span>
               <strong>Smart<span>Taxi</span></strong>
@@ -2293,7 +2293,7 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
         <button type="button" className="client-drawer-account-row" onClick={() => onSelect("profile")}>
           <span className="client-drawer-account-avatar"><Icon name="user" size={21} /></span>
           <span className="client-drawer-account-copy">
-            <small>{authenticated ? "Ваш профиль" : "SmartTaxi ID"}</small>
+            <small>{authenticated ? "Ваш профиль" : "BaiSapar ID"}</small>
             <strong>{title}</strong>
             <em>{subtitle}</em>
           </span>
@@ -2777,7 +2777,7 @@ function ReferencePaymentPicker({ payment, onClose, onSelect }) {
         <div className="reference-payment-picker-grip" aria-hidden="true" />
         <header>
           <div>
-            <small>Поездка SmartTaxi</small>
+            <small>Поездка BaiSapar</small>
             <h2>Как оплатить?</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={20} /></button>
@@ -3389,7 +3389,7 @@ function RegionSection({ regions, selectedRegionId, onSelect, onHome, regionsLoa
                 <span className="region-selection-icon"><Icon name="pin" size={20} /></span>
                 <span>
                   <strong>{regionLabel(region)}</strong>
-                  <small>{region.subtitle || "Зона обслуживания SmartTaxi"}</small>
+                  <small>{region.subtitle || "Зона обслуживания BaiSapar"}</small>
                 </span>
                 {selected ? <span className="region-selection-current">Выбран</span> : <Icon name="chevron" size={18} />}
               </button>
@@ -3539,7 +3539,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
   };
   const hasDriver = ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "TRIP_STARTED", "TRIP_COMPLETED", "PAYMENT_PENDING", "PAID", "RATED"].includes(status) || order.driver_name;
   const cancelled = ["CANCELLED", "CANCELED", "CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR", "CANCELLED_BY_ADMIN"].includes(status);
-  const driverName = order.driver_name || "Водитель SmartTaxi";
+  const driverName = order.driver_name || "Водитель BaiSapar";
   const driverPoint = clientDriverMapPoint(order, liveRoute);
   const stage = clientLifecycleStage(status, order, activeRoute);
   const statusTone = tripStatusTone(status);
@@ -4014,7 +4014,7 @@ function driverEtaText(order, route = null) {
 
 function driverVehicleLine(order) {
   const color = order?.driver_car_color || order?.driverCarColor || "";
-  const model = order?.driver_car_model || order?.driverCarModel || "Автомобиль SmartTaxi";
+  const model = order?.driver_car_model || order?.driverCarModel || "Автомобиль BaiSapar";
   const plate = order?.driver_plate || order?.driverPlate || "";
   return [[color, model].filter(Boolean).join(" "), plate].filter(Boolean).join(" · ");
 }
@@ -4114,7 +4114,7 @@ function RideStatusNote({ status, order, destination, route = null }) {
     icon = "check";
   } else if (status === "RATED") {
     title = "Поездка закрыта";
-    text = "Спасибо, что помогаете делать SmartTaxi лучше.";
+    text = "Спасибо, что помогаете делать BaiSapar лучше.";
     icon = "star";
   } else if (status === "NO_SHOW") {
     title = "Заказ закрыт";
@@ -4161,7 +4161,7 @@ function TripRatingCard({
         <div>
           <small>Завершение поездки</small>
           <h2>Оцените поездку</h2>
-          <p>{driverName || "Водитель SmartTaxi"} · заказ {order.short_id || order.id}</p>
+          <p>{driverName || "Водитель BaiSapar"} · заказ {order.short_id || order.id}</p>
         </div>
       </div>
       <div className="trip-rating-stars" role="group" aria-label="Оценка поездки">
@@ -4300,12 +4300,12 @@ function TripDetailsSheet({ open, order, pickup, destination, route, estimate, o
   const approachText = tripApproach(order, route);
   const orderId = identity.orderId ? `#${identity.orderId}` : "Уточняется";
   const driverDisplayName = identity.name;
-  const shareText = `SmartTaxi ${orderId}: ${pickupText} → ${dropoffText}. ${driverDisplayName}, ${carText}, ${plate}.`;
+  const shareText = `BaiSapar ${orderId}: ${pickupText} → ${dropoffText}. ${driverDisplayName}, ${carText}, ${plate}.`;
 
   async function handleShare() {
     try {
       if (navigator.share) {
-        await navigator.share({ title: "SmartTaxi", text: shareText });
+        await navigator.share({ title: "BaiSapar", text: shareText });
         if (mountedRef.current) setNotice("Детали поездки отправлены");
         return;
       }
@@ -4533,7 +4533,7 @@ function PremiumAuthFlow({
   };
 
   return (
-    <section className={`premium-auth-screen ${isPhone ? "auth-reference-welcome-screen" : "auth-reference-step-screen"} ${isSuccess ? "auth-reference-success-screen" : ""}`} aria-label="Вход и регистрация SmartTaxi">
+    <section className={`premium-auth-screen ${isPhone ? "auth-reference-welcome-screen" : "auth-reference-step-screen"} ${isSuccess ? "auth-reference-success-screen" : ""}`} aria-label="Вход и регистрация BaiSapar">
       <AuthStatusBar />
       <div className={`auth-topbar ${isPhone ? "welcome" : ""}`}>
         {canGoBack ? (
@@ -4814,7 +4814,7 @@ function ProfileSection({
       </section>
       <section className="app-card premium-profile-card account-identity">
         <span className="account-avatar" aria-hidden="true">{Array.from(rider.name?.trim() || "П")[0].toUpperCase()}</span>
-        <div><h2>{rider.name || "Пассажир"}</h2><p>{rider.phone || "Телефон не указан"}</p><span className="account-member">Пассажир SmartTaxi</span></div>
+        <div><h2>{rider.name || "Пассажир"}</h2><p>{rider.phone || "Телефон не указан"}</p><span className="account-member">Пассажир BaiSapar</span></div>
       </section>
       <section className="app-card settings-list-premium account-action-list" aria-label="Мои поездки">
         <SettingsRow icon="history" title="История поездок" text="Маршруты, стоимость и детали" onClick={() => onNavigate("trips")} />
@@ -4853,7 +4853,7 @@ function ClientAccessGate({ title, text = "Войдите в аккаунт, ч�
   return (
     <section className="screen-grid drawer-linked-screen">
       <section className="screen-intro"><h1>{title}</h1><p>{text}</p></section>
-      <section className="app-card drawer-linked-card"><p className="state-note">Для просмотра персональных данных требуется вход в SmartTaxi.</p></section>
+      <section className="app-card drawer-linked-card"><p className="state-note">Для просмотра персональных данных требуется вход в BaiSapar.</p></section>
     </section>
   );
 }
@@ -4891,7 +4891,7 @@ function NotificationsSection({ authenticated }) {
       <section className="app-card drawer-linked-card">
         <div className="client-data-toolbar"><b>{state.unread ? `Новых: ${state.unread}` : "Все прочитано"}</b><button type="button" onClick={readAll} disabled={!state.unread}>Прочитать все</button></div>
         {state.loading ? <p className="state-note">Загружаем уведомления...</p> : state.error ? <p className="state-note danger">{state.error}</p> : !state.rows.length ? <p className="state-note">Здесь появятся статусы поездок и важные сообщения.</p> : (
-          <div className="client-data-list">{state.rows.map(item => <button type="button" key={item.id} className={`client-notification-row ${item.read_at ? "read" : "unread"}`} onClick={() => read(item)}><Icon name="bell" size={19} /><span><b>{item.title || "SmartTaxi"}</b><small>{item.body || ""}</small><em>{formatClientDate(item.created_at)}</em></span>{!item.read_at && <i />}</button>)}</div>
+          <div className="client-data-list">{state.rows.map(item => <button type="button" key={item.id} className={`client-notification-row ${item.read_at ? "read" : "unread"}`} onClick={() => read(item)}><Icon name="bell" size={19} /><span><b>{item.title || "BaiSapar"}</b><small>{item.body || ""}</small><em>{formatClientDate(item.created_at)}</em></span>{!item.read_at && <i />}</button>)}</div>
         )}
       </section>
     </section>
@@ -5056,7 +5056,7 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
     if (phoneDigits.length < 6) return setError("Укажите корректный номер телефона.");
     if (form.carModel.trim().length < 2) return setError("Укажите модель автомобиля.");
     if (form.plateNumber.trim().length < 2) return setError("Укажите госномер автомобиля.");
-    if (!termsAccepted) return setError("Подтвердите согласие с правилами SmartTaxi.");
+    if (!termsAccepted) return setError("Подтвердите согласие с правилами BaiSapar.");
     setLoading(true);
     try {
       const result = await submitDriverApplication({
@@ -5143,7 +5143,7 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
         <label>Госномер<input value={form.plateNumber} onChange={event => update("plateNumber", event.target.value)} /></label>
         <label>Год выпуска<input value={form.year} onChange={event => update("year", event.target.value.replace(/\D/g, "").slice(0, 4))} inputMode="numeric" /></label>
         <label>Комментарий<textarea value={form.comment} onChange={event => update("comment", event.target.value)} rows="3" /></label>
-        <label className="driver-terms"><input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} />Я принимаю правила сервиса и требования безопасности SmartTaxi.</label>
+        <label className="driver-terms"><input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} />Я принимаю правила сервиса и требования безопасности BaiSapar.</label>
         {error && <p className="state-note danger">{error}</p>}
         <button className="app-button primary-brand" type="submit" disabled={loading}>{loading ? "Отправляем…" : "Отправить заявку"}</button>
       </form>
@@ -5247,7 +5247,7 @@ function SettingsSection({ onLogout, onNavigate }) {
       <h2 className="account-group-label">Приложение</h2>
       <section className="app-card settings-list-premium account-action-list">
         <SettingsRow icon="settings" title="Тема" text="Светлая синяя" />
-        <SettingsRow icon="document" title="Версия" text="SmartTaxi Web" />
+        <SettingsRow icon="document" title="Версия" text="BaiSapar Web" />
         <SettingsRow icon="document" title="О приложении" onClick={() => onNavigate('about')} />
       </section>
       <button type="button" className="account-signout" onClick={onLogout}><Icon name="logout" size={20} /> Выйти из аккаунта</button>
@@ -5410,7 +5410,7 @@ function ReferralSection({ authenticated }) {
   const rewardTotalKzt = state.data?.totalBonusEarned ?? 0;
 
   async function share() {
-    const text = `Приезжай в SmartTaxi по моему коду ${code} и получи скидку на первую поездку!`;
+    const text = `Приезжай в BaiSapar по моему коду ${code} и получи скидку на первую поездку!`;
     if (navigator.share) {
       try { await navigator.share({ text }); return; } catch { /* user cancelled share */ }
     }
@@ -5423,7 +5423,7 @@ function ReferralSection({ authenticated }) {
   if (!authenticated) {
     return (
       <section className="screen-grid drawer-linked-screen">
-        <section className="screen-intro"><h1>Пригласить друга</h1><p>Делитесь SmartTaxi и получайте бонусы за друзей.</p></section>
+        <section className="screen-intro"><h1>Пригласить друга</h1><p>Делитесь BaiSapar и получайте бонусы за друзей.</p></section>
         <section className="app-card drawer-linked-card">
           <p className="state-note">Войдите в аккаунт, чтобы получить свой реферальный код.</p>
         </section>
@@ -5433,7 +5433,7 @@ function ReferralSection({ authenticated }) {
 
   return (
     <section className="screen-grid drawer-linked-screen">
-      <section className="screen-intro"><h1>Пригласить друга</h1><p>Делитесь SmartTaxi и получайте бонусы за друзей.</p></section>
+      <section className="screen-intro"><h1>Пригласить друга</h1><p>Делитесь BaiSapar и получайте бонусы за друзей.</p></section>
       <section className="app-card drawer-linked-card">
         {state.loading ? (
           <p className="state-note">Загружаем ваш код...</p>
@@ -5503,7 +5503,7 @@ function LegalSection({ type }) {
   const meta = {
     terms: {
       title: "Пользовательское соглашение",
-      text: "Правила использования сервиса SmartTaxi, оформления заказов, отмены поездок и ответственности сторон.",
+      text: "Правила использования сервиса BaiSapar, оформления заказов, отмены поездок и ответственности сторон.",
       documentHref: "/legal/terms.html",
       documentLabel: "Открыть соглашение",
       points: [
@@ -5515,7 +5515,7 @@ function LegalSection({ type }) {
     },
     privacy: {
       title: "Политика конфиденциальности",
-      text: "Как SmartTaxi обрабатывает номер телефона, адреса поездок, статусы заказов и технические данные приложения.",
+      text: "Как BaiSapar обрабатывает номер телефона, адреса поездок, статусы заказов и технические данные приложения.",
       documentHref: "/legal/privacy.html",
       documentLabel: "Открыть политику",
       points: [
@@ -5531,7 +5531,7 @@ function LegalSection({ type }) {
       documentHref: "",
       documentLabel: "",
       points: [
-        ["Статус", "SmartTaxi является цифровым сервисом для оформления поездок."],
+        ["Статус", "BaiSapar является цифровым сервисом для оформления поездок."],
         ["Оплата", "В текущей версии доступны только Наличные и Kaspi. Банковские карты не подключены."],
         ["Реквизиты", "До публичного запуска нужно заполнить ИП/ТОО, БИН/ИИН, адрес, email и телефон поддержки."],
         ["Юридическая проверка", "Финальные документы должен проверить юрист по законодательству Казахстана."]
@@ -5539,7 +5539,7 @@ function LegalSection({ type }) {
     },
     payment: {
       title: "Оплата и кешбэк",
-      text: "Способы оплаты поездки, кешбэк и привязанные карты SmartTaxi.",
+      text: "Способы оплаты поездки, кешбэк и привязанные карты BaiSapar.",
       documentHref: "",
       documentLabel: "",
       points: [
@@ -5563,7 +5563,7 @@ function LegalSection({ type }) {
     },
     safety: {
       title: "Безопасность поездки",
-      text: "Инструменты для безопасной поездки и связи с поддержкой SmartTaxi.",
+      text: "Инструменты для безопасной поездки и связи с поддержкой BaiSapar.",
       documentHref: "",
       documentLabel: "",
       points: [
@@ -5589,7 +5589,7 @@ function LegalSection({ type }) {
             </a>
             {sosPhone && (
               <a className="menu-secondary-link legal-open-link" href={`tel:${sosPhone}`}>
-                <Icon name="support" size={18} /> Служба безопасности SmartTaxi — {sosPhone}
+                <Icon name="support" size={18} /> Служба безопасности BaiSapar — {sosPhone}
               </a>
             )}
           </>
@@ -5620,11 +5620,11 @@ function FaqSection() {
 function AboutSection() {
   return (
     <section className="screen-grid menu-screen">
-      <section className="screen-intro"><h1>О SmartTaxi</h1><p>Сервис поездок для клиентов и водителей.</p></section>
+      <section className="screen-intro"><h1>О BaiSapar</h1><p>Сервис поездок для клиентов и водителей.</p></section>
       <section className="app-card about-card-premium">
-        <SmartTaxiLogo large />
-        <h2>SmartTaxi</h2>
-        <p>SmartTaxi помогает быстро выбрать адрес на карте, увидеть цену до заказа и безопасно пройти весь путь поездки.</p>
+        <BrandLogo large />
+        <h2>BaiSapar</h2>
+        <p>BaiSapar помогает быстро выбрать адрес на карте, увидеть цену до заказа и безопасно пройти весь путь поездки.</p>
         <SettingsRow icon="cash" title="Оплата" text={paymentOptions.map(option => option.title).join(' · ')} />
         <SettingsRow icon="shield" title="Безопасность" text="Статусы поездки, поддержка и юридические документы в меню" />
       </section>

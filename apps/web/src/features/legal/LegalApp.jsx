@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import legalDocuments from "../../legal/legal-content.json";
 
 // Public, unauthenticated pages for the 5 lawyer-approved legal documents
-// (smarttaxi.kz/legal, /legal/:id). Google Play's "App content" declaration
+// (baisapar.kz/legal, /legal/:id). Google Play's "App content" declaration
 // and Apple's App Review both require a live, publicly reachable privacy
 // policy URL — the in-app-only viewer in the mobile apps doesn't satisfy
 // that, since reviewers and prospective users need to open it in a browser
@@ -46,15 +46,15 @@ export default function LegalApp() {
             navigate("/legal");
           }}
         >
-          <SmartTaxiLogo />
-          <span>SmartTaxi</span>
+          <BrandLogo />
+          <span>BaiSapar</span>
         </a>
       </header>
       <main className="legal-main">
         {activeDoc ? <LegalDocumentView doc={activeDoc} onBack={() => navigate("/legal")} /> : <LegalHub onOpen={id => navigate(`/legal/${id}`)} />}
       </main>
       <footer className="legal-footer">
-        <span>© {new Date().getFullYear()} SmartTaxi · smarttaxi.kz</span>
+        <span>© {new Date().getFullYear()} BaiSapar · baisapar.kz</span>
       </footer>
       <style>{legalStyles}</style>
     </div>
@@ -66,7 +66,7 @@ function LegalHub({ onOpen }) {
     <>
       <h1>Юридические документы</h1>
       <p className="legal-lead">
-        Документы, регулирующие использование мобильного приложения и веб-сайта SmartTaxi.
+        Документы, регулирующие использование мобильного приложения и веб-сайта BaiSapar.
       </p>
       <div className="legal-doc-grid">
         {legalDocuments.map(doc => (

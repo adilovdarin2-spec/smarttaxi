@@ -14,7 +14,7 @@ const LegalApp = React.lazy(() => import("../features/legal/LegalApp.jsx"));
 const TrackApp = React.lazy(() => import("../features/track/TrackApp.jsx"));
 
 function AppLoading() {
-  return <main className="app-loading" role="status" aria-live="polite">Загружаем SmartTaxi…</main>;
+  return <main className="app-loading" role="status" aria-live="polite">Загружаем BaiSapar…</main>;
 }
 
 export default function App() {

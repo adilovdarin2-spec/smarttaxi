@@ -35,3 +35,6 @@ tmp-*
 # nor the prepared graph belongs in a clone.
 osrm-build/*.osm.pbf
 osrm-build/prepared/
+
+# Rasterised brand output — regenerate with apps/web/public/brand/render.sh
+apps/web/public/brand/out/

@@ -5,7 +5,7 @@
 // region code as its name, for example YNTYMAK.csv.  Each row needs a stable
 // `rka` plus `lat` and `lng`; other useful fields are label/address, street,
 // housenumber, name, kind and variants.  The loader rejects unlocated rows,
-// non-RKA IDs and points outside the configured SmartTaxi service area.
+// non-RKA IDs and points outside the configured BaiSapar service area.
 
 import fs from "node:fs";
 import { createHash } from "node:crypto";

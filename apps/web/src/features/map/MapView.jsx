@@ -226,7 +226,7 @@ const finishFlagMarkerMarkup = `<span class="finish-flag-marker-badge" aria-hidd
 function smartTaxiMarkerElement() {
   const element = document.createElement("span");
   element.className = "smarttaxi-map-marker native-address-pick-marker";
-  element.setAttribute("aria-label", "Точка на карте SmartTaxi");
+  element.setAttribute("aria-label", "Точка на карте BaiSapar");
   element.innerHTML = approvedAddressMarkerMarkup;
   return element;
 }
@@ -825,7 +825,7 @@ export default function MapView({
 
   return (
     <section className={`map-view live-osm maplibre-view ${compact ? "compact" : ""} ${expanded ? "expanded-map" : ""} ${onMapPick ? "pickable" : ""} ${centerMarker ? "center-pick-mode" : ""}`}>
-      <div ref={containerRef} className="maplibre-canvas-host" aria-label="Карта SmartTaxi" />
+      <div ref={containerRef} className="maplibre-canvas-host" aria-label="Карта BaiSapar" />
       <div className="map-vignette" />
       {centerMarker && (
         <div ref={pickerOverlayRef} className="smarttaxi-center-picker native-address-picker" aria-hidden="true">

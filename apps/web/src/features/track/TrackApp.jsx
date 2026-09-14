@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import MapView from "../map/MapView.jsx";
 import { api } from "../../lib/api.js";
 import { sanitizeAddressText } from "../../lib/text.js";
@@ -100,7 +100,7 @@ export default function TrackApp() {
   return (
     <main className="track-shell">
       <section className="track-card">
-        <SmartTaxiLogo />
+        <BrandLogo />
         {loading && <p className="track-muted">Загружаем поездку...</p>}
         {!loading && error && <p className="track-error">{error}</p>}
         {!loading && !error && trip && (

@@ -3732,7 +3732,7 @@ class _PassengerShellState extends State<PassengerShell>
                         Text(
                           widget.accountPhone.isNotEmpty
                               ? widget.accountPhone
-                              : l10n.passengerClientOfSmartTaxi,
+                              : l10n.passengerClientOfBaiSapar,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 13,
@@ -4333,7 +4333,7 @@ class _PassengerShellState extends State<PassengerShell>
                                       () => _tab = PassengerTab.legalSafety,
                                     ),
                             ),
-                            const TextSpan(text: ' SmartTaxi.'),
+                            const TextSpan(text: ' BaiSapar.'),
                           ],
                         ),
                       ),
@@ -5366,7 +5366,7 @@ class _PassengerShellState extends State<PassengerShell>
               const Center(child: BrandLogo(large: true)),
               const SizedBox(height: 18),
               const Text(
-                'SmartTaxi',
+                'BaiSapar',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
@@ -17518,7 +17518,7 @@ class _SmartDrawer extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'SmartTaxi · v$_appVersion',
+              'BaiSapar · v$_appVersion',
               style: TextStyle(
                 color: palette.textMuted,
                 fontSize: 11,
@@ -17701,7 +17701,7 @@ class _AppHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Text('SmartTaxi',
+          Text('BaiSapar',
               style: TextStyle(
                   fontSize: 13,
                   color: palette.textSecondary,

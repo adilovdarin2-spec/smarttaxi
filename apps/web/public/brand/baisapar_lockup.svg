@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="160" viewBox="0 0 720 160" fill="none" role="img" aria-label="BaiSapar">
+  <title>BaiSapar</title>
+  <defs>
+    <linearGradient id="lbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123C8F"/><stop offset="0.55" stop-color="#0E2A66"/><stop offset="1" stop-color="#091C47"/>
+    </linearGradient>
+    <linearGradient id="lgold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD879"/><stop offset="1" stop-color="#E9A72C"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(8,16) scale(0.125)">
+    <rect width="1024" height="1024" rx="232" fill="url(#lbg)"/>
+    <path d="M296 742 C 296 742, 322 520, 512 520 C 702 520, 728 372, 728 372"
+          fill="none" stroke="#FFFFFF" stroke-width="86" stroke-linecap="round" stroke-linejoin="round" opacity="0.97"/>
+    <circle cx="296" cy="742" r="74" fill="url(#lbg)"/>
+    <circle cx="296" cy="742" r="74" fill="none" stroke="#FFFFFF" stroke-width="44"/>
+    <circle cx="728" cy="372" r="116" fill="url(#lgold)"/>
+    <circle cx="728" cy="372" r="44" fill="#0E2A66"/>
+  </g>
+  <text x="164" y="103" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="900" fill="#0E2A66">Bai</text>
+  <text x="288" y="103" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="900" fill="#1D6FFF">Sapar</text>
+</svg>

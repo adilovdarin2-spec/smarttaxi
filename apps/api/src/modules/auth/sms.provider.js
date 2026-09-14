@@ -9,7 +9,7 @@ function cleanPhoneForProvider(phone) {
 
 function smsText({ code, purpose }) {
   const action = purpose === "RESET_PASSWORD" ? "восстановления доступа" : "подтверждения входа";
-  return `SmartTaxi: код ${action} ${code}. Никому не сообщайте этот код.`;
+  return `BaiSapar: код ${action} ${code}. Никому не сообщайте этот код.`;
 }
 
 function infobipUrl() {

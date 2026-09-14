@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="120" viewBox="0 0 560 120" fill="none" role="img" aria-label="BaiSapar">
+  <title>BaiSapar</title>
+  <!-- Text rather than outlines, matching the wordmark this replaces: the apps
+       already load Inter, and keeping it as text means the file stays a few
+       hundred bytes and the fallback stack still reads correctly. -->
+  <text x="0" y="82" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="900" fill="#0E2A66">Bai</text>
+  <text x="132" y="82" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="900" fill="#1D6FFF">Sapar</text>
+</svg>

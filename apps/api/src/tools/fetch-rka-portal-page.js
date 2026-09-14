@@ -11,7 +11,7 @@
 // This writes raw official records, not import-ready map points: s_buildings
 // does not provide geometry. Feed reviewed, geocoded rows to
 // official-addresses.js only after their coordinates are independently
-// validated against the SmartTaxi service boundary.
+// validated against the BaiSapar service boundary.
 
 import fs from "node:fs";
 import path from "node:path";

@@ -1,4 +1,4 @@
-// Reports usable local-address density for every active SmartTaxi region.
+// Reports usable local-address density for every active BaiSapar region.
 // It is intentionally non-blocking by default: catalogue density is an
 // operations/data concern, not a reason to prevent a safe code deploy.  Run
 // with --strict in a data-refresh pipeline to fail if a region has no house,

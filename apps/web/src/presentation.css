@@ -1,4 +1,4 @@
-/* SmartTaxi presentation layer. Only rider/driver surfaces are in scope;
+/* BaiSapar presentation layer. Only rider/driver surfaces are in scope;
    map geography, marker geometry, admin consoles and business state stay owned
    by their components. Loaded after the historical stylesheet deliberately. */
 .phone-frame:is(.taxi-client-shell, .driver-core-phone) {

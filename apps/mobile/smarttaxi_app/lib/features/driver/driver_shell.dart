@@ -2358,7 +2358,7 @@ class _DriverShellState extends State<DriverShell> {
               const Center(child: BrandLogo(large: true)),
               const SizedBox(height: 18),
               const Text(
-                'SmartTaxi',
+                'BaiSapar',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),

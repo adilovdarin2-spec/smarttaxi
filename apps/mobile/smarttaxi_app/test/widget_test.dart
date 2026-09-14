@@ -45,16 +45,11 @@ void main() {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
 
-    expect(logo, contains('assets/brand/smarttaxi_app_icon_2026.png'));
-    expect(
-      logo,
-      contains('assets/brand/smarttaxi_wordmark_2026.png'),
-    );
-    expect(pubspec, contains('assets/brand/smarttaxi_app_icon_2026.png'));
-    expect(
-      pubspec,
-      contains('assets/brand/smarttaxi_wordmark_2026.png'),
-    );
+    expect(logo, contains('assets/brand/baisapar_app_icon.png'));
+    expect(pubspec, contains('assets/brand/baisapar_app_icon.png'));
+    // The old brand's artwork must not come back with it.
+    expect(logo, isNot(contains('smarttaxi')));
+    expect(pubspec, isNot(contains('assets/brand/smarttaxi')));
     expect(
       pubspec,
       contains('assets/cars/tariff_v11_economy.png'),
@@ -539,7 +534,7 @@ void main() {
     expect(ruArb, contains('"passengerFaqQ3": "Как считается цена?"'));
     expect(ruArb, contains('"passengerFaqQ4": "Как стать водителем?"'));
     expect(passenger, contains('_aboutScreen'));
-    expect(passenger, contains('SmartTaxi'));
+    expect(passenger, contains('BaiSapar'));
     expect(passenger, contains('l10n.passengerAboutDescription'));
     expect(ruArb, contains('региональный сервис такси'));
     expect(passenger, contains('_ProfileGroupLabel'));

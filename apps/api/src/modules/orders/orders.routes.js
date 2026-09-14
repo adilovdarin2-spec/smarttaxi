@@ -749,7 +749,7 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
     if (driverAutoBlocked) {
       notifyOrderDriver(order, {
         title: "Аккаунт временно заблокирован",
-        body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку SmartTaxi.",
+        body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку BaiSapar.",
         type: "DRIVER_AUTO_BLOCKED"
       }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     }
@@ -1491,7 +1491,7 @@ async function updateStatus(req, res, next, status) {
     if (status === "TRIP_COMPLETED") {
       notifyOrderClient(order, {
         title: "Поездка завершена",
-        body: order.price ? `Стоимость поездки: ${order.price} ₸` : "Спасибо, что выбрали SmartTaxi",
+        body: order.price ? `Стоимость поездки: ${order.price} ₸` : "Спасибо, что выбрали BaiSapar",
         type: "TRIP_COMPLETED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     }

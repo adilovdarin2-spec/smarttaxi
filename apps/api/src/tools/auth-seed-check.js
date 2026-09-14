@@ -50,7 +50,7 @@ for (const expected of [
   "+77000000001",
   "Test Driver",
   "driver@smarttaxi.local",
-  "SmartTaxi Owner",
+  "BaiSapar Owner",
   "+77000000099",
   "Test Finance",
   "finance@smarttaxi.local",

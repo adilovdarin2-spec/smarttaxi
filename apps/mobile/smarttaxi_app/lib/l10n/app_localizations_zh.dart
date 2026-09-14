@@ -35,7 +35,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get appName => 'SmartTaxi';
+  String get appName => 'BaiSapar';
 
   @override
   String get continueLabel => '继续';
@@ -254,7 +254,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerFaqQ2 => '为什么服务只在指定地区可用?';
 
   @override
-  String get passengerFaqA2 => 'SmartTaxi 只在管理员开通的地区运营,以确保行程可控、公平。';
+  String get passengerFaqA2 => 'BaiSapar 只在管理员开通的地区运营,以确保行程可控、公平。';
 
   @override
   String get passengerFaqQ3 => '价格是如何计算的?';
@@ -365,7 +365,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passengerAboutDescription =>
-      'SmartTaxi 是一款区域出租车服务,致力于在已开通的地区提供快捷、透明、公正的出行服务。';
+      'BaiSapar 是一款区域出租车服务,致力于在已开通的地区提供快捷、透明、公正的出行服务。';
 
   @override
   String get passengerAboutRegionalModelTitle => '区域运营模式';
@@ -387,7 +387,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String passengerAboutVersionLabel(String version) {
-    return 'SmartTaxi · 版本 $version';
+    return 'BaiSapar · 版本 $version';
   }
 
   @override
@@ -550,7 +550,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String passengerReferralsShareMessage(String code) {
-    return '使用我的邀请码 $code 在 SmartTaxi 打车,首次出行即可获得奖励!';
+    return '使用我的邀请码 $code 在 BaiSapar 打车,首次出行即可获得奖励!';
   }
 
   @override
@@ -740,7 +740,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerTripsLoadErrorText => '请检查网络连接,并下拉屏幕重试。';
 
   @override
-  String get passengerTripsEmptyText => '下单后,SmartTaxi 会在这里显示行程状态。';
+  String get passengerTripsEmptyText => '下单后,BaiSapar 会在这里显示行程状态。';
 
   @override
   String get passengerGoHomeAction => '返回首页';
@@ -785,7 +785,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerTripDateYesterday => '昨天';
 
   @override
-  String get passengerTripShareTextPrefix => 'SmartTaxi 行程';
+  String get passengerTripShareTextPrefix => 'BaiSapar 行程';
 
   @override
   String passengerSearchingSubtitleWithCount(int count) {
@@ -1021,7 +1021,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String passengerShareTripMessage(String routeSuffix, String link) {
-    return '我正在通过 SmartTaxi 追踪行程$routeSuffix。状态:$link';
+    return '我正在通过 BaiSapar 追踪行程$routeSuffix。状态:$link';
   }
 
   @override
@@ -1033,7 +1033,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get passengerSosEmergencyLineText => '如遇突发状况,可拨打 SmartTaxi 紧急热线';
+  String get passengerSosEmergencyLineText => '如遇突发状况,可拨打 BaiSapar 紧急热线';
 
   @override
   String get passengerSupportWillBeNotifiedTitle => '客服将收到提醒';
@@ -1088,7 +1088,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerNotifLoadError => '无法加载通知';
 
   @override
-  String get passengerNotifSubtitle => '行程状态和 SmartTaxi 的重要消息';
+  String get passengerNotifSubtitle => '行程状态和 BaiSapar 的重要消息';
 
   @override
   String get passengerNotifCategoryOrders => '订单';
@@ -1453,7 +1453,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerLogoutConfirmTitle => '确定退出账户吗?';
 
   @override
-  String get passengerLogoutConfirmText => '退出后需要重新使用手机号登录才能继续使用 SmartTaxi。';
+  String get passengerLogoutConfirmText => '退出后需要重新使用手机号登录才能继续使用 BaiSapar。';
 
   @override
   String get passengerCancelButton => '取消';
@@ -1465,7 +1465,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerAccountLabelFallback => '用户';
 
   @override
-  String get passengerClientOfSmartTaxi => 'SmartTaxi 用户';
+  String get passengerClientOfBaiSapar => 'BaiSapar 用户';
 
   @override
   String get passengerStatTripsLabel => '行程数';
@@ -1634,7 +1634,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerAccountGroup => '账户';
 
   @override
-  String get passengerProfileSubtitle => 'SmartTaxi 账户、行程和设置';
+  String get passengerProfileSubtitle => 'BaiSapar 账户、行程和设置';
 
   @override
   String get passengerAddressEmptyHintTitle => '开始输入地址';
@@ -1653,7 +1653,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passengerNoLocationAccessText =>
-      'SmartTaxi 需要访问定位才能找到您附近的司机,请在手机设置中授予权限。';
+      'BaiSapar 需要访问定位才能找到您附近的司机,请在手机设置中授予权限。';
 
   @override
   String get passengerOpenSettingsButton => '打开设置';
@@ -1732,7 +1732,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passengerPointOutsideRegionError =>
-      '该位置不在所选地区范围内,请更换地区或在 SmartTaxi 服务范围内选择位置。';
+      '该位置不在所选地区范围内,请更换地区或在 BaiSapar 服务范围内选择位置。';
 
   @override
   String get passengerMapLoadingTitle => '地图加载中';
@@ -1902,7 +1902,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerLegalHubTitle => '法律信息';
 
   @override
-  String get passengerLegalHubSubtitle => 'SmartTaxi 官方文件,2026 年 7 月 6 日修订版';
+  String get passengerLegalHubSubtitle => 'BaiSapar 官方文件,2026 年 7 月 6 日修订版';
 
   @override
   String get passengerAllDocumentsButton => '全部文件';
@@ -2045,7 +2045,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get smsNeverShareCode => '请勿将验证码告诉任何人。';
 
   @override
-  String get smsStaffNeverAsk => 'SmartTaxi 员工绝不会向您索要验证码。';
+  String get smsStaffNeverAsk => 'BaiSapar 员工绝不会向您索要验证码。';
 
   @override
   String get smsCodeValidity => '验证码有效期为 5 分钟,计时结束后可重新发送。';
@@ -2230,7 +2230,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get secureHint => '您的密码受到安全保护,不会提供给第三方';
 
   @override
-  String get defaultAccountLabel => 'SmartTaxi 账户';
+  String get defaultAccountLabel => 'BaiSapar 账户';
 
   @override
   String get appTagline => '您的舒适,我们的关怀';
@@ -2251,7 +2251,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverDrawerMenuTooltip => '菜单';
 
   @override
-  String get driverDrawerNameFallback => 'SmartTaxi 司机';
+  String get driverDrawerNameFallback => 'BaiSapar 司机';
 
   @override
   String get driverDrawerWorkSection => '工作';
@@ -2401,7 +2401,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverDocumentsTitle => '证件';
 
   @override
-  String get driverDocumentsSubtitle => '请上传证件以供 SmartTaxi 管理员审核';
+  String get driverDocumentsSubtitle => '请上传证件以供 BaiSapar 管理员审核';
 
   @override
   String get driverDocumentsLoadError => '无法加载证件';
@@ -2548,7 +2548,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverProfileDebtLabel => '欠款';
 
   @override
-  String get driverProfileDocumentsNote => '车辆证件和地区准入由 SmartTaxi 管理员审核。';
+  String get driverProfileDocumentsNote => '车辆证件和地区准入由 BaiSapar 管理员审核。';
 
   @override
   String get driverProfileTripHistoryTitle => '行程记录';
@@ -2669,7 +2669,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get driverAboutDescription =>
-      'SmartTaxi 是一款区域出租车服务。司机端应用仅显示管理员已批准的开通地区内的订单。';
+      'BaiSapar 是一款区域出租车服务。司机端应用仅显示管理员已批准的开通地区内的订单。';
 
   @override
   String get driverAboutVersionLabel => '应用版本';
@@ -3185,7 +3185,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get driverEmergencyLineSubtitle => '如遇突发状况,可拨打 SmartTaxi 紧急热线';
+  String get driverEmergencyLineSubtitle => '如遇突发状况,可拨打 BaiSapar 紧急热线';
 
   @override
   String get driverSupportWillReceiveSignal => '客服将收到提醒';
@@ -3370,7 +3370,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverSettingsPayoutsGroup => '提现';
 
   @override
-  String get driverLogoutConfirmText => '退出后需要重新使用手机号登录才能继续在 SmartTaxi 工作。';
+  String get driverLogoutConfirmText => '退出后需要重新使用手机号登录才能继续在 BaiSapar 工作。';
 
   @override
   String get driverMustGoOfflineToChangeRegion => '请先停止接单才能更换地区';
@@ -4093,7 +4093,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateRequiredTitle => '需要更新应用';
 
   @override
-  String get updateRequiredText => 'SmartTaxi 已发布新版本。此版本不再受支持，请更新应用以继续使用。';
+  String get updateRequiredText => 'BaiSapar 已发布新版本。此版本不再受支持，请更新应用以继续使用。';
 
   @override
   String get updateButton => '更新';

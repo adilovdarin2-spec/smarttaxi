@@ -35,7 +35,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get appName => 'SmartTaxi';
+  String get appName => 'BaiSapar';
 
   @override
   String get continueLabel => 'Продолжить';
@@ -264,7 +264,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerFaqA2 =>
-      'SmartTaxi запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.';
+      'BaiSapar запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.';
 
   @override
   String get passengerFaqQ3 => 'Как считается цена?';
@@ -386,7 +386,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerAboutDescription =>
-      'SmartTaxi — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.';
+      'BaiSapar — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.';
 
   @override
   String get passengerAboutRegionalModelTitle => 'Региональная модель';
@@ -411,7 +411,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerAboutVersionLabel(String version) {
-    return 'SmartTaxi · версия $version';
+    return 'BaiSapar · версия $version';
   }
 
   @override
@@ -587,7 +587,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerReferralsShareMessage(String code) {
-    return 'Заказывай такси в SmartTaxi по моему коду $code и получи бонус на первую поездку!';
+    return 'Заказывай такси в BaiSapar по моему коду $code и получи бонус на первую поездку!';
   }
 
   @override
@@ -790,7 +790,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerTripsEmptyText =>
-      'Создайте заказ, и SmartTaxi откроет статус поездки здесь.';
+      'Создайте заказ, и BaiSapar откроет статус поездки здесь.';
 
   @override
   String get passengerGoHomeAction => 'На главную';
@@ -837,7 +837,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerTripDateYesterday => 'Вчера';
 
   @override
-  String get passengerTripShareTextPrefix => 'Поездка SmartTaxi';
+  String get passengerTripShareTextPrefix => 'Поездка BaiSapar';
 
   @override
   String passengerSearchingSubtitleWithCount(int count) {
@@ -1087,7 +1087,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerShareTripMessage(String routeSuffix, String link) {
-    return 'Слежу за поездкой SmartTaxi$routeSuffix. Статус: $link';
+    return 'Слежу за поездкой BaiSapar$routeSuffix. Статус: $link';
   }
 
   @override
@@ -1100,7 +1100,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerSosEmergencyLineText =>
-      'Экстренная линия SmartTaxi, если что-то пошло не так';
+      'Экстренная линия BaiSapar, если что-то пошло не так';
 
   @override
   String get passengerSupportWillBeNotifiedTitle => 'Поддержка получит сигнал';
@@ -1158,7 +1158,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerNotifSubtitle =>
-      'Статусы поездок и важные сообщения SmartTaxi';
+      'Статусы поездок и важные сообщения BaiSapar';
 
   @override
   String get passengerNotifCategoryOrders => 'Заказы';
@@ -1551,7 +1551,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerLogoutConfirmText =>
-      'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться SmartTaxi.';
+      'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться BaiSapar.';
 
   @override
   String get passengerCancelButton => 'Отмена';
@@ -1563,7 +1563,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerAccountLabelFallback => 'Пользователь';
 
   @override
-  String get passengerClientOfSmartTaxi => 'Клиент SmartTaxi';
+  String get passengerClientOfBaiSapar => 'Клиент BaiSapar';
 
   @override
   String get passengerStatTripsLabel => 'Поездок';
@@ -1747,7 +1747,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerProfileSubtitle =>
-      'Аккаунт, поездки и настройки SmartTaxi';
+      'Аккаунт, поездки и настройки BaiSapar';
 
   @override
   String get passengerAddressEmptyHintTitle => 'Начните вводить адрес';
@@ -1768,7 +1768,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerNoLocationAccessText =>
-      'SmartTaxi нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.';
+      'BaiSapar нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.';
 
   @override
   String get passengerOpenSettingsButton => 'Открыть настройки';
@@ -1853,7 +1853,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerPointOutsideRegionError =>
-      'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны SmartTaxi.';
+      'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны BaiSapar.';
 
   @override
   String get passengerMapLoadingTitle => 'Карта загружается';
@@ -2043,7 +2043,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerLegalHubSubtitle =>
-      'Официальные документы SmartTaxi, редакция от 6 июля 2026 года';
+      'Официальные документы BaiSapar, редакция от 6 июля 2026 года';
 
   @override
   String get passengerAllDocumentsButton => 'Все документы';
@@ -2192,8 +2192,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get smsNeverShareCode => 'Никому не сообщайте код.';
 
   @override
-  String get smsStaffNeverAsk =>
-      'Сотрудники SmartTaxi никогда не попросят его.';
+  String get smsStaffNeverAsk => 'Сотрудники BaiSapar никогда не попросят его.';
 
   @override
   String get smsCodeValidity =>
@@ -2392,7 +2391,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Ваш пароль надёжно защищён и не передаётся третьим лицам';
 
   @override
-  String get defaultAccountLabel => 'Аккаунт SmartTaxi';
+  String get defaultAccountLabel => 'Аккаунт BaiSapar';
 
   @override
   String get appTagline => 'Ваш комфорт. Наша забота';
@@ -2413,7 +2412,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverDrawerMenuTooltip => 'Меню';
 
   @override
-  String get driverDrawerNameFallback => 'Водитель SmartTaxi';
+  String get driverDrawerNameFallback => 'Водитель BaiSapar';
 
   @override
   String get driverDrawerWorkSection => 'Работа';
@@ -2569,7 +2568,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverDocumentsSubtitle =>
-      'Загрузите документы для проверки администратором SmartTaxi';
+      'Загрузите документы для проверки администратором BaiSapar';
 
   @override
   String get driverDocumentsLoadError => 'Не удалось загрузить документы';
@@ -2725,7 +2724,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverProfileDocumentsNote =>
-      'Документы автомобиля и допуск к регионам проверяет администратор SmartTaxi.';
+      'Документы автомобиля и допуск к регионам проверяет администратор BaiSapar.';
 
   @override
   String get driverProfileTripHistoryTitle => 'История поездок';
@@ -2856,7 +2855,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverAboutDescription =>
-      'SmartTaxi — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.';
+      'BaiSapar — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.';
 
   @override
   String get driverAboutVersionLabel => 'Версия приложения';
@@ -3400,7 +3399,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverEmergencyLineSubtitle =>
-      'Экстренная линия SmartTaxi, если что-то пошло не так';
+      'Экстренная линия BaiSapar, если что-то пошло не так';
 
   @override
   String get driverSupportWillReceiveSignal => 'Поддержка получит сигнал';
@@ -3597,7 +3596,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverLogoutConfirmText =>
-      'Придётся снова войти по номеру телефона, чтобы продолжить работу в SmartTaxi.';
+      'Придётся снова войти по номеру телефона, чтобы продолжить работу в BaiSapar.';
 
   @override
   String get driverMustGoOfflineToChangeRegion =>
@@ -4368,7 +4367,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get updateRequiredText =>
-      'Вышла новая версия SmartTaxi. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.';
+      'Вышла новая версия BaiSapar. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.';
 
   @override
   String get updateButton => 'Обновить';

@@ -19,7 +19,7 @@ class StartupScreen extends StatelessWidget {
           children: [
             Center(
               child: Semantics(
-                label: 'SmartTaxi',
+                label: 'BaiSapar',
                 child: const SizedBox.square(
                   dimension: 96,
                   child: Image(image: AssetImage(BrandLogo.iconAssetPath)),

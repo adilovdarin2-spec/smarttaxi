@@ -478,7 +478,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     if (_session != AppSession.splash) _maybeShowUpdateNudge();
     return MaterialApp(
       navigatorKey: _sessionNavigation.keyFor(_session),
-      title: 'SmartTaxi',
+      title: 'BaiSapar',
       debugShowCheckedModeBanner: false,
       theme: buildSmartTaxiTheme(),
       darkTheme: buildSmartTaxiDarkTheme(),
@@ -593,7 +593,7 @@ class _AuthBackdrop extends StatelessWidget {
   }
 }
 
-/// "SmartTaxi" plus the localised tagline, over the auth backdrop.
+/// "BaiSapar" plus the localised tagline, over the auth backdrop.
 ///
 /// The two weights inside the wordmark are the supplied lockup: "Smart" solid
 /// white and bold, "Taxi" the same size in a lighter weight and slightly
@@ -1765,7 +1765,7 @@ class _RuntimeFallbackScreen extends StatelessWidget {
                   const _RuntimeFallbackLogo(),
                   const SizedBox(height: 18),
                   const Text(
-                    'SmartTaxi',
+                    'BaiSapar',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
@@ -4356,8 +4356,8 @@ class _PremiumCard extends StatelessWidget {
 }
 
 String _userLabel(dynamic user) {
-  if (user is! Map) return 'Аккаунт SmartTaxi';
-  return (user['login'] ?? user['name'] ?? user['phone'] ?? 'Аккаунт SmartTaxi')
+  if (user is! Map) return 'Аккаунт BaiSapar';
+  return (user['login'] ?? user['name'] ?? user['phone'] ?? 'Аккаунт BaiSapar')
       .toString();
 }
 

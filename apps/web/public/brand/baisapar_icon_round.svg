@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="BaiSapar">
+  <title>BaiSapar</title>
+  <!-- The mark is a journey, not a letter: a route running from where the
+       rider stands to where they are going. "Сапар" is the trip; the gold end
+       point is "бай" — the good arrival. It is built from three shapes so it
+       still reads at 48px in a launcher. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123C8F"/>
+      <stop offset="0.55" stop-color="#0E2A66"/>
+      <stop offset="1" stop-color="#091C47"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD879"/>
+      <stop offset="1" stop-color="#E9A72C"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="512" cy="512" r="512" fill="url(#bg)"/>
+
+  <!-- The route. One stroke, round caps, generous weight so it survives the
+       aggressive downscaling Android does for mdpi. -->
+  <path d="M296 742 C 296 742, 322 520, 512 520 C 702 520, 728 372, 728 372"
+        fill="none" stroke="#FFFFFF" stroke-width="86"
+        stroke-linecap="round" stroke-linejoin="round" opacity="0.97"/>
+
+  <!-- Origin: an open ring, the way a map shows "you are here". -->
+  <circle cx="296" cy="742" r="74" fill="url(#bg)"/>
+  <circle cx="296" cy="742" r="74" fill="none" stroke="#FFFFFF" stroke-width="44"/>
+
+  <!-- Destination: solid, gold, deliberately the heaviest thing in the mark. -->
+  <circle cx="728" cy="372" r="116" fill="url(#gold)"/>
+  <circle cx="728" cy="372" r="44" fill="#0E2A66"/>
+</svg>

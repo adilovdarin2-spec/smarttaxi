@@ -33,7 +33,7 @@ function addressSearchUnavailable(message = "Address search provider is unavaila
 
 function nominatimHeaders() {
   return {
-    "User-Agent": "SmartTaxi/1.0 support@smarttaxi.local",
+    "User-Agent": "BaiSapar/1.0 support@baisapar.kz",
     "Accept": "application/json"
   };
 }

@@ -35,7 +35,7 @@ class AppLocalizationsKk extends AppLocalizations {
   }
 
   @override
-  String get appName => 'SmartTaxi';
+  String get appName => 'BaiSapar';
 
   @override
   String get continueLabel => 'Жалғастыру';
@@ -264,7 +264,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerFaqA2 =>
-      'SmartTaxi әкімші қосқан аймақтарда іске қосылады. Осылайша сапарлар бақыланатын және әділ болып қалады.';
+      'BaiSapar әкімші қосқан аймақтарда іске қосылады. Осылайша сапарлар бақыланатын және әділ болып қалады.';
 
   @override
   String get passengerFaqQ3 => 'Баға қалай есептеледі?';
@@ -388,7 +388,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerAboutDescription =>
-      'SmartTaxi — белсенді аймақтарда жылдам, түсінікті және әділ сапарлар үшін аймақтық такси қызметі.';
+      'BaiSapar — белсенді аймақтарда жылдам, түсінікті және әділ сапарлар үшін аймақтық такси қызметі.';
 
   @override
   String get passengerAboutRegionalModelTitle => 'Аймақтық модель';
@@ -414,7 +414,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String passengerAboutVersionLabel(String version) {
-    return 'SmartTaxi · $version нұсқасы';
+    return 'BaiSapar · $version нұсқасы';
   }
 
   @override
@@ -593,7 +593,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String passengerReferralsShareMessage(String code) {
-    return 'SmartTaxi-де менің $code кодым бойынша такси шақыр және алғашқы сапарыңа бонус ал!';
+    return 'BaiSapar-де менің $code кодым бойынша такси шақыр және алғашқы сапарыңа бонус ал!';
   }
 
   @override
@@ -796,7 +796,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerTripsEmptyText =>
-      'Тапсырыс жасаңыз, SmartTaxi сапар мәртебесін осында көрсетеді.';
+      'Тапсырыс жасаңыз, BaiSapar сапар мәртебесін осында көрсетеді.';
 
   @override
   String get passengerGoHomeAction => 'Басты бетке';
@@ -843,7 +843,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerTripDateYesterday => 'Кеше';
 
   @override
-  String get passengerTripShareTextPrefix => 'SmartTaxi сапары';
+  String get passengerTripShareTextPrefix => 'BaiSapar сапары';
 
   @override
   String passengerSearchingSubtitleWithCount(int count) {
@@ -1094,7 +1094,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String passengerShareTripMessage(String routeSuffix, String link) {
-    return 'SmartTaxi сапарын бақылап отырмын$routeSuffix. Мәртебе: $link';
+    return 'BaiSapar сапарын бақылап отырмын$routeSuffix. Мәртебе: $link';
   }
 
   @override
@@ -1107,7 +1107,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerSosEmergencyLineText =>
-      'Бірдеңе дұрыс болмаса — SmartTaxi шұғыл желісі';
+      'Бірдеңе дұрыс болмаса — BaiSapar шұғыл желісі';
 
   @override
   String get passengerSupportWillBeNotifiedTitle =>
@@ -1169,7 +1169,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerNotifSubtitle =>
-      'Сапар мәртебелері және SmartTaxi-дің маңызды хабарламалары';
+      'Сапар мәртебелері және BaiSapar-дің маңызды хабарламалары';
 
   @override
   String get passengerNotifCategoryOrders => 'Тапсырыстар';
@@ -1558,7 +1558,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerLogoutConfirmText =>
-      'SmartTaxi пайдалануды жалғастыру үшін телефон нөміріңізбен қайта кіруге тура келеді.';
+      'BaiSapar пайдалануды жалғастыру үшін телефон нөміріңізбен қайта кіруге тура келеді.';
 
   @override
   String get passengerCancelButton => 'Бас тарту';
@@ -1570,7 +1570,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerAccountLabelFallback => 'Пайдаланушы';
 
   @override
-  String get passengerClientOfSmartTaxi => 'SmartTaxi клиенті';
+  String get passengerClientOfBaiSapar => 'BaiSapar клиенті';
 
   @override
   String get passengerStatTripsLabel => 'Сапарлар';
@@ -1753,7 +1753,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerProfileSubtitle =>
-      'SmartTaxi аккаунты, сапарлары және баптаулары';
+      'BaiSapar аккаунты, сапарлары және баптаулары';
 
   @override
   String get passengerAddressEmptyHintTitle => 'Мекенжайды енгізе бастаңыз';
@@ -1774,7 +1774,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerNoLocationAccessText =>
-      'SmartTaxi-ге жақын жүргізушілерді табу үшін геолокацияға қолжетімділік қажет. Телефон баптауларынан рұқсат беріңіз.';
+      'BaiSapar-ге жақын жүргізушілерді табу үшін геолокацияға қолжетімділік қажет. Телефон баптауларынан рұқсат беріңіз.';
 
   @override
   String get passengerOpenSettingsButton => 'Баптауларды ашу';
@@ -1861,7 +1861,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerPointOutsideRegionError =>
-      'Бұл нүкте таңдалған аймақтан тыс. Аймақты ауыстырыңыз немесе SmartTaxi аймағының ішінен нүкте таңдаңыз.';
+      'Бұл нүкте таңдалған аймақтан тыс. Аймақты ауыстырыңыз немесе BaiSapar аймағының ішінен нүкте таңдаңыз.';
 
   @override
   String get passengerMapLoadingTitle => 'Карта жүктелуде';
@@ -2051,7 +2051,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerLegalHubSubtitle =>
-      'SmartTaxi ресми құжаттары, 2026 жылғы 6 шілдедегі редакция';
+      'BaiSapar ресми құжаттары, 2026 жылғы 6 шілдедегі редакция';
 
   @override
   String get passengerAllDocumentsButton => 'Барлық құжаттар';
@@ -2200,7 +2200,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get smsStaffNeverAsk =>
-      'SmartTaxi қызметкерлері оны ешқашан сұрамайды.';
+      'BaiSapar қызметкерлері оны ешқашан сұрамайды.';
 
   @override
   String get smsCodeValidity =>
@@ -2399,7 +2399,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Құпия сөзіңіз сенімді қорғалған және үшінші тұлғаларға берілмейді';
 
   @override
-  String get defaultAccountLabel => 'SmartTaxi аккаунты';
+  String get defaultAccountLabel => 'BaiSapar аккаунты';
 
   @override
   String get appTagline => 'Сіздің жайлылығыңыз. Біздің қамқорлығымыз';
@@ -2420,7 +2420,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverDrawerMenuTooltip => 'Мәзір';
 
   @override
-  String get driverDrawerNameFallback => 'SmartTaxi жүргізушісі';
+  String get driverDrawerNameFallback => 'BaiSapar жүргізушісі';
 
   @override
   String get driverDrawerWorkSection => 'Жұмыс';
@@ -2575,7 +2575,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverDocumentsSubtitle =>
-      'SmartTaxi әкімшісі тексеруі үшін құжаттарды жүктеңіз';
+      'BaiSapar әкімшісі тексеруі үшін құжаттарды жүктеңіз';
 
   @override
   String get driverDocumentsLoadError => 'Құжаттарды жүктеу мүмкін болмады';
@@ -2729,7 +2729,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverProfileDocumentsNote =>
-      'Көлік құжаттарын және аймаққа рұқсатты SmartTaxi әкімшісі тексереді.';
+      'Көлік құжаттарын және аймаққа рұқсатты BaiSapar әкімшісі тексереді.';
 
   @override
   String get driverProfileTripHistoryTitle => 'Сапарлар тарихы';
@@ -2862,7 +2862,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverAboutDescription =>
-      'SmartTaxi — аймақтық такси қызметі. Жүргізуші қосымшасы тек әкімші растаған белсенді аймақтардағы тапсырыстарды көрсетеді.';
+      'BaiSapar — аймақтық такси қызметі. Жүргізуші қосымшасы тек әкімші растаған белсенді аймақтардағы тапсырыстарды көрсетеді.';
 
   @override
   String get driverAboutVersionLabel => 'Қосымша нұсқасы';
@@ -3404,7 +3404,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverEmergencyLineSubtitle =>
-      'Бірдеңе дұрыс болмаса, SmartTaxi шұғыл желісі';
+      'Бірдеңе дұрыс болмаса, BaiSapar шұғыл желісі';
 
   @override
   String get driverSupportWillReceiveSignal => 'Қолдау қызметі сигнал алады';
@@ -3598,7 +3598,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverLogoutConfirmText =>
-      'SmartTaxi-де жұмысты жалғастыру үшін телефон нөміріңіз арқылы қайта кіру керек болады.';
+      'BaiSapar-де жұмысты жалғастыру үшін телефон нөміріңіз арқылы қайта кіру керек болады.';
 
   @override
   String get driverMustGoOfflineToChangeRegion =>
@@ -4354,7 +4354,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get updateRequiredText =>
-      'SmartTaxi-дың жаңа нұсқасы шықты. Бұл нұсқа енді қолдау көрмейді — пайдалануды жалғастыру үшін қолданбаны жаңартыңыз.';
+      'BaiSapar-дың жаңа нұсқасы шықты. Бұл нұсқа енді қолдау көрмейді — пайдалануды жалғастыру үшін қолданбаны жаңартыңыз.';
 
   @override
   String get updateButton => 'Жаңарту';

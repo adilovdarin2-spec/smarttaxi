@@ -192,7 +192,7 @@ const statements = [
   )`,
   `CREATE TABLE IF NOT EXISTS service_settings (
     id INTEGER PRIMARY KEY DEFAULT 1,
-    service_name TEXT NOT NULL DEFAULT 'SmartTaxi',
+    service_name TEXT NOT NULL DEFAULT 'BaiSapar',
     city TEXT NOT NULL DEFAULT 'Atakent',
     currency TEXT NOT NULL DEFAULT 'KZT',
     currency_symbol TEXT NOT NULL DEFAULT '₸',
@@ -335,7 +335,7 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id)",
   "CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id)",
   `INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
-   VALUES (1, 'SmartTaxi', 'Atakent', 'KZT', '₸')
+   VALUES (1, 'BaiSapar', 'Atakent', 'KZT', '₸')
    ON CONFLICT (id) DO NOTHING`,
   `DO $$
   BEGIN
@@ -1097,8 +1097,11 @@ const statements = [
   // "rider never came out" is a legitimate cancellation and has to be
   // distinguishable in review from a silent one.
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancel_reason_code TEXT",
-  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancel_reason_note TEXT"
-
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_cancel_reason_note TEXT",
+  // The service renamed itself to BaiSapar. Only a row still carrying the old
+  // default is touched: an owner who typed their own name in admin settings
+  // keeps it.
+  `UPDATE service_settings SET service_name='BaiSapar' WHERE service_name='SmartTaxi'`
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies

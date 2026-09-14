@@ -47,8 +47,7 @@ flutter:
         - asset: assets/fonts/InterVariable.ttf
   assets:
     - assets/fonts/OFL.txt
-    - assets/brand/smarttaxi_wordmark_2026.png
-    - assets/brand/smarttaxi_app_icon_2026.png
+    - assets/brand/baisapar_app_icon.png
     - assets/auth/auth_phone_full_reference.png
     - assets/auth/auth_welcome_logo_mark.png
     - assets/auth/auth_background_2026.png

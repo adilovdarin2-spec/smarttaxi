@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import DriversLiveMap from "./DriversLiveMap.jsx";
 import StandsPage from "./StandsPage.jsx";
 import CancellationReviewsPage from "./CancellationReviewsPage.jsx";
@@ -1063,7 +1063,7 @@ export default function AdminApp() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "smarttaxi-finance-transactions.csv";
+      link.download = "baisapar-finance-transactions.csv";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1227,7 +1227,7 @@ export default function AdminApp() {
     return (
       <main className="admin-control-shell admin-access-shell">
         <section className="admin-access-card">
-          <SmartTaxiLogo large />
+          <BrandLogo large />
           <h1>Загружаем панель</h1>
           <p>Проверяем сессию и доступ к административным разделам.</p>
           <div className="admin-skeleton-row" />
@@ -1240,7 +1240,7 @@ export default function AdminApp() {
     return (
       <main className="admin-control-shell admin-access-shell">
         <section className="admin-access-card">
-          <SmartTaxiLogo large />
+          <BrandLogo large />
           <h1>Войдите в панель управления</h1>
           <p>{accessError || "Доступ есть у владельца, оператора и финансового пользователя."}</p>
           <form className="admin-login-form" onSubmit={handleLogin}>
@@ -1278,9 +1278,9 @@ export default function AdminApp() {
     <main className={`admin-control-shell ${drawerOpen ? "drawer-open" : ""}`}>
       <aside className="admin-control-sidebar" aria-label="Навигация панели">
         <div className="admin-brand">
-          <SmartTaxiLogo />
+          <BrandLogo />
           <div>
-            <strong>SmartTaxi</strong>
+            <strong>BaiSapar</strong>
             <span>Control Center</span>
           </div>
         </div>
@@ -1657,7 +1657,7 @@ function DashboardPage({ dashboard, health, onSelectPage, isOwner }) {
     <div className="admin-page-stack">
       <section className="admin-command-hero">
         <div>
-          <span className="admin-command-kicker">SmartTaxi Control Center</span>
+          <span className="admin-command-kicker">BaiSapar Control Center</span>
           <h2>Панель владельца, которая ведёт сервис по проблемам</h2>
           <p>
             Здесь собраны зоны, водители, заказы, тарифы, финансы, дорожные события, отзывы и аудит.
@@ -1956,7 +1956,7 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
     <div className="admin-page-stack">
       <PageHeader
         title="Регионы"
-        subtitle="Управление зонами работы SmartTaxi"
+        subtitle="Управление зонами работы BaiSapar"
         action={canManageOwnerOnly ? <button type="button" className="admin-primary-button" onClick={onAddRegion}>Добавить регион</button> : null}
       >
         <SegmentedFilter
@@ -2310,7 +2310,7 @@ function TariffsPage({
       </DataCard>
 
       {!regions.length ? (
-        <StatePanel title="Сначала настройте регионы" text="Тарифы привязываются к активным рабочим регионам SmartTaxi." />
+        <StatePanel title="Сначала настройте регионы" text="Тарифы привязываются к активным рабочим регионам BaiSapar." />
       ) : !visible.length ? (
         <StatePanel
           title="Тарифы пока не настроены"

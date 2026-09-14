@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import { Icon } from "../../core/icons.jsx";
-import SmartTaxiLogo from "../../components/ui/SmartTaxiLogo.jsx";
+import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import { useLiveDriverRouteState } from "../client/useLiveDriverRoute.js";
 import { createDriverLocationPublisher } from "./driverLocationPublisher.js";
 import { driverLocationFeedback } from "./driverLocationFeedback.js";
@@ -258,11 +258,11 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
   return (
     <PhoneFrame className="driver-core-phone driver-core-login">
       <section className="driver-core-auth-card">
-        <SmartTaxiLogo className="auth-logo" />
+        <BrandLogo className="auth-logo" />
         <div>
           <p className="driver-core-eyebrow">Кабинет водителя</p>
           <h1>Хорошая смена начинается здесь</h1>
-          <p>Вход только для одобренных водителей SmartTaxi.</p>
+          <p>Вход только для одобренных водителей BaiSapar.</p>
         </div>
         <form onSubmit={onSubmit} className="driver-core-form">
           <label>
@@ -352,7 +352,7 @@ function DriverHeader({ driver, activeOrder, currentRegion, onAccount }) {
   return (
     <header className="driver-core-header">
       <div className="driver-core-brand">
-        <SmartTaxiLogo className="compact" />
+        <BrandLogo className="compact" />
         <span>{regionName(currentRegion)}</span>
       </div>
       <div className={`driver-core-status ${status.toLowerCase()}`}>{statusLabel(status)}</div>

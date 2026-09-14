@@ -1422,7 +1422,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 /* Final blue/white product polish lock.
    This block intentionally lives at the end so older experimental CSS cannot
-   overpower the approved premium SmartTaxi direction after auth. */
+   overpower the approved premium BaiSapar direction after auth. */
 .taxi-client-shell {
   --gw-ink: #111827;
   --gw-muted: #6d7482;
@@ -1685,7 +1685,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: linear-gradient(180deg, rgba(255,255,255,.97), #ffffff) !important;
 }
 
-/* SmartTaxi blue/white visual lock — keeps post-auth product screens coherent. */
+/* BaiSapar blue/white visual lock — keeps post-auth product screens coherent. */
 :root {
   --st-premium-brand: #1d6fff;
   --st-premium-brand-2: #65a3ff;
@@ -3789,8 +3789,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* SmartTaxi final mobile shell: white/blue, scoped away from admin/operator UI. */
-.smarttaxi-logo {
+/* BaiSapar final mobile shell: white/blue, scoped away from admin/operator UI. */
+.brand-logo {
   width: 36px;
   height: 36px;
   object-fit: contain;
@@ -3799,7 +3799,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   flex-shrink: 0;
 }
 
-.smarttaxi-logo--large {
+.brand-logo--large {
   width: 88px;
   height: 88px;
 }
@@ -4362,7 +4362,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   text-align: center;
 }
 
-.taxi-pwa .driver-login-clean .smarttaxi-logo {
+.taxi-pwa .driver-login-clean .brand-logo {
   margin: 0 auto 2px;
 }
 
@@ -5223,7 +5223,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   margin: auto;
 }
 
-.admin-access-card .smarttaxi-logo {
+.admin-access-card .brand-logo {
   margin-bottom: 8px;
 }
 
@@ -6078,7 +6078,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   to { background-position: -100% 0; }
 }
 
-/* Final SmartTaxi client/admin polish */
+/* Final BaiSapar client/admin polish */
 .taxi-client-shell {
   --taxi-bg: #f7fbff;
   --taxi-card-warm: #e8f1ff;
@@ -6524,7 +6524,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 10px;
 }
 
-.taxi-client-shell .taxi-brand .smarttaxi-logo {
+.taxi-client-shell .taxi-brand .brand-logo {
   width: 40px;
   height: 40px;
   object-fit: contain;
@@ -7479,7 +7479,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 12px;
 }
 
-.profile-avatar-row .smarttaxi-logo {
+.profile-avatar-row .brand-logo {
   width: 54px;
   height: 54px;
   object-fit: contain;
@@ -7723,7 +7723,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .about-card-premium { justify-items: start; }
-.about-card-premium .smarttaxi-logo {
+.about-card-premium .brand-logo {
   width: 74px;
   height: 74px;
   object-fit: contain;
@@ -9598,7 +9598,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* SmartTaxi final blue/white visual lock.
+/* BaiSapar final blue/white visual lock.
    Scoped overrides keep the existing flow intact while normalizing the visible client UI. */
 .taxi-client-shell {
   --st-brand: #0a64f5;
@@ -10301,7 +10301,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 20px;
 }
 
-.taxi-client-shell .auth-topbar .smarttaxi-logo {
+.taxi-client-shell .auth-topbar .brand-logo {
   width: 126px;
   max-width: 100%;
   height: 34px;
@@ -10344,7 +10344,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: 0 22px 48px rgba(15, 27, 45, .09);
 }
 
-.taxi-client-shell .auth-welcome-card .smarttaxi-logo {
+.taxi-client-shell .auth-welcome-card .brand-logo {
   width: 72px;
   height: 72px;
   z-index: 2;
@@ -11178,7 +11178,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     border-radius: 26px;
   }
 
-  .taxi-client-shell .auth-welcome-card .smarttaxi-logo {
+  .taxi-client-shell .auth-welcome-card .brand-logo {
     width: 58px;
     height: 58px;
   }
@@ -11242,7 +11242,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   box-shadow: 0 16px 34px rgba(15, 27, 45, .08);
 }
 
-.taxi-client-shell .auth-hero-panel .smarttaxi-logo {
+.taxi-client-shell .auth-hero-panel .brand-logo {
   width: 64px;
   height: 64px;
 }
@@ -17599,7 +17599,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   height: 48px;
 }
 
-.operator-brand .smarttaxi-logo {
+.operator-brand .brand-logo {
   width: 48px;
   height: 48px;
   flex: 0 0 auto;
@@ -17830,7 +17830,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 
   .operator-brand .smart-logo,
-  .operator-brand .smarttaxi-logo,
+  .operator-brand .brand-logo,
   .operator-brand b,
   .operator-brand span {
     display: none;
@@ -21597,7 +21597,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: radial-gradient(circle at 50% 0, rgba(29, 111, 255, .12), transparent 28rem), #f7fbff;
 }
 
-/* SmartTaxi Urban Flow.
+/* BaiSapar Urban Flow.
    One design language for the passenger journey: map first, one clear next
    action, and white surfaces that carry the information rather than compete
    with it. This layer intentionally stays scoped to the passenger shell. */
@@ -26145,7 +26145,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 
   body:has(.phone-frame.taxi-pwa)::before {
-    content: "SmartTaxi";
+    content: "BaiSapar";
     position: fixed;
     left: max(4vw, 40px);
     top: 50%;
