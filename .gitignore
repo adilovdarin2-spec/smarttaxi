@@ -16,7 +16,7 @@ apps/mobile/smarttaxi_app/android/key.properties
 .env.local
 apps/api/secrets/
 apps/api/uploads/
-apps/mobile/smarttaxi_app/android/app/google-services.json
+apps/mobile/smarttaxi_app/android/app/google-services.json*
 *.log
 .DS_Store
 coverage

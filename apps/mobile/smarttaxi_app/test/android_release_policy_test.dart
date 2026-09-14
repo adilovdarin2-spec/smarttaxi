@@ -11,6 +11,31 @@ void main() {
     expect(gradle, contains('targetSdk = 36'));
   });
 
+  test('the app is published under one identity, spelled the same everywhere',
+      () {
+    // The application id is the app's identity on Google Play and can only be
+    // chosen once — after the first publish it is a different app, with none
+    // of the reviews, installs or updates of the old one. It is fixed here so
+    // that a rename cannot happen by halves: the namespace, the id and the
+    // Kotlin package have to agree, or the manifest's ".MainActivity" resolves
+    // to a class that does not exist and the app dies at launch.
+    const id = 'kz.baisapar.app';
+    expect(gradle, contains('namespace = "$id"'));
+    expect(gradle, contains('applicationId = "$id"'));
+    expect(gradle, isNot(contains('kz.smarttaxi')));
+
+    final packagePath = id.replaceAll('.', '/');
+    final activity =
+        File('android/app/src/main/kotlin/$packagePath/MainActivity.kt');
+    expect(activity.existsSync(), isTrue,
+        reason: 'MainActivity must live in the package it declares');
+    expect(activity.readAsStringSync(), contains('package $id'));
+
+    final manifest =
+        File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    expect(manifest, contains('android:name=".MainActivity"'));
+  });
+
   test('Android release remains fail-closed without owner signing material',
       () {
     expect(

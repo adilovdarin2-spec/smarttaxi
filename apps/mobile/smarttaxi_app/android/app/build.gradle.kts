@@ -26,7 +26,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "kz.smarttaxi.app"
+    namespace = "kz.baisapar.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "kz.smarttaxi.app"
+        applicationId = "kz.baisapar.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
