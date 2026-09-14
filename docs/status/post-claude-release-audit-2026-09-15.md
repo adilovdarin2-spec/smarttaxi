@@ -42,6 +42,14 @@ All native `flutter_map` tile requests now use `kz.baisapar.app` as their user
 agent package name. The retired `com.smarttaxi.app` value was removed from the
 passenger, driver and taxi-stand maps, with an Android policy regression test.
 
+### Driver navigation no longer covers the shift action
+
+The new taxi-stand destination increased the driver bottom navigation to six
+items, but the compact web grid still reserved only five columns. At 360 px,
+Income wrapped onto a second row and covered most of the primary "go online"
+button. The grid now reserves six equal columns. The browser QA asserts that all
+destinations share one row and that the shift action ends above the navigation.
+
 ### Source hygiene
 
 The two whitespace defects found by `git diff --check` were removed. No user or
@@ -56,8 +64,9 @@ Claude changes were reset, cleaned or rewritten.
 | Docker QA smoke | passed, including minimum-ETA route candidate selection |
 | Regional route/pricing smoke | 34/34 tariff previews passed |
 | API test suite | passed; 121,361 address rows checked across all 13 regions |
-| Web tests | 165/165 passed |
+| Web tests | 166/166 passed |
 | Web production build | passed; bundled MapLibre worker/map checks passed |
+| Local web visual smoke | passenger home/address/tariff/payment and driver line/orders/income passed at 360/390 px |
 | Flutter analysis | no issues found |
 | Flutter tests | 325/325 passed |
 | Android debug APK | built; package/label `kz.baisapar.app` / `BaiSapar`; target SDK 36; APK Signature Scheme v2 verified with one debug signer |
@@ -83,9 +92,10 @@ It is a debug-signed QA artifact, not a store release.
 
 The current machine exposed no Android device through ADB during this pass, so
 the new APK was not installed and fresh physical screenshots must not be
-claimed. The Windows visual helper also timed out twice while acquiring the
-already-open local web tabs; the automated web presentation/layout suites pass,
-but this pass does not add new human-visible browser screenshots.
+claimed. The Windows visual helper timed out twice while acquiring the open
+tabs, so the repository's local-only Playwright harness was used instead. Its
+fresh screenshots under `qa_screenshots/post-claude-2026-09-15` were inspected;
+that inspection found and verified the six-tab driver navigation fix above.
 
 ## Work that cannot be closed by code alone
 

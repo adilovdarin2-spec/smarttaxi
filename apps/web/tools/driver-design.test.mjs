@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
+
+test('driver navigation reserves one column for every current destination', () => {
+  const styles = readFileSync(fileURLToPath(new URL('../src/styles.css', import.meta.url)), 'utf8');
+  assert.match(
+    styles,
+    /\.phone-frame\.driver-core-phone \.driver-core-tabs\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)\s*!important;/s,
+  );
+});
 
 test('driver surfaces keep addresses, action hierarchy and payment gates', async () => {
   // The API module reads the host at import time; these pure surfaces never

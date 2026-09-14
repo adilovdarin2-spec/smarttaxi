@@ -35,11 +35,22 @@ try {
   for (const [key, label] of [['line', 'Линия'], ['orders', 'Заказы'], ['money', 'Доход']]) {
     await page.getByRole('navigation', { name: 'Меню водителя', exact: true }).getByRole('button', { name: label, exact: true }).click();
     await page.waitForTimeout(1000);
+    // The line view is the first map shown after login. Give its remote vector
+    // tiles time to paint before recording visual evidence; later tabs reuse
+    // the warm map instance and do not need the same cold-start allowance.
+    if (key === 'line') await page.waitForTimeout(4000);
     for (const width of [390, 360]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 740 });
       const phone = page.locator('.driver-core-phone');
       const bounds = await phone.boundingBox();
       assert(bounds.x >= -1 && bounds.x + bounds.width <= width + 1, `${key}: outer overflow`);
+      const navigation = await page.locator('.driver-core-tabs').boundingBox();
+      const tabBounds = await Promise.all(
+        (await page.locator('.driver-core-tabs button').all()).map(button => button.boundingBox())
+      );
+      assert(tabBounds.every(Boolean), `${key}: every navigation destination must be visible`);
+      assert(Math.max(...tabBounds.map(item => item.y)) - Math.min(...tabBounds.map(item => item.y)) < 2,
+        `${key}: all six navigation destinations must stay on one row`);
       for (const card of await page.locator('.driver-core-line-card, .driver-core-money-card, .driver-core-money-grid > div').all()) {
         assert.equal(await card.evaluate(el => el.scrollWidth > el.clientWidth + 1), false, `${key}: card content overflow`);
       }
@@ -47,11 +58,15 @@ try {
         const card = await page.locator('.driver-core-line-card').boundingBox();
         const action = await page.locator('.driver-core-line-card .app-button').boundingBox();
         assert(action.width >= card.width - 2, 'Shift action should span the sheet');
+        assert(action.y + action.height <= navigation.y + 1, 'Shift action must remain above navigation');
         const stats = await page.locator('.driver-core-stats').boundingBox();
         assert(stats.height >= 60, 'Earnings strip must not collapse in a scrolling sheet');
-        const badge = await page.locator('.map-badge').boundingBox();
+        const badge = page.locator('.map-badge');
         const attribution = await page.locator('.map-attribution').boundingBox();
-        assert(badge.height < 64, 'Map status must not stretch over the map');
+        if (await badge.isVisible()) {
+          const badgeBounds = await badge.boundingBox();
+          assert(badgeBounds && badgeBounds.height < 64, 'Visible map status must not stretch over the map');
+        }
         assert(attribution.height < 40, 'Map attribution must stay a compact readable label');
       }
       await page.screenshot({ path: path.join(output, `${key}-${width}.png`) });

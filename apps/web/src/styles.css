@@ -24021,10 +24021,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 /* Driver web navigation follows the same compact, touch-first information
-   hierarchy as the native driver shell. It used to reserve four columns for
-   five text-only actions, forcing the final action onto a second row. */
+   hierarchy as the native driver shell. Keep all six current destinations on
+   one row; a five-column grid made Income wrap below Stands and cover the
+   primary shift action on compact screens. */
 .phone-frame.driver-core-phone .driver-core-tabs {
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   gap: 3px !important;
   padding: 6px !important;
   border-radius: 22px !important;
