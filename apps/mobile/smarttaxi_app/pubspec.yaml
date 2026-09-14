@@ -70,7 +70,6 @@ flutter:
     - assets/cars/tariff_delivery_smarttaxi_v3.png
     - assets/icons/
     - assets/map/driver_car_topview_white.png
-    - assets/map/smarttaxi_map_marker.png
     - assets/map/marker_my_location_2026.png
     - assets/map/marker_destination_2026.png
     - assets/map/marker_address_pick_2026.png
