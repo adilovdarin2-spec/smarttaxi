@@ -51,7 +51,10 @@ def mark(cap, cx, cy, gap):
     return d_of(out)
 
 MARK_ICON = mark(610, 512, 512, 46)          # legacy/square icon
-MARK_ADAPTIVE = mark(470, 512, 512, 36)      # inside the adaptive safe zone
+# Smaller than the square icon's: what a launcher shows of an adaptive icon is
+# the middle 72dp of 108, and at 470 the B pressed against the edge of a round
+# mask. Checked against circle, squircle and rounded-square masks.
+MARK_ADAPTIVE = mark(430, 512, 512, 33)
 MARK_ALONE = mark(880, 512, 512, 66)         # on its own, no field
 
 DEFS = f'''  <defs>
