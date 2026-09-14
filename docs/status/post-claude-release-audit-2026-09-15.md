@@ -60,7 +60,7 @@ Claude changes were reset, cleaned or rewritten.
 | Web production build | passed; bundled MapLibre worker/map checks passed |
 | Flutter analysis | no issues found |
 | Flutter tests | 325/325 passed |
-| Android debug APK | built; APK Signature Scheme v2 verified with one debug signer |
+| Android debug APK | built; package/label `kz.baisapar.app` / `BaiSapar`; target SDK 36; APK Signature Scheme v2 verified with one debug signer |
 | Docker Compose validation | passed |
 
 The web build still reports the known large MapLibre chunk warning. Flutter also
