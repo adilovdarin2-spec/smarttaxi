@@ -1,4 +1,4 @@
-# SmartTaxi — remaining release acceptance
+# BaiSapar — remaining release acceptance
 
 This is the current acceptance list, not a claim that every screen or external
 integration is production-ready. The historical August "final readiness" report
@@ -6,21 +6,23 @@ does not replace the September evidence. Work and QA remain local on `dev`.
 
 ## Verified local baseline
 
-Latest September 10/11 evidence: [local release gate](local-release-gate-2026-09-10.md)
-and [taxi stands and cancellation review](stands-and-cancellation-review-2026-09-11.md),
-the first physical-device pass since the phone was reconnected.
-The complete API checks, 134 web tests/build, 283 Flutter tests/analyze and a
-fresh local-endpoint APK passed.
+Latest September 15 evidence: [post-Claude release audit](post-claude-release-audit-2026-09-15.md),
+building on the [local release gate](local-release-gate-2026-09-10.md) and
+[taxi stands and cancellation review](stands-and-cancellation-review-2026-09-11.md).
+The complete API checks, 167 web tests/build, 328 Flutter tests/analyze and a
+fresh BaiSapar debug APK passed. Both push and pull-request CI runs for commit
+`117baa3` passed all four jobs.
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
 raw card data was not migrated and requires an owner-controlled retention decision.
-The phone is connected again. The current cable-free APK
-(`SmartTaxi-stands-WiFi-2026-09-11.apk`) is installed and was driven through
-login, all 13 regions, address and map selection, and both new stand screens on
-the device; see the stand evidence above. Moving-GPS, background and permission-
+The September 11 physical-device evidence remains useful but is historical: it
+predates the application ID change to `kz.baisapar.app`. The current machine
+exposes no device through ADB, so the new package has not been installed and no
+fresh physical screenshots are claimed. Moving-GPS, background and permission-
 revocation acceptance is still open.
 
-- API dependency policy and 36 checks; web 49 tests and production build.
+- API dependency policy and its 36 focused checks; the corresponding historical
+  web pass had 49 focused tests and a production build.
 - Standard root-lock Docker images, healthy local API/web/PostgreSQL/Redis,
   actual isolated backup restoration. No database volume was removed.
 - npm TLS validation enabled by default in both API build contexts and Compose;
@@ -34,11 +36,11 @@ revocation acceptance is still open.
   active/unpaid-trip restoration and stale-session isolation.
 - Native GPS queue/route ordering, presentation, transport and creation
   reconciliation plus passenger route framing and socket session isolation:
-  272 tests and clean analysis. Address search now exposes Android address
+  328 tests and clean analysis. Address search now exposes Android address
   keyboard/autofill semantics and localized close/clear icon tooltips. The
-  newest localhost candidate is built and signature/hash-verified but remains
-  uninstalled because no ADB device is currently exposed; earlier physical
-  installation evidence remains historical.
+  September 10 localhost candidate was built and signature/hash-verified; the
+  current BaiSapar artifact and its installation status are recorded in the
+  table below. Earlier physical installation evidence remains historical.
 - Physical Android passenger pre-order screens and the driver lifecycle through
   manual local CASH receipt were exercised. The revised route/flag and home
   footer are visually confirmed; this does not close all native acceptance.
@@ -51,8 +53,9 @@ revocation acceptance is still open.
 - Sep 6 composition refinement: bundled licensed Inter typography, simplified
   startup, edge-to-edge passenger/driver chrome, full-height native address
   search and a shared lighter map palette. Duplicate provider buildings are
-  hidden while SmartTaxi buildings remain below labels/routes/markers. The final
-  localhost APK was installed and hash-verified on the physical phone.
+  hidden while BaiSapar buildings remain below labels/routes/markers. The final
+  pre-rebrand localhost APK was installed and hash-verified on the physical
+  phone; that is not current-package evidence.
 - Android/web read-after-uncertain-creation recovery, with a compiled-browser
   proof of actual backend commit, lost response and exactly one creation POST.
 - Strict route/maneuver validation, correct missing intercity rate inheritance,
@@ -76,7 +79,7 @@ revocation acceptance is still open.
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
 | Production routing capacity | Agreed staging/self-hosted provider, data and capacity testing before rollout | Local readiness currently uses the public OSRM demo; no load test should target that shared service |
 | Deployment and remote CI acceptance | Read CI results; apply and verify an authorized staging/production configuration | No production deploy is authorized in this local QA pass; Railway root-context adoption still needs service settings migration |
-| Final Android release artifact | Owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | The newest development-only cable-free candidate is `SmartTaxi-customer-WiFi-2026-09-11.apk` (signature and SHA-256 verified); it targets the isolated private-LAN QA stack and cannot become a store artifact. Installation is pending until phone QA resumes. The earlier signed local AAB remains recorded in `release-qa-local-2026-09-08.md`; no store upload is authorized. |
+| Final Android release artifact | Owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | The newest development candidate is `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk` (262,396,410 bytes; SHA-256 `bb3e59eef01aa2918b0ba531a10cf07cfc361e4d34ceb060717902dbeccfd79c`; package/label `kz.baisapar.app` / `BaiSapar`; APK Signature Scheme v2 verified). It is debug-signed and uninstalled because no ADB device is currently exposed. Older SmartTaxi APK/AAB evidence predates the package-ID change and cannot certify the BaiSapar store artifact. No store upload is authorized. |
 
 The current transport/recovery pass fixes unsafe native write replay, stale
 session-expiry callbacks and recovery after an uncertain order response in both

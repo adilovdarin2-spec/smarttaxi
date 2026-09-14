@@ -87,6 +87,25 @@ Claude changes were reset, cleaned or rewritten.
 | Android debug APK | built; package/label `kz.baisapar.app` / `BaiSapar`; target SDK 36; APK Signature Scheme v2 verified with one debug signer |
 | Docker Compose validation | passed |
 
+## Local completion audit against the requested scope
+
+| Requested area | Authoritative local evidence | Assessment |
+|---|---|---|
+| Backend | Complete API suite, full guarded Docker smoke, readiness and API CI job | Locally complete |
+| Web | 167 tests, production bundle, MapLibre build guard and paired lifecycle screenshots at 360/390 px | Locally complete |
+| Flutter Android | Clean analysis, 328 tests, compiled debug APK, manifest/signature checks and mobile CI job | Source/build complete; current physical install remains unavailable |
+| Docker | Clean image rebuild without removing volumes, valid Compose config and four healthy services | Locally complete |
+| Addresses | 121,361-row/13-region invariant check, strict address/POI confirmation and live local search/picker coverage | Implementation complete; official house-level coverage needs the external RKA exports below |
+| Maps and markers | Label/building layer guards, real rendered route/car/finish assertions and inspected lifecycle captures | Locally complete; current native-device rendering remains a field gate |
+| Routes and navigation | Minimum-duration OSRM candidate guard, 34 regional/intercity previews and live pickup/drop-off route lifecycle | Locally complete within the stated no-live-traffic/public-provider boundary |
+| UI/UX and parity | Complete passenger/driver browser lifecycle, six driver destinations, matching web/Flutter quick-message policy and compact-layout tests | Locally complete; moving-device/background/TTS comparison remains a field gate |
+| BaiSapar identity | Visible-copy tests, Android package/label verification and readiness identity | Complete |
+
+This table deliberately separates source/build completion from facts that only
+an attached phone, an authorized production environment or owner-supplied data
+can prove. A green unit test is not used as evidence for physical GPS, TTS,
+production traffic or complete official address coverage.
+
 The web build still reports the known large MapLibre chunk warning. Flutter also
 warns that future SDK versions will require newer Gradle, Android Gradle Plugin
 and Kotlin versions. Neither warning fails the current verified build; upgrades
