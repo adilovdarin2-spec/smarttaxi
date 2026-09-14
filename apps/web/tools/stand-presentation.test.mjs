@@ -157,7 +157,7 @@ test("both web apps offer only the lines their own side may send", () => {
   }
   // A driver on a laptop could previously only ring the rider.
   const driver = read("../src/features/driver/DriverApp.jsx");
-  assert.match(driver, /<DriverQuickMessages orderId=\{order\.id\} \/>/);
+  assert.match(driver, /<DriverQuickMessages orderId=\{order\.id\} status=\{order\.status\} \/>/);
 });
 
 test("a confirmed case leads to the driver it is about", () => {

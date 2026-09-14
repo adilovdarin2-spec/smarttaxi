@@ -31,6 +31,7 @@ import '../../core/widgets/status_pill.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/cancellation_reason_sheet.dart';
 import '../shared/models.dart';
+import 'driver_quick_message_policy.dart';
 import 'models/driver_location_sync.dart';
 import 'models/navigation_progress.dart';
 import 'models/driver_shell_helpers.dart';
@@ -3289,24 +3290,28 @@ class _DriverShellState extends State<DriverShell> {
                           style:
                               TextStyle(color: context.palette.textSecondary)),
                     ],
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => _DriverQuickMessageSheet(
-                            api: widget.api,
-                            orderId: _activeOrder!.id,
+                    if (driverQuickMessageKeysForStatus(_activeOrder!.status)
+                        .isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => _DriverQuickMessageSheet(
+                              api: widget.api,
+                              orderId: _activeOrder!.id,
+                              status: _activeOrder!.status,
+                            ),
                           ),
+                          icon: const Icon(Icons.chat_bubble_outline_rounded,
+                              size: 18),
+                          label: Text(l10n.driverQuickMessageToClientButton),
                         ),
-                        icon: const Icon(Icons.chat_bubble_outline_rounded,
-                            size: 18),
-                        label: Text(l10n.driverQuickMessageToClientButton),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 16),
                     if (_canNoShow(_activeOrder!.status)) ...[
                       const SizedBox(height: 10),
@@ -6041,10 +6046,15 @@ class _DriverMapBadge extends StatelessWidget {
 // (apps/api/src/modules/orders/orders.routes.js) — the server owns the
 // canonical text and rejects any key outside this set.
 class _DriverQuickMessageSheet extends StatefulWidget {
-  const _DriverQuickMessageSheet({required this.api, required this.orderId});
+  const _DriverQuickMessageSheet({
+    required this.api,
+    required this.orderId,
+    required this.status,
+  });
 
   final ApiClient api;
   final String orderId;
+  final String status;
 
   @override
   State<_DriverQuickMessageSheet> createState() =>
@@ -6054,12 +6064,17 @@ class _DriverQuickMessageSheet extends StatefulWidget {
 class _DriverQuickMessageSheetState extends State<_DriverQuickMessageSheet> {
   // "Жду у входа" is the rider's line, not the driver's; the server refuses it
   // from this side. What is left is what a driver actually needs to say.
-  Map<String, String> _messages(AppLocalizations l10n) => {
-        'I_ARRIVED': l10n.driverQuickMessageArrived,
-        'ON_MY_WAY': l10n.driverQuickMessageOnMyWay,
-        'PLEASE_COME_OUT': l10n.driverQuickMessagePleaseComeOut,
-        'RUNNING_LATE_2MIN': l10n.driverQuickMessageRunningLate2Min,
-      };
+  Map<String, String> _messages(AppLocalizations l10n) {
+    final allowed = driverQuickMessageKeysForStatus(widget.status);
+    final messages = {
+      'I_ARRIVED': l10n.driverQuickMessageArrived,
+      'ON_MY_WAY': l10n.driverQuickMessageOnMyWay,
+      'PLEASE_COME_OUT': l10n.driverQuickMessagePleaseComeOut,
+      'RUNNING_LATE_2MIN': l10n.driverQuickMessageRunningLate2Min,
+    };
+    return Map.fromEntries(
+        messages.entries.where((entry) => allowed.contains(entry.key)));
+  }
 
   String? _sending;
 

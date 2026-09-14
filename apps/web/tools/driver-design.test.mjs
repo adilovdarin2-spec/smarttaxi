@@ -14,6 +14,13 @@ test('driver navigation reserves one column for every current destination', () =
   );
 });
 
+test('driver trip stages reset the viewport before presenting the next action', () => {
+  const source = readFileSync(fileURLToPath(new URL('../src/features/driver/DriverApp.jsx', import.meta.url)), 'utf8');
+  assert.match(source, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
+  assert.match(source, /document\.querySelector\("\.driver-core-panel"\)\?\.scrollTo/);
+  assert.match(source, /\[tab, displayedOrder\?\.id, displayedOrder\?\.status\]/);
+});
+
 test('driver surfaces keep addresses, action hierarchy and payment gates', async () => {
   // The API module reads the host at import time; these pure surfaces never
   // log in or issue requests. Keep that browser input explicit in this test.
@@ -21,7 +28,10 @@ test('driver surfaces keep addresses, action hierarchy and payment gates', async
   globalThis.window = { location: { hostname: '127.0.0.1' } };
   const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom', optimizeDeps: { noDiscovery: true } });
   try {
-    const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel, DriverEmptyState, DriverErrorNotice, DriverLoadUnavailable } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
+    const { IncomingOrderCard, ActiveOrderPanel, DriverShiftPanel, DriverEmptyState, DriverErrorNotice, DriverLoadUnavailable, driverQuickMessageCodes } = await server.ssrLoadModule('/src/features/driver/DriverApp.jsx');
+    assert.deepEqual(driverQuickMessageCodes('DRIVER_GOING_TO_CLIENT'), ['ON_MY_WAY', 'RUNNING_LATE_2MIN']);
+    assert.deepEqual(driverQuickMessageCodes('WAITING_CLIENT'), ['I_ARRIVED', 'PLEASE_COME_OUT']);
+    assert.deepEqual(driverQuickMessageCodes('TRIP_STARTED'), []);
     const order = { id: 'design-fixture', status: 'SEARCHING_DRIVER', tariff: 'Economy',
       estimatedPrice: 700, paymentMethod: 'CASH', distanceKm: 3.5, durationMin: 12,
       pickup: 'улица Бектасова, 12, главный вход со стороны двора', dropoff: 'улица Кожанова, 34' };

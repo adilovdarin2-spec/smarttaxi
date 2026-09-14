@@ -295,7 +295,17 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
 
 // Which lines this side may send is the server's call — the text is rendered
 // to the rider — so the list is fetched rather than written here a second time.
-function DriverQuickMessages({ orderId }) {
+export function driverQuickMessageCodes(status) {
+  if (["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT"].includes(status)) {
+    return ["ON_MY_WAY", "RUNNING_LATE_2MIN"];
+  }
+  if (["DRIVER_ARRIVED", "WAITING_CLIENT"].includes(status)) {
+    return ["I_ARRIVED", "PLEASE_COME_OUT"];
+  }
+  return [];
+}
+
+function DriverQuickMessages({ orderId, status }) {
   const [options, setOptions] = useState([]);
   const [sendingKey, setSendingKey] = useState("");
   const [sent, setSent] = useState("");
@@ -325,12 +335,14 @@ function DriverQuickMessages({ orderId }) {
     }
   }
 
-  if (!options.length) return null;
+  const allowedCodes = driverQuickMessageCodes(status);
+  const visibleOptions = options.filter(item => allowedCodes.includes(item.code));
+  if (!visibleOptions.length) return null;
 
   return (
     <div className="driver-quick-messages">
       <div className="driver-quick-message-bar" role="group" aria-label="Быстрые сообщения пассажиру">
-        {options.map(item => (
+        {visibleOptions.map(item => (
           <button
             type="button"
             key={item.code}
@@ -479,8 +491,8 @@ export function ActiveOrderPanel({ order, driverRoute, onAction, onCancel, onNoS
         {/* The phone app has let a driver send these since the feature shipped;
             the browser had only the call button, so a driver on a laptop had
             no way to say "я приехал" short of ringing the rider. */}
-        {["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "TRIP_STARTED"].includes(order.status) &&
-          <DriverQuickMessages orderId={order.id} />}
+        {driverQuickMessageCodes(order.status).length > 0 &&
+          <DriverQuickMessages orderId={order.id} status={order.status} />}
         {!awaitingPayment && <div className="driver-core-split-actions">
           {order.rider_phone && <a className="driver-core-call" href={`tel:${order.rider_phone}`}><Icon name="phone" /> Позвонить</a>}
           {canNoShow(order) && (
@@ -653,6 +665,21 @@ export default function DriverApp() {
   const isOnline = ["ONLINE", "FREE"].includes(driver?.publicStatus || driver?.status);
   const isWorking = isOnline || ["BUSY"].includes(driver?.publicStatus || driver?.status);
   const displayedOrder = activeOrder || settlementOrders[0] || null;
+  useEffect(() => {
+    // A stage action can sit at the bottom of a long trip sheet. Browsers keep
+    // that scroll offset after React replaces the sheet, which used to open
+    // the next stage with its heading and even the map toolbar cut off. Every
+    // trip stage is a new task, so present it from the top just like native.
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      document.querySelector(".driver-core-panel")?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto"
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [tab, displayedOrder?.id, displayedOrder?.status]);
   const lineStatusTitle = activeOrder
     ? "Вы выполняете заказ"
     : isOnline

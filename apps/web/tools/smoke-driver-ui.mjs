@@ -216,6 +216,12 @@ async function failAction(orderId, action, label, expectedSelector) {
   const pattern = `**/api/driver/orders/${orderId}/${action}`;
   await page.route(pattern, route => route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ error: "INVALID_STATUS_TRANSITION" }) }));
   await page.locator(`[data-order-id="${orderId}"]`).getByRole("button", { name: label, exact: true }).click();
+  if (action === "cancel") {
+    const dialog = page.getByRole("dialog", { name: "Почему отменяете поездку?", exact: true });
+    await dialog.waitFor();
+    await dialog.getByLabel("Другая причина", { exact: true }).check();
+    await dialog.getByRole("button", { name: "Отменить поездку", exact: true }).click();
+  }
   await page.locator(".driver-core-error").filter({ hasText: "Это действие сейчас недоступно" }).waitFor();
   assert(await page.locator(expectedSelector).isVisible(), `${action} failure must preserve current order UI`);
   assert.equal(await page.locator(".driver-core-tabs button.active").innerText(), action === "accept" || action === "reject" ? "Заказы" : "Поездка");
@@ -233,6 +239,9 @@ async function transition(orderId, label, status, image) {
   const result = await response.json();
   assert.equal(result.order?.public_status || result.order?.status, status);
   await page.waitForFunction(() => !document.querySelector(".driver-core-card-actions .app-button:disabled"));
+  await page.waitForFunction(() => window.scrollX === 0 && window.scrollY === 0);
+  const stageHeading = page.locator(`[data-order-id="${orderId}"] .driver-core-active-head`).first();
+  if (await stageHeading.count()) await onScreen(stageHeading);
   if (passenger) {
     const titles = { DRIVER_GOING_TO_CLIENT: "Водитель едет к вам", DRIVER_ARRIVED: "Водитель на месте", WAITING_CLIENT: "Идёт ожидание", TRIP_STARTED: "Поездка началась", TRIP_COMPLETED: "Поездка окончена", PAID: "Оставьте отзыв" };
     if (titles[status]) await passenger.getByRole("heading", { name: titles[status], exact: true }).waitFor({ timeout: 20000 });
@@ -278,13 +287,13 @@ try {
 
   for (const size of [{ width: 390, height: 844 }, { width: 360, height: 740 }]) {
     await page.setViewportSize(size);
-    for (const name of ["Линия", "Заказы", "Поездка", "Дорога", "Доход"]) {
+    for (const name of ["Линия", "Заказы", "Поездка", "Стоянка", "Дорога", "Доход"]) {
       await tab(name);
       await onScreen(page.getByRole("button", { name: "Открыть кабинет водителя", exact: true }));
-      await shot(`driver-${name === "Линия" ? "line" : name === "Заказы" ? "orders" : name === "Поездка" ? "active" : name === "Дорога" ? "road" : "earnings"}-${size.width}`);
+      await shot(`driver-${name === "Линия" ? "line" : name === "Заказы" ? "orders" : name === "Поездка" ? "active" : name === "Стоянка" ? "stands" : name === "Дорога" ? "road" : "earnings"}-${size.width}`);
     }
   }
-  mark("all_five_tabs_visible", { widths: [390, 360] });
+  mark("all_six_tabs_visible", { widths: [390, 360] });
   const roadComment = `Локальная проверка дорожного события ${Date.now()}`;
   const roadCreated = await request("/api/driver/road-alerts", { method: "POST", body: {
     type: "ROAD_WORK", comment: roadComment, lat: 40.844435, lng: 68.509021
@@ -423,6 +432,11 @@ try {
   await context.grantPermissions(['geolocation']);
   const gpsRecovery = page.waitForResponse(response => response.url().endsWith('/api/drivers/me/location') && response.status() === 200);
   await page.getByRole('button', { name: 'Повторить GPS', exact: true }).click();
+  // Playwright retains the configured coordinates while permission is denied,
+  // but not every Chromium revision emits them again for a replacement watch.
+  // Trigger a fresh browser-position event after the UI has recreated its
+  // watch; the request and acknowledgement still travel through the real API.
+  await context.setGeolocation(gps);
   await gpsRecovery;
   await page.locator('.driver-core-location-notice').waitFor({ state: 'hidden' });
   assert.equal(await page.evaluate(() => window.driverQaWatches.size), 1);

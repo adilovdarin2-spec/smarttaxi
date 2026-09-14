@@ -50,6 +50,21 @@ Income wrapped onto a second row and covered most of the primary "go online"
 button. The grid now reserves six equal columns. The browser QA asserts that all
 destinations share one row and that the shift action ends above the navigation.
 
+### Driver trip actions are unambiguous and every stage opens at the top
+
+The server quick-message vocabulary was previously displayed at every driving
+stage. Before pickup this put a message called "Я приехал" beside the separate
+state-changing action with the same label. Web and Flutter now share the same
+stage policy: before pickup only "Уже еду" and "Опаздываю" are offered; arrival
+messages appear only after arrival is recorded; pickup messages disappear once
+the trip starts.
+
+The built web lifecycle also exposed retained document/sheet scroll after a
+stage transition. That could open "На месте" or "Ожидание" with the heading
+above the visible sheet. The driver surface now resets both scroll containers
+when the tab, order or status changes. The end-to-end assertion verifies that
+the next heading is fully inside both the viewport and its sheet.
+
 ### Source hygiene
 
 The two whitespace defects found by `git diff --check` were removed. No user or
@@ -64,11 +79,11 @@ Claude changes were reset, cleaned or rewritten.
 | Docker QA smoke | passed, including minimum-ETA route candidate selection |
 | Regional route/pricing smoke | 34/34 tariff previews passed |
 | API test suite | passed; 121,361 address rows checked across all 13 regions |
-| Web tests | 166/166 passed |
+| Web tests | 167/167 passed |
 | Web production build | passed; bundled MapLibre worker/map checks passed |
-| Local web visual smoke | passenger home/address/tariff/payment and driver line/orders/income passed at 360/390 px |
+| Local web visual smoke | passenger home/address/tariff/payment plus complete driver/passenger order lifecycle passed at 360/390 px |
 | Flutter analysis | no issues found |
-| Flutter tests | 325/325 passed |
+| Flutter tests | 328/328 passed |
 | Android debug APK | built; package/label `kz.baisapar.app` / `BaiSapar`; target SDK 36; APK Signature Scheme v2 verified with one debug signer |
 | Docker Compose validation | passed |
 
@@ -86,8 +101,8 @@ correct fail-closed readiness signal, not evidence that SMS exists.
 
 The fresh debug candidate is
 `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk`
-(262,396,056 bytes; SHA-256
-`502d98c6b28dc88cc158f0a0ff102c237d2cda99cbdc6579c541c6e7f2078fef`).
+(262,396,410 bytes; SHA-256
+`bb3e59eef01aa2918b0ba531a10cf07cfc361e4d34ceb060717902dbeccfd79c`).
 It is a debug-signed QA artifact, not a store release.
 
 The current machine exposed no Android device through ADB during this pass, so
@@ -95,7 +110,11 @@ the new APK was not installed and fresh physical screenshots must not be
 claimed. The Windows visual helper timed out twice while acquiring the open
 tabs, so the repository's local-only Playwright harness was used instead. Its
 fresh screenshots under `qa_screenshots/post-claude-2026-09-15` were inspected;
-that inspection found and verified the six-tab driver navigation fix above.
+that inspection found and verified the six-tab navigation, stage-scroll and
+quick-message fixes above. The full built-web lifecycle used authenticated local
+development APIs and OSRM for incoming order, accept, pickup route, arrival,
+waiting, trip route, completion, payment and reload recovery. Browser GPS was
+simulated; API responses, state transitions and routes were not stubbed.
 
 ## Work that cannot be closed by code alone
 
