@@ -66,7 +66,16 @@ test("the page announces itself as BaiSapar", () => {
   assert.ok(html.includes("<title>BaiSapar</title>"));
   assert.ok(html.includes('href="/brand/baisapar_icon.svg"'));
   assert.ok(html.includes('rel="apple-touch-icon"'));
+  assert.ok(html.includes('rel="manifest"'));
   assert.ok(!html.includes("smarttaxi"));
+
+  // "Add to home screen" reads the manifest, not the favicon, and a manifest
+  // whose icons 404 gets the browser's own grey placeholder instead.
+  const manifest = JSON.parse(read("../public/site.webmanifest"));
+  assert.equal(manifest.name, "BaiSapar");
+  for (const icon of manifest.icons) {
+    assert.ok(exists(`../public${icon.src}`), `${icon.src} is declared but missing`);
+  }
 });
 
 test("the address marker carries this brand's initial", () => {

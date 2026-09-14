@@ -30,8 +30,11 @@ rsvg-convert -w 512 -h 512 $BRAND/baisapar_icon.svg          -o $FLUTTER/baisapa
 rsvg-convert -h 160        $BRAND/baisapar_wordmark.svg      -o $FLUTTER/baisapar_wordmark.png
 rsvg-convert -h 160        $BRAND/baisapar_wordmark_light.svg -o $FLUTTER/baisapar_wordmark_light.png
 
-# Web: the store master and the one icon iOS Safari insists on as a bitmap.
+# Web: the store master, the icon iOS Safari insists on as a bitmap, and the
+# two sizes a web manifest needs for "add to home screen".
 rsvg-convert -w 1024 -h 1024 $BRAND/baisapar_icon.svg -o $BRAND/baisapar_icon_1024.png
 rsvg-convert -w 180  -h 180  $BRAND/baisapar_icon.svg -o $BRAND/baisapar_apple_touch_icon.png
+rsvg-convert -w 192  -h 192  $BRAND/baisapar_icon.svg -o $BRAND/baisapar_icon_192.png
+rsvg-convert -w 512  -h 512  $BRAND/baisapar_icon.svg -o $BRAND/baisapar_icon_512.png
 
 echo "brand rasterised"

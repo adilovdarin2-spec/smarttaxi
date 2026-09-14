@@ -56,6 +56,7 @@ MARK_ICON = mark(610, 512, 512, 46)          # legacy/square icon
 # mask. Checked against circle, squircle and rounded-square masks.
 MARK_ADAPTIVE = mark(430, 512, 512, 33)
 MARK_ALONE = mark(880, 512, 512, 66)         # on its own, no field
+MARK_NOTIFY = mark(760, 512, 512, 58)        # status bar, one flat colour
 
 DEFS = f'''  <defs>
     <linearGradient id="fld" x1="0" y1="0" x2="1" y2="1">
@@ -226,4 +227,24 @@ ADAPTIVE = """<?xml version="1.0" encoding="utf-8"?>
 (RES / "mipmap-anydpi-v26/ic_launcher.xml").write_text(ADAPTIVE, encoding="utf-8")
 (RES / "mipmap-anydpi-v26/ic_launcher_round.xml").write_text(ADAPTIVE, encoding="utf-8")
 
-print("wrote", len(files), "svg masters and 5 android vector resources")
+# The status-bar notification icon. Android throws away every colour here and
+# repaints the alpha channel flat white, so it has to be a silhouette — which
+# the mark already is, the slice included.
+NOTIFY = f"""<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar notification icon: the BaiSapar mark as a silhouette. Android
+     strips all colour from this and repaints it flat white through the alpha
+     channel per Material's notification-icon rules, so it must never become
+     the full-colour launcher icon — the OS would draw that as a white blob. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="{MARK_NOTIFY}"/>
+</vector>
+"""
+(RES / "drawable/ic_stat_notify.xml").write_text(NOTIFY, encoding="utf-8")
+
+print("wrote", len(files), "svg masters and 6 android vector resources")

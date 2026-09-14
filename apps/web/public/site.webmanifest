@@ -1,0 +1,16 @@
+{
+  "name": "BaiSapar",
+  "short_name": "BaiSapar",
+  "description": "Такси по районам Мактааральского района: цена до заказа, ближайший свободный водитель, вся поездка на карте.",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#12307A",
+  "theme_color": "#12307A",
+  "icons": [
+    { "src": "/brand/baisapar_icon_192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/baisapar_icon_512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/baisapar_icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
