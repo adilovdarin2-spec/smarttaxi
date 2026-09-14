@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { pool, query } from "../db/pool.js";
 import { env } from "../config/env.js";
+import { REGION_SEED } from "../modules/routing/region-geo.js";
 
 // Every password below is readable by anyone who opens the repository, so they
 // are development defaults only. `assertSeedPasswordsAreSafe` refuses to write
@@ -94,7 +95,7 @@ async function upsertUser({ name, email, phone, password, role }) {
 }
 
 async function seedRegions() {
-  return (await query(`
+  await query(`
     INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
     VALUES
       (
@@ -223,7 +224,44 @@ async function seedRegions() {
         is_active=EXCLUDED.is_active,
         updated_at=NOW()
     RETURNING *
-  `)).rows;
+  `);
+
+  // The historical VALUES block above creates every launch row, but it must
+  // never be allowed to become a second source of truth for service geometry.
+  // In particular, its former Atameken boundary reached across the border and
+  // overwrote the corrected REGION_SEED whenever local QA ran `npm run seed`.
+  // Reconcile all mutable region fields from the same canonical data used by
+  // schema/migrations before returning anything to tariff and approval seeds.
+  const canonicalRegions = REGION_SEED.map((region) => ({
+    code: region.code,
+    name: region.name,
+    boundary: region.boundary,
+    center_lat: region.centerLat,
+    center_lng: region.centerLng,
+    currency: region.currency,
+    is_active: region.isActive
+  }));
+  return (await query(`
+    UPDATE regions AS region
+    SET name=seed.name,
+        boundary=seed.boundary,
+        center_lat=seed.center_lat,
+        center_lng=seed.center_lng,
+        currency=seed.currency,
+        is_active=seed.is_active,
+        updated_at=NOW()
+    FROM jsonb_to_recordset($1::jsonb) AS seed(
+      code text,
+      name text,
+      boundary jsonb,
+      center_lat numeric,
+      center_lng numeric,
+      currency text,
+      is_active boolean
+    )
+    WHERE region.code=seed.code
+    RETURNING region.*
+  `, [JSON.stringify(canonicalRegions)])).rows;
 }
 
 async function seedTariffs(regions) {

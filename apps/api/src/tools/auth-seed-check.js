@@ -59,6 +59,10 @@ for (const expected of [
   assert.match(seed, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `seed must include ${expected}`);
 }
 assert.match(seed, /phone:\s*env\.DEFAULT_DRIVER_PHONE/, "driver seed must use the configurable default phone");
+assert.match(seed, /import \{ REGION_SEED \} from "\.\.\/modules\/routing\/region-geo\.js"/,
+  "development seed must share the canonical launch-region geometry");
+assert.match(seed, /FROM jsonb_to_recordset\(\$1::jsonb\)/,
+  "development seed must reconcile every region from canonical geometry");
 assert.match(envConfig, /DEFAULT_DRIVER_PHONE:\s*process\.env\.DEFAULT_DRIVER_PHONE\s*\|\|\s*"\+77000000000"/, "driver default phone must remain documented in environment config");
 assert.match(seed, /email:\s*env\.DEFAULT_ADMIN_EMAIL/, "owner seed must use the configurable admin email");
 assert.match(envConfig, /DEFAULT_ADMIN_EMAIL:\s*process\.env\.DEFAULT_ADMIN_EMAIL\s*\|\|\s*"admin@smarttaxi\.local"/, "admin email default must remain documented in environment config");
