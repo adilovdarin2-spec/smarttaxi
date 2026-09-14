@@ -11,8 +11,13 @@ class StartupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Follows the theme rather than pinning the light background: on a phone
+    // in dark mode the fixed colour turned this screen into a white flash
+    // between the (now also dark) native launch screen and the app itself.
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xfff7fbff),
+      backgroundColor:
+          dark ? SmartTaxiPalette.dark.appBackground : const Color(0xfff7fbff),
       body: LayoutBuilder(builder: (context, constraints) {
         return Stack(
           fit: StackFit.expand,
@@ -35,8 +40,10 @@ class StartupScreen extends StatelessWidget {
                 children: [
                   Text(l10n.appTagline,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: SmartTaxiColors.textSecondary,
+                      style: TextStyle(
+                        color: dark
+                            ? SmartTaxiPalette.dark.textSecondary
+                            : SmartTaxiColors.textSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         height: 1.4,

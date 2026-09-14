@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icons (Android 13+): the system paints this one flat colour, so it
+     is the bare letterform with no gradient of its own. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+  <path
+      android:pathData="M320.21 747V564.09L636.98 508.24Q644.54 511.35 651.58 515.63Q675.71 530.3 689.75 555.53Q703.79 580.77 703.79 613.89Q703.79 652.37 684.54 682.49Q665.3 712.62 629.03 729.81Q592.75 747 541.65 747ZM658.98 467.8 320.21 527.54V277H523.99Q577.61 277 614.2 292.14Q650.79 307.28 669.4 333.62Q688.01 359.96 688.01 394.34Q688.01 421.47 676.66 443.39Q669.57 457.07 658.98 467.8ZM447.65 648.58H517.05Q541.02 648.58 555.21 635.97Q569.41 623.35 569.41 602.21Q569.41 588.02 562.94 577.61Q556.48 567.2 544.81 561.52Q533.13 555.85 517.05 555.85H447.65ZM447.65 463.11H509.16Q523.67 463.11 534.4 457.74Q545.12 452.38 550.96 442.45Q556.79 432.51 556.79 419.26Q556.79 399.39 543.86 387.4Q530.93 375.42 509.16 375.42H447.65Z"
+      android:fillColor="#FFFFFF"/>
+</vector>

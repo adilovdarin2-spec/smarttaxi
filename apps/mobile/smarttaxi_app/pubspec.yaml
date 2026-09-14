@@ -48,6 +48,8 @@ flutter:
   assets:
     - assets/fonts/OFL.txt
     - assets/brand/baisapar_app_icon.png
+    - assets/brand/baisapar_wordmark.png
+    - assets/brand/baisapar_wordmark_light.png
     - assets/auth/auth_phone_full_reference.png
     - assets/auth/auth_welcome_logo_mark.png
     - assets/auth/auth_background_2026.png

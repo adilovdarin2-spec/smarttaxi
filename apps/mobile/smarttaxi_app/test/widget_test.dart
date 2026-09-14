@@ -53,6 +53,31 @@ void main() {
     // The old brand's artwork must not come back with it.
     expect(logo, isNot(contains('smarttaxi')));
     expect(pubspec, isNot(contains('assets/brand/smarttaxi')));
+
+    // The logotype ships as artwork in both inks. Set as a Text widget it
+    // drifts with whatever font and weight the surrounding theme carries,
+    // which is how the auth screen kept wearing a different logo from the
+    // rest of the app.
+    expect(logo, contains('assets/brand/baisapar_wordmark.png'));
+    expect(logo, contains('assets/brand/baisapar_wordmark_light.png'));
+    expect(pubspec, contains('assets/brand/baisapar_wordmark.png'));
+    expect(pubspec, contains('assets/brand/baisapar_wordmark_light.png'));
+
+    // Android 8 onwards draws the adaptive icon and shrinks a legacy one into
+    // a shim of its own; 13 onwards wants the monochrome layer for themed
+    // icons. All three must exist, and the launcher must ask for them.
+    for (final path in const [
+      'android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml',
+      'android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml',
+      'android/app/src/main/res/drawable/ic_launcher_background.xml',
+      'android/app/src/main/res/drawable/ic_launcher_foreground.xml',
+      'android/app/src/main/res/drawable/ic_launcher_monochrome.xml',
+    ]) {
+      expect(File(path).existsSync(), isTrue, reason: '$path must be in the tree');
+    }
+    final adaptive = _read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml');
+    expect(adaptive, contains('<monochrome'));
+
     expect(
       pubspec,
       contains('assets/cars/tariff_v11_economy.png'),
@@ -89,6 +114,23 @@ void main() {
     expect(pubspec, contains('assets/map/marker_my_location_2026.png'));
     expect(pubspec, contains('assets/map/marker_destination_2026.png'));
     expect(pubspec, contains('assets/map/marker_address_pick_2026.png'));
+  });
+
+  test('the brand name is never spelled across two spans', () {
+    // The rename missed the first screen of the app for exactly this reason:
+    // the welcome logotype was TextSpan('Smart') + TextSpan('Taxi'), which no
+    // search for the brand name can find.
+    for (final path in const [
+      'lib/main.dart',
+      'lib/features/passenger/passenger_shell.dart',
+      'lib/features/driver/driver_shell.dart',
+    ]) {
+      final source = _read(path);
+      for (final half in const ["'Smart'", "'Taxi'", '"Smart"', '"Taxi"']) {
+        expect(source, isNot(contains(half)),
+            reason: '$path spells half the old brand name on its own');
+      }
+    }
   });
 
   test('auth screen is production-only and starts before main app', () {

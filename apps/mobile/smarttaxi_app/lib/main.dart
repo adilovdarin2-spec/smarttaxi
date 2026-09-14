@@ -593,12 +593,13 @@ class _AuthBackdrop extends StatelessWidget {
   }
 }
 
-/// "BaiSapar" plus the localised tagline, over the auth backdrop.
+/// The logotype plus the localised tagline, over the auth backdrop.
 ///
-/// The two weights inside the wordmark are the supplied lockup: "Smart" solid
-/// white and bold, "Taxi" the same size in a lighter weight and slightly
-/// dimmed. Reproducing it as text rather than shipping a second PNG keeps it
-/// crisp at every density and lets the tagline under it be translated.
+/// This is the artwork, not text set at runtime: the previous version spelled
+/// the name out in two TextSpans of different weights, which is why it went on
+/// reading "SmartTaxi" on the first screen of the app long after everything
+/// else had been renamed. The tagline under it stays text, because it is
+/// translated.
 class _AuthWordmark extends StatelessWidget {
   const _AuthWordmark();
 
@@ -624,33 +625,7 @@ class _AuthWordmark extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Smart',
-                    style: TextStyle(
-                      fontSize: 44 * scale,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                      height: 1.05,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'Taxi',
-                    style: TextStyle(
-                      fontSize: 44 * scale,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white.withValues(alpha: 0.92),
-                      letterSpacing: -0.5,
-                      height: 1.05,
-                    ),
-                  ),
-                ],
-              ),
-              textAlign: TextAlign.center,
-            ),
+            BrandWordmark(onDark: true, height: 46 * scale),
             SizedBox(height: 14 * scale),
             Container(
               width: 64 * scale,

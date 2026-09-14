@@ -5365,10 +5365,7 @@ class _PassengerShellState extends State<PassengerShell>
             children: [
               const Center(child: BrandLogo(large: true)),
               const SizedBox(height: 18),
-              const Text(
-                'BaiSapar',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
-              ),
+              const BrandWordmark(height: 30),
               const SizedBox(height: 8),
               Text(
                 l10n.passengerAboutDescription,

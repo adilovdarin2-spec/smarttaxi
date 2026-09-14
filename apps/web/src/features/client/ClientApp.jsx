@@ -2280,9 +2280,9 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
       <aside ref={drawerRef} className={`client-drawer ${open ? "open" : ""}`} role="dialog" aria-modal={open || undefined} aria-label="Меню BaiSapar" tabIndex={-1} aria-hidden={!open} inert={!open}>
         <div className="client-drawer-brand-row">
           <div className="client-drawer-brand-lockup" aria-label="BaiSapar">
-            <span className="client-drawer-mark" aria-hidden="true">S</span>
+            <img className="client-drawer-mark" src="/brand/baisapar_icon.svg" alt="" aria-hidden="true" />
             <span>
-              <strong>Bai<span>Sapar</span></strong>
+              <img className="client-drawer-wordmark" src="/brand/baisapar_wordmark.svg" alt="" aria-hidden="true" />
               <small>Ваш комфорт</small>
             </span>
           </div>

@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="560" height="120" viewBox="0 0 560 120" fill="none" role="img" aria-label="BaiSapar">
-  <title>BaiSapar</title>
-  <!-- For dark grounds: the deep navy half of the wordmark disappears there, so
-       it becomes white and the accent lifts to a lighter blue that still reads
-       against navy. -->
-  <text x="0" y="82" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="900" fill="#FFFFFF">Bai</text>
-  <text x="132" y="82" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="900" fill="#6FA8FF">Sapar</text>
-</svg>

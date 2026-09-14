@@ -10086,7 +10086,6 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   filter: drop-shadow(0 9px 18px rgba(5, 86, 216, .22));
 }
 
-.taxi-client-shell .client-drawer-brand-lockup strong,
 .taxi-client-shell .client-drawer-brand-lockup small {
   display: block;
   overflow: hidden;
@@ -10094,16 +10093,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   white-space: nowrap;
 }
 
-.taxi-client-shell .client-drawer-brand-lockup strong {
-  color: var(--st-ink);
-  font-size: 24px;
-  line-height: 27px;
-  font-weight: 950;
-  letter-spacing: -.035em;
-}
-
-.taxi-client-shell .client-drawer-brand-lockup strong span {
-  color: var(--st-brand);
+.taxi-client-shell .client-drawer-wordmark {
+  display: block;
+  height: 21px;
+  width: auto;
+  max-width: 100%;
 }
 
 .taxi-client-shell .client-drawer-brand-lockup small {
