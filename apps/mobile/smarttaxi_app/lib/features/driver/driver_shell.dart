@@ -4757,6 +4757,17 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       children: [
         native_map.MapLibreMap(
           styleString: AppConfig.mapLibreStyleUrl,
+          // Navigation uses style layers for its route/buildings and only
+          // symbols/circles for live objects. Do not initialize the unused
+          // line and fill annotation managers on every Android map view.
+          annotationOrder: const [
+            native_map.AnnotationType.symbol,
+            native_map.AnnotationType.circle,
+          ],
+          annotationConsumeTapEvents: const [
+            native_map.AnnotationType.symbol,
+            native_map.AnnotationType.circle,
+          ],
           initialCameraPosition: native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 14.2 : 15.4,

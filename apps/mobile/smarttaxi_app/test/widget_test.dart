@@ -906,6 +906,16 @@ void main() {
     }
     expect(driver, contains('await controller.addCircles(circles)'));
     expect(
+      passenger,
+      contains('annotationOrder: const [native_map.AnnotationType.symbol]'),
+      reason: 'the passenger map must not initialize unused managers',
+    );
+    expect(
+      driver,
+      contains('native_map.AnnotationType.circle'),
+      reason: 'the driver map retains its safety-circle manager',
+    );
+    expect(
       RegExp(r'_lastSceneSignature = .*?_imagesInstalled = false;',
               dotAll: true)
           .hasMatch(driver),

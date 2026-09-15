@@ -6944,6 +6944,13 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         children: [
           native_map.MapLibreMap(
             styleString: AppConfig.mapLibreStyleUrl,
+            // Route and buildings are native style layers. Keeping only the
+            // symbol annotation manager avoids the Android cost of creating
+            // unused line, circle and fill managers for this platform view.
+            annotationOrder: const [native_map.AnnotationType.symbol],
+            annotationConsumeTapEvents: const [
+              native_map.AnnotationType.symbol,
+            ],
             initialCameraPosition: native_map.CameraPosition(
               target: _nativePoint(widget.center),
               zoom: widget.zoom,
