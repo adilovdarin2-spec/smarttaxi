@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { query } from "./pool.js";
+import { pool } from "./pool.js";
 import { REGION_SEED } from "../modules/routing/region-geo.js";
 
 // These statements are executed as plain strings, so the seed values are
@@ -1115,7 +1115,7 @@ const statements = [
 // own. Every statement in schema.sql is CREATE ... IF NOT EXISTS, so running it
 // on every boot is a no-op once the tables are there, and it can never
 // overwrite data.
-async function ensureBaseSchema() {
+async function ensureBaseSchema(executor) {
   const schemaPath = new URL("./schema.sql", import.meta.url);
   let sql;
   try {
@@ -1127,12 +1127,30 @@ async function ensureBaseSchema() {
     console.warn("[db] schema.sql not found, relying on an existing schema", error.code);
     return;
   }
-  await query(sql);
+  await executor.query(sql);
 }
 
-export async function runMigrations() {
-  await ensureBaseSchema();
-  for (const sql of statements) {
-    await query(sql);
+export async function runMigrations(executor = pool) {
+  const client = await executor.connect();
+  const lockName = "baisapar:database-migrations";
+  let locked = false;
+  try {
+    // All replicas boot from the same image. A session advisory lock lets one
+    // apply DDL while the rest wait, avoiding concurrent ALTER/constraint races.
+    await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [lockName]);
+    locked = true;
+    await ensureBaseSchema(client);
+    for (const sql of statements) {
+      await client.query(sql);
+    }
+  } finally {
+    if (locked) {
+      try {
+        await client.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [lockName]);
+      } catch (error) {
+        console.error("[db] failed to release migration advisory lock", error);
+      }
+    }
+    client.release();
   }
 }
