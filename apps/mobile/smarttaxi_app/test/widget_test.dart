@@ -76,9 +76,11 @@ void main() {
       'android/app/src/main/res/drawable/ic_launcher_foreground.xml',
       'android/app/src/main/res/drawable/ic_launcher_monochrome.xml',
     ]) {
-      expect(File(path).existsSync(), isTrue, reason: '$path must be in the tree');
+      expect(File(path).existsSync(), isTrue,
+          reason: '$path must be in the tree');
     }
-    final adaptive = _read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml');
+    final adaptive =
+        _read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml');
     expect(adaptive, contains('<monochrome'));
 
     expect(
@@ -884,6 +886,20 @@ void main() {
         reason: 'high-DPI MapLibre must receive a compact car source image');
     expect(driver, contains('iconSize: 0.08,'),
         reason: 'the finish flag must not cover the destination intersection');
+  });
+
+  test('native map scenes batch annotations and never overlap a sync', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final driver = _read('lib/features/driver/driver_shell.dart');
+
+    for (final source in [passenger, driver]) {
+      expect(source, contains('bool _sceneSyncInFlight = false;'));
+      expect(source, contains('if (_sceneSyncInFlight)'));
+      expect(source, contains('await controller.addSymbols(symbols)'));
+      expect(source, isNot(contains('await controller.clearLines();')),
+          reason: 'style-layer routes do not use the annotation line manager');
+    }
+    expect(driver, contains('await controller.addCircles(circles)'));
   });
 
   test('driver drawer keeps driver tabs and adds account/support sections', () {

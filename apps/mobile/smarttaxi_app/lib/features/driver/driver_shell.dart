@@ -954,8 +954,7 @@ class _DriverShellState extends State<DriverShell> {
           // with a connection error. DriverLocationSync keeps processing the
           // newest fix after that failure; clear the stale error as soon as a
           // later fix is acknowledged by the server.
-          _locationMessage =
-              AppLocalizations.of(context).driverLocationActive;
+          _locationMessage = AppLocalizations.of(context).driverLocationActive;
         });
         // The route endpoint reads persisted GPS. Never race it against the
         // location write or let an older overlapping write rewind its origin.
@@ -4261,6 +4260,8 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
   bool _styleReady = false;
   bool _imagesInstalled = false;
   bool _routeLayersInstalled = false;
+  bool _sceneSyncInFlight = false;
+  bool _sceneSyncQueued = false;
   String _lastSceneSignature = '';
   DateTime? _lastSceneSyncAt;
   Timer? _sceneSyncTimer;
@@ -4507,35 +4508,6 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
     }
   }
 
-  Future<void> _safetyPin({
-    required native_map.MapLibreMapController controller,
-    required native_map.LatLng point,
-    required String label,
-    required String color,
-  }) async {
-    await controller.addCircle(
-      native_map.CircleOptions(
-        geometry: point,
-        circleRadius: 15,
-        circleColor: color,
-        circleOpacity: 0.98,
-        circleStrokeColor: '#ffffff',
-        circleStrokeWidth: 3,
-      ),
-    );
-    await controller.addSymbol(
-      native_map.SymbolOptions(
-        geometry: point,
-        textField: label,
-        textSize: 11,
-        textColor: '#ffffff',
-        textHaloColor: color,
-        textHaloWidth: 1,
-        textAnchor: 'center',
-      ),
-    );
-  }
-
   Map<String, dynamic> _routeGeoJson() {
     if (widget.route.length < 2) {
       return const {'type': 'FeatureCollection', 'features': <dynamic>[]};
@@ -4604,6 +4576,23 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
   }
 
   Future<void> _syncScene() async {
+    if (_sceneSyncInFlight) {
+      _sceneSyncQueued = true;
+      return;
+    }
+    _sceneSyncInFlight = true;
+    try {
+      await _syncSceneNow();
+    } finally {
+      _sceneSyncInFlight = false;
+      if (_sceneSyncQueued && mounted) {
+        _sceneSyncQueued = false;
+        unawaited(_syncScene());
+      }
+    }
+  }
+
+  Future<void> _syncSceneNow() async {
     final controller = _controller;
     if (!_styleReady || controller == null) return;
     final l10n = AppLocalizations.of(context);
@@ -4615,15 +4604,39 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
     if (!_imagesInstalled || !mounted) return;
 
     try {
-      await controller.clearLines();
       await controller.clearCircles();
       await controller.clearSymbols();
       await _syncRouteStyleLayer(controller);
 
+      final circles = <native_map.CircleOptions>[];
+      final symbols = <native_map.SymbolOptions>[];
+      void safetyPin({
+        required native_map.LatLng point,
+        required String label,
+        required String color,
+      }) {
+        circles.add(native_map.CircleOptions(
+          geometry: point,
+          circleRadius: 15,
+          circleColor: color,
+          circleOpacity: 0.98,
+          circleStrokeColor: '#ffffff',
+          circleStrokeWidth: 3,
+        ));
+        symbols.add(native_map.SymbolOptions(
+          geometry: point,
+          textField: label,
+          textSize: 11,
+          textColor: '#ffffff',
+          textHaloColor: color,
+          textHaloWidth: 1,
+          textAnchor: 'center',
+        ));
+      }
+
       final pickup = widget.activeOrder?.pickupCoordinate;
       if (pickup != null) {
-        await _safetyPin(
-          controller: controller,
+        safetyPin(
           point: _coordinate(pickup),
           label: '●',
           color: '#1d6fff',
@@ -4631,30 +4644,26 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       }
       final dropoff = widget.activeOrder?.dropoffCoordinate;
       if (dropoff != null) {
-        await controller.addSymbol(
-          native_map.SymbolOptions(
-            geometry: _coordinate(dropoff),
-            iconImage: _finishImage,
-            iconAnchor: 'bottom',
-            // Uses the same compact destination scale as the passenger map.
-            // At 0.62 the 1000px source covered intersections and obscured
-            // labels; 0.08 keeps the flag readable without competing with
-            // the road geometry.
-            iconSize: 0.08,
-          ),
-        );
+        symbols.add(native_map.SymbolOptions(
+          geometry: _coordinate(dropoff),
+          iconImage: _finishImage,
+          iconAnchor: 'bottom',
+          // Uses the same compact destination scale as the passenger map.
+          // At 0.62 the 1000px source covered intersections and obscured
+          // labels; 0.08 keeps the flag readable without competing with
+          // the road geometry.
+          iconSize: 0.08,
+        ));
       }
       for (final alert in widget.alerts.take(12)) {
-        await _safetyPin(
-          controller: controller,
+        safetyPin(
           point: _alertPoint(alert),
           label: _alertShortLabel(l10n, alert.type),
           color: _alertHex(alert.type),
         );
       }
       for (final sign in widget.signs.take(12)) {
-        await _safetyPin(
-          controller: controller,
+        safetyPin(
           point: _signPoint(sign),
           label: _signShortLabel(sign),
           color: '#0b4fd1',
@@ -4662,19 +4671,19 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       }
       final current = widget.current;
       if (current != null) {
-        await controller.addSymbol(
-          native_map.SymbolOptions(
-            geometry: _driverPoint(current),
-            iconImage: _carImage,
-            iconAnchor: 'center',
-            // A top-down car should occupy one road-width at navigation zoom,
-            // not three-plus. On Android's high-DPI renderer, 0.01 keeps the
-            // vehicle, route, and street labels readable together.
-            iconSize: 0.01,
-            iconRotate: widget.heading,
-          ),
-        );
+        symbols.add(native_map.SymbolOptions(
+          geometry: _driverPoint(current),
+          iconImage: _carImage,
+          iconAnchor: 'center',
+          // A top-down car should occupy one road-width at navigation zoom,
+          // not three-plus. On Android's high-DPI renderer, 0.01 keeps the
+          // vehicle, route, and street labels readable together.
+          iconSize: 0.01,
+          iconRotate: widget.heading,
+        ));
       }
+      if (circles.isNotEmpty) await controller.addCircles(circles);
+      if (symbols.isNotEmpty) await controller.addSymbols(symbols);
     } catch (_) {
       // Annotation managers become temporarily unavailable when Android
       // reloads a style. The next live GPS/route update retries safely.

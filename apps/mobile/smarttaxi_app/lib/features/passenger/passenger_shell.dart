@@ -6232,6 +6232,8 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   bool _styleReady = false;
   bool _imagesInstalled = false;
   bool _routeLayersInstalled = false;
+  bool _sceneSyncInFlight = false;
+  bool _sceneSyncQueued = false;
   bool _ignoreNextCameraIdle = false;
   String _lastSceneSignature = '';
   String _lastRouteFitSignature = '';
@@ -6695,6 +6697,23 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   }
 
   Future<void> _syncScene() async {
+    if (_sceneSyncInFlight) {
+      _sceneSyncQueued = true;
+      return;
+    }
+    _sceneSyncInFlight = true;
+    try {
+      await _syncSceneNow();
+    } finally {
+      _sceneSyncInFlight = false;
+      if (_sceneSyncQueued && mounted) {
+        _sceneSyncQueued = false;
+        unawaited(_syncScene());
+      }
+    }
+  }
+
+  Future<void> _syncSceneNow() async {
     final controller = _controller;
     if (!_styleReady || controller == null) return;
     final signature = _sceneSignature();
@@ -6705,26 +6724,25 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     if (!_imagesInstalled || !mounted) return;
 
     try {
-      await controller.clearLines();
       // Keep the route inside the style rather than the annotation manager.
       // It then stays beneath street and POI labels just like the web route.
       await _syncRouteStyleLayer(controller);
       await controller.clearSymbols();
 
-      Future<void> symbol(LatLng point, String image,
-              {double size = 0.65, String anchor = 'bottom'}) =>
-          controller.addSymbol(
-            native_map.SymbolOptions(
-              geometry: _nativePoint(point),
-              iconImage: image,
-              iconAnchor: anchor,
-              iconSize: size,
-            ),
-          );
+      final symbols = <native_map.SymbolOptions>[];
+      void symbol(LatLng point, String image,
+          {double size = 0.65, String anchor = 'bottom'}) {
+        symbols.add(native_map.SymbolOptions(
+          geometry: _nativePoint(point),
+          iconImage: image,
+          iconAnchor: anchor,
+          iconSize: size,
+        ));
+      }
 
       final pickup = widget.pickup;
       if (pickup != null) {
-        await symbol(
+        symbol(
           pickup.toLatLng(),
           widget.pickupIsCurrentLocation ? _currentImage : _pickupImage,
           // A selected address must remain legible without covering street
@@ -6739,21 +6757,20 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         // address marker and never let it cover the route near its finish.
         // The source canvas is 1000px wide. A 0.40 scale made it a 400dp
         // annotation; the confirmed phone screenshot showed an enormous flag.
-        await symbol(dropoff.toLatLng(), _finishImage, size: 0.08);
+        symbol(dropoff.toLatLng(), _finishImage, size: 0.08);
       }
       final driver = widget.driver;
       if (driver != null) {
         // The 1024px canvas contains a narrow top-view car. 0.12 made it
         // wider than the street on the physical phone; center its body on
         // the GPS fix instead of anchoring its rear bumper to the point.
-        await symbol(driver.toLatLng(), _carImage,
-            size: 0.05, anchor: 'center');
+        symbol(driver.toLatLng(), _carImage, size: 0.05, anchor: 'center');
       } else {
         for (final nearby in widget.nearbyDrivers.take(5)) {
-          await symbol(nearby.toLatLng(), _carImage,
-              size: 0.05, anchor: 'center');
+          symbol(nearby.toLatLng(), _carImage, size: 0.05, anchor: 'center');
         }
       }
+      if (symbols.isNotEmpty) await controller.addSymbols(symbols);
     } catch (_) {
       // A style reload can race an annotation update. The next model state
       // change will rebuild the scene; never surface a map renderer error as
