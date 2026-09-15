@@ -121,5 +121,11 @@ assert(redisDb.includes("API will run in degraded mode"), "Redis connect should 
 const rateLimiter = read("../common/rateLimit.js");
 assert(rateLimiter.includes("Redis fallback"), "Rate limiter should document Redis fallback behavior");
 assert(!rateLimiter.includes("next(error);"), "Rate limiter must not turn Redis fallback into API 500 responses");
+assert(rateLimiter.includes("rateLimitIdentity"), "Rate limiter should isolate authenticated users behind shared carrier IPs");
+assert(rateLimiter.includes("jwt.verify"), "Global rate-limit identity must only trust signed bearer tokens");
+
+const socketRedisAdapter = read("../realtime/socket-redis-adapter.js");
+assert(socketRedisAdapter.includes("createAdapter"), "Socket.IO should share rooms across horizontally scaled API replicas");
+assert(socketRedisAdapter.includes("redis.duplicate"), "Socket.IO Redis pub/sub must use dedicated connections");
 
 console.log("Milestone 1, 2, 3, 4, auth/seed, routing/location and admin control checks ok");

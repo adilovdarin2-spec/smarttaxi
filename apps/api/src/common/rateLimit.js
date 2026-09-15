@@ -1,8 +1,29 @@
 import { redis } from "../db/redis.js";
 import { AppError } from "./errors.js";
 import { env } from "../config/env.js";
+import jwt from "jsonwebtoken";
 
 const memoryBuckets = new Map();
+
+export function rateLimitIdentity(req) {
+  if (req.user?.id) return `user:${req.user.id}`;
+
+  // The global limiter runs before route-level requireAuth, so req.user is not
+  // populated yet. A valid signed token still gives us a trustworthy stable
+  // identity and prevents unrelated riders behind a mobile carrier's CGNAT
+  // address from consuming one shared bucket. Invalid/expired tokens fall back
+  // to the IP bucket and cannot be rotated to bypass public endpoint limits.
+  const header = req.headers?.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_SECRET);
+      if (decoded?.id) return `user:${decoded.id}`;
+    } catch {}
+  }
+
+  return `ip:${req.ip || req.socket?.remoteAddress || "unknown"}`;
+}
 
 function memoryHit(key, windowMs) {
   const now = Date.now();
@@ -19,7 +40,7 @@ export function rateLimit({ prefix = "api", windowMs = 60_000, max = 120 } = {})
   return async (req, res, next) => {
     if (!env.RATE_LIMIT_ENABLED) return next();
 
-    const identity = req.ip || req.socket?.remoteAddress || "unknown";
+    const identity = rateLimitIdentity(req);
     const key = `rl:${prefix}:${identity}`;
 
     try {

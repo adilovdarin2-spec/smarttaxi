@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { env } from "./config/env.js";
 import { connectRedis } from "./db/redis.js";
+import { attachSocketRedisAdapter, closeSocketRedisAdapter } from "./realtime/socket-redis-adapter.js";
 import { query, pool } from "./db/pool.js";
 import { spawn } from "node:child_process";
 import { runMigrations } from "./db/migrations.js";
@@ -280,7 +281,8 @@ app.use(notFound);
 app.use(errorHandler);
 
 async function bootstrap() {
-  await connectRedis();
+  const redisConnected = await connectRedis();
+  if (redisConnected) await attachSocketRedisAdapter(io);
   await runMigrations();
   await query("SELECT 1");
   // A managed host gives no way to run a one-off command before the first
@@ -334,6 +336,11 @@ server.listen(env.API_PORT, "0.0.0.0", () => console.log(`[API] BaiSapar running
     })
     .catch((error) => console.error("[addresses] gazetteer load failed", error));
 }
-process.on("SIGTERM", async () => { await pool.end(); process.exit(0); });
-process.on("SIGINT", async () => { await pool.end(); process.exit(0); });
+async function shutdown() {
+  await closeSocketRedisAdapter();
+  await pool.end();
+  process.exit(0);
+}
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 bootstrap().catch(e => { console.error(e); process.exit(1); });
