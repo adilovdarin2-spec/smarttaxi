@@ -14,7 +14,12 @@ import { env } from "../config/env.js";
 // absolute instant. Only the answer to "which day is this instant in" moves.
 export const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
-  max: 20,
+  // Keep this per replica. For example, three API replicas with 30 here can
+  // open 90 PostgreSQL connections; production should place PgBouncer in
+  // front of the database and size both limits together.
+  max: env.DB_POOL_MAX,
+  idleTimeoutMillis: env.DB_POOL_IDLE_TIMEOUT_MS,
+  connectionTimeoutMillis: env.DB_POOL_CONNECTION_TIMEOUT_MS,
   options: `-c timezone=${env.SERVICE_TIMEZONE}`
 });
 

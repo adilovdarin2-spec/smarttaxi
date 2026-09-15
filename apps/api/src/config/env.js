@@ -44,6 +44,16 @@ function boolEnv(name, fallback = false) {
   return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
 }
 
+function intEnv(name, fallback, { min, max }) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new Error(`Invalid env ${name}: expected an integer from ${min} to ${max}`);
+  }
+  return value;
+}
+
 // Goes into a `SET TIME ZONE` statement, which takes a literal rather than a
 // parameter, so it is checked here: a real IANA zone the runtime recognises,
 // and nothing that could carry anything else into that statement.
@@ -97,6 +107,9 @@ export const env = {
   API_PUBLIC_URL: optionalPublicUrl("API_PUBLIC_URL"),
   WEB_PUBLIC_URL: optionalPublicUrl("WEB_PUBLIC_URL"),
   DATABASE_URL: requiredUrl("DATABASE_URL"),
+  DB_POOL_MAX: intEnv("DB_POOL_MAX", 20, { min: 5, max: 200 }),
+  DB_POOL_IDLE_TIMEOUT_MS: intEnv("DB_POOL_IDLE_TIMEOUT_MS", 30_000, { min: 1000, max: 300_000 }),
+  DB_POOL_CONNECTION_TIMEOUT_MS: intEnv("DB_POOL_CONNECTION_TIMEOUT_MS", 5000, { min: 500, max: 60_000 }),
   REDIS_URL: optionalUrl("REDIS_URL", "redis://redis:6379"),
   JWT_SECRET: jwtSecret(),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "365d",

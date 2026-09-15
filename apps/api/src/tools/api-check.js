@@ -128,4 +128,15 @@ const socketRedisAdapter = read("../realtime/socket-redis-adapter.js");
 assert(socketRedisAdapter.includes("createAdapter"), "Socket.IO should share rooms across horizontally scaled API replicas");
 assert(socketRedisAdapter.includes("redis.duplicate"), "Socket.IO Redis pub/sub must use dedicated connections");
 
+const dbPool = read("../db/pool.js");
+assert(dbPool.includes("env.DB_POOL_MAX"), "PostgreSQL pool size should be configurable per API replica");
+assert(dbPool.includes("env.DB_POOL_CONNECTION_TIMEOUT_MS"), "PostgreSQL connection acquisition must have a bounded timeout");
+
+const recurringScheduler = read("../modules/recurring-bookings/recurring-bookings.scheduler.js");
+const standsScheduler = read("../modules/stands/stands.scheduler.js");
+const cancellationScheduler = read("../modules/orders/cancellation-review.scheduler.js");
+[recurringScheduler, standsScheduler, cancellationScheduler].forEach((source) => {
+  assert(source.includes("runDistributedJob"), "every in-process scheduler must be single-owner across API replicas");
+});
+
 console.log("Milestone 1, 2, 3, 4, auth/seed, routing/location and admin control checks ok");

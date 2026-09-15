@@ -5,6 +5,7 @@ import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
 import { emitOrderCreated } from "../orders/order-dispatch.service.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { runDistributedJob } from "../../common/distributedJob.js";
 
 // NOTE on time zones: this compares against the database server's own NOW()
 // (Postgres, normally UTC on a managed host like Railway), not any
@@ -241,7 +242,8 @@ export function startRecurringBookingsScheduler(io) {
   global.io = io;
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    tick().catch((error) => console.error("[recurring-bookings] scheduler tick failed", error));
+    runDistributedJob("baisapar:recurring-bookings", tick)
+      .catch((error) => console.error("[recurring-bookings] scheduler tick failed", error));
   }, 60_000);
   return intervalHandle;
 }

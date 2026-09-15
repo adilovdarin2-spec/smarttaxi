@@ -1,6 +1,7 @@
 import { query } from "../../db/pool.js";
 import { broadcastStand, notifyDroppedDrivers, notifyStrandedRiders } from "./stands.notify.js";
 import { sweepStaleQueueEntries } from "./stands.service.js";
+import { runDistributedJob } from "../../common/distributedJob.js";
 
 // A place in a stand line is a claim about the physical world: this car is
 // standing here, right now. Nothing else in the system notices when that
@@ -36,7 +37,8 @@ export async function standsSweepTick(io) {
 export function startStandsSweeper(io) {
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    standsSweepTick(io).catch((error) => console.error("[stands] sweep tick failed", error));
+    runDistributedJob("baisapar:stands-sweeper", () => standsSweepTick(io))
+      .catch((error) => console.error("[stands] sweep tick failed", error));
   }, SWEEP_INTERVAL_MS);
   intervalHandle.unref?.();
   return intervalHandle;

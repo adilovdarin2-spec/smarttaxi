@@ -1,5 +1,6 @@
 import { query } from "../../db/pool.js";
 import { runFollowUpObservation } from "./cancellation-review.service.js";
+import { runDistributedJob } from "../../common/distributedJob.js";
 
 // A cancellation tells you what someone clicked. Where the car went in the
 // next few minutes tells you what actually happened, and that can only be
@@ -52,7 +53,8 @@ export async function cancellationReviewTick() {
 export function startCancellationReviewScheduler() {
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    cancellationReviewTick().catch((error) => console.error("[cancellation-review] tick failed", error));
+    runDistributedJob("baisapar:cancellation-review", cancellationReviewTick)
+      .catch((error) => console.error("[cancellation-review] tick failed", error));
   }, TICK_INTERVAL_MS);
   intervalHandle.unref?.();
   return intervalHandle;
