@@ -27,6 +27,13 @@ String driverTripMapLabel(
   required bool hasRoute,
 }) {
   if (!hasRoute) return l10n.driverRouteWillAppearAfterCalc;
+  // Once the driver has arrived, "route to pickup" is no longer an action
+  // or a useful instruction. Keep the already-drawn approach leg for spatial
+  // context, but caption it with the actual pickup address while the driver
+  // is waiting for the passenger.
+  if (const {'DRIVER_ARRIVED', 'WAITING_CLIENT'}.contains(order.status)) {
+    return order.pickup;
+  }
   return driverRoutePhaseForStatus(order.status) == 'to_dropoff'
       ? order.dropoff
       : l10n.driverRouteToPickupPoint;

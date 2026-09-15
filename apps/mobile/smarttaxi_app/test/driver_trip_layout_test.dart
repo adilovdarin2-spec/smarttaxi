@@ -68,6 +68,15 @@ void main() {
           dropoff: 'Technodom');
       expect(driverTripMapLabel(l10n, pickupOrder, hasRoute: true),
           l10n.driverRouteToPickupPoint);
+      for (final status in ['DRIVER_ARRIVED', 'WAITING_CLIENT']) {
+        final waitingOrder = OrderSummary(
+            id: 'qa',
+            status: status,
+            pickup: 'улица Бектасова, 60',
+            dropoff: 'Technodom');
+        expect(driverTripMapLabel(l10n, waitingOrder, hasRoute: true),
+            'улица Бектасова, 60');
+      }
     });
   }
 }

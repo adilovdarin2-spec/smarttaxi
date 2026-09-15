@@ -946,9 +946,17 @@ class _DriverShellState extends State<DriverShell> {
         accuracy: position.accuracy.isFinite ? position.accuracy : null,
       ),
       onPublished: (position, tripDistanceM) {
-        if (tripDistanceM != null) {
-          setState(() => _tripDistanceTraveledM = tripDistanceM);
-        }
+        setState(() {
+          if (tripDistanceM != null) {
+            _tripDistanceTraveledM = tripDistanceM;
+          }
+          // A failed publication may have replaced the active-location copy
+          // with a connection error. DriverLocationSync keeps processing the
+          // newest fix after that failure; clear the stale error as soon as a
+          // later fix is acknowledged by the server.
+          _locationMessage =
+              AppLocalizations.of(context).driverLocationActive;
+        });
         // The route endpoint reads persisted GPS. Never race it against the
         // location write or let an older overlapping write rewind its origin.
         unawaited(_maybeRefreshDriverRoute(position));

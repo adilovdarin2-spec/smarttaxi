@@ -118,12 +118,12 @@ Claude changes were reset, cleaned or rewritten.
 |---|---|---|
 | Backend | Complete API suite, full guarded Docker smoke, readiness and API CI job | Locally complete |
 | Web | 167 tests, production bundle, MapLibre build guard and paired lifecycle smoke at 320/360/390 px | Locally complete |
-| Flutter Android | Clean analysis, 328 tests, compiled debug APK, manifest/signature checks and mobile CI job | Source/build complete; current physical install remains unavailable |
+| Flutter Android | Clean analysis, 328 tests, compiled debug APK, manifest/signature checks, mobile CI job and current-package physical driver lifecycle | Locally complete; moving/on-road GPS, audible TTS and external release inputs remain |
 | Docker | Clean image rebuild without removing volumes, valid Compose config and four healthy services | Locally complete |
 | Addresses | 121,361-row/13-region invariant check, strict address/POI confirmation, exact local-POI recovery and live reverse checks in every region | Implementation complete; five regions still need official house-level RKA coverage below |
-| Maps and markers | Label/building layer guards, real rendered route/car/finish assertions and inspected lifecycle captures | Locally complete; current native-device rendering remains a field gate |
+| Maps and markers | Label/building layer guards, real rendered route/car/finish assertions, browser lifecycle captures and current native navigator inspection | Locally complete; real moving/on-road visibility remains a field gate |
 | Routes and navigation | Minimum-duration OSRM candidate guard, 34 regional/intercity previews and live pickup/drop-off route lifecycle | Locally complete within the stated no-live-traffic/public-provider boundary |
-| UI/UX and parity | Complete passenger/driver browser lifecycle at 320/360/390 px, six driver destinations, matching web/Flutter quick-message policy and compact-layout tests | Locally complete; moving-device/background/TTS comparison remains a field gate |
+| UI/UX and parity | Complete passenger/driver browser lifecycle at 320/360/390 px, six driver destinations, matching web/Flutter quick-message policy, compact-layout tests and current native driver lifecycle | Locally complete; moving-device/TTS comparison remains a field gate |
 | BaiSapar identity | Visible-copy tests, Android package/label verification and readiness identity | Complete |
 
 This table deliberately separates source/build completion from facts that only
@@ -143,17 +143,27 @@ working database, Redis and private OSRM dependencies, but readiness was
 `degraded` because production SMS is intentionally not configured. That is a
 correct fail-closed readiness signal, not evidence that SMS exists.
 
+On September 15 the Railway web origin was reachable, but its downloadable APK
+was an older artifact. `api.smarttaxi.kz` and `www.smarttaxi.kz` returned 502,
+while `smarttaxi.kz` and the future `baisapar.kz` name had no usable DNS result.
+Those custom-domain states are deployment/ownership inputs, not gaps that can be
+fixed by changing local application code. No production deployment was made.
+
 The fresh debug candidate is
 `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk`
-(262,396,410 bytes; SHA-256
-`bb3e59eef01aa2918b0ba531a10cf07cfc361e4d34ceb060717902dbeccfd79c`).
+(233,210,724 bytes; SHA-256
+`6d0787b14c58468670ffd14a41f48e3c210f634a584d9e401efe1866ed3ddb6d`,
+Android `1.0.0+2`).
 It is a debug-signed QA artifact, not a store release.
 
-The current machine exposed no Android device through ADB during this pass, so
-the new APK was not installed and fresh physical screenshots must not be
-claimed. The Windows visual helper timed out twice while acquiring the open
-tabs, so the repository's local-only Playwright harness was used instead. Its
-fresh screenshots under `qa_screenshots/post-claude-2026-09-15` were inspected;
+The initial audit snapshot had no Android device, but a phone was connected later
+the same day. BaiSapar `1.0.0+2` was installed and the complete native driver
+lifecycle, background/resume and forced network-loss recovery were exercised
+against the local Docker API. See
+[physical Android QA](physical-android-baisapar-qa-2026-09-15.md). The Windows
+visual helper timed out twice while acquiring the open tabs, so the repository's
+local-only Playwright harness was used for the browser pass. Its fresh
+screenshots under `qa_screenshots/post-claude-2026-09-15` were inspected;
 that inspection found and verified the six-tab navigation, stage-scroll and
 quick-message fixes above. The full built-web lifecycle used authenticated local
 development APIs and OSRM for incoming order, accept, pickup route, arrival,
@@ -172,8 +182,9 @@ simulated; API responses, state transitions and routes were not stubbed.
   account for push delivery.
 - Legal entity, contracts, policy decisions, domains, store accounts, release
   signing custody and iOS/macOS/App Store work.
-- Moving-GPS, permission revocation, resume/background behavior and spoken
-  navigation on a physical phone and a controlled route.
+- Moving-GPS, denied-forever permission recovery, extended background tracking
+  and audible spoken navigation on a controlled route. Stationary publication
+  recovery and active-trip background/resume passed on the current phone build.
 - Real taxi-stand lines for every region and a multi-driver operational day.
 - Maktaaral's provider detour and other road-access/safety facts that require
   on-road or authoritative-provider validation.

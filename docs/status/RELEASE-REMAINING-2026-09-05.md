@@ -15,11 +15,13 @@ fresh BaiSapar debug APK passed. Both push and pull-request CI runs for commit
 New passenger card collection/uncredited top-up intents fail closed until real
 provider integration. Historical records remain owner-readable/removable; existing
 raw card data was not migrated and requires an owner-controlled retention decision.
-The September 11 physical-device evidence remains useful but is historical: it
-predates the application ID change to `kz.baisapar.app`. The current machine
-exposes no device through ADB, so the new package has not been installed and no
-fresh physical screenshots are claimed. Moving-GPS, background and permission-
-revocation acceptance is still open.
+The September 11 physical-device evidence remains useful but is historical. It
+is now superseded for the current package by the September 15 physical Android
+pass: BaiSapar `1.0.0+2` is installed on the connected phone, the full native
+driver lifecycle and background/resume were completed against the local Docker
+API, and a forced network loss recovered automatically after the ADB tunnel was
+restored. Moving-GPS, spoken guidance and denied-forever permission acceptance
+remain field work.
 
 - API dependency policy and its 36 focused checks; the corresponding historical
   web pass had 49 focused tests and a production build.
@@ -75,17 +77,17 @@ revocation acceptance is still open.
 
 | Item | What closes it | Current constraint |
 |---|---|---|
-| Passenger/driver visual parity | Continue the remaining physical-device permission and recovery-state comparison against the current reference boards | Region-bootstrap recovery is checked on web at 390x844 and in Flutter with 320px light/dark and large-text cases. On 2026-09-11 the connected phone also confirmed login, all 13 regions, address search and map selection on the current build, and drove both new stand screens end to end. Real permission revocation and background transitions still require the phone. |
+| Passenger/driver visual parity | Continue only the remaining moving-device and denied-forever comparison against the current reference boards | Region-bootstrap recovery is checked on web at 390x844 and in Flutter with 320px light/dark and large-text cases. The September 15 current-package phone pass confirmed the complete driver lifecycle, route/navigation rendering, background/resume, runtime location prompt and network-loss recovery. Passenger address/tariff/payment parity remains covered by the local browser lifecycle and Flutter presentation suite; a new passenger moving-GPS field run is still required. |
 | Taxi stands (стоянки) | Owner draws the real lines in each region; then a working day on a real stand with several drivers | Built and verified on the connected phone: geofenced joining, the offer, phone and app seats, handing a turn over, departure, and the rider's map/sheet/reservation. See [stands and cancellation review](stands-and-cancellation-review-2026-09-11.md). The browser apps now carry the same line for both audiences, a place is released the moment the driver goes off the line or accepts a dispatch order, and the owner's map editor is confirmed working in a real browser. Two demo stands exist in Мырзакент only; nothing is drawn for the other twelve regions, and no real line has been run yet. |
 | Cancellation review | Owner works the queue for a few weeks, then the risk threshold and signal weights are retuned against what actually shows up | Every cancellation that reached a driver is now scored and filed; the driver states a reason and the rider can say the driver asked them to cancel. Nothing is charged automatically, by decision. Both browser apps now ask the same question, so a cancellation made from a laptop no longer reaches the queue reasonless. The threshold (25) and weights are reasoned, not data-derived, and a follow-up observation of where the car went is recorded 8 minutes later. |
 | Driver account in passenger mode | Closed — live local API check plus `stage11-driver-core-smoke.js` cover driver → passenger → driver, client wallet and recurring bookings | The acting token is correctly CLIENT-scoped in passenger mode while the persisted account stays DRIVER. Wallet and recurring bookings return `200`; the former 403/404 note was superseded by the current route/token contract. |
 | Native automatic dispatch after account switch | Closed — observe the new driver order without manual refresh on the revised APK | A newly registered local rider's order appeared in the already-signed-in, online driver app and was accepted/completed through the native driver UI. The library-level stale-session reproduction also fails before and passes after the fix. |
-| Moving GPS, resume, background tracking, spoken navigation | Real-device permission/revocation/resume and controlled route QA | Unit tests and browser GPS fixtures do not establish physical behavior |
+| Moving GPS, resume, background tracking, spoken navigation | Controlled moving-device route plus audible TTS and denied-forever recovery | Current BaiSapar phone pass closed active-trip background/resume and stationary GPS publication/recovery. A desk test cannot certify moving/off-route guidance, background tracking over time or audible announcements. |
 | Native driver route layer | Closed — current phone navigator inspected after the style-layer migration | The physical driver navigator displayed the 1.2 km road-shaped route, turn prompt, ETA, building footprints, readable labels, compact car and destination marker. This is current-device evidence in addition to the shared GeoJSON/style-layer regression test. |
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
 | Production routing capacity | Agreed staging/self-hosted provider, data and capacity testing before rollout | Local readiness currently uses the public OSRM demo; no load test should target that shared service |
 | Deployment and remote CI acceptance | Read CI results; apply and verify an authorized staging/production configuration | No production deploy is authorized in this local QA pass; Railway root-context adoption still needs service settings migration |
-| Final Android release artifact | Owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | The newest development candidate is `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk` (262,396,410 bytes; SHA-256 `bb3e59eef01aa2918b0ba531a10cf07cfc361e4d34ceb060717902dbeccfd79c`; package/label `kz.baisapar.app` / `BaiSapar`; APK Signature Scheme v2 verified). It is debug-signed and uninstalled because no ADB device is currently exposed. Older SmartTaxi APK/AAB evidence predates the package-ID change and cannot certify the BaiSapar store artifact. No store upload is authorized. |
+| Final Android release artifact | Firebase config, owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | The newest development candidate is `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk` (233,210,724 bytes; SHA-256 `6d0787b14c58468670ffd14a41f48e3c210f634a584d9e401efe1866ed3ddb6d`; `1.0.0+2`; package/label `kz.baisapar.app` / `BaiSapar`; APK Signature Scheme v2 verified). It is debug-signed and installed on the physical phone with local-development endpoints. A notification-capable release build remains blocked by the missing BaiSapar Firebase configuration and owner release inputs. No store upload is authorized. |
 
 The current transport/recovery pass fixes unsafe native write replay, stale
 session-expiry callbacks and recovery after an uncertain order response in both
@@ -113,6 +115,7 @@ these warnings did not prevent the current builds.
 ## Evidence index
 
 - [BaiSapar post-Claude release audit](post-claude-release-audit-2026-09-15.md)
+- [Current BaiSapar physical Android QA](physical-android-baisapar-qa-2026-09-15.md)
 - [Taxi stands and cancellation review](stands-and-cancellation-review-2026-09-11.md)
 - [Current local release gate](local-release-gate-2026-09-10.md)
 - [Web map, address and route visual pass](web-map-route-visual-pass-2026-09-10.md)
