@@ -593,13 +593,11 @@ class _AuthBackdrop extends StatelessWidget {
   }
 }
 
-/// The logotype plus the localised tagline, over the auth backdrop.
+/// The supplied app icon plus the localised tagline, over the auth backdrop.
 ///
-/// This is the artwork, not text set at runtime: the previous version spelled
-/// the name out in two TextSpans of different weights, which is why it went on
-/// reading "SmartTaxi" on the first screen of the app long after everything
-/// else had been renamed. The tagline under it stays text, because it is
-/// translated.
+/// The icon already carries its BaiSapar monogram and name, so a separate
+/// wordmark here would repeat the brand and turn the hero into a logo stack.
+/// The tagline stays text because it is translated.
 class _AuthWordmark extends StatelessWidget {
   const _AuthWordmark();
 
@@ -625,7 +623,7 @@ class _AuthWordmark extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BrandWordmark(onDark: true, height: 46 * scale),
+            BrandLogo(size: 126 * scale),
             SizedBox(height: 14 * scale),
             Container(
               width: 64 * scale,

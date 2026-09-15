@@ -1,22 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The name's own B with the road cut through it. Drawn smaller than the
-     legacy square icon on purpose: only the middle 66% of an adaptive icon is
-     guaranteed to survive the launcher's mask. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="1024"
-    android:viewportHeight="1024">
-  <path android:pathData="M336.54 727V559.69L626.4 508.58Q633.29 511.42 639.7 515.32Q661.78 528.74 674.62 551.83Q687.46 574.91 687.46 605.21Q687.46 640.42 669.86 667.98Q652.26 695.54 619.07 711.27Q585.88 727 539.13 727ZM646.51 471.53 336.54 526.18V297H522.97Q572.03 297 605.5 310.85Q638.98 324.7 656.01 348.8Q673.03 372.9 673.03 404.36Q673.03 429.17 662.64 449.23Q656.17 461.72 646.51 471.53ZM453.13 636.96H516.62Q538.55 636.96 551.54 625.42Q564.52 613.87 564.52 594.54Q564.52 581.55 558.61 572.03Q552.69 562.5 542.01 557.31Q531.34 552.11 516.62 552.11H453.13ZM453.13 467.27H509.4Q522.68 467.27 532.49 462.36Q542.3 457.46 547.64 448.37Q552.98 439.28 552.98 427.15Q552.98 408.97 541.15 398.01Q529.32 387.04 509.4 387.04H453.13Z">
-    <aapt:attr name="android:fillColor">
-      <gradient
-          android:type="linear"
-          android:startX="300" android:startY="230"
-          android:endX="760" android:endY="800">
-        <item android:offset="0" android:color="#FFD24A"/>
-        <item android:offset="1" android:color="#FFAE1A"/>
-      </gradient>
-    </aapt:attr>
-  </path>
-</vector>
+<!-- The user's supplied glossy tile, inset into Android's adaptive safe zone.
+     Launchers may apply circles, squircles or rounded rectangles; the inset
+     keeps the silver monogram and blue rim intact under every mask. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/smarttaxi_app_icon"
+        android:insetLeft="18dp"
+        android:insetTop="18dp"
+        android:insetRight="18dp"
+        android:insetBottom="18dp" />
+</layer-list>

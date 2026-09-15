@@ -34,7 +34,13 @@
   height: 76px;
 }
 .landing-brand { display: flex; align-items: center; gap: 10px; }
-.landing-brand-mark { width: 38px; height: 38px; border-radius: 11px; }
+.landing-brand-mark {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 11px;
+  filter: drop-shadow(0 9px 16px rgba(0, 21, 58, .28));
+}
 /* The logotype is artwork, so it is sized by height and never re-typeset. */
 .landing-brand-wordmark { height: 19px; width: auto; display: block; }
 .landing-nav { display: flex; align-items: center; gap: 28px; }

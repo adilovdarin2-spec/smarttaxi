@@ -3797,6 +3797,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   object-position: center;
   display: block;
   flex-shrink: 0;
+  border-radius: 24%;
+  filter: drop-shadow(0 8px 14px rgba(3, 33, 79, .22));
 }
 
 .brand-logo--large {
@@ -15381,10 +15383,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-s-mark {
-  width: 58px;
+  width: 138px;
   height: auto;
-  margin: 0 0 -6px;
+  margin: 0;
   display: block;
+  filter: drop-shadow(0 16px 25px rgba(2, 39, 91, .28));
 }
 
 .taxi-client-shell .auth-reference-welcome-screen .auth-brand-wordmark {
@@ -15541,8 +15544,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-s-mark {
-    width: 50px;
-    margin: 0 0 -8px;
+    width: 122px;
+    margin: 0;
   }
 
   .taxi-client-shell .auth-reference-welcome-screen .auth-brand-wordmark {
@@ -22652,20 +22655,15 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .client-drawer-mark {
-  display: grid !important;
-  width: 34px !important;
-  height: 34px !important;
+  display: block !important;
+  width: 38px !important;
+  height: 38px !important;
   padding: 0 !important;
-  place-items: center !important;
-  color: #fff !important;
-  border-radius: 12px !important;
-  background: linear-gradient(145deg, #0a5ee9, #58a0ff) !important;
-  box-shadow: 0 8px 16px rgba(11, 95, 255, .22) !important;
-  filter: none !important;
-  font-size: 19px !important;
-  font-weight: 900 !important;
-  letter-spacing: -.08em !important;
-  line-height: 1 !important;
+  object-fit: contain !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 8px 13px rgba(2, 43, 100, .25)) !important;
 }
 
 .taxi-client-shell .client-drawer-brand-lockup strong {
@@ -26183,3 +26181,22 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 /* Narrower desktop windows keep the light page: there is no room beside the
    device for the wordmark, and a dark band behind a 390px strip would only
    make the emptiness louder. */
+
+/* The supplied icon is a detailed product tile, not the retired flat mark.
+   Give it enough room to read on the driver entry screen while retaining a
+   compact fallback for short handsets. */
+.phone-frame.driver-core-phone.driver-core-login .driver-core-auth-card .auth-logo {
+  width: 76px !important;
+  height: 76px !important;
+  margin-bottom: 16px !important;
+  border-radius: 18px;
+  filter: drop-shadow(0 13px 20px rgba(2, 39, 91, .25));
+}
+
+@media (max-height: 650px) {
+  .phone-frame.driver-core-phone.driver-core-login .driver-core-auth-card .auth-logo {
+    width: 58px !important;
+    height: 58px !important;
+    margin-bottom: 10px !important;
+  }
+}

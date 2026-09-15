@@ -159,9 +159,9 @@ const tripDetailsUi = "/ui/trip-details";
 const baseIcons = {
   logo: `/brand/baisapar_lockup.svg`,
   authLogo: `/brand/baisapar_lockup.svg`,
-  sMark: `/brand/baisapar_icon.svg`,
+  sMark: `/brand/baisapar_icon_512.png`,
   pin: `${baseUi}/svg/target_location.svg`,
-  mark: `/brand/baisapar_icon.svg`,
+  mark: `/brand/baisapar_icon_512.png`,
   menu: `${baseUi}/svg/menu.svg`,
   bell: `${baseUi}/svg/bell.svg`,
   pickup: `${baseUi}/svg/pickup_marker.svg`,
@@ -197,8 +197,7 @@ const baseIcons = {
   tariffRadio: `${fixedTariffUi}/unselected_radio.svg`
 };
 const authWelcomeAssets = {
-  wordmark: `/brand/baisapar_wordmark.svg`,
-  sMark: `/brand/baisapar_icon.svg`,
+  sMark: `/brand/baisapar_icon_512.png`,
   heroPhoto: `${authWelcomeUi}/background/auth_hero_photo_soft.png`,
   bottomOverlay: `${authWelcomeUi}/background/white_bottom_gradient_overlay.png`,
   arrowRight: `${authWelcomeUi}/svg/icons/arrow_right.svg`,
@@ -2280,7 +2279,7 @@ function ClientDrawer({ open, active, rider, authenticated, onClose, onSelect, o
       <aside ref={drawerRef} className={`client-drawer ${open ? "open" : ""}`} role="dialog" aria-modal={open || undefined} aria-label="Меню BaiSapar" tabIndex={-1} aria-hidden={!open} inert={!open}>
         <div className="client-drawer-brand-row">
           <div className="client-drawer-brand-lockup" aria-label="BaiSapar">
-            <img className="client-drawer-mark" src="/brand/baisapar_icon.svg" alt="" aria-hidden="true" />
+            <img className="client-drawer-mark" src="/brand/baisapar_icon_512.png" alt="" aria-hidden="true" />
             <span>
               <img className="client-drawer-wordmark" src="/brand/baisapar_wordmark.svg" alt="" aria-hidden="true" />
               <small>Ваш комфорт</small>
@@ -4549,7 +4548,6 @@ function PremiumAuthFlow({
         <section className="auth-welcome-hero" aria-hidden="true">
           <div className="auth-photo-brand">
             <img className="auth-s-mark" src={authWelcomeAssets.sMark} alt="" />
-            <img className="auth-brand-wordmark" src={authWelcomeAssets.wordmark} alt="" />
             <p>Ваш комфорт. Наша забота</p>
           </div>
         </section>

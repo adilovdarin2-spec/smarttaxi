@@ -39,8 +39,9 @@ test("the logotype is artwork, and the artwork is in the tree", () => {
   assert.ok(landing.includes('src="/brand/baisapar_wordmark_light.svg"'));
 
   for (const file of [
-    "../public/brand/baisapar_icon.svg",
-    "../public/brand/baisapar_icon_round.svg",
+    "../public/brand/baisapar_icon_192.png",
+    "../public/brand/baisapar_icon_512.png",
+    "../public/brand/baisapar_icon_1024.png",
     "../public/brand/baisapar_wordmark.svg",
     "../public/brand/baisapar_wordmark_light.svg",
     "../public/brand/baisapar_lockup.svg",
@@ -64,7 +65,7 @@ test("the logotype is artwork, and the artwork is in the tree", () => {
 test("the page announces itself as BaiSapar", () => {
   const html = read("../index.html");
   assert.ok(html.includes("<title>BaiSapar</title>"));
-  assert.ok(html.includes('href="/brand/baisapar_icon.svg"'));
+  assert.ok(html.includes('href="/brand/baisapar_icon_192.png"'));
   assert.ok(html.includes('rel="apple-touch-icon"'));
   assert.ok(html.includes('rel="manifest"'));
   assert.ok(!html.includes("smarttaxi"));

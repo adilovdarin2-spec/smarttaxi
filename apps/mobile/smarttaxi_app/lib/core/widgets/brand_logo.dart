@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// The BaiSapar mark: the name's own B, cut through by the road.
+/// The supplied BaiSapar icon: a silver B monogram on a deep-blue tile.
 ///
 /// Same artwork as the launcher icon and the native launch drawable, so the
-/// app never changes face while it starts.
+/// app never changes face while it starts. The retired route-pin mark must not
+/// be recreated by individual feature screens.
 class BrandLogo extends StatelessWidget {
   const BrandLogo({
     super.key,
     this.large = false,
+    this.size,
   });
 
   // A raster PNG rather than an SVG: the app has no SVG renderer on the
@@ -15,16 +17,17 @@ class BrandLogo extends StatelessWidget {
   static const iconAssetPath = 'assets/brand/baisapar_app_icon.png';
 
   final bool large;
+  final double? size;
 
   @override
   Widget build(BuildContext context) {
-    final size = large ? 78.0 : 46.0;
+    final resolvedSize = size ?? (large ? 78.0 : 46.0);
     return Semantics(
       label: 'BaiSapar',
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(large ? 20 : 12),
+        borderRadius: BorderRadius.circular(resolvedSize * 0.24),
         child: SizedBox.square(
-          dimension: size,
+          dimension: resolvedSize,
           child: Image.asset(iconAssetPath, fit: BoxFit.cover),
         ),
       ),
