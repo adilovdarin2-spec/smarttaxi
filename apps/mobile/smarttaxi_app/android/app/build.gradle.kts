@@ -66,6 +66,12 @@ android {
         debug {
             manifestPlaceholders["cleartextTraffic"] = "true"
         }
+        // Profile builds are installed only for local performance QA and may
+        // point at the developer machine over plain HTTP. Production remains
+        // HTTPS-only in the release block below.
+        getByName("profile") {
+            manifestPlaceholders["cleartextTraffic"] = "true"
+        }
         release {
             manifestPlaceholders["cleartextTraffic"] = "false"
             signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else null

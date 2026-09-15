@@ -44,6 +44,22 @@ void main() {
     expect(AppConfig.mapAttribution, contains('OpenStreetMap'));
   });
 
+  test('Android profile QA can reach a local backend without weakening release',
+      () {
+    final gradle = _read('android/app/build.gradle.kts');
+    expect(
+      RegExp(r'getByName\("profile"\).*?cleartextTraffic.*?"true"',
+              dotAll: true)
+          .hasMatch(gradle),
+      isTrue,
+    );
+    expect(
+      RegExp(r'release\s*\{.*?cleartextTraffic.*?"false"', dotAll: true)
+          .hasMatch(gradle),
+      isTrue,
+    );
+  });
+
   test('official icon is launcher-only and absent from feature screens', () {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
