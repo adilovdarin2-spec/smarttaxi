@@ -65,6 +65,15 @@ above the visible sheet. The driver surface now resets both scroll containers
 when the tab, order or status changes. The end-to-end assertion verifies that
 the next heading is fully inside both the viewport and its sheet.
 
+### The driver shift summary remains readable at 320 px
+
+The final narrow-screen pass found the debt total clipped inside the three-column
+shift summary at 320×568. The compact breakpoint now reduces only the metric
+cell padding and number size; labels, six navigation destinations and the primary
+shift action keep their existing hierarchy. The reusable presentation smoke now
+asserts each metric value directly, and the complete local driver/passenger
+lifecycle covers 320, 360 and 390 px.
+
 ### Source hygiene
 
 The two whitespace defects found by `git diff --check` were removed. No user or
@@ -81,7 +90,7 @@ Claude changes were reset, cleaned or rewritten.
 | API test suite | passed; 121,361 address rows checked across all 13 regions |
 | Web tests | 167/167 passed |
 | Web production build | passed; bundled MapLibre worker/map checks passed |
-| Local web visual smoke | passenger home/address/tariff/payment plus complete driver/passenger order lifecycle passed at 360/390 px |
+| Local web visual smoke | passenger home/address/tariff/payment plus complete driver/passenger order lifecycle passed at 320/360/390 px |
 | Flutter analysis | no issues found |
 | Flutter tests | 328/328 passed |
 | Android debug APK | built; package/label `kz.baisapar.app` / `BaiSapar`; target SDK 36; APK Signature Scheme v2 verified with one debug signer |
@@ -92,13 +101,13 @@ Claude changes were reset, cleaned or rewritten.
 | Requested area | Authoritative local evidence | Assessment |
 |---|---|---|
 | Backend | Complete API suite, full guarded Docker smoke, readiness and API CI job | Locally complete |
-| Web | 167 tests, production bundle, MapLibre build guard and paired lifecycle screenshots at 360/390 px | Locally complete |
+| Web | 167 tests, production bundle, MapLibre build guard and paired lifecycle smoke at 320/360/390 px | Locally complete |
 | Flutter Android | Clean analysis, 328 tests, compiled debug APK, manifest/signature checks and mobile CI job | Source/build complete; current physical install remains unavailable |
 | Docker | Clean image rebuild without removing volumes, valid Compose config and four healthy services | Locally complete |
 | Addresses | 121,361-row/13-region invariant check, strict address/POI confirmation and live local search/picker coverage | Implementation complete; official house-level coverage needs the external RKA exports below |
 | Maps and markers | Label/building layer guards, real rendered route/car/finish assertions and inspected lifecycle captures | Locally complete; current native-device rendering remains a field gate |
 | Routes and navigation | Minimum-duration OSRM candidate guard, 34 regional/intercity previews and live pickup/drop-off route lifecycle | Locally complete within the stated no-live-traffic/public-provider boundary |
-| UI/UX and parity | Complete passenger/driver browser lifecycle, six driver destinations, matching web/Flutter quick-message policy and compact-layout tests | Locally complete; moving-device/background/TTS comparison remains a field gate |
+| UI/UX and parity | Complete passenger/driver browser lifecycle at 320/360/390 px, six driver destinations, matching web/Flutter quick-message policy and compact-layout tests | Locally complete; moving-device/background/TTS comparison remains a field gate |
 | BaiSapar identity | Visible-copy tests, Android package/label verification and readiness identity | Complete |
 
 This table deliberately separates source/build completion from facts that only

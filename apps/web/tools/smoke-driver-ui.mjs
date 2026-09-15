@@ -17,6 +17,12 @@ const { chromium } = require(process.env.QA_PLAYWRIGHT_PACKAGE || "playwright");
 const { PNG } = createRequire(require.resolve(process.env.QA_PLAYWRIGHT_PACKAGE || "playwright"))("pngjs");
 const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), "smarttaxi-driver-ui-qa");
 await mkdir(output, { recursive: true });
+const PHONE_VIEWPORTS = Object.freeze([
+  { width: 390, height: 844 },
+  { width: 360, height: 740 },
+  { width: 320, height: 568 },
+]);
+const viewportSuffix = width => width === 390 ? "" : `-${width}`;
 const evidence = [];
 const mark = (step, detail = {}) => { evidence.push({ step, ...detail }); console.log(JSON.stringify({ step, ...detail })); };
 const browser = await chromium.launch({ headless: true, ...(process.env.QA_BROWSER_EXECUTABLE ? { executablePath: process.env.QA_BROWSER_EXECUTABLE } : {}) });
@@ -78,9 +84,9 @@ async function request(endpoint, { method = "GET", body, auth = token } = {}) {
 async function shot(name) {
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: path.join(output, `${name}.png`) });
-  if (passenger && name.startsWith("driver-") && name !== "driver-active-360") {
-    for (const width of [390, 360]) {
-      await passenger.setViewportSize({ width, height: width === 390 ? 844 : 740 });
+  if (passenger && name.startsWith("driver-") && !/^driver-active-(360|320)$/.test(name)) {
+    for (const { width, height } of PHONE_VIEWPORTS) {
+      await passenger.setViewportSize({ width, height });
       await passenger.waitForTimeout(300);
       await passenger.locator('.map-loading-chip').waitFor({ state: 'hidden', timeout: 30000 });
       assert.equal(await passenger.locator(".search-nearby-driver, .driver-found-map-layer, .search-map-radar-marker").count(), 0, "Only real map markers/ETA may represent the live trip");
@@ -91,7 +97,7 @@ async function shot(name) {
         const box = await element.boundingBox();
         if (box) assert(box.x >= -1 && box.x + box.width <= width + 1, `Passenger element overflows ${width}px: ${JSON.stringify(box)}`);
       }
-      const passengerName = name.replace("driver-", "passenger-") + (width === 360 ? "-360" : "");
+      const passengerName = name.replace("driver-", "passenger-") + viewportSuffix(width);
       await passenger.screenshot({ path: path.join(output, `${passengerName}.png`), animations: 'disabled' });
     }
     await passenger.setViewportSize({ width: 390, height: 844 });
@@ -285,7 +291,7 @@ try {
   await assertDriverCar(page, "driver initial location");
   await page.waitForFunction(() => !document.body.textContent.includes("Загружаем карту"), null, { timeout: 25000 }).catch(() => mark("map_provider_still_loading"));
 
-  for (const size of [{ width: 390, height: 844 }, { width: 360, height: 740 }]) {
+  for (const size of PHONE_VIEWPORTS) {
     await page.setViewportSize(size);
     for (const name of ["Линия", "Заказы", "Поездка", "Стоянка", "Дорога", "Доход"]) {
       await tab(name);
@@ -293,7 +299,7 @@ try {
       await shot(`driver-${name === "Линия" ? "line" : name === "Заказы" ? "orders" : name === "Поездка" ? "active" : name === "Стоянка" ? "stands" : name === "Дорога" ? "road" : "earnings"}-${size.width}`);
     }
   }
-  mark("all_six_tabs_visible", { widths: [390, 360] });
+  mark("all_six_tabs_visible", { widths: PHONE_VIEWPORTS.map(({ width }) => width) });
   const roadComment = `Локальная проверка дорожного события ${Date.now()}`;
   const roadCreated = await request("/api/driver/road-alerts", { method: "POST", body: {
     type: "ROAD_WORK", comment: roadComment, lat: 40.844435, lng: 68.509021
@@ -403,8 +409,8 @@ try {
   const publicOrderId = String(passengerOrder.short_id ?? passengerOrder.public_id ?? newOrder.id);
   assert.equal(await detailsDialog.locator('.trip-details-clean-row').filter({ hasText: 'ID заказа' }).locator('strong').innerText(), `#${publicOrderId}`, 'Trip details show the actual server public ID without inventing or truncating it');
   assert.equal(await detailsDialog.locator('.trip-driver-vehicle b').innerText(), passengerOrder.driver_plate);
-  for (const width of [390, 360]) {
-    await passenger.setViewportSize({ width, height: width === 390 ? 844 : 740 });
+  for (const { width, height } of PHONE_VIEWPORTS) {
+    await passenger.setViewportSize({ width, height });
     assert(await detailsDialog.evaluate(node => node.scrollWidth <= node.clientWidth + 1), 'Trip details must not overflow for a full UUID');
     await passenger.screenshot({ path: path.join(output, `passenger-details-${width}.png`), animations: 'disabled' });
   }
@@ -468,10 +474,12 @@ try {
   assert.equal(movingState.driver?.publicStatus, "BUSY", "A location update must not free a driver with an active order");
   mark("longitude_only_movement_routed_without_latitude_change");
   await shot("driver-accepted-live");
-  await page.setViewportSize({ width: 360, height: 740 });
-  await onScreen(page.getByRole("button", { name: "Еду к клиенту", exact: true }));
-  await onScreen(page.getByRole("navigation", { name: "Меню водителя" }));
-  await shot("driver-active-360");
+  for (const { width, height } of PHONE_VIEWPORTS.slice(1)) {
+    await page.setViewportSize({ width, height });
+    await onScreen(page.getByRole("button", { name: "Еду к клиенту", exact: true }));
+    await onScreen(page.getByRole("navigation", { name: "Меню водителя" }));
+    await shot(`driver-active-${width}`);
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   await failAction(newOrder.id, "cancel", "Отменить", ".driver-core-active");
   await transition(newOrder.id, "Еду к клиенту", "DRIVER_GOING_TO_CLIENT", "driver-going");
@@ -512,9 +520,11 @@ try {
     await passenger.getByRole('heading', { name: heading, exact: true }).waitFor();
     assert.equal(await passenger.locator('.screen-intro h1').evaluate(element => getComputedStyle(element).fontWeight), '600', `${heading}: shared readable heading hierarchy`);
     await passenger.screenshot({ path: path.join(output, `passenger-${file}.png`), animations: 'disabled' });
-    await passenger.setViewportSize({ width: 360, height: 740 });
-    assert(await passenger.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${heading}: no horizontal overflow at 360px`);
-    await passenger.screenshot({ path: path.join(output, `passenger-${file}-360.png`), animations: 'disabled' });
+    for (const { width, height } of PHONE_VIEWPORTS.slice(1)) {
+      await passenger.setViewportSize({ width, height });
+      assert(await passenger.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${heading}: no horizontal overflow at ${width}px`);
+      await passenger.screenshot({ path: path.join(output, `passenger-${file}-${width}.png`), animations: 'disabled' });
+    }
     await passenger.setViewportSize({ width: 390, height: 844 });
   }
   mark('passenger_account_surfaces_read_only');

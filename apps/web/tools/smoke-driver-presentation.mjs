@@ -39,8 +39,8 @@ try {
     // tiles time to paint before recording visual evidence; later tabs reuse
     // the warm map instance and do not need the same cold-start allowance.
     if (key === 'line') await page.waitForTimeout(4000);
-    for (const width of [390, 360]) {
-      await page.setViewportSize({ width, height: width === 390 ? 844 : 740 });
+    for (const [width, height] of [[390, 844], [360, 740], [320, 568]]) {
+      await page.setViewportSize({ width, height });
       const phone = page.locator('.driver-core-phone');
       const bounds = await phone.boundingBox();
       assert(bounds.x >= -1 && bounds.x + bounds.width <= width + 1, `${key}: outer overflow`);
@@ -53,6 +53,15 @@ try {
         `${key}: all six navigation destinations must stay on one row`);
       for (const card of await page.locator('.driver-core-line-card, .driver-core-money-card, .driver-core-money-grid > div').all()) {
         assert.equal(await card.evaluate(el => el.scrollWidth > el.clientWidth + 1), false, `${key}: card content overflow`);
+      }
+      for (const value of await page.locator('.driver-core-stats strong').all()) {
+        const metric = await value.evaluate(el => ({
+          text: el.textContent,
+          clientWidth: el.clientWidth,
+          scrollWidth: el.scrollWidth,
+          fontSize: getComputedStyle(el).fontSize,
+        }));
+        assert(metric.scrollWidth <= metric.clientWidth + 1, `${key}: shift metric is clipped: ${JSON.stringify(metric)}`);
       }
       if (key === 'line') {
         const card = await page.locator('.driver-core-line-card').boundingBox();

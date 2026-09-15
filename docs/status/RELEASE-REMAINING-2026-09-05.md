@@ -28,7 +28,9 @@ revocation acceptance is still open.
 - npm TLS validation enabled by default in both API build contexts and Compose;
   verified root-lock rebuild, offline API checks and local runtime readiness.
 - Browser passenger address/map selection, Economy/Delivery KZT estimates,
-  payment selection and complete paired driver/passenger trip lifecycle.
+  payment selection and complete paired driver/passenger trip lifecycle at
+  320, 360 and 390 px; the 320 px driver shift summary is guarded against
+  clipped monetary values.
 - Compact tariff previews keep the approved full-size picker cursor unchanged
   while scaling confirmed endpoint copies so short routes remain visible;
   address search reports an in-progress state instead of a false zero count.
