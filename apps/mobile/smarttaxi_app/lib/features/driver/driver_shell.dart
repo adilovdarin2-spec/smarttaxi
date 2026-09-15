@@ -4598,7 +4598,6 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
     final l10n = AppLocalizations.of(context);
     final signature = _sceneSignature();
     if (signature == _lastSceneSignature) return;
-    _lastSceneSignature = signature;
     _lastSceneSyncAt = DateTime.now();
     await _installImages();
     if (!_imagesInstalled || !mounted) return;
@@ -4684,6 +4683,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       }
       if (circles.isNotEmpty) await controller.addCircles(circles);
       if (symbols.isNotEmpty) await controller.addSymbols(symbols);
+      _lastSceneSignature = signature;
     } catch (_) {
       // Annotation managers become temporarily unavailable when Android
       // reloads a style. The next live GPS/route update retries safely.
@@ -4700,6 +4700,9 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       _styleReady = true;
     }
     _lastSceneSignature = '';
+    // Images belong to the current MapLibre style. A style reload removes
+    // them even though this State object and its controller stay alive.
+    _imagesInstalled = false;
     _routeLayersInstalled = false;
     final controller = _controller;
     unawaited(_followDriverIfNeeded());

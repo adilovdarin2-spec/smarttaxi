@@ -6718,7 +6718,6 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     if (!_styleReady || controller == null) return;
     final signature = _sceneSignature();
     if (signature == _lastSceneSignature) return;
-    _lastSceneSignature = signature;
 
     await _installImages();
     if (!_imagesInstalled || !mounted) return;
@@ -6771,6 +6770,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         }
       }
       if (symbols.isNotEmpty) await controller.addSymbols(symbols);
+      _lastSceneSignature = signature;
     } catch (_) {
       // A style reload can race an annotation update. The next model state
       // change will rebuild the scene; never surface a map renderer error as

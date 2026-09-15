@@ -896,10 +896,22 @@ void main() {
       expect(source, contains('bool _sceneSyncInFlight = false;'));
       expect(source, contains('if (_sceneSyncInFlight)'));
       expect(source, contains('await controller.addSymbols(symbols)'));
+      expect(
+        source.indexOf('_lastSceneSignature = signature;'),
+        greaterThan(source.indexOf('await controller.addSymbols(symbols)')),
+        reason: 'a failed annotation update must remain retryable',
+      );
       expect(source, isNot(contains('await controller.clearLines();')),
           reason: 'style-layer routes do not use the annotation line manager');
     }
     expect(driver, contains('await controller.addCircles(circles)'));
+    expect(
+      RegExp(r'_lastSceneSignature = .*?_imagesInstalled = false;',
+              dotAll: true)
+          .hasMatch(driver),
+      isTrue,
+      reason: 'a driver style reload must reinstall style-owned marker images',
+    );
   });
 
   test('driver drawer keeps driver tabs and adds account/support sections', () {
