@@ -29,7 +29,7 @@ RUN node src/tools/runtime-dependencies-check.js
 # workspace layout (including any nested dependencies introduced in the lock).
 RUN mkdir -p /app/uploads && ln -s /app/uploads uploads
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]
 
 FROM workspace-manifests AS web-builder
 RUN npm ci --workspace=apps/web --include-workspace-root=false

@@ -17,4 +17,4 @@ COPY packages /packages
 # addresses exist in production at all.
 COPY apps/api/data ./data
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]

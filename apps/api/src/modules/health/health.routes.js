@@ -4,11 +4,21 @@ import { redis } from "../../db/redis.js";
 import { env } from "../../config/env.js";
 import { buildMapsDiagnostics } from "../maps/maps.diagnostics.js";
 import { dependenciesReady, smsReadinessStatus } from "./health-readiness.js";
+import { isShuttingDown } from "../../common/lifecycle.js";
 
 const router = Router();
 const version = process.env.npm_package_version || "1.0.0";
 
 async function dependencyStatus() {
+  if (isShuttingDown()) {
+    return {
+      ready: false,
+      checks: { lifecycle: "draining" },
+      dbTime: null,
+      maps: { providers: {}, osrm: { status: "draining" }, maptiler: { key: "draining" } }
+    };
+  }
+
   const checks = {
     db: "down",
     redis: "down",

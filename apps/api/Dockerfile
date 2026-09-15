@@ -17,4 +17,4 @@ COPY src ./src
 # See src/tools/harvest-addresses.js.
 COPY data ./data
 EXPOSE 4000
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]

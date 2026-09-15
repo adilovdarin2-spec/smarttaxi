@@ -110,6 +110,7 @@ export const env = {
   DB_POOL_MAX: intEnv("DB_POOL_MAX", 20, { min: 5, max: 200 }),
   DB_POOL_IDLE_TIMEOUT_MS: intEnv("DB_POOL_IDLE_TIMEOUT_MS", 30_000, { min: 1000, max: 300_000 }),
   DB_POOL_CONNECTION_TIMEOUT_MS: intEnv("DB_POOL_CONNECTION_TIMEOUT_MS", 5000, { min: 500, max: 60_000 }),
+  SHUTDOWN_GRACE_MS: intEnv("SHUTDOWN_GRACE_MS", 8000, { min: 1000, max: 60_000 }),
   REDIS_URL: optionalUrl("REDIS_URL", "redis://redis:6379"),
   JWT_SECRET: jwtSecret(),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "365d",

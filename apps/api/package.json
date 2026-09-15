@@ -7,7 +7,7 @@
     "qs": "6.16.0"
   },
   "scripts": {
-    "pretest": "node src/tools/dependency-policy-check.js",
+    "pretest": "node src/tools/dependency-policy-check.js && node src/tools/lifecycle-check.js",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "seed": "node src/seeds/seed.js",

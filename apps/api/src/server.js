@@ -6,7 +6,7 @@ import helmet from "helmet";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { env } from "./config/env.js";
-import { connectRedis } from "./db/redis.js";
+import { connectRedis, redis } from "./db/redis.js";
 import { attachSocketRedisAdapter, closeSocketRedisAdapter } from "./realtime/socket-redis-adapter.js";
 import { query, pool } from "./db/pool.js";
 import { spawn } from "node:child_process";
@@ -15,6 +15,7 @@ import { loadHarvestedAddresses } from "./tools/load-addresses.js";
 import { errorHandler, notFound } from "./common/errors.js";
 import { captureError, initSentry } from "./common/sentry.js";
 import { rateLimit } from "./common/rateLimit.js";
+import { beginShutdown, isShuttingDown } from "./common/lifecycle.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import healthRoutes from "./modules/health/health.routes.js";
 import ordersRoutes from "./modules/orders/orders.routes.js";
@@ -43,9 +44,9 @@ import standsRoutes, { driverStandsRouter } from "./modules/stands/stands.routes
 import adminStandsRoutes from "./modules/stands/stands.admin.routes.js";
 import cancellationReviewRoutes from "./modules/orders/cancellation-review.routes.js";
 import { standRegionRoom, standRoom } from "./modules/stands/stands.service.js";
-import { startStandsSweeper } from "./modules/stands/stands.scheduler.js";
-import { startCancellationReviewScheduler } from "./modules/orders/cancellation-review.scheduler.js";
-import { startRecurringBookingsScheduler } from "./modules/recurring-bookings/recurring-bookings.scheduler.js";
+import { startStandsSweeper, stopStandsSweeper } from "./modules/stands/stands.scheduler.js";
+import { startCancellationReviewScheduler, stopCancellationReviewScheduler } from "./modules/orders/cancellation-review.scheduler.js";
+import { startRecurringBookingsScheduler, stopRecurringBookingsScheduler } from "./modules/recurring-bookings/recurring-bookings.scheduler.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
 import { assertCanAccessOrderLocation, updateDriverLocation } from "./modules/routing/routing.service.js";
 import {
@@ -310,6 +311,7 @@ async function bootstrap() {
       });
     });
   }
+  if (isShuttingDown()) return;
   startRecurringBookingsScheduler(io);
   startStandsSweeper(io);
   startCancellationReviewScheduler();
@@ -336,11 +338,60 @@ server.listen(env.API_PORT, "0.0.0.0", () => console.log(`[API] BaiSapar running
     })
     .catch((error) => console.error("[addresses] gazetteer load failed", error));
 }
-async function shutdown() {
-  await closeSocketRedisAdapter();
-  await pool.end();
-  process.exit(0);
+
+let shutdownPromise = null;
+
+function closeHttpServer() {
+  if (!server.listening) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  });
 }
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+
+async function drainServer() {
+  stopRecurringBookingsScheduler();
+  stopStandsSweeper();
+  stopCancellationReviewScheduler();
+
+  // Tell connected clients to reconnect immediately. With the Redis adapter,
+  // another healthy replica will restore their rooms after authentication.
+  io.local.emit("server_draining", { retryAfterMs: 1000 });
+  io.local.disconnectSockets(true);
+  await closeHttpServer();
+  await closeSocketRedisAdapter();
+  if (redis.isOpen) await redis.quit();
+  await pool.end();
+}
+
+function shutdown(signal) {
+  if (shutdownPromise) return shutdownPromise;
+  beginShutdown();
+  console.log(`[shutdown] ${signal} received; draining for up to ${env.SHUTDOWN_GRACE_MS}ms`);
+
+  shutdownPromise = new Promise((resolve) => {
+    const deadline = setTimeout(() => {
+      console.error("[shutdown] grace period expired; closing remaining connections");
+      server.closeAllConnections?.();
+      process.exit(1);
+    }, env.SHUTDOWN_GRACE_MS);
+    deadline.unref?.();
+
+    drainServer()
+      .then(() => {
+        clearTimeout(deadline);
+        console.log("[shutdown] complete");
+        resolve();
+        process.exit(0);
+      })
+      .catch((error) => {
+        clearTimeout(deadline);
+        console.error("[shutdown] failed", error);
+        resolve();
+        process.exit(1);
+      });
+  });
+  return shutdownPromise;
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 bootstrap().catch(e => { console.error(e); process.exit(1); });
