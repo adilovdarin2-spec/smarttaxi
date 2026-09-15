@@ -1,7 +1,29 @@
 import { redis } from "../db/redis.js";
 import { AppError } from "./errors.js";
+import { env } from "../config/env.js";
+import jwt from "jsonwebtoken";
 
 const memoryBuckets = new Map();
+
+export function rateLimitIdentity(req) {
+  if (req.user?.id) return `user:${req.user.id}`;
+
+  // The global limiter runs before route-level requireAuth, so req.user is not
+  // populated yet. A valid signed token still gives us a trustworthy stable
+  // identity and prevents unrelated riders behind a mobile carrier's CGNAT
+  // address from consuming one shared bucket. Invalid/expired tokens fall back
+  // to the IP bucket and cannot be rotated to bypass public endpoint limits.
+  const header = req.headers?.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, env.JWT_SECRET);
+      if (decoded?.id) return `user:${decoded.id}`;
+    } catch {}
+  }
+
+  return `ip:${req.ip || req.socket?.remoteAddress || "unknown"}`;
+}
 
 function memoryHit(key, windowMs) {
   const now = Date.now();
@@ -16,7 +38,9 @@ function memoryHit(key, windowMs) {
 
 export function rateLimit({ prefix = "api", windowMs = 60_000, max = 120 } = {}) {
   return async (req, res, next) => {
-    const identity = req.ip || req.socket?.remoteAddress || "unknown";
+    if (!env.RATE_LIMIT_ENABLED) return next();
+
+    const identity = rateLimitIdentity(req);
     const key = `rl:${prefix}:${identity}`;
 
     try {
@@ -43,8 +67,14 @@ export function rateLimit({ prefix = "api", windowMs = 60_000, max = 120 } = {})
       next();
     } catch (error) {
       const bucket = memoryHit(key, windowMs);
+      const ttlMs = bucket.resetAt - Date.now();
+      res.setHeader("RateLimit-Limit", String(max));
+      res.setHeader("RateLimit-Remaining", String(Math.max(0, max - bucket.count)));
+      res.setHeader("RateLimit-Reset", String(Math.ceil(Math.max(0, ttlMs) / 1000)));
+
       if (bucket.count > max) return next(new AppError("Too many requests", 429, "RATE_LIMITED"));
-      next(error);
+      console.warn(`[RATE_LIMIT] Redis fallback for ${key}: ${error.message}`);
+      next();
     }
   };
 }

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="BaiSapar">
+  <title>BaiSapar</title>
+  <!-- BaiSapar. The mark is the name's own B (Inter Black, outlined) with
+       one slanted gap through it: the road. This file IS the artwork —
+       it is not text, and re-typesetting it will not reproduce it. -->
+  <defs>
+    <linearGradient id="fld" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E4FD0"/><stop offset="1" stop-color="#12307A"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0.12" y1="0" x2="0.88" y2="1">
+      <stop offset="0" stop-color="#FFD24A"/><stop offset="1" stop-color="#FFAE1A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="232" fill="url(#fld)"/>
+  <path d="M263.09 817V579.24L673.58 506.86Q683.73 510.98 693.16 516.71Q724.48 535.74 742.69 568.5Q760.91 601.25 760.91 644.23Q760.91 694.18 735.94 733.28Q710.97 772.38 663.89 794.69Q616.81 817 550.48 817ZM263.09 532.54V207H527.56Q597.15 207 644.64 226.65Q692.13 246.3 716.29 280.49Q740.44 314.67 740.44 359.3Q740.44 394.5 725.7 422.96Q716.36 441 702.33 455.09L263.09 532.54ZM428.48 689.27H518.55Q549.66 689.27 568.09 672.89Q586.51 656.52 586.51 629.09Q586.51 610.66 578.12 597.15Q569.72 583.64 554.58 576.28Q539.43 568.91 518.55 568.91H428.48ZM428.48 448.54H508.32Q527.15 448.54 541.07 441.58Q554.99 434.62 562.56 421.73Q570.13 408.83 570.13 391.64Q570.13 365.85 553.35 350.29Q536.56 334.73 508.32 334.73H428.48Z" fill="url(#gold)"/>
+</svg>

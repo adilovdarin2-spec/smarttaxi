@@ -1,0 +1,54 @@
+<svg width="820" height="390" viewBox="0 0 820 390" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="heroBrand" x1="86" y1="277" x2="700" y2="98" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#1D6FFF"/>
+    <stop offset="0.54" stop-color="#65A3FF"/>
+    <stop offset="1" stop-color="#1D6FFF"/>
+  </linearGradient>
+  <linearGradient id="carBody" x1="298" y1="186" x2="420" y2="186" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFFFFF"/>
+    <stop offset="1" stop-color="#F4F6F8"/>
+  </linearGradient>
+  <radialGradient id="mapGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(408 198) rotate(90) scale(220 430)">
+    <stop stop-color="#FFFFFF"/>
+    <stop offset="0.56" stop-color="#FAFBFC"/>
+    <stop offset="1" stop-color="#EEF1F5" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="pinShadow" x="622" y="18" width="146" height="190" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#0B4FD1" flood-opacity="0.2"/>
+  </filter>
+  <filter id="carShadow" x="270" y="148" width="174" height="92" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feDropShadow dx="0" dy="13" stdDeviation="13" flood-color="#101828" flood-opacity="0.15"/>
+  </filter>
+</defs>
+<rect width="820" height="390" fill="url(#mapGlow)" fill-opacity="0.94"/>
+<g opacity="0.42">
+  <path d="M18 310H806M16 248H806M18 187H806M22 126H802M48 62H776" stroke="#DDE3EA" stroke-width="2"/>
+  <path d="M82 27V362M171 22V354M266 38V360M360 26V364M456 38V360M548 22V364M644 40V360M734 26V356" stroke="#E3E7ED" stroke-width="2"/>
+  <path d="M-8 226C74 194 135 182 209 207C287 233 355 226 430 187C514 143 588 148 660 173C713 191 760 193 833 160" stroke="#D5DBE4" stroke-width="2"/>
+  <path d="M52 345C150 278 225 260 323 279C433 311 503 276 590 228C658 190 728 190 807 225" stroke="#D9DEE6" stroke-width="2"/>
+</g>
+<path d="M72 282H151L252 211H342L423 157H540L646 104" stroke="url(#heroBrand)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="72" cy="282" r="37" fill="#EAF3FF"/>
+<circle cx="72" cy="282" r="15" fill="white" stroke="#1D6FFF" stroke-width="8"/>
+<circle cx="646" cy="104" r="44" fill="#EAF3FF"/>
+<circle cx="646" cy="104" r="10" fill="#1D6FFF"/>
+<g filter="url(#pinShadow)">
+  <path d="M690 37C656 37 629 64 629 98C629 143 690 205 690 205C690 205 751 143 751 98C751 64 724 37 690 37Z" fill="#1D6FFF"/>
+  <circle cx="690" cy="98" r="22" fill="white"/>
+</g>
+<g filter="url(#carShadow)" transform="translate(311 153) rotate(-5)">
+  <path d="M16 49C19 31 35 18 55 18H82C101 18 119 31 125 49L130 65H8L16 49Z" fill="url(#carBody)"/>
+  <path d="M43 25H78C94 25 105 34 111 49H25C30 34 33 25 43 25Z" fill="#142337"/>
+  <path d="M46 29H63L59 48H30C34 37 38 29 46 29Z" fill="#EAF3FB"/>
+  <path d="M70 29H80C91 29 100 37 105 48H66L70 29Z" fill="#EAF3FB"/>
+  <rect x="1" y="55" width="137" height="18" rx="9" fill="#FFFFFF"/>
+  <rect x="16" y="67" width="103" height="8" rx="4" fill="#D8DEE6"/>
+  <circle cx="31" cy="73" r="13" fill="#111827"/>
+  <circle cx="31" cy="73" r="6" fill="#F8FAFC"/>
+  <circle cx="111" cy="73" r="13" fill="#111827"/>
+  <circle cx="111" cy="73" r="6" fill="#F8FAFC"/>
+  <path d="M125 51L139 55L136 66H128L125 51Z" fill="#1D6FFF"/>
+</g>
+<path d="M18 381H802" stroke="#F0F2F5" stroke-width="2"/>
+</svg>

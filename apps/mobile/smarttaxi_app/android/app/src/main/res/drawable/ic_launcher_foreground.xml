@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The user's supplied glossy tile, inset into Android's adaptive safe zone.
+     Launchers may apply circles, squircles or rounded rectangles; the inset
+     keeps the silver monogram and blue rim intact under every mask. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/smarttaxi_app_icon"
+        android:insetLeft="18dp"
+        android:insetTop="18dp"
+        android:insetRight="18dp"
+        android:insetBottom="18dp" />
+</layer-list>

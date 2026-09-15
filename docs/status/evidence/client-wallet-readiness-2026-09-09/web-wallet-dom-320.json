@@ -1,0 +1,11 @@
+{
+  "buttons": [
+    {
+      "height": 44,
+      "text": "Обновить кошелёк"
+    }
+  ],
+  "fields": 0,
+  "overflow": false,
+  "width": 320
+}

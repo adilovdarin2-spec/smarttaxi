@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar notification icon: the BaiSapar mark as a silhouette. Android
+     strips all colour from this and repaints it flat white through the alpha
+     channel per Material's notification-icon rules, so it must never become
+     the full-colour launcher icon — the OS would draw that as a white blob. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M201.88 892V596.13L713.92 505.84Q726.24 510.9 737.7 517.87Q776.72 541.58 799.42 582.39Q822.12 623.19 822.12 676.75Q822.12 738.98 791.01 787.69Q759.89 836.4 701.23 864.2Q642.58 892 559.95 892ZM201.88 537.24V132H531.38Q618.09 132 677.26 156.48Q736.43 180.97 766.52 223.56Q796.62 266.15 796.62 321.74Q796.62 365.61 778.26 401.06Q766.75 423.26 749.55 440.67L201.88 537.24ZM407.95 732.86H520.16Q558.93 732.86 581.88 712.46Q604.83 692.05 604.83 657.88Q604.83 634.93 594.38 618.09Q583.92 601.26 565.05 592.08Q546.17 582.9 520.16 582.9H407.95ZM407.95 432.94H507.41Q530.87 432.94 548.21 424.27Q565.56 415.6 574.99 399.53Q584.43 383.46 584.43 362.04Q584.43 329.91 563.52 310.52Q542.6 291.14 507.41 291.14H407.95Z"/>
+</vector>
