@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   DOCUMENT_TYPES,
   getDriverDocumentById,
+  getDriverDocumentFileById,
   insertDriverDocument,
   listDocumentsForApplication,
   listDocumentsForDriver,
@@ -14,12 +15,18 @@ import {
 const root = fileURLToPath(new URL("../", import.meta.url));
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
+const documentService = readFileSync(join(root, "modules", "driver-documents", "driver-documents.service.js"), "utf8");
 const documentRoutes = readFileSync(join(root, "modules", "driver-documents", "driver-documents.routes.js"), "utf8");
+const uploadMiddleware = readFileSync(join(root, "modules", "driver-documents", "upload.middleware.js"), "utf8");
 const adminRoutes = readFileSync(join(root, "modules", "admin", "admin.routes.js"), "utf8");
 
 assert.match(schema, /CREATE TABLE IF NOT EXISTS driver_documents/i, "schema must create driver_documents table");
 assert.match(migrations, /CREATE TABLE IF NOT EXISTS driver_documents/i, "migration must create driver_documents table");
 assert.match(migrations, /driver_documents_owner_check CHECK \(driver_id IS NOT NULL OR driver_application_id IS NOT NULL\)/i, "a document must belong to a driver or an application");
+assert.match(schema, /driver_documents[\s\S]*data BYTEA/i, "new databases must persist document bytes");
+assert.match(migrations, /ALTER TABLE driver_documents ADD COLUMN IF NOT EXISTS data BYTEA/i, "existing databases must gain document byte storage");
+assert.match(uploadMiddleware, /multer\.memoryStorage\(\)/, "uploads must not depend on one replica's filesystem");
+assert.match(documentService, /DOCUMENT_METADATA_COLUMNS/, "document lists must keep binary payloads out of metadata queries");
 
 assert.match(documentRoutes, /router\.get\("\/", requireAuth, requireRole\("DRIVER"\), resolveOwnDriver/, "listing own documents must require an authenticated driver");
 assert.match(documentRoutes, /router\.post\("\/", requireAuth, requireRole\("DRIVER"\), resolveOwnDriver, uploadDriverDocument/, "uploading own documents must require an authenticated driver");
@@ -41,7 +48,7 @@ function createExecutor() {
       const s = sql.replace(/\s+/g, " ").trim();
 
       if (s.startsWith("INSERT INTO driver_documents")) {
-        const [driverId, driverApplicationId, type, filePath, originalFilename, mimeType, sizeBytes] = params;
+        const [driverId, driverApplicationId, type, filePath, originalFilename, mimeType, sizeBytes, data] = params;
         seq += 1;
         const row = {
           id: `doc-${seq}`,
@@ -52,6 +59,7 @@ function createExecutor() {
           original_filename: originalFilename,
           mime_type: mimeType,
           size_bytes: sizeBytes,
+          data,
           status: "PENDING",
           rejection_reason: null,
           reviewed_by_user_id: null,
@@ -62,13 +70,13 @@ function createExecutor() {
         state.documents.push(row);
         return { rows: [row] };
       }
-      if (s.startsWith("SELECT * FROM driver_documents WHERE driver_id=$1")) {
+      if (s.includes("FROM driver_documents WHERE driver_id=$1")) {
         return { rows: state.documents.filter(d => d.driver_id === params[0]) };
       }
-      if (s.startsWith("SELECT * FROM driver_documents WHERE driver_application_id=$1")) {
+      if (s.includes("FROM driver_documents WHERE driver_application_id=$1")) {
         return { rows: state.documents.filter(d => d.driver_application_id === params[0]) };
       }
-      if (s.startsWith("SELECT * FROM driver_documents WHERE id=$1")) {
+      if (s.includes("FROM driver_documents WHERE id=$1")) {
         return { rows: state.documents.filter(d => d.id === params[0]) };
       }
       if (s.startsWith("UPDATE driver_documents SET status=$1")) {
@@ -89,13 +97,15 @@ function createExecutor() {
 // --- upload + list, both owner kinds ---
 {
   const executor = createExecutor();
+  const driverPayload = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
   await insertDriverDocument({
     driverId: "driver-1",
     type: "DRIVER_LICENSE_FRONT",
     filePath: "driver-1/license-front.jpg",
     originalFilename: "license-front.jpg",
     mimeType: "image/jpeg",
-    sizeBytes: 12345
+    sizeBytes: driverPayload.length,
+    data: driverPayload
   }, executor);
   await insertDriverDocument({
     driverApplicationId: "app-1",
@@ -103,7 +113,8 @@ function createExecutor() {
     filePath: "app-1/id-front.jpg",
     originalFilename: "id-front.jpg",
     mimeType: "image/jpeg",
-    sizeBytes: 22345
+    sizeBytes: 4,
+    data: Buffer.from([1, 2, 3, 4])
   }, executor);
 
   const forDriver = await listDocumentsForDriver("driver-1", executor);
@@ -113,6 +124,9 @@ function createExecutor() {
   const forApplication = await listDocumentsForApplication("app-1", executor);
   assert.equal(forApplication.length, 1, "application-scoped list only returns that application's documents");
   assert.equal(forApplication[0].type, "ID_CARD_FRONT", "document type is preserved");
+
+  const storedFile = await getDriverDocumentFileById(forDriver[0].id, executor);
+  assert.deepEqual(storedFile.data, driverPayload, "document bytes survive storage and can be served by every replica");
 }
 
 // --- review lifecycle ---
@@ -124,7 +138,8 @@ function createExecutor() {
     filePath: "driver-1/reg.pdf",
     originalFilename: "reg.pdf",
     mimeType: "application/pdf",
-    sizeBytes: 5000
+    sizeBytes: 4,
+    data: Buffer.from([1, 2, 3, 4])
   }, executor);
 
   const approved = await reviewDriverDocument({ id: inserted.id, status: "APPROVED", actorUserId: "admin-1" }, executor);

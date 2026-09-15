@@ -539,6 +539,7 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id)",
   "CREATE INDEX IF NOT EXISTS idx_driver_documents_application_id ON driver_documents(driver_application_id)",
   "CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status)",
+  "ALTER TABLE driver_documents ADD COLUMN IF NOT EXISTS data BYTEA",
 
   `CREATE TABLE IF NOT EXISTS driver_payout_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

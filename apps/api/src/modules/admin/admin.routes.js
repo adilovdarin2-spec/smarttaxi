@@ -38,7 +38,7 @@ import {
 import { publicPayoutRequest, reviewPayoutRequest } from "../wallet/wallet.service.js";
 import { broadcastNotification, notifyUser } from "../notifications/notification.service.js";
 import {
-  getDriverDocumentById,
+  getDriverDocumentFileById,
   listDocumentsForApplication,
   listDocumentsForDriver,
   publicDriverDocument,
@@ -1812,11 +1812,14 @@ router.patch("/driver-documents/:id", requireAuth, requireRole("OWNER"), async (
 router.get("/driver-documents/:id/file", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
-    const document = await getDriverDocumentById(params.id, query);
+    const document = await getDriverDocumentFileById(params.id, query);
     if (!document) throw new AppError("Document not found", 404, "DRIVER_DOCUMENT_NOT_FOUND");
+    res.setHeader("Content-Type", document.mime_type);
+    res.setHeader("Content-Length", String(document.size_bytes));
+    res.setHeader("Cache-Control", "private, no-store");
+    if (document.data) return res.end(document.data);
     const absolutePath = join(UPLOAD_ROOT, document.file_path);
     if (!existsSync(absolutePath)) throw new AppError("Document file is missing", 404, "DRIVER_DOCUMENT_FILE_MISSING");
-    res.setHeader("Content-Type", document.mime_type);
     createReadStream(absolutePath).pipe(res);
   } catch (error) { next(error); }
 });

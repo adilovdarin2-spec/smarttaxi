@@ -1,5 +1,4 @@
 import multer from "multer";
-import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { AppError } from "../../common/errors.js";
@@ -13,22 +12,10 @@ function sanitizeFilename(name) {
   return trimmed.slice(-80) || "file";
 }
 
-const storage = multer.diskStorage({
-  destination(req, _file, cb) {
-    const ownerId = req.documentOwnerId;
-    if (!ownerId) return cb(new AppError("Document owner could not be resolved", 400, "DOCUMENT_OWNER_REQUIRED"));
-    const dir = join(UPLOAD_ROOT, ownerId);
-    try {
-      mkdirSync(dir, { recursive: true });
-      cb(null, dir);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename(_req, file, cb) {
-    cb(null, `${randomUUID()}-${sanitizeFilename(file.originalname)}`);
-  }
-});
+export function createStoredDocumentPath(ownerId, originalName) {
+  if (!ownerId) throw new AppError("Document owner could not be resolved", 400, "DOCUMENT_OWNER_REQUIRED");
+  return `${ownerId}/${randomUUID()}-${sanitizeFilename(originalName)}`;
+}
 
 function fileFilter(_req, file, cb) {
   if (!ALLOWED_MIME.has(file.mimetype)) {
@@ -38,7 +25,10 @@ function fileFilter(_req, file, cb) {
 }
 
 const upload = multer({
-  storage,
+  // Documents live in PostgreSQL so a deploy or a second API replica cannot
+  // make them disappear. The 8 MB limit bounds both request memory and row
+  // size; legacy disk-backed rows remain readable in the route fallback.
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: MAX_SIZE_BYTES, files: 1 }
 });

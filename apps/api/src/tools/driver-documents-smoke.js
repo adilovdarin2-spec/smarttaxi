@@ -1,6 +1,6 @@
 // Live smoke test for driver document upload + admin review. Requires a
 // running API (npm run dev) against a seeded database (npm run seed) — hits
-// real HTTP endpoints, real disk storage under apps/api/uploads/, and a real
+// real HTTP endpoints, PostgreSQL-backed file storage, and a real
 // DB, so it is not part of `npm test`. Run with: npm run smoke:driver-documents
 import assert from "node:assert/strict";
 

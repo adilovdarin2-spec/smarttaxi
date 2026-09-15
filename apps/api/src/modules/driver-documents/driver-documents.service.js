@@ -34,6 +34,12 @@ export const REQUIRED_DOCUMENT_TYPES = [
   "VEHICLE_REGISTRATION"
 ];
 
+const DOCUMENT_METADATA_COLUMNS = `
+  id, driver_id, driver_application_id, type, file_path,
+  original_filename, mime_type, size_bytes, status, rejection_reason,
+  reviewed_by_user_id, reviewed_at, created_at, updated_at
+`;
+
 // Live check (no separate "driver is verified" flag to keep in sync) — a
 // driver counts as approved to work only if every required type's most
 // recent submission is APPROVED. A required type that was APPROVED and then
@@ -76,32 +82,40 @@ export async function insertDriverDocument({
   filePath,
   originalFilename,
   mimeType,
-  sizeBytes
+  sizeBytes,
+  data
 }, executor = defaultQuery) {
   const result = await run(executor, `
-    INSERT INTO driver_documents(driver_id, driver_application_id, type, file_path, original_filename, mime_type, size_bytes)
-    VALUES($1,$2,$3,$4,$5,$6,$7)
-    RETURNING *
-  `, [driverId, driverApplicationId, type, filePath, originalFilename, mimeType, sizeBytes]);
+    INSERT INTO driver_documents(driver_id, driver_application_id, type, file_path, original_filename, mime_type, size_bytes, data)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+    RETURNING ${DOCUMENT_METADATA_COLUMNS}
+  `, [driverId, driverApplicationId, type, filePath, originalFilename, mimeType, sizeBytes, data]);
   return result.rows[0];
 }
 
 export async function listDocumentsForDriver(driverId, executor = defaultQuery) {
   const result = await run(executor, `
-    SELECT * FROM driver_documents WHERE driver_id=$1 ORDER BY created_at DESC
+    SELECT ${DOCUMENT_METADATA_COLUMNS}
+    FROM driver_documents WHERE driver_id=$1 ORDER BY created_at DESC
   `, [driverId]);
   return result.rows;
 }
 
 export async function listDocumentsForApplication(applicationId, executor = defaultQuery) {
   const result = await run(executor, `
-    SELECT * FROM driver_documents WHERE driver_application_id=$1 ORDER BY created_at DESC
+    SELECT ${DOCUMENT_METADATA_COLUMNS}
+    FROM driver_documents WHERE driver_application_id=$1 ORDER BY created_at DESC
   `, [applicationId]);
   return result.rows;
 }
 
 export async function getDriverDocumentById(id, executor = defaultQuery) {
-  const result = await run(executor, "SELECT * FROM driver_documents WHERE id=$1", [id]);
+  const result = await run(executor, `SELECT ${DOCUMENT_METADATA_COLUMNS} FROM driver_documents WHERE id=$1`, [id]);
+  return result.rows[0] || null;
+}
+
+export async function getDriverDocumentFileById(id, executor = defaultQuery) {
+  const result = await run(executor, `SELECT ${DOCUMENT_METADATA_COLUMNS}, data FROM driver_documents WHERE id=$1`, [id]);
   return result.rows[0] || null;
 }
 

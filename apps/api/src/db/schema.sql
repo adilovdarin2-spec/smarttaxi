@@ -376,6 +376,7 @@ CREATE TABLE IF NOT EXISTS driver_documents (
   driver_application_id UUID REFERENCES driver_applications(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('DRIVER_LICENSE_FRONT','DRIVER_LICENSE_BACK','ID_CARD_FRONT','ID_CARD_BACK','VEHICLE_REGISTRATION','INSURANCE_POLICY','PROFILE_PHOTO','OTHER')),
   file_path TEXT NOT NULL,
+  data BYTEA,
   original_filename TEXT NOT NULL,
   mime_type TEXT NOT NULL,
   size_bytes INTEGER NOT NULL,

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createReadStream, existsSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { z } from "zod";
 import { query } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
@@ -9,19 +9,15 @@ import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
 import {
   DOCUMENT_TYPES,
-  getDriverDocumentById,
+  getDriverDocumentFileById,
   insertDriverDocument,
   listDocumentsForApplication,
   listDocumentsForDriver,
   publicDriverDocument
 } from "./driver-documents.service.js";
-import { UPLOAD_ROOT, resolveApplicationOwner, resolveOwnDriver, uploadDriverDocument } from "./upload.middleware.js";
+import { UPLOAD_ROOT, createStoredDocumentPath, resolveApplicationOwner, resolveOwnDriver, uploadDriverDocument } from "./upload.middleware.js";
 
 const TypeField = z.object({ type: z.enum(DOCUMENT_TYPES) });
-
-function storedRelativePath(absolutePath) {
-  return relative(UPLOAD_ROOT, absolutePath).split("\\").join("/");
-}
 
 async function saveUploadedDocument(req, { driverId = null, driverApplicationId = null }) {
   if (!req.file) throw new AppError("File is required", 400, "FILE_REQUIRED");
@@ -30,10 +26,11 @@ async function saveUploadedDocument(req, { driverId = null, driverApplicationId 
     driverId,
     driverApplicationId,
     type: body.type,
-    filePath: storedRelativePath(req.file.path),
+    filePath: createStoredDocumentPath(req.documentOwnerId, req.file.originalname),
     originalFilename: req.file.originalname,
     mimeType: req.file.mimetype,
-    sizeBytes: req.file.size
+    sizeBytes: req.file.size,
+    data: req.file.buffer
   });
 }
 
@@ -64,13 +61,16 @@ router.post("/", requireAuth, requireRole("DRIVER"), resolveOwnDriver, uploadDri
 router.get("/:id/file", requireAuth, requireRole("DRIVER"), resolveOwnDriver, async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
-    const document = await getDriverDocumentById(params.id);
+    const document = await getDriverDocumentFileById(params.id);
     if (!document || document.driver_id !== req.driver.id) {
       throw new AppError("Document not found", 404, "DRIVER_DOCUMENT_NOT_FOUND");
     }
+    res.setHeader("Content-Type", document.mime_type);
+    res.setHeader("Content-Length", String(document.size_bytes));
+    res.setHeader("Cache-Control", "private, no-store");
+    if (document.data) return res.end(document.data);
     const absolutePath = join(UPLOAD_ROOT, document.file_path);
     if (!existsSync(absolutePath)) throw new AppError("Document file is missing", 404, "DRIVER_DOCUMENT_FILE_MISSING");
-    res.setHeader("Content-Type", document.mime_type);
     createReadStream(absolutePath).pipe(res);
   } catch (error) { next(error); }
 });
