@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import legalDocuments from "../../legal/legal-content.json";
 
 // Public, unauthenticated pages for the 5 lawyer-approved legal documents
@@ -46,7 +45,6 @@ export default function LegalApp() {
             navigate("/legal");
           }}
         >
-          <BrandLogo />
           <span>BaiSapar</span>
         </a>
       </header>

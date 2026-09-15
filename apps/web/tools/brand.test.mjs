@@ -11,6 +11,9 @@ const SOURCES = [
   "../src/features/landing/LandingPage.jsx",
   "../src/features/driver/DriverApp.jsx",
   "../src/features/admin/AdminApp.jsx",
+  "../src/features/legal/LegalApp.jsx",
+  "../src/features/track/TrackApp.jsx",
+  "../src/core/ui.jsx",
 ];
 
 test("the old brand name cannot come back split across markup", () => {
@@ -30,14 +33,20 @@ test("the old brand name cannot come back split across markup", () => {
   }
 });
 
-test("the logotype is artwork, and the artwork is in the tree", () => {
-  // Set as styled text it drifts with whatever font the page happens to have
-  // loaded; as an SVG of outlines it is the same logo the app shows.
+test("in-product screens use the name without placing the app icon in content", () => {
   const client = read("../src/features/client/ClientApp.jsx");
   const landing = read("../src/features/landing/LandingPage.jsx");
-  assert.ok(client.includes('src="/brand/baisapar_wordmark.svg"'));
-  assert.ok(landing.includes('src="/brand/baisapar_wordmark_light.svg"'));
+  assert.ok(client.includes('<span className="auth-brand-name">BaiSapar</span>'));
+  assert.ok(landing.includes('<span className="landing-brand-name">BaiSapar</span>'));
 
+  for (const path of SOURCES) {
+    const source = read(path);
+    assert.ok(!source.includes("<BrandLogo"), `${path} renders the app icon in product UI`);
+    assert.ok(!source.includes("baisapar_icon_512.png"), `${path} renders the app icon in product UI`);
+  }
+
+  // Launcher, PWA and native splash artwork remains packaged even though it is
+  // intentionally absent from application screens.
   for (const file of [
     "../public/brand/baisapar_icon_192.png",
     "../public/brand/baisapar_icon_512.png",

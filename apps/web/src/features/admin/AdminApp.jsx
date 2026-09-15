@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import BrandLogo from "../../components/ui/BrandLogo.jsx";
 import DriversLiveMap from "./DriversLiveMap.jsx";
 import StandsPage from "./StandsPage.jsx";
 import CancellationReviewsPage from "./CancellationReviewsPage.jsx";
@@ -1227,7 +1226,6 @@ export default function AdminApp() {
     return (
       <main className="admin-control-shell admin-access-shell">
         <section className="admin-access-card">
-          <BrandLogo large />
           <h1>Загружаем панель</h1>
           <p>Проверяем сессию и доступ к административным разделам.</p>
           <div className="admin-skeleton-row" />
@@ -1240,7 +1238,6 @@ export default function AdminApp() {
     return (
       <main className="admin-control-shell admin-access-shell">
         <section className="admin-access-card">
-          <BrandLogo large />
           <h1>Войдите в панель управления</h1>
           <p>{accessError || "Доступ есть у владельца, оператора и финансового пользователя."}</p>
           <form className="admin-login-form" onSubmit={handleLogin}>
@@ -1278,7 +1275,6 @@ export default function AdminApp() {
     <main className={`admin-control-shell ${drawerOpen ? "drawer-open" : ""}`}>
       <aside className="admin-control-sidebar" aria-label="Навигация панели">
         <div className="admin-brand">
-          <BrandLogo />
           <div>
             <strong>BaiSapar</strong>
             <span>Control Center</span>

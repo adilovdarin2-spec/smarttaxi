@@ -23,7 +23,6 @@ import '../../core/utils/contact_phone.dart';
 import '../../core/utils/map_layers.dart';
 import '../../core/voice/voice_alert_service.dart';
 import '../../core/widgets/app_toast.dart';
-import '../../core/widgets/brand_logo.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/exit_on_double_back.dart';
 import '../../core/widgets/map_vehicle_marker.dart';
@@ -2356,9 +2355,14 @@ class _DriverShellState extends State<DriverShell> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(child: BrandLogo(large: true)),
-              const SizedBox(height: 18),
-              const BrandWordmark(height: 30),
+              Text(
+                'BaiSapar',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: context.palette.text,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+              ),
               const SizedBox(height: 8),
               Text(
                 l10n.driverAboutDescription,

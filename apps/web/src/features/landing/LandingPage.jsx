@@ -32,8 +32,7 @@ export default function LandingPage() {
       <header className="landing-header">
         <div className="landing-shell landing-header-row">
           <div className="landing-brand">
-            <img className="landing-brand-mark" src="/brand/baisapar_icon_512.png" alt="" aria-hidden="true" />
-            <img className="landing-brand-wordmark" src="/brand/baisapar_wordmark_light.svg" alt="BaiSapar" />
+            <span className="landing-brand-name">BaiSapar</span>
           </div>
           <nav className="landing-nav">
             <a href="#features">Возможности</a>
@@ -152,7 +151,6 @@ export default function LandingPage() {
         <div className="landing-footer-grid">
           <div>
             <div className="landing-footer-brand">
-              <img src="/brand/baisapar_icon_512.png" alt="BaiSapar" />
               <span>BaiSapar</span>
             </div>
             <p className="muted">Сервис поездок для клиентов и водителей. Наличные и Kaspi, поддержка 24/7.</p>

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/brand_logo.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import 'driver_common_widgets.dart';
@@ -220,7 +219,6 @@ class DriverDrawer extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const BrandLogo(),
                 ],
               ),
             ),

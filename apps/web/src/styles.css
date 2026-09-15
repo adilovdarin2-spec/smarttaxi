@@ -15382,6 +15382,17 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   gap: 4px;
 }
 
+.taxi-client-shell .auth-reference-welcome-screen .auth-brand-name {
+  position: relative;
+  z-index: 3;
+  color: #123056;
+  font-size: clamp(38px, 10vw, 52px);
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: -0.055em;
+  text-shadow: 0 8px 20px rgba(2, 39, 91, .16);
+}
+
 .taxi-client-shell .auth-reference-welcome-screen .auth-s-mark {
   width: 138px;
   height: auto;
@@ -22651,7 +22662,8 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 }
 
 .taxi-client-shell .client-drawer-brand-lockup {
-  gap: 9px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
 }
 
 .taxi-client-shell .client-drawer-mark {
@@ -26181,22 +26193,3 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 /* Narrower desktop windows keep the light page: there is no room beside the
    device for the wordmark, and a dark band behind a 390px strip would only
    make the emptiness louder. */
-
-/* The supplied icon is a detailed product tile, not the retired flat mark.
-   Give it enough room to read on the driver entry screen while retaining a
-   compact fallback for short handsets. */
-.phone-frame.driver-core-phone.driver-core-login .driver-core-auth-card .auth-logo {
-  width: 76px !important;
-  height: 76px !important;
-  margin-bottom: 16px !important;
-  border-radius: 18px;
-  filter: drop-shadow(0 13px 20px rgba(2, 39, 91, .25));
-}
-
-@media (max-height: 650px) {
-  .phone-frame.driver-core-phone.driver-core-login .driver-core-auth-card .auth-logo {
-    width: 58px !important;
-    height: 58px !important;
-    margin-bottom: 10px !important;
-  }
-}

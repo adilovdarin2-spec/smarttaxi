@@ -1,5 +1,4 @@
 import React from "react";
-import BrandLogo from "../components/ui/BrandLogo.jsx";
 import { Icon } from "./icons.jsx";
 
 export function Money({ value }) {
@@ -35,7 +34,7 @@ export function BottomNav({ active, onSelect }) {
     <nav className="bottom-nav" aria-label="Навигация">
       {items.map(([icon, label, key]) => (
         <button key={key} type="button" className={`${active === key ? "active" : ""} ${icon === "logo" ? "center" : ""}`} onClick={() => onSelect(key)}>
-          {icon === "logo" ? <BrandLogo className="compact" /> : <Icon name={icon} />}
+          <Icon name={icon === "logo" ? "car" : icon} />
           {label && <span>{label}</span>}
         </button>
       ))}

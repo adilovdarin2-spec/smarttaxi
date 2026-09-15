@@ -19,7 +19,6 @@ import 'core/push/push_service.dart';
 import 'core/sockets/socket_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/active_locale.dart';
-import 'core/widgets/brand_logo.dart';
 import 'core/widgets/startup_screen.dart';
 import 'core/widgets/exit_on_double_back.dart';
 import 'features/driver/driver_shell.dart';
@@ -593,11 +592,8 @@ class _AuthBackdrop extends StatelessWidget {
   }
 }
 
-/// The supplied app icon plus the localised tagline, over the auth backdrop.
-///
-/// The icon already carries its BaiSapar monogram and name, so a separate
-/// wordmark here would repeat the brand and turn the hero into a logo stack.
-/// The tagline stays text because it is translated.
+/// The product name plus the localised tagline, over the auth backdrop.
+/// Kept as text so no launcher icon or graphical logo leaks into auth UI.
 class _AuthWordmark extends StatelessWidget {
   const _AuthWordmark();
 
@@ -623,7 +619,16 @@ class _AuthWordmark extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BrandLogo(size: 126 * scale),
+            Text(
+              'BaiSapar',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 38 * scale,
+                height: 1,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -1.2 * scale,
+              ),
+            ),
             SizedBox(height: 14 * scale),
             Container(
               width: 64 * scale,
@@ -1554,8 +1559,6 @@ class _UpdateRequiredScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const BrandLogo(large: true),
-                  const SizedBox(height: 24),
                   Container(
                     width: 84,
                     height: 84,

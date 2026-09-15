@@ -44,7 +44,7 @@ void main() {
     expect(AppConfig.mapAttribution, contains('OpenStreetMap'));
   });
 
-  test('official icon-only logo asset is wired', () {
+  test('official icon is launcher-only and absent from feature screens', () {
     final logo = _read('lib/core/widgets/brand_logo.dart');
     final pubspec = _read('pubspec.yaml');
 
@@ -54,14 +54,17 @@ void main() {
     expect(logo, isNot(contains('smarttaxi')));
     expect(pubspec, isNot(contains('assets/brand/smarttaxi')));
 
-    // The logotype ships as artwork in both inks. Set as a Text widget it
-    // drifts with whatever font and weight the surrounding theme carries,
-    // which is how the auth screen kept wearing a different logo from the
-    // rest of the app.
-    expect(logo, contains('assets/brand/baisapar_wordmark.png'));
-    expect(logo, contains('assets/brand/baisapar_wordmark_light.png'));
-    expect(pubspec, contains('assets/brand/baisapar_wordmark.png'));
-    expect(pubspec, contains('assets/brand/baisapar_wordmark_light.png'));
+    for (final path in const [
+      'lib/main.dart',
+      'lib/features/passenger/passenger_shell.dart',
+      'lib/features/driver/driver_shell.dart',
+      'lib/features/driver/widgets/driver_shell_chrome.dart',
+    ]) {
+      final source = _read(path);
+      expect(source, isNot(contains('BrandLogo(')));
+      expect(source, isNot(contains('BrandWordmark(')));
+      expect(source, isNot(contains('BrandLockup(')));
+    }
 
     // Android 8 onwards draws the adaptive icon and shrinks a legacy one into
     // a shim of its own; 13 onwards wants the monochrome layer for themed
