@@ -1680,15 +1680,16 @@ async function nearestGazetteerAddress(
   const latDelta = maxMeters / 111000;
   const lngDelta = maxMeters / (111000 * Math.cos((point.lat * Math.PI) / 180));
   const { rows } = await executor(
-    `SELECT label, lat, lng, kind,
-            (lat - $1) * (lat - $1) +
-              (lng - $2) * (lng - $2) * power(cos(radians($1)), 2) AS distance_squared
-      FROM addresses
-      WHERE lat BETWEEN $1 - $3 AND $1 + $3
-        AND lng BETWEEN $2 - $4 AND $2 + $4
-        AND ($5::boolean = false OR kind = 'housenumber')
-        AND ($6::boolean = false OR kind = 'poi')
-        AND kind IN ('housenumber', 'building', 'poi')
+    `SELECT a.label, a.lat, a.lng, a.kind, r.name AS region_name,
+            (a.lat - $1) * (a.lat - $1) +
+              (a.lng - $2) * (a.lng - $2) * power(cos(radians($1)), 2) AS distance_squared
+      FROM addresses a
+      JOIN regions r ON r.id = a.region_id
+      WHERE a.lat BETWEEN $1 - $3 AND $1 + $3
+        AND a.lng BETWEEN $2 - $4 AND $2 + $4
+        AND ($5::boolean = false OR a.kind = 'housenumber')
+        AND ($6::boolean = false OR a.kind = 'poi')
+        AND a.kind IN ('housenumber', 'building', 'poi')
       ORDER BY
         CASE WHEN $5 THEN CASE kind WHEN 'housenumber' THEN 0 ELSE 1 END ELSE 0 END,
         -- Physical proximity comes first: a named shop twenty metres from
@@ -1719,6 +1720,7 @@ async function nearestGazetteerAddress(
     label,
     title: label,
     kind: row.kind || "address",
+    city: row.region_name || "",
     lat: Number(row.lat),
     lng: Number(row.lng),
     distanceMeters: Math.round(row.distance)
@@ -1775,9 +1777,12 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
   };
   const located = (suggestion) => {
     const distanceMeters = Math.round(distanceKmBetween(point, suggestion) * 1000);
-    const locality = suggestion.subtitle || nearestLocalPlace(point)?.city || '';
+    const nearestPlace = nearestLocalPlace(point);
+    const locality = suggestion.subtitle || suggestion.city || nearestPlace?.city || '';
     return {
       ...suggestion,
+      city: suggestion.city || locality,
+      region: suggestion.region || nearestPlace?.region || '',
       fallback: false,
       distanceMeters,
       matchKind: building ? 'selected-building' : 'nearby-address',

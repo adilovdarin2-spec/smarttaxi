@@ -186,6 +186,21 @@ assert.ok(
 );
 const reversed = await reverseAddress({ lat: 42.316, lng: 69.596 }, mockAddressFetch());
 assert.equal(reversed.city, "Шымкент", "reverse address returns city");
+const localHouseReverse = await reverseAddress(
+  { lat: 42.316, lng: 69.596 },
+  mockAddressFetch(),
+  async () => ({
+    rows: [{
+      label: "улица Абая, 25",
+      lat: 42.316,
+      lng: 69.596,
+      kind: "housenumber",
+      region_name: "Шымкент"
+    }]
+  })
+);
+assert.equal(localHouseReverse.source, "gazetteer_reverse", "an exact catalogued house wins without a remote round-trip");
+assert.equal(localHouseReverse.city, "Шымкент", "a local reverse result keeps the same city contract as remote providers");
 const roadCodeReverse = await reverseAddress(
   { lat: 40.7001, lng: 68.5201 },
   async () => ({
