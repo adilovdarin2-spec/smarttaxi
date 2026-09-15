@@ -27,6 +27,7 @@
     "check:sos-priority": "node src/tools/sos-priority-check.js",
     "smoke:health": "node src/tools/smoke-health.js",
     "smoke:maps": "node src/tools/smoke-maps.js",
+    "smoke:regional-reverse": "node src/tools/smoke-regional-reverse-addresses.js",
     "smoke:auth": "node src/tools/stage2-smoke.js",
     "smoke:order": "node src/tools/stage3-client-flow-smoke.js",
     "smoke:full": "node src/tools/smoke-full.js",

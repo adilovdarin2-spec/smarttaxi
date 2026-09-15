@@ -31,6 +31,10 @@ revocation acceptance is still open.
   payment selection and complete paired driver/passenger trip lifecycle at
   320, 360 and 390 px; the 320 px driver shift summary is guarded against
   clipped monetary values.
+- Regional reverse lookup returns an exact local house in all eight regions
+  that currently have house-number data. In the other five regions, an exact
+  catalogued real POI is retained instead of being replaced by a weak provider
+  street; nearby POIs still cannot name an unrelated building.
 - Compact tariff previews keep the approved full-size picker cursor unchanged
   while scaling confirmed endpoint copies so short routes remain visible;
   address search reports an in-progress state instead of a false zero count.

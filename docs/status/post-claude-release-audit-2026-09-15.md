@@ -74,6 +74,21 @@ shift action keep their existing hierarchy. The reusable presentation smoke now
 asserts each metric value directly, and the complete local driver/passenger
 lifecycle covers 320, 360 and 390 px.
 
+### Exact catalogued POIs now survive reverse geocoding
+
+A live 13-region database audit found that Атамекен, Бирлик, Жана Жол, Киров
+and Ынтымак currently contain real mapped POIs but no house-number rows. Before
+this pass, a pin placed exactly on a catalogued school in Бирлик or Ынтымак
+could be replaced by a provider's bare street and end as "Адрес не определён".
+Reverse lookup now accepts a real local POI only within a strict three-metre
+match, after checking for a house number. A POI five metres away still cannot
+name an unrelated building. Live rebuilt-API checks returned the catalogued
+school/customs POI with `fallback:false` in all five affected regions; the
+eight regions with house-number data returned an exact local house at zero
+metres. The repeatable local check is `npm --prefix apps/api run
+smoke:regional-reverse` (run inside the API container or with equivalent local
+development environment variables).
+
 ### Source hygiene
 
 The two whitespace defects found by `git diff --check` were removed. No user or
@@ -87,6 +102,7 @@ Claude changes were reset, cleaned or rewritten.
 | Local API readiness | healthy: PostgreSQL, Redis and OSRM ready; development SMS mode |
 | Docker QA smoke | passed, including minimum-ETA route candidate selection |
 | Regional route/pricing smoke | 34/34 tariff previews passed |
+| Regional reverse-address smoke | 13/13 exact catalogue points passed: 8 houses and 5 real POIs |
 | API test suite | passed; 121,361 address rows checked across all 13 regions |
 | Web tests | 167/167 passed |
 | Web production build | passed; bundled MapLibre worker/map checks passed |
@@ -104,7 +120,7 @@ Claude changes were reset, cleaned or rewritten.
 | Web | 167 tests, production bundle, MapLibre build guard and paired lifecycle smoke at 320/360/390 px | Locally complete |
 | Flutter Android | Clean analysis, 328 tests, compiled debug APK, manifest/signature checks and mobile CI job | Source/build complete; current physical install remains unavailable |
 | Docker | Clean image rebuild without removing volumes, valid Compose config and four healthy services | Locally complete |
-| Addresses | 121,361-row/13-region invariant check, strict address/POI confirmation and live local search/picker coverage | Implementation complete; official house-level coverage needs the external RKA exports below |
+| Addresses | 121,361-row/13-region invariant check, strict address/POI confirmation, exact local-POI recovery and live reverse checks in every region | Implementation complete; five regions still need official house-level RKA coverage below |
 | Maps and markers | Label/building layer guards, real rendered route/car/finish assertions and inspected lifecycle captures | Locally complete; current native-device rendering remains a field gate |
 | Routes and navigation | Minimum-duration OSRM candidate guard, 34 regional/intercity previews and live pickup/drop-off route lifecycle | Locally complete within the stated no-live-traffic/public-provider boundary |
 | UI/UX and parity | Complete passenger/driver browser lifecycle at 320/360/390 px, six driver destinations, matching web/Flutter quick-message policy and compact-layout tests | Locally complete; moving-device/background/TTS comparison remains a field gate |
@@ -148,6 +164,8 @@ simulated; API responses, state transitions and routes were not stubbed.
 
 - Official per-region address exports containing `rka`, `label`, `lat`, `lng`
   and a separate checksum `meta.json`; the Pavlodar spreadsheet is ineligible.
+  The current catalogue has no house-number rows for Атамекен, Бирлик,
+  Жана Жол, Киров and Ынтымак, so code cannot honestly invent their houses.
 - Infobip/SMS sender approval and production credentials.
 - Merchant approval, production payment credentials and settlement acceptance.
 - Firebase Android configuration for `kz.baisapar.app` and a server-side service

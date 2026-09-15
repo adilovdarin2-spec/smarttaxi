@@ -1787,14 +1787,22 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
     };
   };
   // A catalogued house almost under the pin is both faster and more useful
-  // than a provider's nearest-road answer. POIs still use the provider chain
-  // below so they cannot silently replace a known street's missing number.
+  // than a provider's nearest-road answer.
   const exactLocalHouse = await lookupLocal({ requireHouseNumber: true });
   if (exactLocalHouse && exactLocalHouse.distanceMeters <= 8) {
     return located({ ...exactLocalHouse, source: 'gazetteer_reverse' });
   }
   if (building && exactLocalHouse) {
     return located({ ...exactLocalHouse, source: 'gazetteer_reverse' });
+  }
+  // A pin placed directly on a catalogued real POI is equally authoritative.
+  // This matters in small settlements whose harvested OSM data contains a
+  // named school/shop but no house numbers: a provider's bare road must not
+  // turn that exact POI into "Адрес не определён". Keep the tolerance tight;
+  // a merely nearby POI still cannot name an unrelated home or street.
+  const exactLocalPoi = await lookupLocal({ requirePoi: true });
+  if (exactLocalPoi && exactLocalPoi.distanceMeters <= 3) {
+    return located({ ...exactLocalPoi, source: 'gazetteer_reverse' });
   }
   // A POI from the committed catalogue may safely name a footprint the rider
   // explicitly selected. Keep this tied to the supplied building geometry:

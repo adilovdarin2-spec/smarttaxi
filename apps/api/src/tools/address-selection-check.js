@@ -113,6 +113,16 @@ assert.equal(offlineHouse.source, 'gazetteer_reverse', 'local addresses work dur
 assert.equal(offlineHouse.lat, PIN.lat + 0.0002);
 assert.match(offlineHouse.subtitle, /м от метки/, 'a nearby address is not presented as an exact footprint match');
 
+const exactPoi = await reverseAddress(
+  PIN,
+  nominatim('улица Абая, Мырзакент', { road: 'улица Абая', village: 'Мырзакент' }),
+  gazetteer([{ ...SHOP, lat: PIN.lat, lng: PIN.lng }])
+);
+assert.equal(exactPoi.label, SHOP.label, 'a pin directly on a catalogued POI keeps the real place name');
+assert.equal(exactPoi.kind, 'poi');
+assert.equal(exactPoi.source, 'gazetteer_reverse');
+assert.equal(exactPoi.fallback, false);
+
 const farHouse = { ...HOUSE, lat: PIN.lat + 0.002 };
 const far = await reverseAddress(PIN, roadResponse, gazetteer([farHouse]));
 assert.equal(far.fallback, true, 'a house 220 metres away must not name the selected building');
