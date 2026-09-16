@@ -208,6 +208,19 @@ export async function loadStand(standId, executor) {
   return row;
 }
 
+// Structural queue changes serialize on their stand before locking entries.
+// Dispatch may already hold driver rows; never acquire drivers after this lock.
+export async function lockStand(standId, executor) {
+  const row = (await run(executor, 'SELECT id FROM taxi_stands WHERE id=$1 FOR UPDATE', [standId])).rows[0];
+  if (!row) throw new AppError('Стоянка не найдена', 404, 'STAND_NOT_FOUND');
+}
+
+async function lockStandForEntry(entryId, executor) {
+  const row = (await run(executor, 'SELECT stand_id FROM taxi_stand_queue_entries WHERE id=$1', [entryId])).rows[0];
+  if (!row) throw new AppError('Queue entry not found', 404, 'STAND_ENTRY_NOT_FOUND');
+  await lockStand(row.stand_id, executor);
+}
+
 export function assertInsideStand(stand, { lat, lng }) {
   if (lat == null || lng == null) {
     throw new AppError("Driver location is required", 400, "STAND_LOCATION_REQUIRED");
@@ -325,11 +338,11 @@ async function refreshBoardingSlots(standId, executor) {
         SET status='BOARDING',
             boarding_started_at=COALESCE(boarding_started_at, NOW()),
             updated_at=NOW()
-        WHERE id=$1
+        WHERE id=$1 AND status IN ${LIVE_STATUSES}
       `, [entry.id]);
       promoted.push(entry.id);
     } else if (!shouldBoard && entry.status !== "WAITING") {
-      await run(executor, "UPDATE taxi_stand_queue_entries SET status='WAITING', updated_at=NOW() WHERE id=$1", [entry.id]);
+      await run(executor, `UPDATE taxi_stand_queue_entries SET status='WAITING', updated_at=NOW() WHERE id=$1 AND status IN ${LIVE_STATUSES}`, [entry.id]);
     }
   }
   return promoted;
@@ -389,6 +402,7 @@ export async function joinQueue({ driver, standId, lat, lng, destinationLabel, d
     return await tx(async (client) => {
       driver = (await client.query('SELECT * FROM drivers WHERE id=$1 FOR UPDATE', [driver.id])).rows[0];
       await assertStandDriverAvailable(driver, client);
+      await lockStand(standId, client);
       const stand = await loadStand(standId, client);
       if (!stand.is_active) throw new AppError("Stand is closed", 409, "STAND_INACTIVE");
       // Standing at the place is not the same as being allowed to work there.
@@ -567,6 +581,7 @@ export async function releaseSeats({ driver, entryId, seats }) {
 
 export async function departQueue({ driver, entryId }) {
   return tx(async (client) => {
+    await lockStandForEntry(entryId, client);
     const entry = (await client.query("SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE", [entryId])).rows[0];
     if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
     if (entry.driver_id !== driver.id) throw new AppError("Forbidden queue entry", 403, "FORBIDDEN_STAND_ENTRY");
@@ -597,6 +612,7 @@ export async function departQueue({ driver, entryId }) {
 
 export async function leaveQueue({ driver, entryId, reason = "DRIVER_LEFT" }) {
   return tx(async (client) => {
+    await lockStandForEntry(entryId, client);
     const entry = (await client.query("SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE", [entryId])).rows[0];
     if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
     if (entry.driver_id !== driver.id) throw new AppError("Forbidden queue entry", 403, "FORBIDDEN_STAND_ENTRY");
@@ -633,6 +649,7 @@ export async function handOverTurn({ driver, entryId, toDriverId }) {
     const drivers = (await client.query('SELECT * FROM drivers WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
       [[driver.id, toDriverId]])).rows;
     const target = drivers.find(row => row.id === toDriverId);
+    await lockStandForEntry(entryId, client);
     const entry = (await client.query("SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE", [entryId])).rows[0];
     if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
     if (entry.driver_id !== driver.id) throw new AppError("Forbidden queue entry", 403, "FORBIDDEN_STAND_ENTRY");
@@ -928,11 +945,18 @@ export async function cancelReservation({ rider, reservationId }) {
 // call this, inside their own transaction, so a rider never calls a car whose
 // driver has closed the app or is already on their way to someone else.
 export async function releaseStandPlaceForDriver({ driverId, reason }, executor) {
+  if (!executor || executor === defaultQuery) {
+    return tx(client => releaseStandPlaceForDriver({ driverId, reason }, client));
+  }
+  const peek = (await run(executor, `SELECT stand_id FROM taxi_stand_queue_entries
+    WHERE driver_id=$1 AND status IN ${LIVE_STATUSES}`, [driverId])).rows[0];
+  if (!peek) return null;
+  await lockStand(peek.stand_id, executor);
   const entry = (await run(executor, `
     SELECT * FROM taxi_stand_queue_entries
-    WHERE driver_id=$1 AND status IN ${LIVE_STATUSES}
+    WHERE driver_id=$1 AND stand_id=$2 AND status IN ${LIVE_STATUSES}
     FOR UPDATE
-  `, [driverId])).rows[0];
+  `, [driverId, peek.stand_id])).rows[0];
   if (!entry) return null;
   const updated = (await run(executor, `
     UPDATE taxi_stand_queue_entries
@@ -966,43 +990,60 @@ export async function activeReservationForClient(clientId, executor) {
 
 // Sweeper: the two ways a place in the line stops being real without anyone
 // pressing anything — the car drove off, or the phone went dark.
-export async function sweepStaleQueueEntries(executor) {
-  const expired = (await run(executor, `
-    UPDATE taxi_stand_queue_entries
-    SET status='EXPIRED',
-        left_at=NOW(),
-        left_reason=CASE
-          WHEN outside_since IS NOT NULL AND outside_since < NOW() - INTERVAL '${OUT_OF_RANGE_GRACE_MINUTES} minutes'
-            THEN 'LEFT_AREA'
-          ELSE 'NO_SIGNAL'
-        END,
-        updated_at=NOW()
-    WHERE status IN ${LIVE_STATUSES}
-      AND (
-        (outside_since IS NOT NULL AND outside_since < NOW() - INTERVAL '${OUT_OF_RANGE_GRACE_MINUTES} minutes')
-        OR last_seen_at < NOW() - INTERVAL '${STALE_PRESENCE_MINUTES} minutes'
-      )
-    RETURNING *
-  `)).rows;
-  const expiredReservations = (await run(executor, `
-    UPDATE taxi_stand_seat_reservations
-    SET status='EXPIRED', updated_at=NOW()
-    WHERE status='PENDING' AND expires_at IS NOT NULL AND expires_at < NOW()
-    RETURNING *
-  `)).rows;
-  const strandedByEntry = expired.length
-    ? (await run(executor, `
-        UPDATE taxi_stand_seat_reservations
-        SET status='CANCELLED', cancelled_at=NOW(), updated_at=NOW()
-        WHERE entry_id = ANY($1::uuid[]) AND status IN ('PENDING','CONFIRMED')
+export async function sweepStaleQueueEntries(executor = defaultQuery, { standId = null } = {}) {
+  // Take one stand at a time, not entry/reservation locks across the country.
+  // The optional scope is also used by isolated local integration checks.
+  const candidates = (await run(executor, `
+    SELECT DISTINCT stand_id FROM (
+      SELECT stand_id FROM taxi_stand_queue_entries
+      WHERE status IN ${LIVE_STATUSES} AND (
+        outside_since < NOW() - INTERVAL '${OUT_OF_RANGE_GRACE_MINUTES} minutes'
+        OR last_seen_at < NOW() - INTERVAL '${STALE_PRESENCE_MINUTES} minutes')
+      UNION
+      SELECT stand_id FROM taxi_stand_seat_reservations
+      WHERE status='PENDING' AND expires_at <= NOW()
+    ) candidates WHERE ($1::uuid IS NULL OR stand_id=$1)
+    ORDER BY stand_id
+  `, [standId])).rows;
+  const result = { expired: [], expiredReservations: [], strandedByEntry: [], touchedStands: [] };
+  for (const candidate of candidates) {
+    const sweep = async (client) => {
+      // A stand can be deleted between the candidate read and its turn.
+      const found = (await run(client, 'SELECT id FROM taxi_stands WHERE id=$1 FOR UPDATE', [candidate.stand_id])).rows[0];
+      if (!found) return null;
+      // Same entry-before-reservation order as seat confirmation/cancellation.
+      await run(client, `SELECT e.id FROM taxi_stand_queue_entries e
+        WHERE e.stand_id=$1 AND (e.status IN ${LIVE_STATUSES} OR EXISTS (
+          SELECT 1 FROM taxi_stand_seat_reservations res WHERE res.entry_id=e.id AND res.status='PENDING'))
+        ORDER BY e.id FOR UPDATE`, [candidate.stand_id]);
+      const expired = (await run(client, `
+        UPDATE taxi_stand_queue_entries SET status='EXPIRED', left_at=NOW(),
+          left_reason=CASE WHEN outside_since < NOW() - INTERVAL '${OUT_OF_RANGE_GRACE_MINUTES} minutes'
+            THEN 'LEFT_AREA' ELSE 'NO_SIGNAL' END, updated_at=NOW()
+        WHERE stand_id=$1 AND status IN ${LIVE_STATUSES} AND (
+          outside_since < NOW() - INTERVAL '${OUT_OF_RANGE_GRACE_MINUTES} minutes'
+          OR last_seen_at < NOW() - INTERVAL '${STALE_PRESENCE_MINUTES} minutes')
         RETURNING *
-      `, [expired.map((row) => row.id)])).rows
-    : [];
-  const touchedStands = [...new Set(expired.map((row) => row.stand_id))];
-  for (const standId of touchedStands) {
-    await refreshBoardingSlots(standId, executor);
+      `, [candidate.stand_id])).rows;
+      const expiredReservations = (await run(client, `
+        UPDATE taxi_stand_seat_reservations SET status='EXPIRED', updated_at=NOW()
+        WHERE stand_id=$1 AND status='PENDING' AND expires_at <= NOW() RETURNING *
+      `, [candidate.stand_id])).rows;
+      const strandedByEntry = expired.length ? (await run(client, `
+        UPDATE taxi_stand_seat_reservations SET status='CANCELLED', cancelled_at=NOW(), updated_at=NOW()
+        WHERE entry_id = ANY($1::uuid[]) AND status IN ('PENDING','CONFIRMED') RETURNING *
+      `, [expired.map(row => row.id)])).rows : [];
+      if (expired.length) await refreshBoardingSlots(candidate.stand_id, client);
+      return { expired, expiredReservations, strandedByEntry };
+    };
+    const batch = executor === defaultQuery ? await tx(sweep) : await sweep(executor);
+    if (!batch) continue;
+    result.expired.push(...batch.expired);
+    result.expiredReservations.push(...batch.expiredReservations);
+    result.strandedByEntry.push(...batch.strandedByEntry);
+    if (batch.expired.length) result.touchedStands.push(candidate.stand_id);
   }
-  return { expired, expiredReservations, strandedByEntry, touchedStands };
+  return result;
 }
 
 export { refreshBoardingSlots };

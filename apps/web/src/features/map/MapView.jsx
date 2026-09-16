@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { clearStandMarkers } from './standMarkerLifecycle.mjs';
 import { maplibregl } from './mapRuntime.js';
 import { Icon } from "../../core/icons.jsx";
 import { applyLibertyPresentation, hideDuplicateBuildings } from './mapPresentation.mjs';
@@ -541,8 +542,7 @@ export default function MapView({
         ref.current?.remove();
         ref.current = null;
       });
-      standMarkersRef.current.forEach(marker => marker.remove());
-      standMarkersRef.current.clear();
+      clearStandMarkers(standMarkersRef.current);
       driverMarkerPointRef.current = null;
       removeMissingPoiFallbacks();
       loadedMapRef.current = null;

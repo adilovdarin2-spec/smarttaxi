@@ -40,6 +40,16 @@ async function screenshot(target, name) {
 }
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
+// React boundaries catch render/cleanup failures before window.pageerror.
+function captureBoundaryErrors(target) {
+  target.on('console', message => {
+    if (message.type() === 'error' && /TypeError|ReferenceError|Minified React error|application render failed/i.test(message.text())) {
+      errors.push(message.text());
+      console.error('Browser caught exception:', message.text());
+    }
+  });
+}
+captureBoundaryErrors(page);
 let driver, stand, entry;
 try {
   await page.goto(web + '/driver');
@@ -120,6 +130,7 @@ try {
   await riderContext.addInitScript(token => localStorage.setItem('smarttaxi_token', token), account.token);
   const rider = await riderContext.newPage();
   rider.on('pageerror', error => errors.push(error.message));
+  captureBoundaryErrors(rider);
   await rider.goto(web + '/order');
   await rider.getByRole('button', { name: 'Открыть меню', exact: true }).click();
   await rider.locator('.client-drawer-nav button').filter({ has: rider.getByText('Стоянки', { exact: true }) }).click();
@@ -171,8 +182,29 @@ try {
   await screenshot(page, 'driver-presence-needs-gps');
   await context.setGeolocation({ latitude: 40.8458, longitude: 68.5041, accuracy: 8 });
   await page.getByText('Не удалось подтвердить геолокацию.', { exact: false }).waitFor({ state: 'hidden' });
+
+  // Owner closure must clear the live driver/rider screens and cancel an
+  // actual confirmed booking, without either client pressing refresh.
+  await rider.unroute(reservePath);
+  await rider.locator('.client-stand-row').filter({ hasText: stand.name }).click();
+  await rider.getByLabel('Сколько мест', { exact: true }).selectOption('1');
+  await rider.getByRole('button', { name: 'Забронировать место', exact: true }).click();
+  await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor();
+  await page.locator('.driver-stand-request').getByRole('button', { name: 'Подтвердить', exact: true }).click();
+  await page.locator('.driver-stand-seats strong').filter({ hasText: '1 из 4' }).waitFor();
+  assert.equal((await request('/api/stands/reservations/me', { token: account.token })).reservation.status, 'CONFIRMED');
+  await request(`/api/admin/stands/${stand.id}`, { token: owner.token, method: 'PATCH', body: { isActive: false } });
+  await page.locator('.driver-stand-place').waitFor({ state: 'hidden' });
+  await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor({ state: 'hidden' });
+  await rider.locator('.client-stand-row').filter({ hasText: stand.name }).waitFor({ state: 'hidden' });
+  await rider.locator('.client-stands').waitFor({ state: 'visible' });
+  assert.equal(await rider.getByRole('heading', { name: 'Не удалось открыть экран' }).count(), 0);
+  assert.equal((await request('/api/driver/stands/me', { token: driver.token })).entry, null);
+  assert.equal((await request('/api/stands/reservations/me', { token: account.token })).reservation, null);
+  await screenshot(page, 'driver-owner-closed-stand');
+  await screenshot(rider, 'rider-owner-cancelled-booking');
   assert.deepEqual(errors, []);
-  console.log('Stand browser recovery passed: accurate-GPS join gate, real committed seat, failed acknowledgement/read, guarded refresh, passenger reservation recovery/cancellation, unknown-GPS heartbeat preserves timestamp. Screenshots: ' + output);
+  console.log('Stand browser recovery passed: accurate-GPS join gate, real committed seat, failed acknowledgement/read, guarded refresh, passenger reservation recovery/cancellation, unknown-GPS heartbeat, owner closure clears driver and confirmed rider booking. Screenshots: ' + output);
 } catch (error) {
   console.error('Stand QA failed', error.message, await page.locator('body').innerText());
   await page.screenshot({ path: path.join(output, 'failure.png') });

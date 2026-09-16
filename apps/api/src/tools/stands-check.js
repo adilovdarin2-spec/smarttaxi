@@ -6,6 +6,8 @@ import {
   assertInsideStand,
   assertHandoverLocation,
   assertStandDriverAvailable,
+  lockStand,
+  sweepStaleQueueEntries,
   haversineMeters,
   publicQueueEntry,
   publicReservation,
@@ -195,6 +197,49 @@ const settled = fakeExecutor([
 assert.deepEqual(await refreshBoardingSlots("s1", settled), []);
 assert.deepEqual(settled.updates, []);
 
+// Stand lock / entry lock / reservation update must be in that order in the
+// sweeper too; otherwise a normal seat confirmation can deadlock the sweep.
+await assert.rejects(() => lockStand('missing', async () => ({ rows: [] })),
+  error => error.code === 'STAND_NOT_FOUND');
+const sweepSteps = [];
+const sweepExecutor = async (sql, params = []) => {
+  if (sql.includes('SELECT DISTINCT stand_id')) {
+    assert.deepEqual(params, ['s1']);
+    return { rows: [{ stand_id: 's1' }] };
+  }
+  if (sql.includes('SELECT id FROM taxi_stands')) {
+    assert.ok(sql.includes('FOR UPDATE'));
+    assert.deepEqual(params, ['s1']);
+    sweepSteps.push('stand');
+    return { rows: [{ id: 's1' }] };
+  }
+  if (sql.includes('SELECT e.id FROM taxi_stand_queue_entries')) {
+    assert.ok(sql.includes('ORDER BY e.id FOR UPDATE') && sql.includes('e.stand_id=$1'));
+    assert.deepEqual(params, ['s1']);
+    sweepSteps.push('entries');
+    return { rows: [{ id: 'expired' }] };
+  }
+  if (sql.includes("SET status='EXPIRED'")) {
+    assert.ok(sql.includes('stand_id=$1'), 'Every expiration must be stand-scoped');
+    assert.deepEqual(params, ['s1']);
+    const entry = sql.includes('UPDATE taxi_stand_queue_entries');
+    sweepSteps.push(entry ? 'expire-entry' : 'expire-seat');
+    return { rows: [{ id: entry ? 'expired' : 'timed-out-seat' }] };
+  }
+  if (sql.includes("SET status='CANCELLED'")) {
+    assert.deepEqual(params, [['expired']]);
+    sweepSteps.push('cancel-seat');
+    return { rows: [{ id: 'stranded-seat' }] };
+  }
+  if (sql.includes('SELECT boarding_slots')) return { rows: [{ boarding_slots: 1 }] };
+  if (sql.includes('SELECT id, status FROM taxi_stand_queue_entries')) return { rows: [] };
+  throw new Error(`Unexpected sweep SQL: ${sql}`);
+};
+const swept = await sweepStaleQueueEntries(sweepExecutor, { standId: 's1' });
+assert.deepEqual(sweepSteps, ['stand', 'entries', 'expire-entry', 'expire-seat', 'cancel-seat']);
+assert.deepEqual(swept, { expired: [{ id: 'expired' }], expiredReservations: [{ id: 'timed-out-seat' }],
+  strandedByEntry: [{ id: 'stranded-seat' }], touchedStands: ['s1'] });
+
 /* ----------------------------- missing GPS never renews queue presence */
 const presenceWrites = [];
 const presenceExecutor = async (sql, params) => {
@@ -237,6 +282,12 @@ const migrations = read("../db/migrations.js");
 
 const service = read("../modules/stands/stands.service.js");
 assert.ok(service.includes("FOR UPDATE"), "queue mutations must lock the row they move");
+for (const fn of ['joinQueue', 'departQueue', 'leaveQueue', 'handOverTurn', 'releaseStandPlaceForDriver']) {
+  const start = service.indexOf(`export async function ${fn}(`);
+  const body = service.slice(start, service.indexOf('\nexport ', start + 1));
+  assert.ok(/await lockStand(?:ForEntry)?\(/.test(body), `${fn} must serialize structural queue changes`);
+}
+assert.ok(service.includes('WHERE id=$1 AND status IN ${LIVE_STATUSES}'), 'Promotion must never restore a closed entry');
 // Standing at the place is not the same as being allowed to work there: a
 // stand belongs to exactly one region, and both ways into a line have to
 // check that the driver was approved for it.
@@ -286,6 +337,13 @@ assert.ok(
 );
 
 const adminRoutes = read("../modules/stands/stands.admin.routes.js");
+for (const method of ['patch', 'delete']) {
+  const start = adminRoutes.indexOf(`router.${method}(`);
+  const body = adminRoutes.slice(start, adminRoutes.indexOf('\n});', start));
+  assert.ok(body.includes('await tx(') && body.includes('await lockStand(id, client)'), `Owner ${method} must be atomic with admission`);
+}
+assert.ok(adminRoutes.includes('await refreshBoardingSlots(id, client)'), 'Owner boarding-slot changes must immediately recompute the queue');
+assert.ok(adminRoutes.includes('await broadcastStand(req.io, id)'), 'Owner queue changes must reach open rider and driver screens');
 assert.ok(adminRoutes.includes('requireRole("OWNER")'), "only the owner may draw stands");
 assert.ok(adminRoutes.includes("pointInPolygon"), "a stand must land inside its own region");
 assert.ok(adminRoutes.includes("STAND_HAS_LIVE_QUEUE"), "deleting a stand with drivers in it must be refused");

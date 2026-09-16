@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { query } from "../../db/pool.js";
+import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { normalizePoint, pointInPolygon } from "../regions/regions.service.js";
-import { listStands, publicStand, standQueueView, standRegionRoom, standRoom } from "./stands.service.js";
-import { notifyDroppedDrivers, notifyStrandedRiders } from "./stands.notify.js";
+import { listStands, publicStand, standQueueView, standRegionRoom, standRoom, lockStand, refreshBoardingSlots } from "./stands.service.js";
+import { notifyDroppedDrivers, notifyStrandedRiders, notifyPromotedDrivers, broadcastStand } from "./stands.notify.js";
 
 // Stands are drawn on the map, not typed in: the owner drops a pin and drags
 // a radius. The API therefore takes a point and a radius in metres and
@@ -37,8 +37,8 @@ const ListQuery = z.object({
   includeInactive: z.coerce.boolean().default(true)
 });
 
-async function assertPointInsideRegion(regionId, { lat, lng }) {
-  const region = (await query("SELECT id, name, boundary, is_active FROM regions WHERE id=$1", [regionId])).rows[0];
+async function assertPointInsideRegion(regionId, { lat, lng }, executor = query) {
+  const region = (await executor("SELECT id, name, boundary, is_active FROM regions WHERE id=$1", [regionId])).rows[0];
   if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
   const point = normalizePoint({ lat, lng });
   // A stand outside its own region would never be reachable: drivers only
@@ -119,74 +119,79 @@ router.patch("/:id", async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
     const patch = StandPatch.parse(req.body || {});
-    const existing = (await query("SELECT * FROM taxi_stands WHERE id=$1", [id])).rows[0];
-    if (!existing) throw new AppError("Stand not found", 404, "STAND_NOT_FOUND");
+    const { updated, closedEntries, closedReservations, promoted } = await tx(async (client) => {
+      await lockStand(id, client);
+      const existing = (await client.query("SELECT * FROM taxi_stands WHERE id=$1", [id])).rows[0];
+      if (!existing) throw new AppError("Stand not found", 404, "STAND_NOT_FOUND");
 
-    const lat = patch.lat ?? Number(existing.lat);
-    const lng = patch.lng ?? Number(existing.lng);
-    if (patch.lat != null || patch.lng != null) {
-      await assertPointInsideRegion(existing.region_id, { lat, lng });
-    }
-    if (patch.name) {
-      const clash = (await query(
-        "SELECT id FROM taxi_stands WHERE region_id=$1 AND lower(name)=lower($2) AND id<>$3",
-        [existing.region_id, patch.name, id]
-      )).rows[0];
-      if (clash) throw new AppError("A stand with this name already exists here", 409, "STAND_NAME_TAKEN");
-    }
-    const updated = (await query(`
-      UPDATE taxi_stands
-      SET name=COALESCE($2, name),
-          kind=COALESCE($3, kind),
-          lat=$4,
-          lng=$5,
-          radius_m=COALESCE($6, radius_m),
-          boarding_slots=COALESCE($7, boarding_slots),
-          default_seats=COALESCE($8, default_seats),
-          note=COALESCE($9, note),
-          is_active=COALESCE($10, is_active),
-          updated_at=NOW()
-      WHERE id=$1
-      RETURNING *
-    `, [
-      id,
-      patch.name ?? null,
-      patch.kind ?? null,
-      lat,
-      lng,
-      patch.radiusM ?? null,
-      patch.boardingSlots ?? null,
-      patch.defaultSeats ?? null,
-      patch.note ?? null,
-      patch.isActive ?? null
-    ])).rows[0];
-
-    // Closing a stand has to clear the line with it, or riders keep seeing
-    // cars that are no longer offered anywhere in the app.
-    let closedEntries = [];
-    let closedReservations = [];
-    if (updated.is_active === false && existing.is_active === true) {
-      closedEntries = (await query(`
-        UPDATE taxi_stand_queue_entries
-        SET status='EXPIRED', left_at=NOW(), left_reason='STAND_CLOSED', updated_at=NOW()
-        WHERE stand_id=$1 AND status IN ('WAITING','BOARDING')
+      const lat = patch.lat ?? Number(existing.lat);
+      const lng = patch.lng ?? Number(existing.lng);
+      if (patch.lat != null || patch.lng != null) {
+        await assertPointInsideRegion(existing.region_id, { lat, lng }, client.query.bind(client));
+      }
+      if (patch.name) {
+        const clash = (await client.query(
+          "SELECT id FROM taxi_stands WHERE region_id=$1 AND lower(name)=lower($2) AND id<>$3",
+          [existing.region_id, patch.name, id]
+        )).rows[0];
+        if (clash) throw new AppError("A stand with this name already exists here", 409, "STAND_NAME_TAKEN");
+      }
+      const updated = (await client.query(`
+        UPDATE taxi_stands
+        SET name=COALESCE($2, name),
+            kind=COALESCE($3, kind),
+            lat=$4,
+            lng=$5,
+            radius_m=COALESCE($6, radius_m),
+            boarding_slots=COALESCE($7, boarding_slots),
+            default_seats=COALESCE($8, default_seats),
+            note=COALESCE($9, note),
+            is_active=COALESCE($10, is_active),
+            updated_at=NOW()
+        WHERE id=$1
         RETURNING *
-      `, [id])).rows;
-      closedReservations = (await query(`
-        UPDATE taxi_stand_seat_reservations
-        SET status='CANCELLED', cancelled_at=NOW(), updated_at=NOW()
-        WHERE stand_id=$1 AND status IN ('PENDING','CONFIRMED')
-        RETURNING *
-      `, [id])).rows;
-    }
+      `, [
+        id,
+        patch.name ?? null,
+        patch.kind ?? null,
+        lat,
+        lng,
+        patch.radiusM ?? null,
+        patch.boardingSlots ?? null,
+        patch.defaultSeats ?? null,
+        patch.note ?? null,
+        patch.isActive ?? null
+      ])).rows[0];
 
-    await writeAudit(query, {
-      action: "stand_updated",
-      actorUserId: req.user.id,
-      entityType: "taxi_stand",
-      entityId: id,
-      metadata: { patch },
-      req
+      // Closing a stand has to clear the line with it, or riders keep seeing
+      // cars that are no longer offered anywhere in the app.
+      let closedEntries = [];
+      let closedReservations = [];
+      if (updated.is_active === false) {
+        closedEntries = (await client.query(`
+          UPDATE taxi_stand_queue_entries
+          SET status='EXPIRED', left_at=NOW(), left_reason='STAND_CLOSED', updated_at=NOW()
+          WHERE stand_id=$1 AND status IN ('WAITING','BOARDING')
+          RETURNING *
+        `, [id])).rows;
+        closedReservations = (await client.query(`
+          UPDATE taxi_stand_seat_reservations
+          SET status='CANCELLED', cancelled_at=NOW(), updated_at=NOW()
+          WHERE stand_id=$1 AND status IN ('PENDING','CONFIRMED')
+          RETURNING *
+        `, [id])).rows;
+      }
+
+      await writeAudit(client, {
+        action: "stand_updated",
+        actorUserId: req.user.id,
+        entityType: "taxi_stand",
+        entityId: id,
+        metadata: { patch },
+        req
+      });
+      const promoted = updated.is_active ? await refreshBoardingSlots(id, client) : [];
+      return { updated, closedEntries, closedReservations, promoted };
     });
     const payload = { stand: publicStand(updated) };
     req.io?.to(standRegionRoom(updated.region_id)).emit("stand_updated", payload);
@@ -195,6 +200,8 @@ router.patch("/:id", async (req, res, next) => {
     // cars both just lost something through no action of their own. Without
     // this they found out by watching the screen empty: stand_updated above
     // says the stand changed, not that your place or your seat is gone.
+    await broadcastStand(req.io, id);
+    await notifyPromotedDrivers(req.io, promoted, id);
     await notifyDroppedDrivers(req.io, closedEntries);
     await notifyStrandedRiders(req.io, closedReservations, { reason: "STAND_CLOSED" });
     res.json(payload);
@@ -206,28 +213,32 @@ router.patch("/:id", async (req, res, next) => {
 router.delete("/:id", async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
-    const existing = (await query("SELECT * FROM taxi_stands WHERE id=$1", [id])).rows[0];
-    if (!existing) throw new AppError("Stand not found", 404, "STAND_NOT_FOUND");
-    const live = (await query(
-      "SELECT COUNT(*) c FROM taxi_stand_queue_entries WHERE stand_id=$1 AND status IN ('WAITING','BOARDING')",
-      [id]
-    )).rows[0];
-    // Deleting a stand with drivers standing in it would take their place in
-    // the line away with no trace; closing it is the reversible action and is
-    // what the screen offers instead.
-    if (Number(live.c) > 0) {
-      throw new AppError("Drivers are still in this line — close the stand instead", 409, "STAND_HAS_LIVE_QUEUE", {
-        driversCount: Number(live.c)
+    const existing = await tx(async (client) => {
+      await lockStand(id, client);
+      const existing = (await client.query("SELECT * FROM taxi_stands WHERE id=$1", [id])).rows[0];
+      if (!existing) throw new AppError("Stand not found", 404, "STAND_NOT_FOUND");
+      const live = (await client.query(
+        "SELECT COUNT(*) c FROM taxi_stand_queue_entries WHERE stand_id=$1 AND status IN ('WAITING','BOARDING')",
+        [id]
+      )).rows[0];
+      // Deleting a stand with drivers standing in it would take their place in
+      // the line away with no trace; closing it is the reversible action and is
+      // what the screen offers instead.
+      if (Number(live.c) > 0) {
+        throw new AppError("Drivers are still in this line — close the stand instead", 409, "STAND_HAS_LIVE_QUEUE", {
+          driversCount: Number(live.c)
+        });
+      }
+      await client.query("DELETE FROM taxi_stands WHERE id=$1", [id]);
+      await writeAudit(client, {
+        action: "stand_deleted",
+        actorUserId: req.user.id,
+        entityType: "taxi_stand",
+        entityId: id,
+        metadata: { name: existing.name, regionId: existing.region_id },
+        req
       });
-    }
-    await query("DELETE FROM taxi_stands WHERE id=$1", [id]);
-    await writeAudit(query, {
-      action: "stand_deleted",
-      actorUserId: req.user.id,
-      entityType: "taxi_stand",
-      entityId: id,
-      metadata: { name: existing.name, regionId: existing.region_id },
-      req
+      return existing;
     });
     req.io?.to(standRegionRoom(existing.region_id)).emit("stand_deleted", { standId: id });
     res.json({ ok: true });

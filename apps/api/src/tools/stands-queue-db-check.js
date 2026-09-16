@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { pool, query } from "../db/pool.js";
-import {
+const database = new URL(process.env.STAND_QA_DATABASE_URL || 'about:blank');
+assert.ok(['postgres:', 'postgresql:'].includes(database.protocol) &&
+  ['localhost', '127.0.0.1', '[::1]'].includes(database.hostname), 'Explicit local STAND_QA_DATABASE_URL required');
+assert.notEqual(process.env.NODE_ENV, 'production');
+process.env.DATABASE_URL = database.href;
+const { pool, query } = await import('../db/pool.js');
+const {
   departQueue,
   handOverTurn,
   joinQueue,
@@ -10,7 +15,7 @@ import {
   releaseStandPlaceForDriver,
   sweepStaleQueueEntries,
   touchPresence
-} from "../modules/stands/stands.service.js";
+} = await import("../modules/stands/stands.service.js");
 
 // The parts of a stand line that need more than one car to be real: who is
 // first, what happens when the front car leaves, and what "я отдам свою
@@ -19,7 +24,7 @@ import {
 // functions the routes call, against the real database, and removes every row
 // it created.
 //
-// Needs DATABASE_URL — deliberately not part of `npm test`, which runs with no
+// Needs local STAND_QA_DATABASE_URL — not part of `npm test`, which runs with no
 // database. Run it against the local stack.
 
 const tag = randomBytes(4).toString("hex");
@@ -125,7 +130,7 @@ async function main() {
   });
   assert.equal(away.inside, false, "the heartbeat must notice the car left the radius");
   assert.ok(away.distanceM > 1000);
-  let swept = await sweepStaleQueueEntries(query);
+  let swept = await sweepStaleQueueEntries(query, { standId: stand.id });
   assert.equal(swept.expired.length, 0, "a car that just stepped out must keep its place");
   console.log("[queue-db-check] car outside the radius keeps its place inside the grace period");
 
@@ -134,7 +139,7 @@ async function main() {
     "UPDATE taxi_stand_queue_entries SET outside_since=NOW() - INTERVAL '30 minutes' WHERE id=$1",
     [boarding.id]
   );
-  swept = await sweepStaleQueueEntries(query);
+  swept = await sweepStaleQueueEntries(query, { standId: stand.id });
   assert.equal(swept.expired.length, 1, "a car gone past the grace period must lose its place");
   assert.equal(swept.expired[0].left_reason, "LEFT_AREA");
   assert.deepEqual(await positions(stand.id), ["2:BOARDING"], "the remaining car moves to the front");

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { clearStandMarkers } from '../src/features/map/standMarkerLifecycle.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -29,8 +30,15 @@ test("a changing seat count updates the pin instead of replacing it", () => {
 
 test("stand pins are torn down with the map", () => {
   const source = read("../src/features/map/MapView.jsx");
-  assert.match(source, /standMarkersRef\.current\.forEach\(marker => marker\.remove\(\)\)/);
-  assert.match(source, /standMarkersRef\.current\.clear\(\)/);
+  assert.match(source, /clearStandMarkers\(standMarkersRef\.current\)/);
+  assert.match(source, /markers\.set\(stand.id, \{ marker \}\)/);
+  const removed = [];
+  const registry = new Map(['a', 'b'].map(id => [id, { marker: { remove: () => removed.push(id) } }]));
+  clearStandMarkers(registry);
+  assert.deepEqual(removed, ['a', 'b']);
+  assert.equal(registry.size, 0);
+  clearStandMarkers(registry);
+  assert.deepEqual(removed, ['a', 'b'], 'A second teardown cannot remove the old map pins again');
 });
 
 test("a full stand still shows, but cannot read as an open one", () => {
