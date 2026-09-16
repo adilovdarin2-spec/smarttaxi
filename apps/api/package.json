@@ -32,6 +32,7 @@
     "smoke:order": "node src/tools/stage3-client-flow-smoke.js",
     "smoke:full": "node src/tools/smoke-full.js",
     "smoke:qa-docker": "node src/tools/smoke-qa-docker.js",
+    "smoke:capacity-local": "node src/tools/local-capacity-smoke.js",
     "smoke:stage2": "node src/tools/stage2-smoke.js",
     "smoke:stage3": "node src/tools/stage3-client-flow-smoke.js",
     "smoke:stage9": "node src/tools/stage9-payment-rating-smoke.js",

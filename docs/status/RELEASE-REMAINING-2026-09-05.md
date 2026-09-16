@@ -32,6 +32,10 @@ deployment state. Current stages:
   Flutter 366 tests including document-read failure recovery and 320px/200%
   text-scale layout; fresh signed profile APK. API/web deployed to Railway.
   No phone used.
+- [Local API/PostgreSQL capacity baseline](local-capacity-baseline-2026-09-16.md):
+  three read-only Docker runs served 5,000 distinct virtual users at 100, 250
+  and 500 concurrent connections with 5,000/5,000 HTTP 200 responses. This is
+  a narrow local baseline, not production sizing or routing capacity acceptance.
 
 The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass
@@ -125,7 +129,7 @@ remain field work.
 | Moving GPS, resume, background tracking, spoken navigation | Controlled moving-device route plus audible TTS and denied-forever recovery | Current BaiSapar phone pass closed active-trip background/resume and stationary GPS publication/recovery. A desk test cannot certify moving/off-route guidance, background tracking over time or audible announcements. |
 | Native driver route layer | Closed — current phone navigator inspected after the style-layer migration | The physical driver navigator displayed the 1.2 km road-shaped route, turn prompt, ETA, building footprints, readable labels, compact car and destination marker. This is current-device evidence in addition to the shared GeoJSON/style-layer regression test. |
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
-| Production routing capacity | Capacity testing against the owned stack and an agreed load/latency target | Railway private OSRM health is verified. No 5,000-active-user capacity certification or road-data completeness claim follows from health checks. Never load-test a shared public provider. |
+| Production routing capacity | Capacity testing against owned staging with an agreed traffic mix and latency target | A reproducible local baseline now passes 5,000 read requests from distinct identities at 100/250/500 concurrency with no failures. At 500 concurrency observed p95 varied from 542 to 1,036 ms, so the result is not presented as an SLO. This excludes writes, sockets, GPS and routing. Railway private OSRM health is verified, but production sizing, road-data completeness and a 5,000-active-user certification remain open. Never load-test a shared public provider. |
 | Deployment and remote CI acceptance | Successful deployment plus public assets/runtime verification; inspect CI for each release candidate | API/web changes have been deployed to the authorized temporary Railway services with successful rollouts and read-only checks, recorded per-stage above. Production accounts/orders are not QA fixtures. Remote CI evidence for a previous commit does not certify the latest commit. |
 | Final Android release artifact | Firebase config, owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | Current profile APK and SHA-256 are recorded in the [September 16 onboarding report](driver-onboarding-2026-09-16.md); it uses the Railway-default endpoint and has not been installed on a phone in this stage. The September 15 debug APK/physical installation is historical, not evidence for this package. A notification-capable store release still needs BaiSapar Firebase configuration and owner release inputs. No store upload is authorized. |
 
