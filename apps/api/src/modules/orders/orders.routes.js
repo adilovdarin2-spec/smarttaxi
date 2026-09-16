@@ -985,10 +985,11 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
     const { id } = IdParam.parse(req.params);
     const body = z.object({ accept: z.boolean() }).parse(req.body);
     let offerDriverId = null;
+    let standRelease = null;
     const order = await tx(async (client) => {
-      const before = (await client.query("SELECT driver_offer_by_driver_id FROM orders WHERE id=$1", [id])).rows[0];
-      offerDriverId = before?.driver_offer_by_driver_id ?? null;
       const result = await respondToDriverPriceOffer({ orderId: id, clientUserId: req.user.id, accept: body.accept, executor: client });
+      offerDriverId = result.order.driver_offer_by_driver_id ?? null;
+      standRelease = result.standRelease;
       await writeAudit(client, {
         action: body.accept ? "order_driver_price_offer_accepted" : "order_driver_price_offer_declined",
         actorUserId: req.user.id,
@@ -1005,6 +1006,7 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
       `, [result.order.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, body.accept ? "order.driver_price_offer_accepted" : "order.driver_price_offer_declined");
+    await announceStandRelease(req.io, standRelease);
     if (offerDriverId) {
       notifyOrderDriver({ driver_id: offerDriverId }, body.accept
         ? { title: "Клиент принял вашу цену", body: "Поездка назначена вам", type: "DRIVER_PRICE_OFFER_ACCEPTED" }
@@ -1067,8 +1069,10 @@ router.post("/:id/price-offer/driver-respond", requireAuth, requireRole("DRIVER"
   try {
     const { id } = IdParam.parse(req.params);
     const body = z.object({ accept: z.boolean() }).parse(req.body);
+    let standRelease = null;
     const order = await tx(async (client) => {
       const result = await respondToClientCounterOffer({ orderId: id, driverUserId: req.user.id, accept: body.accept, executor: client });
+      standRelease = result.standRelease;
       await writeAudit(client, {
         action: body.accept ? "order_client_counter_offer_accepted" : "order_client_counter_offer_declined",
         actorUserId: req.user.id,
@@ -1085,6 +1089,7 @@ router.post("/:id/price-offer/driver-respond", requireAuth, requireRole("DRIVER"
       `, [result.order.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, body.accept ? "order.client_counter_offer_accepted" : "order.client_counter_offer_declined");
+    await announceStandRelease(req.io, standRelease);
     notifyOrderClient(order, body.accept
       ? { title: "Водитель принял вашу цену", body: "Водитель уже едет к вам", type: "CLIENT_COUNTER_OFFER_ACCEPTED" }
       : { title: "Водитель отклонил вашу цену", body: "Можете предложить другую цену", type: "CLIENT_COUNTER_OFFER_DECLINED" }

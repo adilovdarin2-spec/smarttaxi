@@ -10,6 +10,7 @@ import {
   listOrdersForDriver,
   orderRoom,
   publicOrderStatus,
+  syncDriverAvailability,
   TRANSITION_RULES
 } from "../modules/orders/order-dispatch.service.js";
 
@@ -30,7 +31,13 @@ assert.match(dispatchService, /SELECT \* FROM drivers WHERE user_id=\$1 FOR UPDA
 assert.match(dispatchService, /SELECT \* FROM orders WHERE id=\$1 FOR UPDATE/i, "accept must lock order row");
 assert.match(ordersRoutes, /listOrdersForDriver/i, "driver order listing must use region-scoped dispatch service");
 assert.match(ordersRoutes, /acceptOrderForDriver/i, "accept endpoint must use transactional dispatch service");
-assert.match(driverCoreRoutes, /const activeOrder = await activeOrderForDriver\(driver\);[\s\S]*const nextStatus = activeOrder \? "BUSY" : "FREE"/, "driver online must keep BUSY when an active order exists");
+assert.match(driverCoreRoutes, /const activeOrder = await activeOrderForDriver\(driver, client\);[\s\S]*const nextStatus = activeOrder \? "BUSY" : "FREE"/, "driver online must keep BUSY using the same transaction's active-order check");
+for (const action of ['online', 'offline']) {
+  const route = driverCoreRoutes.split(`router.post("/status/${action}"`)[1].split('\nrouter.')[0];
+  assert.match(route, /await tx\(async client =>/);
+  assert.match(route, /getDriverForUser\(req.user.id, client, true\)/, 'Both shift paths lock the driver before checking availability');
+  assert.match(route, /writeAudit\(client,/);
+}
 assert.match(ordersRoutes, /emitOrderCreated\(req\.io, order\)/, "order creation must emit after transaction returns");
 assert.match(ordersRoutes, /emitOrderUpdated\(req\.io, order, "order_accepted"\)/, "accept must emit after transaction returns");
 assert.doesNotMatch(ordersRoutes, /\.to\("drivers"\)/, "order offers must not use global drivers room");
@@ -255,5 +262,24 @@ assert.throws(() => assertStatusTransition({ status: "PAID" }, "CANCELLED_BY_CLI
 assert.throws(() => assertStatusTransition({ status: "CANCELLED_BY_CLIENT" }, "DRIVER_FOUND"), { code: "INVALID_STATUS_TRANSITION" }, "cancelled order is terminal");
 assert.match(ordersRoutes, /existing\.driver_id !== driver\.id/, "driver cannot update order they do not own");
 assert.match(ordersRoutes, /CLIENT_HAS_ACTIVE_ORDER/, "client cannot create duplicate active orders");
+
+for (const freshStatus of ['FREE', 'OFFLINE', 'BREAK', 'BUSY']) {
+  for (const active of [false, true]) {
+    const statements = [];
+    const recovered = await syncDriverAvailability({ id: 'driver', status: 'BUSY' }, async (sql, params) => {
+      statements.push(sql);
+      assert.equal(params[0], 'driver');
+      if (sql === 'SELECT * FROM drivers WHERE id=$1 FOR UPDATE') return { rows: [{ id: 'driver', status: freshStatus }] };
+      if (sql.startsWith('SELECT id FROM orders')) return { rows: active ? [{ id: 'trip' }] : [] };
+      if (sql.startsWith("UPDATE drivers SET status='FREE'")) return { rows: [{ id: 'driver', status: 'FREE' }] };
+      throw new Error(`Unexpected recovery SQL ${sql}`);
+    });
+    assert.equal(recovered.status, freshStatus === 'BUSY' && !active ? 'FREE' : freshStatus);
+    assert.equal(statements.length, freshStatus !== 'BUSY' ? 1 : active ? 2 : 3,
+      'Only fresh BUSY without an active trip may be repaired');
+  }
+}
+await assert.rejects(() => syncDriverAvailability({ id: 'deleted', status: 'BUSY' }, async () => ({ rows: [] })),
+  error => error.code === 'DRIVER_NOT_FOUND');
 
 console.log("Dispatch and realtime checks ok");

@@ -66,6 +66,10 @@ function createExecutor() {
   return {
     state,
     async query(sql, params = []) {
+      if (/SELECT stand_id FROM taxi_stand_queue_entries/.test(sql)) {
+        assert.ok(state.drivers.find(d => d.id === params[0])?.status === 'BUSY', 'Release follows assignment inside the same executor');
+        return { rows: [] }; // This unit fixture has no stand place; DB tests cover occupied stands.
+      }
       if (/SELECT \* FROM drivers WHERE user_id=\$1 FOR UPDATE/i.test(sql)) {
         return { rows: state.drivers.filter(d => d.user_id === params[0]) };
       }

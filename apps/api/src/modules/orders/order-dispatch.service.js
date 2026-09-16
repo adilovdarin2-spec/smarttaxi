@@ -1,4 +1,5 @@
 import { AppError } from "../../common/errors.js";
+import { query as defaultQuery, tx } from '../../db/pool.js';
 import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
 import { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
@@ -255,6 +256,16 @@ export async function assertDriverHasNoActiveOrder(driver, executor) {
 
 export async function syncDriverAvailability(driver, executor) {
   if (!driver || driver.status !== "BUSY") return driver;
+  // GET/profile and incoming-order reads call with the pool query function.
+  // A pool-level FOR UPDATE would release immediately: keep the lock through
+  // the active-order check and repair, just like assignment/shift changes.
+  if (!executor || executor === defaultQuery) {
+    return tx(client => syncDriverAvailability(driver, client));
+  }
+  const fresh = (await runQuery(executor, 'SELECT * FROM drivers WHERE id=$1 FOR UPDATE', [driver.id])).rows[0];
+  if (!fresh) throw new AppError('Driver not found', 404, 'DRIVER_NOT_FOUND');
+  driver = fresh;
+  if (driver.status !== 'BUSY') return driver;
   const active = await runQuery(
     executor,
     "SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1",
@@ -266,7 +277,7 @@ export async function syncDriverAvailability(driver, executor) {
     "UPDATE drivers SET status='FREE', last_seen_at=NOW() WHERE id=$1 RETURNING *",
     [driver.id]
   );
-  return recovered.rows[0] || { ...driver, status: "FREE" };
+  return recovered.rows[0] || driver;
 }
 
 export async function listOrdersForDriver({ driver, status, limit, executor, orderSelect = "o.*" }) {
@@ -692,7 +703,10 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
     [existing.id]
   );
 
-  return { order, driver: updatedDriver, accepted: true };
+  const standRelease = await releaseStandPlaceForDriver(
+    { driverId: driver.id, reason: "ACCEPTED_ORDER" }, executor
+  );
+  return { order, driver: updatedDriver, accepted: true, standRelease };
 }
 
 // Rider's counter to a pending driver price offer -- only valid while the
@@ -802,5 +816,8 @@ export async function respondToClientCounterOffer({ orderId, driverUserId, accep
     [existing.id, driverUserId]
   );
 
-  return { order, driver: updatedDriver, accepted: true };
+  const standRelease = await releaseStandPlaceForDriver(
+    { driverId: driver.id, reason: "ACCEPTED_ORDER" }, executor
+  );
+  return { order, driver: updatedDriver, accepted: true, standRelease };
 }

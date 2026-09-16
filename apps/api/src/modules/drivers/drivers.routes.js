@@ -14,6 +14,8 @@ import {
 import { updateDriverLocation } from "../routing/routing.service.js";
 import { ACTIVE_ORDER_STATUSES, syncDriverAvailability } from "../orders/order-dispatch.service.js";
 import { driverDailyStats } from "./driver-daily-stats.service.js";
+import { releaseStandPlaceForDriver } from '../stands/stands.service.js';
+import { announceStandRelease } from '../stands/stands.notify.js';
 const router = Router();
 
 function nearbyPublicId(driverId) {
@@ -146,29 +148,25 @@ router.get("/me/active-order", requireAuth, requireRole("DRIVER"), async (req, r
 router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
     const body = z.object({ status: z.enum(["FREE", "OFFLINE", "BREAK"]) }).parse(req.body);
-    const driver = (await query("SELECT * FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
-    if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-    if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
-
-    if (["FREE", "OFFLINE", "BREAK"].includes(body.status)) {
-      const active = await query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ACTIVE_ORDER_STATUSES]);
+    const { updated, release } = await tx(async client => {
+      const driver = (await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id])).rows[0];
+      if (!driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+      if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+      const active = await client.query("SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1", [driver.id, ACTIVE_ORDER_STATUSES]);
       if (active.rows[0]) throw new AppError("Driver has active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
-    }
-
-    if (body.status === "FREE") {
-      await assertDriverCanGoOnline(driver, query);
-    }
-
-    const result = await query("UPDATE drivers SET status=$1,last_seen_at=NOW() WHERE user_id=$2 RETURNING *", [body.status, req.user.id]);
-    await writeAudit(query, {
-      action: "driver_status_updated",
-      actorUserId: req.user.id,
-      entityType: "driver",
-      entityId: driver.id,
-      metadata: { from: driver.status, to: body.status },
-      req
+      if (body.status === "FREE") await assertDriverCanGoOnline(driver, client);
+      const updated = (await client.query("UPDATE drivers SET status=$1,last_seen_at=NOW() WHERE user_id=$2 RETURNING *", [body.status, req.user.id])).rows[0];
+      const release = body.status === 'FREE' ? null : await releaseStandPlaceForDriver(
+        { driverId: driver.id, reason: 'DRIVER_OFFLINE' }, client
+      );
+      await writeAudit(client, {
+        action: "driver_status_updated", actorUserId: req.user.id, entityType: "driver", entityId: driver.id,
+        metadata: { from: driver.status, to: body.status }, req
+      });
+      return { updated, release };
     });
-    res.json({ driver: result.rows[0] });
+    await announceStandRelease(req.io, release);
+    res.json({ driver: updated });
   } catch (e) { next(e); }
 });
 
