@@ -26,6 +26,7 @@ Using a real local HTTP request blocked on a driver row while another transactio
 - `driver-shift-race-db-check.js`: seven deterministic contention cases using `pg_blocking_pids`. Core offline and all three legacy changes reject with 409 after assignment; online stays BUSY; recovery preserves fresh OFFLINE/BUSY. Three separate reservation-row barriers prove atomic core-offline/legacy-offline/break visibility. FREE does not remove a valid queue place. Exact local fixture rows are removed and the seed driver's initial status restored.
 - API test suite and syntax: pass. Added no-DB recovery tests for fresh FREE/OFFLINE/BREAK/BUSY, with/without active orders and missing drivers; tightened shift transaction assertions. Existing routing fallback DB warning remains non-fatal.
 - Local Docker rebuild and Compose config: pass; volumes preserved.
+- Existing stand concurrency DB regression also passes after these changes (simultaneous joins, departure/leave/join, owner closure, sweep, boarding slot resize and atomic closure barrier).
 - Existing browser stand recovery at 320px: pass, including genuine seat commits, lost acknowledgement, guarded refresh, GPS gate, protected APP seats and owner closure, no browser exceptions.
 - Web and Flutter source/UI unchanged in this stage; their previous verified 179/353 suites and existing profile APK are not presented as newly rebuilt here.
 
@@ -36,3 +37,9 @@ Using a real local HTTP request blocked on a driver row while another transactio
 ## Remaining
 
 Continue broader release verification. Compare eligibility checks on direct and negotiated assignment (region changes, blocked counterpart, debt and previous cancellation) rather than assuming stand parity proves complete dispatch parity. External SMS/payment/legal/store/official-address and physical field QA gates remain open. This stage is not a zero-bug or release-complete claim.
+
+## Publication
+
+Code `af707fc` pushed to `origin/dev`. Railway API deployment `db288347-81fa-4bf3-b356-da66dcf4f749` reports `SUCCESS`. Read-only SHA-256 verification of all four changed runtime files on Railway matches the local committed files exactly.
+
+Public readiness still returns 503 with SMS not configured; DB, Redis and OSRM checks pass. No production login, order, stand or payment mutations were used for verification. Web deployment and Android profile APK remain the previously verified versions because this stage only changes the shared backend.
