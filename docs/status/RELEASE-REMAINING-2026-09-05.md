@@ -41,6 +41,12 @@ deployment state. Current stages:
   Real web map/picker/route/tariff/payment smoke passed; web 187 tests, Flutter
   366 tests/analyze and a fresh signed profile APK passed. Web deployed and
   public lazy map asset verified. No phone used.
+- [Deep browser and release-smoke pass](release-deep-browser-and-smoke-pass-2026-09-16.md):
+  19 owner and 16 finance sections, 15 passenger account screens, driver
+  presentation/lifecycle, negotiation, stand recovery and all 13 regional
+  address picks passed locally. The admin support heading was visually fixed,
+  and the document smoke now follows authenticated application ownership and
+  refuses non-development SMS environments. Web deployment `c1fb214b` passed.
 
 The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass
