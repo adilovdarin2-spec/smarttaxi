@@ -77,8 +77,9 @@ class StandSocket extends SocketService {
   StandSocket() : super(MemoryAuthStore('test-session'));
   void Function(dynamic)? update;
   @override
-  void onStandQueueUpdate(void Function(dynamic) handler) {
+  void Function() onStandQueueUpdate(void Function(dynamic) handler) {
     update = handler;
+    return () => update = null;
   }
 }
 
@@ -121,6 +122,8 @@ void main() {
     expect(find.text('Ждём подтверждения водителя'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
+    expect(socket.update, isNull,
+        reason: 'Closed screen releases its listener');
     expect(tester.takeException(), isNull);
   });
 }

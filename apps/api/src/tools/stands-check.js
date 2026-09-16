@@ -10,6 +10,7 @@ import {
   publicStand,
   refreshBoardingSlots,
   standRegionRoom,
+  touchPresence,
   standRoom
 } from "../modules/stands/stands.service.js";
 
@@ -145,6 +146,31 @@ const settled = fakeExecutor([
 ], 1);
 assert.deepEqual(await refreshBoardingSlots("s1", settled), []);
 assert.deepEqual(settled.updates, []);
+
+/* ----------------------------- missing GPS never renews queue presence */
+const presenceWrites = [];
+const presenceExecutor = async (sql, params) => {
+  if (sql.includes('SELECT e.*')) return { rows: [{ id: 'e1', stand_id: 's1',
+    stand_lat: stand.lat, stand_lng: stand.lng, radius_m: stand.radius_m }] };
+  assert.ok(sql.includes('UPDATE taxi_stand_queue_entries'));
+  presenceWrites.push({ sql, params });
+  return { rows: [] };
+};
+for (const point of [ {}, { lat: null, lng: null }, { lat: stand.lat },
+  { lat: NaN, lng: stand.lng }, { lat: stand.lat, lng: Infinity },
+  { lat: 91, lng: stand.lng }, { lat: stand.lat, lng: 181 },
+  { lat: String(stand.lat), lng: stand.lng } ]) {
+  const result = await touchPresence({ driverId: 'd1', ...point }, presenceExecutor);
+  assert.equal(result.inside, null);
+  assert.equal(result.distanceM, null);
+}
+assert.deepEqual(presenceWrites, [], 'Unknown GPS must not extend last_seen_at or clear outside_since');
+assert.equal((await touchPresence({ driverId: 'd1', lat: stand.lat, lng: stand.lng }, presenceExecutor)).inside, true);
+assert.equal(presenceWrites[0].params[3], true);
+assert.equal((await touchPresence({ driverId: 'd1', lat: stand.lat + 0.01, lng: stand.lng }, presenceExecutor)).inside, false);
+assert.equal(presenceWrites[1].params[3], false);
+assert.ok(presenceWrites[1].sql.includes('COALESCE(outside_since, NOW())'), 'Repeated outside fixes preserve the first exit time');
+assert.equal(await touchPresence({ driverId: 'absent' }, async () => ({ rows: [] })), null);
 
 /* ------------------------------------------------------- wiring guards */
 

@@ -7405,6 +7405,12 @@ abstract class AppLocalizations {
   /// **'Включите геолокацию, чтобы встать в очередь'**
   String get standJoinNeedsLocation;
 
+  /// No description provided for @standPresenceNeedsLocation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось подтвердить геолокацию. Включите точное местоположение, чтобы сохранить место в очереди.'**
+  String get standPresenceNeedsLocation;
+
   /// No description provided for @standJoinNeedsOnline.
   ///
   /// In ru, this message translates to:

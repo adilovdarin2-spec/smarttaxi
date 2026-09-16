@@ -930,9 +930,10 @@ export default function DriverApp() {
       timeout: 20000
     });
     // Browser watches need not fire while stationary. Request actual fresh
-    // fixes during navigation; never turn a repaint into a GPS timestamp.
+    // fixes during navigation or while holding a stand place; never turn a
+    // repaint into a GPS timestamp.
     let polling = false;
-    const gpsTimer = navigationActive ? window.setInterval(() => {
+    const gpsTimer = (navigationActive || tab === 'stands') ? window.setInterval(() => {
       if (polling || document.visibilityState !== "visible") return;
       polling = true;
       const polledAfter = lastFixTimestamp;
@@ -952,7 +953,7 @@ export default function DriverApp() {
       if (gpsTimer !== null) window.clearInterval(gpsTimer);
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [session, driver?.id, isWorking, selectedRegionId, locationAttempt, navigationActive]);
+  }, [session, driver?.id, isWorking, selectedRegionId, locationAttempt, navigationActive, tab === 'stands']);
 
   async function handleLogin(event) {
     event.preventDefault();

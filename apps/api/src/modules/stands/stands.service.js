@@ -664,8 +664,11 @@ export async function touchPresence({ driverId, lat, lng }, executor) {
     WHERE e.driver_id=$1 AND e.status IN ${LIVE_STATUSES}
   `, [driverId])).rows[0];
   if (!entry) return null;
-  if (lat == null || lng == null) {
-    await run(executor, "UPDATE taxi_stand_queue_entries SET last_seen_at=NOW() WHERE id=$1", [entry.id]);
+  if (typeof lat !== 'number' || typeof lng !== 'number' ||
+      !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    // An open app is not proof that its car is still here. Preserve the last
+    // actual fix and the existing grace period instead of renewing it forever
+    // with null coordinates after permission/GPS was lost.
     return { entryId: entry.id, standId: entry.stand_id, inside: null, distanceM: null };
   }
   const distance = haversineMeters(Number(entry.stand_lat), Number(entry.stand_lng), Number(lat), Number(lng));

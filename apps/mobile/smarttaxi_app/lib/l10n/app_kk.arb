@@ -1764,6 +1764,7 @@
   "standJoinButton": "Кезекке тұру",
   "standJoinTooFar": "Кезекке тұру үшін тұраққа жақындаңыз",
   "standJoinNeedsLocation": "Кезекке тұру үшін геолокацияны қосыңыз",
+  "standPresenceNeedsLocation": "Геолокация расталмады. Кезектегі орныңызды сақтау үшін нақты орналасқан жерді анықтауды қосыңыз.",
   "standJoinNeedsOnline": "Кезекке тұру үшін желіге шығыңыз",
   "standYourPlaceTitle": "Кезектегі орныңыз",
   "standPositionLabel": "Кезекте {position}-ші",

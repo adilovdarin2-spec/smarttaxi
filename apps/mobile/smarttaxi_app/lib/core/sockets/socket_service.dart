@@ -98,23 +98,39 @@ class SocketService {
   }
 
   /// The rider's view of a line. Never carries another rider's details.
-  void onStandQueueUpdate(void Function(dynamic data) handler) {
-    _socket?.on('stand_queue_updated', handler);
+  void Function() onStandQueueUpdate(void Function(dynamic data) handler) {
+    return _listenStand('stand_queue_updated', handler);
   }
 
   /// The driver's view of the same line, with the seat requests waiting on
   /// them. The server only sends this to sockets it has confirmed are
   /// drivers, so the two must stay separate events rather than one payload.
-  void onDriverStandQueueUpdate(void Function(dynamic data) handler) {
-    _socket?.on('stand_queue_updated_driver', handler);
+  void Function() onDriverStandQueueUpdate(
+      void Function(dynamic data) handler) {
+    return _listenStand('stand_queue_updated_driver', handler);
   }
 
   /// Things that happen to this one person rather than to the line: a seat
   /// request arrives, their turn starts, their place is gone.
-  void onStandPersonalEvent(void Function(String event, dynamic data) handler) {
-    for (final event in _standPersonalEvents) {
-      _socket?.on(event, (data) => handler(event, data));
-    }
+  void Function() onStandPersonalEvent(
+      void Function(String event, dynamic data) handler) {
+    final remove = [
+      for (final event in _standPersonalEvents)
+        _listenStand(event, (data) => handler(event, data)),
+    ];
+    return () {
+      for (final unsubscribe in remove) {
+        unsubscribe();
+      }
+    };
+  }
+
+  void Function() _listenStand(String event, void Function(dynamic) handler) {
+    // Remove only this screen's callback, from the socket it registered on.
+    // Repeatedly opening stands must not accumulate abandoned listeners.
+    final socket = _socket;
+    socket?.on(event, handler);
+    return () => socket?.off(event, handler);
   }
 
   static const _standPersonalEvents = [

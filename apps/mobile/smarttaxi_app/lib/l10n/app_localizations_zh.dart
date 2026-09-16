@@ -3860,6 +3860,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get standJoinNeedsLocation => '请开启定位后再加入排队';
 
   @override
+  String get standPresenceNeedsLocation => '无法确认位置。请开启精确定位以保留排队位置。';
+
+  @override
   String get standJoinNeedsOnline => '请先上线再加入排队';
 
   @override

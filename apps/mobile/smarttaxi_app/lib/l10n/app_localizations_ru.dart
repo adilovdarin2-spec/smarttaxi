@@ -4119,6 +4119,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Включите геолокацию, чтобы встать в очередь';
 
   @override
+  String get standPresenceNeedsLocation =>
+      'Не удалось подтвердить геолокацию. Включите точное местоположение, чтобы сохранить место в очереди.';
+
+  @override
   String get standJoinNeedsOnline => 'Выйдите на линию, чтобы встать в очередь';
 
   @override

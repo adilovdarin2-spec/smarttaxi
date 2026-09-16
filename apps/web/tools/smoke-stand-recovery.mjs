@@ -64,6 +64,15 @@ try {
   await card.getByRole('button', { name: 'Встать в очередь', exact: true }).click();
   await card.getByLabel('Направление', { exact: true }).fill('Шымкент');
   await card.getByLabel('Цена за место, ₸', { exact: true }).fill('2500');
+  // The driver's offer may stay open while accuracy deteriorates. The final
+  // submit must be gated too, not only the button that opened the form.
+  await context.setGeolocation({ latitude: 40.8458, longitude: 68.5041, accuracy: 500 });
+  await card.getByText('Включите геолокацию, чтобы встать в очередь', { exact: true }).waitFor();
+  assert(await card.getByRole('button', { name: 'Встать в очередь', exact: true }).isDisabled());
+  assert.equal((await request('/api/driver/stands/me', { token: driver.token })).entry, null);
+  await card.getByText('Включите геолокацию, чтобы встать в очередь', { exact: true }).scrollIntoViewIfNeeded();
+  await screenshot(page, 'driver-offer-needs-accurate-gps');
+  await context.setGeolocation({ latitude: 40.8458, longitude: 68.5041, accuracy: 8 });
   await card.getByRole('button', { name: 'Встать в очередь', exact: true }).click();
   await page.locator('.driver-stand-place').waitFor();
   ({ entry } = await request('/api/driver/stands/me', { token: driver.token }));
@@ -131,8 +140,23 @@ try {
   await screenshot(rider, 'rider-reservation-recovered');
   await rider.getByRole('button', { name: 'Отменить бронь', exact: true }).click();
   await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor({ state: 'hidden' });
+  // A real null-coordinate heartbeat cannot keep a car in the queue forever.
+  // No mocked API response here: verify the persisted timestamp via GET/me.
+  const heartbeat = page.waitForResponse(response => response.url().endsWith('/api/driver/stands/presence') &&
+    response.request().method() === 'POST' && response.request().postDataJSON()?.lat === null,
+    { timeout: 35000 });
+  await context.setGeolocation({ latitude: 40.8458, longitude: 68.5041, accuracy: 500 });
+  await page.getByText('Не удалось подтвердить геолокацию.', { exact: false }).waitFor();
+  const beforePresence = (await request('/api/driver/stands/me', { token: driver.token })).entry.lastSeenAt;
+  assert(beforePresence);
+  assert.equal((await (await heartbeat).json()).presence.inside, null);
+  const afterPresence = (await request('/api/driver/stands/me', { token: driver.token })).entry.lastSeenAt;
+  assert.equal(afterPresence, beforePresence, 'An unknown position cannot refresh last_seen_at');
+  await screenshot(page, 'driver-presence-needs-gps');
+  await context.setGeolocation({ latitude: 40.8458, longitude: 68.5041, accuracy: 8 });
+  await page.getByText('Не удалось подтвердить геолокацию.', { exact: false }).waitFor({ state: 'hidden' });
   assert.deepEqual(errors, []);
-  console.log('Stand browser recovery passed: real committed seat, failed acknowledgement/read, guarded refresh, passenger reservation recovery and cancellation. Screenshots: ' + output);
+  console.log('Stand browser recovery passed: accurate-GPS join gate, real committed seat, failed acknowledgement/read, guarded refresh, passenger reservation recovery/cancellation, unknown-GPS heartbeat preserves timestamp. Screenshots: ' + output);
 } catch (error) {
   console.error('Stand QA failed', error.message, await page.locator('body').innerText());
   await page.screenshot({ path: path.join(output, 'failure.png') });

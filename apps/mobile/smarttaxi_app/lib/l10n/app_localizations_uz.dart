@@ -4155,6 +4155,10 @@ class AppLocalizationsUz extends AppLocalizations {
       'Navbatga turish uchun joylashuvni yoqing';
 
   @override
+  String get standPresenceNeedsLocation =>
+      'Joylashuv tasdiqlanmadi. Navbatdagi joyingizni saqlash uchun aniq joylashuvni yoqing.';
+
+  @override
   String get standJoinNeedsOnline => 'Navbatga turish uchun liniyaga chiqing';
 
   @override

@@ -4116,6 +4116,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get standJoinNeedsLocation => 'Кезекке тұру үшін геолокацияны қосыңыз';
 
   @override
+  String get standPresenceNeedsLocation =>
+      'Геолокация расталмады. Кезектегі орныңызды сақтау үшін нақты орналасқан жерді анықтауды қосыңыз.';
+
+  @override
   String get standJoinNeedsOnline => 'Кезекке тұру үшін желіге шығыңыз';
 
   @override

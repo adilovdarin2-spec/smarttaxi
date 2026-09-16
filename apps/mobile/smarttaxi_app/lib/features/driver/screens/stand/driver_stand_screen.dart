@@ -9,6 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../shared/models.dart';
 import '../../../shared/stand_sync.dart';
+import '../../../shared/stand_location.dart';
 import '../../widgets/driver_common_widgets.dart';
 
 /// The driver's side of a stand: the lines nearby, their own place in one, and
@@ -50,6 +51,11 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   List<TaxiStand> _stands = const [];
   MyStandPlace _place = const MyStandPlace();
   Coordinate? _position;
+  Position? _sensorFix;
+  Future<void>? _locationRefresh;
+  bool _publishingPresence = false;
+  Coordinate? get _freshPosition =>
+      freshStandPosition(_sensorFix, DateTime.now());
   StandPresence? _presence;
   bool _loading = true;
   bool _busy = false;
@@ -59,6 +65,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   Timer? _refreshTimer;
   String? _joinedStandRoom;
   final _sync = StandSync();
+  final _unsubscribe = <VoidCallback>[];
 
   @override
   void initState() {
@@ -70,6 +77,9 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   @override
   void dispose() {
     _sync.dispose();
+    for (final unsubscribe in _unsubscribe) {
+      unsubscribe();
+    }
     _presenceTimer?.cancel();
     _refreshTimer?.cancel();
     final room = _joinedStandRoom;
@@ -85,8 +95,9 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
         Timer.periodic(_presenceInterval, (_) => _publishPresence());
     _refreshTimer =
         Timer.periodic(_refreshInterval, (_) => _load(silent: true));
-    widget.socket.onDriverStandQueueUpdate(_onQueueEvent);
-    widget.socket.onStandPersonalEvent((_, __) => _load(silent: true));
+    _unsubscribe.add(widget.socket.onDriverStandQueueUpdate(_onQueueEvent));
+    _unsubscribe.add(
+        widget.socket.onStandPersonalEvent((_, __) => _load(silent: true)));
   }
 
   void _onQueueEvent(dynamic data) {
@@ -97,7 +108,15 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
     unawaited(_load(silent: true));
   }
 
-  Future<void> _refreshPosition() async {
+  Future<void> _refreshPosition() {
+    if (!mounted) return Future.value();
+    // Joining must await an already-running GPS check too, not fall through
+    // with the old fix while that check is about to report lost permission.
+    return _locationRefresh ??=
+        _readPosition().whenComplete(() => _locationRefresh = null);
+  }
+
+  Future<void> _readPosition() async {
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -107,21 +126,11 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _position = Coordinate(lat: position.latitude, lng: position.longitude);
+        _sensorFix = position;
+        _position = _freshPosition ?? _position;
       });
     } catch (_) {
-      // A stale hint is better than none: it still sorts the list sensibly,
-      // and the join button checks the distance again before it is offered.
-      try {
-        final last = await Geolocator.getLastKnownPosition();
-        if (last != null && mounted && _position == null) {
-          setState(() {
-            _position = Coordinate(lat: last.latitude, lng: last.longitude);
-          });
-        }
-      } catch (_) {
-        // Nothing more to try; the screen explains what is missing.
-      }
+      if (mounted) setState(() => _sensorFix = null);
     }
   }
 
@@ -139,6 +148,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
       );
       if (!_sync.settleRead(ticket, true)) return;
       setState(() {
+        if (_place.entry?.id != place.entry?.id) _presence = null;
         _place = place;
         _stands = stands;
         _loading = false;
@@ -163,17 +173,21 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   }
 
   Future<void> _publishPresence() async {
-    if (!mounted || !_place.isInLine) return;
-    await _refreshPosition();
-    if (!mounted || !_place.isInLine) return;
+    if (!mounted || _publishingPresence) return;
+    _publishingPresence = true;
     try {
-      final presence = await widget.api.publishStandPresence(_position);
-      if (!mounted) return;
+      await _refreshPosition();
+      if (!mounted || !_place.isInLine) return;
+      final entryId = _place.entry?.id;
+      final presence = await widget.api.publishStandPresence(_freshPosition);
+      if (!mounted || _place.entry?.id != entryId) return;
       setState(() => _presence = presence);
     } catch (_) {
       // A missed heartbeat is not evidence the car left. The server's own
       // longer timeout is what decides that; showing a scary warning off one
       // failed request would be worse than showing nothing.
+    } finally {
+      _publishingPresence = false;
     }
   }
 
@@ -217,7 +231,12 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
         title: Text(l10n.standScreenTitle),
         actions: [
           IconButton(
-            onPressed: _busy ? null : () => _load(),
+            onPressed: _busy
+                ? null
+                : () async {
+                    await _refreshPosition();
+                    await _load();
+                  },
             icon: const Icon(Icons.refresh),
             tooltip: l10n.retry,
           ),
@@ -255,10 +274,15 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
                 InlineMessage(text: l10n.standRefreshRequired, danger: true),
                 const SizedBox(height: 12),
               ],
+              if (_place.isInLine && _freshPosition == null) ...[
+                InlineMessage(
+                    text: l10n.standPresenceNeedsLocation, danger: true),
+                const SizedBox(height: 12),
+              ],
               if (_place.isInLine)
                 DriverStandPlaceSection(
                   place: _place,
-                  presence: _presence,
+                  presence: _freshPosition == null ? null : _presence,
                   busy: _busy || _sync.blocked,
                   onAddSeat: _addSeat,
                   onReleaseSeat: _releaseSeat,
@@ -271,7 +295,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
               else
                 DriverStandListSection(
                   stands: _stands,
-                  position: _position,
+                  position: _freshPosition,
                   isOnline: widget.isOnline,
                   busy: _busy || _sync.blocked,
                   onJoin: _join,
@@ -284,10 +308,19 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   }
 
   Future<void> _join(TaxiStand stand) async {
-    final position = _position;
-    if (position == null) return;
+    if (_freshPosition == null) return;
     final offer = await _askOffer(stand: stand);
-    if (offer == null) return;
+    if (offer == null || !mounted) return;
+    // The offer sheet may have been open for minutes. Do not reuse the fix
+    // from before the driver filled it in or before they lost permission.
+    await _refreshPosition();
+    if (!mounted) return;
+    final position = _freshPosition;
+    if (position == null) {
+      setState(() =>
+          _actionError = AppLocalizations.of(context).standJoinNeedsLocation);
+      return;
+    }
     await _run(() async {
       await widget.api.joinStandQueue(
         stand.id,
@@ -482,8 +515,7 @@ class _StandCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final distance =
-        position == null ? stand.distanceM : stand.distanceFrom(position!);
+    final distance = position == null ? null : stand.distanceFrom(position!);
     final inside = position != null && stand.containsPoint(position!);
     // The button is only offered when the driver is actually standing there
     // and on the line: the server refuses otherwise, and a button that only

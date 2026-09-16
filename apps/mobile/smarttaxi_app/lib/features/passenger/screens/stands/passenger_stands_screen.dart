@@ -56,6 +56,8 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
   BuildContext? _sheetContext;
   int _openSequence = 0;
 
+  final _unsubscribe = <VoidCallback>[];
+
   void _change(VoidCallback change) {
     if (!mounted) return;
     setState(change);
@@ -68,13 +70,18 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
     unawaited(_load());
     _refreshTimer =
         Timer.periodic(_refreshInterval, (_) => _load(silent: true));
-    widget.socket.onStandQueueUpdate((_) => _load(silent: true));
-    widget.socket.onStandPersonalEvent((_, __) => _load(silent: true));
+    _unsubscribe
+        .add(widget.socket.onStandQueueUpdate((_) => _load(silent: true)));
+    _unsubscribe.add(
+        widget.socket.onStandPersonalEvent((_, __) => _load(silent: true)));
   }
 
   @override
   void dispose() {
     _sync.dispose();
+    for (final unsubscribe in _unsubscribe) {
+      unsubscribe();
+    }
     _sheetRevision.dispose();
     _refreshTimer?.cancel();
     final room = _joinedRoom;

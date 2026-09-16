@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createSocket } from "../../lib/socket.js";
 import { getToken } from "../../lib/api.js";
 import { StandSync } from "../shared/standSync.mjs";
+import { freshStandPosition } from "../shared/standLocation.mjs";
 import {
   addStandSeats,
   departStandQueue,
@@ -144,16 +145,23 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
   useEffect(() => {
     if (!place.entry) return undefined;
     let cancelled = false;
+    let publishing = false;
+    setPresence(null);
     async function beat() {
+      if (publishing || cancelled) return;
+      publishing = true;
       try {
+        const fix = freshStandPosition(positionRef.current);
         const data = await publishStandPresence({
-          lat: positionRef.current?.lat ?? null,
-          lng: positionRef.current?.lng ?? null,
+          lat: fix?.lat ?? null,
+          lng: fix?.lng ?? null,
         });
         if (!cancelled && mountedRef.current) setPresence(data.presence || null);
       } catch {
         // A missed heartbeat is not evidence the car left; the server's own
         // much longer timeout is what decides that.
+      } finally {
+        publishing = false;
       }
     }
     beat();
@@ -202,7 +210,12 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
         {syncNotice}
         {error && <div className="driver-core-error" role="alert">{error}</div>}
         {actionError && !blocked && <div className="driver-core-error" role="alert" ref={feedbackRef}>{actionError}</div>}
-        {presence?.inside === false && (
+        {!freshStandPosition(position) && (
+          <div className="driver-core-error" role="alert">
+            Не удалось подтвердить геолокацию. Включите точное местоположение, чтобы сохранить место в очереди.
+          </div>
+        )}
+        {freshStandPosition(position) && presence?.inside === false && (
           <div className="driver-core-error" role="alert">
             Вы вне зоны стоянки ({metres(presence.distanceM)}). Место освободится через{" "}
             {presence.graceMinutes ?? 6} мин.
@@ -244,14 +257,14 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
           <StandCard
             key={stand.id}
             stand={stand}
-            position={position}
+            position={freshStandPosition(position)}
             isOnline={isOnline}
             busy={busy || blocked}
-            onJoin={draft => run(() => joinStandQueue(stand.id, {
-              lat: position.lat,
-              lng: position.lng,
-              ...draft,
-            }))}
+            onJoin={draft => run(() => {
+              const fix = freshStandPosition(positionRef.current);
+              if (!fix) throw new Error('Нужна свежая точная геолокация. Включите определение местоположения.');
+              return joinStandQueue(stand.id, { ...fix, ...draft });
+            })}
             onGoToLine={onGoToLine}
           />
         ))
@@ -267,7 +280,9 @@ function StandCard({ stand, position, isOnline, busy, onJoin, onGoToLine }) {
   const [seats, setSeats] = useState(stand.defaultSeats || 4);
   const [comment, setComment] = useState("");
 
-  const distance = position ? distanceMeters(position, stand) : stand.distanceM ?? null;
+  // A cached list may have been sorted around a region centre. Without a
+  // fresh device fix, its distance must not look like the driver's distance.
+  const distance = position ? distanceMeters(position, stand) : null;
   const inside = distance != null && distance <= stand.radiusM;
   const blocked = !isOnline
     ? "Выйдите на линию, чтобы встать в очередь"
@@ -296,6 +311,7 @@ function StandCard({ stand, position, isOnline, busy, onJoin, onGoToLine }) {
           className="driver-stand-form"
           onSubmit={event => {
             event.preventDefault();
+            if (blocked || busy) return;
             onJoin({
               destinationLabel: destination.trim() || undefined,
               pricePerSeat: price.trim() ? Number(price) : undefined,
@@ -324,8 +340,9 @@ function StandCard({ stand, position, isOnline, busy, onJoin, onGoToLine }) {
           </label>
           <div className="driver-stand-form-actions">
             <button type="button" onClick={() => setOpen(false)} disabled={busy}>Отмена</button>
-            <button type="submit" className="primary" disabled={busy}>Встать в очередь</button>
+            <button type="submit" className="primary" disabled={busy || Boolean(blocked)}>Встать в очередь</button>
           </div>
+          {blocked && <p className="driver-stand-note">{blocked}</p>}
         </form>
       ) : (
         <>
