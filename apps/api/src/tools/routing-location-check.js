@@ -170,7 +170,7 @@ const dedupResults = await searchAddresses({ q: "Абая", region: "Атаке�
       { lat: "40.751", lon: "68.598", display_name: "Абай, Казахстан", address: { village: "Абай" } }
     ];
   }
-}));
+}), gazetteerFixture([]));
 assert.equal(
   dedupResults.filter(item => item.label === "улица Абая").length,
   1,

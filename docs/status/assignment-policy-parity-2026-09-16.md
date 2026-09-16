@@ -31,6 +31,10 @@ The offer error is announced as an alert.
 - API full test suite and syntax check passed. Optional local gazetteer lookup
   logged an unavailable port 5434 during the fallback unit test; exit was zero.
   This is not evidence of a functioning production registry or push service.
+  Follow-up: supplied the already available injected empty gazetteer executor
+  to that deduplication test. Targeted check and full API suite passed again
+  without the accidental database connection or ECONNREFUSED warning. Runtime
+  routing code is unchanged.
 - Web: 180/180 tests; build/map build check passed; Docker API/web rebuilt.
 - Flutter: analyzer clean; 354/354 tests; profile APK built and signature v2
   verified (one signer). Existing Gradle/AGP/Kotlin future-support warnings remain.
@@ -48,8 +52,8 @@ The offer error is announced as an alert.
 - Optional real browser mode of that tool passed at 320 and 390px using actual
   local API state: correct refusal text, no horizontal overflow, both actions
   reachable by scrolling. Screenshots:
-  `%TEMP%/baisapar-assignment-policy-qa/rider-refused-320.png` and `390.png`
-  (the latter filename is `rider-refused-390.png`). Both inspected visually.
+  `%TEMP%/baisapar-assignment-policy-qa/rider-refused-320.png` and
+  `%TEMP%/baisapar-assignment-policy-qa/rider-refused-390.png`. Both inspected visually.
 - `driver-shift-race-db-check.js`: seven driver lock races and three atomic
   driver/queue/confirmed-seat release barriers passed again.
 
@@ -69,3 +73,21 @@ all-region or zero-bug certification. SMS/payment/operational setup, official
 address completeness, field navigation and physical-device performance QA
 remain unclosed. Production rollout verification is recorded below after the
 deployment finishes; no production account/order/stand mutations are used.
+
+## Published and read-only verified
+
+- Code commit `adbd715`, pushed to `origin/dev`.
+- API deployment `f91001c3-decb-49b5-9903-66a4d690dc18`: SUCCESS.
+- Web deployment `5fa4f78c-de5d-4ce1-a6df-b9f5c4997bf3`: SUCCESS.
+- Remote dispatch service SHA-256 matches local:
+  `f528338b24157d45a4a6da92547d893a9aa3c991b67f2cdfc0a9bb029428aa15`.
+- Public web HTTP 200, entry `index-BhS1qZUo.js`, stylesheet
+  `index-BaMO6TPp.css`. Public `standOutcome-ZjKrhID4.js` contains the new
+  refusal copy and `ClientApp-ROp36mG7.js` the unbroken amount markup.
+- Public `/api/health/live` HTTP 200. Readiness remains 503 with missing SMS;
+  DB, Redis and OSRM are healthy. No gate or production setting was bypassed.
+- Read-only stand accounting: 0 live entries, 0 counter mismatches,
+  0 overcommitted entries, 0 counter-overcapacity entries. This verifies current
+  stored consistency, not a real operating day's stand capacity.
+- The final fixture-only routing test adjustment is not production runtime code
+  and does not require another deployment.
