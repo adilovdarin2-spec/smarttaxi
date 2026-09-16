@@ -35,6 +35,7 @@ class _DriverApplicationDocumentsScreenState
   final Set<String> _uploadingTypes = {};
   String? _error;
   bool _loading = true;
+  bool _readFailed = false;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _DriverApplicationDocumentsScreenState
           await widget.api.getDriverApplicationDocuments(widget.applicationId);
       if (!mounted) return;
       setState(() {
+        _readFailed = false;
         _uploaded.clear();
         for (final document in documents) {
           _uploaded.putIfAbsent(document.type, () => document);
@@ -59,8 +61,10 @@ class _DriverApplicationDocumentsScreenState
       });
     } catch (_) {
       if (mounted) {
-        setState(() =>
-            _error = AppLocalizations.of(context).driverApplicationReadFailed);
+        setState(() {
+          _readFailed = true;
+          _error = AppLocalizations.of(context).driverApplicationReadFailed;
+        });
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -68,7 +72,12 @@ class _DriverApplicationDocumentsScreenState
   }
 
   Future<void> _uploadFromPath(String type, String? path) async {
-    if (path == null || _loading || _uploadingTypes.contains(type)) return;
+    if (path == null ||
+        _loading ||
+        _readFailed ||
+        _uploadingTypes.contains(type)) {
+      return;
+    }
     setState(() {
       _uploadingTypes.add(type);
       _error = null;
@@ -141,7 +150,7 @@ class _DriverApplicationDocumentsScreenState
             ],
             if (_loading)
               const Center(child: CircularProgressIndicator())
-            else
+            else if (!_readFailed)
               _ApplicationDocumentListCard(
                 rows: [
                   for (final type in DriverDocumentType.required)

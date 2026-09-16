@@ -29,7 +29,9 @@ deployment state. Current stages:
   ownership, owner-selected region, transactional profile creation and document
   linking; status restoration/correction in web/Flutter. Real local HTTP,
   PostgreSQL rollback and 320/390px browser flows passed. Web 186 tests;
-  Flutter 362 tests and fresh signed profile APK. No phone used.
+  Flutter 366 tests including document-read failure recovery and 320px/200%
+  text-scale layout; fresh signed profile APK. API/web deployed to Railway.
+  No phone used.
 
 The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass
@@ -125,7 +127,7 @@ remain field work.
 | Intercity/region acceptance | Representative real booking/direction/GPS checks across enabled regions | Read-only route/price previews pass across 13 regions and four intercity directions; Maktaaral has a flagged provider detour needing road-access review, and real regional journeys remain unverified |
 | Production routing capacity | Capacity testing against the owned stack and an agreed load/latency target | Railway private OSRM health is verified. No 5,000-active-user capacity certification or road-data completeness claim follows from health checks. Never load-test a shared public provider. |
 | Deployment and remote CI acceptance | Successful deployment plus public assets/runtime verification; inspect CI for each release candidate | API/web changes have been deployed to the authorized temporary Railway services with successful rollouts and read-only checks, recorded per-stage above. Production accounts/orders are not QA fixtures. Remote CI evidence for a previous commit does not certify the latest commit. |
-| Final Android release artifact | Firebase config, owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | The newest development candidate is `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-debug.apk` (233,210,724 bytes; SHA-256 `6d0787b14c58468670ffd14a41f48e3c210f634a584d9e401efe1866ed3ddb6d`; `1.0.0+2`; package/label `kz.baisapar.app` / `BaiSapar`; APK Signature Scheme v2 verified). It is debug-signed and installed on the physical phone with local-development endpoints. A notification-capable release build remains blocked by the missing BaiSapar Firebase configuration and owner release inputs. No store upload is authorized. |
+| Final Android release artifact | Firebase config, owner-controlled signing-key backup, final configured endpoints and Play Console acceptance | Current profile APK and SHA-256 are recorded in the [September 16 onboarding report](driver-onboarding-2026-09-16.md); it uses the Railway-default endpoint and has not been installed on a phone in this stage. The September 15 debug APK/physical installation is historical, not evidence for this package. A notification-capable store release still needs BaiSapar Firebase configuration and owner release inputs. No store upload is authorized. |
 
 The current transport/recovery pass fixes unsafe native write replay, stale
 session-expiry callbacks and recovery after an uncertain order response in both

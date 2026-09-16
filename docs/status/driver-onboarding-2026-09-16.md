@@ -60,7 +60,12 @@ labelled QA-ONLY, never a fabricated licence or identity document.
   `%TEMP%/baisapar-driver-onboarding-qa/` (`owner-region.png`, `approved-320.png`,
   `approved-390.png`). The missing-icon regression is also SSR-render tested.
 - Web 186 tests and Docker production build passed; Compose config valid.
-- Flutter 362 tests and analyze passed. Fresh profile APK built and v2 signature
+- Flutter 366 tests passed after a native follow-up: a failed initial document
+  read must not offer five empty upload slots as though no documents existed.
+  The new widget test failed before the guard and passed afterward; explicit
+  refresh restores actual document state. Three additional tests cover reopened
+  pending/rejected documents at 320 px with 100%, 150% and 200% text scaling.
+  Analyze passed. Fresh profile APK built and v2 signature
   verified (one signer). No phone or emulator used: native physical acceptance
   is not claimed.
 - Previous commit `19f98c8` CI runs 35099473648 / 35099465391 now both completed
@@ -70,7 +75,7 @@ labelled QA-ONLY, never a fabricated licence or identity document.
 
 `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-profile.apk`:
 191163229 bytes, SHA-256
-`3d44c1c1bc467dd827a173cf125303029285269fbe4418f364b677a6de751592`.
+`a31a5ea321eac1f507686d3c9c8b9137648a7f76d9083a07d4429f290751a0aa`.
 Railway-default profile QA artifact, not a Play Store release. Gradle/AGP/Kotlin
 future-support warnings remain; no unverified toolchain upgrade was made.
 
@@ -81,3 +86,20 @@ SMS/payment activation, owner/legal/domain/store decisions, authoritative addres
 completeness, moving navigation/background/performance on physical Android and
 production capacity acceptance remain separate. Unit and local browser checks
 cannot certify the entire application as bug-free.
+
+## Publication
+
+- Main implementation `179df96` pushed to `origin/dev`.
+- API deployment `7c89fc5b-0024-474e-82d9-dcffac91828a`: SUCCESS.
+  Web deployment `04fbc9b4-ffd3-452f-a085-5598767bd82a`: SUCCESS.
+- Remote onboarding service SHA-256 matches local:
+  `35322e598535d0ddc1035c8f03221c04c84308d063f8d23550ad4ed25d17e1e6`.
+- Public `/order` returns 200 with `index-BnxfpaDF.js`. Admin
+  `AdminApp-C-b9mi_-.js`, rider `ClientApp-BP9n0GGm.js`, API client
+  `mvpApi-C6UquOiK.js` return 200; region selection and authenticated own-application
+  read are in the published bundles.
+- Production liveness 200. Readiness 503 still reports missing SMS with
+  PostgreSQL, Redis and private OSRM healthy. Unauthenticated own-application
+  read returns 401. No production account/trip/stand/config mutations in QA.
+- CI runs 35103243964 / 35103236647 for `179df96`: API/web/operations successful;
+  Android job was still running at this observation, not yet a complete pass.
