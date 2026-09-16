@@ -67,11 +67,16 @@ test("a token that simply expired ends the session like any other dead token", (
   assert.match(source, /requestIsCurrent\(\)/);
 });
 
-test('a bare web preview uses the temporary public API, while local QA documents port 4001', () => {
+test('a bare web preview proxies the temporary API, while local Docker QA documents port 4001', () => {
   const apiSource = readFileSync(new URL('../src/lib/api.js', import.meta.url), 'utf8');
   const envExample = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
+  const viteConfig = readFileSync(new URL('../vite.config.js', import.meta.url), 'utf8');
   assert.match(apiSource, /fallbackApiUrl = "https:\/\/smarttaxi-api-production-c518\.up\.railway\.app"/);
-  assert.doesNotMatch(apiSource, /127\.0\.0\.1:4000/);
+  assert.match(apiSource, /typeof window !== "undefined" && typeof window\.location\?\.origin === "string"/);
+  assert.match(apiSource, /import\.meta\.env\.DEV && browserOrigin \? browserOrigin : fallbackApiUrl/);
+  assert.match(viteConfig, /"\/api"/);
+  assert.match(viteConfig, /"\/socket\.io"/);
+  assert.match(viteConfig, /target: "https:\/\/smarttaxi-api-production-c518\.up\.railway\.app"/);
   assert.match(envExample, /VITE_API_URL=http:\/\/127\.0\.0\.1:4001/);
   assert.match(envExample, /VITE_SOCKET_URL=http:\/\/127\.0\.0\.1:4001/);
 });

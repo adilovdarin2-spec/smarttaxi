@@ -6,6 +6,24 @@ import react from "@vitejs/plugin-react";
 // with React, sockets and the public landing page.
 export default defineConfig({
   plugins: [react()],
+  server: {
+    // Railway keeps a strict origin allow-list in production. Proxying only
+    // Vite development traffic preserves that protection and lets a bare
+    // localhost preview exercise the temporary API without a CORS bypass.
+    proxy: {
+      "/api": {
+        target: "https://smarttaxi-api-production-c518.up.railway.app",
+        changeOrigin: true,
+        secure: true,
+      },
+      "/socket.io": {
+        target: "wss://smarttaxi-api-production-c518.up.railway.app",
+        changeOrigin: true,
+        ws: true,
+        secure: true,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {

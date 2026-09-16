@@ -7,12 +7,17 @@ import {
 } from './browserSession.js';
 
 // The public Railway API is the temporary default until the owner points the
-// BaiSapar domain at its replacement.  A bare Vite preview must not silently
-// target a non-existent localhost:4000 server and make the whole app look
-// offline. Local Docker/phone QA always supplies VITE_API_URL explicitly.
+// BaiSapar domain at its replacement. Vite's development proxy keeps a bare
+// local preview same-origin, because the production API correctly rejects an
+// arbitrary localhost Origin. Local Docker/phone QA always supplies
+// VITE_API_URL explicitly.
 const fallbackApiUrl = "https://smarttaxi-api-production-c518.up.railway.app";
 
-export const API_URL = (import.meta.env.VITE_API_URL || fallbackApiUrl).replace(/\/$/, "");
+const browserOrigin = typeof window !== "undefined" && typeof window.location?.origin === "string"
+  ? window.location.origin
+  : "";
+const localPreviewApiUrl = import.meta.env.DEV && browserOrigin ? browserOrigin : fallbackApiUrl;
+export const API_URL = (import.meta.env.VITE_API_URL || localPreviewApiUrl).replace(/\/$/, "");
 export function getToken(){ return readSessionToken(); }
 export function setToken(token){ writeSessionToken(token); }
 export function clearToken(){ removeSessionToken(); }
