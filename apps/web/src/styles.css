@@ -10717,11 +10717,39 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .premium-auth-screen.auth-reference-welcome-screen,
 .taxi-client-shell .premium-auth-screen.auth-reference-step-screen {
   min-height: 100svh;
+  position: relative;
+  isolation: isolate;
   align-content: stretch;
   grid-template-rows: 24px auto minmax(0, 1fr) auto;
   gap: 0;
   padding: 10px 27px 28px;
-  background: #fff;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 88% 42% at 104% -8%, rgba(29, 111, 255, .17), transparent 70%),
+    radial-gradient(ellipse 68% 38% at -12% 27%, rgba(11, 79, 209, .09), transparent 72%),
+    linear-gradient(154deg, #ffffff 0%, #f7fbff 42%, #eaf3ff 100%);
+}
+
+.taxi-client-shell .premium-auth-screen.auth-reference-welcome-screen::before,
+.taxi-client-shell .premium-auth-screen.auth-reference-step-screen::before {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  right: -174px;
+  bottom: 8%;
+  border: 1px solid rgba(29, 111, 255, .13);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 32px rgba(29, 111, 255, .035),
+    0 0 0 76px rgba(29, 111, 255, .022);
+  pointer-events: none;
+}
+
+.taxi-client-shell .premium-auth-screen.auth-reference-welcome-screen > *,
+.taxi-client-shell .premium-auth-screen.auth-reference-step-screen > * {
+  position: relative;
+  z-index: 1;
 }
 
 .taxi-client-shell .auth-status-bar {

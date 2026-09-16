@@ -550,43 +550,60 @@ class _AuthBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // BoxFit.cover + centered: fills every screen size without letterboxing
-    // or visible stretching, cropping evenly from whichever edge is
-    // relatively longer instead of skewing the image.
+    // Login and registration share a quiet, light surface. The existing wave
+    // artwork remains only as a texture, rather than a saturated blue wall
+    // competing with fields and legal text.
     return Positioned.fill(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/auth/auth_background_2026.png',
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (_, __, ___) => const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [SmartTaxiColors.brand, SmartTaxiColors.brandDeep],
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFFFFF), Color(0xFFF7FBFF), Color(0xFFEAF3FF)],
+            stops: [0, .52, 1],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              top: -170,
+              right: -130,
+              child: Container(
+                width: 340,
+                height: 340,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: SmartTaxiColors.brand.withValues(alpha: .10),
                 ),
               ),
             ),
-          ),
-          // The wordmark and its tagline used to be painted into the PNG.
-          // That made the tagline permanently Russian: this is the first
-          // screen the app ever shows, and on a Kazakh device every other
-          // word on it was Kazakh while "ГОРОДСКОЕ ТАКСИ" sat under the logo
-          // in Russian, with no string for a translator to reach. The app
-          // ships ru/kk/uz/zh, so three of its four audiences saw it.
-          //
-          // Drawing it here also fixes a second, quieter problem: the image
-          // is BoxFit.cover, so the baked text drifted off-centre on any
-          // aspect ratio other than the 1080x1920 it was authored at.
-          //
-          // 0.19 of the height is where the baked wordmark sat on the
-          // reference device, so the layout is unchanged where it was right.
-          const _AuthWordmark(),
-        ],
+            Opacity(
+              opacity: .12,
+              child: Image.asset(
+                'assets/auth/auth_background_2026.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (_, __, ___) => const SizedBox.expand(),
+              ),
+            ),
+            // The wordmark and its tagline used to be painted into the PNG.
+            // That made the tagline permanently Russian: this is the first
+            // screen the app ever shows, and on a Kazakh device every other
+            // word on it was Kazakh while "ГОРОДСКОЕ ТАКСИ" sat under the logo
+            // in Russian, with no string for a translator to reach. The app
+            // ships ru/kk/uz/zh, so three of its four audiences saw it.
+            //
+            // Drawing it here also fixes a second, quieter problem: the image
+            // is BoxFit.cover, so the baked text drifted off-centre on any
+            // aspect ratio other than the 1080x1920 it was authored at.
+            //
+            // 0.19 of the height is where the baked wordmark sat on the
+            // reference device, so the layout is unchanged where it was right.
+            const _AuthWordmark(),
+          ],
+        ),
       ),
     );
   }
@@ -622,7 +639,7 @@ class _AuthWordmark extends StatelessWidget {
             Text(
               'BaiSapar',
               style: TextStyle(
-                color: Colors.white,
+                color: SmartTaxiColors.brandDeep,
                 fontSize: 38 * scale,
                 height: 1,
                 fontWeight: FontWeight.w800,
@@ -633,7 +650,7 @@ class _AuthWordmark extends StatelessWidget {
             Container(
               width: 64 * scale,
               height: 1,
-              color: Colors.white.withValues(alpha: 0.55),
+              color: SmartTaxiColors.brand.withValues(alpha: 0.42),
             ),
             SizedBox(height: 12 * scale),
             Text(
@@ -642,7 +659,7 @@ class _AuthWordmark extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13 * scale,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withValues(alpha: 0.86),
+                color: SmartTaxiColors.authInk.withValues(alpha: 0.72),
                 letterSpacing: 2.4 * scale,
               ),
             ),
