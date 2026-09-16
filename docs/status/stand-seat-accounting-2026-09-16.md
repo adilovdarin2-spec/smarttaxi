@@ -75,6 +75,25 @@ counter-mismatch and overcommitment counts, never personal data or row IDs.
 Local post-cleanup report: zero live entries and zero mismatches. This is an
 empty-state audit, not proof that historical records elsewhere were repaired.
 
+## Published and read-only production verification
+
+Commit `05549cf` pushed to `origin/dev`. Both Railway deployments completed
+with `SUCCESS` using existing root Dockerfiles and unchanged service settings:
+
+- API `5164747b-985f-4fd0-a27a-74bf720486f3`.
+- Web `9af7ffce-f6df-486b-9987-2858f8081df8`.
+
+Public `/order`, `index-DtxNf6vQ.js` and `DriverApp-DUaX9WB5.js` returned HTTP
+200, with pending/manual seat guards present in the served driver bundle.
+Readiness remains 503 solely for the existing unconfigured SMS gate; DB,
+Redis and OSRM checks are healthy. No gate was relaxed.
+
+The aggregate accounting report was also run in the deployed API container
+using the existing Railway SSH access: zero live entries, zero mismatches,
+zero overcommitted entries. It used a READ ONLY transaction, emitted no
+personal data, and made no production reservation/account/queue writes.
+An empty live queue is not a claim that all historical records were checked.
+
 ## Android candidate and remaining gates
 
 Fresh profile QA APK:
@@ -89,3 +108,8 @@ Unchanged gates: real-device/background/road QA, full authoritative house
 and entrance data, SMS, merchant/legal setup and store signing. This pass
 does not certify every queue handover/promotion/closure interleaving or
 historical accounting; these must not be inferred from green unit tests.
+
+Next queue review: receiving a transferred turn currently follows a separate
+path from ordinary join. Inspect receiver online/busy status, freshness of
+stored coordinates, and multi-driver promotion/swap concurrency with isolated
+local fixtures before calling the full stand lifecycle verified.
