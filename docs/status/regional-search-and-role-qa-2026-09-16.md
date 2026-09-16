@@ -76,3 +76,21 @@ causes that detour. No straight-line shortcut was substituted.
 Physical Android navigation, background GPS/push, legal/merchant/SMS setup,
 official address completeness and production load acceptance remain separate
 release gates. No production accounts or orders were used for QA.
+
+## Published and verified
+
+- Code commit: `5f92b87`, pushed to `origin/dev`.
+- Railway API deployment `cfdae719-20c3-4081-b3b3-efad7b581bb9` completed
+  with status `SUCCESS` on 2026-09-16. Existing `Dockerfile.api` was used;
+  production seed remained disabled. No environment settings were changed.
+- Public read-only checks passed: 13 reordered catalogue searches and 13
+  exact point resolutions, one known sample per active region. Searches used
+  `gazetteer`; point resolutions used `gazetteer_reverse` without fallback.
+  These post-deploy point checks do not replace the local footprint test above.
+- `29 Амангелды` in Атакент returns house 29 before 29 А from the catalogue.
+  Observed public request took 308 ms (single request, not a latency guarantee).
+- Public liveness is HTTP 200. Readiness remains HTTP 503 because production
+  SMS is not configured; PostgreSQL, Redis and OSRM checks passed. This release
+  does not bypass readiness or claim that external release gates are complete.
+- Both web and Android clients use the corrected API; no new APK is needed
+  for this backend-only search fix. No phone/physical GPS test was performed.
