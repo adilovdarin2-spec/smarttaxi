@@ -13,6 +13,10 @@ const routeSmoke = readFileSync(
   new URL("./smoke-route-selection.js", import.meta.url),
   "utf8",
 );
+const driverDocumentsSmoke = readFileSync(
+  new URL("./driver-documents-smoke.js", import.meta.url),
+  "utf8",
+);
 
 assert.equal(
   packageJson.scripts["smoke:qa-docker"],
@@ -26,5 +30,8 @@ assert.match(dockerSmoke, /readiness\.checks\?\.sms, "dev"/);
 assert.match(dockerSmoke, /AbortSignal\.timeout\(10_000\)/);
 assert.match(routeSmoke, /const ROUTE_QA_ATTEMPTS = 3/);
 assert.match(routeSmoke, /health\.checks\?\.osrm === "ok"/);
+assert.match(driverDocumentsSmoke, /readiness\.env, "development"/);
+assert.match(driverDocumentsSmoke, /readiness\.checks\?\.sms, "dev"/);
+assert.match(driverDocumentsSmoke, /token: applicantToken,[\s\S]*fullName: "Smoke Test Applicant"/);
 
-console.log("Smoke orchestration: 9 passed.");
+console.log("Smoke orchestration: 12 passed.");

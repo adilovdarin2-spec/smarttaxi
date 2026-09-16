@@ -1,7 +1,7 @@
-// Live smoke test for driver document upload + admin review. Requires a
-// running API (npm run dev) against a seeded database (npm run seed) — hits
-// real HTTP endpoints, PostgreSQL-backed file storage, and a real
-// DB, so it is not part of `npm test`. Run with: npm run smoke:driver-documents
+// Live smoke test for authenticated applicant/driver document upload and
+// admin review. Requires a local development API against a seeded database —
+// hits real HTTP endpoints, PostgreSQL-backed file storage, and a real DB, so
+// it is not part of `npm test`. Run with: npm run smoke:driver-documents
 import assert from "node:assert/strict";
 
 const API_URL = (process.env.API_URL || "http://127.0.0.1:4000").replace(/\/$/, "");
@@ -36,18 +36,44 @@ async function login(phone, password) {
   return request("/api/auth/login/password", { method: "POST", body: { phone, password } });
 }
 
+const readyResponse = await fetch(`${API_URL}/api/health/ready`, { signal: AbortSignal.timeout(10_000) });
+const readiness = await readyResponse.json().catch(() => ({}));
+assert.equal(readyResponse.ok, true, "driver document smoke requires a ready local API");
+assert.equal(readiness.env, "development", "driver document smoke is development-only");
+assert.equal(readiness.checks?.sms, "dev", "driver document smoke requires the local dev SMS provider");
+
 const ownerLogin = await login("+77000000099", "ChangeMe_2026!");
 const ownerToken = ownerLogin.token;
 const driverLogin = await login("+77000000000", "123456");
 const driverToken = driverLogin.token;
 
-// --- unauthenticated application-scoped flow ---
+// --- authenticated, application-owned flow ---
 const suffix = String(Date.now()).slice(-7);
-const application = await request("/api/admin/driver-applications", {
+const applicantPhone = `+7707${suffix}`;
+const sent = await request("/api/auth/sms/send", {
+  method: "POST",
+  body: { phone: applicantPhone, purpose: "REGISTER" }
+});
+const verified = await request("/api/auth/sms/verify", {
+  method: "POST",
+  body: { phone: applicantPhone, purpose: "REGISTER", code: sent.devCode }
+});
+const applicant = await request("/api/auth/register/password", {
   method: "POST",
   body: {
+    phone: applicantPhone,
+    verificationToken: verified.verificationToken,
+    name: "Smoke Test Applicant",
+    password: "123456"
+  }
+});
+const applicantToken = applicant.token;
+const application = await request("/api/admin/driver-applications", {
+  method: "POST",
+  token: applicantToken,
+  body: {
     fullName: "Smoke Test Applicant",
-    phone: `+7707${suffix}`,
+    phone: applicantPhone,
     carModel: "Toyota Camry",
     plateNumber: `SMK${suffix}`.slice(0, 10)
   }
@@ -56,19 +82,21 @@ assert.ok(application.application?.id, "driver application is created");
 const applicationId = application.application.id;
 
 const uploadedAppDoc = await uploadFile(`/api/driver-applications/${applicationId}/documents`, {
+  token: applicantToken,
   type: "DRIVER_LICENSE_FRONT"
 });
-assert.equal(uploadedAppDoc.status, 201, "unauthenticated applicant can upload a document for their application");
+assert.equal(uploadedAppDoc.status, 201, "authenticated applicant can upload a document for their application");
 assert.equal(uploadedAppDoc.data.document.status, "PENDING", "uploaded document starts pending review");
 
 const rejectedMime = await uploadFile(`/api/driver-applications/${applicationId}/documents`, {
+  token: applicantToken,
   type: "DRIVER_LICENSE_BACK",
   mimeType: "text/plain",
   filename: "not-a-photo.txt"
 });
 assert.equal(rejectedMime.status, 400, "unsupported mime types are rejected");
 
-const appDocsAsApplicant = await request(`/api/driver-applications/${applicationId}/documents`);
+const appDocsAsApplicant = await request(`/api/driver-applications/${applicationId}/documents`, { token: applicantToken });
 assert.equal(appDocsAsApplicant.documents.length, 1, "the application-scoped list only shows successfully uploaded documents");
 
 const appDocsAsAdmin = await request(`/api/admin/driver-applications/${applicationId}/documents`, { token: ownerToken });
