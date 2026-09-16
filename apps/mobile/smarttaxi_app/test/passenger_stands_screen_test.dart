@@ -237,6 +237,14 @@ void main() {
     expect(find.text('Машины на стоянке'), findsOneWidget);
     expect(find.text('Забронировать место'), findsOneWidget);
     expect(find.byKey(const ValueKey('stand_call_hint')), findsOneWidget);
+    expect(
+      tester
+          .widget<DraggableScrollableSheet>(
+            find.byType(DraggableScrollableSheet),
+          )
+          .initialChildSize,
+      0.6,
+    );
   });
 
   testWidgets('an empty stand does not tell the rider to call a missing driver',
@@ -282,6 +290,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('stand_call_hint')), findsNothing);
+    expect(
+      tester
+          .widget<DraggableScrollableSheet>(
+            find.byType(DraggableScrollableSheet),
+          )
+          .initialChildSize,
+      0.35,
+    );
   });
 }
 

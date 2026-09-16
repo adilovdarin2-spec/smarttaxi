@@ -713,8 +713,9 @@ class PassengerStandSheet extends StatelessWidget {
     // the line is waiting its turn, and offering a seat in one would promise
     // something the driver cannot deliver.
     final boarding = current.boarding;
+    final compactEmptyState = boarding.isEmpty && error == null;
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
+      initialChildSize: compactEmptyState ? 0.35 : 0.6,
       minChildSize: 0.35,
       maxChildSize: 0.92,
       expand: false,

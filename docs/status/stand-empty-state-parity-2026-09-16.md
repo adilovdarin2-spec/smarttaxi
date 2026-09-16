@@ -11,6 +11,9 @@ contradicted it and offered an impossible action.
 
 - Flutter renders `standCallToConfirm` only when at least one `BOARDING` entry
   is actually offered to the rider.
+- The normal empty Flutter sheet starts at its compact 35% extent instead of
+  leaving a mostly blank 60% panel over the map; populated and error states
+  keep the larger extent.
 - Web applies the same `boarding.length > 0` rule.
 - Regression coverage checks both the populated and empty Flutter states and
   guards the matching web condition.
