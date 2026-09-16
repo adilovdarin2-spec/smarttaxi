@@ -77,6 +77,7 @@ test('a bare web preview proxies the temporary API, while local Docker QA docume
   assert.match(viteConfig, /"\/api"/);
   assert.match(viteConfig, /"\/socket\.io"/);
   assert.match(viteConfig, /target: "https:\/\/smarttaxi-api-production-c518\.up\.railway\.app"/);
+  assert.doesNotMatch(viteConfig, /target: "wss:\/\//);
   assert.match(envExample, /VITE_API_URL=http:\/\/127\.0\.0\.1:4001/);
   assert.match(envExample, /VITE_SOCKET_URL=http:\/\/127\.0\.0\.1:4001/);
 });

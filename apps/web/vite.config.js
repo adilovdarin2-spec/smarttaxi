@@ -17,7 +17,9 @@ export default defineConfig({
         secure: true,
       },
       "/socket.io": {
-        target: "wss://smarttaxi-api-production-c518.up.railway.app",
+        // Vite's proxy opens the WebSocket upgrade itself; its target must
+        // remain an HTTPS origin so polling and WebSocket transports share it.
+        target: "https://smarttaxi-api-production-c518.up.railway.app",
         changeOrigin: true,
         ws: true,
         secure: true,
