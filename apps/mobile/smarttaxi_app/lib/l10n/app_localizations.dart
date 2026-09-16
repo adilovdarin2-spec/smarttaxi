@@ -7615,6 +7615,12 @@ abstract class AppLocalizations {
   /// **'Не удалось выполнить действие'**
   String get standActionFailed;
 
+  /// No description provided for @standRefreshRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Данные стоянки не подтверждены. Обновите их перед следующим действием.'**
+  String get standRefreshRequired;
+
   /// No description provided for @standsPassengerTitle.
   ///
   /// In ru, this message translates to:

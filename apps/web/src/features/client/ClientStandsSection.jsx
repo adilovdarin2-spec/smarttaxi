@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createSocket } from "../../lib/socket.js";
+import { getToken } from "../../lib/api.js";
+import { StandSync } from "../shared/standSync.mjs";
 
 // MapLibre is a megabyte of JavaScript. The rest of this screen — the lines,
 // the cars, the phone numbers — must not wait on it, and a rider who never
@@ -33,6 +35,9 @@ const REFRESH_INTERVAL_MS = 20_000;
 const KIND_LABELS = { CITY: "По городу", INTERCITY: "Межгород" };
 
 function formatError(error) {
+  if (error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(error?.message || '')) {
+    return 'Не удалось связаться с сервером. Проверьте соединение и обновите данные.';
+  }
   return error?.message || "Не удалось выполнить действие";
 }
 
@@ -42,37 +47,60 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
   const [reservation, setReservation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(true);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const mountedRef = useRef(true);
   const openIdRef = useRef(null);
+  const openSequenceRef = useRef(0);
+  const syncRef = useRef(null);
+  if (!syncRef.current) syncRef.current = new StandSync(getToken);
 
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    syncRef.current.activate();
+    setBlocked(true);
+    setBusy(false);
+    setStands([]);
+    setReservation(null);
+    setOpenStand(null);
+    openIdRef.current = null;
+    openSequenceRef.current++;
+    return () => { mountedRef.current = false; syncRef.current.dispose(); };
+  }, [authenticated, regionId]);
 
-  const load = useCallback(async ({ silent = false } = {}) => {
+  const load = useCallback(async ({ silent = false, reconcile = false } = {}) => {
     if (!authenticated) {
       setLoading(false);
       return;
     }
+    const ticket = syncRef.current.beginRead({ reconcile });
+    if (!ticket) return;
+    const openId = openIdRef.current;
     if (!silent) setLoading(true);
     try {
       const [list, mine] = await Promise.all([
         getStands({ regionId: regionId || undefined }),
         getMyStandReservation(),
       ]);
-      if (!mountedRef.current) return;
+      if (!syncRef.current.currentRead(ticket)) return;
+      if (!Array.isArray(list.stands) || !Object.hasOwn(mine, 'reservation')) {
+        throw new Error('Сервер не подтвердил состояние стоянки');
+      }
+      const view = openId ? await getStand(openId) : null;
+      if (!syncRef.current.settleRead(ticket, true)) return;
       setStands(list.stands || []);
       setReservation(mine.reservation || null);
-      if (openIdRef.current) {
-        const view = await getStand(openIdRef.current);
-        if (mountedRef.current && openIdRef.current === view.stand.id) setOpenStand(view);
-      }
+      if (view && openIdRef.current === openId) setOpenStand(view);
+      setBlocked(false);
       setError("");
+      return mine;
     } catch (loadError) {
-      if (!mountedRef.current) return;
-      if (!silent) setError(formatError(loadError));
+      if (!syncRef.current.settleRead(ticket, false)) return;
+      setBlocked(true);
+      setError(formatError(loadError));
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (syncRef.current.currentRead(ticket)) setLoading(false);
     }
   }, [authenticated, regionId]);
 
@@ -107,34 +135,47 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
   }, [authenticated, regionId, load]);
 
   async function openStandById(standId) {
+    const sequence = ++openSequenceRef.current;
+    const token = getToken();
     setActionError("");
     try {
       const view = await getStand(standId);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || sequence !== openSequenceRef.current || token !== getToken()) return;
       openIdRef.current = standId;
       setOpenStand(view);
     } catch (openError) {
-      if (mountedRef.current) setActionError(formatError(openError));
+      if (mountedRef.current && sequence === openSequenceRef.current && token === getToken()) setActionError(formatError(openError));
     }
   }
 
   function closeStand() {
+    openSequenceRef.current++;
     openIdRef.current = null;
     setOpenStand(null);
   }
 
-  async function run(action) {
-    if (busy) return;
+  async function run(action, onSuccess) {
+    const ticket = syncRef.current.beginWrite();
+    if (!ticket) return;
     setBusy(true);
     setActionError("");
+    let actionFailure;
+    let snapshot;
     try {
       await action();
-      await load({ silent: true });
+      if (syncRef.current.currentWrite(ticket)) onSuccess?.();
     } catch (runError) {
-      if (mountedRef.current) setActionError(formatError(runError));
+      actionFailure = runError;
     } finally {
-      if (mountedRef.current) setBusy(false);
+      if (syncRef.current.currentWrite(ticket)) {
+        snapshot = await load({ silent: true, reconcile: true });
+        if (syncRef.current.finishWrite(ticket)) {
+          if (actionFailure) setActionError(formatError(actionFailure));
+          setBusy(false);
+        }
+      }
     }
+    return snapshot;
   }
 
   if (!authenticated) {
@@ -162,6 +203,12 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
 
       {error && <div className="client-stand-error" role="alert">{error}</div>}
       {actionError && <div className="client-stand-error" role="alert">{actionError}</div>}
+      {blocked && !busy && !loading && (
+        <div className="client-stand-error" role="alert">
+          Данные стоянки не подтверждены. Обновите их перед следующим действием.
+          <button type="button" className="client-stand-ghost" onClick={() => load()}>Обновить стоянки</button>
+        </div>
+      )}
 
       {reservation && (
         <article className={`client-stand-reservation${reservation.status === "CONFIRMED" ? " confirmed" : ""}`}>
@@ -182,7 +229,7 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
             <button
               type="button"
               className="client-stand-ghost"
-              disabled={busy}
+              disabled={busy || blocked}
               onClick={() => run(() => cancelStandReservation(reservation.id))}
             >
               Отменить бронь
@@ -223,19 +270,24 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
         <StandSheet
           view={openStand}
           reservation={reservation}
-          busy={busy}
+          busy={busy || blocked}
+          error={actionError || error}
+          onRefresh={() => load()}
           onClose={closeStand}
-          onReserve={(entryId, seats) => run(async () => {
-            await reserveStandSeat(entryId, { seats });
-            closeStand();
-          })}
+          onReserve={async (entryId, seats) => {
+            const snapshot = await run(() => reserveStandSeat(entryId, { seats }));
+            if (snapshot?.reservation?.entryId === entryId) {
+              setActionError('');
+              closeStand();
+            }
+          }}
         />
       )}
     </section>
   );
 }
 
-function StandSheet({ view, reservation, busy, onClose, onReserve }) {
+function StandSheet({ view, reservation, busy, error, onRefresh, onClose, onReserve }) {
   const dialogRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -273,6 +325,10 @@ function StandSheet({ view, reservation, busy, onClose, onReserve }) {
           <button type="button" className="client-stand-close" onClick={onClose} aria-label="Закрыть">×</button>
         </header>
         {view.stand.note && <p className="client-stand-note">{view.stand.note}</p>}
+        {error && <div className="client-stand-error" role="alert">
+          {error}
+          <button type="button" className="client-stand-ghost" onClick={onRefresh}>Обновить стоянки</button>
+        </div>}
 
         <h3>Машины на стоянке</h3>
         {!boarding.length ? (

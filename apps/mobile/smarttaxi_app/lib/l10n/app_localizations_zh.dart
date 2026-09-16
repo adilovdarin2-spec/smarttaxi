@@ -3985,6 +3985,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get standActionFailed => '操作失败';
 
   @override
+  String get standRefreshRequired => '站点数据尚未确认。请刷新后再进行下一步操作。';
+
+  @override
   String get standsPassengerTitle => '候客点';
 
   @override

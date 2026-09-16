@@ -4251,6 +4251,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get standActionFailed => 'Не удалось выполнить действие';
 
   @override
+  String get standRefreshRequired =>
+      'Данные стоянки не подтверждены. Обновите их перед следующим действием.';
+
+  @override
   String get standsPassengerTitle => 'Стоянки';
 
   @override

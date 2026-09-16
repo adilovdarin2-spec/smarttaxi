@@ -1802,6 +1802,7 @@
   "standDeclineRequest": "Rad etish",
   "standOutsideWarning": "Siz to‘xtash joyi hududidan tashqaridasiz ({distance} m). Joy {minutes} daqiqadan so‘ng bo‘shaydi.",
   "standActionFailed": "Amalni bajarib bo‘lmadi",
+  "standRefreshRequired": "Avtoturargoh ma’lumotlari tasdiqlanmadi. Keyingi amaldan oldin yangilang.",
   "standsPassengerTitle": "To‘xtash joylari",
   "standSheetCars": "To‘xtash joyidagi mashinalar",
   "standSheetEmpty": "Hozir to‘xtash joyida yo‘lovchi olishga tayyor mashina yo‘q.",

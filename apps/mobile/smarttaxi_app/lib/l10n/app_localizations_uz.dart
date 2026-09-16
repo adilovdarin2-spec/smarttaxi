@@ -4283,6 +4283,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get standActionFailed => 'Amalni bajarib bo‘lmadi';
 
   @override
+  String get standRefreshRequired =>
+      'Avtoturargoh ma’lumotlari tasdiqlanmadi. Keyingi amaldan oldin yangilang.';
+
+  @override
   String get standsPassengerTitle => 'To‘xtash joylari';
 
   @override

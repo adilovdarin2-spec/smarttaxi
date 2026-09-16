@@ -4242,6 +4242,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get standActionFailed => 'Әрекетті орындау мүмкін болмады';
 
   @override
+  String get standRefreshRequired =>
+      'Тұрақ деректері расталмады. Келесі әрекеттен бұрын жаңартыңыз.';
+
+  @override
   String get standsPassengerTitle => 'Тұрақтар';
 
   @override

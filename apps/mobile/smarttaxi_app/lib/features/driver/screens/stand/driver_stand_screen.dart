@@ -8,6 +8,7 @@ import '../../../../core/sockets/socket_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../shared/models.dart';
+import '../../../shared/stand_sync.dart';
 import '../../widgets/driver_common_widgets.dart';
 
 /// The driver's side of a stand: the lines nearby, their own place in one, and
@@ -57,6 +58,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   Timer? _presenceTimer;
   Timer? _refreshTimer;
   String? _joinedStandRoom;
+  final _sync = StandSync();
 
   @override
   void initState() {
@@ -67,6 +69,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
 
   @override
   void dispose() {
+    _sync.dispose();
     _presenceTimer?.cancel();
     _refreshTimer?.cancel();
     final room = _joinedStandRoom;
@@ -77,8 +80,11 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   Future<void> _bootstrap() async {
     await _refreshPosition();
     await _load();
-    _presenceTimer = Timer.periodic(_presenceInterval, (_) => _publishPresence());
-    _refreshTimer = Timer.periodic(_refreshInterval, (_) => _load(silent: true));
+    if (!mounted) return;
+    _presenceTimer =
+        Timer.periodic(_presenceInterval, (_) => _publishPresence());
+    _refreshTimer =
+        Timer.periodic(_refreshInterval, (_) => _load(silent: true));
     widget.socket.onDriverStandQueueUpdate(_onQueueEvent);
     widget.socket.onStandPersonalEvent((_, __) => _load(silent: true));
   }
@@ -119,16 +125,19 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
     }
   }
 
-  Future<void> _load({bool silent = false}) async {
+  Future<void> _load({bool silent = false, bool reconcile = false}) async {
     if (!mounted) return;
+    final ticket = _sync.beginRead(reconcile: reconcile);
+    if (ticket == null) return;
     if (!silent) setState(() => _loading = true);
     try {
       final place = await widget.api.getMyStandPlace();
+      if (!_sync.currentRead(ticket)) return;
       final stands = await widget.api.getDriverStands(
         regionId: widget.regionId,
         at: _position,
       );
-      if (!mounted) return;
+      if (!_sync.settleRead(ticket, true)) return;
       setState(() {
         _place = place;
         _stands = stands;
@@ -137,10 +146,10 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
       });
       _syncStandRoom(place.stand?.id);
     } catch (error) {
-      if (!mounted) return;
+      if (!_sync.settleRead(ticket, false)) return;
       setState(() {
         _loading = false;
-        if (!silent) _error = _readError(error);
+        _error = _readError(error);
       });
     }
   }
@@ -156,6 +165,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   Future<void> _publishPresence() async {
     if (!mounted || !_place.isInLine) return;
     await _refreshPosition();
+    if (!mounted || !_place.isInLine) return;
     try {
       final presence = await widget.api.publishStandPresence(_position);
       if (!mounted) return;
@@ -175,18 +185,22 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   }
 
   Future<void> _run(Future<void> Function() action) async {
-    if (_busy) return;
+    if (!mounted) return;
+    final ticket = _sync.beginWrite();
+    if (ticket == null) return;
     setState(() {
       _busy = true;
       _actionError = null;
     });
     try {
       await action();
-      await _load(silent: true);
     } catch (error) {
       if (mounted) setState(() => _actionError = _readError(error));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (_sync.currentWrite(ticket)) {
+        await _load(silent: true, reconcile: true);
+        if (_sync.finishWrite(ticket)) setState(() => _busy = false);
+      }
     }
   }
 
@@ -219,47 +233,51 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
           // to work on an empty screen too, which is exactly the screen a
           // driver is looking at when something is wrong.
           child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  children: [
-                    if (_loading) ...[
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                    ],
-                    if (_error != null) ...[
-                      InlineMessage(text: _error!, danger: true),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_actionError != null) ...[
-                      InlineMessage(text: _actionError!, danger: true),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_place.isInLine)
-                      DriverStandPlaceSection(
-                        place: _place,
-                        presence: _presence,
-                        busy: _busy,
-                        onAddSeat: _addSeat,
-                        onReleaseSeat: _releaseSeat,
-                        onEditOffer: _editOffer,
-                        onDepart: _depart,
-                        onLeave: _leave,
-                        onGiveTurn: _giveTurn,
-                        onRespond: _respondToReservation,
-                      )
-                    else
-                      DriverStandListSection(
-                        stands: _stands,
-                        position: _position,
-                        isOnline: widget.isOnline,
-                        busy: _busy,
-                        onJoin: _join,
-                      ),
-                  ],
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            children: [
+              if (_loading) ...[
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(),
+                  ),
                 ),
+              ],
+              if (_error != null) ...[
+                InlineMessage(text: _error!, danger: true),
+                const SizedBox(height: 12),
+              ],
+              if (_actionError != null) ...[
+                InlineMessage(text: _actionError!, danger: true),
+                const SizedBox(height: 12),
+              ],
+              if (_sync.blocked && !_busy && !_loading) ...[
+                InlineMessage(text: l10n.standRefreshRequired, danger: true),
+                const SizedBox(height: 12),
+              ],
+              if (_place.isInLine)
+                DriverStandPlaceSection(
+                  place: _place,
+                  presence: _presence,
+                  busy: _busy || _sync.blocked,
+                  onAddSeat: _addSeat,
+                  onReleaseSeat: _releaseSeat,
+                  onEditOffer: _editOffer,
+                  onDepart: _depart,
+                  onLeave: _leave,
+                  onGiveTurn: _giveTurn,
+                  onRespond: _respondToReservation,
+                )
+              else
+                DriverStandListSection(
+                  stands: _stands,
+                  position: _position,
+                  isOnline: widget.isOnline,
+                  busy: _busy || _sync.blocked,
+                  onJoin: _join,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -382,8 +400,8 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
 
   Future<void> _respondToReservation(
       StandSeatReservation reservation, bool accept) async {
-    await _run(() => widget.api
-        .respondToStandReservation(reservation.id, accept: accept));
+    await _run(() =>
+        widget.api.respondToStandReservation(reservation.id, accept: accept));
   }
 }
 
@@ -464,7 +482,8 @@ class _StandCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
-    final distance = position == null ? stand.distanceM : stand.distanceFrom(position!);
+    final distance =
+        position == null ? stand.distanceM : stand.distanceFrom(position!);
     final inside = position != null && stand.containsPoint(position!);
     // The button is only offered when the driver is actually standing there
     // and on the line: the server refuses otherwise, and a button that only
@@ -484,7 +503,9 @@ class _StandCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                stand.isIntercity ? Icons.alt_route_rounded : Icons.local_taxi_rounded,
+                stand.isIntercity
+                    ? Icons.alt_route_rounded
+                    : Icons.local_taxi_rounded,
                 color: palette.brand,
               ),
               const SizedBox(width: 10),
@@ -514,7 +535,9 @@ class _StandCard extends StatelessWidget {
             runSpacing: 4,
             children: [
               _Chip(
-                text: stand.isIntercity ? l10n.standKindIntercity : l10n.standKindCity,
+                text: stand.isIntercity
+                    ? l10n.standKindIntercity
+                    : l10n.standKindCity,
               ),
               _Chip(text: l10n.standCarsInLine(stand.driversCount)),
               if (stand.driversCount > 0)
@@ -615,7 +638,9 @@ class DriverStandPlaceSection extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                boarding ? l10n.standYourTurnTitle : l10n.standPositionLabel(position),
+                boarding
+                    ? l10n.standYourTurnTitle
+                    : l10n.standPositionLabel(position),
                 style: TextStyle(
                   color: boarding ? palette.success : palette.brand,
                   fontSize: 16,
@@ -624,7 +649,9 @@ class DriverStandPlaceSection extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                boarding ? l10n.standYourTurnText : l10n.standWaitTurnText(ahead),
+                boarding
+                    ? l10n.standYourTurnText
+                    : l10n.standWaitTurnText(ahead),
                 style: TextStyle(color: palette.textSecondary, fontSize: 13.5),
               ),
               const SizedBox(height: 16),
@@ -744,8 +771,9 @@ class _SeatCounter extends StatelessWidget {
                 width: 56,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed:
-                      !busy && enabled && entry.takenSeats > 0 ? onRelease : null,
+                  onPressed: !busy && enabled && entry.takenSeats > 0
+                      ? onRelease
+                      : null,
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(56, 52),
@@ -817,14 +845,15 @@ class _OfferSummary extends StatelessWidget {
                     entry.pricePerSeat == null
                         ? l10n.standNoPriceYet
                         : l10n.standPricePerSeatValue('${entry.pricePerSeat}'),
-                    style: TextStyle(
-                        color: palette.textSecondary, fontSize: 13.5),
+                    style:
+                        TextStyle(color: palette.textSecondary, fontSize: 13.5),
                   ),
                   if (entry.comment.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       entry.comment,
-                      style: TextStyle(color: palette.textMuted, fontSize: 12.5),
+                      style:
+                          TextStyle(color: palette.textMuted, fontSize: 12.5),
                     ),
                   ],
                 ],
@@ -927,7 +956,8 @@ class _QueueRow extends StatelessWidget {
             child: Text(
               '${entry.position ?? '—'}',
               style: TextStyle(
-                color: entry.isBoarding ? palette.success : palette.textSecondary,
+                color:
+                    entry.isBoarding ? palette.success : palette.textSecondary,
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
               ),
@@ -1168,31 +1198,31 @@ class _SeatSourceSheet extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SheetHandle(),
-          const SizedBox(height: 8),
-          Text(
-            l10n.standSeatSourceTitle,
-            style: TextStyle(
-              color: palette.text,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SheetHandle(),
+            const SizedBox(height: 8),
+            Text(
+              l10n.standSeatSourceTitle,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          ListTile(
-            leading: const Icon(Icons.phone_in_talk_rounded),
-            title: Text(l10n.standSeatSourcePhone),
-            onTap: () => Navigator.of(context).pop('PHONE'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.directions_walk_rounded),
-            title: Text(l10n.standSeatSourceWalkIn),
-            onTap: () => Navigator.of(context).pop('WALK_IN'),
-          ),
-        ],
+            const SizedBox(height: 14),
+            ListTile(
+              leading: const Icon(Icons.phone_in_talk_rounded),
+              title: Text(l10n.standSeatSourcePhone),
+              onTap: () => Navigator.of(context).pop('PHONE'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.directions_walk_rounded),
+              title: Text(l10n.standSeatSourceWalkIn),
+              onTap: () => Navigator.of(context).pop('WALK_IN'),
+            ),
+          ],
         ),
       ),
     );
@@ -1217,42 +1247,43 @@ class _GiveTurnSheet extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SheetHandle(),
-          const SizedBox(height: 8),
-          Text(
-            l10n.standGiveTurnTitle,
-            style: TextStyle(
-              color: palette.text,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (candidates.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                l10n.standGiveTurnEmpty,
-                style: TextStyle(color: palette.textSecondary),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SheetHandle(),
+            const SizedBox(height: 8),
+            Text(
+              l10n.standGiveTurnTitle,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
               ),
-            )
-          else
-            ...candidates.map(
-              (entry) => ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: palette.brandSurface,
-                  child: Text('${entry.position ?? '—'}'),
+            ),
+            const SizedBox(height: 12),
+            if (candidates.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  l10n.standGiveTurnEmpty,
+                  style: TextStyle(color: palette.textSecondary),
                 ),
-                title: Text(
-                    entry.carLabel.isEmpty ? entry.driverName : entry.carLabel),
-                subtitle: Text(entry.plate),
-                onTap: () => Navigator.of(context).pop(entry.driverId),
+              )
+            else
+              ...candidates.map(
+                (entry) => ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: palette.brandSurface,
+                    child: Text('${entry.position ?? '—'}'),
+                  ),
+                  title: Text(entry.carLabel.isEmpty
+                      ? entry.driverName
+                      : entry.carLabel),
+                  subtitle: Text(entry.plate),
+                  onTap: () => Navigator.of(context).pop(entry.driverId),
+                ),
               ),
-            ),
-        ],
+          ],
         ),
       ),
     );

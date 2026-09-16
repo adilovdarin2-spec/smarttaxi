@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createSocket } from "../../lib/socket.js";
+import { getToken } from "../../lib/api.js";
+import { StandSync } from "../shared/standSync.mjs";
 import {
   addStandSeats,
   departStandQueue,
@@ -32,6 +34,9 @@ const REFRESH_INTERVAL_MS = 20_000;
 const KIND_LABELS = { CITY: "По городу", INTERCITY: "Межгород" };
 
 function formatError(error) {
+  if (error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(error?.message || '')) {
+    return 'Не удалось связаться с сервером. Проверьте соединение и обновите данные.';
+  }
   return error?.message || "Не удалось выполнить действие";
 }
 
@@ -41,16 +46,36 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
   const [presence, setPresence] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(true);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [offerDraft, setOfferDraft] = useState(null);
   const mountedRef = useRef(true);
+  const feedbackRef = useRef(null);
+  const syncRef = useRef(null);
+  if (!syncRef.current) syncRef.current = new StandSync(getToken);
   const positionRef = useRef(position);
   positionRef.current = position;
 
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  useEffect(() => {
+    if (busy || (!blocked && !actionError)) return undefined;
+    const frame = requestAnimationFrame(() => feedbackRef.current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, [busy, blocked, actionError]);
 
-  const load = useCallback(async ({ silent = false } = {}) => {
+  useEffect(() => {
+    mountedRef.current = true;
+    syncRef.current.activate();
+    setBlocked(true);
+    setBusy(false);
+    setStands([]);
+    setPlace({ entry: null, stand: null, queue: [] });
+    return () => { mountedRef.current = false; syncRef.current.dispose(); };
+  }, [regionId]);
+
+  const load = useCallback(async ({ silent = false, reconcile = false } = {}) => {
+    const ticket = syncRef.current.beginRead({ reconcile });
+    if (!ticket) return;
     if (!silent) setLoading(true);
     try {
       const [mine, list] = await Promise.all([
@@ -61,15 +86,20 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
           lng: positionRef.current?.lng,
         }),
       ]);
-      if (!mountedRef.current) return;
+      if (!Array.isArray(list.stands) || !Object.hasOwn(mine, 'entry')) {
+        throw new Error('Сервер не подтвердил состояние стоянки');
+      }
+      if (!syncRef.current.settleRead(ticket, true)) return;
       setPlace({ entry: mine.entry || null, stand: mine.stand || null, queue: mine.queue || [] });
       setStands(list.stands || []);
+      setBlocked(false);
       setError("");
     } catch (loadError) {
-      if (!mountedRef.current) return;
-      if (!silent) setError(formatError(loadError));
+      if (!syncRef.current.settleRead(ticket, false)) return;
+      setBlocked(true);
+      setError(formatError(loadError));
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (syncRef.current.currentRead(ticket)) setLoading(false);
     }
   }, [regionId]);
 
@@ -131,19 +161,34 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
     return () => { cancelled = true; clearInterval(timer); };
   }, [place.entry?.id]);
 
-  async function run(action) {
-    if (busy) return;
+  async function run(action, onSuccess) {
+    const ticket = syncRef.current.beginWrite();
+    if (!ticket) return;
     setBusy(true);
     setActionError("");
+    let actionFailure;
     try {
       await action();
-      await load({ silent: true });
+      if (syncRef.current.currentWrite(ticket)) onSuccess?.();
     } catch (runError) {
-      if (mountedRef.current) setActionError(formatError(runError));
+      actionFailure = runError;
     } finally {
-      if (mountedRef.current) setBusy(false);
+      if (syncRef.current.currentWrite(ticket)) {
+        await load({ silent: true, reconcile: true });
+        if (syncRef.current.finishWrite(ticket)) {
+          if (actionFailure) setActionError(formatError(actionFailure));
+          setBusy(false);
+        }
+      }
     }
   }
+
+  const syncNotice = blocked && !busy && !loading && (
+    <div className="driver-core-error" role="alert" ref={feedbackRef}>
+      Данные стоянки не подтверждены. Обновите их перед следующим действием.
+      <button type="button" className="driver-stand-blocked-action" onClick={() => load()}>Обновить стоянки</button>
+    </div>
+  );
 
   const entry = place.entry;
 
@@ -154,8 +199,9 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
   if (entry) {
     return (
       <section className="driver-stands">
+        {syncNotice}
         {error && <div className="driver-core-error" role="alert">{error}</div>}
-        {actionError && <div className="driver-core-error" role="alert">{actionError}</div>}
+        {actionError && !blocked && <div className="driver-core-error" role="alert" ref={feedbackRef}>{actionError}</div>}
         {presence?.inside === false && (
           <div className="driver-core-error" role="alert">
             Вы вне зоны стоянки ({metres(presence.distanceM)}). Место освободится через{" "}
@@ -164,15 +210,12 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
         )}
         <MyPlaceCard
           place={place}
-          busy={busy}
+          busy={busy || blocked}
           offerDraft={offerDraft}
           setOfferDraft={setOfferDraft}
           onAddSeat={source => run(() => addStandSeats(entry.id, { seats: 1, source }))}
           onReleaseSeat={() => run(() => releaseStandSeats(entry.id, 1))}
-          onSaveOffer={draft => run(async () => {
-            await updateStandOffer(entry.id, draft);
-            setOfferDraft(null);
-          })}
+          onSaveOffer={draft => run(() => updateStandOffer(entry.id, draft), () => setOfferDraft(null))}
           onDepart={() => run(() => departStandQueue(entry.id))}
           onLeave={() => run(() => leaveStandQueue(entry.id))}
           onGiveTurn={driverId => run(() => handOverStandTurn(entry.id, driverId))}
@@ -184,8 +227,9 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
 
   return (
     <section className="driver-stands">
+      {syncNotice}
       {error && <div className="driver-core-error" role="alert">{error}</div>}
-      {actionError && <div className="driver-core-error" role="alert">{actionError}</div>}
+      {actionError && !blocked && <div className="driver-core-error" role="alert" ref={feedbackRef}>{actionError}</div>}
       <div className="driver-core-section-title">
         <strong>Стоянки рядом</strong>
         <span>{stands.length}</span>
@@ -202,7 +246,7 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
             stand={stand}
             position={position}
             isOnline={isOnline}
-            busy={busy}
+            busy={busy || blocked}
             onJoin={draft => run(() => joinStandQueue(stand.id, {
               lat: position.lat,
               lng: position.lng,

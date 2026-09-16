@@ -774,6 +774,7 @@ class ApiClient {
       _postOrderAction('/api/orders/$orderId/complete');
   Future<OrderSummary> noShow(String orderId) =>
       _postOrderAction('/api/orders/$orderId/no-show');
+
   /// The reason is the only thing separating "the rider never came out" from a
   /// trip quietly taken off the books, and the server cannot tell them apart on
   /// its own. Optional so an older flow still works, but its absence is itself
@@ -1771,7 +1772,12 @@ class ApiClient {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/stands/reservations/me');
     final data = response.data;
-    if (data is! Map || data['reservation'] is! Map) return null;
+    if (data is! Map ||
+        !data.containsKey('reservation') ||
+        (data['reservation'] != null && data['reservation'] is! Map)) {
+      throw const FormatException('Stand reservation state is missing');
+    }
+    if (data['reservation'] == null) return null;
     return StandSeatReservation.fromJson(
       Map<String, dynamic>.from(data['reservation'] as Map),
     );
@@ -1802,6 +1808,12 @@ class ApiClient {
   Future<MyStandPlace> getMyStandPlace() async {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/driver/stands/me');
+    final data = response.data;
+    if (data is! Map ||
+        !data.containsKey('entry') ||
+        (data['entry'] != null && data['entry'] is! Map)) {
+      throw const FormatException('Stand queue state is missing');
+    }
     return MyStandPlace.fromJson(
       response.data is Map
           ? Map<String, dynamic>.from(response.data as Map)
@@ -1811,7 +1823,8 @@ class ApiClient {
 
   Future<StandQueueView> getDriverStandQueue(String standId) async {
     await _attachToken();
-    final response = await _dio.get<dynamic>('/api/driver/stands/$standId/queue');
+    final response =
+        await _dio.get<dynamic>('/api/driver/stands/$standId/queue');
     return StandQueueView.fromJson(
       response.data is Map
           ? Map<String, dynamic>.from(response.data as Map)
@@ -1901,7 +1914,8 @@ class ApiClient {
     );
   }
 
-  Future<MyStandPlace> releaseStandSeats(String entryId, {int seats = 1}) async {
+  Future<MyStandPlace> releaseStandSeats(String entryId,
+      {int seats = 1}) async {
     await _attachToken();
     final response = await _dio.delete<dynamic>(
       '/api/driver/stands/entries/$entryId/seats',

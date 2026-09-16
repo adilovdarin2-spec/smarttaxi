@@ -1802,6 +1802,7 @@
   "standDeclineRequest": "拒绝",
   "standOutsideWarning": "您已离开候客点范围（{distance} 米）。位置将在 {minutes} 分钟后释放。",
   "standActionFailed": "操作失败",
+  "standRefreshRequired": "站点数据尚未确认。请刷新后再进行下一步操作。",
   "standsPassengerTitle": "候客点",
   "standSheetCars": "候客点的车辆",
   "standSheetEmpty": "目前候客点没有可接客的车辆。",

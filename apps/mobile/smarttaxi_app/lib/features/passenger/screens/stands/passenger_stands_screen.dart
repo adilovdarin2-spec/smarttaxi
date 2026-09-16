@@ -11,6 +11,7 @@ import '../../../../core/sockets/socket_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../shared/models.dart';
+import '../../../shared/stand_sync.dart';
 
 /// The rider's side of a stand. A stand is a place people already know: the
 /// cars by the bazaar that leave for Шымкент when they fill up. This shows
@@ -50,6 +51,16 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
   String? _actionError;
   Timer? _refreshTimer;
   String? _joinedRoom;
+  final _sync = StandSync();
+  final _sheetRevision = ValueNotifier<int>(0);
+  BuildContext? _sheetContext;
+  int _openSequence = 0;
+
+  void _change(VoidCallback change) {
+    if (!mounted) return;
+    setState(change);
+    _sheetRevision.value++;
+  }
 
   @override
   void initState() {
@@ -63,6 +74,8 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
 
   @override
   void dispose() {
+    _sync.dispose();
+    _sheetRevision.dispose();
     _refreshTimer?.cancel();
     final room = _joinedRoom;
     if (room != null) widget.socket.leaveStand(room);
@@ -70,31 +83,36 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
     super.dispose();
   }
 
-  Future<void> _load({bool silent = false}) async {
+  Future<void> _load({bool silent = false, bool reconcile = false}) async {
     if (!mounted) return;
+    final ticket = _sync.beginRead(reconcile: reconcile);
+    if (ticket == null) return;
     if (!silent) setState(() => _loading = true);
     try {
       final stands = await widget.api.getStands(regionId: widget.regionId);
+      if (!_sync.currentRead(ticket)) return;
       final reservation = await widget.api.getMyStandReservation();
       StandQueueView? open;
       final openId = _open?.stand.id ?? widget.initialStandId;
+      final openSequence = _openSequence;
+      if (!_sync.currentRead(ticket)) return;
       if (openId != null && stands.any((stand) => stand.id == openId)) {
         open = await widget.api.getStandQueue(openId);
       }
-      if (!mounted) return;
-      setState(() {
+      if (!_sync.settleRead(ticket, true)) return;
+      _change(() {
         _stands = stands;
         _reservation = reservation;
-        if (open != null) _open = open;
+        if (open != null && openSequence == _openSequence) _open = open;
         _loading = false;
         _error = null;
       });
       _syncRoom(_open?.stand.id);
     } catch (error) {
-      if (!mounted) return;
-      setState(() {
+      if (!_sync.settleRead(ticket, false)) return;
+      _change(() {
         _loading = false;
-        if (!silent) _error = _readError(error);
+        _error = _readError(error);
       });
     }
   }
@@ -115,36 +133,47 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
   }
 
   Future<void> _openStand(TaxiStand stand) async {
-    setState(() => _actionError = null);
+    final sequence = ++_openSequence;
+    _change(() => _actionError = null);
     try {
       final view = await widget.api.getStandQueue(stand.id);
-      if (!mounted) return;
-      setState(() => _open = view);
+      if (!mounted || sequence != _openSequence) return;
+      _change(() => _open = view);
       _syncRoom(stand.id);
       _mapController.move(stand.toLatLng(), 15);
       await _showStandSheet();
     } catch (error) {
-      if (mounted) setState(() => _actionError = _readError(error));
+      if (mounted && sequence == _openSequence) {
+        _change(() => _actionError = _readError(error));
+      }
     }
   }
 
-  Future<void> _showStandSheet() {
-    return showModalBottomSheet<void>(
+  Future<void> _showStandSheet() async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, _) => PassengerStandSheet(
-          view: _open,
-          reservation: _reservation,
-          busy: _busy,
-          onCall: _call,
-          onReserve: _reserve,
-          onCancelReservation: _cancelReservation,
-          error: _actionError,
-        ),
-      ),
+      builder: (context) {
+        _sheetContext = context;
+        return ValueListenableBuilder<int>(
+          valueListenable: _sheetRevision,
+          builder: (context, value, child) => PassengerStandSheet(
+            view: _open,
+            reservation: _reservation,
+            busy: _busy || _sync.blocked,
+            onCall: _call,
+            onReserve: _reserve,
+            onCancelReservation: _cancelReservation,
+            error: _sync.blocked && !_busy
+                ? AppLocalizations.of(context).standRefreshRequired
+                : _actionError ?? _error,
+            onRefresh: _busy ? null : () => _load(),
+          ),
+        );
+      },
     );
+    _sheetContext = null;
   }
 
   Future<void> _call(String phone) async {
@@ -155,46 +184,52 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
   }
 
   Future<void> _reserve(StandQueueEntry entry) async {
+    if (_busy || _sync.blocked) return;
     final seats = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => _SeatCountSheet(maxSeats: entry.freeSeats),
     );
-    if (seats == null) return;
-    setState(() {
-      _busy = true;
-      _actionError = null;
+    if (seats == null || !mounted) return;
+    await _run(() async {
+      await widget.api.reserveStandSeat(entry.id, seats: seats);
     });
-    try {
-      final reservation =
-          await widget.api.reserveStandSeat(entry.id, seats: seats);
-      if (!mounted) return;
-      setState(() => _reservation = reservation);
-      await _load(silent: true);
-    } catch (error) {
-      if (mounted) setState(() => _actionError = _readError(error));
-    } finally {
-      if (mounted) setState(() => _busy = false);
+    // Close only this sheet, never the passenger route after the user has
+    // already dismissed it while the network request was in flight.
+    final sheet = _sheetContext;
+    if (mounted &&
+        sheet != null &&
+        sheet.mounted &&
+        _reservation?.entryId == entry.id &&
+        !_sync.blocked) {
+      _change(() => _actionError = null);
+      Navigator.of(sheet).pop();
     }
-    if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
   }
 
   Future<void> _cancelReservation() async {
     final reservation = _reservation;
     if (reservation == null) return;
-    setState(() {
+    await _run(() => widget.api.cancelStandReservation(reservation.id));
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (!mounted) return;
+    final ticket = _sync.beginWrite();
+    if (ticket == null) return;
+    _change(() {
       _busy = true;
       _actionError = null;
     });
     try {
-      await widget.api.cancelStandReservation(reservation.id);
-      if (!mounted) return;
-      setState(() => _reservation = null);
-      await _load(silent: true);
+      await action();
     } catch (error) {
-      if (mounted) setState(() => _actionError = _readError(error));
+      if (mounted) _change(() => _actionError = _readError(error));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (_sync.currentWrite(ticket)) {
+        await _load(silent: true, reconcile: true);
+        if (_sync.finishWrite(ticket)) _change(() => _busy = false);
+      }
     }
   }
 
@@ -213,6 +248,13 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(l10n.standsPassengerTitle),
+        actions: [
+          IconButton(
+            onPressed: _busy ? null : () => _load(),
+            icon: const Icon(Icons.refresh),
+            tooltip: l10n.retry,
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -273,8 +315,10 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
               child: _StandList(
                 stands: _stands,
                 reservation: _reservation,
-                error: _error,
-                busy: _busy,
+                error: _sync.blocked && !_busy && !_loading
+                    ? l10n.standRefreshRequired
+                    : _actionError ?? _error,
+                busy: _busy || _sync.blocked,
                 onOpen: _openStand,
                 onCancelReservation: _cancelReservation,
               ),
@@ -596,6 +640,7 @@ class PassengerStandSheet extends StatelessWidget {
     required this.onReserve,
     required this.onCancelReservation,
     required this.error,
+    this.onRefresh,
   });
 
   final StandQueueView? view;
@@ -605,6 +650,7 @@ class PassengerStandSheet extends StatelessWidget {
   final Future<void> Function(StandQueueEntry entry) onReserve;
   final Future<void> Function() onCancelReservation;
   final String? error;
+  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -666,6 +712,12 @@ class PassengerStandSheet extends StatelessWidget {
             if (error != null) ...[
               const SizedBox(height: 12),
               _Notice(text: error!, danger: true),
+              if (onRefresh != null)
+                OutlinedButton.icon(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l10n.retry),
+                ),
             ],
             const SizedBox(height: 18),
             Text(
