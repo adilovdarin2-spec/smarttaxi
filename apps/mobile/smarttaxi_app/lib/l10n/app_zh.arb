@@ -1768,6 +1768,8 @@
   "standJoinTooFar": "请走近候客点后再加入排队",
   "standJoinNeedsLocation": "请开启定位后再加入排队",
   "standPresenceNeedsLocation": "无法确认位置。请开启精确定位以保留排队位置。",
+  "standPendingSeats": "待确认座位：{count}",
+  "standManualReleaseHint": "“−”仅释放电话或现场添加的座位。应用内预订需由乘客取消。",
   "standJoinNeedsOnline": "请先上线再加入排队",
   "standYourPlaceTitle": "您的排队位置",
   "standPositionLabel": "排队第 {position} 位",

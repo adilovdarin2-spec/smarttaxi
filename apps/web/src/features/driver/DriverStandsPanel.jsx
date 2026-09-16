@@ -412,11 +412,13 @@ function MyPlaceCard({
         <div className="driver-stand-seats">
           <span>Места</span>
           <strong>{entry.takenSeats} из {entry.totalSeats}</strong>
+          {entry.pendingSeats > 0 && <p>Ожидают подтверждения: {entry.pendingSeats} {plural(entry.pendingSeats, 'место', 'места', 'мест')}</p>}
+          {entry.takenSeats > 0 && !entry.manualSeats && <p>Кнопка «−» освобождает только места по звонку или на месте. Бронь из приложения отменяет пассажир.</p>}
           <div className="driver-stand-seat-actions">
             <button
               type="button"
               onClick={onReleaseSeat}
-              disabled={busy || !boarding || entry.takenSeats <= 0}
+              disabled={busy || !boarding || !entry.manualSeats}
               aria-label="Освободить место"
             >
               −
@@ -477,7 +479,7 @@ function MyPlaceCard({
                 {[1, 2, 3, 4, 5, 6, 7, 8]
                   // Lowering the total below what is already taken would strand
                   // a rider who is already counted in.
-                  .filter(value => value >= entry.takenSeats || value === Number(offerDraft.totalSeats))
+                  .filter(value => value >= entry.takenSeats + (entry.pendingSeats || 0) || value === Number(offerDraft.totalSeats))
                   .map(value => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>
@@ -525,7 +527,7 @@ function MyPlaceCard({
 
         {handoverOpen && (
           <div className="driver-stand-handover">
-            {entry.takenSeats > 0 ? (
+            {entry.takenSeats + (entry.pendingSeats || 0) > 0 ? (
               <p>Сначала освободите занятые места.</p>
             ) : !others.length ? (
               <p>В очереди нет других водителей.</p>

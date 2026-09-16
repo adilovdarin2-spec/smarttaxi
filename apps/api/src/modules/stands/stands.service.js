@@ -86,7 +86,8 @@ export function publicQueueEntry(row, { audience = "DRIVER", position = null, re
     pricePerSeat: number(row.price_per_seat),
     totalSeats: Number(row.total_seats),
     takenSeats: Number(row.taken_seats),
-    freeSeats: Math.max(0, Number(row.total_seats) - Number(row.taken_seats)),
+    pendingSeats: Number(row.pending_seats || 0),
+    freeSeats: Math.max(0, Number(row.total_seats) - Number(row.taken_seats) - Number(row.pending_seats || 0)),
     comment: row.comment || "",
     joinedAt: row.joined_at,
     boardingStartedAt: row.boarding_started_at,
@@ -102,6 +103,7 @@ export function publicQueueEntry(row, { audience = "DRIVER", position = null, re
   if (audience === "CLIENT") return base;
   return {
     ...base,
+    manualSeats: Math.min(Number(row.taken_seats), Number(row.manual_seats || 0)),
     queueSeq: row.queue_seq == null ? null : Number(row.queue_seq),
     regionId: row.region_id,
     lastSeenAt: row.last_seen_at,
@@ -176,9 +178,23 @@ function translateUniqueViolation(error) {
   return build ? build() : error;
 }
 
+const PENDING_SEATS_SQL = `(SELECT COALESCE(SUM(res.seats), 0)
+  FROM taxi_stand_seat_reservations res
+  WHERE res.entry_id=e.id AND res.status='PENDING'
+    AND (res.expires_at IS NULL OR res.expires_at > NOW()))`;
+
 const ENTRY_SELECT = `
-  e.*, d.name driver_name, d.phone driver_phone, d.car_model, d.car_color, d.plate, d.rating
+  e.*, d.name driver_name, d.phone driver_phone, d.car_model, d.car_color, d.plate, d.rating,
+  ${PENDING_SEATS_SQL} pending_seats,
+  (SELECT COALESCE(SUM(res.seats), 0) FROM taxi_stand_seat_reservations res
+   WHERE res.entry_id=e.id AND res.status='CONFIRMED' AND res.source IN ('PHONE','WALK_IN')) manual_seats
 `;
+
+async function pendingSeatsForEntry(entryId, executor) {
+  const row = (await run(executor, `SELECT ${PENDING_SEATS_SQL} pending_seats
+    FROM taxi_stand_queue_entries e WHERE e.id=$1`, [entryId])).rows[0];
+  return Number(row?.pending_seats || 0);
+}
 
 export async function loadStand(standId, executor) {
   const row = (await run(executor, `
@@ -222,8 +238,8 @@ export async function listStands({ regionId, includeInactive = false } = {}, exe
     LEFT JOIN (
       SELECT stand_id,
              COUNT(*) drivers_count,
-             SUM(GREATEST(0, total_seats - taken_seats)) FILTER (WHERE status='BOARDING') free_seats
-      FROM taxi_stand_queue_entries
+             SUM(GREATEST(0, total_seats - taken_seats - ${PENDING_SEATS_SQL})) FILTER (WHERE status='BOARDING') free_seats
+      FROM taxi_stand_queue_entries e
       WHERE status IN ${LIVE_STATUSES}
       GROUP BY stand_id
     ) live ON live.stand_id=s.id
@@ -251,6 +267,7 @@ async function listReservationsForEntries(entryIds, executor) {
     FROM taxi_stand_seat_reservations res
     LEFT JOIN clients c ON c.id=res.client_id
     WHERE res.entry_id = ANY($1::uuid[]) AND res.status IN ('PENDING','CONFIRMED')
+      AND (res.status='CONFIRMED' OR res.expires_at IS NULL OR res.expires_at > NOW())
     ORDER BY res.created_at ASC
   `, [entryIds]);
   const byEntry = new Map();
@@ -279,7 +296,7 @@ export async function standQueueView(standId, { audience = "CLIENT", forDriverId
   }));
   const boardingSeats = rows
     .filter((row) => row.status === "BOARDING")
-    .reduce((sum, row) => sum + Math.max(0, Number(row.total_seats) - Number(row.taken_seats)), 0);
+    .reduce((sum, row) => sum + Math.max(0, Number(row.total_seats) - Number(row.taken_seats) - Number(row.pending_seats || 0)), 0);
   return {
     stand: publicStand(stand, { driversCount: rows.length, freeSeats: boardingSeats }),
     entries
@@ -404,9 +421,10 @@ export async function updateOffer({ driver, entryId, patch }) {
       throw new AppError("This place in the line is closed", 409, "STAND_ENTRY_NOT_LIVE", { status: entry.status });
     }
     const totalSeats = patch.totalSeats == null ? Number(entry.total_seats) : Number(patch.totalSeats);
-    if (totalSeats < Number(entry.taken_seats)) {
+    const pendingSeats = await pendingSeatsForEntry(entryId, client);
+    if (totalSeats < Number(entry.taken_seats) + pendingSeats) {
       throw new AppError("Seats already taken exceed the new total", 409, "STAND_SEATS_BELOW_TAKEN", {
-        takenSeats: Number(entry.taken_seats)
+        takenSeats: Number(entry.taken_seats), pendingSeats
       });
     }
     const updated = (await client.query(`
@@ -441,7 +459,7 @@ export async function addSeatsManually({ driver, entryId, seats, source, comment
     if (!["WAITING", "BOARDING"].includes(entry.status)) {
       throw new AppError("This place in the line is closed", 409, "STAND_ENTRY_NOT_LIVE", { status: entry.status });
     }
-    const free = Number(entry.total_seats) - Number(entry.taken_seats);
+    const free = Number(entry.total_seats) - Number(entry.taken_seats) - await pendingSeatsForEntry(entryId, client);
     if (seats > free) {
       throw new AppError("Not enough free seats", 409, "STAND_NOT_ENOUGH_SEATS", { freeSeats: Math.max(0, free) });
     }
@@ -466,6 +484,9 @@ export async function releaseSeats({ driver, entryId, seats }) {
     const entry = (await client.query("SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE", [entryId])).rows[0];
     if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
     if (entry.driver_id !== driver.id) throw new AppError("Forbidden queue entry", 403, "FORBIDDEN_STAND_ENTRY");
+    if (!["WAITING", "BOARDING"].includes(entry.status)) {
+      throw new AppError("This place in the line is closed", 409, "STAND_ENTRY_NOT_LIVE", { status: entry.status });
+    }
     const release = Math.min(Number(seats), Number(entry.taken_seats));
     if (release <= 0) {
       throw new AppError("No seats to release", 409, "STAND_NO_TAKEN_SEATS");
@@ -473,12 +494,17 @@ export async function releaseSeats({ driver, entryId, seats }) {
     // Give back the walk-in/phone rows first: an app reservation is a named
     // rider who is on their way and must not be silently dropped because the
     // driver tapped minus once too often.
-    let remaining = release;
     const manual = (await client.query(`
       SELECT id, seats FROM taxi_stand_seat_reservations
       WHERE entry_id=$1 AND status='CONFIRMED' AND source IN ('PHONE','WALK_IN')
       ORDER BY created_at DESC
+      FOR UPDATE
     `, [entryId])).rows;
+    const manualSeats = manual.reduce((sum, row) => sum + Number(row.seats), 0);
+    if (Number(seats) > manualSeats) {
+      throw new AppError("Можно освободить только места, добавленные вручную. Бронь из приложения отменяет пассажир.", 409, "STAND_NO_MANUAL_SEATS", { manualSeats });
+    }
+    let remaining = release;
     for (const row of manual) {
       if (remaining <= 0) break;
       if (Number(row.seats) <= remaining) {
@@ -574,9 +600,10 @@ export async function handOverTurn({ driver, entryId, toDriverId }) {
       throw new AppError("This place in the line is closed", 409, "STAND_ENTRY_NOT_LIVE", { status: entry.status });
     }
     if (toDriverId === driver.id) throw new AppError("Choose another driver", 400, "STAND_HANDOVER_SELF");
-    if (Number(entry.taken_seats) > 0) {
+    const pendingSeats = await pendingSeatsForEntry(entryId, client);
+    if (Number(entry.taken_seats) > 0 || pendingSeats > 0) {
       throw new AppError("Release your booked seats before giving away the turn", 409, "STAND_HANDOVER_HAS_SEATS", {
-        takenSeats: Number(entry.taken_seats)
+        takenSeats: Number(entry.taken_seats), pendingSeats
       });
     }
 
@@ -705,6 +732,12 @@ export async function reserveSeat({ client: rider, entryId, seats, pickupLabel, 
       if (entry.status !== "BOARDING") {
         throw new AppError("This car is not taking passengers yet", 409, "STAND_ENTRY_NOT_BOARDING", { status: entry.status });
       }
+      // Do not make a passenger wait for the periodic sweeper before booking
+      // again after their previous request timed out. This only resolves
+      // expired pending holds, never a confirmed seat.
+      await dbClient.query(`UPDATE taxi_stand_seat_reservations
+        SET status='EXPIRED', updated_at=NOW()
+        WHERE client_id=$1 AND status='PENDING' AND expires_at <= clock_timestamp()`, [rider.id]);
       const existing = (await dbClient.query(`
         SELECT * FROM taxi_stand_seat_reservations
         WHERE client_id=$1 AND status IN ('PENDING','CONFIRMED')
@@ -751,10 +784,20 @@ export async function reserveSeat({ client: rider, entryId, seats, pickupLabel, 
   }
 }
 
+// Confirming/cancelling a seat locks its entry before its reservation row.
+// The reverse order deadlocks with departure (entry -> reservations).
+async function lockReservationEntry(reservationId, client) {
+  const ref = (await client.query('SELECT entry_id FROM taxi_stand_seat_reservations WHERE id=$1', [reservationId])).rows[0];
+  if (!ref) throw new AppError("Reservation not found", 404, "STAND_RESERVATION_NOT_FOUND");
+  return (await client.query('SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE', [ref.entry_id])).rows[0];
+}
+
 export async function respondToReservation({ driver, reservationId, accept }) {
   return tx(async (client) => {
+    const entry = await lockReservationEntry(reservationId, client);
     const reservation = (await client.query(`
-      SELECT res.*, c.name client_name, c.phone client_phone
+      SELECT res.*, c.name client_name, c.phone client_phone,
+        (res.expires_at IS NOT NULL AND res.expires_at <= clock_timestamp()) is_expired
       FROM taxi_stand_seat_reservations res
       LEFT JOIN clients c ON c.id=res.client_id
       WHERE res.id=$1
@@ -765,6 +808,9 @@ export async function respondToReservation({ driver, reservationId, accept }) {
     if (reservation.status !== "PENDING") {
       throw new AppError("Reservation is already resolved", 409, "STAND_RESERVATION_RESOLVED", { status: reservation.status });
     }
+    if (reservation.is_expired) {
+      throw new AppError("Время ожидания подтверждения истекло. Пассажиру нужно создать новую бронь.", 409, "STAND_RESERVATION_EXPIRED");
+    }
     if (!accept) {
       const declined = (await client.query(`
         UPDATE taxi_stand_seat_reservations
@@ -773,11 +819,11 @@ export async function respondToReservation({ driver, reservationId, accept }) {
       `, [reservationId])).rows[0];
       return { reservation: { ...declined, client_name: reservation.client_name, client_phone: reservation.client_phone }, standId: reservation.stand_id };
     }
-    const entry = (await client.query("SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE", [reservation.entry_id])).rows[0];
     if (!entry || !["WAITING", "BOARDING"].includes(entry.status)) {
       throw new AppError("This place in the line is closed", 409, "STAND_ENTRY_NOT_LIVE", { status: entry?.status || "GONE" });
     }
-    const free = Number(entry.total_seats) - Number(entry.taken_seats);
+    const otherHeld = Math.max(0, await pendingSeatsForEntry(entry.id, client) - Number(reservation.seats));
+    const free = Number(entry.total_seats) - Number(entry.taken_seats) - otherHeld;
     if (Number(reservation.seats) > free) {
       throw new AppError("Not enough free seats", 409, "STAND_NOT_ENOUGH_SEATS", { freeSeats: Math.max(0, free) });
     }
@@ -801,6 +847,7 @@ export async function respondToReservation({ driver, reservationId, accept }) {
 
 export async function cancelReservation({ rider, reservationId }) {
   return tx(async (client) => {
+    await lockReservationEntry(reservationId, client);
     const reservation = (await client.query(
       "SELECT * FROM taxi_stand_seat_reservations WHERE id=$1 FOR UPDATE",
       [reservationId]
@@ -864,6 +911,7 @@ export async function activeReservationForClient(clientId, executor) {
     JOIN taxi_stands s ON s.id=res.stand_id
     JOIN drivers d ON d.id=res.driver_id
     WHERE res.client_id=$1 AND res.status IN ('PENDING','CONFIRMED')
+      AND (res.status='CONFIRMED' OR res.expires_at IS NULL OR res.expires_at > NOW())
     ORDER BY res.created_at DESC
     LIMIT 1
   `, [clientId])).rows[0] || null;

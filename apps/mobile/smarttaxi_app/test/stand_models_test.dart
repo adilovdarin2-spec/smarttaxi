@@ -94,6 +94,19 @@ void main() {
     expect(entry.rating, 4.85);
   });
 
+  test('pending app seats hold capacity without exposing rider details', () {
+    final entry = StandQueueEntry.fromJson({
+      'id': 'held', 'standId': 's1', 'driverId': 'd1', 'status': 'BOARDING',
+      'totalSeats': 4, 'takenSeats': 1, 'pendingSeats': 3, 'manualSeats': 1,
+      'freeSeats': 4,
+    });
+    expect(entry.freeSeats, 0);
+    expect(entry.isFull, isTrue);
+    expect(entry.pendingSeats, 3);
+    expect(entry.manualSeats, 1);
+    expect(entry.reservations, isEmpty);
+  });
+
   test('a full car reports itself full rather than a negative count', () {
     final entry = StandQueueEntry.fromJson({
       'id': 'e2',

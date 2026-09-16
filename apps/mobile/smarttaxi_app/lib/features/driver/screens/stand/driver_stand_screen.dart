@@ -376,7 +376,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
 
   Future<void> _releaseSeat() async {
     final entry = _place.entry;
-    if (entry == null || entry.takenSeats <= 0) return;
+    if (entry == null || entry.manualSeats <= 0) return;
     await _run(() => widget.api.releaseStandSeats(entry.id));
   }
 
@@ -415,7 +415,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
     final entry = _place.entry;
     if (entry == null) return;
     final l10n = AppLocalizations.of(context);
-    if (entry.takenSeats > 0) {
+    if (entry.takenSeats + entry.pendingSeats > 0) {
       setState(() => _actionError = l10n.standGiveTurnHasSeats);
       return;
     }
@@ -796,6 +796,16 @@ class _SeatCounter extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (entry.pendingSeats > 0) ...[
+            const SizedBox(height: 6),
+            Text(l10n.standPendingSeats(entry.pendingSeats),
+                style: TextStyle(color: palette.textSecondary, fontSize: 13)),
+          ],
+          if (entry.takenSeats > 0 && entry.manualSeats == 0) ...[
+            const SizedBox(height: 6),
+            Text(l10n.standManualReleaseHint,
+                style: TextStyle(color: palette.textMuted, fontSize: 12)),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -803,7 +813,7 @@ class _SeatCounter extends StatelessWidget {
                 width: 56,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: !busy && enabled && entry.takenSeats > 0
+                  onPressed: !busy && enabled && entry.manualSeats > 0
                       ? onRelease
                       : null,
                   style: OutlinedButton.styleFrom(
@@ -1114,7 +1124,10 @@ class _StandOfferSheetState extends State<_StandOfferSheet> {
     final palette = context.palette;
     // The seat floor is whatever is already taken: lowering the total below
     // it would strand a rider who is already counted in.
-    final minSeats = (widget.entry?.takenSeats ?? 0).clamp(1, 20).toInt();
+    final minSeats =
+        ((widget.entry?.takenSeats ?? 0) + (widget.entry?.pendingSeats ?? 0))
+            .clamp(1, 20)
+            .toInt();
     return Padding(
       // Two different things eat the bottom of this sheet: the keyboard while
       // the driver types a price, and the gesture bar once it closes. The

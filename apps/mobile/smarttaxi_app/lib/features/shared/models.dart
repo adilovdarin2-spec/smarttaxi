@@ -1608,6 +1608,8 @@ class StandQueueEntry {
     required this.status,
     required this.totalSeats,
     required this.takenSeats,
+    this.pendingSeats = 0,
+    this.manualSeats = 0,
     required this.driverName,
     required this.driverPhone,
     required this.carModel,
@@ -1627,6 +1629,8 @@ class StandQueueEntry {
   final String status;
   final int totalSeats;
   final int takenSeats;
+  final int pendingSeats;
+  final int manualSeats;
   final String driverName;
   final String driverPhone;
   final String carModel;
@@ -1639,9 +1643,10 @@ class StandQueueEntry {
   final double? rating;
   final List<StandSeatReservation> reservations;
 
-  /// Free seats are always derived, never read from the payload: the total and
-  /// the taken count are the only two numbers that are authoritative.
-  int get freeSeats => (totalSeats - takenSeats).clamp(0, totalSeats).toInt();
+  /// Pending app requests hold capacity too; they are not free seats while
+  /// their passenger waits for the driver's confirmation.
+  int get freeSeats =>
+      (totalSeats - takenSeats - pendingSeats).clamp(0, totalSeats).toInt();
 
   bool get isBoarding => status == 'BOARDING';
 
@@ -1666,6 +1671,8 @@ class StandQueueEntry {
       status: '${json['status'] ?? 'WAITING'}',
       totalSeats: _toDouble(json['totalSeats'] ?? 4).round(),
       takenSeats: _toDouble(json['takenSeats'] ?? 0).round(),
+      pendingSeats: _toDouble(json['pendingSeats'] ?? 0).round(),
+      manualSeats: _toDouble(json['manualSeats'] ?? 0).round(),
       driverName: '${driver['name'] ?? ''}',
       driverPhone: '${driver['phone'] ?? ''}',
       carModel: '${driver['carModel'] ?? ''}',

@@ -73,6 +73,13 @@ for (const hidden of ["queueSeq", "lastSeenAt", "outsideSince", "reservations", 
 const driverView = publicQueueEntry(entryRow, { audience: "DRIVER", position: 1, reservations: [] });
 assert.equal(driverView.queueSeq, 7);
 assert.deepEqual(driverView.reservations, []);
+const heldView = publicQueueEntry({ ...entryRow, taken_seats: 1, pending_seats: 3, manual_seats: 1 });
+assert.equal(heldView.freeSeats, 0, 'Pending app requests hold the remaining capacity');
+assert.equal(heldView.pendingSeats, 3);
+assert.equal(heldView.manualSeats, 1);
+const heldRider = publicQueueEntry({ ...entryRow, taken_seats: 1, pending_seats: 3, manual_seats: 1 }, { audience: 'CLIENT' });
+assert.equal(heldRider.freeSeats, 0);
+assert.ok(!('manualSeats' in heldRider) && !('reservations' in heldRider), 'Aggregate availability does not expose passenger or manual bookkeeping');
 
 // A rider must never receive another rider's name and number.
 const reservationRow = {

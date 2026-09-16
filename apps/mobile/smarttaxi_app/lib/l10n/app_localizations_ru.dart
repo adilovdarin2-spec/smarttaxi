@@ -4123,6 +4123,23 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось подтвердить геолокацию. Включите точное местоположение, чтобы сохранить место в очереди.';
 
   @override
+  String standPendingSeats(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count места',
+      many: '$count мест',
+      few: '$count места',
+      one: '$count место',
+    );
+    return 'Ожидают подтверждения: $_temp0';
+  }
+
+  @override
+  String get standManualReleaseHint =>
+      'Кнопка «−» освобождает только места по звонку или на месте. Бронь из приложения отменяет пассажир.';
+
+  @override
   String get standJoinNeedsOnline => 'Выйдите на линию, чтобы встать в очередь';
 
   @override

@@ -1768,6 +1768,8 @@
   "standJoinTooFar": "Navbatga turish uchun to‘xtash joyiga yaqinlashing",
   "standJoinNeedsLocation": "Navbatga turish uchun joylashuvni yoqing",
   "standPresenceNeedsLocation": "Joylashuv tasdiqlanmadi. Navbatdagi joyingizni saqlash uchun aniq joylashuvni yoqing.",
+  "standPendingSeats": "Tasdiq kutilayotgan joylar: {count}",
+  "standManualReleaseHint": "«−» faqat telefon yoki joyida qo‘shilgan joylarni bo‘shatadi. Ilovadagi bronni yo‘lovchi bekor qiladi.",
   "standJoinNeedsOnline": "Navbatga turish uchun liniyaga chiqing",
   "standYourPlaceTitle": "Navbatdagi o‘rningiz",
   "standPositionLabel": "Navbatda {position}-chi",

@@ -4120,6 +4120,15 @@ class AppLocalizationsKk extends AppLocalizations {
       'Геолокация расталмады. Кезектегі орныңызды сақтау үшін нақты орналасқан жерді анықтауды қосыңыз.';
 
   @override
+  String standPendingSeats(int count) {
+    return 'Растауды күтіп тұрған орындар: $count';
+  }
+
+  @override
+  String get standManualReleaseHint =>
+      '«−» түймесі тек қоңыраумен немесе сол жерде қосылған орындарды босатады. Қолданбадағы броньды жолаушы тоқтатады.';
+
+  @override
   String get standJoinNeedsOnline => 'Кезекке тұру үшін желіге шығыңыз';
 
   @override

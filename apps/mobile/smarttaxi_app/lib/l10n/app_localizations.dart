@@ -7411,6 +7411,18 @@ abstract class AppLocalizations {
   /// **'Не удалось подтвердить геолокацию. Включите точное местоположение, чтобы сохранить место в очереди.'**
   String get standPresenceNeedsLocation;
 
+  /// No description provided for @standPendingSeats.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидают подтверждения: {count, plural, one{{count} место} few{{count} места} many{{count} мест} other{{count} места}}'**
+  String standPendingSeats(int count);
+
+  /// No description provided for @standManualReleaseHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Кнопка «−» освобождает только места по звонку или на месте. Бронь из приложения отменяет пассажир.'**
+  String get standManualReleaseHint;
+
   /// No description provided for @standJoinNeedsOnline.
   ///
   /// In ru, this message translates to:

@@ -3863,6 +3863,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get standPresenceNeedsLocation => '无法确认位置。请开启精确定位以保留排队位置。';
 
   @override
+  String standPendingSeats(int count) {
+    return '待确认座位：$count';
+  }
+
+  @override
+  String get standManualReleaseHint => '“−”仅释放电话或现场添加的座位。应用内预订需由乘客取消。';
+
+  @override
   String get standJoinNeedsOnline => '请先上线再加入排队';
 
   @override

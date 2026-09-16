@@ -132,14 +132,30 @@ try {
     assert(response.ok());
     await route.abort('failed');
   });
+  await rider.getByLabel('Сколько мест', { exact: true }).selectOption('3');
   await rider.getByRole('button', { name: 'Забронировать место', exact: true }).click();
   await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor();
   await rider.getByRole('dialog').waitFor({ state: 'hidden' });
   assert.equal(reservations, 1);
   assert.equal((await request('/api/stands/reservations/me', { token: account.token })).reservation.status, 'PENDING');
   await screenshot(rider, 'rider-reservation-recovered');
+  await page.getByText('Ожидают подтверждения: 3 места', { exact: true }).waitFor();
+  assert(await page.getByRole('button', { name: '+1 место', exact: true }).isDisabled());
+  const held = (await request('/api/driver/stands/me', { token: driver.token })).entry;
+  assert.equal(held.pendingSeats, 3);
+  assert.equal(held.freeSeats, 0);
+  await page.locator('.driver-stand-seats').scrollIntoViewIfNeeded();
+  await screenshot(page, 'driver-all-capacity-held');
+  await page.locator('.driver-stand-request').getByRole('button', { name: 'Подтвердить', exact: true }).click();
+  await page.locator('.driver-stand-seats strong').filter({ hasText: '4 из 4' }).waitFor();
+  await page.getByRole('button', { name: 'Освободить место', exact: true }).click();
+  await page.locator('.driver-stand-seats strong').filter({ hasText: '3 из 4' }).waitFor();
+  assert(await page.getByRole('button', { name: 'Освободить место', exact: true }).isDisabled());
+  await page.locator('.driver-stand-seats').scrollIntoViewIfNeeded();
+  await screenshot(page, 'driver-app-seats-protected');
   await rider.getByRole('button', { name: 'Отменить бронь', exact: true }).click();
   await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor({ state: 'hidden' });
+  await page.locator('.driver-stand-seats strong').filter({ hasText: '0 из 4' }).waitFor();
   // A real null-coordinate heartbeat cannot keep a car in the queue forever.
   // No mocked API response here: verify the persisted timestamp via GET/me.
   const heartbeat = page.waitForResponse(response => response.url().endsWith('/api/driver/stands/presence') &&

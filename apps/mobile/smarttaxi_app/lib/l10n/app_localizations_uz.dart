@@ -4159,6 +4159,15 @@ class AppLocalizationsUz extends AppLocalizations {
       'Joylashuv tasdiqlanmadi. Navbatdagi joyingizni saqlash uchun aniq joylashuvni yoqing.';
 
   @override
+  String standPendingSeats(int count) {
+    return 'Tasdiq kutilayotgan joylar: $count';
+  }
+
+  @override
+  String get standManualReleaseHint =>
+      '«−» faqat telefon yoki joyida qo‘shilgan joylarni bo‘shatadi. Ilovadagi bronni yo‘lovchi bekor qiladi.';
+
+  @override
   String get standJoinNeedsOnline => 'Navbatga turish uchun liniyaga chiqing';
 
   @override

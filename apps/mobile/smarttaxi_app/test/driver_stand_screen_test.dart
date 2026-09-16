@@ -26,7 +26,7 @@ final _stand = TaxiStand.fromJson(const {
   'note': 'Заезд со стороны улицы Абая',
 });
 
-MyStandPlace _place({int taken = 1, List<Map<String, dynamic>> reservations = const []}) {
+MyStandPlace _place({int taken = 1, int pending = 0, int manual = 1, List<Map<String, dynamic>> reservations = const []}) {
   final entry = {
     'id': 'e1',
     'standId': 's1',
@@ -35,6 +35,8 @@ MyStandPlace _place({int taken = 1, List<Map<String, dynamic>> reservations = co
     'position': 1,
     'totalSeats': 4,
     'takenSeats': taken,
+    'pendingSeats': pending,
+    'manualSeats': manual,
     'destinationLabel': 'Шымкент',
     'pricePerSeat': 3000,
     'comment': 'Выезжаю по заполнению',
@@ -97,6 +99,26 @@ Future<void> _pump(WidgetTester tester, Widget child,
 }
 
 void main() {
+  for (final dark in [false, true]) {
+    testWidgets('held seats block addition and app seats block manual release, dark=$dark', (tester) async {
+      var adds = 0;
+      var releases = 0;
+      await _pump(tester, DriverStandPlaceSection(
+        place: _place(taken: 1, pending: 3, manual: 0), presence: null, busy: false,
+        onAddSeat: () async { adds++; }, onReleaseSeat: () async { releases++; },
+        onEditOffer: () async {}, onDepart: () async {}, onLeave: () async {},
+        onGiveTurn: () async {}, onRespond: (_, __) async {},
+      ), dark: dark, scale: 1.6);
+      expect(find.text('Ожидают подтверждения: 3 места'), findsOneWidget);
+      final add = tester.widget<FilledButton>(find.widgetWithText(FilledButton, '+1 место'));
+      expect(add.onPressed, isNull);
+      final release = tester.widget<OutlinedButton>(find.ancestor(of: find.byIcon(Icons.remove), matching: find.byType(OutlinedButton)));
+      expect(release.onPressed, isNull);
+      expect(adds, 0);
+      expect(releases, 0);
+      expect(tester.takeException(), isNull);
+    });
+  }
   for (final dark in [false, true]) {
     for (final scale in [1.0, 1.6]) {
       testWidgets(
