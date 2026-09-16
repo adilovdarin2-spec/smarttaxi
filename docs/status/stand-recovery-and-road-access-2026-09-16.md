@@ -62,6 +62,23 @@ was rebuilt with the temporary public Railway API configuration. Size:
 `633d4d02cfc8688772a6c351bdfe0842bb2aef1d7fb17c155622ec5915628b11`.
 This is a profile QA candidate, not a store-signed release. No phone was used.
 The existing future Gradle/AGP/Kotlin compatibility warnings remain non-fatal.
+`aapt` confirmed `kz.baisapar.app`, BaiSapar, `1.0.0+2`, minimum SDK 24 and
+target SDK 36. `apksigner verify --verbose` passed APK Signature Scheme v2
+with one signer; signature verification does not make a profile build a store
+release.
+
+## Published web
+
+Code commit `b4ab628` was pushed to `origin/dev`. Railway web deployment
+`66af0cd2-f48c-4f37-bea3-07ba17e27042` completed with `SUCCESS` using the existing
+root `Dockerfile.web` and public Railway API configuration. No service variables
+or production database settings were changed.
+
+Public read-only verification returned HTTP 200 for `/order`, current entry
+`index-BWevvrxc.js`, `standSync-DimsoghO.js`, `DriverApp-BpOU72Og.js` and
+`ClientApp-DZUF9D2G.js`. The served driver/passenger chunks contain the new
+recovery UI, and the shared chunk contains the read reconciliation guard.
+Authenticated failure injection remains local-only as described above.
 
 ## Maktaaral detour — not silently changed
 
