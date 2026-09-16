@@ -1,5 +1,13 @@
 # Local QA environment blocker — 2026-09-16
 
+**Later update, 2026-09-16:** the local Docker engine is now available. The
+stack was rebuilt without removing volumes, readiness returned HTTP 200 in
+development, and real local browser/API stand flows passed. See
+`regional-search-and-role-qa-2026-09-16.md` and
+`stand-location-presence-2026-09-16.md`. The startup failure below is historical,
+not a current blocker; it is not an instruction to reboot a working engine.
+No new physical-phone QA is claimed.
+
 ## Observed state
 
 The Windows Docker Desktop Linux-engine pipe `\\.\pipe\dockerDesktopLinuxEngine`

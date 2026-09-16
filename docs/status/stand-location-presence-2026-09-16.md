@@ -70,6 +70,21 @@ candidate, not a store-signed release; no phone was used or installation
 claimed. The pre-existing Gradle/AGP/Kotlin future-compatibility warnings
 remain non-fatal and were not suppressed.
 
+## Publication
+
+Code commit `b07a792` was pushed to `origin/dev`. Railway deployments using
+the existing root Dockerfiles completed with `SUCCESS`:
+
+- API: `1dab7637-65f8-4d73-9f3a-95114fcb50a2`.
+- Web: `dbd6aaa1-e3ac-47fc-bcd5-811326d0c527`.
+
+Read-only production checks: `/api/health/live` HTTP 200; database, Redis and
+OSRM healthy. `/api/health/ready` remains HTTP 503 because SMS is not
+configured; the release gate was not weakened. `/order` and the current
+`index-Djn85lpY.js` / `DriverApp-BhGOJGC4.js` returned HTTP 200, with the GPS
+warning/freshness guard present in the served driver chunk. No production
+account/queue operation or environment-variable change was made.
+
 ## Scope still open
 
 This stage is not an all-screen release certification. It does not resolve
