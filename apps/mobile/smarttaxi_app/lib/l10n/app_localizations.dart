@@ -7348,7 +7348,7 @@ abstract class AppLocalizations {
   /// No description provided for @standNoneText.
   ///
   /// In ru, this message translates to:
-  /// **'В этом регионе стоянки ещё не добавлены.'**
+  /// **'Сейчас в этом регионе нет доступных стоянок.'**
   String get standNoneText;
 
   /// No description provided for @standLoadFailed.
@@ -7902,6 +7902,84 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Введите адрес назначения'**
   String get dropoffEnterPrompt;
+
+  /// No description provided for @standOutcomeClosedDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоянку закрыли. Ваше место в очереди снято. Выберите другую стоянку.'**
+  String get standOutcomeClosedDriver;
+
+  /// No description provided for @standOutcomeClosedRider.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стоянку закрыли. Бронь снята. Выберите другую стоянку или закажите поездку.'**
+  String get standOutcomeClosedRider;
+
+  /// No description provided for @standOutcomeExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время ожидания подтверждения истекло. Бронь снята — можно выбрать другую машину.'**
+  String get standOutcomeExpired;
+
+  /// No description provided for @standOutcomeDeclined.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель не подтвердил бронь. Выберите другую машину.'**
+  String get standOutcomeDeclined;
+
+  /// No description provided for @standOutcomeCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бронь отменена. Место больше не занято.'**
+  String get standOutcomeCancelled;
+
+  /// No description provided for @standOutcomeBoarded.
+  ///
+  /// In ru, this message translates to:
+  /// **'Посадка завершена. Машина отправилась.'**
+  String get standOutcomeBoarded;
+
+  /// No description provided for @standOutcomeCarLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Машина больше не набирает пассажиров. Бронь снята — выберите другую машину.'**
+  String get standOutcomeCarLeft;
+
+  /// No description provided for @standOutcomeLeftArea.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы покинули зону стоянки. Место в очереди снято. Чтобы вернуться, подъедьте к стоянке.'**
+  String get standOutcomeLeftArea;
+
+  /// No description provided for @standOutcomeNoSignal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Давно не было координат от вашего устройства. Место снято. Проверьте GPS и встаньте в очередь заново.'**
+  String get standOutcomeNoSignal;
+
+  /// No description provided for @standOutcomeHandedOver.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше место передано другому водителю.'**
+  String get standOutcomeHandedOver;
+
+  /// No description provided for @standOutcomeAcceptedOrder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы приняли заказ. Место на стоянке освобождено.'**
+  String get standOutcomeAcceptedOrder;
+
+  /// No description provided for @standOutcomeDriverLeft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваше место в очереди освобождено.'**
+  String get standOutcomeDriverLeft;
+
+  /// No description provided for @standOutcomeRiderUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта бронь больше не активна. Обновите данные или выберите другую машину.'**
+  String get standOutcomeRiderUnavailable;
 }
 
 class _AppLocalizationsDelegate

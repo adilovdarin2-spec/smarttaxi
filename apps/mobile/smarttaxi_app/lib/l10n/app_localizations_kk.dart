@@ -4070,7 +4070,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get standNoneTitle => 'Тұрақтар жоқ';
 
   @override
-  String get standNoneText => 'Бұл өңірге тұрақтар әлі қосылмаған.';
+  String get standNoneText => 'Қазір бұл өңірде қолжетімді тұрақтар жоқ.';
 
   @override
   String get standLoadFailed => 'Тұрақтарды жүктеу мүмкін болмады';
@@ -4404,4 +4404,52 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get dropoffEnterPrompt => 'Бару мекенжайын енгізіңіз';
+
+  @override
+  String get standOutcomeClosedDriver =>
+      'Тұрақ жабылды. Кезектегі орныңыз алынды. Басқа тұрақты таңдаңыз.';
+
+  @override
+  String get standOutcomeClosedRider =>
+      'Тұрақ жабылды. Бронь жойылды. Басқа тұрақты таңдаңыз немесе сапарға тапсырыс беріңіз.';
+
+  @override
+  String get standOutcomeExpired =>
+      'Растауды күту уақыты аяқталды. Бронь жойылды — басқа көлікті таңдауға болады.';
+
+  @override
+  String get standOutcomeDeclined =>
+      'Жүргізуші броньды растамады. Басқа көлікті таңдаңыз.';
+
+  @override
+  String get standOutcomeCancelled => 'Бронь жойылды. Орын енді бос.';
+
+  @override
+  String get standOutcomeBoarded => 'Отырғызу аяқталды. Көлік жолға шықты.';
+
+  @override
+  String get standOutcomeCarLeft =>
+      'Көлік енді жолаушы қабылдамайды. Бронь жойылды — басқа көлікті таңдаңыз.';
+
+  @override
+  String get standOutcomeLeftArea =>
+      'Сіз тұрақ аумағынан шығып кеттіңіз. Кезектегі орын алынды. Қайту үшін тұраққа жақындаңыз.';
+
+  @override
+  String get standOutcomeNoSignal =>
+      'Құрылғыңыздан ұзақ уақыт координаттар келмеді. Орын алынды. GPS-ті тексеріп, кезекке қайта тұрыңыз.';
+
+  @override
+  String get standOutcomeHandedOver => 'Орныңыз басқа жүргізушіге берілді.';
+
+  @override
+  String get standOutcomeAcceptedOrder =>
+      'Сіз тапсырысты қабылдадыңыз. Тұрақтағы орын босатылды.';
+
+  @override
+  String get standOutcomeDriverLeft => 'Кезектегі орныңыз босатылды.';
+
+  @override
+  String get standOutcomeRiderUnavailable =>
+      'Бұл бронь енді белсенді емес. Деректерді жаңартыңыз немесе басқа көлікті таңдаңыз.';
 }

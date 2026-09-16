@@ -10,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../shared/models.dart';
 import '../../../shared/stand_sync.dart';
 import '../../../shared/stand_location.dart';
+import '../../../shared/stand_outcome.dart';
 import '../../widgets/driver_common_widgets.dart';
 
 /// The driver's side of a stand: the lines nearby, their own place in one, and
@@ -61,6 +62,7 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
   bool _busy = false;
   String? _error;
   String? _actionError;
+  StandOutcomeNotice? _notice;
   Timer? _presenceTimer;
   Timer? _refreshTimer;
   String? _joinedStandRoom;
@@ -146,8 +148,23 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
         regionId: widget.regionId,
         at: _position,
       );
+      if (!_sync.currentRead(ticket)) return;
+      final previousId = _place.entry?.id;
+      StandOutcome? outcome;
+      if (previousId != null && place.entry == null) {
+        try {
+          outcome = await widget.api.getStandOutcome(previousId, driver: true);
+        } catch (_) {
+          /* Confirmed absence, unknown cause: use neutral wording. */
+        }
+      }
       if (!_sync.settleRead(ticket, true)) return;
       setState(() {
+        if (place.entry != null) {
+          _notice = null;
+        } else if (previousId != null) {
+          _notice = standOutcomeNotice(outcome, previousId, driver: true);
+        }
         if (_place.entry?.id != place.entry?.id) _presence = null;
         _place = place;
         _stands = stands;
@@ -264,6 +281,12 @@ class _DriverStandScreenState extends State<DriverStandScreen> {
               ],
               if (_error != null) ...[
                 InlineMessage(text: _error!, danger: true),
+                const SizedBox(height: 12),
+              ],
+              if (_notice != null) ...[
+                Semantics(
+                    liveRegion: true,
+                    child: InlineMessage(text: _notice!.text(l10n))),
                 const SizedBox(height: 12),
               ],
               if (_actionError != null) ...[

@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createSocket } from "../../lib/socket.js";
 import { getToken } from "../../lib/api.js";
 import { StandSync } from "../shared/standSync.mjs";
+import { standOutcomeNotice, standOutcomeMessages } from '../shared/standOutcome.mjs';
 import { freshStandPosition } from "../shared/standLocation.mjs";
 import {
   addStandSeats,
   departStandQueue,
   getDriverStands,
   getMyStandPlace,
+  getStandEntryOutcome,
   handOverStandTurn,
   joinStandQueue,
   leaveStandQueue,
@@ -50,6 +52,8 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
   const [blocked, setBlocked] = useState(true);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState(null);
+  const previousEntryRef = useRef(null);
   const [offerDraft, setOfferDraft] = useState(null);
   const mountedRef = useRef(true);
   const feedbackRef = useRef(null);
@@ -71,6 +75,8 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
     setBusy(false);
     setStands([]);
     setPlace({ entry: null, stand: null, queue: [] });
+    previousEntryRef.current = null;
+    setNotice(null);
     return () => { mountedRef.current = false; syncRef.current.dispose(); };
   }, [regionId]);
 
@@ -90,7 +96,16 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
       if (!Array.isArray(list.stands) || !Object.hasOwn(mine, 'entry')) {
         throw new Error('Сервер не подтвердил состояние стоянки');
       }
+      if (!syncRef.current.currentRead(ticket)) return;
+      const previous = previousEntryRef.current;
+      let outcome;
+      if (previous && !mine.entry) {
+        try { outcome = (await getStandEntryOutcome(previous)).outcome; } catch { /* Keep the confirmed empty state with neutral wording. */ }
+      }
       if (!syncRef.current.settleRead(ticket, true)) return;
+      if (mine.entry) setNotice(null);
+      else if (previous) setNotice(standOutcomeNotice(outcome, previous, true));
+      previousEntryRef.current = mine.entry?.id || null;
       setPlace({ entry: mine.entry || null, stand: mine.stand || null, queue: mine.queue || [] });
       setStands(list.stands || []);
       setBlocked(false);
@@ -241,6 +256,7 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
   return (
     <section className="driver-stands">
       {syncNotice}
+      {notice && <div className="stand-outcome-notice" role="status">{standOutcomeMessages[notice]}</div>}
       {error && <div className="driver-core-error" role="alert">{error}</div>}
       {actionError && !blocked && <div className="driver-core-error" role="alert" ref={feedbackRef}>{actionError}</div>}
       <div className="driver-core-section-title">
@@ -250,7 +266,7 @@ export default function DriverStandsPanel({ regionId, isOnline, position, onGoTo
       {!stands.length ? (
         <div className="driver-stand-empty">
           <strong>Стоянок нет</strong>
-          <p>В этом регионе стоянки ещё не добавлены.</p>
+          <p>Сейчас в этом регионе нет доступных стоянок.</p>
         </div>
       ) : (
         stands.map(stand => (

@@ -4107,7 +4107,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get standNoneTitle => 'To‘xtash joylari yo‘q';
 
   @override
-  String get standNoneText => 'Bu hududda to‘xtash joylari hali qo‘shilmagan.';
+  String get standNoneText => 'Hozir bu hududda mavjud to‘xtash joylari yo‘q.';
 
   @override
   String get standLoadFailed => 'To‘xtash joylarini yuklab bo‘lmadi';
@@ -4447,4 +4447,54 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get dropoffEnterPrompt => 'Borish manzilini kiriting';
+
+  @override
+  String get standOutcomeClosedDriver =>
+      'To‘xtash joyi yopildi. Navbatdagi o‘rningiz bekor qilindi. Boshqa joyni tanlang.';
+
+  @override
+  String get standOutcomeClosedRider =>
+      'To‘xtash joyi yopildi. Bron bekor qilindi. Boshqa joyni tanlang yoki safar buyurtma qiling.';
+
+  @override
+  String get standOutcomeExpired =>
+      'Tasdiqlashni kutish vaqti tugadi. Bron bekor qilindi — boshqa mashinani tanlashingiz mumkin.';
+
+  @override
+  String get standOutcomeDeclined =>
+      'Haydovchi bronni tasdiqlamadi. Boshqa mashinani tanlang.';
+
+  @override
+  String get standOutcomeCancelled =>
+      'Bron bekor qilindi. O‘rin endi band emas.';
+
+  @override
+  String get standOutcomeBoarded =>
+      'Yo‘lovchilar chiqishi yakunlandi. Mashina yo‘lga tushdi.';
+
+  @override
+  String get standOutcomeCarLeft =>
+      'Mashina endi yo‘lovchi qabul qilmaydi. Bron bekor qilindi — boshqa mashinani tanlang.';
+
+  @override
+  String get standOutcomeLeftArea =>
+      'Siz to‘xtash joyi hududidan chiqib ketdingiz. Navbatdagi o‘rin bekor qilindi. Qaytish uchun to‘xtash joyiga yaqinlashing.';
+
+  @override
+  String get standOutcomeNoSignal =>
+      'Qurilmangizdan uzoq vaqt koordinatalar kelmadi. O‘rin bekor qilindi. GPSni tekshirib, navbatga qayta turing.';
+
+  @override
+  String get standOutcomeHandedOver => 'O‘rningiz boshqa haydovchiga berildi.';
+
+  @override
+  String get standOutcomeAcceptedOrder =>
+      'Siz buyurtmani qabul qildingiz. To‘xtash joyidagi o‘rin bo‘shatildi.';
+
+  @override
+  String get standOutcomeDriverLeft => 'Navbatdagi o‘rningiz bo‘shatildi.';
+
+  @override
+  String get standOutcomeRiderUnavailable =>
+      'Bu bron endi faol emas. Ma’lumotlarni yangilang yoki boshqa mashinani tanlang.';
 }

@@ -8,6 +8,41 @@ import 'api_transport_test.dart'
 void main() {
   for (final driver in [false, true]) {
     test(
+        'personal stand outcome is scoped and rejects mismatched records, driver=$driver',
+        () async {
+      dynamic payload = {
+        'outcome': {
+          'id': 'own',
+          'status': 'CANCELLED',
+          'reason': 'STAND_CLOSED'
+        }
+      };
+      final dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:1'))
+        ..httpClientAdapter = TestAdapter((request) async {
+          expect(request.path,
+              '${driver ? '/api/driver/stands/entries' : '/api/stands/reservations'}/own/status');
+          return jsonResponse(payload);
+        });
+      addTearDown(() => dio.close(force: true));
+      final api = ApiClient(MemoryAuthStore('test-session'), dio: dio);
+      expect((await api.getStandOutcome('own', driver: driver)).reason,
+          'STAND_CLOSED');
+      for (final bad in [
+        {},
+        {'outcome': null},
+        {
+          'outcome': {'id': 'other', 'status': 'CANCELLED'}
+        },
+        {
+          'outcome': {'id': 'own', 'status': 4}
+        }
+      ]) {
+        payload = bad;
+        await expectLater(api.getStandOutcome('own', driver: driver),
+            throwsA(isA<FormatException>()));
+      }
+    });
+    test(
         '${driver ? 'driver' : 'rider'} malformed stand state is not an empty queue',
         () async {
       final dio = Dio(BaseOptions(baseUrl: 'http://127.0.0.1:1'))

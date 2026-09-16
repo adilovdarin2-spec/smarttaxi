@@ -1754,7 +1754,7 @@
   "standScreenTitle": "Тұрақ",
   "standNearbyTitle": "Жақын тұрақтар",
   "standNoneTitle": "Тұрақтар жоқ",
-  "standNoneText": "Бұл өңірге тұрақтар әлі қосылмаған.",
+  "standNoneText": "Қазір бұл өңірде қолжетімді тұрақтар жоқ.",
   "standLoadFailed": "Тұрақтарды жүктеу мүмкін болмады",
   "standKindCity": "Қала бойынша",
   "standKindIntercity": "Қалааралық",
@@ -1853,5 +1853,18 @@
   "tariffUpToFourPassengers": "4 жолаушыға дейін",
   "settingsServerLabel": "Сервер",
   "pickupChoosePrompt": "Мінетін нүктені таңдаңыз",
-  "dropoffEnterPrompt": "Бару мекенжайын енгізіңіз"
+  "dropoffEnterPrompt": "Бару мекенжайын енгізіңіз",
+  "standOutcomeClosedDriver": "Тұрақ жабылды. Кезектегі орныңыз алынды. Басқа тұрақты таңдаңыз.",
+  "standOutcomeClosedRider": "Тұрақ жабылды. Бронь жойылды. Басқа тұрақты таңдаңыз немесе сапарға тапсырыс беріңіз.",
+  "standOutcomeExpired": "Растауды күту уақыты аяқталды. Бронь жойылды — басқа көлікті таңдауға болады.",
+  "standOutcomeDeclined": "Жүргізуші броньды растамады. Басқа көлікті таңдаңыз.",
+  "standOutcomeCancelled": "Бронь жойылды. Орын енді бос.",
+  "standOutcomeBoarded": "Отырғызу аяқталды. Көлік жолға шықты.",
+  "standOutcomeCarLeft": "Көлік енді жолаушы қабылдамайды. Бронь жойылды — басқа көлікті таңдаңыз.",
+  "standOutcomeLeftArea": "Сіз тұрақ аумағынан шығып кеттіңіз. Кезектегі орын алынды. Қайту үшін тұраққа жақындаңыз.",
+  "standOutcomeNoSignal": "Құрылғыңыздан ұзақ уақыт координаттар келмеді. Орын алынды. GPS-ті тексеріп, кезекке қайта тұрыңыз.",
+  "standOutcomeHandedOver": "Орныңыз басқа жүргізушіге берілді.",
+  "standOutcomeAcceptedOrder": "Сіз тапсырысты қабылдадыңыз. Тұрақтағы орын босатылды.",
+  "standOutcomeDriverLeft": "Кезектегі орныңыз босатылды.",
+  "standOutcomeRiderUnavailable": "Бұл бронь енді белсенді емес. Деректерді жаңартыңыз немесе басқа көлікті таңдаңыз."
 }

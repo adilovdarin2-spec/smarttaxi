@@ -1757,7 +1757,7 @@
   "standScreenTitle": "Стоянка",
   "standNearbyTitle": "Стоянки рядом",
   "standNoneTitle": "Стоянок нет",
-  "standNoneText": "В этом регионе стоянки ещё не добавлены.",
+  "standNoneText": "Сейчас в этом регионе нет доступных стоянок.",
   "standLoadFailed": "Не удалось загрузить стоянки",
   "standKindCity": "По городу",
   "standKindIntercity": "Межгород",
@@ -1933,5 +1933,18 @@
   "tariffUpToFourPassengers": "до 4 пассажиров",
   "settingsServerLabel": "Сервер",
   "pickupChoosePrompt": "Выберите точку подачи",
-  "dropoffEnterPrompt": "Введите адрес назначения"
+  "dropoffEnterPrompt": "Введите адрес назначения",
+  "standOutcomeClosedDriver": "Стоянку закрыли. Ваше место в очереди снято. Выберите другую стоянку.",
+  "standOutcomeClosedRider": "Стоянку закрыли. Бронь снята. Выберите другую стоянку или закажите поездку.",
+  "standOutcomeExpired": "Время ожидания подтверждения истекло. Бронь снята — можно выбрать другую машину.",
+  "standOutcomeDeclined": "Водитель не подтвердил бронь. Выберите другую машину.",
+  "standOutcomeCancelled": "Бронь отменена. Место больше не занято.",
+  "standOutcomeBoarded": "Посадка завершена. Машина отправилась.",
+  "standOutcomeCarLeft": "Машина больше не набирает пассажиров. Бронь снята — выберите другую машину.",
+  "standOutcomeLeftArea": "Вы покинули зону стоянки. Место в очереди снято. Чтобы вернуться, подъедьте к стоянке.",
+  "standOutcomeNoSignal": "Давно не было координат от вашего устройства. Место снято. Проверьте GPS и встаньте в очередь заново.",
+  "standOutcomeHandedOver": "Ваше место передано другому водителю.",
+  "standOutcomeAcceptedOrder": "Вы приняли заказ. Место на стоянке освобождено.",
+  "standOutcomeDriverLeft": "Ваше место в очереди освобождено.",
+  "standOutcomeRiderUnavailable": "Эта бронь больше не активна. Обновите данные или выберите другую машину."
 }

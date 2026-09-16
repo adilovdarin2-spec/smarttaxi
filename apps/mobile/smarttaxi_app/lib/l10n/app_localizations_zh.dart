@@ -3814,7 +3814,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get standNoneTitle => '暂无候客点';
 
   @override
-  String get standNoneText => '该地区尚未添加候客点。';
+  String get standNoneText => '目前该地区没有可用的候客点。';
 
   @override
   String get standLoadFailed => '无法加载候客点';
@@ -4140,4 +4140,43 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dropoffEnterPrompt => '请输入目的地';
+
+  @override
+  String get standOutcomeClosedDriver => '候客点已关闭，您的排队位置已取消。请选择其他候客点。';
+
+  @override
+  String get standOutcomeClosedRider => '候客点已关闭，预订已取消。请选择其他候客点或预约行程。';
+
+  @override
+  String get standOutcomeExpired => '等待确认的时间已结束，预订已取消。您可以选择其他车辆。';
+
+  @override
+  String get standOutcomeDeclined => '司机未确认预订，请选择其他车辆。';
+
+  @override
+  String get standOutcomeCancelled => '预订已取消，座位不再占用。';
+
+  @override
+  String get standOutcomeBoarded => '乘客上车已完成，车辆已出发。';
+
+  @override
+  String get standOutcomeCarLeft => '车辆已停止接客，预订已取消。请选择其他车辆。';
+
+  @override
+  String get standOutcomeLeftArea => '您已离开候客点范围，排队位置已取消。请返回候客点后重新排队。';
+
+  @override
+  String get standOutcomeNoSignal => '设备已长时间未提供位置，排队位置已取消。请检查 GPS 后重新排队。';
+
+  @override
+  String get standOutcomeHandedOver => '您的排队位置已转交给其他司机。';
+
+  @override
+  String get standOutcomeAcceptedOrder => '您已接受订单，候客点的排队位置已释放。';
+
+  @override
+  String get standOutcomeDriverLeft => '您的排队位置已释放。';
+
+  @override
+  String get standOutcomeRiderUnavailable => '此预订已不再有效。请刷新信息或选择其他车辆。';
 }

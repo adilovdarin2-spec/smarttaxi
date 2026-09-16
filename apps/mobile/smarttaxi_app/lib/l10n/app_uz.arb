@@ -1757,7 +1757,7 @@
   "standScreenTitle": "To‘xtash joyi",
   "standNearbyTitle": "Yaqindagi to‘xtash joylari",
   "standNoneTitle": "To‘xtash joylari yo‘q",
-  "standNoneText": "Bu hududda to‘xtash joylari hali qo‘shilmagan.",
+  "standNoneText": "Hozir bu hududda mavjud to‘xtash joylari yo‘q.",
   "standLoadFailed": "To‘xtash joylarini yuklab bo‘lmadi",
   "standKindCity": "Shahar bo‘ylab",
   "standKindIntercity": "Shaharlararo",
@@ -1856,5 +1856,18 @@
   "tariffUpToFourPassengers": "4 nafar yo'lovchigacha",
   "settingsServerLabel": "Server",
   "pickupChoosePrompt": "Olib ketish nuqtasini tanlang",
-  "dropoffEnterPrompt": "Borish manzilini kiriting"
+  "dropoffEnterPrompt": "Borish manzilini kiriting",
+  "standOutcomeClosedDriver": "To‘xtash joyi yopildi. Navbatdagi o‘rningiz bekor qilindi. Boshqa joyni tanlang.",
+  "standOutcomeClosedRider": "To‘xtash joyi yopildi. Bron bekor qilindi. Boshqa joyni tanlang yoki safar buyurtma qiling.",
+  "standOutcomeExpired": "Tasdiqlashni kutish vaqti tugadi. Bron bekor qilindi — boshqa mashinani tanlashingiz mumkin.",
+  "standOutcomeDeclined": "Haydovchi bronni tasdiqlamadi. Boshqa mashinani tanlang.",
+  "standOutcomeCancelled": "Bron bekor qilindi. O‘rin endi band emas.",
+  "standOutcomeBoarded": "Yo‘lovchilar chiqishi yakunlandi. Mashina yo‘lga tushdi.",
+  "standOutcomeCarLeft": "Mashina endi yo‘lovchi qabul qilmaydi. Bron bekor qilindi — boshqa mashinani tanlang.",
+  "standOutcomeLeftArea": "Siz to‘xtash joyi hududidan chiqib ketdingiz. Navbatdagi o‘rin bekor qilindi. Qaytish uchun to‘xtash joyiga yaqinlashing.",
+  "standOutcomeNoSignal": "Qurilmangizdan uzoq vaqt koordinatalar kelmadi. O‘rin bekor qilindi. GPSni tekshirib, navbatga qayta turing.",
+  "standOutcomeHandedOver": "O‘rningiz boshqa haydovchiga berildi.",
+  "standOutcomeAcceptedOrder": "Siz buyurtmani qabul qildingiz. To‘xtash joyidagi o‘rin bo‘shatildi.",
+  "standOutcomeDriverLeft": "Navbatdagi o‘rningiz bo‘shatildi.",
+  "standOutcomeRiderUnavailable": "Bu bron endi faol emas. Ma’lumotlarni yangilang yoki boshqa mashinani tanlang."
 }

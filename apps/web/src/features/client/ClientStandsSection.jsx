@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createSocket } from "../../lib/socket.js";
 import { getToken } from "../../lib/api.js";
 import { StandSync } from "../shared/standSync.mjs";
+import { standOutcomeNotice, standOutcomeMessages } from '../shared/standOutcome.mjs';
 
 // MapLibre is a megabyte of JavaScript. The rest of this screen — the lines,
 // the cars, the phone numbers — must not wait on it, and a rider who never
@@ -19,6 +20,7 @@ function StandsMap(props) {
 import {
   cancelStandReservation,
   getMyStandReservation,
+  getStandReservationOutcome,
   getStand,
   getStands,
   reserveStandSeat,
@@ -50,6 +52,8 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
   const [blocked, setBlocked] = useState(true);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState(null);
+  const previousReservationRef = useRef(null);
   const mountedRef = useRef(true);
   const openIdRef = useRef(null);
   const openSequenceRef = useRef(0);
@@ -63,6 +67,8 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
     setBusy(false);
     setStands([]);
     setReservation(null);
+    previousReservationRef.current = null;
+    setNotice(null);
     setOpenStand(null);
     openIdRef.current = null;
     openSequenceRef.current++;
@@ -87,11 +93,20 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
       if (!Array.isArray(list.stands) || !Object.hasOwn(mine, 'reservation')) {
         throw new Error('Сервер не подтвердил состояние стоянки');
       }
-      const view = openId ? await getStand(openId) : null;
+      const view = openId && list.stands.some(stand => stand.id === openId) ? await getStand(openId) : null;
+      const previous = previousReservationRef.current;
+      let outcome;
+      if (previous && !mine.reservation) {
+        try { outcome = (await getStandReservationOutcome(previous)).outcome; } catch { /* Live absence is confirmed; do not invent its cause. */ }
+      }
       if (!syncRef.current.settleRead(ticket, true)) return;
+      if (mine.reservation) setNotice(null);
+      else if (previous) setNotice(standOutcomeNotice(outcome, previous));
+      previousReservationRef.current = mine.reservation?.id || null;
       setStands(list.stands || []);
       setReservation(mine.reservation || null);
       if (view && openIdRef.current === openId) setOpenStand(view);
+      else if (openId && openIdRef.current === openId) closeStand();
       setBlocked(false);
       setError("");
       return mine;
@@ -203,6 +218,7 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
 
       {error && <div className="client-stand-error" role="alert">{error}</div>}
       {actionError && <div className="client-stand-error" role="alert">{actionError}</div>}
+      {notice && <div className="stand-outcome-notice" role="status">{standOutcomeMessages[notice]}</div>}
       {blocked && !busy && !loading && (
         <div className="client-stand-error" role="alert">
           Данные стоянки не подтверждены. Обновите их перед следующим действием.
@@ -249,7 +265,7 @@ export default function ClientStandsSection({ authenticated, regionId, onLogin, 
       ) : !stands.length ? (
         <div className="client-stand-empty">
           <strong>Стоянок нет</strong>
-          <p>В этом регионе стоянки ещё не добавлены.</p>
+          <p>Сейчас в этом регионе нет доступных стоянок.</p>
           {onHome && <button type="button" className="client-stand-ghost" onClick={onHome}>На главную</button>}
         </div>
       ) : (

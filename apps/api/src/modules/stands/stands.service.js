@@ -1046,4 +1046,27 @@ export async function sweepStaleQueueEntries(executor = defaultQuery, { standId 
   return result;
 }
 
+// Minimal, owner-scoped history for reconciling a vanished live item after a
+// missed socket event. No passenger lists, phone numbers or other identities.
+export async function standEntryOutcome(driverId, entryId, executor) {
+  const row = (await run(executor, `SELECT id, stand_id, status, left_reason reason
+    FROM taxi_stand_queue_entries WHERE id=$1 AND driver_id=$2`, [entryId, driverId])).rows[0];
+  if (!row) throw new AppError('Queue entry not found', 404, 'STAND_ENTRY_NOT_FOUND');
+  return { id: row.id, standId: row.stand_id, status: row.status,
+    reason: row.reason || (row.status === 'DEPARTED' ? 'DEPARTED' : null) };
+}
+
+export async function standReservationOutcome(clientId, reservationId, executor) {
+  const row = (await run(executor, `SELECT res.id, res.stand_id,
+    CASE WHEN res.status='PENDING' AND res.expires_at <= clock_timestamp() THEN 'EXPIRED' ELSE res.status END status,
+    CASE WHEN res.status='CANCELLED' AND res.cancelled_at=COALESCE(e.left_at,e.departed_at)
+      THEN COALESCE(e.left_reason, CASE WHEN e.status='DEPARTED' THEN 'DEPARTED' END) END reason
+    FROM taxi_stand_seat_reservations res
+    JOIN taxi_stand_queue_entries e ON e.id=res.entry_id
+    WHERE res.id=$1 AND res.client_id=$2`, [reservationId, clientId])).rows[0];
+  if (!row) throw new AppError('Reservation not found', 404, 'STAND_RESERVATION_NOT_FOUND');
+  // Do not attribute an earlier rider cancellation to a later stand closure.
+  return { id: row.id, standId: row.stand_id, status: row.status, reason: row.reason || null };
+}
+
 export { refreshBoardingSlots };

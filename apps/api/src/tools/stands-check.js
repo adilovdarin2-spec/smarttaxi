@@ -17,6 +17,25 @@ import {
   touchPresence,
   standRoom
 } from "../modules/stands/stands.service.js";
+import { standEntryOutcome, standReservationOutcome } from '../modules/stands/stands.service.js';
+
+for (const [getOutcome, id, actor, scope, missing] of [
+  [standEntryOutcome, 'entry', 'driver', 'driver_id', 'STAND_ENTRY_NOT_FOUND'],
+  [standReservationOutcome, 'reservation', 'client', 'client_id', 'STAND_RESERVATION_NOT_FOUND'],
+]) {
+  for (const status of ['CANCELLED', 'EXPIRED', 'DEPARTED', 'BOARDED']) {
+    const outcome = await getOutcome(actor, id, async (sql, params) => {
+      assert.deepEqual(params, [id, actor]);
+      assert.ok(sql.includes(`${scope}=$2`), 'History must be scoped to the authenticated actor');
+      assert.ok(sql.trim().startsWith('SELECT'), 'Reading history cannot mutate a queue');
+      return { rows: [{ id, stand_id: 'stand', status, reason: null, phone: 'private', driver_id: 'private' }] };
+    });
+    assert.deepEqual(outcome, { id, standId: 'stand', status,
+      reason: getOutcome === standEntryOutcome && status === 'DEPARTED' ? 'DEPARTED' : null });
+  }
+  await assert.rejects(() => getOutcome(actor, id, async () => ({ rows: [] })),
+    error => error.status === 404 && error.code === missing);
+}
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const { ACTIVE_ORDER_STATUSES } = await import('../modules/orders/active-order-statuses.js');

@@ -822,6 +822,14 @@ export function getMyStandReservation() {
   return api("/api/stands/reservations/me");
 }
 
+export function getStandReservationOutcome(id) {
+  return api(`/api/stands/reservations/${encodeURIComponent(id)}/status`);
+}
+
+export function getStandEntryOutcome(id) {
+  return api(`/api/driver/stands/entries/${encodeURIComponent(id)}/status`);
+}
+
 export function cancelStandReservation(reservationId) {
   return api(`/api/stands/reservations/${reservationId}`, { method: "DELETE" });
 }

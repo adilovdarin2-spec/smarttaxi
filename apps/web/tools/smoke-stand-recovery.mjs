@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { standOutcomeMessages } from '../src/features/shared/standOutcome.mjs';
 
 // Real local API writes. Fault injection drops the browser acknowledgement
 // only AFTER the server has accepted a seat; it never fabricates a booking.
@@ -164,6 +165,7 @@ try {
   assert(await page.getByRole('button', { name: 'Освободить место', exact: true }).isDisabled());
   await page.locator('.driver-stand-seats').scrollIntoViewIfNeeded();
   await screenshot(page, 'driver-app-seats-protected');
+  const earlierBooking = (await request('/api/stands/reservations/me', { token: account.token })).reservation;
   await rider.getByRole('button', { name: 'Отменить бронь', exact: true }).click();
   await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor({ state: 'hidden' });
   await page.locator('.driver-stand-seats strong').filter({ hasText: '0 из 4' }).waitFor();
@@ -192,7 +194,8 @@ try {
   await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor();
   await page.locator('.driver-stand-request').getByRole('button', { name: 'Подтвердить', exact: true }).click();
   await page.locator('.driver-stand-seats strong').filter({ hasText: '1 из 4' }).waitFor();
-  assert.equal((await request('/api/stands/reservations/me', { token: account.token })).reservation.status, 'CONFIRMED');
+  const closedBooking = (await request('/api/stands/reservations/me', { token: account.token })).reservation;
+  assert.equal(closedBooking.status, 'CONFIRMED');
   await request(`/api/admin/stands/${stand.id}`, { token: owner.token, method: 'PATCH', body: { isActive: false } });
   await page.locator('.driver-stand-place').waitFor({ state: 'hidden' });
   await rider.getByText('Ваша бронь на стоянке', { exact: true }).waitFor({ state: 'hidden' });
@@ -201,6 +204,23 @@ try {
   assert.equal(await rider.getByRole('heading', { name: 'Не удалось открыть экран' }).count(), 0);
   assert.equal((await request('/api/driver/stands/me', { token: driver.token })).entry, null);
   assert.equal((await request('/api/stands/reservations/me', { token: account.token })).reservation, null);
+  await page.getByText(standOutcomeMessages.closedDriver, { exact: true }).waitFor();
+  await rider.getByText(standOutcomeMessages.closedRider, { exact: true }).waitFor();
+  const bookingPath = `/api/stands/reservations/${closedBooking.id}/status`;
+  const entryPath = `/api/driver/stands/entries/${entry.id}/status`;
+  assert.deepEqual((await request(bookingPath, { token: account.token })).outcome,
+    { id: closedBooking.id, standId: stand.id, status: 'CANCELLED', reason: 'STAND_CLOSED' });
+  assert.equal((await request(entryPath, { token: driver.token })).outcome.reason, 'STAND_CLOSED');
+  assert.equal((await request(`/api/stands/reservations/${earlierBooking.id}/status`, { token: account.token })).outcome.reason, null,
+    'A previous rider cancellation must not be blamed on later owner closure');
+  for (const [endpoint, token, expected] of [
+    [bookingPath, null, 401], [bookingPath, driver.token, 403], [entryPath, account.token, 403],
+    [`/api/stands/reservations/${entry.id}/status`, account.token, 404],
+    [`/api/driver/stands/entries/${closedBooking.id}/status`, driver.token, 404],
+  ]) {
+    const response = await fetch(api + endpoint, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    assert.equal(response.status, expected, endpoint);
+  }
   await screenshot(page, 'driver-owner-closed-stand');
   await screenshot(rider, 'rider-owner-cancelled-booking');
   assert.deepEqual(errors, []);

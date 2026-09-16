@@ -4066,7 +4066,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get standNoneTitle => 'Стоянок нет';
 
   @override
-  String get standNoneText => 'В этом регионе стоянки ещё не добавлены.';
+  String get standNoneText => 'Сейчас в этом регионе нет доступных стоянок.';
 
   @override
   String get standLoadFailed => 'Не удалось загрузить стоянки';
@@ -4425,4 +4425,52 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get dropoffEnterPrompt => 'Введите адрес назначения';
+
+  @override
+  String get standOutcomeClosedDriver =>
+      'Стоянку закрыли. Ваше место в очереди снято. Выберите другую стоянку.';
+
+  @override
+  String get standOutcomeClosedRider =>
+      'Стоянку закрыли. Бронь снята. Выберите другую стоянку или закажите поездку.';
+
+  @override
+  String get standOutcomeExpired =>
+      'Время ожидания подтверждения истекло. Бронь снята — можно выбрать другую машину.';
+
+  @override
+  String get standOutcomeDeclined =>
+      'Водитель не подтвердил бронь. Выберите другую машину.';
+
+  @override
+  String get standOutcomeCancelled => 'Бронь отменена. Место больше не занято.';
+
+  @override
+  String get standOutcomeBoarded => 'Посадка завершена. Машина отправилась.';
+
+  @override
+  String get standOutcomeCarLeft =>
+      'Машина больше не набирает пассажиров. Бронь снята — выберите другую машину.';
+
+  @override
+  String get standOutcomeLeftArea =>
+      'Вы покинули зону стоянки. Место в очереди снято. Чтобы вернуться, подъедьте к стоянке.';
+
+  @override
+  String get standOutcomeNoSignal =>
+      'Давно не было координат от вашего устройства. Место снято. Проверьте GPS и встаньте в очередь заново.';
+
+  @override
+  String get standOutcomeHandedOver => 'Ваше место передано другому водителю.';
+
+  @override
+  String get standOutcomeAcceptedOrder =>
+      'Вы приняли заказ. Место на стоянке освобождено.';
+
+  @override
+  String get standOutcomeDriverLeft => 'Ваше место в очереди освобождено.';
+
+  @override
+  String get standOutcomeRiderUnavailable =>
+      'Эта бронь больше не активна. Обновите данные или выберите другую машину.';
 }

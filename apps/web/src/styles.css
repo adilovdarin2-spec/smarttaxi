@@ -25740,6 +25740,18 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-weight: 600;
 }
 
+.stand-outcome-notice {
+  padding: 14px 16px;
+  margin: 0 0 14px;
+  border: 1px solid #cfe1ff;
+  border-radius: 16px;
+  background: #eaf3ff;
+  color: #153c72;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .client-stand-list {
   display: flex;
   flex-direction: column;

@@ -9,6 +9,7 @@ import 'package:smarttaxi_app/core/theme/app_theme.dart';
 import 'package:smarttaxi_app/features/driver/screens/stand/driver_stand_screen.dart';
 import 'package:smarttaxi_app/features/driver/widgets/driver_common_widgets.dart';
 import 'package:smarttaxi_app/features/shared/models.dart';
+import 'package:smarttaxi_app/features/shared/stand_outcome.dart';
 import 'package:smarttaxi_app/l10n/app_localizations.dart';
 import 'api_transport_test.dart' show MemoryAuthStore;
 import 'stand_live_recovery_test.dart' show standData;
@@ -18,6 +19,12 @@ class DriverStandApi extends ApiClient {
   MyStandPlace place = const MyStandPlace();
   final joins = <Coordinate>[];
   final presence = <Coordinate?>[];
+  @override
+  Future<StandOutcome> getStandOutcome(String id, {bool driver = false}) async {
+    expect(driver, isTrue);
+    return StandOutcome(id: id, status: 'EXPIRED', reason: 'NO_SIGNAL');
+  }
+
   @override
   Future<MyStandPlace> getMyStandPlace() async => place;
   @override
@@ -168,6 +175,12 @@ void main() {
     expect(find.textContaining('Не удалось подтвердить геолокацию.'),
         findsOneWidget);
     expect(gpsCalls, everyElement('getCurrentPosition'));
+    api.place = const MyStandPlace();
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(find.byType(DriverStandPlaceSection), findsNothing);
+    expect(find.textContaining('Давно не было координат от вашего устройства.'),
+        findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
     expect(socket.listeners, 0);

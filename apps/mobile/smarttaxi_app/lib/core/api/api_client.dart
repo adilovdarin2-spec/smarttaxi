@@ -7,6 +7,7 @@ import '../../features/driver/models/driver_rating_models.dart';
 import '../../features/driver/models/driver_wallet_models.dart';
 import '../../features/passenger/models/client_wallet_models.dart';
 import '../../features/shared/models.dart';
+import '../../features/shared/stand_outcome.dart';
 import '../auth/auth_store.dart';
 import '../config/app_config.dart';
 import 'api_transport.dart';
@@ -1786,6 +1787,24 @@ class ApiClient {
   Future<void> cancelStandReservation(String reservationId) async {
     await _attachToken();
     await _dio.delete<dynamic>('/api/stands/reservations/$reservationId');
+  }
+
+  Future<StandOutcome> getStandOutcome(String id, {bool driver = false}) async {
+    await _attachToken();
+    final base =
+        driver ? '/api/driver/stands/entries' : '/api/stands/reservations';
+    final response =
+        await _dio.get<dynamic>('$base/${Uri.encodeComponent(id)}/status');
+    final data = response.data;
+    if (data is! Map || data['outcome'] is! Map) {
+      throw const FormatException('Stand outcome is missing');
+    }
+    final outcome = StandOutcome.fromJson(
+        Map<String, dynamic>.from(data['outcome'] as Map));
+    if (outcome.id != id) {
+      throw const FormatException('Stand outcome does not match');
+    }
+    return outcome;
   }
 
   Future<List<TaxiStand>> getDriverStands({

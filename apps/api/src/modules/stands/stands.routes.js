@@ -24,13 +24,14 @@ import {
   listStands,
   loadLiveEntryForDriver,
   loadStand,
-  publicQueueEntry,
   publicReservation,
   publicStand,
   releaseSeats,
   reserveSeat,
   respondToReservation,
   standQueueView,
+  standEntryOutcome,
+  standReservationOutcome,
   touchPresence,
   updateOffer
 } from "./stands.service.js";
@@ -157,6 +158,14 @@ router.get("/:id", requireAuth, async (req, res, next) => {
   }
 });
 
+router.get('/reservations/:reservationId/status', requireAuth, requireRole('CLIENT'), async (req, res, next) => {
+  try {
+    const { reservationId } = ReservationParam.parse(req.params);
+    const rider = await loadClient(req.user.id);
+    res.json({ outcome: await standReservationOutcome(rider.id, reservationId) });
+  } catch (error) { next(error); }
+});
+
 router.post(
   "/entries/:entryId/reserve",
   requireAuth,
@@ -244,15 +253,26 @@ driverStandsRouter.get("/me", async (req, res, next) => {
     const entry = await loadLiveEntryForDriver(driver.id);
     if (!entry) return res.json({ entry: null, stand: null, queue: [] });
     const view = await standQueueView(entry.stand_id, { audience: "DRIVER", forDriverId: driver.id });
-    const position = view.entries.findIndex((row) => row.id === entry.id) + 1;
+    const current = view.entries.find((row) => row.id === entry.id);
+    // Closure can commit between the first lookup and the queue snapshot.
+    // Never revive the stale row from that earlier read in the response.
+    if (!current) return res.json({ entry: null, stand: null, queue: [] });
     res.json({
-      entry: view.entries.find((row) => row.id === entry.id) || publicQueueEntry(entry, { position }),
+      entry: current,
       stand: view.stand,
       queue: view.entries
     });
   } catch (error) {
     next(error);
   }
+});
+
+driverStandsRouter.get('/entries/:entryId/status', async (req, res, next) => {
+  try {
+    const { entryId } = EntryParam.parse(req.params);
+    const driver = await loadDriver(req.user.id);
+    res.json({ outcome: await standEntryOutcome(driver.id, entryId) });
+  } catch (error) { next(error); }
 });
 
 driverStandsRouter.get("/:id/queue", async (req, res, next) => {

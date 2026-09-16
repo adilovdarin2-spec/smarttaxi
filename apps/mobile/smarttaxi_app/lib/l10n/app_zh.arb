@@ -1757,7 +1757,7 @@
   "standScreenTitle": "候客点",
   "standNearbyTitle": "附近的候客点",
   "standNoneTitle": "暂无候客点",
-  "standNoneText": "该地区尚未添加候客点。",
+  "standNoneText": "目前该地区没有可用的候客点。",
   "standLoadFailed": "无法加载候客点",
   "standKindCity": "市内",
   "standKindIntercity": "城际",
@@ -1856,5 +1856,18 @@
   "tariffUpToFourPassengers": "最多 4 位乘客",
   "settingsServerLabel": "服务器",
   "pickupChoosePrompt": "请选择上车地点",
-  "dropoffEnterPrompt": "请输入目的地"
+  "dropoffEnterPrompt": "请输入目的地",
+  "standOutcomeClosedDriver": "候客点已关闭，您的排队位置已取消。请选择其他候客点。",
+  "standOutcomeClosedRider": "候客点已关闭，预订已取消。请选择其他候客点或预约行程。",
+  "standOutcomeExpired": "等待确认的时间已结束，预订已取消。您可以选择其他车辆。",
+  "standOutcomeDeclined": "司机未确认预订，请选择其他车辆。",
+  "standOutcomeCancelled": "预订已取消，座位不再占用。",
+  "standOutcomeBoarded": "乘客上车已完成，车辆已出发。",
+  "standOutcomeCarLeft": "车辆已停止接客，预订已取消。请选择其他车辆。",
+  "standOutcomeLeftArea": "您已离开候客点范围，排队位置已取消。请返回候客点后重新排队。",
+  "standOutcomeNoSignal": "设备已长时间未提供位置，排队位置已取消。请检查 GPS 后重新排队。",
+  "standOutcomeHandedOver": "您的排队位置已转交给其他司机。",
+  "standOutcomeAcceptedOrder": "您已接受订单，候客点的排队位置已释放。",
+  "standOutcomeDriverLeft": "您的排队位置已释放。",
+  "standOutcomeRiderUnavailable": "此预订已不再有效。请刷新信息或选择其他车辆。"
 }

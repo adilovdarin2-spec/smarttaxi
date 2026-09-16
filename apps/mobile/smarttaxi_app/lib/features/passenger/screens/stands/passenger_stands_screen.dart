@@ -12,6 +12,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../shared/models.dart';
 import '../../../shared/stand_sync.dart';
+import '../../../shared/stand_outcome.dart';
 
 /// The rider's side of a stand. A stand is a place people already know: the
 /// cars by the bazaar that leave for Шымкент when they fill up. This shows
@@ -49,11 +50,13 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
   bool _busy = false;
   String? _error;
   String? _actionError;
+  StandOutcomeNotice? _notice;
   Timer? _refreshTimer;
   String? _joinedRoom;
   final _sync = StandSync();
   final _sheetRevision = ValueNotifier<int>(0);
   BuildContext? _sheetContext;
+  BuildContext? _seatCountContext;
   int _openSequence = 0;
 
   final _unsubscribe = <VoidCallback>[];
@@ -106,14 +109,35 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
       if (openId != null && stands.any((stand) => stand.id == openId)) {
         open = await widget.api.getStandQueue(openId);
       }
+      if (!_sync.currentRead(ticket)) return;
+      final previousId = _reservation?.id;
+      StandOutcome? outcome;
+      if (previousId != null && reservation == null) {
+        try {
+          outcome = await widget.api.getStandOutcome(previousId);
+        } catch (_) {/* Do not invent a reason when history is unavailable. */}
+      }
       if (!_sync.settleRead(ticket, true)) return;
+      final closed = openId != null &&
+          openSequence == _openSequence &&
+          !stands.any((stand) => stand.id == openId);
       _change(() {
+        if (reservation != null) {
+          _notice = null;
+        } else if (previousId != null) {
+          _notice = standOutcomeNotice(outcome, previousId);
+        }
         _stands = stands;
         _reservation = reservation;
         if (open != null && openSequence == _openSequence) _open = open;
+        if (closed) {
+          _open = null;
+          _openSequence++;
+        }
         _loading = false;
         _error = null;
       });
+      if (closed) _dismissStandSheets();
       _syncRoom(_open?.stand.id);
     } catch (error) {
       if (!_sync.settleRead(ticket, false)) return;
@@ -130,6 +154,20 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
     if (previous != null) widget.socket.leaveStand(previous);
     _joinedRoom = standId;
     if (standId != null) widget.socket.joinStand(standId);
+  }
+
+  void _dismissStandSheets() {
+    // Remove only the routes owned by this screen, never the navigator's
+    // current unrelated route. The seat picker may be above the stand sheet.
+    for (final sheet in [_seatCountContext, _sheetContext]) {
+      if (sheet == null || !sheet.mounted) continue;
+      final route = ModalRoute.of(sheet);
+      if (route != null && route.isActive) {
+        Navigator.of(sheet).removeRoute(route);
+      }
+    }
+    _seatCountContext = null;
+    _sheetContext = null;
   }
 
   String _readError(Object error) {
@@ -195,9 +233,13 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
     final seats = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => _SeatCountSheet(maxSeats: entry.freeSeats),
+      builder: (context) {
+        _seatCountContext = context;
+        return _SeatCountSheet(maxSeats: entry.freeSeats);
+      },
     );
-    if (seats == null || !mounted) return;
+    _seatCountContext = null;
+    if (seats == null || !mounted || _open?.stand.id != entry.standId) return;
     await _run(() async {
       await widget.api.reserveStandSeat(entry.id, seats: seats);
     });
@@ -322,6 +364,7 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
               child: _StandList(
                 stands: _stands,
                 reservation: _reservation,
+                notice: _notice?.text(l10n),
                 error: _sync.blocked && !_busy && !_loading
                     ? l10n.standRefreshRequired
                     : _actionError ?? _error,
@@ -411,6 +454,7 @@ class _StandList extends StatelessWidget {
   const _StandList({
     required this.stands,
     required this.reservation,
+    this.notice,
     required this.error,
     required this.busy,
     required this.onOpen,
@@ -419,6 +463,7 @@ class _StandList extends StatelessWidget {
 
   final List<TaxiStand> stands;
   final StandSeatReservation? reservation;
+  final String? notice;
   final String? error;
   final bool busy;
   final Future<void> Function(TaxiStand stand) onOpen;
@@ -437,6 +482,10 @@ class _StandList extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       child: ListView(
         children: [
+          if (notice != null) ...[
+            Semantics(liveRegion: true, child: _Notice(text: notice!)),
+            const SizedBox(height: 12),
+          ],
           if (error != null) ...[
             _Notice(text: error!, danger: true),
             const SizedBox(height: 12),
@@ -512,26 +561,26 @@ class _StandList extends StatelessWidget {
                                   fontSize: 13,
                                 ),
                               ),
+                              if (stand.freeSeats > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: palette.successSoft,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    l10n.standSeatsFreeCount(stand.freeSeats),
+                                    style: TextStyle(
+                                      color: palette.success,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                        if (stand.freeSeats > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: palette.successSoft,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              l10n.standSeatsFreeCount(stand.freeSeats),
-                              style: TextStyle(
-                                color: palette.success,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                          ),
                         const SizedBox(width: 6),
                         Icon(Icons.chevron_right, color: palette.textMuted),
                       ],
@@ -609,25 +658,20 @@ class PassengerStandReservationBanner extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          Row(
+          _StandActions(
             children: [
               if (reservation.driverPhone.isNotEmpty)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: busy
-                        ? null
-                        : () => launchUrl(
-                            Uri(scheme: 'tel', path: reservation.driverPhone)),
-                    icon: const Icon(Icons.phone_rounded, size: 18),
-                    label: Text(l10n.callButton),
-                  ),
+                OutlinedButton.icon(
+                  onPressed: busy
+                      ? null
+                      : () => launchUrl(
+                          Uri(scheme: 'tel', path: reservation.driverPhone)),
+                  icon: const Icon(Icons.phone_rounded, size: 18),
+                  label: Text(l10n.callButton),
                 ),
-              if (reservation.driverPhone.isNotEmpty) const SizedBox(width: 10),
-              Expanded(
-                child: TextButton(
-                  onPressed: busy ? null : onCancel,
-                  child: Text(l10n.standReservationCancel),
-                ),
+              TextButton(
+                onPressed: busy ? null : onCancel,
+                child: Text(l10n.standReservationCancel),
               ),
             ],
           ),
@@ -873,23 +917,18 @@ class PassengerStandCarCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          Row(
+          _StandActions(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: entry.driverPhone.isEmpty || busy
-                      ? null
-                      : () => onCall(entry.driverPhone),
-                  icon: const Icon(Icons.phone_rounded, size: 18),
-                  label: Text(l10n.callButton),
-                ),
+              OutlinedButton.icon(
+                onPressed: entry.driverPhone.isEmpty || busy
+                    ? null
+                    : () => onCall(entry.driverPhone),
+                icon: const Icon(Icons.phone_rounded, size: 18),
+                label: Text(l10n.callButton),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton(
-                  onPressed: canReserve ? () => onReserve(entry) : null,
-                  child: Text(l10n.standReserveSeat),
-                ),
+              FilledButton(
+                onPressed: canReserve ? () => onReserve(entry) : null,
+                child: Text(l10n.standReserveSeat),
               ),
             ],
           ),
@@ -1006,4 +1045,35 @@ class _Notice extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Keep actions readable without shrinking the user's chosen text size.
+class _StandActions extends StatelessWidget {
+  const _StandActions({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 300 ||
+              MediaQuery.textScalerOf(context).scale(14) > 18;
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  children[i],
+                ],
+              ],
+            );
+          }
+          return Row(children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(child: children[i]),
+            ],
+          ]);
+        },
+      );
 }
