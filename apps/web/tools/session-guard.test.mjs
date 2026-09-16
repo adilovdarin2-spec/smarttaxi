@@ -66,3 +66,12 @@ test("a token that simply expired ends the session like any other dead token", (
   // A late response for a previous token must still never evict a newer login.
   assert.match(source, /requestIsCurrent\(\)/);
 });
+
+test('a bare web preview uses the temporary public API, while local QA documents port 4001', () => {
+  const apiSource = readFileSync(new URL('../src/lib/api.js', import.meta.url), 'utf8');
+  const envExample = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
+  assert.match(apiSource, /fallbackApiUrl = "https:\/\/smarttaxi-api-production-c518\.up\.railway\.app"/);
+  assert.doesNotMatch(apiSource, /127\.0\.0\.1:4000/);
+  assert.match(envExample, /VITE_API_URL=http:\/\/127\.0\.0\.1:4001/);
+  assert.match(envExample, /VITE_SOCKET_URL=http:\/\/127\.0\.0\.1:4001/);
+});

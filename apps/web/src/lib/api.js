@@ -6,10 +6,11 @@ import {
   writeSessionToken,
 } from './browserSession.js';
 
-const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-const fallbackApiUrl = isLocalHost
-  ? "http://127.0.0.1:4000"
-  : "https://api.smarttaxi.kz";
+// The public Railway API is the temporary default until the owner points the
+// BaiSapar domain at its replacement.  A bare Vite preview must not silently
+// target a non-existent localhost:4000 server and make the whole app look
+// offline. Local Docker/phone QA always supplies VITE_API_URL explicitly.
+const fallbackApiUrl = "https://smarttaxi-api-production-c518.up.railway.app";
 
 export const API_URL = (import.meta.env.VITE_API_URL || fallbackApiUrl).replace(/\/$/, "");
 export function getToken(){ return readSessionToken(); }
