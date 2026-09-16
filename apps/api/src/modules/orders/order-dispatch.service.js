@@ -1,6 +1,8 @@
 import { AppError } from "../../common/errors.js";
 import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
+import { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
+export { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
 
 export const ORDER_STATUSES = [
   "SEARCHING_DRIVER",
@@ -26,15 +28,6 @@ export const ORDER_STATUSES = [
 ];
 
 export const OPEN_ORDER_STATUSES = ["SEARCHING_DRIVER", "NEW"];
-export const ACTIVE_ORDER_STATUSES = [
-  "DRIVER_FOUND",
-  "DRIVER_GOING_TO_CLIENT",
-  "DRIVER_ARRIVED",
-  "WAITING_CLIENT",
-  "TRIP_STARTED",
-  "DRIVER_ASSIGNED",
-  "IN_PROGRESS"
-];
 // Which physical leg the driver is on — used to pick the routing target
 // (pickup point vs dropoff point) for the live "driver active route".
 export const TO_PICKUP_ORDER_STATUSES = [

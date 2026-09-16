@@ -1,6 +1,7 @@
 import { query as defaultQuery, tx } from "../../db/pool.js";
 import { AppError } from "../../common/errors.js";
 import { assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { ACTIVE_ORDER_STATUSES } from '../orders/active-order-statuses.js';
 
 // A stand is the physical place drivers already queue at off-app: the
 // межгород line by the bazaar, the по городу line by the bus station. The
@@ -352,9 +353,42 @@ export async function loadLiveEntryForDriver(driverId, executor) {
   `, [driverId])).rows[0] || null;
 }
 
+// Call with a freshly locked driver, never the object read by the HTTP route.
+// Stand admission must not "repair" BUSY or change dispatch status.
+export async function assertStandDriverAvailable(driver, executor) {
+  if (!driver) throw new AppError('Водитель не найден', 404, 'DRIVER_NOT_FOUND');
+  if (driver.is_blocked) throw new AppError('Водитель заблокирован', 403, 'DRIVER_BLOCKED');
+  if (driver.status === 'BUSY') {
+    throw new AppError('Водитель занят. Сначала нужно завершить поездку', 409, 'DRIVER_HAS_ACTIVE_ORDER');
+  }
+  if (driver.status !== 'FREE') {
+    throw new AppError('Водителю нужно выйти на линию, чтобы занять место на стоянке', 409, 'DRIVER_OFFLINE');
+  }
+  const active = (await run(executor,
+    'SELECT id FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1',
+    [driver.id, ACTIVE_ORDER_STATUSES])).rows[0];
+  if (active) throw new AppError('У водителя есть незавершённая поездка', 409, 'DRIVER_HAS_ACTIVE_ORDER');
+}
+
+export function assertHandoverLocation(stand, location, { queuePresence = false, now = Date.now() } = {}) {
+  const age = now - new Date(location?.updated_at ?? NaN).getTime();
+  const lat = location?.lat == null ? NaN : Number(location.lat);
+  const lng = location?.lng == null ? NaN : Number(location.lng);
+  const accuracy = location?.accuracy == null ? NaN : Number(location.accuracy);
+  if (!Number.isFinite(age) || age < -5000 || age > 30_000 ||
+      !Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lng) || Math.abs(lng) > 180 ||
+      (!queuePresence && (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 60))) {
+    throw new AppError('Не удалось подтвердить местоположение водителя. Попросите его открыть стоянку и обновить GPS',
+      409, 'STAND_HANDOVER_LOCATION_REQUIRED');
+  }
+  return assertInsideStand(stand, { lat, lng });
+}
+
 export async function joinQueue({ driver, standId, lat, lng, destinationLabel, destinationRegionId, pricePerSeat, totalSeats, comment }) {
   try {
     return await tx(async (client) => {
+      driver = (await client.query('SELECT * FROM drivers WHERE id=$1 FOR UPDATE', [driver.id])).rows[0];
+      await assertStandDriverAvailable(driver, client);
       const stand = await loadStand(standId, client);
       if (!stand.is_active) throw new AppError("Stand is closed", 409, "STAND_INACTIVE");
       // Standing at the place is not the same as being allowed to work there.
@@ -593,13 +627,18 @@ export async function leaveQueue({ driver, entryId, reason = "DRIVER_LEFT" }) {
 // and the giver steps out.
 export async function handOverTurn({ driver, entryId, toDriverId }) {
   return tx(async (client) => {
+    if (toDriverId === driver.id) throw new AppError("Choose another driver", 400, "STAND_HANDOVER_SELF");
+    // Driver rows first, as in dispatch. Stable ordering serializes A -> B
+    // and B -> A instead of deadlocking their queue entries.
+    const drivers = (await client.query('SELECT * FROM drivers WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
+      [[driver.id, toDriverId]])).rows;
+    const target = drivers.find(row => row.id === toDriverId);
     const entry = (await client.query("SELECT * FROM taxi_stand_queue_entries WHERE id=$1 FOR UPDATE", [entryId])).rows[0];
     if (!entry) throw new AppError("Queue entry not found", 404, "STAND_ENTRY_NOT_FOUND");
     if (entry.driver_id !== driver.id) throw new AppError("Forbidden queue entry", 403, "FORBIDDEN_STAND_ENTRY");
     if (!["WAITING", "BOARDING"].includes(entry.status)) {
       throw new AppError("This place in the line is closed", 409, "STAND_ENTRY_NOT_LIVE", { status: entry.status });
     }
-    if (toDriverId === driver.id) throw new AppError("Choose another driver", 400, "STAND_HANDOVER_SELF");
     const pendingSeats = await pendingSeatsForEntry(entryId, client);
     if (Number(entry.taken_seats) > 0 || pendingSeats > 0) {
       throw new AppError("Release your booked seats before giving away the turn", 409, "STAND_HANDOVER_HAS_SEATS", {
@@ -607,11 +646,11 @@ export async function handOverTurn({ driver, entryId, toDriverId }) {
       });
     }
 
-    const target = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [toDriverId])).rows[0];
-    if (!target) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
-    if (target.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+    await assertStandDriverAvailable(target, client);
 
     const stand = await loadStand(entry.stand_id, client);
+    if (!stand.is_active) throw new AppError('Стоянка закрыта', 409, 'STAND_INACTIVE');
+    await assertDriverRegionApproved(target, stand.region_id, client);
     const targetEntry = (await client.query(`
       SELECT * FROM taxi_stand_queue_entries
       WHERE driver_id=$1 AND status IN ${LIVE_STATUSES}
@@ -622,6 +661,15 @@ export async function handOverTurn({ driver, entryId, toDriverId }) {
       if (targetEntry.stand_id !== entry.stand_id) {
         throw new AppError("That driver is in another stand line", 409, "STAND_HANDOVER_OTHER_STAND");
       }
+      // Both cars must be free of passengers before swapping their places.
+      if (Number(targetEntry.taken_seats) > 0 || await pendingSeatsForEntry(targetEntry.id, client) > 0) {
+        throw new AppError('У выбранного водителя уже есть пассажиры или заявки. Обмен местами недоступен',
+          409, 'STAND_HANDOVER_TARGET_HAS_SEATS');
+      }
+      // Stand-only clients publish presence without a navigation location.
+      // touchPresence never refreshes this timestamp without coordinates.
+      assertHandoverLocation(stand, { lat: targetEntry.last_lat, lng: targetEntry.last_lng,
+        updated_at: targetEntry.last_seen_at }, { queuePresence: true });
       // Postgres has no deferred unique index here, so park the giver on a
       // sentinel sequence for the length of the swap rather than colliding
       // with idx_stand_queue_live_seq mid-statement.
@@ -643,12 +691,11 @@ export async function handOverTurn({ driver, entryId, toDriverId }) {
     // clears — approved for this stand's region, and actually standing there.
     // Their last published position is the only fact the server has about
     // where they are.
-    await assertDriverRegionApproved(target, stand.region_id, client);
     const location = (await client.query(
-      "SELECT lat, lng FROM driver_locations WHERE driver_id=$1",
+      "SELECT lat, lng, accuracy, updated_at FROM driver_locations WHERE driver_id=$1",
       [toDriverId]
-    )).rows[0] || { lat: target.lat, lng: target.lng };
-    assertInsideStand(stand, { lat: location?.lat, lng: location?.lng });
+    )).rows[0];
+    assertHandoverLocation(stand, location);
 
     await client.query(`
       UPDATE taxi_stand_queue_entries

@@ -4,6 +4,8 @@ import {
   OUT_OF_RANGE_GRACE_MINUTES,
   RESERVATION_TTL_MINUTES,
   assertInsideStand,
+  assertHandoverLocation,
+  assertStandDriverAvailable,
   haversineMeters,
   publicQueueEntry,
   publicReservation,
@@ -15,6 +17,10 @@ import {
 } from "../modules/stands/stands.service.js";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
+const { ACTIVE_ORDER_STATUSES } = await import('../modules/orders/active-order-statuses.js');
+const dispatchStatuses = await import('../modules/orders/order-dispatch.service.js');
+assert.equal(dispatchStatuses.ACTIVE_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, 'Stands and dispatch must use the same active statuses');
+assert.ok(ACTIVE_ORDER_STATUSES.includes('DRIVER_ASSIGNED') && ACTIVE_ORDER_STATUSES.includes('IN_PROGRESS'));
 
 /* ------------------------------------------------- the geofence itself */
 
@@ -35,6 +41,41 @@ assert.throws(
   () => assertInsideStand(stand, { lat: null, lng: null }),
   (error) => error.code === "STAND_LOCATION_REQUIRED"
 );
+
+const fixNow = Date.parse('2026-09-16T12:00:00Z');
+const freshFix = { lat: stand.lat, lng: stand.lng, accuracy: 10, updated_at: new Date(fixNow) };
+assert.equal(assertHandoverLocation(stand, freshFix, { now: fixNow }), 0);
+for (const fix of [null, {}, { ...freshFix, updated_at: null }, { ...freshFix, updated_at: 'bad' },
+  { ...freshFix, updated_at: new Date(fixNow - 30_001) }, { ...freshFix, updated_at: new Date(fixNow + 5001) },
+  ...[null, -1, 61, Infinity, NaN].map(accuracy => ({ ...freshFix, accuracy })),
+  ...[null, NaN, Infinity, 91].map(lat => ({ ...freshFix, lat })),
+  ...[null, NaN, Infinity, 181].map(lng => ({ ...freshFix, lng })),
+]) {
+  assert.throws(() => assertHandoverLocation(stand, fix, { now: fixNow }),
+    error => error.code === 'STAND_HANDOVER_LOCATION_REQUIRED');
+}
+assert.equal(assertHandoverLocation(stand, { ...freshFix, accuracy: 60, updated_at: new Date(fixNow - 30_000) }, { now: fixNow }), 0);
+assert.equal(assertHandoverLocation(stand, { ...freshFix, accuracy: null }, { now: fixNow, queuePresence: true }), 0);
+assert.throws(() => assertHandoverLocation(stand, { ...freshFix, lat: stand.lat + 0.1 }, { now: fixNow }),
+  error => error.code === 'STAND_OUT_OF_RANGE');
+const noQueries = () => { throw new Error('Unavailable drivers must not reach order queries'); };
+for (const [driver, code] of [[null, 'DRIVER_NOT_FOUND'], [{ is_blocked: true }, 'DRIVER_BLOCKED'],
+  [{ status: 'OFFLINE' }, 'DRIVER_OFFLINE'], [{ status: 'BREAK' }, 'DRIVER_OFFLINE'],
+  [{ status: 'BUSY' }, 'DRIVER_HAS_ACTIVE_ORDER']]) {
+  await assert.rejects(() => assertStandDriverAvailable(driver, noQueries), error => error.code === code);
+}
+let availabilityQueries = 0;
+for (const status of [null, ...ACTIVE_ORDER_STATUSES]) {
+  const check = () => assertStandDriverAvailable({ id: 'driver', status: 'FREE' }, async (sql, params) => {
+    availabilityQueries++;
+    assert.ok(sql.startsWith('SELECT id FROM orders'), 'Eligibility must not write or repair driver status');
+    assert.deepEqual(params, ['driver', ACTIVE_ORDER_STATUSES]);
+    return { rows: status ? [{ id: 'order', status }] : [] };
+  });
+  if (status) await assert.rejects(check, error => error.code === 'DRIVER_HAS_ACTIVE_ORDER');
+  else await check();
+}
+assert.equal(availabilityQueries, 8);
 
 /* ------------------------------------ what each audience is allowed to see */
 
