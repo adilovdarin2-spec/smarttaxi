@@ -9,7 +9,8 @@ import 'package:smarttaxi_app/l10n/app_localizations.dart';
 // whether there is room, and how to reach the driver. Rendered at 320px and at
 // large text, because a bazaar is not where anyone zooms in to read.
 
-StandQueueEntry _entry({int taken = 1, int total = 4, String status = 'BOARDING'}) {
+StandQueueEntry _entry(
+    {int taken = 1, int total = 4, String status = 'BOARDING'}) {
   return StandQueueEntry.fromJson({
     'id': 'e1',
     'standId': 's1',
@@ -58,7 +59,8 @@ Future<void> _pump(WidgetTester tester, Widget child,
 void main() {
   for (final dark in [false, true]) {
     for (final scale in [1.0, 1.6]) {
-      testWidgets('a car on the stand reads at 320px ${dark ? 'dark' : 'light'} at $scale',
+      testWidgets(
+          'a car on the stand reads at 320px ${dark ? 'dark' : 'light'} at $scale',
           (tester) async {
         await _pump(
           tester,
@@ -170,7 +172,11 @@ void main() {
           'status': 'CONFIRMED',
           'source': 'APP',
           'standName': 'Базар, межгород',
-          'driver': {'name': 'Ержан', 'phone': '+77010000001', 'plate': '123ABC13'},
+          'driver': {
+            'name': 'Ержан',
+            'phone': '+77010000001',
+            'plate': '123ABC13'
+          },
         }),
         busy: false,
         onCancel: () async {},
@@ -230,6 +236,52 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Машины на стоянке'), findsOneWidget);
     expect(find.text('Забронировать место'), findsOneWidget);
+    expect(find.byKey(const ValueKey('stand_call_hint')), findsOneWidget);
+  });
+
+  testWidgets('an empty stand does not tell the rider to call a missing driver',
+      (tester) async {
+    final view = StandQueueView.fromJson({
+      'stand': const {
+        'id': 's1',
+        'regionId': 'r1',
+        'name': 'Empty stand',
+        'kind': 'CITY',
+        'lat': 40.663,
+        'lng': 68.553,
+        'radiusM': 200,
+        'driversCount': 0,
+        'freeSeats': 0,
+        'isActive': true,
+      },
+      'entries': const [],
+    });
+    tester.view.physicalSize = const Size(360, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        theme: buildSmartTaxiTheme(),
+        home: Scaffold(
+          body: PassengerStandSheet(
+            view: view,
+            reservation: null,
+            busy: false,
+            onCall: (_) async {},
+            onReserve: (_) async {},
+            onCancelReservation: () async {},
+            error: null,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('stand_call_hint')), findsNothing);
   });
 }
 

@@ -40,7 +40,7 @@ No unrelated package-major sweep was performed.
 ## Verified evidence
 
 - `flutter analyze`: no issues;
-- `flutter test`: 367/367 passed, including the new exact-version and
+- `flutter test`: 368/368 passed, including the new exact-version and
   compatibility-mode guard;
 - the focused `android_release_policy_test.dart` run also passed 7/7;
 - `flutter build apk --profile`: passed on AGP 9.4/Gradle 9.6;
@@ -50,6 +50,31 @@ No unrelated package-major sweep was performed.
 - APK signature verification: v2 signature valid, one Android Debug signer.
 
 The profile APK is a local QA artifact, not an owner-signed store release.
+
+## Physical-device QA follow-up
+
+The local profile build was installed on a connected `2409BRN2CY` Android
+device with ADB reverse to the isolated development API and web services. The
+following owned flows were exercised on the device without production
+accounts, SMS or payment providers:
+
+- local client login and session restoration;
+- region confirmation and passenger home map;
+- real building selection (`Бектасова 66`) and road-shaped route preview;
+- both passenger tariffs and the payment-method sheet;
+- Android system share sheet after the `share_plus` upgrade;
+- Android system document picker after the `file_picker` upgrade;
+- passenger stand list and stand detail.
+
+The second cold profile launch completed in 2.245 seconds. The rebuilt local
+QA APK is 192,179,183 bytes with SHA-256
+`6d6803ef79b72ca3054c65cf0d8529246257e9e4a7bb9f07f84e9ab804198dfc`.
+
+Physical QA exposed one bounded stand UX defect: an empty stand still told the
+rider to call a driver. `PassengerStandSheet` now renders that instruction only
+when a `BOARDING` vehicle is actually offered. Widget coverage verifies both
+the populated and empty queue states, and the corrected empty state was
+rechecked on the profile build installed on the phone.
 
 ## Remaining upstream migration risk
 
@@ -70,8 +95,8 @@ plugins was not used as a substitute for an upstream release.
 
 ## Acceptance still outside this pass
 
-No phone was used. Installation, document-picker UI, platform share sheet,
-secure-storage persistence after upgrade, moving GPS/navigation and audible TTS
-remain physical-device acceptance items. Production Firebase, owner release
-signing, SMS, payments, legal/store inputs and official regional address
-exports remain external blockers described in the main release audit.
+Moving GPS/navigation, audible TTS, background behavior across OEM power
+management and the complete two-phone rider/driver lifecycle remain physical
+field acceptance items. Production Firebase, owner release signing, SMS,
+payments, legal/store inputs and official regional address exports remain
+external blockers described in the main release audit.

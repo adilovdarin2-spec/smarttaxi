@@ -798,11 +798,14 @@ class PassengerStandSheet extends StatelessWidget {
                   onCall: onCall,
                   onReserve: onReserve,
                 ),
-            const SizedBox(height: 10),
-            Text(
-              l10n.standCallToConfirm,
-              style: TextStyle(color: palette.textMuted, fontSize: 12.5),
-            ),
+            if (boarding.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                l10n.standCallToConfirm,
+                key: const ValueKey('stand_call_hint'),
+                style: TextStyle(color: palette.textMuted, fontSize: 12.5),
+              ),
+            ],
           ],
         ),
       ),
