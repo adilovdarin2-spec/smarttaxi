@@ -3,8 +3,10 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    // flutter_tts still applies legacy KGP, so Flutter 3.47's documented AGP 9
+    // compatibility mode remains enabled until that upstream plugin migrates.
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after Android and Kotlin.
     id("dev.flutter.flutter-gradle-plugin")
     // A clean CI checkout intentionally has no owner Firebase configuration.
     // Resolve the plugin here, then apply it only when google-services.json is
@@ -33,10 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -76,6 +74,12 @@ android {
             manifestPlaceholders["cleartextTraffic"] = "false"
             signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else null
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

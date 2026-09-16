@@ -111,11 +111,11 @@ class _DriverApplicationDocumentsScreenState
   }
 
   Future<void> _pickFromGallery(String type) async {
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['jpg', 'jpeg', 'png', 'pdf'],
     );
-    await _uploadFromPath(type, result?.files.single.path);
+    await _uploadFromPath(type, file?.path);
   }
 
   bool get _allRequiredUploaded => DriverDocumentType.required.every((type) =>

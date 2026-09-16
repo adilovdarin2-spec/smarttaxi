@@ -5217,9 +5217,15 @@ class _PassengerShellState extends State<PassengerShell>
                       enabled: true,
                       loading: false,
                       text: l10n.passengerReferralsShareCode,
-                      onTap: () => unawaited(Share.share(
-                        l10n.passengerReferralsShareMessage(summary.code),
-                      )),
+                      onTap: () => unawaited(
+                        SharePlus.instance.share(
+                          ShareParams(
+                            text: l10n.passengerReferralsShareMessage(
+                              summary.code,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -9784,7 +9790,11 @@ class _TripDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.ios_share_rounded),
             tooltip: l10n.passengerTripShareTooltip,
-            onPressed: () => unawaited(Share.share(_tripShareText(l10n, trip))),
+            onPressed: () => unawaited(
+              SharePlus.instance.share(
+                ShareParams(text: _tripShareText(l10n, trip)),
+              ),
+            ),
           ),
         ],
       ),
@@ -13716,9 +13726,16 @@ class _ShareTripButton extends StatelessWidget {
                       .where((value) => (value ?? '').trim().isNotEmpty)
                       .join(' → ');
                   final routeSuffix = route.isEmpty ? '' : ': $route';
-                  unawaited(Share.share(
-                    l10n.passengerShareTripMessage(routeSuffix, link),
-                  ));
+                  unawaited(
+                    SharePlus.instance.share(
+                      ShareParams(
+                        text: l10n.passengerShareTripMessage(
+                          routeSuffix,
+                          link,
+                        ),
+                      ),
+                    ),
+                  );
                 },
           child: SizedBox(
             width: 34,

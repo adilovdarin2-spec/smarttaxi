@@ -77,3 +77,9 @@ is test tooling only and does not require an API runtime deployment.
 - real regional road/access acceptance, including the documented Maktaaral
   provider detour.
 
+## Android toolchain follow-up
+
+The later [AGP 9 compatibility pass](android-agp9-compatibility-2026-09-16.md)
+replaced the older Gradle/AGP/Kotlin set, compiled a profile APK and retained
+Flutter's documented legacy-KGP compatibility mode for five not-yet-migrated
+published plugins.

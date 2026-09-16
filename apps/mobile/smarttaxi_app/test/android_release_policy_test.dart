@@ -4,11 +4,30 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+  final settings = File('android/settings.gradle.kts').readAsStringSync();
+  final gradleProperties = File('android/gradle.properties').readAsStringSync();
+  final gradleWrapper = File(
+    'android/gradle/wrapper/gradle-wrapper.properties',
+  ).readAsStringSync();
   final ci =
       File('../../../.github/workflows/basic-check.yml').readAsStringSync();
 
   test('Android release targets the current Google Play API level', () {
     expect(gradle, contains('targetSdk = 36'));
+  });
+
+  test('Android build stays on the verified AGP 9 compatibility set', () {
+    expect(settings, contains('version "9.4.0" apply false'));
+    expect(settings, contains('version "2.3.20" apply false'));
+    expect(gradleWrapper, contains('gradle-9.6.0-all.zip'));
+
+    // Flutter 3.47 still needs compatibility mode while published plugins such
+    // as flutter_tts apply the legacy Kotlin Gradle Plugin. These flags must be
+    // removed together only after every plugin has migrated to built-in Kotlin.
+    expect(gradleProperties, contains('android.builtInKotlin=false'));
+    expect(gradleProperties, contains('android.newDsl=false'));
+    expect(gradle, contains('id("kotlin-android")'));
+    expect(gradle, contains('JvmTarget.JVM_17'));
   });
 
   test('the app is published under one identity, spelled the same everywhere',
