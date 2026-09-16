@@ -37,3 +37,15 @@ APK signature verifies (v2, one signer). Profile QA candidate only; no phone use
 ## Remaining
 
 Continue release verification outside this stand recovery slice, including driver shift/order state races and full end-to-end device/field scenarios. SMS, payment merchant, legal/store decisions, official coordinate-bearing address registries and licensed/live traffic data remain external gates. No universal address coverage, traffic-optimal routing or zero-bug claim follows from these checks.
+
+Next concrete code audit: `driver-core.routes.js` online/offline currently reads availability before a standalone update; reproduce contention against order acceptance. Also compare `respondToDriverPriceOffer` and `respondToClientCounterOffer` with `acceptOrderForDriver`: the latter releases a stand place inside its transaction, while the former paths currently return no stand release. Reproduce with local fixtures before making this a separate correction. Neither issue is marked fixed by this stage.
+
+## Publication receipt
+
+Code/documentation commit `33aa241` pushed to `origin/dev`.
+Railway deployments both report `SUCCESS`:
+
+- API: `1f811dc2-20a2-45df-b1cb-7cbf24caa170`.
+- Web: `b23bc8f8-abe4-4584-8440-ed886cef1af4`.
+
+Public `/order` returns 200 with `index-CJvyKzqS.js`. The deployed `standOutcome-uYfVD8WF.js` returns 200 and contains the new closure/expiry explanations. Public readiness remains 503/degraded with SMS not configured; database, Redis and OSRM are healthy. Read-only production stand accounting reports zero live entries, zero counter mismatches and zero overcommitted entries. No production account/order/stand mutations were used for QA.
