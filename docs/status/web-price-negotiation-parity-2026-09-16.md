@@ -72,4 +72,24 @@ chain. Also review price consent if the offer changes concurrently with an
 accept request; current tests cover owner/direction and policy changes, not that
 specific stale-price race. Do not infer these paths are complete from this suite.
 
-Production rollout verification will be recorded after deployment completes.
+## Published and verified
+
+- Code `6327120` pushed to `origin/dev`.
+- API deployment `06bc051d-f978-49b0-a83b-2d59a27b157a`: SUCCESS.
+- Web deployment `8eeab942-3770-436e-b1e0-5671770147d6`: SUCCESS.
+- Remote API dispatch file SHA-256 equals local:
+  `ae9f42083b13eb1d0e36fec6c3b2f67531b85df0c67543c2390e9def6f2f5aff`.
+- Public web HTTP 200: entry `index-4a4mk1Zq.js`; downloaded
+  `DriverApp-DclBeDnp.js` contains driver counter controls,
+  `ClientApp-DtLwiwPj.js` competing offers, and
+  `standOutcome-BiEh4-rg.css` the shared price form styling.
+- Public liveness 200. Readiness remains 503 with SMS not configured; DB,
+  Redis and private OSRM checks are healthy. No production accounts or orders
+  were created for verification; configuration/gates were not changed.
+- GitHub CLI lacks a login, but the public GitHub Actions API is readable.
+  Runs [35097046700](https://github.com/adilovdarin2-spec/smarttaxi/actions/runs/35097046700)
+  and [35097041359](https://github.com/adilovdarin2-spec/smarttaxi/actions/runs/35097041359)
+  both target `6327120129d4161cea4c9addb73538eb6ae50a11`. At the recorded check,
+  API/web/operations jobs passed; mobile passed analyze/tests and was still
+  running `flutter build apk --debug --no-pub`. Do not call the complete runs
+  green until their final statuses are read. Previous commit `2020a82` passed.
