@@ -39,7 +39,8 @@ deployment state. Current stages:
 - [Settlement label polish](map-place-label-polish-2026-09-16.md): Liberty's
   visual `Atakent / Атакент` duplicate is one local place label in web/Flutter.
   Real web map/picker/route/tariff/payment smoke passed; web 187 tests, Flutter
-  366 tests/analyze and a fresh signed profile APK passed. No phone used.
+  366 tests/analyze and a fresh signed profile APK passed. Web deployed and
+  public lazy map asset verified. No phone used.
 
 The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass

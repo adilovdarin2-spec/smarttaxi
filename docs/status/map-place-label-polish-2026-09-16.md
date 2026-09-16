@@ -46,3 +46,13 @@ Fresh Railway-default profile artifact:
 This change removes a confirmed map-label defect. It does not add missing
 official addresses, certify every building, validate moving navigation or
 establish provider/production capacity.
+
+## Publication
+
+- Code `241119e` pushed to `origin/dev`.
+- Railway web deployment `e9e27ff5-4ac5-4c6a-b1e0-2a366071d45a`: SUCCESS.
+- Public `/order` returns 200 with `index-BLu4xLOc.js`; its lazy
+  `MapView-BpFalOyu.js` returns 200 and contains the single-local-place
+  expression. Verification was read-only and made no production account,
+  order, stand or configuration changes.
+- CI runs for this commit were still running at the publication observation.
