@@ -37,4 +37,46 @@ void main() {
     restoration.complete();
     expect(await result, isFalse);
   });
+
+  test('first detection asks once when several regions are available', () {
+    expect(
+      shouldConfirmDetectedRegion(
+        activeRegionCount: 13,
+        detectedRegionId: 'myrzakent',
+      ),
+      isTrue,
+    );
+  });
+
+  test('the same confirmed region does not ask again after a cold launch', () {
+    expect(
+      shouldConfirmDetectedRegion(
+        activeRegionCount: 13,
+        detectedRegionId: 'myrzakent',
+        confirmedRegionId: 'myrzakent',
+      ),
+      isFalse,
+    );
+  });
+
+  test('moving to a different region requires a new confirmation', () {
+    expect(
+      shouldConfirmDetectedRegion(
+        activeRegionCount: 13,
+        detectedRegionId: 'shymkent',
+        confirmedRegionId: 'myrzakent',
+      ),
+      isTrue,
+    );
+  });
+
+  test('a single active region needs no redundant confirmation', () {
+    expect(
+      shouldConfirmDetectedRegion(
+        activeRegionCount: 1,
+        detectedRegionId: 'myrzakent',
+      ),
+      isFalse,
+    );
+  });
 }

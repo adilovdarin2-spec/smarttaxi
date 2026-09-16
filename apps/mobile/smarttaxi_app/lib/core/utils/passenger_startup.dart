@@ -8,3 +8,12 @@ Future<bool> mayLocatePassenger({
   await orderRestoration;
   return isMounted() && !hasOrder();
 }
+
+bool shouldConfirmDetectedRegion({
+  required int activeRegionCount,
+  required String detectedRegionId,
+  String? confirmedRegionId,
+}) {
+  if (activeRegionCount <= 1) return false;
+  return confirmedRegionId?.trim() != detectedRegionId.trim();
+}

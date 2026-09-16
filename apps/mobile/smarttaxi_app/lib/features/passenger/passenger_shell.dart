@@ -1122,6 +1122,7 @@ class _PassengerShellState extends State<PassengerShell>
     }
     if (selected == null || !mounted || _order != null) return null;
     _applyRegion(selected, resetRoute: resetRoute);
+    unawaited(_rememberConfirmedPassengerRegion(selected.id));
     if (askLocationAfter) {
       _maybeAskLocationOnStart();
     }
@@ -1165,6 +1166,23 @@ class _PassengerShellState extends State<PassengerShell>
       backgroundColor: Colors.transparent,
       builder: (_) => _RegionConfirmSheet(region: region),
     );
+  }
+
+  Future<void> _rememberConfirmedPassengerRegion(String regionId) async {
+    try {
+      await widget.authStore.saveConfirmedPassengerRegionId(regionId);
+    } catch (_) {
+      // A storage failure must not block location or address selection. It
+      // only means the confirmation may be requested again next launch.
+    }
+  }
+
+  Future<String?> _readConfirmedPassengerRegion() async {
+    try {
+      return await widget.authStore.readConfirmedPassengerRegionId();
+    } catch (_) {
+      return null;
+    }
   }
 
   RegionOption? _regionForPoint(Coordinate point) {
@@ -1695,9 +1713,15 @@ class _PassengerShellState extends State<PassengerShell>
       final point = await _getPreciseLocation();
       if (!mounted || _order != null) return;
       final detectedRegion = _regionForPoint(point);
+      final confirmedRegionId = await _readConfirmedPassengerRegion();
+      if (!mounted || _order != null) return;
       if (!_startupRegionPromptShown &&
           detectedRegion != null &&
-          _regions.length > 1) {
+          shouldConfirmDetectedRegion(
+            activeRegionCount: _regions.length,
+            detectedRegionId: detectedRegion.id,
+            confirmedRegionId: confirmedRegionId,
+          )) {
         _startupRegionPromptShown = true;
         final action = await _confirmDetectedRegion(detectedRegion);
         if (!mounted || _order != null) return;
@@ -1724,6 +1748,7 @@ class _PassengerShellState extends State<PassengerShell>
             resetRoute: false,
             center: detectedRegion.center?.toLatLng() ?? point.toLatLng(),
           );
+          unawaited(_rememberConfirmedPassengerRegion(detectedRegion.id));
         }
       }
       final selectedRegion = _selectedRegion;

@@ -15,6 +15,8 @@ class AuthStore {
   static const _localeKey = 'smarttaxi.app.locale';
   static const _themeModeKey = 'smarttaxi.app.themeMode';
   static const _voiceEnabledKey = 'smarttaxi.app.voiceEnabled';
+  static const _confirmedRegionIdKey =
+      'smarttaxi.app.confirmedPassengerRegionId';
   static const _driverApplicationSubmittedKey =
       'smarttaxi.user.driverApplicationSubmitted';
 
@@ -42,6 +44,16 @@ class AuthStore {
 
   Future<void> saveVoiceEnabled(bool enabled) =>
       _storage.write(key: _voiceEnabledKey, value: enabled ? '1' : '0');
+
+  // Device-level passenger preference. A matching GPS region should not ask
+  // the same confirmation on every cold launch, while a different detected
+  // region must still be confirmed. Deliberately survives logout like locale,
+  // theme and navigator voice preferences.
+  Future<String?> readConfirmedPassengerRegionId() =>
+      _storage.read(key: _confirmedRegionIdKey);
+
+  Future<void> saveConfirmedPassengerRegionId(String regionId) =>
+      _storage.write(key: _confirmedRegionIdKey, value: regionId);
 
   Future<void> saveToken(String token) =>
       _storage.write(key: _tokenKey, value: token);
