@@ -32,7 +32,17 @@
 - Полный API test и syntax: PASS; web unit: 178/178 PASS; Docker Compose config и сборка: PASS (без удаления volumes).
 - Flutter полный test: 348/348 PASS; analyze: No issues found. Исходники Flutter и APK в этом этапе не менялись.
 - Усиленная браузерная проверка после исправления cleanup на 320 px: PASS, конечный скриншот пассажира просмотрен — рабочий экран стоянок, не recovery screen.
+- Тот же полный браузерный сценарий на 390 px: PASS; никаких caught React exceptions, клиентский экран остаётся рабочим после закрытия последней стоянки.
 - Усиленный `smoke-stand-recovery.mjs` проверяет существование рабочего `.client-stands`, отсутствие экрана восстановления и перехваченных React-ошибок, а не только отсутствие брони. Скриншоты хранятся в `%TEMP%\baisapar-stand-recovery-qa\<width>`.
+
+## Публикация
+
+- Код `8052e2a`, push `origin/dev` выполнен.
+- Railway API: `b63f5d61-2f15-4223-9c9e-0713f8f9d10a` — SUCCESS.
+- Railway web: `5beb2717-f42d-45cd-baf4-f66074d588ae` — SUCCESS.
+- Публичный `/order` и `MapView-Cp3fZekc.js` — HTTP 200; HTML ссылается на `index-C5YrwcWE.js`. В фактически отданном bundle проверен cleanup обёрток `{ marker }`.
+- Read-only production-агрегат после API deploy: 0 live entries, 0 mismatches, 0 overcommitted, 0 counter overcapacity (пустая очередь, не нагрузочная проверка).
+- Production readiness: 503, SMS не настроен; DB/Redis/OSRM исправны. Внешний gate не ослаблялся; production-аккаунты, заказы и очереди тестами не менялись.
 
 ## Что не доказано этим этапом
 
