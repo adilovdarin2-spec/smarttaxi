@@ -20,14 +20,20 @@ deployment state. Current stages:
   driver offers, passenger counters, competing offers, explicit selection vs
   acceptance and lost-acknowledgement recovery. Web 185 tests; Flutter 354 tests;
   API suite/build checks passed. Phone use is excluded from the current run.
+- [Displayed-price consent](price-offer-consent-2026-09-16.md): stale decisions
+  fail closed under the order/queue lock; web/Flutter submit displayed terms.
+  Local HTTP, PostgreSQL and real 320/390px browser conflicts passed, including
+  unchanged stand reservations and separate confirmation of the refreshed price.
+  Web 186 tests; Flutter 359 tests. Old clients must update for negotiation.
 
 The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass
 proves moving navigation, complete official address coverage or a production
 capacity target. Driver-application approval through creation of a usable
 driver account and region access remains an explicit end-to-end audit target;
-the seeded-driver smoke tests do not cover it. Concurrent replacement of a
-price offer while accepting also needs a separate consent-race check.
+the seeded-driver smoke tests do not cover it. Negotiated-price replacement
+during acceptance is covered by the September 16 consent stage; this does not
+prove every unrelated order-edit or direct base-price acceptance race.
 
 ## Verified local baseline
 

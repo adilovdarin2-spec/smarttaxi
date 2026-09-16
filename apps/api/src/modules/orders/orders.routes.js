@@ -858,6 +858,14 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
 const PriceOfferBody = z.object({
   priceKzt: z.coerce.number().int().positive().max(1_000_000)
 });
+const ExpectedPriceOffer = z.object({
+  driverId: z.string().uuid(),
+  priceKzt: z.number().int().positive().max(1_000_000),
+  proposedBy: z.enum(['DRIVER', 'CLIENT'])
+});
+// Optional at parsing only so older clients get the explicit upgrade/refresh
+// error from the service, never permission to act on an unseen offer.
+const PriceOfferResponse = z.object({ accept: z.boolean(), expectedOffer: ExpectedPriceOffer.optional() });
 
 router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ prefix: "orders-price-offer", windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
@@ -944,9 +952,10 @@ router.get("/:id/price-offers/queue", requireAuth, requireRole("CLIENT"), async 
 router.post("/:id/price-offers/queue/:queueId/promote", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-price-offer-promote", windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
     const { id, queueId } = z.object({ id: z.string().uuid(), queueId: z.string().uuid() }).parse(req.params);
+    const body = z.object({ expectedOffer: ExpectedPriceOffer.optional() }).parse(req.body || {});
     let previousDriverId = null;
     const order = await tx(async (client) => {
-      const result = await promoteQueuedPriceOffer({ orderId: id, queueOfferId: queueId, clientUserId: req.user.id, executor: client });
+      const result = await promoteQueuedPriceOffer({ orderId: id, queueOfferId: queueId, clientUserId: req.user.id, expectedOffer: body.expectedOffer, executor: client });
       previousDriverId = result.previousDriverId;
       await writeAudit(client, {
         action: "order_price_offer_queue_promoted",
@@ -983,11 +992,11 @@ router.post("/:id/price-offers/queue/:queueId/promote", requireAuth, requireRole
 router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-price-offer-respond", windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
-    const body = z.object({ accept: z.boolean() }).parse(req.body);
+    const body = PriceOfferResponse.parse(req.body);
     let offerDriverId = null;
     let standRelease = null;
     const order = await tx(async (client) => {
-      const result = await respondToDriverPriceOffer({ orderId: id, clientUserId: req.user.id, accept: body.accept, executor: client });
+      const result = await respondToDriverPriceOffer({ orderId: id, clientUserId: req.user.id, accept: body.accept, expectedOffer: body.expectedOffer, executor: client });
       offerDriverId = result.order.driver_offer_by_driver_id ?? null;
       standRelease = result.standRelease;
       await writeAudit(client, {
@@ -1024,7 +1033,7 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
 router.post("/:id/price-offer/counter", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders-price-offer-counter", windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
-    const body = PriceOfferBody.parse(req.body);
+    const body = PriceOfferBody.extend({ expectedOffer: ExpectedPriceOffer.optional() }).parse(req.body);
     const order = await tx(async (client) => {
       const target = (await client.query("SELECT price FROM orders WHERE id=$1", [id])).rows[0];
       if (!target) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
@@ -1035,7 +1044,7 @@ router.post("/:id/price-offer/counter", requireAuth, requireRole("CLIENT"), rate
           maxAllowed
         });
       }
-      const result = await submitClientCounterOffer({ orderId: id, clientUserId: req.user.id, priceKzt: body.priceKzt, executor: client });
+      const result = await submitClientCounterOffer({ orderId: id, clientUserId: req.user.id, priceKzt: body.priceKzt, expectedOffer: body.expectedOffer, executor: client });
       await writeAudit(client, {
         action: "order_client_counter_offer_submitted",
         actorUserId: req.user.id,
@@ -1068,10 +1077,10 @@ router.post("/:id/price-offer/counter", requireAuth, requireRole("CLIENT"), rate
 router.post("/:id/price-offer/driver-respond", requireAuth, requireRole("DRIVER"), rateLimit({ prefix: "orders-price-offer-driver-respond", windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
     const { id } = IdParam.parse(req.params);
-    const body = z.object({ accept: z.boolean() }).parse(req.body);
+    const body = PriceOfferResponse.parse(req.body);
     let standRelease = null;
     const order = await tx(async (client) => {
-      const result = await respondToClientCounterOffer({ orderId: id, driverUserId: req.user.id, accept: body.accept, executor: client });
+      const result = await respondToClientCounterOffer({ orderId: id, driverUserId: req.user.id, accept: body.accept, expectedOffer: body.expectedOffer, executor: client });
       standRelease = result.standRelease;
       await writeAudit(client, {
         action: body.accept ? "order_client_counter_offer_accepted" : "order_client_counter_offer_declined",

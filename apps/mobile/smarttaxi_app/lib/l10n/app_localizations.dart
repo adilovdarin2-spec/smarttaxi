@@ -102,6 +102,18 @@ abstract class AppLocalizations {
     Locale('zh')
   ];
 
+  /// No description provided for @priceOfferChanged.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.'**
+  String get priceOfferChanged;
+
+  /// No description provided for @priceOfferConfirmationRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновите приложение и подтвердите показанную цену заново.'**
+  String get priceOfferConfirmationRequired;
+
   /// No description provided for @driverNavNow.
   ///
   /// In ru, this message translates to:

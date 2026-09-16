@@ -813,6 +813,12 @@ class OrderSummary {
 
   bool get hasPendingDriverOffer =>
       driverOfferStatus == 'PENDING' && driverOfferPriceKzt != null;
+  // Capture the displayed terms; never fetch a newer price before consenting.
+  Map<String, dynamic> get priceOfferSnapshot => {
+        'driverId': driverOfferByDriverId,
+        'priceKzt': driverOfferPriceKzt,
+        'proposedBy': driverOfferProposedBy ?? 'DRIVER',
+      };
   // Whose turn it actually is to act right now, for a rider viewing this
   // order: true means the driver's price is the one on the table and the
   // rider can accept/decline/counter it; false means the rider already
@@ -1038,6 +1044,12 @@ class QueuedPriceOffer {
           (json['driverAvatarUrl'] ?? json['driver_avatar_url'])?.toString(),
     );
   }
+
+  Map<String, dynamic> get priceOfferSnapshot => {
+        'driverId': driverId,
+        'priceKzt': priceKzt,
+        'proposedBy': 'DRIVER',
+      };
 }
 
 class PaymentInfo {

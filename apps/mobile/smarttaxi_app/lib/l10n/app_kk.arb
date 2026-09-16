@@ -1,4 +1,6 @@
 {
+  "priceOfferChanged": "Ұсыныс өзгерді. Жаңа бағаны тексеріп, бөлек растаңыз.",
+  "priceOfferConfirmationRequired": "Қолданбаны жаңартып, көрсетілген бағаны қайта растаңыз.",
   "@@locale": "kk",
   "driverNavNow": "Қазір",
   "driverNavSpeedUnit": "км/сағ",

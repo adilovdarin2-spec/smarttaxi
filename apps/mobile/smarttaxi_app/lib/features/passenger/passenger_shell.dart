@@ -2382,14 +2382,28 @@ class _PassengerShellState extends State<PassengerShell>
 
   bool _respondingToPriceOffer = false;
 
-  Future<void> _respondToDriverPriceOffer(bool accept) async {
-    final order = _order;
-    if (order == null || _respondingToPriceOffer) return;
+  Future<void> _refreshPriceOfferAfterFailure(String orderId) async {
+    final previous = _order;
+    try {
+      final current = await widget.api.getMyActiveOrder();
+      if (!mounted || current?.id != orderId || !identical(previous, _order)) {
+        return;
+      }
+      _applyOrderSnapshot(current!);
+      await _loadQueuedPriceOffers(orderId);
+    } catch (_) {
+      // Keep the error and displayed terms; never replay a price decision.
+    }
+  }
+
+  Future<void> _respondToDriverPriceOffer(OrderSummary order, bool accept) async {
+    if (_order?.id != order.id || _respondingToPriceOffer) return;
     setState(() => _respondingToPriceOffer = true);
     try {
       final updated = await widget.api.respondToDriverPriceOffer(
         orderId: order.id,
         accept: accept,
+        expectedOffer: order.priceOfferSnapshot,
       );
       if (!mounted) return;
       setState(() => _order = updated);
@@ -2409,19 +2423,20 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       AppToast.showError(
           context, _readableError(AppLocalizations.of(context), error));
+      await _refreshPriceOfferAfterFailure(order.id);
     } finally {
       if (mounted) setState(() => _respondingToPriceOffer = false);
     }
   }
 
-  Future<void> _submitClientCounterOffer(int priceKzt) async {
-    final order = _order;
-    if (order == null || _respondingToPriceOffer) return;
+  Future<void> _submitClientCounterOffer(OrderSummary order, int priceKzt) async {
+    if (_order?.id != order.id || _respondingToPriceOffer) return;
     setState(() => _respondingToPriceOffer = true);
     try {
       final updated = await widget.api.submitClientCounterOffer(
         orderId: order.id,
         priceKzt: priceKzt,
+        expectedOffer: order.priceOfferSnapshot,
       );
       if (!mounted) return;
       setState(() => _order = updated);
@@ -2434,6 +2449,7 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       AppToast.showError(
           context, _readableError(AppLocalizations.of(context), error));
+      await _refreshPriceOfferAfterFailure(order.id);
     } finally {
       if (mounted) setState(() => _respondingToPriceOffer = false);
     }
@@ -2483,12 +2499,16 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _promoteQueuedPriceOffer(QueuedPriceOffer offer) async {
     final order = _order;
-    if (order == null || _promotingQueuedOfferId != null) return;
+    if (order == null || order.id != offer.orderId ||
+        _promotingQueuedOfferId != null) {
+      return;
+    }
     setState(() => _promotingQueuedOfferId = offer.id);
     try {
       final updated = await widget.api.promoteQueuedPriceOffer(
         orderId: order.id,
         queueOfferId: offer.id,
+        expectedOffer: offer.priceOfferSnapshot,
       );
       if (!mounted) return;
       setState(() {
@@ -2500,6 +2520,7 @@ class _PassengerShellState extends State<PassengerShell>
       if (!mounted) return;
       AppToast.showError(
           context, _readableError(AppLocalizations.of(context), error));
+      await _refreshPriceOfferAfterFailure(order.id);
     } finally {
       if (mounted) setState(() => _promotingQueuedOfferId = null);
     }
@@ -3477,8 +3498,10 @@ class _PassengerShellState extends State<PassengerShell>
                 onCancel: _confirmCancelOrder,
                 onNewTrip: _startNewPassengerTrip,
                 respondingToPriceOffer: _respondingToPriceOffer,
-                onRespondToPriceOffer: _respondToDriverPriceOffer,
-                onSubmitCounterOffer: _submitClientCounterOffer,
+                onRespondToPriceOffer: (accept) =>
+                    _respondToDriverPriceOffer(order, accept),
+                onSubmitCounterOffer: (price) =>
+                    _submitClientCounterOffer(order, price),
                 queuedPriceOffers: _queuedPriceOffers,
                 promotingQueuedOfferId: _promotingQueuedOfferId,
                 onPromoteQueuedOffer: _promoteQueuedPriceOffer,

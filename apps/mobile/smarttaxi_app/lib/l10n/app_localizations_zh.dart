@@ -9,6 +9,12 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get priceOfferChanged => '报价已更改。请查看新价格并单独确认。';
+
+  @override
+  String get priceOfferConfirmationRequired => '请更新应用并重新确认显示的价格。';
+
+  @override
   String get driverNavNow => '现在';
 
   @override

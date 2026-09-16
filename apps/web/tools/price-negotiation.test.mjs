@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { priceOfferBounds, pendingPriceOffer, validOfferPrice } from '../src/features/shared/priceNegotiation.js';
+import { priceOfferBounds, pendingPriceOffer, validOfferPrice, priceOfferSnapshot, queuedOfferSnapshot, priceOfferErrorMessage } from '../src/features/shared/priceNegotiation.js';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
@@ -27,6 +27,18 @@ test('pending offers distinguish counterpart, owner and invalid payloads', () =>
   assert.equal(pendingPriceOffer({ ...order, driver_offer_status: 'DECLINED' }), null);
   assert.equal(pendingPriceOffer({ ...order, driver_offer_price_kzt: null }), null);
   assert.equal(pendingPriceOffer({ ...order, driver_offer_by_driver_id: '' }), null);
+});
+
+test('consent snapshots preserve displayed terms independently of later updates', () => {
+  const order = { driver_offer_status: 'PENDING', driver_offer_by_driver_id: 'a', driver_offer_price_kzt: 800, driver_offer_proposed_by: 'DRIVER' };
+  const expected = priceOfferSnapshot(order);
+  order.driver_offer_price_kzt = 900;
+  order.driver_offer_proposed_by = 'CLIENT';
+  assert.deepEqual(expected, { driverId: 'a', priceKzt: 800, proposedBy: 'DRIVER' });
+  assert.deepEqual(priceOfferSnapshot(order), { driverId: 'a', priceKzt: 900, proposedBy: 'CLIENT' });
+  assert.deepEqual(queuedOfferSnapshot({ driverId: 'b', priceKzt: '750' }), { driverId: 'b', priceKzt: 750, proposedBy: 'DRIVER' });
+  assert.equal(priceOfferSnapshot({}), null);
+  for (const code of ['PRICE_OFFER_CHANGED', 'PRICE_OFFER_CONFIRMATION_REQUIRED']) assert.match(priceOfferErrorMessage({ code }), /подтвердите/);
 });
 
 test('rider cannot accept their own counter; only its named driver can answer', async () => {

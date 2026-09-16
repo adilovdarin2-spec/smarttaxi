@@ -1,4 +1,6 @@
 {
+  "priceOfferChanged": "Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.",
+  "priceOfferConfirmationRequired": "Обновите приложение и подтвердите показанную цену заново.",
   "@@locale": "ru",
   "driverNavNow": "Сейчас",
   "driverNavSpeedUnit": "км/ч",

@@ -1,4 +1,6 @@
 {
+  "priceOfferChanged": "Taklif o‘zgardi. Yangi narxni tekshiring va alohida tasdiqlang.",
+  "priceOfferConfirmationRequired": "Ilovani yangilang va ko‘rsatilgan narxni qayta tasdiqlang.",
   "@@locale": "uz",
   "driverNavNow": "Hozir",
   "driverNavSpeedUnit": "km/soat",

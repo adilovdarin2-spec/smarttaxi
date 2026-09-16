@@ -113,6 +113,55 @@ try {
     order = null;
     await d.reload();
   }
+  // Change the actual server offer after the click captured its displayed
+  // terms, but before delivering that request. No mocked business responses.
+  for (const driverDecision of [false, true]) {
+    await request('/api/driver/status/online', driver.token, {});
+    order = (await request('/api/orders', rider.token, { riderName: 'QA stale consent', riderPhone: phone,
+      pickupText: 'улица Бектасова, 12', dropoffText: 'улица Кожанова, 34', pickupLat: 40.8458, pickupLng: 68.5041,
+      dropoffLat: 40.844435, dropoffLng: 68.509021, tariff: 'Economy', paymentMethod: 'CASH', distanceKm: 1, durationMin: 3 })).order;
+    const endpoint = `/api/orders/${order.id}/price-offer`;
+    let offered = (await request(endpoint, driver.token, { priceKzt: 800 })).order;
+    const snapshot = o => ({ driverId: o.driver_offer_by_driver_id, priceKzt: Number(o.driver_offer_price_kzt), proposedBy: o.driver_offer_proposed_by });
+    if (driverDecision) offered = (await request(endpoint + '/counter', rider.token, { priceKzt: 700, expectedOffer: snapshot(offered) })).order;
+    const page = driverDecision ? d : p;
+    await page.reload();
+    if (driverDecision) await d.getByRole('navigation', { name: 'Меню водителя' }).getByRole('button', { name: 'Заказы', exact: true }).click();
+    const button = driverDecision
+      ? d.locator(`[data-order-id="${order.id}"]`).getByRole('button', { name: 'Согласиться', exact: true })
+      : p.locator('.price-offer-accept');
+    await button.waitFor();
+    const pattern = `**${endpoint}/${driverDecision ? 'driver-respond' : 'respond'}`;
+    let writes = 0;
+    await page.route(pattern, async route => {
+      writes++;
+      assert.deepEqual(route.request().postDataJSON().expectedOffer, snapshot(offered));
+      let newer = (await request(endpoint, driver.token, { priceKzt: 900 })).order;
+      if (driverDecision) newer = (await request(endpoint + '/counter', rider.token, { priceKzt: 750, expectedOffer: snapshot(newer) })).order;
+      const refused = await route.fetch();
+      assert.equal(refused.status(), 409);
+      assert.equal((await refused.json()).error, 'PRICE_OFFER_CHANGED');
+      await route.fulfill({ response: refused });
+    });
+    await button.click();
+    await page.getByText('Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.', { exact: true }).waitFor();
+    assert.equal(writes, 1, 'A conflict must not retry consent');
+    const current = (await request('/api/orders/me/active', rider.token)).order;
+    assert.equal(current.driver_id, null, 'Stale click cannot assign a new price');
+    assert.equal(Number(current.driver_offer_price_kzt), driverDecision ? 750 : 900);
+    await shot(page, driverDecision ? 'driver-price-changed' : 'rider-price-changed');
+    await page.unroute(pattern);
+    await button.click();
+    if (driverDecision) await d.getByRole('button', { name: 'Еду к клиенту', exact: true }).waitFor();
+    else await p.locator('.price-offer-card').waitFor({ state: 'hidden' });
+    const assigned = (await request('/api/driver/orders/active', driver.token)).activeOrder;
+    assert.equal(assigned.id, order.id);
+    assert.equal(Number(assigned.price), driverDecision ? 750 : 900);
+    await request(`/api/orders/${order.id}/cancel-public`, rider.token, { riderPhone: phone });
+    order = null;
+    await d.reload();
+    console.log(`${driverDecision ? 'Driver' : 'Rider'} stale click refused; refreshed price needs a separate explicit acceptance`);
+  }
   if (process.env.STAND_QA_DATABASE_URL) {
     const dbUrl = new URL(process.env.STAND_QA_DATABASE_URL);
     assert(['localhost', '127.0.0.1', '[::1]'].includes(dbUrl.hostname));

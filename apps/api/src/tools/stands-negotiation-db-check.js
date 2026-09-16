@@ -6,7 +6,7 @@ assert.ok(['postgres:', 'postgresql:'].includes(url.protocol) && ['localhost', '
 assert.notEqual(process.env.NODE_ENV, 'production');
 process.env.DATABASE_URL = url.href;
 const { pool } = await import('../db/pool.js');
-const { acceptOrderForDriver, respondToDriverPriceOffer, respondToClientCounterOffer } = await import('../modules/orders/order-dispatch.service.js');
+const { acceptOrderForDriver, respondToDriverPriceOffer, respondToClientCounterOffer, promoteQueuedPriceOffer } = await import('../modules/orders/order-dispatch.service.js');
 const connection = await pool.connect();
 const query = connection.query.bind(connection);
 const observe = process.argv.includes('--observe');
@@ -41,8 +41,8 @@ try {
   const before = await snapshot();
   const acceptancePaths = [
     ['direct', 'DRIVER', (executor) => acceptOrderForDriver({ orderId: order.id, userId: driverUser, executor })],
-    ['rider accepts driver price', 'DRIVER', (executor) => respondToDriverPriceOffer({ orderId: order.id, clientUserId: clientUser, accept: true, executor })],
-    ['driver accepts rider counter', 'CLIENT', (executor) => respondToClientCounterOffer({ orderId: order.id, driverUserId: driverUser, accept: true, executor })],
+    ['rider accepts driver price', 'DRIVER', (executor) => respondToDriverPriceOffer({ orderId: order.id, clientUserId: clientUser, accept: true, expectedOffer: { driverId: driver.id, priceKzt: 1200, proposedBy: 'DRIVER' }, executor })],
+    ['driver accepts rider counter', 'CLIENT', (executor) => respondToClientCounterOffer({ orderId: order.id, driverUserId: driverUser, accept: true, expectedOffer: { driverId: driver.id, priceKzt: 1200, proposedBy: 'CLIENT' }, executor })],
   ];
   for (const [name, proposedBy, accept] of acceptancePaths) {
     await query('SAVEPOINT scenario');
@@ -60,6 +60,38 @@ try {
     assert.deepEqual(await snapshot(), before, 'Rollback restores order, driver, queue and reservations together');
     await query('RELEASE SAVEPOINT scenario');
   }
+  for (const [name, proposedBy, accept] of acceptancePaths.slice(1)) {
+    await query('SAVEPOINT stale');
+    await query('UPDATE orders SET driver_offer_proposed_by=$2,driver_offer_price_kzt=1300 WHERE id=$1', [order.id, proposedBy]);
+    const untouched = await snapshot();
+    await assert.rejects(() => accept(connection), { code: 'PRICE_OFFER_CHANGED' });
+    assert.deepEqual(await snapshot(), untouched, 'Stale consent cannot release a stand or booking');
+    const terms = (await query('SELECT driver_offer_price_kzt,driver_offer_status FROM orders WHERE id=$1', [order.id])).rows[0];
+    assert.equal(Number(terms.driver_offer_price_kzt), 1300);
+    assert.equal(terms.driver_offer_status, 'PENDING');
+    await query('ROLLBACK TO SAVEPOINT stale');
+    await query('RELEASE SAVEPOINT stale');
+    console.log(`${name}: changed price refused with stand intact`);
+  }
+  await query('SAVEPOINT queued');
+  const queued = (await query("INSERT INTO order_price_offer_queue(order_id,driver_id,price_kzt,status) VALUES($1,$2,1300,'PENDING') RETURNING id", [order.id, follower.id])).rows[0];
+  for (const expectedOffer of [undefined, { driverId: follower.id, priceKzt: 1200, proposedBy: 'DRIVER' },
+    { driverId: driver.id, priceKzt: 1300, proposedBy: 'DRIVER' }, { driverId: follower.id, priceKzt: 1300, proposedBy: 'CLIENT' }]) {
+    const untouched = await snapshot();
+    await assert.rejects(() => promoteQueuedPriceOffer({ orderId: order.id, queueOfferId: queued.id, clientUserId: clientUser, expectedOffer, executor: connection }),
+      { code: expectedOffer ? 'PRICE_OFFER_CHANGED' : 'PRICE_OFFER_CONFIRMATION_REQUIRED' });
+    assert.deepEqual(await snapshot(), untouched);
+    assert.equal((await query('SELECT status FROM order_price_offer_queue WHERE id=$1', [queued.id])).rows[0].status, 'PENDING');
+    assert.equal((await query('SELECT driver_offer_by_driver_id FROM orders WHERE id=$1', [order.id])).rows[0].driver_offer_by_driver_id, driver.id);
+  }
+  const promoted = await promoteQueuedPriceOffer({ orderId: order.id, queueOfferId: queued.id, clientUserId: clientUser,
+    expectedOffer: { driverId: follower.id, priceKzt: 1300, proposedBy: 'DRIVER' }, executor: connection });
+  assert.equal(Number(promoted.order.driver_offer_price_kzt), 1300);
+  assert.equal(promoted.order.driver_offer_by_driver_id, follower.id);
+  assert.equal(promoted.order.driver_id, null, 'Review is not assignment');
+  await query('ROLLBACK TO SAVEPOINT queued');
+  await query('RELEASE SAVEPOINT queued');
+  console.log('Queued offer: stale/missing price/person/side refused; exact terms promote without assignment');
   const otherRegion = (await query('SELECT id FROM regions WHERE is_active=true AND id<>$1 LIMIT 1', [region.id])).rows[0];
   assert.ok(otherRegion);
   const policies = [
@@ -90,8 +122,8 @@ try {
     }
   }
   for (const [proposedBy, decline] of [
-    ['DRIVER', () => respondToDriverPriceOffer({ orderId: order.id, clientUserId: clientUser, accept: false, executor: connection })],
-    ['CLIENT', () => respondToClientCounterOffer({ orderId: order.id, driverUserId: driverUser, accept: false, executor: connection })],
+    ['DRIVER', () => respondToDriverPriceOffer({ orderId: order.id, clientUserId: clientUser, accept: false, expectedOffer: { driverId: driver.id, priceKzt: 1200, proposedBy: 'DRIVER' }, executor: connection })],
+    ['CLIENT', () => respondToClientCounterOffer({ orderId: order.id, driverUserId: driverUser, accept: false, expectedOffer: { driverId: driver.id, priceKzt: 1200, proposedBy: 'CLIENT' }, executor: connection })],
   ]) {
     await query('SAVEPOINT decline');
     await query('UPDATE orders SET driver_offer_proposed_by=$2 WHERE id=$1', [order.id, proposedBy]);

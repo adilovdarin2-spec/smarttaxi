@@ -1,4 +1,6 @@
 {
+  "priceOfferChanged": "报价已更改。请查看新价格并单独确认。",
+  "priceOfferConfirmationRequired": "请更新应用并重新确认显示的价格。",
   "@@locale": "zh",
   "driverNavNow": "现在",
   "driverNavSpeedUnit": "公里/时",

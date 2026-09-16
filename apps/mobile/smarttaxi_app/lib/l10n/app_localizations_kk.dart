@@ -9,6 +9,14 @@ class AppLocalizationsKk extends AppLocalizations {
   AppLocalizationsKk([String locale = 'kk']) : super(locale);
 
   @override
+  String get priceOfferChanged =>
+      'Ұсыныс өзгерді. Жаңа бағаны тексеріп, бөлек растаңыз.';
+
+  @override
+  String get priceOfferConfirmationRequired =>
+      'Қолданбаны жаңартып, көрсетілген бағаны қайта растаңыз.';
+
+  @override
   String get driverNavNow => 'Қазір';
 
   @override

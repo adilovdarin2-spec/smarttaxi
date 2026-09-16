@@ -9,6 +9,14 @@ class AppLocalizationsUz extends AppLocalizations {
   AppLocalizationsUz([String locale = 'uz']) : super(locale);
 
   @override
+  String get priceOfferChanged =>
+      'Taklif o‘zgardi. Yangi narxni tekshiring va alohida tasdiqlang.';
+
+  @override
+  String get priceOfferConfirmationRequired =>
+      'Ilovani yangilang va ko‘rsatilgan narxni qayta tasdiqlang.';
+
+  @override
   String get driverNavNow => 'Hozir';
 
   @override

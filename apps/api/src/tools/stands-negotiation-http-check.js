@@ -56,9 +56,13 @@ try {
       dropoffLat: 40.844435, dropoffLng: 68.509021, tariff: 'Economy', paymentMethod: 'CASH', distanceKm: 1, durationMin: 3,
       notes: 'Local QA stand negotiation only' })).order;
     const priceKzt = Number(order.price);
-    await api(`/api/orders/${order.id}/price-offer`, driver.token, { priceKzt });
+    const proposal = (await api(`/api/orders/${order.id}/price-offer`, driver.token, { priceKzt })).order;
+    const expectedOffer = { driverId: proposal.driver_offer_by_driver_id, priceKzt: Number(proposal.driver_offer_price_kzt), proposedBy: 'DRIVER' };
     const endpoint = counter ? 'driver-respond' : 'respond';
-    if (counter) await api(`/api/orders/${order.id}/price-offer/counter`, passenger.token, { priceKzt });
+    if (counter) {
+      await api(`/api/orders/${order.id}/price-offer/counter`, passenger.token, { priceKzt, expectedOffer });
+      expectedOffer.proposedBy = 'CLIENT';
+    }
     let page;
     if (!counter && process.env.QA_PLAYWRIGHT_PACKAGE) {
       const web = process.env.QA_WEB_URL || 'http://127.0.0.1:5175';
@@ -78,7 +82,7 @@ try {
     const driverId = profile.driver.id;
     await api('/api/favorites/drivers', passenger.token, { driverId, type: 'BLOCKED' });
     try {
-      const rejected = await api(`/api/orders/${order.id}/price-offer/${endpoint}`, counter ? driver.token : passenger.token, { accept: true }, 'POST', 403);
+      const rejected = await api(`/api/orders/${order.id}/price-offer/${endpoint}`, counter ? driver.token : passenger.token, { accept: true, expectedOffer }, 'POST', 403);
       assert.equal(rejected.error, 'DRIVER_BLOCKED_BY_CLIENT');
       assert.equal((await api('/api/driver/orders/active', driver.token)).activeOrder, null);
       assert.equal((await api('/api/driver/stands/me', driver.token)).entry.id, entry.id);
@@ -114,7 +118,7 @@ try {
     } finally {
       await api(`/api/favorites/drivers/${driverId}`, passenger.token, undefined, 'DELETE');
     }
-    const accepted = await api(`/api/orders/${order.id}/price-offer/${endpoint}`, counter ? driver.token : passenger.token, { accept: true });
+    const accepted = await api(`/api/orders/${order.id}/price-offer/${endpoint}`, counter ? driver.token : passenger.token, { accept: true, expectedOffer });
     assert.equal(accepted.order.public_status, 'DRIVER_FOUND');
     assert.equal((await api('/api/driver/stands/me', driver.token)).entry, null);
     assert.equal((await api('/api/stands/reservations/me', rider.token)).reservation, null);

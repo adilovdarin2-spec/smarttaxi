@@ -2,6 +2,10 @@ import '../../l10n/app_localizations.dart';
 
 String? assignmentErrorMessage(String? code, AppLocalizations l10n,
     {bool driver = false}) {
+  if (code == 'PRICE_OFFER_CHANGED') return l10n.priceOfferChanged;
+  if (code == 'PRICE_OFFER_CONFIRMATION_REQUIRED') {
+    return l10n.priceOfferConfirmationRequired;
+  }
   final messages = {
     'DRIVER_DEBT_LIMIT': l10n.driverErrorDebtLimit,
     'ORDER_REGION_MISMATCH': l10n.driverErrorOrderRegionMismatch,

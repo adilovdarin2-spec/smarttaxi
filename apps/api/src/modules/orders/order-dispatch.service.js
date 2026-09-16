@@ -3,6 +3,7 @@ import { query as defaultQuery, tx } from '../../db/pool.js';
 import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
 import { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
+import { assertPriceOfferConsent, assertOrderPriceOfferConsent } from './price-offer-consent.js';
 export { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
 
 export const ORDER_STATUSES = [
@@ -522,7 +523,7 @@ export async function submitDriverPriceOffer({ orderId, userId, priceKzt, execut
 // driver (if any) steps aside exactly as if the rider had explicitly
 // declined them, since from that driver's side their offer is off the
 // table either way.
-export async function promoteQueuedPriceOffer({ orderId, queueOfferId, clientUserId, executor }) {
+export async function promoteQueuedPriceOffer({ orderId, queueOfferId, clientUserId, expectedOffer, executor }) {
   const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
   if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
 
@@ -559,6 +560,8 @@ export async function promoteQueuedPriceOffer({ orderId, queueOfferId, clientUse
     [queueOfferId, orderId]
   )).rows[0];
   if (!queued) throw new AppError("Queued price offer not found", 404, "QUEUED_PRICE_OFFER_NOT_FOUND");
+
+  assertPriceOfferConsent({ driverId: queued.driver_id, priceKzt: queued.price_kzt, proposedBy: 'DRIVER' }, expectedOffer);
 
   const previousDriverId = existing.driver_offer_status === "PENDING" ? existing.driver_offer_by_driver_id : null;
 
@@ -618,7 +621,7 @@ export async function listQueuedPriceOffers(orderId, executor) {
 // normal accept, just price-and-driver predetermined instead of
 // first-to-claim); declining just clears the offer and leaves the order
 // open for anyone, including the same driver trying again at a new price.
-export async function respondToDriverPriceOffer({ orderId, clientUserId, accept, executor }) {
+export async function respondToDriverPriceOffer({ orderId, clientUserId, accept, expectedOffer, executor }) {
   const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
   if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
 
@@ -635,6 +638,7 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
         existing.driver_offer_proposed_by !== "DRIVER") {
       throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
     }
+    assertOrderPriceOfferConsent(existing, expectedOffer);
     const declined = (await runQuery(
       executor,
       `UPDATE orders
@@ -677,6 +681,8 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
     throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
   }
+
+  assertOrderPriceOfferConsent(existing, expectedOffer);
   await assertAssignmentPolicy(driver, existing, executor);
 
   const order = (await runQuery(
@@ -726,7 +732,7 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
 // respondToDriverPriceOffer rather than a new table -- there is never more
 // than one live proposal on an order at a time, so nothing else needs to
 // track whose turn it is beyond this flag.
-export async function submitClientCounterOffer({ orderId, clientUserId, priceKzt, executor }) {
+export async function submitClientCounterOffer({ orderId, clientUserId, priceKzt, expectedOffer, executor }) {
   const client = (await runQuery(executor, "SELECT * FROM clients WHERE user_id=$1", [clientUserId])).rows[0];
   if (!client) throw new AppError("Client not found", 404, "CLIENT_NOT_FOUND");
 
@@ -741,6 +747,7 @@ export async function submitClientCounterOffer({ orderId, clientUserId, priceKzt
     throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
   }
 
+  assertOrderPriceOfferConsent(existing, expectedOffer);
   const order = (await runQuery(
     executor,
     `UPDATE orders
@@ -759,7 +766,7 @@ export async function submitClientCounterOffer({ orderId, clientUserId, priceKzt
 // but from the other side: only the specific driver who owns the pending
 // offer slot (driver_offer_by_driver_id) can respond, since a different
 // driver has no standing proposal on this order to accept or decline.
-export async function respondToClientCounterOffer({ orderId, driverUserId, accept, executor }) {
+export async function respondToClientCounterOffer({ orderId, driverUserId, accept, expectedOffer, executor }) {
   const driverRow = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1", [driverUserId])).rows[0];
   if (!driverRow) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
 
@@ -770,6 +777,7 @@ export async function respondToClientCounterOffer({ orderId, driverUserId, accep
         existing.driver_offer_proposed_by !== "CLIENT") {
       throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
     }
+    assertOrderPriceOfferConsent(existing, expectedOffer);
     const declined = (await runQuery(
       executor,
       `UPDATE orders
@@ -799,6 +807,8 @@ export async function respondToClientCounterOffer({ orderId, driverUserId, accep
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
     throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
   }
+
+  assertOrderPriceOfferConsent(existing, expectedOffer);
   await assertAssignmentPolicy(driver, existing, executor);
 
   const order = (await runQuery(

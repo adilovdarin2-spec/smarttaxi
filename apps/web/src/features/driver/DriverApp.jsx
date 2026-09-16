@@ -8,7 +8,7 @@ import { driverErrorMessage } from "./driverErrorPresentation.js";
 import DriverNavigator from "./DriverNavigator.jsx";
 import DriverStandsPanel from "./DriverStandsPanel.jsx";
 import DriverPriceOffer from './DriverPriceOffer.jsx';
-import { pendingPriceOffer } from '../shared/priceNegotiation.js';
+import { pendingPriceOffer, priceOfferSnapshot } from '../shared/priceNegotiation.js';
 import CancellationReasonDialog from "../shared/CancellationReasonDialog.jsx";
 import { driverRouteMeta } from "./driverRoutePresentation.js";
 import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress.js";
@@ -1152,10 +1152,11 @@ export default function DriverApp() {
   }
 
   async function handleCounterOffer(order, accept) {
+    const expectedOffer = priceOfferSnapshot(order);
     const result = await withAction(`counter-${order.id}`, () => accept
-      ? assignWithRecovery({ orderId: order.id, write: () => respondClientCounterOffer(order.id, true),
+      ? assignWithRecovery({ orderId: order.id, write: () => respondClientCounterOffer(order.id, true, expectedOffer),
         readActive: getDriverActiveOrder, isCurrent: protectSession() })
-      : respondClientCounterOffer(order.id, false));
+      : respondClientCounterOffer(order.id, false, expectedOffer));
     if (result && accept) setTab('active');
   }
 

@@ -213,11 +213,14 @@ function createExecutor() {
   );
 }
 
+const snapshot = order => ({ driverId: order.driver_offer_by_driver_id,
+  priceKzt: Number(order.driver_offer_price_kzt), proposedBy: order.driver_offer_proposed_by });
+
 // Client accepts a pending offer: order is assigned at the offered price.
 {
   const executor = createExecutor();
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 350, executor });
-  const { order, accepted } = await respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: true, executor });
+  const { order, accepted } = await respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor });
   assert.equal(accepted, true, "respond must report accepted:true");
   assert.equal(order.status, "DRIVER_FOUND", "accepting assigns the order");
   assert.equal(order.driver_id, "driver-1", "accepting assigns the offering driver");
@@ -230,7 +233,7 @@ function createExecutor() {
 {
   const executor = createExecutor();
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 350, executor });
-  const { order, accepted } = await respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: false, executor });
+  const { order, accepted } = await respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: false, expectedOffer: snapshot(executor.state.orders[0]), executor });
   assert.equal(accepted, false, "respond must report accepted:false");
   assert.equal(order.status, "SEARCHING_DRIVER", "declining must not touch the order status");
   assert.equal(order.driver_offer_status, "DECLINED", "declining marks the offer DECLINED");
@@ -246,7 +249,7 @@ function createExecutor() {
   executor.state.clients.push({ id: "client-2", user_id: "client-user-2" });
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 350, executor });
   await assert.rejects(
-    () => respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-2", accept: true, executor }),
+    () => respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-2", accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor }),
     { code: "FORBIDDEN_ORDER" },
     "a client must not be able to respond to a price offer on someone else's order"
   );
@@ -257,12 +260,12 @@ function createExecutor() {
 {
   const executor = createExecutor();
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
-  const { order: countered, driverId } = await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 350, executor });
+  const { order: countered, driverId } = await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 350, expectedOffer: snapshot(executor.state.orders[0]), executor });
   assert.equal(countered.driver_offer_price_kzt, 350, "the rider's counter replaces the driver's price on the same pending slot");
   assert.equal(countered.driver_offer_proposed_by, "CLIENT", "countering flips whose turn it is to CLIENT");
   assert.equal(driverId, "driver-1", "the counter reports which driver needs to be notified");
 
-  const { order, accepted } = await respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-1", accept: true, executor });
+  const { order, accepted } = await respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-1", accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor });
   assert.equal(accepted, true, "driver accepting the rider's counter must report accepted:true");
   assert.equal(order.status, "DRIVER_FOUND", "accepting the counter assigns the order");
   assert.equal(order.driver_id, "driver-1", "accepting the counter assigns the same driver who was negotiating");
@@ -273,8 +276,8 @@ function createExecutor() {
 {
   const executor = createExecutor();
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
-  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 250, executor });
-  const { order, accepted } = await respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-1", accept: false, executor });
+  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 250, expectedOffer: snapshot(executor.state.orders[0]), executor });
+  const { order, accepted } = await respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-1", accept: false, expectedOffer: snapshot(executor.state.orders[0]), executor });
   assert.equal(accepted, false, "declining the rider's counter must report accepted:false");
   assert.equal(order.driver_offer_status, "DECLINED", "declining the counter marks the offer DECLINED");
   assert.equal(order.driver_id, null, "declining the counter must not assign a driver");
@@ -288,14 +291,14 @@ function createExecutor() {
 {
   const executor = createExecutor();
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
-  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 300, executor });
+  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 300, expectedOffer: snapshot(executor.state.orders[0]), executor });
   await assert.rejects(
-    () => submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 280, executor }),
+    () => submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 280, expectedOffer: snapshot(executor.state.orders[0]), executor }),
     { code: "NO_PENDING_PRICE_OFFER" },
     "the rider must not be able to counter again while their own counter is still awaiting the driver's response"
   );
   await assert.rejects(
-    () => respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: true, executor }),
+    () => respondToDriverPriceOffer({ orderId: "order-1", clientUserId: "client-user-1", accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor }),
     { code: "NO_PENDING_PRICE_OFFER" },
     "the rider must not be able to accept/decline via the driver-offer endpoint while their own counter is pending"
   );
@@ -306,9 +309,9 @@ function createExecutor() {
 {
   const executor = createExecutor();
   await submitDriverPriceOffer({ orderId: "order-1", userId: "driver-user-1", priceKzt: 500, executor });
-  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 300, executor });
+  await submitClientCounterOffer({ orderId: "order-1", clientUserId: "client-user-1", priceKzt: 300, expectedOffer: snapshot(executor.state.orders[0]), executor });
   await assert.rejects(
-    () => respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-2", accept: true, executor }),
+    () => respondToClientCounterOffer({ orderId: "order-1", driverUserId: "driver-user-2", accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor }),
     { code: "NO_PENDING_PRICE_OFFER" },
     "a driver who isn't the one negotiating must not be able to accept the rider's counter"
   );
@@ -326,23 +329,46 @@ for (const counter of [false, true]) {
   ]) {
     const executor = createExecutor();
     await submitDriverPriceOffer({ orderId: 'order-1', userId: 'driver-user-1', priceKzt: 500, executor });
-    if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, executor });
+    if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, expectedOffer: snapshot(executor.state.orders[0]), executor });
     arrange(executor.state);
     const before = structuredClone(executor.state);
     const accept = () => counter
-      ? respondToClientCounterOffer({ orderId: 'order-1', driverUserId: 'driver-user-1', accept: true, executor })
-      : respondToDriverPriceOffer({ orderId: 'order-1', clientUserId: 'client-user-1', accept: true, executor });
+      ? respondToClientCounterOffer({ orderId: 'order-1', driverUserId: 'driver-user-1', accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor })
+      : respondToDriverPriceOffer({ orderId: 'order-1', clientUserId: 'client-user-1', accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor });
     await assert.rejects(accept, { code });
     assert.deepEqual(executor.state, before, 'A rejected price acceptance cannot mutate order/driver state');
   }
   const executor = createExecutor();
   executor.state.drivers[0].debt = 15000;
   await submitDriverPriceOffer({ orderId: 'order-1', userId: 'driver-user-1', priceKzt: 500, executor });
-  if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, executor });
+  if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, expectedOffer: snapshot(executor.state.orders[0]), executor });
   const result = counter
-    ? await respondToClientCounterOffer({ orderId: 'order-1', driverUserId: 'driver-user-1', accept: true, executor })
-    : await respondToDriverPriceOffer({ orderId: 'order-1', clientUserId: 'client-user-1', accept: true, executor });
+    ? await respondToClientCounterOffer({ orderId: 'order-1', driverUserId: 'driver-user-1', accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor })
+    : await respondToDriverPriceOffer({ orderId: 'order-1', clientUserId: 'client-user-1', accept: true, expectedOffer: snapshot(executor.state.orders[0]), executor });
   assert.equal(result.accepted, true, 'Exactly the existing debt limit remains allowed');
 }
 
-console.log("Driver price-offer (\"торг\") checks ok");
+// Every decision is tied to the terms displayed before a competing update.
+for (const counter of [false, true]) {
+  for (const action of counter ? ['accept', 'decline'] : ['accept', 'decline', 'counter']) {
+    for (const changed of ['price', 'driver', 'author', 'missing']) {
+      const executor = createExecutor();
+      await submitDriverPriceOffer({ orderId: 'order-1', userId: 'driver-user-1', priceKzt: 500, executor });
+      if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400,
+        expectedOffer: snapshot(executor.state.orders[0]), executor });
+      const expectedOffer = snapshot(executor.state.orders[0]);
+      // Keep the authorized current row valid; simulate the old rendered terms.
+      if (changed === 'price') expectedOffer.priceKzt -= 50;
+      if (changed === 'driver') expectedOffer.driverId = 'another-driver';
+      if (changed === 'author') expectedOffer.proposedBy = counter ? 'DRIVER' : 'CLIENT';
+      const input = { orderId: 'order-1', clientUserId: 'client-user-1', driverUserId: 'driver-user-1',
+        accept: action === 'accept', priceKzt: 350, expectedOffer: changed === 'missing' ? undefined : expectedOffer, executor };
+      const before = structuredClone(executor.state);
+      const decide = counter ? respondToClientCounterOffer : action === 'counter' ? submitClientCounterOffer : respondToDriverPriceOffer;
+      await assert.rejects(() => decide(input), { code: changed === 'missing' ? 'PRICE_OFFER_CONFIRMATION_REQUIRED' : 'PRICE_OFFER_CHANGED' });
+      assert.deepEqual(executor.state, before, `${counter}/${action}/${changed}: no mutation`);
+    }
+  }
+}
+
+console.log("Driver price-offer (\"торг\") checks ok, including 20 stale/missing-consent refusals");

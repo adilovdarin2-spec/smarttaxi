@@ -19,8 +19,19 @@ export function pendingPriceOffer(order, driverId = null) {
   return { price, driverId: owner, author: author || 'DRIVER', mine: Boolean(driverId && owner === driverId) };
 }
 
+export function priceOfferSnapshot(order) {
+  const offer = pendingPriceOffer(order);
+  return offer ? { driverId: offer.driverId, priceKzt: offer.price, proposedBy: offer.author } : null;
+}
+
+export function queuedOfferSnapshot(offer) {
+  return { driverId: offer.driverId, priceKzt: Number(offer.priceKzt), proposedBy: 'DRIVER' };
+}
+
 export function priceOfferErrorMessage(error) {
   const messages = {
+    PRICE_OFFER_CHANGED: 'Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.',
+    PRICE_OFFER_CONFIRMATION_REQUIRED: 'Обновите приложение и подтвердите показанную цену заново.',
     NO_PENDING_PRICE_OFFER: 'Предложение уже изменилось. Обновите данные заказа.',
     NO_PENDING_CLIENT_COUNTER_OFFER: 'Встречное предложение уже изменилось. Обновите данные заказа.',
     OFFERED_PRICE_OUT_OF_BOUNDS: 'Цена вне допустимого диапазона. Проверьте сумму.',

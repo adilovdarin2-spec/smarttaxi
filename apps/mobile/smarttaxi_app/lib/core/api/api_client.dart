@@ -815,11 +815,12 @@ class ApiClient {
   Future<OrderSummary> respondToDriverPriceOffer({
     required String orderId,
     required bool accept,
+    required Map<String, dynamic> expectedOffer,
   }) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/orders/$orderId/price-offer/respond',
-      data: {'accept': accept},
+      data: {'accept': accept, 'expectedOffer': expectedOffer},
     );
     final data = response.data ?? {};
     return OrderSummary.fromJson(
@@ -833,11 +834,12 @@ class ApiClient {
   Future<OrderSummary> submitClientCounterOffer({
     required String orderId,
     required int priceKzt,
+    required Map<String, dynamic> expectedOffer,
   }) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/orders/$orderId/price-offer/counter',
-      data: {'priceKzt': priceKzt},
+      data: {'priceKzt': priceKzt, 'expectedOffer': expectedOffer},
     );
     final data = response.data ?? {};
     return OrderSummary.fromJson(
@@ -851,11 +853,12 @@ class ApiClient {
   Future<OrderSummary> respondToClientCounterOffer({
     required String orderId,
     required bool accept,
+    required Map<String, dynamic> expectedOffer,
   }) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/orders/$orderId/price-offer/driver-respond',
-      data: {'accept': accept},
+      data: {'accept': accept, 'expectedOffer': expectedOffer},
     );
     final data = response.data ?? {};
     return OrderSummary.fromJson(
@@ -882,10 +885,12 @@ class ApiClient {
   Future<OrderSummary> promoteQueuedPriceOffer({
     required String orderId,
     required String queueOfferId,
+    required Map<String, dynamic> expectedOffer,
   }) async {
     await _attachToken();
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/orders/$orderId/price-offers/queue/$queueOfferId/promote',
+      data: {'expectedOffer': expectedOffer},
     );
     final data = response.data ?? {};
     return OrderSummary.fromJson(

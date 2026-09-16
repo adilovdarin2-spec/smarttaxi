@@ -9,6 +9,14 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get priceOfferChanged =>
+      'Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.';
+
+  @override
+  String get priceOfferConfirmationRequired =>
+      'Обновите приложение и подтвердите показанную цену заново.';
+
+  @override
   String get driverNavNow => 'Сейчас';
 
   @override

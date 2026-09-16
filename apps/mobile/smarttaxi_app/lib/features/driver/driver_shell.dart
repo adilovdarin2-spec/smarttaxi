@@ -1864,6 +1864,7 @@ class _DriverShellState extends State<DriverShell> {
       final updated = await widget.api.respondToClientCounterOffer(
         orderId: order.id,
         accept: accept,
+        expectedOffer: order.priceOfferSnapshot,
       );
       if (!mounted) return;
       if (accept) {
@@ -1893,7 +1894,10 @@ class _DriverShellState extends State<DriverShell> {
       AppToast.showError(
           context, readableError(AppLocalizations.of(context), error));
     } finally {
-      if (mounted) setState(() => _respondingToCounterOrderId = null);
+      if (mounted) {
+        await _loadOrders();
+        if (mounted) setState(() => _respondingToCounterOrderId = null);
+      }
     }
   }
 

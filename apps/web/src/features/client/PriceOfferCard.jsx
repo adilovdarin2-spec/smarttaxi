@@ -3,7 +3,7 @@ import { Money } from '../../core/ui.jsx';
 import { getClientActiveOrder, getQueuedPriceOffers, getToken, promoteQueuedPriceOffer, respondPriceOffer, submitClientCounterOffer } from '../../lib/mvpApi.js';
 import { sessionGuard } from '../../lib/sessionGuard.js';
 import { assignmentErrorMessage } from '../shared/assignmentError.mjs';
-import { pendingPriceOffer, priceOfferErrorMessage } from '../shared/priceNegotiation.js';
+import { pendingPriceOffer, priceOfferErrorMessage, priceOfferSnapshot, queuedOfferSnapshot } from '../shared/priceNegotiation.js';
 import PriceOfferForm from '../shared/PriceOfferForm.jsx';
 
 export default function PriceOfferCard({ order, onOrderUpdate }) {
@@ -17,6 +17,7 @@ export default function PriceOfferCard({ order, onOrderUpdate }) {
   const mounted = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const offer = pendingPriceOffer(order);
+  const expectedOffer = priceOfferSnapshot(order);
   const token = getToken();
   const refreshQueue = useCallback(async () => {
     const isCurrent = sessionGuard(token, getToken, () => mounted.current);
@@ -77,7 +78,7 @@ export default function PriceOfferCard({ order, onOrderUpdate }) {
       {queued.map(item => <div className="negotiation-queued" key={item.id}>
         <strong>{item.driverName || 'Водитель'}</strong>
         {item.driverCarModel && <p>{item.driverCarModel}</p>}
-        <button disabled={busy || queueError} onClick={() => act(() => promoteQueuedPriceOffer(order.id, item.id))}>Рассмотреть за <Money value={item.priceKzt} /></button>
+        <button disabled={busy || queueError} onClick={() => act(() => promoteQueuedPriceOffer(order.id, item.id, queuedOfferSnapshot(item)))}>Рассмотреть за <Money value={item.priceKzt} /></button>
       </div>)}
     </section>}
   </>;
@@ -93,11 +94,11 @@ export default function PriceOfferCard({ order, onOrderUpdate }) {
     <span>Вместо <Money value={order.price} /> за поездку</span>
     {error && <p className="state-note danger" role="alert">{error}</p>}
     {editing ? <PriceOfferForm price={order.price} busy={busy} onCancel={() => setEditing(false)}
-      onSubmit={price => act(() => submitClientCounterOffer(order.id, price))} />
+      onSubmit={price => act(() => submitClientCounterOffer(order.id, price, expectedOffer))} />
       : <>
         <div className="price-offer-actions">
-          <button type="button" className="price-offer-decline" disabled={busy} onClick={() => act(() => respondPriceOffer(order.id, false))}>Отказаться</button>
-          <button type="button" className="price-offer-accept" disabled={busy} onClick={() => act(() => respondPriceOffer(order.id, true))}>{busy ? 'Отправляем…' : 'Согласиться'}</button>
+          <button type="button" className="price-offer-decline" disabled={busy} onClick={() => act(() => respondPriceOffer(order.id, false, expectedOffer))}>Отказаться</button>
+          <button type="button" className="price-offer-accept" disabled={busy} onClick={() => act(() => respondPriceOffer(order.id, true, expectedOffer))}>{busy ? 'Отправляем…' : 'Согласиться'}</button>
         </div>
         <button type="button" className="negotiation-toggle" disabled={busy} onClick={() => setEditing(true)}>Предложить свою цену</button>
       </>}

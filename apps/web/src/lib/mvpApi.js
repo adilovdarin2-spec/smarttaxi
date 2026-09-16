@@ -186,10 +186,10 @@ export function getOrderStatusHistory(orderId) {
   return api(`/api/orders/${orderId}/status-history`);
 }
 
-export function respondPriceOffer(orderId, accept) {
+export function respondPriceOffer(orderId, accept, expectedOffer) {
   return api(`/api/orders/${orderId}/price-offer/respond`, {
     method: "POST",
-    body: JSON.stringify({ accept })
+    body: JSON.stringify({ accept, expectedOffer })
   });
 }
 
@@ -826,20 +826,20 @@ export function submitDriverPriceOffer(orderId, priceKzt) {
   return api(`/api/orders/${orderId}/price-offer`, { method: 'POST', body: JSON.stringify({ priceKzt }) });
 }
 
-export function submitClientCounterOffer(orderId, priceKzt) {
-  return api(`/api/orders/${orderId}/price-offer/counter`, { method: 'POST', body: JSON.stringify({ priceKzt }) });
+export function submitClientCounterOffer(orderId, priceKzt, expectedOffer) {
+  return api(`/api/orders/${orderId}/price-offer/counter`, { method: 'POST', body: JSON.stringify({ priceKzt, expectedOffer }) });
 }
 
-export function respondClientCounterOffer(orderId, accept) {
-  return api(`/api/orders/${orderId}/price-offer/driver-respond`, { method: 'POST', body: JSON.stringify({ accept }) });
+export function respondClientCounterOffer(orderId, accept, expectedOffer) {
+  return api(`/api/orders/${orderId}/price-offer/driver-respond`, { method: 'POST', body: JSON.stringify({ accept, expectedOffer }) });
 }
 
 export function getQueuedPriceOffers(orderId) {
   return api(`/api/orders/${orderId}/price-offers/queue`);
 }
 
-export function promoteQueuedPriceOffer(orderId, queueId) {
-  return api(`/api/orders/${orderId}/price-offers/queue/${queueId}/promote`, { method: 'POST' });
+export function promoteQueuedPriceOffer(orderId, queueId, expectedOffer) {
+  return api(`/api/orders/${orderId}/price-offers/queue/${queueId}/promote`, { method: 'POST', body: JSON.stringify({ expectedOffer }) });
 }
 
 export function getStandReservationOutcome(id) {
