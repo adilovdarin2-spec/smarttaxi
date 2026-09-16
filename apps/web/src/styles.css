@@ -26193,3 +26193,30 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 /* Narrower desktop windows keep the light page: there is no room beside the
    device for the wordmark, and a dark band behind a 390px strip would only
    make the emptiness louder. */
+
+/* Final desktop parity layer. The web app must feel like the mobile app in a
+   larger viewport, never like a promotional phone render. This wins over the
+   legacy demo-stage rules above while preserving every functional screen. */
+@media (min-width: 900px) {
+  body:has(.phone-frame.taxi-pwa) {
+    background:
+      radial-gradient(circle at 50% 0, rgba(29, 111, 255, .13), transparent 34rem),
+      linear-gradient(180deg, #f8fbff 0%, #eaf3ff 100%);
+  }
+
+  body:has(.phone-frame.taxi-pwa)::before,
+  body:has(.phone-frame.taxi-pwa)::after {
+    content: none;
+    display: none;
+  }
+
+  .phone-frame.taxi-pwa {
+    margin-block: clamp(20px, 3vh, 36px);
+    margin-inline: auto;
+    border: 1px solid rgba(29, 111, 255, .16);
+    border-radius: 30px;
+    box-shadow:
+      0 24px 70px rgba(11, 79, 209, .14),
+      0 2px 8px rgba(16, 25, 46, .05);
+  }
+}
