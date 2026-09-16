@@ -34,6 +34,9 @@ test("admin loading and login use a centered full-viewport access shell", async 
     const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
     assert.match(css, /\.admin-control-shell\.admin-access-shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*place-items:\s*center/s);
     assert.match(css, /\.admin-login-form\s*\{[^}]*width:\s*min\(100%, 360px\)/s);
+    assert.match(css, /\.admin-road-alert-card header,\s*\.admin-detail-hero\s*\{[^}]*display:\s*flex/s);
+    assert.match(css, /\.admin-road-alert-card header strong,\s*\.admin-detail-hero h2\s*\{[^}]*display:\s*block/s);
+    assert.match(css, /\.admin-road-alert-card header span,\s*\.admin-detail-hero p\s*\{[^}]*display:\s*block/s);
   } finally {
     await server.close();
     if (previousWindow === undefined) delete globalThis.window;

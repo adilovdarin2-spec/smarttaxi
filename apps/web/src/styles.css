@@ -5388,6 +5388,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-application-card header,
 .admin-approval-card header,
 .admin-tariff-card header,
+.admin-road-alert-card header,
 .admin-detail-hero {
   display: flex;
   align-items: start;
@@ -5409,6 +5410,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-application-card strong,
 .admin-approval-card strong,
 .admin-tariff-card strong,
+.admin-road-alert-card header strong,
 .admin-detail-hero h2 {
   display: block;
   margin: 0;
@@ -5422,6 +5424,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .admin-application-card header span,
 .admin-approval-card header span,
 .admin-tariff-card header span,
+.admin-road-alert-card header span,
 .admin-detail-hero p {
   display: block;
   margin: 3px 0 0;
