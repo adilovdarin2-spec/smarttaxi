@@ -13,7 +13,8 @@ import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress
 import { sessionGuard } from "../../lib/sessionGuard.js";
 import "./driverDesign.css";
 import { driverWaitingPresentation } from "./driverWaitingPresentation.js";
-const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
+const loadMapView = () => import("../map/MapView.jsx");
+const LazyMapView = React.lazy(loadMapView);
 const LazyDriverAccount = React.lazy(() => import('./DriverAccount.jsx'));
 
 function MapView(props) {
@@ -617,6 +618,12 @@ export default function DriverApp() {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+  useEffect(() => {
+    // The map is the first surface after driver login. Warm its split bundle
+    // while the driver is entering credentials instead of showing an empty
+    // map frame while MapLibre downloads only after authentication succeeds.
+    if (!logged) void loadMapView();
+  }, [logged]);
   const protectSession = useCallback(() => sessionGuard(getToken(), getToken, () => mountedRef.current), []);
   const resetDriverSession = useCallback((loginMessage = "") => {
     setLogged(false);

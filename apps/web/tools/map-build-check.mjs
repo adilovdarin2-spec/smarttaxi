@@ -7,6 +7,9 @@ import { Script } from 'node:vm';
 // its sibling shared module and leaves the published vector map empty.
 const assets = new URL('../dist/assets/', import.meta.url);
 const files = readdirSync(assets);
+const index = readFileSync(new URL('../dist/index.html', import.meta.url), 'utf8');
+assert.match(index, /rel="preconnect"[^>]+tiles\.openfreemap\.org/,
+  'Production HTML must connect to the vector-tile origin before MapLibre starts');
 const workers = files.filter(file => /^maplibre-gl-worker-[\w-]+\.js$/.test(file));
 assert.equal(workers.length, 1, 'Expected one bundled MapLibre worker asset');
 const worker = workers[0];
@@ -17,4 +20,4 @@ assert(files.some(file => file !== worker && file.endsWith('.js') &&
   readFileSync(new URL(file, assets), 'utf8').includes(worker)), 'Map runtime must reference the emitted worker');
 assert(files.some(file => file.endsWith('.css') &&
   readFileSync(new URL(file, assets), 'utf8').includes('.maplibregl-marker')), 'Map marker positioning CSS must ship');
-console.log('Map build check ok: bundled worker, runtime reference and marker CSS');
+console.log('Map build check ok: tile preconnect, bundled worker, runtime reference and marker CSS');
