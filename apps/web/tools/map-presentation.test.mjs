@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { libertyPaintForLayer, applyLibertyPresentation, hideDuplicateBuildings } from '../src/features/map/mapPresentation.mjs';
+import { libertyPaintForLayer, libertyPlaceLabelText, applyLibertyPresentation, hideDuplicateBuildings } from '../src/features/map/mapPresentation.mjs';
 
 test('Liberty colors retain road geometry, widths, arrows and labels', () => {
   for (const id of ['background', 'water', 'building', 'landuse_residential', 'park', 'landuse_school', 'road_minor', 'bridge_trunk_primary', 'tunnel_motorway_casing', 'waterway_river', 'label_city', 'poi_r1']) {
@@ -16,7 +16,27 @@ test('Liberty colors retain road geometry, widths, arrows and labels', () => {
 });
 
 test('Custom styles are not recolored by a matching background id alone', () => {
-  applyLibertyPresentation({ getStyle: () => ({layers: [{id: 'background'}]}), setPaintProperty: () => assert.fail('custom provider mutation') });
+  applyLibertyPresentation({ getStyle: () => ({layers: [{id: 'background'}]}), setPaintProperty: () => assert.fail('custom provider mutation'), setLayoutProperty: () => assert.fail('custom provider mutation') });
+});
+
+test('Liberty settlement labels use one local name with safe fallbacks', () => {
+  assert.deepEqual(libertyPlaceLabelText, [
+    'coalesce', ['get', 'name:nonlatin'], ['get', 'name:latin'], ['get', 'name_en'], ['get', 'name'],
+  ]);
+  const layers = [
+    { id: 'landuse_residential', type: 'fill' },
+    { id: 'road_one_way_arrow', type: 'symbol' },
+    { id: 'building-3d', type: 'fill-extrusion' },
+    { id: 'label_town', type: 'symbol', 'source-layer': 'place' },
+    { id: 'poi_r1', type: 'symbol', 'source-layer': 'poi' },
+  ];
+  const layouts = [];
+  applyLibertyPresentation({
+    getStyle: () => ({ layers }),
+    setPaintProperty() {},
+    setLayoutProperty: (...args) => layouts.push(args),
+  });
+  assert.deepEqual(layouts, [['label_town', 'text-field', libertyPlaceLabelText]]);
 });
 
 test('Duplicate extrusion is hidden only after its replacement exists', () => {

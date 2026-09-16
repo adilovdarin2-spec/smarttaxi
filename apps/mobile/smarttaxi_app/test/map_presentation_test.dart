@@ -36,7 +36,9 @@ void main() {
       expect(paint, isNotEmpty, reason: id);
       expect(
           paint.keys.every(
-              (key) => key.endsWith('color') || key == 'text-halo-width'),
+              (key) => key.endsWith('color') ||
+                  key == 'text-halo-width' ||
+                  (id.startsWith('label_') && key == 'text-field')),
           isTrue,
           reason: id);
     }
@@ -61,6 +63,12 @@ void main() {
         '#b9d8f5');
     expect(libertyPresentationForLayer('label_city')!.toJson()['text-color'],
         '#50627a');
+    expect(
+        libertyPresentationForLayer('label_city')!.toJson()['text-field'],
+        libertyPlaceLabelText);
+    expect(
+        libertyPresentationForLayer('poi_r1')!.toJson().containsKey('text-field'),
+        isFalse);
   });
 
   test('Light and dark themes use the bundled typeface', () {

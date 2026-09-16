@@ -17,6 +17,14 @@ export function libertyPaintForLayer(id) {
   return null;
 }
 
+// Liberty displays `name:latin` and `name:nonlatin` on separate lines. Around
+// Atakent this becomes "Atakent / Атакент": technically different Unicode,
+// visually the same settlement repeated behind the pickup marker. Kazakhstan
+// place labels use one local name, falling back to Latin/English if absent.
+export const libertyPlaceLabelText = [
+  'coalesce', ['get', 'name:nonlatin'], ['get', 'name:latin'], ['get', 'name_en'], ['get', 'name'],
+];
+
 export function applyLibertyPresentation(map) {
   const layers = map.getStyle()?.layers || [];
   const ids = new Set(layers.map(layer => layer.id));
@@ -24,6 +32,9 @@ export function applyLibertyPresentation(map) {
   for (const layer of layers) {
     for (const [key, value] of Object.entries(libertyPaintForLayer(layer.id) || {})) {
       try { map.setPaintProperty(layer.id, key, value); } catch { /* optional provider paint */ }
+    }
+    if (layer.type === 'symbol' && layer['source-layer'] === 'place' && layer.id.startsWith('label_')) {
+      try { map.setLayoutProperty(layer.id, 'text-field', libertyPlaceLabelText); } catch { /* optional provider layout */ }
     }
   }
 }

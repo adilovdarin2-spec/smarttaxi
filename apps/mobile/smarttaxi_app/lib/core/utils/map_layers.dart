@@ -1,5 +1,15 @@
 import 'package:maplibre_gl/maplibre_gl.dart' as native_map;
 
+/// Use one local settlement name. Liberty's default Latin + non-Latin pair
+/// renders Atakent/Атакент as a visual duplicate behind the pickup marker.
+const List<Object> libertyPlaceLabelText = <Object>[
+  'coalesce',
+  <Object>['get', 'name:nonlatin'],
+  <Object>['get', 'name:latin'],
+  <Object>['get', 'name_en'],
+  <Object>['get', 'name']
+];
+
 /// Presentation-only overrides for the known Liberty basemap. No source,
 /// geometry, filters, road widths or label visibility is replaced.
 native_map.LayerProperties? libertyPresentationForLayer(String id) {
@@ -44,8 +54,11 @@ native_map.LayerProperties? libertyPresentationForLayer(String id) {
   if (id.startsWith('label_') ||
       id.startsWith('highway-name-') ||
       id.startsWith('poi_')) {
-    return const native_map.SymbolLayerProperties(
-        textColor: '#50627a', textHaloColor: '#ffffff', textHaloWidth: 1.35);
+    return native_map.SymbolLayerProperties(
+        textField: id.startsWith('label_') ? libertyPlaceLabelText : null,
+        textColor: '#50627a',
+        textHaloColor: '#ffffff',
+        textHaloWidth: 1.35);
   }
   return null;
 }
