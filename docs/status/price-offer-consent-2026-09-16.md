@@ -61,7 +61,7 @@ is unchanged; its base-price edit races are outside this stage.
 - Screens inspected: `%TEMP%/baisapar-web-negotiation-qa/{320,390}/`
   `rider-price-changed.png`, `driver-price-changed.png`. Map loading in the early
   rider capture is not evidence of map readiness; the price panel was the target.
-- Flutter 359/359 tests, including four transport snapshot/conflict/no-replay
+- Flutter analyze clean; 359/359 tests, including four transport snapshot/conflict/no-replay
   cases and shared error-copy/queued snapshot checks. No physical phone used.
 - Earlier CI runs 35097046700 and 35097041359 for `6327120` were re-read:
   both completed SUCCESS (their previous report had the Android build pending).
@@ -73,3 +73,43 @@ criteria. Next: driver application approval through usable driver profile/region
 access end-to-end. SMS/payment/legal/domain/store configuration, authoritative
 address completeness and physical moving navigation/background/performance remain
 separate gates. Do not call the whole product bug-free or ready from this suite.
+
+## Artifact and publication
+
+- Code `19f98c8` pushed to `origin/dev`.
+- Fresh `apps/mobile/smarttaxi_app/build/app/outputs/flutter-apk/app-profile.apk`,
+  191163229 bytes, SHA-256
+  `255f69778a8359d6af8b8740401bb3e93378ba9345ac6bae284474c0f65314a1`.
+  APK signature verifies with v2, one signer. Railway-default profile QA artifact,
+  not a store-release acceptance claim; no phone installation in this stage.
+  Gradle/AGP/Kotlin future-support warnings remain; no blind toolchain upgrade.
+- API Railway deployment `b407b8cf-d781-44e6-85a0-2ab3992798ee`: SUCCESS.
+  Web deployment `fbeb9156-b84f-4bf7-bef2-ead3c08f790d`: SUCCESS.
+- Remote API hashes equal local: dispatch
+  `b7f28cb851c97766d9466d14eca37796292531fee3797c29259368c8ae55607d`,
+  consent helper `449b5fa9bd01ae9b8d263874435f70c7c63249b6f21d7a264323fc8770572500`.
+- Public `/order` loads `index-BkDDgl8o.js`; `mvpApi-DDETxfwP.js` contains
+  `expectedOffer`, `standOutcome-Bdv90Q08.js` contains `PRICE_OFFER_CHANGED`.
+  Driver `DriverApp-NR6FJeO5.js` and rider `ClientApp-CfM4Bbhv.js` return 200.
+- Public API liveness 200; readiness 503 still reports missing SMS honestly,
+  with PostgreSQL, Redis and private OSRM healthy. Verification made no production
+  account, trip, stand or configuration mutations.
+
+## Next internal defect reproduced
+
+After this stage, a separate local dev HTTP audit registered a new QA passenger
+through SMS/password, submitted a synthetic driver application, and reviewed it
+through the normal local OWNER endpoint. Review returned `APPROVED`, but a fresh
+password login remained `CLIENT`, and `POST /api/auth/mode/driver` returned
+403 `DRIVER_MODE_UNAVAILABLE`. The synthetic application was set back to REJECTED
+after the audit (no real person or documents were approved).
+
+Source review: application review only updates status/comment. Runtime modules
+do not create/link the driver profile; driver inserts exist in seed/QA code.
+The current public application and application-document routes also lack a
+verified applicant-account binding. Fix the chain with authenticated ownership,
+explicit owner-approved region access and transactional provisioning, preserving
+existing driver/customer sessions and records. Do not auto-link legacy anonymous
+applications by a freely entered phone, grant every region, generate passwords,
+or treat synthetic QA as a real legal/document approval. This is unfinished
+internal work, not an SMS/provider external blocker.

@@ -30,8 +30,11 @@ The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass
 proves moving navigation, complete official address coverage or a production
 capacity target. Driver-application approval through creation of a usable
-driver account and region access remains an explicit end-to-end audit target;
-the seeded-driver smoke tests do not cover it. Negotiated-price replacement
+driver account and region access is a confirmed unfinished internal path:
+local owner approval returns APPROVED, but a fresh applicant login remains CLIENT
+and driver-mode switching returns 403 DRIVER_MODE_UNAVAILABLE (see consent-stage
+report's follow-up audit). The seeded-driver smoke tests do not cover onboarding.
+Negotiated-price replacement
 during acceptance is covered by the September 16 consent stage; this does not
 prove every unrelated order-edit or direct base-price acceptance race.
 
