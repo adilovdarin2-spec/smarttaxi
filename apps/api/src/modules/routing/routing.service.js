@@ -6,6 +6,7 @@ import { AppError } from "../../common/errors.js";
 import { redis } from "../../db/redis.js";
 import { query as defaultQuery } from "../../db/pool.js";
 import { regionRadiusKmByName } from "./region-geo.js";
+import { addressSearchQuery } from "./address-search-query.js";
 import { orderRoom, dispatchRegionRoom, ACTIVE_ORDER_STATUSES, TO_PICKUP_ORDER_STATUSES, TO_DROPOFF_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 import { prepareOrderPricing } from "../orders/order-pricing.service.js";
 import { publicIntercityRoute, resolveIntercityRoute } from "../intercity/intercity-routes.service.js";
@@ -688,6 +689,10 @@ function addressQueryScore(item, query) {
   const label = normalizedText(item.label);
   const text = suggestionText(item);
   if (label === normalizedQuery) return 0;
+  const queryTokens = addressSearchQuery(normalizedQuery).tokens;
+  const labelTokens = addressSearchQuery(label).tokens;
+  if (queryTokens.length && queryTokens.length === labelTokens.length &&
+      queryTokens.every(token => labelTokens.includes(token))) return 0;
   if (label.startsWith(normalizedQuery)) return 1;
   if (label.includes(normalizedQuery)) return 2;
   if (text.includes(normalizedQuery)) return 3;
@@ -1360,6 +1365,7 @@ async function filterAddressSuggestionsToServiceArea(addresses, regionName, exec
 }
 
 async function searchGazetteer(text, regionName, limit, executor = defaultQuery) {
+  const search = addressSearchQuery(text);
   // Scoped by distance from the region's centre, NOT by `r.name = $2`.
   //
   // Every address row belongs to exactly one region — the nearest settlement
@@ -1400,6 +1406,8 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
       -- search_text = label WHERE search_text IS NULL on every boot, so the
       -- column is never null by the time a query runs.
       WHERE a.search_text ILIKE $1
+        AND a.search_text ILIKE ALL($7::text[])
+        AND a.label ~* ALL($8::text[])
         AND ($2::text IS NULL OR (
               scope.id IS NOT NULL
               AND a.lat BETWEEN scope.center_lat - $5 AND scope.center_lat + $5
@@ -1420,7 +1428,8 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
                     WHEN 'building' THEN 2 ELSE 3 END,
         length(a.label)
       LIMIT $4`,
-    [`%${text}%`, regionName || null, `${text}%`, candidateLimit, latDelta, lngDelta]
+    [search.anchor, regionName || null, `${text.replace(/[\\%_]/g, '\\$&')}%`, candidateLimit,
+      latDelta, lngDelta, search.patterns, search.numbers]
   );
   if (!rows.length) return [];
 
@@ -1438,6 +1447,9 @@ async function searchGazetteer(text, regionName, limit, executor = defaultQuery)
     // real service area instead, otherwise a valid border-street can look as
     // if it belongs to a neighbouring town.
     region: matchingRegion?.name || row.region_name,
+    city: matchingRegion?.name || row.region_name,
+    subtitle: matchingRegion?.name || row.region_name,
+    kind: row.kind,
     source: "gazetteer"
   }));
 }
@@ -1453,6 +1465,8 @@ export async function searchAddresses(
 ) {
   const trimmed = String(q || "").trim();
   if (trimmed.length < 2) return [];
+  const search = addressSearchQuery(trimmed);
+  if (!search.tokens.length) return [];
   // compactText returns "" (not null) for a missing region, and an empty
   // string is not NULL in SQL — so passing it straight through made the
   // region filter compare r.name against '', matching nothing and
@@ -1476,6 +1490,13 @@ export async function searchAddresses(
     console.error("[addresses] gazetteer lookup failed", error);
   }
   if (local.length) {
+    // A house-number query answered by this town's own catalogue does not
+    // need to wait for remote providers to rediscover the same building.
+    // Broad street/business searches still merge independent POI results.
+    if (regionFilter && search.tokens.length > 1 && search.numbers.length &&
+        local.some(item => item.kind === 'housenumber')) {
+      return sortAddressSuggestions(local, regionFilter, trimmed).slice(0, limit);
+    }
     // ...and the reverse must hold too. Every provider being unreachable
     // used to throw straight out of here, past a catch that logged it as a
     // gazetteer failure, into a second remote call that threw again — so a

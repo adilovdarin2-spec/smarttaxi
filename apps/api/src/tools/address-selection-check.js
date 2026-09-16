@@ -374,6 +374,34 @@ function searchDb(rows) {
 
 const noRemote = async () => ({ ok: false, async json() { return {}; } });
 
+let exactHouseRemoteCalls = 0;
+const exactHouseSearch = await searchAddresses(
+  { q: '29 Амангелды', region: 'Мырзакент' },
+  async () => { exactHouseRemoteCalls++; return noRemote(); },
+  searchDb([
+    { label: 'Амангелды улица, 29 А', lat: 40.7001, lng: 68.5201, kind: 'housenumber' },
+    { label: 'Амангелды улица, 29', lat: 40.7002, lng: 68.5202, kind: 'housenumber' },
+  ])
+);
+assert.equal(exactHouseSearch[0].label, 'Амангелды улица, 29', 'exact house precedes letter variants');
+assert.equal(exactHouseRemoteCalls, 0, 'an available scoped house search never waits for a geocoder');
+assert.equal(exactHouseSearch[0].subtitle, 'Мырзакент', 'same street names have regional context');
+assert.deepEqual(await searchAddresses({ q: '%%__' }, noRemote,
+  async () => { throw new Error('punctuation must not scan the address table'); }), []);
+
+// The SQL must receive independent words, not a literal phrase that only
+// matches the punctuation and word order used by the catalogue.
+for (const q of ['Амангелды 29', '29 Амангелды', 'ул. Амангелды, д. 29']) {
+  let searchParams;
+  await searchAddresses({ q, region: 'Мырзакент' }, noRemote, async (sql, params) => {
+    if (/FROM addresses/i.test(sql)) searchParams = params;
+    return { rows: /FROM regions/i.test(sql) ? [MYRZAKENT] : [] };
+  }).catch(error => assert.equal(error.code, 'ADDRESS_SEARCH_UNAVAILABLE'));
+  assert.equal(searchParams[0], '%амангелды%');
+  assert.deepEqual([...searchParams[6]].sort(), ['%29%', '%амангелды%']);
+  assert.deepEqual(searchParams[7], ['(^|[^[:digit:]])29([^[:digit:]]|$)']);
+}
+
 // 9. A local hit inside the service area is returned and credited - and it
 //     survives every external provider being unreachable, which is what
 //     `noRemote` simulates here. This used to throw a 503: the remote call sat
