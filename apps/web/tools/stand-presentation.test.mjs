@@ -91,6 +91,11 @@ test("the rider screen only offers seats in cars that are loading", () => {
   );
   // A rider already holding a seat is not offered a second one anywhere.
   assert.match(source, /disabled=\{busy \|\| Boolean\(reservation\) \|\| entry\.freeSeats <= 0\}/);
+  assert.match(
+    source,
+    /\{boarding\.length > 0 && \(\s*<p className="client-stand-note">Позвоните водителю/,
+    "an empty stand must not tell the rider to call a driver who is not there",
+  );
 });
 
 test("both web apps send the stated reason with the cancellation", () => {

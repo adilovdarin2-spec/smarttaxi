@@ -390,7 +390,9 @@ function StandSheet({ view, reservation, busy, error, onRefresh, onClose, onRese
             </article>
           ))
         )}
-        <p className="client-stand-note">Позвоните водителю и скажите, когда подойдёте.</p>
+        {boarding.length > 0 && (
+          <p className="client-stand-note">Позвоните водителю и скажите, когда подойдёте.</p>
+        )}
       </div>
     </div>
   );
