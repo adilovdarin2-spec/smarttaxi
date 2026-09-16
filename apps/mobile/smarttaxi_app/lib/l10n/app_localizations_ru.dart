@@ -4473,4 +4473,20 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get standOutcomeRiderUnavailable =>
       'Эта бронь больше не активна. Обновите данные или выберите другую машину.';
+
+  @override
+  String get assignmentDriverCancelled =>
+      'Вы уже отменили этот заказ. Выберите другой.';
+
+  @override
+  String get assignmentDriverUnavailable =>
+      'Этот заказ недоступен для вас. Выберите другой.';
+
+  @override
+  String get assignmentDriverBlockedRider =>
+      'Вы заблокировали этого пассажира. Выберите другой заказ.';
+
+  @override
+  String get assignmentRiderUnavailable =>
+      'Водитель больше не может принять этот заказ. Выберите другого водителя или отклоните предложение.';
 }

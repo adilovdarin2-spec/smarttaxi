@@ -1869,5 +1869,9 @@
   "standOutcomeHandedOver": "您的排队位置已转交给其他司机。",
   "standOutcomeAcceptedOrder": "您已接受订单，候客点的排队位置已释放。",
   "standOutcomeDriverLeft": "您的排队位置已释放。",
-  "standOutcomeRiderUnavailable": "此预订已不再有效。请刷新信息或选择其他车辆。"
+  "standOutcomeRiderUnavailable": "此预订已不再有效。请刷新信息或选择其他车辆。",
+  "assignmentDriverCancelled": "您已取消过此订单。请选择其他订单。",
+  "assignmentDriverUnavailable": "您无法接受此订单。请选择其他订单。",
+  "assignmentDriverBlockedRider": "您已屏蔽此乘客。请选择其他订单。",
+  "assignmentRiderUnavailable": "司机已无法接受此订单。请选择其他司机或拒绝报价。"
 }

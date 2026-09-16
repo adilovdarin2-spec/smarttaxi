@@ -7980,6 +7980,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Эта бронь больше не активна. Обновите данные или выберите другую машину.'**
   String get standOutcomeRiderUnavailable;
+
+  /// No description provided for @assignmentDriverCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже отменили этот заказ. Выберите другой.'**
+  String get assignmentDriverCancelled;
+
+  /// No description provided for @assignmentDriverUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот заказ недоступен для вас. Выберите другой.'**
+  String get assignmentDriverUnavailable;
+
+  /// No description provided for @assignmentDriverBlockedRider.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы заблокировали этого пассажира. Выберите другой заказ.'**
+  String get assignmentDriverBlockedRider;
+
+  /// No description provided for @assignmentRiderUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель больше не может принять этот заказ. Выберите другого водителя или отклоните предложение.'**
+  String get assignmentRiderUnavailable;
 }
 
 class _AppLocalizationsDelegate

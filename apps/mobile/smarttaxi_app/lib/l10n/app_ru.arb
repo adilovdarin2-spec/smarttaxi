@@ -1946,5 +1946,9 @@
   "standOutcomeHandedOver": "Ваше место передано другому водителю.",
   "standOutcomeAcceptedOrder": "Вы приняли заказ. Место на стоянке освобождено.",
   "standOutcomeDriverLeft": "Ваше место в очереди освобождено.",
-  "standOutcomeRiderUnavailable": "Эта бронь больше не активна. Обновите данные или выберите другую машину."
+  "standOutcomeRiderUnavailable": "Эта бронь больше не активна. Обновите данные или выберите другую машину.",
+  "assignmentDriverCancelled": "Вы уже отменили этот заказ. Выберите другой.",
+  "assignmentDriverUnavailable": "Этот заказ недоступен для вас. Выберите другой.",
+  "assignmentDriverBlockedRider": "Вы заблокировали этого пассажира. Выберите другой заказ.",
+  "assignmentRiderUnavailable": "Водитель больше не может принять этот заказ. Выберите другого водителя или отклоните предложение."
 }

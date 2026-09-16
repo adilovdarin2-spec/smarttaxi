@@ -4452,4 +4452,20 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get standOutcomeRiderUnavailable =>
       'Бұл бронь енді белсенді емес. Деректерді жаңартыңыз немесе басқа көлікті таңдаңыз.';
+
+  @override
+  String get assignmentDriverCancelled =>
+      'Сіз бұл тапсырыстан бас тартқансыз. Басқасын таңдаңыз.';
+
+  @override
+  String get assignmentDriverUnavailable =>
+      'Бұл тапсырыс сізге қолжетімсіз. Басқасын таңдаңыз.';
+
+  @override
+  String get assignmentDriverBlockedRider =>
+      'Сіз бұл жолаушыны бұғаттағансыз. Басқа тапсырысты таңдаңыз.';
+
+  @override
+  String get assignmentRiderUnavailable =>
+      'Жүргізуші енді бұл тапсырысты қабылдай алмайды. Басқа жүргізушіні таңдаңыз немесе ұсыныстан бас тартыңыз.';
 }

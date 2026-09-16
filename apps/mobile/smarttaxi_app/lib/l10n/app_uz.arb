@@ -1869,5 +1869,9 @@
   "standOutcomeHandedOver": "O‘rningiz boshqa haydovchiga berildi.",
   "standOutcomeAcceptedOrder": "Siz buyurtmani qabul qildingiz. To‘xtash joyidagi o‘rin bo‘shatildi.",
   "standOutcomeDriverLeft": "Navbatdagi o‘rningiz bo‘shatildi.",
-  "standOutcomeRiderUnavailable": "Bu bron endi faol emas. Ma’lumotlarni yangilang yoki boshqa mashinani tanlang."
+  "standOutcomeRiderUnavailable": "Bu bron endi faol emas. Ma’lumotlarni yangilang yoki boshqa mashinani tanlang.",
+  "assignmentDriverCancelled": "Siz bu buyurtmani avval bekor qilgansiz. Boshqasini tanlang.",
+  "assignmentDriverUnavailable": "Bu buyurtma siz uchun mavjud emas. Boshqasini tanlang.",
+  "assignmentDriverBlockedRider": "Siz bu yo‘lovchini bloklagansiz. Boshqa buyurtmani tanlang.",
+  "assignmentRiderUnavailable": "Haydovchi endi bu buyurtmani qabul qila olmaydi. Boshqa haydovchini tanlang yoki taklifni rad eting."
 }

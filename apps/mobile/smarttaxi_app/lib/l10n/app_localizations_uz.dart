@@ -4497,4 +4497,20 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get standOutcomeRiderUnavailable =>
       'Bu bron endi faol emas. Ma’lumotlarni yangilang yoki boshqa mashinani tanlang.';
+
+  @override
+  String get assignmentDriverCancelled =>
+      'Siz bu buyurtmani avval bekor qilgansiz. Boshqasini tanlang.';
+
+  @override
+  String get assignmentDriverUnavailable =>
+      'Bu buyurtma siz uchun mavjud emas. Boshqasini tanlang.';
+
+  @override
+  String get assignmentDriverBlockedRider =>
+      'Siz bu yo‘lovchini bloklagansiz. Boshqa buyurtmani tanlang.';
+
+  @override
+  String get assignmentRiderUnavailable =>
+      'Haydovchi endi bu buyurtmani qabul qila olmaydi. Boshqa haydovchini tanlang yoki taklifni rad eting.';
 }

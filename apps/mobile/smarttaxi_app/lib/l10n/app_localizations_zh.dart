@@ -4179,4 +4179,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get standOutcomeRiderUnavailable => '此预订已不再有效。请刷新信息或选择其他车辆。';
+
+  @override
+  String get assignmentDriverCancelled => '您已取消过此订单。请选择其他订单。';
+
+  @override
+  String get assignmentDriverUnavailable => '您无法接受此订单。请选择其他订单。';
+
+  @override
+  String get assignmentDriverBlockedRider => '您已屏蔽此乘客。请选择其他订单。';
+
+  @override
+  String get assignmentRiderUnavailable => '司机已无法接受此订单。请选择其他司机或拒绝报价。';
 }

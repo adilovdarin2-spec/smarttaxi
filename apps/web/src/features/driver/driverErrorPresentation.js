@@ -1,3 +1,5 @@
+import { assignmentErrorMessage } from '../shared/assignmentError.mjs';
+
 const DRIVER_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: "Неверный телефон или пароль",
   DRIVER_REGION_NOT_SELECTED: "Выберите рабочий регион",
@@ -26,6 +28,8 @@ const NETWORK_ERROR =
 const GENERIC_ERROR = "Не удалось выполнить действие. Попробуйте ещё раз.";
 
 export function driverErrorMessage(error) {
+  const assignment = assignmentErrorMessage(error?.code, true);
+  if (assignment) return assignment;
   const mapped = DRIVER_ERROR_MESSAGES[error?.code];
   if (mapped) return mapped;
 

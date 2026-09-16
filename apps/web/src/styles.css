@@ -7681,6 +7681,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 .price-offer-card strong { font-size: 17px; color: var(--taxi-text); }
 .price-offer-card span { font-size: 13px; color: var(--taxi-secondary); }
+.price-offer-card .price-offer-amount { display: inline-block; white-space: nowrap; font: inherit; color: inherit; }
 
 .price-offer-actions {
   display: grid;

@@ -314,4 +314,35 @@ function createExecutor() {
   );
 }
 
+// Conditions can change after a valid offer was submitted. Revalidate on
+// BOTH acceptance paths, not only when creating the original offer.
+for (const counter of [false, true]) {
+  for (const [code, arrange] of [
+    ['DRIVER_DEBT_LIMIT', state => { state.drivers[0].debt = 15001; }],
+    ['ORDER_REGION_MISMATCH', state => { state.orders[0].region_id = 'region-b'; }],
+    ['DRIVER_PREVIOUSLY_CANCELLED_ORDER', state => { state.orders[0].last_cancelled_by_driver_id = 'driver-1'; }],
+    ['DRIVER_BLOCKED_BY_CLIENT', state => { state.preferences.push({ client_id: 'client-1', driver_id: 'driver-1', type: 'BLOCKED' }); }],
+    ['CLIENT_BLOCKED_BY_DRIVER', state => { state.driverClientPreferences.push({ driver_id: 'driver-1', client_id: 'client-1', type: 'BLOCKED' }); }],
+  ]) {
+    const executor = createExecutor();
+    await submitDriverPriceOffer({ orderId: 'order-1', userId: 'driver-user-1', priceKzt: 500, executor });
+    if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, executor });
+    arrange(executor.state);
+    const before = structuredClone(executor.state);
+    const accept = () => counter
+      ? respondToClientCounterOffer({ orderId: 'order-1', driverUserId: 'driver-user-1', accept: true, executor })
+      : respondToDriverPriceOffer({ orderId: 'order-1', clientUserId: 'client-user-1', accept: true, executor });
+    await assert.rejects(accept, { code });
+    assert.deepEqual(executor.state, before, 'A rejected price acceptance cannot mutate order/driver state');
+  }
+  const executor = createExecutor();
+  executor.state.drivers[0].debt = 15000;
+  await submitDriverPriceOffer({ orderId: 'order-1', userId: 'driver-user-1', priceKzt: 500, executor });
+  if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, executor });
+  const result = counter
+    ? await respondToClientCounterOffer({ orderId: 'order-1', driverUserId: 'driver-user-1', accept: true, executor })
+    : await respondToDriverPriceOffer({ orderId: 'order-1', clientUserId: 'client-user-1', accept: true, executor });
+  assert.equal(result.accepted, true, 'Exactly the existing debt limit remains allowed');
+}
+
 console.log("Driver price-offer (\"торг\") checks ok");

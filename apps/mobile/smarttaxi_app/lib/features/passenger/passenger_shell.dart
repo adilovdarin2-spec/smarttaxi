@@ -43,6 +43,7 @@ import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/cancellation_reason_sheet.dart';
 import '../shared/models.dart';
+import '../shared/assignment_error.dart';
 import 'screens/stands/passenger_stands_screen.dart';
 import 'screens/wallet/client_wallet_screen.dart';
 import 'widgets/passenger_region_connection_notice.dart';
@@ -20202,6 +20203,8 @@ String _readableDriverRouteError(AppLocalizations l10n, Object error) {
 
 String _readableError(AppLocalizations l10n, Object error) {
   final apiCode = _apiErrorCode(error);
+  final assignment = assignmentErrorMessage(apiCode, l10n);
+  if (assignment != null) return assignment;
   if (apiCode != null) {
     final apiMap = {
       'CLIENT_HAS_ACTIVE_ORDER': l10n.errorClientHasActiveOrder,

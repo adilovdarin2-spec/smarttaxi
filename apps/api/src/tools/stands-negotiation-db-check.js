@@ -39,11 +39,12 @@ try {
     reservations: (await query('SELECT status FROM taxi_stand_seat_reservations WHERE entry_id=$1 ORDER BY status', [entry.id])).rows.map(r => r.status),
   });
   const before = await snapshot();
-  for (const [name, proposedBy, accept] of [
+  const acceptancePaths = [
     ['direct', 'DRIVER', (executor) => acceptOrderForDriver({ orderId: order.id, userId: driverUser, executor })],
     ['rider accepts driver price', 'DRIVER', (executor) => respondToDriverPriceOffer({ orderId: order.id, clientUserId: clientUser, accept: true, executor })],
     ['driver accepts rider counter', 'CLIENT', (executor) => respondToClientCounterOffer({ orderId: order.id, driverUserId: driverUser, accept: true, executor })],
-  ]) {
+  ];
+  for (const [name, proposedBy, accept] of acceptancePaths) {
     await query('SAVEPOINT scenario');
     await query('UPDATE orders SET driver_offer_proposed_by=$2 WHERE id=$1', [order.id, proposedBy]);
     const result = await accept(connection);
@@ -58,6 +59,35 @@ try {
     await query('ROLLBACK TO SAVEPOINT scenario');
     assert.deepEqual(await snapshot(), before, 'Rollback restores order, driver, queue and reservations together');
     await query('RELEASE SAVEPOINT scenario');
+  }
+  const otherRegion = (await query('SELECT id FROM regions WHERE is_active=true AND id<>$1 LIMIT 1', [region.id])).rows[0];
+  assert.ok(otherRegion);
+  const policies = [
+    ['debt limit', 'DRIVER_DEBT_LIMIT', () => query('UPDATE drivers SET debt=15001 WHERE id=$1', [driver.id])],
+    ['region changed after offer', 'ORDER_REGION_MISMATCH', async () => {
+      await query("INSERT INTO driver_region_approvals(driver_id,region_id,status) VALUES($1,$2,'APPROVED')", [driver.id, otherRegion.id]);
+      await query('UPDATE drivers SET current_region_id=$2 WHERE id=$1', [driver.id, otherRegion.id]);
+    }],
+    ['previously cancelled', 'DRIVER_PREVIOUSLY_CANCELLED_ORDER', () => query('UPDATE orders SET last_cancelled_by_driver_id=$2 WHERE id=$1', [order.id, driver.id])],
+    ['rider blocked driver', 'DRIVER_BLOCKED_BY_CLIENT', () => query("INSERT INTO client_driver_preferences(client_id,driver_id,type) VALUES($1,$2,'BLOCKED')", [client.id, driver.id])],
+    ['driver blocked rider', 'CLIENT_BLOCKED_BY_DRIVER', () => query("INSERT INTO driver_client_preferences(driver_id,client_id,type) VALUES($1,$2,'BLOCKED')", [driver.id, client.id])],
+  ];
+  for (const [name, proposedBy, accept] of acceptancePaths) {
+    for (const [label, code, arrange] of policies) {
+      await query('SAVEPOINT policy');
+      await query('UPDATE orders SET driver_offer_proposed_by=$2 WHERE id=$1', [order.id, proposedBy]);
+      await arrange();
+      const untouched = await snapshot();
+      let error;
+      try { await accept(connection); } catch (caught) { error = caught; }
+      console.log(`${name}: ${label}: ${error?.code || 'ACCEPTED'}`);
+      if (!observe) {
+        assert.equal(error?.code, code, `${name}: ${label}`);
+        assert.deepEqual(await snapshot(), untouched, 'Refusal cannot assign the order or release a stand/booking');
+      }
+      await query('ROLLBACK TO SAVEPOINT policy');
+      await query('RELEASE SAVEPOINT policy');
+    }
   }
   for (const [proposedBy, decline] of [
     ['DRIVER', () => respondToDriverPriceOffer({ orderId: order.id, clientUserId: clientUser, accept: false, executor: connection })],

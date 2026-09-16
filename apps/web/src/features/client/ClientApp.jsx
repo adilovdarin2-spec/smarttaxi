@@ -6,6 +6,7 @@ import { containModalFocus } from '../../lib/modalFocus.js';
 import TripDriverCard from './TripDriverCard.jsx';
 import { tripIdentity, tripApproach } from './tripPresentation.mjs';
 import { isResolvedAddressPoint } from './address-resolution.mjs';
+import { assignmentErrorMessage } from '../shared/assignmentError.mjs';
 const LazyMapView = React.lazy(() => import("../map/MapView.jsx"));
 const LazyClientWallet = React.lazy(() => import('./ClientWalletSection.jsx'));
 
@@ -369,7 +370,7 @@ const errorMessages = {
 };
 
 function formatError(error) {
-  return errorMessages[error?.code] || "Не удалось выполнить запрос. Проверьте соединение и попробуйте снова.";
+  return assignmentErrorMessage(error?.code) || errorMessages[error?.code] || "Не удалось выполнить запрос. Проверьте соединение и попробуйте снова.";
 }
 
 function publicStatus(status) {
@@ -3874,9 +3875,9 @@ function PriceOfferCard({ order, onOrderUpdate }) {
 
   return (
     <section className="price-offer-card" aria-label="Предложение водителя по цене">
-      <strong>Водитель предлагает {order.driver_offer_price_kzt} ₸</strong>
+      <strong>Водитель предлагает <span className="price-offer-amount"><Money value={order.driver_offer_price_kzt} /></span></strong>
       <span>Вместо {order.price} ₸ за поездку</span>
-      {error && <p className="state-note danger">{error}</p>}
+      {error && <p className="state-note danger" role="alert">{error}</p>}
       <div className="price-offer-actions">
         <button type="button" className="price-offer-decline" disabled={busy} onClick={() => respond(false)}>Отказаться</button>
         <button type="button" className="price-offer-accept" disabled={busy} onClick={() => respond(true)}>{busy ? "Отправляем..." : "Согласиться"}</button>

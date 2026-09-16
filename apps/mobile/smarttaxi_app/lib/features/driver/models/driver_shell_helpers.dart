@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
+import '../../shared/assignment_error.dart';
 
 /// Legacy source statuses remain supported alongside the current lifecycle.
 String? driverRoutePhaseForStatus(String? status) {
@@ -325,6 +326,9 @@ String? apiErrorCode(Object error) {
 }
 
 String readableError(AppLocalizations l10n, Object error) {
+  final assignment =
+      assignmentErrorMessage(apiErrorCode(error), l10n, driver: true);
+  if (assignment != null) return assignment;
   final message = error.toString();
   if (message.contains('SocketException') ||
       message.contains('Connection') ||

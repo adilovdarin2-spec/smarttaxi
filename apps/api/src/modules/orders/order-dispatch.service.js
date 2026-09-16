@@ -388,12 +388,26 @@ export async function assertDriverCanServeOrder(driver, order, executor) {
   }
 }
 
+// Recheck after locking the current driver and order: a pending price is not
+// permission to bypass a later block, region change or cancellation.
+async function assertAssignmentPolicy(driver, order, executor) {
+  if (Number(driver.debt) > 15000) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
+  if (order.region_id !== driver.current_region_id) {
+    throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
+  }
+  await assertDriverCanServeOrder(driver, order, executor);
+  if (order.last_cancelled_by_driver_id === driver.id) {
+    throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
+  }
+  await assertDriverNotBlockedByClient(order.client_id, driver.id, executor);
+  await assertClientNotBlockedByDriver(order.client_id, driver.id, executor);
+}
+
 export async function acceptOrderForDriver({ orderId, userId, executor }) {
   const driver = (await runQuery(executor, "SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [userId])).rows[0];
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
   await assertDriverDispatchReady(driver, executor);
 
-  if (Number(driver.debt) > 15000) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
   await assertDriverHasNoActiveOrder(driver, executor);
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
   if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
@@ -401,15 +415,7 @@ export async function acceptOrderForDriver({ orderId, userId, executor }) {
   const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
   if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) throw new AppError("Order already accepted", 409, "ORDER_ALREADY_ACCEPTED");
-  if (existing.region_id !== driver.current_region_id) {
-    throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
-  }
-  await assertDriverCanServeOrder(driver, existing, executor);
-  if (existing.last_cancelled_by_driver_id === driver.id) {
-    throw new AppError("You already cancelled this order", 409, "DRIVER_PREVIOUSLY_CANCELLED_ORDER");
-  }
-  await assertDriverNotBlockedByClient(existing.client_id, driver.id, executor);
-  await assertClientNotBlockedByDriver(existing.client_id, driver.id, executor);
+  await assertAssignmentPolicy(driver, existing, executor);
 
   const order = (await runQuery(
     executor,
@@ -656,6 +662,7 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
 
   const existing = (await runQuery(executor, "SELECT * FROM orders WHERE id=$1 FOR UPDATE", [orderId])).rows[0];
+  if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
   if (existing.driver_offer_status !== "PENDING" || existing.driver_offer_by_driver_id !== driver.id ||
       existing.driver_offer_proposed_by !== "DRIVER") {
     throw new AppError("No pending price offer for this order", 409, "NO_PENDING_PRICE_OFFER");
@@ -663,12 +670,12 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
 
   await assertDriverDispatchReady(driver, executor);
   await assertDriverHasNoActiveOrder(driver, executor);
-  await assertDriverCanServeOrder(driver, existing, executor);
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
   if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
     throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
   }
+  await assertAssignmentPolicy(driver, existing, executor);
 
   const order = (await runQuery(
     executor,
@@ -785,12 +792,12 @@ export async function respondToClientCounterOffer({ orderId, driverUserId, accep
 
   await assertDriverDispatchReady(driver, executor);
   await assertDriverHasNoActiveOrder(driver, executor);
-  await assertDriverCanServeOrder(driver, existing, executor);
   if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
   if (driver.status !== "FREE") throw new AppError("Driver is not available", 409, "DRIVER_OFFLINE");
   if (!OPEN_ORDER_STATUSES.includes(existing.status) || existing.driver_id) {
     throw new AppError("Order is no longer open", 409, "ORDER_ALREADY_ACCEPTED");
   }
+  await assertAssignmentPolicy(driver, existing, executor);
 
   const order = (await runQuery(
     executor,
