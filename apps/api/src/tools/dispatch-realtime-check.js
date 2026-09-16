@@ -10,11 +10,18 @@ import {
   listOrdersForDriver,
   orderRoom,
   publicOrderStatus,
+  publicOrderEvent,
   syncDriverAvailability,
   TRANSITION_RULES
 } from "../modules/orders/order-dispatch.service.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+for (const author of ['DRIVER', 'CLIENT']) {
+  assert.equal(publicOrderEvent({ driver_offer_proposed_by: author }).driver_offer_proposed_by, author,
+    'Realtime must retain which side is allowed to answer the pending price');
+}
+assert.equal(publicOrderEvent({ offer_driver_name: 'Driver A' }).offer_driver_name, 'Driver A');
+assert.equal(publicOrderEvent({}).offer_driver_name, null, 'A new unnamed offering driver cannot retain the old name in a merged event');
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
 const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");

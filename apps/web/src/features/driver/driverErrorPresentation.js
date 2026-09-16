@@ -1,4 +1,5 @@
 import { assignmentErrorMessage } from '../shared/assignmentError.mjs';
+import { priceOfferErrorMessage } from '../shared/priceNegotiation.js';
 
 const DRIVER_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: "Неверный телефон или пароль",
@@ -28,7 +29,7 @@ const NETWORK_ERROR =
 const GENERIC_ERROR = "Не удалось выполнить действие. Попробуйте ещё раз.";
 
 export function driverErrorMessage(error) {
-  const assignment = assignmentErrorMessage(error?.code, true);
+  const assignment = assignmentErrorMessage(error?.code, true) || priceOfferErrorMessage(error);
   if (assignment) return assignment;
   const mapped = DRIVER_ERROR_MESSAGES[error?.code];
   if (mapped) return mapped;

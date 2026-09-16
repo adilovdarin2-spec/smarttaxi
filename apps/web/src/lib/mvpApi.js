@@ -822,6 +822,26 @@ export function getMyStandReservation() {
   return api("/api/stands/reservations/me");
 }
 
+export function submitDriverPriceOffer(orderId, priceKzt) {
+  return api(`/api/orders/${orderId}/price-offer`, { method: 'POST', body: JSON.stringify({ priceKzt }) });
+}
+
+export function submitClientCounterOffer(orderId, priceKzt) {
+  return api(`/api/orders/${orderId}/price-offer/counter`, { method: 'POST', body: JSON.stringify({ priceKzt }) });
+}
+
+export function respondClientCounterOffer(orderId, accept) {
+  return api(`/api/orders/${orderId}/price-offer/driver-respond`, { method: 'POST', body: JSON.stringify({ accept }) });
+}
+
+export function getQueuedPriceOffers(orderId) {
+  return api(`/api/orders/${orderId}/price-offers/queue`);
+}
+
+export function promoteQueuedPriceOffer(orderId, queueId) {
+  return api(`/api/orders/${orderId}/price-offers/queue/${queueId}/promote`, { method: 'POST' });
+}
+
 export function getStandReservationOutcome(id) {
   return api(`/api/stands/reservations/${encodeURIComponent(id)}/status`);
 }

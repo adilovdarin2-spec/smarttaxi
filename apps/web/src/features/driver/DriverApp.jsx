@@ -7,10 +7,13 @@ import { driverLocationFeedback } from "./driverLocationFeedback.js";
 import { driverErrorMessage } from "./driverErrorPresentation.js";
 import DriverNavigator from "./DriverNavigator.jsx";
 import DriverStandsPanel from "./DriverStandsPanel.jsx";
+import DriverPriceOffer from './DriverPriceOffer.jsx';
+import { pendingPriceOffer } from '../shared/priceNegotiation.js';
 import CancellationReasonDialog from "../shared/CancellationReasonDialog.jsx";
 import { driverRouteMeta } from "./driverRoutePresentation.js";
 import { browserNavigationFix, navigationFixIsFresh } from "./navigationProgress.js";
 import { sessionGuard } from "../../lib/sessionGuard.js";
+import { assignWithRecovery } from '../../lib/assignmentRecovery.js';
 import "./driverDesign.css";
 import { driverWaitingPresentation } from "./driverWaitingPresentation.js";
 const loadMapView = () => import("../map/MapView.jsx");
@@ -49,6 +52,8 @@ import {
   markOrderPaid,
   noShowDriverOrder,
   rejectDriverOrder,
+  submitDriverPriceOffer,
+  respondClientCounterOffer,
   selectDriverRegion,
   sendQuickMessage,
   setDriverStatus,
@@ -405,7 +410,9 @@ function RegionSelector({ regions, selectedRegionId, onSelect, disabled }) {
   );
 }
 
-export function IncomingOrderCard({ order, onAccept, onReject, loading }) {
+export function IncomingOrderCard({ order, onAccept, onReject, loading, driverId, onOffer, onCounter }) {
+  const offer = pendingPriceOffer(order, driverId);
+  const answeringCounter = offer?.mine && offer.author === 'CLIENT' && onCounter;
   return (
     <article className="driver-core-order-card" data-order-id={order.id}>
       <div className="driver-core-order-top">
@@ -435,10 +442,11 @@ export function IncomingOrderCard({ order, onAccept, onReject, loading }) {
         </div>
         <span>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</span>
       </div>
-      <div className="driver-core-card-actions">
+      {!answeringCounter && <div className="driver-core-card-actions">
         <Button variant="secondary" onClick={() => onReject(order)} disabled={Boolean(loading)}>Пропустить</Button>
-        <Button onClick={() => onAccept(order)} disabled={Boolean(loading)}>{loading === "accept" ? "Принимаем…" : "Принять"}</Button>
-      </div>
+        <Button onClick={() => onAccept(order)} disabled={Boolean(loading)}>{loading === `accept-${order.id}` || loading === 'accept' ? "Принимаем…" : offer?.mine ? <>Принять за <Money value={order.price ?? order.estimatedPrice} /></> : "Принять"}</Button>
+      </div>}
+      {onOffer && <DriverPriceOffer order={order} driverId={driverId} loading={loading} onOffer={onOffer} onCounter={onCounter} />}
     </article>
   );
 }
@@ -596,6 +604,7 @@ export default function DriverApp() {
   const [debt, setDebt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
+  const actionFlight = useRef(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("line");
   const [accountSection, setAccountSection] = useState(null);
@@ -648,6 +657,7 @@ export default function DriverApp() {
     setLocationIssue(null);
     setError("");
     setActionLoading("");
+    actionFlight.current = null;
     setTab("line");
     setAccountSection(null);
     setLoginError(loginMessage);
@@ -843,7 +853,10 @@ export default function DriverApp() {
       "order.cancelled",
       "order.paid",
       "order.rated",
-      "order_status_public"
+      "order_status_public",
+      "order.driver_price_offer", "order.client_counter_offer",
+      "order.driver_price_offer_declined", "order.driver_price_offer_accepted",
+      "order.client_counter_offer_declined", "order.client_counter_offer_accepted"
     ].forEach(event => socket.on(event, scheduleRefresh));
     socket.on("connect", joinRooms);
     const onVisibility = () => {
@@ -1070,7 +1083,9 @@ export default function DriverApp() {
 
   async function withAction(name, fn) {
     const isCurrent = protectSession();
-    if (!isCurrent()) return null;
+    if (!isCurrent() || actionFlight.current) return null;
+    const operation = Symbol(name);
+    actionFlight.current = operation;
     setActionLoading(name);
     setError("");
     try {
@@ -1098,9 +1113,15 @@ export default function DriverApp() {
       }
       return isCurrent() ? result : null;
     } catch (error) {
-      if (isCurrent()) setError(formatError(error));
+      if (isCurrent()) {
+        setError(formatError(error));
+        // A lost acknowledgement may hide a committed mutation. Read current
+        // state once; never replay the write automatically.
+        try { await refreshDriver(); } catch { /* Keep the original action error. */ }
+      }
       return null;
     } finally {
+      if (actionFlight.current === operation) actionFlight.current = null;
       if (isCurrent()) setActionLoading("");
     }
   }
@@ -1116,13 +1137,26 @@ export default function DriverApp() {
   }
 
   async function handleAccept(order) {
-    const result = await withAction(`accept-${order.id}`, () => acceptOrder(order.id));
+    const result = await withAction(`accept-${order.id}`, () => assignWithRecovery({ orderId: order.id,
+      write: () => acceptOrder(order.id), readActive: getDriverActiveOrder, isCurrent: protectSession() }));
     if (result) setTab("active");
   }
 
   async function handleReject(order) {
     const result = await withAction(`reject-${order.id}`, () => rejectDriverOrder(order.id));
     if (result) setIncomingOrders(list => list.filter(item => item.id !== order.id));
+  }
+
+  async function handlePriceOffer(order, price) {
+    return withAction(`offer-${order.id}`, () => submitDriverPriceOffer(order.id, price));
+  }
+
+  async function handleCounterOffer(order, accept) {
+    const result = await withAction(`counter-${order.id}`, () => accept
+      ? assignWithRecovery({ orderId: order.id, write: () => respondClientCounterOffer(order.id, true),
+        readActive: getDriverActiveOrder, isCurrent: protectSession() })
+      : respondClientCounterOffer(order.id, false));
+    if (result && accept) setTab('active');
   }
 
   async function handleNext(order, next) {
@@ -1241,6 +1275,9 @@ export default function DriverApp() {
                     order={order}
                     onAccept={handleAccept}
                     onReject={handleReject}
+                    driverId={driver?.id}
+                    onOffer={handlePriceOffer}
+                    onCounter={handleCounterOffer}
                     loading={actionLoading}
                   />
                 ))}
@@ -1259,6 +1296,9 @@ export default function DriverApp() {
                     order={order}
                     onAccept={handleAccept}
                     onReject={handleReject}
+                    driverId={driver?.id}
+                    onOffer={handlePriceOffer}
+                    onCounter={handleCounterOffer}
                     loading={actionLoading}
                   />
                 )) : (

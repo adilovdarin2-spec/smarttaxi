@@ -4,6 +4,7 @@ import { Button, Money, PhoneFrame } from "../../core/ui.jsx";
 import AppModeButton from '../../components/ui/AppModeButton.jsx';
 import { containModalFocus } from '../../lib/modalFocus.js';
 import TripDriverCard from './TripDriverCard.jsx';
+import PriceOfferCard from './PriceOfferCard.jsx';
 import { tripIdentity, tripApproach } from './tripPresentation.mjs';
 import { isResolvedAddressPoint } from './address-resolution.mjs';
 import { assignmentErrorMessage } from '../shared/assignmentError.mjs';
@@ -52,7 +53,6 @@ import {
   rateOrder,
   registerUser,
   requestPasswordReset,
-  respondPriceOffer,
   reverseAddress,
   searchAddresses,
   sendAuthSms,
@@ -1293,6 +1293,12 @@ export default function ClientApp() {
     socket.on("driver_location_updated", updateLocation);
     socket.on("order_status_public", updateOrder);
     socket.on("order_updated", updateOrder);
+    const updateOfferQueue = payload => {
+      if (!isCurrent() || payload?.orderId !== order.id) return;
+      setOrder(current => current?.id === order.id
+        ? { ...current, offerQueueRevision: (current.offerQueueRevision || 0) + 1 } : current);
+    };
+    socket.on('order.driver_price_offer_queued', updateOfferQueue);
     socket.on("order_accepted", updateOrder);
     socket.on("order.searching_driver", updateOrder);
     socket.on("order.driver_found", updateOrder);
@@ -1322,6 +1328,7 @@ export default function ClientApp() {
       socket.off("driver_location_updated", updateLocation);
       socket.off("order_status_public", updateOrder);
       socket.off("order_updated", updateOrder);
+      socket.off('order.driver_price_offer_queued', updateOfferQueue);
       socket.off("order_accepted", updateOrder);
       socket.off("order.searching_driver", updateOrder);
       socket.off("order.driver_found", updateOrder);
@@ -3594,9 +3601,7 @@ function TripsSection({ authenticated, order, pickup, destination, route, liveRo
             </div>
             <img className="search-driver-car-route" src={carImages.Economy} alt="" loading="eager" decoding="async" />
           </header>
-          {order.driver_offer_status === "PENDING" && order.driver_offer_price_kzt != null && (
-            <PriceOfferCard order={order} onOrderUpdate={onOrderUpdate} />
-          )}
+          <PriceOfferCard key={order.id} order={order} onOrderUpdate={onOrderUpdate} />
           <SearchRouteCard pickup={order.pickup_text || pickup?.title} dropoff={order.dropoff_text || destination?.title} />
           <SearchingOrderMeta order={order} estimate={estimate} route={route} />
           <SearchProgress />
@@ -3846,42 +3851,6 @@ function SearchRouteCard({ pickup, dropoff }) {
       <span className="search-route-change" aria-hidden="true">
         Маршрут
       </span>
-    </section>
-  );
-}
-
-function PriceOfferCard({ order, onOrderUpdate }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
-
-  async function respond(accept) {
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const data = await respondPriceOffer(order.id, accept);
-      // Always call this even if the card itself has since unmounted (e.g.
-      // the offer expired via socket update mid-request) -- it writes to
-      // the always-mounted ClientApp root, not this component.
-      onOrderUpdate?.(data.order);
-    } catch (submitError) {
-      if (mountedRef.current) setError(formatError(submitError));
-    } finally {
-      if (mountedRef.current) setBusy(false);
-    }
-  }
-
-  return (
-    <section className="price-offer-card" aria-label="Предложение водителя по цене">
-      <strong>Водитель предлагает <span className="price-offer-amount"><Money value={order.driver_offer_price_kzt} /></span></strong>
-      <span>Вместо {order.price} ₸ за поездку</span>
-      {error && <p className="state-note danger" role="alert">{error}</p>}
-      <div className="price-offer-actions">
-        <button type="button" className="price-offer-decline" disabled={busy} onClick={() => respond(false)}>Отказаться</button>
-        <button type="button" className="price-offer-accept" disabled={busy} onClick={() => respond(true)}>{busy ? "Отправляем..." : "Согласиться"}</button>
-      </div>
     </section>
   );
 }

@@ -182,6 +182,8 @@ export function publicOrderEvent(order) {
     driver_offer_price_kzt: order.driver_offer_price_kzt,
     driver_offer_status: order.driver_offer_status,
     driver_offer_by_driver_id: order.driver_offer_by_driver_id,
+    driver_offer_proposed_by: order.driver_offer_proposed_by,
+    offer_driver_name: order.offer_driver_name ?? null,
     payment_method: order.payment_method,
     tariff: order.tariff,
     driver_id: order.driver_id,
